@@ -14,5 +14,5 @@ pal_gc_dbg2
 pal_gc
 pal_mq
 jp_gc_ce
-cn_ique
-tw_ique
+ique_cn
+ique_tw

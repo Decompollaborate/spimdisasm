@@ -20,8 +20,8 @@ versions = {
     "pal_mq" : "GPM",
     "pal_mq_dbg" : "GPMD",
     "jp_gc_ce" : "GJC",
-    "cn_ique" : "IC",
-    "tw_ique" : "IT",
+    "ique_cn" : "IC",
+    "ique_tw" : "IT",
 }
 
 def getVersionAbbr(filename: str) -> str:
@@ -50,8 +50,8 @@ address_Graph_OpenDisps = {
     "pal_mq" : 0x001F77E,
     "pal_mq_dbg" : 0x0031AB1,
     "jp_gc_ce" : 0x001F78A,
-    "cn_ique" : 0x0,
-    "tw_ique" : 0x0,
+    "ique_cn" : 0x0,
+    "ique_tw" : 0x0,
 }
 
 ENTRYPOINT = 0x80000400

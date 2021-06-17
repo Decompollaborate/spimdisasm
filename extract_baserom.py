@@ -30,8 +30,8 @@ FILE_TABLE_OFFSET = {
     "PAL GC":       0x07170,
     "PAL MQ":       0x07170,
     "JP GC CE":     0x07170, # Zelda collection
-    "CN IQUE":      0x0B7A0,
-    "TW IQUE":      0x0B240
+    "IQUE CN":      0x0B7A0,
+    "IQUE TW":      0x0B240
 }
 FILE_TABLE_OFFSET["NTSC J 1.0 RC"]  = FILE_TABLE_OFFSET["NTSC 1.0 RC"]
 FILE_TABLE_OFFSET["NTSC J 1.0"]     = FILE_TABLE_OFFSET["NTSC 1.0"]
@@ -56,8 +56,8 @@ FILE_NAMES: Dict[str, List[str] | None] = {
     "PAL GC":       None,
     "PAL MQ":       None,
     "JP GC CE":     None, # Zelda collector's edition
-    "CN IQUE":      None,
-    "TW IQUE":      None
+    "IQUE CN":      None,
+    "IQUE TW":      None
 }
 FILE_NAMES["NTSC J 1.0 RC"]  = FILE_NAMES["NTSC 1.0 RC"]
 FILE_NAMES["NTSC J 1.0"]     = FILE_NAMES["NTSC 1.0"]
@@ -81,7 +81,7 @@ def readFilelists():
     FILE_NAMES["NTSC 1.0"] = readFile("filelists/filelist_ntsc_1.0.txt")
     FILE_NAMES["PAL 1.0"] = readFile("filelists/filelist_pal_1.0.txt")
     FILE_NAMES["JP GC CE"] = readFile("filelists/filelist_jp_gc_ce.txt")
-    FILE_NAMES["CN IQUE"] = readFile("filelists/filelist_cn_ique.txt")
+    FILE_NAMES["IQUE CN"] = readFile("filelists/filelist_ique_cn.txt")
 
     FILE_NAMES["JP MQ"] = FILE_NAMES["USA MQ"]
 
@@ -94,7 +94,7 @@ def readFilelists():
     FILE_NAMES["PAL GC DBG2"] = FILE_NAMES["PAL MQ DBG"]
     FILE_NAMES["PAL GC DBG1"] = FILE_NAMES["PAL MQ DBG"]
 
-    FILE_NAMES["TW IQUE"] = FILE_NAMES["CN IQUE"]
+    FILE_NAMES["IQUE TW"] = FILE_NAMES["IQUE CN"]
 
     # Unconfirmed
     FILE_NAMES["NTSC 1.0 RC"] = FILE_NAMES["NTSC 1.0"]
@@ -174,7 +174,7 @@ def ExtractFunc(i):
     print('extracting ' + filename + " (0x%08X, 0x%08X)" % (virtStart, virtEnd))
     write_output_file(filename, physStart, size)
     if compressed:
-        if Edition in ("cn_ique", "tw_ique"):
+        if Edition in ("ique_cn", "ique_tw"):
             data = readFileAsBytearray(filename)
             decompressed = decompressZlib(data)
             writeBytearrayToFile(filename, decompressed)

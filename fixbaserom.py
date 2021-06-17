@@ -30,8 +30,8 @@ VERSIONS_HASHES = {
     "PAL GC":           "cd09029edcfb7c097ac01986a0f83d3f",
     "PAL MQ":           "1618403427e4344a57833043db5ce3c3", # I think it's right.
     "JP GC CE":         "0c13e0449a28ea5b925cdb8af8d29768", # Zelda collection
-    "CN IQUE":          "0ab48b2d44a74b3bb2d384f6170c2742",
-    "TW IQUE":          "a475e9f8615513666a265c464708ae8f"
+    "IQUE CN":          "0ab48b2d44a74b3bb2d384f6170c2742",
+    "IQUE TW":          "a475e9f8615513666a265c464708ae8f"
 }
 
 def getStrHash(byte_array):
