@@ -47,19 +47,19 @@ def compare_baseroms(args, filelist):
                 print(f"File {filename} does not exists in other_baserom.")
             continue
 
-        file_one_data = read_file_as_bytearray(filepath_one)
-        file_two_data = read_file_as_bytearray(filepath_two)
+        file_one_data = readFileAsBytearray(filepath_one)
+        file_two_data = readFileAsBytearray(filepath_two)
 
         if filename.startswith("ovl_"):
-            file_one = Overlay(file_one_data)
-            file_two = Overlay(file_two_data)
+            file_one = Overlay(file_one_data, filename, args.version1, args=args)
+            file_two = Overlay(file_two_data, filename, args.version2, args=args)
         else:
-            file_one = File(file_one_data)
-            file_two = File(file_two_data)
+            file_one = File(file_one_data, filename, args.version1, args=args)
+            file_two = File(file_two_data, filename, args.version2, args=args)
 
-        file_one.blankOutDifferences(file_two, args)
+        file_one.blankOutDifferences(file_two)
 
-        comparison = file_one.compareToFile(file_two, args)
+        comparison = file_one.compareToFile(file_two)
 
         if comparison["equal"]:
             equals += 1
@@ -70,7 +70,7 @@ def compare_baseroms(args, filelist):
             if args.print in ("all", "diffs"):
                 print(f"{filename} not OK")
                 print_result_different(comparison, 1)
-                
+
                 if "ovl" in comparison:
                     for section_name in comparison["ovl"]:
                         section = comparison["ovl"][section_name]
@@ -116,8 +116,8 @@ def compare_to_csv(args, filelist):
         #if args.filetype != "all" and args.filetype != filedata["type"]:
         #    continue
 
-        file_one_data = read_file_as_bytearray(filepath_one)
-        file_two_data = read_file_as_bytearray(filepath_two)
+        file_one_data = readFileAsBytearray(filepath_one)
+        file_two_data = readFileAsBytearray(filepath_two)
 
         equal = ""
         len_one = ""
@@ -139,15 +139,15 @@ def compare_to_csv(args, filelist):
 
         else:
             if filename.startswith("ovl_"):
-                file_one = Overlay(file_one_data)
-                file_two = Overlay(file_two_data)
+                file_one = Overlay(file_one_data, filename, args.version1, args=args)
+                file_two = Overlay(file_two_data, filename, args.version2, args=args)
             else:
-                file_one = File(file_one_data)
-                file_two = File(file_two_data)
+                file_one = File(file_one_data, filename, args.version1, args=args)
+                file_two = File(file_two_data, filename, args.version2, args=args)
 
-            file_one.blankOutDifferences(file_two, args)
+            file_one.blankOutDifferences(file_two)
 
-            comparison = file_one.compareToFile(file_two, args)
+            comparison = file_one.compareToFile(file_two)
             equal = comparison["equal"]
 
             if equal and args.print not in ("all", "equals"):
@@ -215,6 +215,7 @@ def main():
     parser.add_argument("--ignore06", help="Ignores words differences that starts in 0x06XXXXXX", action="store_true")
     parser.add_argument("--ignore04", help="Ignores words differences that starts in 0x04XXXXXX", action="store_true")
     parser.add_argument("--ignore-branches", help="Ignores the address of every branch, jump and jal.", action="store_true")
+    parser.add_argument("--dont-remove-ptrs", help="Disable the pointer removal feature.", action="store_true")
     parser.add_argument("--column1", help="Name for column one (baserom) in the csv.", default=None)
     parser.add_argument("--column2", help="Name for column two (other_baserom) in the csv.", default=None)
     args = parser.parse_args()
