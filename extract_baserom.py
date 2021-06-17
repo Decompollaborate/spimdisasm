@@ -230,6 +230,7 @@ def extract_rom(j):
             ExtractFunc(i)
 
     filetable = f'baserom_{Edition}/dma_addresses.txt'
+    print(f"Creating {filetable}")
     with open(filetable, "w") as f:
         for filename, data in dmaTable.items():
             f.write(",".join([filename] + list(map(str, data))) + "\n")
