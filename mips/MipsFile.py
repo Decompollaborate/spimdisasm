@@ -4,20 +4,17 @@ from __future__ import annotations
 
 from .Utils import *
 from .GlobalConfig import GlobalConfig
-# TODO: remove?
-from .ZeldaTables import OverlayTableEntry
 
 class File:
-    def __init__(self, array_of_bytes: bytearray, filename: str, version: str, tableEntry: OverlayTableEntry=None):
+    def __init__(self, array_of_bytes: bytearray, filename: str, version: str):
         self.bytes: bytearray = array_of_bytes
         self.words: List[int] = bytesToBEWords(self.bytes)
         self.filename: str = filename
         self.version: str = version
+        self.parent: File|None = None
+        self.offset: int = 0 # in-file offset
         self.vRamStart: int = -1
         self.initVarsAddress: int = -1
-        if tableEntry is not None:
-            self.vRamStart = tableEntry.vramStart
-            self.initVarsAddress = tableEntry.initVars
 
     @property
     def size(self):
