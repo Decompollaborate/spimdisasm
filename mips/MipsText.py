@@ -274,7 +274,7 @@ class Text(File):
                     offsetHex = toHex(offset, 5)[2:]
                     vramHex = ""
                     if self.vRamStart != -1:
-                        vramHex = toHex(self.vRamStart + offset, 6)[2:]
+                        vramHex = toHex(self.getVramOffset(offset), 6)[2:]
                     instrHex = toHex(instr.instr, 8)[2:]
 
                     comment = f"/* {offsetHex} {vramHex} {instrHex} */"
