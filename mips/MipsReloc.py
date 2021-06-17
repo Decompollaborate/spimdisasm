@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from .Utils import *
+from .GlobalConfig import GlobalConfig
 from .MipsFile import File
 
 
@@ -44,8 +45,8 @@ class RelocEntry:
         return self.__str__()
 
 class Reloc(File):
-    def __init__(self, array_of_bytes: bytearray, filename: str, version: str, tableEntry: OverlayTableEntry=None, args=None):
-        super().__init__(array_of_bytes, filename, version, tableEntry=tableEntry, args=args)
+    def __init__(self, array_of_bytes: bytearray, filename: str, version: str, tableEntry: OverlayTableEntry=None):
+        super().__init__(array_of_bytes, filename, version, tableEntry=tableEntry)
 
         self.entries: List[RelocEntry] = list()
         for word in self.words:
@@ -61,7 +62,7 @@ class Reloc(File):
         return result
 
     def removePointers(self):
-        if self.args is not None and self.args.dont_remove_ptrs:
+        if not GlobalConfig.REMOVE_POINTERS:
             return
         super().removePointers()
         self.updateBytes()

@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 from .Utils import *
+from .GlobalConfig import GlobalConfig
 from .MipsFile import File
 
 
 class Rodata(File):
     def removePointers(self):
-        if self.args is not None and self.args.dont_remove_ptrs:
+        if not GlobalConfig.REMOVE_POINTERS:
             return
         super().removePointers()
 

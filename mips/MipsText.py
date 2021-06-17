@@ -8,11 +8,12 @@ from .MipsInstructions import Instruction, wordToInstruction
 # TODO: remove?
 from .ZeldaTables import OverlayTableEntry
 from .ZeldaOffsets import address_Graph_OpenDisps
+from .GlobalConfig import GlobalConfig
 
 
 class Text(File):
-    def __init__(self, array_of_bytes: bytearray, filename: str, version: str, tableEntry: OverlayTableEntry=None, args=None):
-        super().__init__(array_of_bytes, filename, version, tableEntry=tableEntry, args=args)
+    def __init__(self, array_of_bytes: bytearray, filename: str, version: str, tableEntry: OverlayTableEntry=None):
+        super().__init__(array_of_bytes, filename, version, tableEntry=tableEntry)
 
         self.instructions: List[Instruction] = list()
         for word in self.words:
@@ -78,7 +79,7 @@ class Text(File):
         return result
 
     def blankOutDifferences(self, other_file: File):
-        if self.args is not None and self.args.dont_remove_ptrs:
+        if not GlobalConfig.REMOVE_POINTERS:
             return
         super().blankOutDifferences(other_file)
         if not isinstance(other_file, Text):
@@ -94,7 +95,7 @@ class Text(File):
         for i in range(min(self.nInstr, other_file.nInstr)):
             instr1 = self.instructions[i]
             instr2 = other_file.instructions[i]
-            if self.args is not None and self.args.ignore_branches:
+            if not GlobalConfig.IGNORE_BRANCHES:
                 if instr1.sameOpcode(instr2):
                     if instr1.isBranch() and instr2.isBranch():
                         instr1.blankOut()
@@ -164,12 +165,12 @@ class Text(File):
             other_file.updateWords()
 
     def removePointers(self):
-        if self.args is not None and self.args.dont_remove_ptrs:
+        if not GlobalConfig.REMOVE_POINTERS:
             return
 
         was_updated = False
 
-        if self.args is not None and self.args.delete_opendisps:
+        if not GlobalConfig.DELETE_OPENDISPS:
             was_updated = self.deleteCallers_Graph_OpenDisps()
 
         was_updated = self.removeTrailingNops() or was_updated
@@ -191,7 +192,7 @@ class Text(File):
                     lui_registers[lui_reg] = [lui_pos, instructions_left]
 
             if opcode == "LUI":
-                lui_registers[instr.rt] = [i, self.args.track_registers]
+                lui_registers[instr.rt] = [i, GlobalConfig.TRACK_REGISTERS]
             elif opcode in ("ADDIU", "LW", "LWU", "LWC1", "LWC2", "ORI", "LH", "LHU", "LB", "LBU"):
                 rs = instr.rs
                 if rs in lui_registers:
