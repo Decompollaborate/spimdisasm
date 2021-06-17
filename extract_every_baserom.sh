@@ -16,5 +16,5 @@
 ./extract_baserom.py -j pal_mq
 ./extract_baserom.py -j pal_mq_dbg
 ./extract_baserom.py -j jp_gc_ce
-./extract_baserom.py -j cn_ique
-./extract_baserom.py -j tw_ique
+./extract_baserom.py -j ique_cn
+./extract_baserom.py -j ique_tw
