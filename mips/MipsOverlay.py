@@ -11,13 +11,16 @@ from .MipsRodata import Rodata
 from .MipsBss import Bss
 from .MipsReloc import Reloc
 from .MipsInstructions import wordToInstruction
-# TODO: remove?
 from .ZeldaTables import OverlayTableEntry
 
 
 class Overlay(File):
     def __init__(self, array_of_bytes: bytearray, filename: str, version: str, tableEntry: OverlayTableEntry=None):
-        super().__init__(array_of_bytes, filename, version, tableEntry=tableEntry)
+        super().__init__(array_of_bytes, filename, version)
+
+        if tableEntry is not None:
+            self.vRamStart = tableEntry.vramStart
+            self.initVarsAddress = tableEntry.initVars
 
         seekup = self.words[-1]
         self.headerBPos = self.size - seekup
@@ -32,21 +35,37 @@ class Overlay(File):
 
         start = 0
         end = text_size
-        self.text = Text(self.bytes[start:end], filename, version, tableEntry=tableEntry)
+        self.text = Text(self.bytes[start:end], filename, version)
+        self.text.parent = self
+        self.text.offset = start
+        self.text.vRamStart = self.vRamStart
+        self.text.initVarsAddress = self.initVarsAddress
 
         start += text_size
         end += data_size
-        self.data = Data(self.bytes[start:end], filename, version, tableEntry=tableEntry)
+        self.data = Data(self.bytes[start:end], filename, version)
+        self.data.parent = self
+        self.data.offset = start
+        self.data.vRamStart = self.vRamStart
+        self.data.initVarsAddress = self.initVarsAddress
 
         start += data_size
         end += rodata_size
-        self.rodata = Rodata(self.bytes[start:end], filename, version, tableEntry=tableEntry)
+        self.rodata = Rodata(self.bytes[start:end], filename, version)
+        self.rodata.parent = self
+        self.rodata.offset = start
+        self.rodata.vRamStart = self.vRamStart
+        self.rodata.initVarsAddress = self.initVarsAddress
 
         #start += rodata_size
         #end += bss_size
-        #self.bss = Bss(self.bytes[start:end], filename, version, tableEntry=tableEntry)
+        #self.bss = Bss(self.bytes[start:end], filename, version)
         # TODO
-        self.bss = Bss(self.bytes[0:0], filename, version, tableEntry=tableEntry)
+        self.bss = Bss(self.bytes[0:0], filename, version)
+        self.bss.parent = self
+        self.bss.offset = start
+        self.bss.vRamStart = self.vRamStart
+        self.bss.initVarsAddress = self.initVarsAddress
 
         #start += bss_size
         start += rodata_size
@@ -55,7 +74,11 @@ class Overlay(File):
 
         start += header_size
         end += reloc_size
-        self.reloc = Reloc(self.bytes[start:end], filename, version, tableEntry=tableEntry)
+        self.reloc = Reloc(self.bytes[start:end], filename, version)
+        self.reloc.parent = self
+        self.reloc.offset = start
+        self.reloc.vRamStart = self.vRamStart
+        self.reloc.initVarsAddress = self.initVarsAddress
 
         self.tail = bytesToBEWords(self.bytes[end:])
 

@@ -12,8 +12,8 @@ from .GlobalConfig import GlobalConfig
 
 
 class Text(File):
-    def __init__(self, array_of_bytes: bytearray, filename: str, version: str, tableEntry: OverlayTableEntry=None):
-        super().__init__(array_of_bytes, filename, version, tableEntry=tableEntry)
+    def __init__(self, array_of_bytes: bytearray, filename: str, version: str):
+        super().__init__(array_of_bytes, filename, version)
 
         self.instructions: List[Instruction] = list()
         for word in self.words:

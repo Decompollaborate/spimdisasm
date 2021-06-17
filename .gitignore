@@ -52,3 +52,5 @@ graphs/
 
 # Per-user configuration
 .python-version
+
+asm/
