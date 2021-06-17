@@ -33,13 +33,17 @@ class Rodata(File):
             return
 
         with open(filepath + ".rodata.asm", "w") as f:
-            # f.write(".section .rodata\n\n.balign 16\n\n")
+            f.write(".section .rodata\n\n")
             offset = 0
             for w in self.words:
                 offsetHex = toHex(offset, 5)[2:]
+                vramHex = ""
+                if self.vRamStart != -1:
+                    currentVram = self.getVramOffset(offset)
+                    vramHex = toHex(currentVram, 8)[2:]
                 rodataHex = toHex(w, 8)[2:]
                 line = toHex(w, 8)
 
-                f.write(f"/* {offsetHex} {rodataHex} */  .word  {line}\n")
+                f.write(f"/* {offsetHex} {vramHex} {rodataHex} */  .word  {line}\n")
                 offset += 4
 

@@ -260,6 +260,7 @@ class Text(File):
         super().saveToFile(filepath + ".text")
 
         with open(filepath + ".text.asm", "w") as f:
+            f.write(".section .text\n\n")
             i = 0
             offset = 0
             for func in self.functions:

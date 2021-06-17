@@ -54,3 +54,4 @@ graphs/
 .python-version
 
 asm/
+*.csv
