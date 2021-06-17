@@ -37,8 +37,11 @@ class Data(File):
             offset = 0
             for w in self.words:
                 offsetHex = toHex(offset, 5)[2:]
+                vramHex = ""
+                if self.vRamStart != -1:
+                    vramHex = toHex(self.getVramOffset(offset), 6)[2:]
                 dataHex = toHex(w, 8)[2:]
                 line = toHex(w, 8)
 
-                f.write(f"/* {offsetHex} {dataHex} */  .word  {line}\n")
+                f.write(f"/* {offsetHex} {vramHex} {dataHex} */  .word  {line}\n")
                 offset += 4

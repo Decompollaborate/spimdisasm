@@ -23,6 +23,11 @@ class File:
     def sizew(self):
         return len(self.words)
 
+    def getVramOffset(self, localOffset: int) -> int:
+        if self.vRamStart == -1:
+            return self.offset + localOffset
+        return self.vRamStart + self.offset + localOffset
+
     def getHash(self):
         return getStrHash(self.bytes)
 
