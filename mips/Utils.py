@@ -6,7 +6,7 @@ import os
 import hashlib
 import json
 import struct
-from typing import List
+from typing import List, Dict
 import sys
 
 def eprint(*args, **kwargs):
