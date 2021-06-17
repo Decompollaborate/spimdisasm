@@ -87,7 +87,7 @@ def readFilelists():
 
     FILE_NAMES["USA GC"] = FILE_NAMES["JP GC CE"]
     FILE_NAMES["JP GC"] = FILE_NAMES["USA GC"]
-    FILE_NAMES["PAL GC"] = FILE_NAMES["USA GC"]
+    FILE_NAMES["PAL GC"] = FILE_NAMES["PAL MQ"]
 
     FILE_NAMES["PAL 1.1"] = FILE_NAMES["PAL 1.0"]
 
@@ -96,12 +96,10 @@ def readFilelists():
 
     FILE_NAMES["IQUE TW"] = FILE_NAMES["IQUE CN"]
 
-    # Unconfirmed
     FILE_NAMES["NTSC 1.0 RC"] = FILE_NAMES["NTSC 1.0"]
     FILE_NAMES["NTSC 1.1"] = FILE_NAMES["NTSC 1.0"]
     FILE_NAMES["NTSC 1.2"] = FILE_NAMES["NTSC 1.0"]
 
-    # In theory, those versions should share the same file list.
     FILE_NAMES["NTSC J 1.0 RC"]  = FILE_NAMES["NTSC 1.0 RC"]
     FILE_NAMES["NTSC J 1.0"]     = FILE_NAMES["NTSC 1.0"]
     FILE_NAMES["NTSC J 1.1"]     = FILE_NAMES["NTSC 1.1"]
