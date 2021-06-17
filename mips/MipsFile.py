@@ -3,16 +3,16 @@
 from __future__ import annotations
 
 from .Utils import *
+from .GlobalConfig import GlobalConfig
 # TODO: remove?
 from .ZeldaTables import OverlayTableEntry
 
 class File:
-    def __init__(self, array_of_bytes: bytearray, filename: str, version: str, tableEntry: OverlayTableEntry=None, args=None):
+    def __init__(self, array_of_bytes: bytearray, filename: str, version: str, tableEntry: OverlayTableEntry=None):
         self.bytes: bytearray = array_of_bytes
         self.words: List[int] = bytesToBEWords(self.bytes)
         self.filename: str = filename
         self.version: str = version
-        self.args = args
         self.vRamStart: int = -1
         self.initVarsAddress: int = -1
         if tableEntry is not None:
@@ -62,23 +62,23 @@ class File:
         return result
 
     def blankOutDifferences(self, other: File):
-        if self.args is not None and self.args.dont_remove_ptrs:
+        if not GlobalConfig.REMOVE_POINTERS:
             return
         was_updated = False
-        if self.args is not None and (self.args.ignore80 or self.args.ignore06 or self.args.ignore04):
+        if GlobalConfig.IGNORE_80 or GlobalConfig.IGNORE_06 or GlobalConfig.IGNORE_04:
             min_len = min(self.sizew, other.sizew)
             for i in range(min_len):
-                if self.args.ignore80:
+                if GlobalConfig.IGNORE_80:
                     if ((self.words[i] >> 24) & 0xFF) == 0x80 and ((other.words[i] >> 24) & 0xFF) == 0x80:
                         self.words[i] = 0x80000000
                         other.words[i] = 0x80000000
                         was_updated = True
-                if self.args.ignore06:
+                if GlobalConfig.IGNORE_06:
                     if ((self.words[i] >> 24) & 0xFF) == 0x06 and ((other.words[i] >> 24) & 0xFF) == 0x06:
                         self.words[i] = 0x06000000
                         other.words[i] = 0x06000000
                         was_updated = True
-                if self.args.ignore04:
+                if GlobalConfig.IGNORE_04:
                     if ((self.words[i] >> 24) & 0xFF) == 0x04 and ((other.words[i] >> 24) & 0xFF) == 0x04:
                         self.words[i] = 0x04000000
                         other.words[i] = 0x04000000
@@ -99,4 +99,3 @@ class File:
         if self.size == 0:
             return
         writeBytearrayToFile(filepath, self.bytes)
-

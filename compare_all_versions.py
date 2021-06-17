@@ -9,6 +9,7 @@ from multiprocessing import Pool, cpu_count
 from functools import partial
 
 from mips.Utils import *
+from mips.GlobalConfig import GlobalConfig
 from mips.MipsFile import File
 from mips.MipsOverlay import Overlay
 from mips.ZeldaTables import OverlayTableEntry
@@ -116,9 +117,9 @@ def compareOverlayAcrossVersions(filename: str, versionsList: List[str], dmaAddr
                         tableEntry = entry
                         break
 
-            f = Overlay(array_of_bytes, filename, version, tableEntry=tableEntry, args=args)
+            f = Overlay(array_of_bytes, filename, version, tableEntry=tableEntry)
         else:
-            f = File(array_of_bytes, filename, version, args=args)
+            f = File(array_of_bytes, filename, version)
         f.removePointers()
         if args.savetofile:
             new_file_path = os.path.join(args.savetofile, version, filename)
@@ -173,13 +174,19 @@ def main():
     parser.add_argument("versionlist", help="Path to version list.")
     parser.add_argument("filelist", help="List of filenames of the ROM that will be compared.")
     parser.add_argument("--noheader", help="Disables the csv header.", action="store_true")
-    parser.add_argument("--ignore04", help="Ignores words starting with 0x04.", action="store_true")
     parser.add_argument("--overlays", help="Treats the files in filelist as overlays.", action="store_true")
     parser.add_argument("--savetofile", help="Specify a folder where each part of an overlay will be written.", metavar="FOLDER")
-    parser.add_argument("--track-registers", help="Set for how many instructions a register will be tracked.", type=int, default=8)
+    parser.add_argument("--ignore04", help="Ignores words starting with 0x04.", action="store_true")
+    parser.add_argument("--track-registers", help="Set for how many instructions a register will be tracked.", type=int)
     parser.add_argument("--delete-opendisps", help="Will try to find and delete every function that calls Graph_OpenDisps.", action="store_true")
     parser.add_argument("--dont-remove-ptrs", help="Disable the pointer removal feature.", action="store_true")
     args = parser.parse_args()
+
+    GlobalConfig.REMOVE_POINTERS = not args.dont_remove_ptrs
+    GlobalConfig.DELETE_OPENDISPS = args.delete_opendisps
+    if args.track_registers is not None:
+        GlobalConfig.TRACK_REGISTERS = args.track_registers
+    GlobalConfig.IGNORE_04 = args.ignore04
 
     versionsList = []
     with open(args.versionlist) as f:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from .Utils import *
+from .GlobalConfig import GlobalConfig
 from .MipsFile import File
 from .MipsText import Text
 from .MipsData import Data
@@ -15,8 +16,8 @@ from .ZeldaTables import OverlayTableEntry
 
 
 class Overlay(File):
-    def __init__(self, array_of_bytes: bytearray, filename: str, version: str, tableEntry: OverlayTableEntry=None, args=None):
-        super().__init__(array_of_bytes, filename, version, tableEntry=tableEntry, args=args)
+    def __init__(self, array_of_bytes: bytearray, filename: str, version: str, tableEntry: OverlayTableEntry=None):
+        super().__init__(array_of_bytes, filename, version, tableEntry=tableEntry)
 
         seekup = self.words[-1]
         self.headerBPos = self.size - seekup
@@ -31,21 +32,21 @@ class Overlay(File):
 
         start = 0
         end = text_size
-        self.text = Text(self.bytes[start:end], filename, version, tableEntry=tableEntry, args=args)
+        self.text = Text(self.bytes[start:end], filename, version, tableEntry=tableEntry)
 
         start += text_size
         end += data_size
-        self.data = Data(self.bytes[start:end], filename, version, tableEntry=tableEntry, args=args)
+        self.data = Data(self.bytes[start:end], filename, version, tableEntry=tableEntry)
 
         start += data_size
         end += rodata_size
-        self.rodata = Rodata(self.bytes[start:end], filename, version, tableEntry=tableEntry, args=args)
+        self.rodata = Rodata(self.bytes[start:end], filename, version, tableEntry=tableEntry)
 
         #start += rodata_size
         #end += bss_size
-        #self.bss = Bss(self.bytes[start:end], filename, version, tableEntry=tableEntry, args=args)
+        #self.bss = Bss(self.bytes[start:end], filename, version, tableEntry=tableEntry)
         # TODO
-        self.bss = Bss(self.bytes[0:0], filename, version, tableEntry=tableEntry, args=args)
+        self.bss = Bss(self.bytes[0:0], filename, version, tableEntry=tableEntry)
 
         #start += bss_size
         start += rodata_size
@@ -54,7 +55,7 @@ class Overlay(File):
 
         start += header_size
         end += reloc_size
-        self.reloc = Reloc(self.bytes[start:end], filename, version, tableEntry=tableEntry, args=args)
+        self.reloc = Reloc(self.bytes[start:end], filename, version, tableEntry=tableEntry)
 
         self.tail = bytesToBEWords(self.bytes[end:])
 
@@ -96,7 +97,7 @@ class Overlay(File):
         return result
 
     def blankOutDifferences(self, other_file: File):
-        if self.args is not None and self.args.dont_remove_ptrs:
+        if not GlobalConfig.REMOVE_POINTERS:
             return
         super().blankOutDifferences(other_file)
         if not isinstance(other_file, Overlay):
@@ -111,7 +112,7 @@ class Overlay(File):
         other_file.updateBytes()
 
     def removePointers(self):
-        if self.args is not None and self.args.dont_remove_ptrs:
+        if not GlobalConfig.REMOVE_POINTERS:
             return
         super().removePointers()
 

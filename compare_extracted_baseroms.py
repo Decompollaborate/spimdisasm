@@ -6,6 +6,7 @@ import argparse
 import os
 
 from mips.Utils import *
+from mips.GlobalConfig import GlobalConfig
 from mips.MipsFile import File
 from mips.MipsOverlay import Overlay
 
@@ -51,11 +52,11 @@ def compare_baseroms(args, filelist):
         file_two_data = readFileAsBytearray(filepath_two)
 
         if filename.startswith("ovl_"):
-            file_one = Overlay(file_one_data, filename, args.version1, args=args)
-            file_two = Overlay(file_two_data, filename, args.version2, args=args)
+            file_one = Overlay(file_one_data, filename, args.version1)
+            file_two = Overlay(file_two_data, filename, args.version2)
         else:
-            file_one = File(file_one_data, filename, args.version1, args=args)
-            file_two = File(file_two_data, filename, args.version2, args=args)
+            file_one = File(file_one_data, filename, args.version1)
+            file_two = File(file_two_data, filename, args.version2)
 
         file_one.blankOutDifferences(file_two)
 
@@ -139,11 +140,11 @@ def compare_to_csv(args, filelist):
 
         else:
             if filename.startswith("ovl_"):
-                file_one = Overlay(file_one_data, filename, args.version1, args=args)
-                file_two = Overlay(file_two_data, filename, args.version2, args=args)
+                file_one = Overlay(file_one_data, filename, args.version1)
+                file_two = Overlay(file_two_data, filename, args.version2)
             else:
-                file_one = File(file_one_data, filename, args.version1, args=args)
-                file_two = File(file_two_data, filename, args.version2, args=args)
+                file_one = File(file_one_data, filename, args.version1)
+                file_two = File(file_two_data, filename, args.version2)
 
             file_one.blankOutDifferences(file_two)
 
@@ -210,15 +211,23 @@ def main():
     # parser.add_argument("--filetype", help="Filters by filetype. Default: all",  choices=["all", "Unknown", "Overlay", "Object", "Texture", "Room", "Scene", "Other"], default="all")
     parser.add_argument("--overlays", help="Treats each section of the overalays as separate files.", action="store_true")
     parser.add_argument("--csv", help="Print the output in csv format instead.", action="store_true")
-    #parser.add_argument("--ignore80", help="Ignores words differences that starts in 0x80XXXXXX", action="store_true")
-    parser.add_argument("--ignore80", help="Ignores words differences that starts in 0x80XXXXXX", action="store_true", default=True) # temporal?
+    parser.add_argument("--ignore80", help="Ignores words differences that starts in 0x80XXXXXX", action="store_true")
     parser.add_argument("--ignore06", help="Ignores words differences that starts in 0x06XXXXXX", action="store_true")
     parser.add_argument("--ignore04", help="Ignores words differences that starts in 0x04XXXXXX", action="store_true")
+    parser.add_argument("--track-registers", help="Set for how many instructions a register will be tracked.", type=int)
     parser.add_argument("--ignore-branches", help="Ignores the address of every branch, jump and jal.", action="store_true")
     parser.add_argument("--dont-remove-ptrs", help="Disable the pointer removal feature.", action="store_true")
     parser.add_argument("--column1", help="Name for column one (baserom) in the csv.", default=None)
     parser.add_argument("--column2", help="Name for column two (other_baserom) in the csv.", default=None)
     args = parser.parse_args()
+
+    GlobalConfig.REMOVE_POINTERS = not args.dont_remove_ptrs
+    GlobalConfig.IGNORE_BRANCHES = args.ignore_branches
+    if args.track_registers is not None:
+        GlobalConfig.TRACK_REGISTERS = args.track_registers
+    GlobalConfig.IGNORE_04 = args.ignore04
+    GlobalConfig.IGNORE_06 = args.ignore06
+    GlobalConfig.IGNORE_80 = args.ignore80
 
     filelist = readFile(args.filelist)
     # filelist = readJson(args.filelist)
