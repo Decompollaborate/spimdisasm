@@ -1,0 +1,7563 @@
+{
+    "memory": {
+        "code": null,
+        "actor_table": null,
+        "gamestate_table": null,
+        "effect_table": null,
+        "kaleido_mgr_table": null,
+        "map_mark_data_table": null,
+        "fbdemo_table": null
+    },
+    "files": [
+        {
+            "vrom": null,
+            "name": "makerom",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "boot",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "dmadata",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "Audiobank",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "Audioseq",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "Audiotable",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "kanji",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "link_animetion",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "icon_item_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "icon_item_24_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "icon_item_field_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "icon_item_dungeon_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "icon_item_gameover_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "icon_item_jpn_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "icon_item_nes_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "item_name_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "map_name_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "do_action_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "message_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "jpn_message_data_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "message_texture_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "nes_font_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "nes_message_data_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "staff_message_data_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "map_grand_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "map_i_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "map_48x85_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "code",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "n64dd",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_title",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_select",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_opening",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_file_choose",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_kaleido_scope",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_player_actor",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_map_mark_data",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Test",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_GirlA",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Part",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Light",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Door",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Box",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Poh",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Okuta",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Bom",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Wallmas",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Dodongo",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Firefly",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Horse",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Arrow",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Elf",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Niw",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Tite",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Reeba",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Peehat",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Holl",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Scene_Change",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Zf",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Hata",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Boss_Dodongo",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Boss_Goma",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Zl1",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Viewer",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Goma",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Pushbox",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Bubble",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Door_Shutter",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Dodojr",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Bdfire",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Boom",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Torch2",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Bili",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Tp",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_St",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Bw",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Eiyer",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_River_Sound",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Horse_Normal",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Ossan",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Treemouth",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Dodoago",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Hidan_Dalm",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Hidan_Hrock",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Horse_Ganon",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Hidan_Rock",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Hidan_Rsekizou",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Hidan_Sekizou",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Hidan_Sima",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Hidan_Syoku",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Xc",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Hidan_Curtain",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot00_Hanebasi",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Mb",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Bombf",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Hidan_Firewall",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Dy_Yoseizo",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Zl2",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Hidan_Fslift",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_OE2",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Ydan_Hasi",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Ydan_Maruta",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Boss_Ganondrof",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Am",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Dekubaba",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_M_Fire1",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_M_Thunder",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Ddan_Jd",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Breakwall",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Jj",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Horse_Zelda",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Ddan_Kd",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Door_Warp1",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Obj_Syokudai",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Item_B_Heart",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Dekunuts",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Menkuri_Kaiten",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Menkuri_Eye",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Vali",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Mizu_Movebg",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Mizu_Water",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Arms_Hook",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_fHG",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Mori_Hineri",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Bb",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Toki_Hikari",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Yukabyun",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Toki_Swd",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Fhg_Fire",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Mjin",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Hidan_Kousi",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Door_Toki",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Hidan_Hamstep",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Bird",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Wood02",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Lightbox",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Pu_box",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Trap",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Arow_Trap",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Vase",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Ta",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Tk",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Mori_Bigst",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Mori_Elevator",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Mori_Kaitenkabe",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Mori_Rakkatenjo",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Vm",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Demo_Effect",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Demo_Kankyo",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Hidan_Fwbig",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Floormas",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Heishi1",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Rd",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Po_Sisters",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Heavy_Block",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Po_Event",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Obj_Mure",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Sw",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Boss_Fd",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Object_Kankyo",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Du",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Fd",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Horse_Link_Child",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Door_Ana",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot02_Objects",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Haka",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Magic_Wind",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Magic_Fire",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Ru1",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Boss_Fd2",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Fd_Fire",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Dh",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Dha",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Rl",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Encount1",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Demo_Du",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Demo_Im",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Demo_Tre_Lgt",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Fw",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Vb_Sima",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Vb_Ball",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Haka_Megane",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Haka_MeganeBG",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Haka_Ship",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Haka_Sgami",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Heishi2",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Encount2",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Fire_Rock",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Brob",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Mir_Ray",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot09_Obj",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot18_Obj",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Boss_Va",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Haka_Tubo",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Haka_Trap",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Haka_Huta",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Haka_Zou",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot17_Funen",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Syateki_Itm",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Syateki_Man",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Tana",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Nb",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Boss_Mo",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Sb",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Bigokuta",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Karebaba",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Bdan_Objects",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Demo_Sa",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Demo_Go",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_In",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Tr",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot16_Bombstone",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Hidan_Kowarerukabe",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Bombwall",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Ru2",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Obj_Dekujr",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Mizu_Uzu",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot06_Objects",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Ice_Objects",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Haka_Water",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Ma2",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Bom_Chu",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Horse_Game_Check",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Boss_Tw",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Rr",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Ba",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Bx",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Anubice",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Anubice_Fire",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Mori_Hashigo",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Mori_Hashira4",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Mori_Idomizu",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot16_Doughnut",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Bdan_Switch",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Ma1",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Boss_Ganon",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Boss_Sst",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Ny",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Fr",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Item_Shield",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Ice_Shelter",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Ice_Hono",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Item_Ocarina",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Magic_Dark",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Demo_6K",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Anubice_Tag",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Haka_Gate",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot15_Saku",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Jya_Goroiwa",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Jya_Zurerukabe",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Jya_Cobra",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Jya_Kanaami",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Fishing",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Obj_Oshihiki",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Gate_Shutter",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Eff_Dust",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot01_Fusya",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot01_Idohashira",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot01_Idomizu",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Po_Syokudai",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Ganon_Otyuka",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot15_Rrbox",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Umajump",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Insect",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Butte",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Fish",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot08_Iceblock",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Item_Etcetera",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Arrow_Fire",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Arrow_Ice",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Arrow_Light",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Obj_Kibako",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Obj_Tsubo",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Wonder_Item",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Ik",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Demo_Ik",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Skj",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Skjneedle",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_G_Switch",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Demo_Ext",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Demo_Shd",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Dns",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Elf_Msg",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Honotrap",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Tubo_Trap",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Obj_Ice_Poly",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot03_Taki",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot07_Taki",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Fz",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Po_Relay",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Relay_Objects",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Diving_Game",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Kusa",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Obj_Bean",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Obj_Bombiwa",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Obj_Switch",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Obj_Elevator",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Obj_Lift",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Obj_Hsblock",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Okarina_Tag",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Yabusame_Mark",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Goroiwa",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Ex_Ruppy",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Toryo",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Daiku",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Nwc",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Blkobj",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Item_Inbox",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Ge1",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Obj_Blockstop",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Sda",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Clear_Tag",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Niw_Lady",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Gm",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Ms",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Hs",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Ingate",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Kanban",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Heishi3",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Syateki_Niw",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Attack_Niw",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot01_Idosoko",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Sa",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Wonder_Talk",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Gjyo_Bridge",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Ds",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Mk",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Bom_Bowl_Man",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Bom_Bowl_Pit",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Owl",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Ishi",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Obj_Hana",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Obj_Lightswitch",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Obj_Mure2",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Go",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Fu",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Changer",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Jya_Megami",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Jya_Lift",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Jya_Bigmirror",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Jya_Bombchuiwa",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Jya_Amishutter",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Jya_Bombiwa",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot18_Basket",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Ganon_Organ",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Siofuki",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Stream",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Mm",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Ko",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Kz",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Weather_Tag",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Sst_Floor",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Ani",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Ex_Item",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Jya_Ironobj",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Js",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Jsjutan",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Cs",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Md",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Hy",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Ganon_Mant",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Okarina_Effect",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Mag",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Door_Gerudo",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Elf_Msg2",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Demo_Gt",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Po_Field",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Efc_Erupc",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Zg",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Heishi4",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Zl3",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Boss_Ganon2",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Kakasi",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Takara_Man",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Obj_Makeoshihiki",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Oceff_Spot",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_End_Title",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Torch",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Demo_Ec",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Shot_Sun",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Dy_Extra",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Wonder_Talk2",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Ge2",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Obj_Roomtimer",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Ssh",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Sth",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Oceff_Wipe",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_Dust",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_KiraKira",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_Bomb",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_Bomb2",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_Blast",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_G_Spk",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_D_Fire",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_Bubble",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_G_Ripple",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_G_Splash",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_G_Magma",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_G_Fire",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_Lightning",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_Dt_Bubble",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_Hahen",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_Stick",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_Sibuki",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_Sibuki2",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_G_Magma2",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_Stone1",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_HitMark",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_Fhg_Flash",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_K_Fire",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_Solder_Srch_Ball",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_Kakera",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_Ice_Piece",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_En_Ice",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_Fire_Tail",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_En_Fire",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_Extra",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_Fcircle",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_Dead_Db",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_Dead_Dd",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_Dead_Ds",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_Dead_Sound",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Oceff_Storm",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Weiyer",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot05_Soko",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Jya_1flift",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Jya_Haheniron",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot12_Gate",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot12_Saku",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Hintnuts",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Nutsball",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot00_Break",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Shopnuts",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_It",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_GeldB",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Oceff_Wipe2",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Oceff_Wipe3",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Niw_Girl",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Dog",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Si",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot01_Objects2",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Obj_Comb",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot11_Bakudankabe",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Obj_Kibako2",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Dnt_Demo",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Dnt_Jiji",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Dnt_Nomal",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Guest",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Bom_Guard",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Hs2",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Demo_Kekkai",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot08_Bakudankabe",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot17_Bakudankabe",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Obj_Mure3",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Tg",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Mu",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Go2",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Wf",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Skb",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Demo_Gj",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Demo_Geff",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Gnd_Firemeiro",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Gnd_Darkmeiro",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Gnd_Soulmeiro",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Gnd_Nisekabe",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Gnd_Iceblock",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Ydan_Sp",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Gb",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Gs",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Mizu_Bwall",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Mizu_Shutter",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Daiku_Kakariko",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Bowl_Wall",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Wall_Tubo",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Po_Desert",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Crow",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Door_Killer",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot11_Oasis",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot18_Futa",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Spot18_Shutter",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Ma3",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Cow",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Ice_Turara",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Ice_Shutter",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Kakasi2",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Kakasi3",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Oceff_Wipe4",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Eg",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Menkuri_Nisekabe",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Zo",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Effect_Ss_Ice_Smoke",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Obj_Makekinsuta",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Ge3",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Obj_Timeblock",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Obj_Hamishi",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Zl4",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_En_Mm2",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Bg_Jya_Block",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ovl_Obj_Warp2block",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "gameplay_keep",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "gameplay_field_keep",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "gameplay_dangeon_keep",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "gameplay_object_exchange_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "object_link_boy",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_link_child",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_box",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_human",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_okuta",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_poh",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_wallmaster",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_dy_obj",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_firefly",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_dodongo",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_fire",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_niw",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_tite",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_reeba",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_peehat",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_kingdodongo",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_horse",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_zf",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_goma",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_zl1",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gol",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_bubble",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_dodojr",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_torch2",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_bl",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_tp",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oA1",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_st",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_bw",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ei",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_horse_normal",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oB1",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_o_anime",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_spot04_objects",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ddan_objects",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_hidan_objects",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_horse_ganon",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oA2",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_spot00_objects",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_mb",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_bombf",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_sk2",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oE1",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oE_anime",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oE2",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ydan_objects",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gnd",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_am",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_dekubaba",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oA3",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oA4",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oA5",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oA6",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oA7",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_jj",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oA8",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oA9",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oB2",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oB3",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oB4",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_horse_zelda",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_opening_demo1",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_warp1",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_b_heart",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_dekunuts",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oE3",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oE4",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_menkuri_objects",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oE5",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oE6",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oE7",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oE8",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oE9",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oE10",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oE11",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oE12",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_vali",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oA10",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oA11",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_mizu_objects",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_fhg",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ossan",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_mori_hineri1",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_Bb",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_toki_objects",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_yukabyun",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_zl2",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_mjin",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_mjin_flash",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_mjin_dark",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_mjin_flame",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_mjin_ice",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_mjin_soul",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_mjin_wind",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_mjin_oka",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_haka_objects",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_spot06_objects",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ice_objects",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_relay_objects",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_mori_hineri1a",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_mori_hineri2",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_mori_hineri2a",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_mori_objects",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_mori_tex",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_spot08_obj",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_warp2",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_hata",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_bird",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_wood02",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_lightbox",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_pu_box",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_trap",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_vase",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_im",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ta",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_tk",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_xc",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_vm",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_bv",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_hakach_objects",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_efc_crystal_light",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_efc_fire_ball",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_efc_flash",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_efc_lgt_shower",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_efc_star_field",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_god_lgt",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_light_ring",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_triforce_spot",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_medal",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_bdan_objects",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_sd",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_rd",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_po_sisters",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_heavy_object",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gndd",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_fd",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_du",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_fw",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_horse_link_child",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_spot02_objects",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_haka",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ru1",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_syokudai",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_fd2",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_dh",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_rl",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_efc_tw",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_demo_tre_lgt",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_key",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_mir_ray",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_brob",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_jewel",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_spot09_obj",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_spot18_obj",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_bdoor",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_spot17_obj",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_shop_dungen",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_nb",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_mo",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_sb",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_melody",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_heart",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_compass",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_bosskey",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_medal",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_nuts",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_sa",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_hearts",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_arrowcase",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_bombpouch",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_in",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_tr",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_spot16_obj",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oE1s",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oE4s",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_os_anime",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_bottle",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_stick",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_map",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oF1d_map",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ru2",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_shield_1",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_dekujr",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_magicpot",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_bomb_1",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_oF1s",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ma2",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_purse",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_hni",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_tw",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_rr",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_bxa",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_anubice",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_gerudo",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_arrow",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_bomb_2",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_egg",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_scale",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_shield_2",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_hookshot",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_ocarina",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_milk",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ma1",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ganon",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_sst",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ny",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_fr",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_pachinko",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_boomerang",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_bow",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_glasses",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_liquid",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ani",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_demo_6k",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_shield_3",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_letter",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_spot15_obj",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_jya_obj",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_clothes",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_bean",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_fish",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_saw",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_hammer",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_grass",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_longsword",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_spot01_objects",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_md",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_km1",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_kw1",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_zo",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_kz",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_umajump",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_masterkokiri",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_masterkokirihead",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_mastergolon",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_masterzoora",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_aob",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ik",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ahg",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_cne",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_niwatori",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_skj",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_bottle_letter",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_bji",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_bba",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_ocarina_0",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ds",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ane",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_boj",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_spot03_object",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_spot07_object",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_fz",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_bob",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ge1",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_yabusame_point",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_boots_2",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_seed",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gnd_magic",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_d_elevator",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_d_hsblock",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_d_lift",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_mamenoki",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_goroiwa",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_toryo",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_daiku",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_nwc",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_blkobj",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gm",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ms",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_hs",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ingate",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_lightswitch",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_kusa",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_tsubo",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_gloves",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_coin",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_kanban",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gjyo_objects",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_owl",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_mk",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_fu",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_ki_tan_mask",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_redead_mask",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_skj_mask",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_rabit_mask",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_truth_mask",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ganon_objects",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_siofuki",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_stream",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_mm",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_fa",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_os",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_eye_lotion",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_powder",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_mushroom",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_ticketstone",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_brokensword",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_js",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_cs",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_prescription",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_bracelet",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_soldout",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_frog",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_mag",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_door_gerudo",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gt",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_efc_erupc",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_zl2_anime1",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_zl2_anime2",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_golonmask",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_zoramask",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_gerudomask",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ganon2",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ka",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ts",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_zg",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_hoverboots",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_m_arrow",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ds2",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ec",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_fish",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_sutaru",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_goddess",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ssh",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_bigokuta",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_bg",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_spot05_objects",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_spot12_obj",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_bombiwa",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_hintnuts",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_rs",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_spot00_break",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gla",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_shopnuts",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_geldb",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gr",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_dog",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_jya_iron",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_jya_door",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_spot01_objects2",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_spot11_obj",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_kibako2",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_dns",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_dnk",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_fire",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_insect",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_butterfly",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_ghost",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_soul",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_bowl",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_po_field",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_demo_kekkai",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_efc_doughnut",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_dekupouch",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ganon_anime1",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ganon_anime2",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ganon_anime3",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_rupy",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_spot01_matoya",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_spot01_matoyab",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_po_composer",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_mu",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_wf",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_skb",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gj",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_geff",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_haka_door",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gs",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ps",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_bwall",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_crow",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_cow",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_cob",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_gi_sword_1",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_door_killer",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_ouke_haka",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_timeblock",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "object_zl4",
+            "type": "Object"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_01",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_02",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_03",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_04",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_05",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_06",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_07",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_08",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_09",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_10",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_11",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_12",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_13",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_14",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_15",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_16",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_17",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_18",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_19",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_20",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_21",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_22",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_23",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_24",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_25",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_26",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_27",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_28",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_29",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_30",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_31",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_32",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_33",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_34",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_35",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_36",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_37",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_38",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_39",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_40",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_41",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_42",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_43",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_44",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_45",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_46",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_47",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_48",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_49",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_50",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_51",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_52",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_53",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_54",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_55",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_56",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "g_pn_57",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "z_select_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "nintendo_rogo_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "title_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "parameter_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_fine0_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_fine0_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_fine1_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_fine1_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_fine2_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_fine2_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_fine3_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_fine3_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_cloud0_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_cloud0_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_cloud1_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_cloud1_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_cloud2_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_cloud2_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_cloud3_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_cloud3_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_holy0_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_holy0_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_holy1_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_holy1_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_MDVR_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_MDVR_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_MNVR_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_MNVR_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_RUVR_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_RUVR_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_LHVR_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_LHVR_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_KHVR_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_KHVR_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_K3VR_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_K3VR_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_K4VR_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_K4VR_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_K5VR_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_K5VR_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_SP1a_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_SP1a_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_MLVR_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_MLVR_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_KKRVR_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_KKRVR_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_KR3VR_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_KR3VR_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_IPVR_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_IPVR_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_KSVR_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_KSVR_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_GLVR_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_GLVR_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_ZRVR_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_ZRVR_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_DGVR_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_DGVR_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_ALVR_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_ALVR_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_NSVR_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_NSVR_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_LBVR_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_LBVR_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_TTVR_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_TTVR_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_FCVR_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "vr_FCVR_pal_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "elf_message_field",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "elf_message_ydan",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ddan_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ddan_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ddan_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ddan_room_2",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ddan_room_3",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ddan_room_4",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ddan_room_5",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ddan_room_6",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ddan_room_7",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ddan_room_8",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ddan_room_9",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ddan_room_10",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ddan_room_11",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ddan_room_12",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ddan_room_13",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ddan_room_14",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ddan_room_15",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ddan_room_16",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot00_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "spot00_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot01_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "spot01_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot02_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "spot02_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot02_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot03_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "spot03_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot03_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot04_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "spot04_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot04_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot04_room_2",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot05_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "spot05_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot06_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "spot06_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot07_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "spot07_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot07_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot08_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "spot08_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot09_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "spot09_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot10_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "spot10_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot10_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot10_room_2",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot10_room_3",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot10_room_4",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot10_room_5",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot10_room_6",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot10_room_7",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot10_room_8",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot10_room_9",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot11_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "spot11_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot12_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "spot12_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot12_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot13_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "spot13_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot13_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot15_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "spot15_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot16_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "spot16_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot17_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "spot17_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot17_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot18_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "spot18_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot18_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot18_room_2",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot18_room_3",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "market_day_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "market_day_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "market_night_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "market_night_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_2",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_3",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_4",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_5",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_6",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_7",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_8",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_9",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_10",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_11",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_12",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_13",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_14",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_15",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_16",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_17",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_18",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_19",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_20",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_21",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_22",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_23",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_24",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_25",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HIDAN_room_26",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "Bmori1_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "Bmori1_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "Bmori1_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "Bmori1_room_2",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "Bmori1_room_3",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "Bmori1_room_4",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "Bmori1_room_5",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "Bmori1_room_6",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "Bmori1_room_7",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "Bmori1_room_8",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "Bmori1_room_9",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "Bmori1_room_10",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "Bmori1_room_11",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "Bmori1_room_12",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "Bmori1_room_13",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "Bmori1_room_14",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "Bmori1_room_15",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "Bmori1_room_16",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "Bmori1_room_17",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "Bmori1_room_18",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "Bmori1_room_19",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "Bmori1_room_20",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "Bmori1_room_21",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "Bmori1_room_22",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ydan_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ydan_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ydan_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ydan_room_2",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ydan_room_3",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ydan_room_4",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ydan_room_5",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ydan_room_6",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ydan_room_7",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ydan_room_8",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ydan_room_9",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ydan_room_10",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ydan_room_11",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "kenjyanoma_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "kenjyanoma_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "tokinoma_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "tokinoma_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "tokinoma_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "link_home_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "link_home_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "kokiri_shop_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "kokiri_shop_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_room_2",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_room_3",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_room_4",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_room_5",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_room_6",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_room_7",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_room_8",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_room_9",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_room_10",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_room_11",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_room_12",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_room_13",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_room_14",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_room_15",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_room_16",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_room_17",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_room_18",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_room_19",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_room_20",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_room_21",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_room_22",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "kokiri_home_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "kokiri_home_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "kakusiana_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "kakusiana_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "kakusiana_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "kakusiana_room_2",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "kakusiana_room_3",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "kakusiana_room_4",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "kakusiana_room_5",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "kakusiana_room_6",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "kakusiana_room_7",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "kakusiana_room_8",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "kakusiana_room_9",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "kakusiana_room_10",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "kakusiana_room_11",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "kakusiana_room_12",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "kakusiana_room_13",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "entra_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "entra_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "bdan_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "bdan_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "bdan_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "bdan_room_2",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "bdan_room_3",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "bdan_room_4",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "bdan_room_5",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "bdan_room_6",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "bdan_room_7",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "bdan_room_8",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "bdan_room_9",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "bdan_room_10",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "bdan_room_11",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "bdan_room_12",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "bdan_room_13",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "bdan_room_14",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "bdan_room_15",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_room_2",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_room_3",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_room_4",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_room_5",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_room_6",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_room_7",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_room_8",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_room_9",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_room_10",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_room_11",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_room_12",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_room_13",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_room_14",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_room_15",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_room_16",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_room_17",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_room_18",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_room_19",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_room_20",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_room_21",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_room_22",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "moribossroom_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "moribossroom_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "moribossroom_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "syatekijyou_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "syatekijyou_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "men_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "men_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "men_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "men_room_2",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "men_room_3",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "men_room_4",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "men_room_5",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "men_room_6",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "men_room_7",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "men_room_8",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "men_room_9",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "men_room_10",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "shop1_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "shop1_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "hairal_niwa_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "hairal_niwa_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganon_tou_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ganon_tou_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "market_alley_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "market_alley_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "spot20_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "spot20_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "market_ruins_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "market_ruins_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "entra_n_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "entra_n_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "enrui_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "enrui_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "market_alley_n_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "market_alley_n_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "hiral_demo_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "hiral_demo_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "kokiri_home3_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "kokiri_home3_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_2",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_3",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_4",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_5",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_6",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_7",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_8",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_9",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_10",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_11",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_12",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_13",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_14",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_15",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_16",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_17",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_18",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_19",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_20",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_21",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_22",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_23",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_24",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_25",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_26",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_27",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinzou_room_28",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ice_doukutu_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ice_doukutu_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ice_doukutu_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ice_doukutu_room_2",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ice_doukutu_room_3",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ice_doukutu_room_4",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ice_doukutu_room_5",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ice_doukutu_room_6",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ice_doukutu_room_7",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ice_doukutu_room_8",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ice_doukutu_room_9",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ice_doukutu_room_10",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ice_doukutu_room_11",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "malon_stable_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "malon_stable_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "kakariko_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "kakariko_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "bdan_boss_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "bdan_boss_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "bdan_boss_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "FIRE_bs_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "FIRE_bs_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "FIRE_bs_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "hut_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "hut_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "daiyousei_izumi_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "daiyousei_izumi_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "hakaana_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "hakaana_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "yousei_izumi_tate_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "yousei_izumi_tate_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "yousei_izumi_yoko_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "yousei_izumi_yoko_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "golon_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "golon_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "zoora_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "zoora_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "drag_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "drag_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "alley_shop_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "alley_shop_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "night_shop_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "night_shop_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "impa_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "impa_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "labo_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "labo_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "tent_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "tent_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "nakaniwa_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "nakaniwa_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ddan_boss_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ddan_boss_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ddan_boss_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ydan_boss_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ydan_boss_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ydan_boss_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_bs_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_bs_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdan_bs_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_bs_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_bs_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "MIZUsin_bs_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganon_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ganon_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganon_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganon_room_2",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganon_room_3",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganon_room_4",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganon_room_5",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganon_room_6",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganon_room_7",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganon_room_8",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganon_room_9",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganon_boss_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ganon_boss_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinboss_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinboss_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinboss_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinboss_room_2",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "jyasinboss_room_3",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "kokiri_home4_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "kokiri_home4_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "kokiri_home5_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "kokiri_home5_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganon_final_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ganon_final_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "kakariko3_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "kakariko3_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "hakasitarelay_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "hakasitarelay_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "hakasitarelay_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "hakasitarelay_room_2",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "hakasitarelay_room_3",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "hakasitarelay_room_4",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "hakasitarelay_room_5",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "hakasitarelay_room_6",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "shrine_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "shrine_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "turibori_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "turibori_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "shrine_n_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "shrine_n_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "shrine_r_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "shrine_r_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganontika_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ganontika_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganontika_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganontika_room_2",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganontika_room_3",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganontika_room_4",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganontika_room_5",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganontika_room_6",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganontika_room_7",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganontika_room_8",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganontika_room_9",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganontika_room_10",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganontika_room_11",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganontika_room_12",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganontika_room_13",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganontika_room_14",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganontika_room_15",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganontika_room_16",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganontika_room_17",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganontika_room_18",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganontika_room_19",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "hakaana2_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "hakaana2_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "gerudoway_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "gerudoway_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "gerudoway_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "gerudoway_room_2",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "gerudoway_room_3",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "gerudoway_room_4",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "gerudoway_room_5",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdanCH_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdanCH_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdanCH_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdanCH_room_2",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdanCH_room_3",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdanCH_room_4",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdanCH_room_5",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "HAKAdanCH_room_6",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "hairal_niwa_n_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "hairal_niwa_n_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "bowling_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "bowling_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "hakaana_ouke_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "hakaana_ouke_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "hakaana_ouke_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "hakaana_ouke_room_2",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "hylia_labo_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "hylia_labo_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "souko_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "souko_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "souko_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "souko_room_2",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "miharigoya_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "miharigoya_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "mahouya_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "mahouya_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "takaraya_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "takaraya_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "takaraya_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "takaraya_room_2",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "takaraya_room_3",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "takaraya_room_4",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "takaraya_room_5",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "takaraya_room_6",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganon_sonogo_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ganon_sonogo_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganon_sonogo_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganon_sonogo_room_2",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganon_sonogo_room_3",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganon_sonogo_room_4",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganon_demo_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ganon_demo_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "face_shop_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "face_shop_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "kinsuta_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "kinsuta_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganontikasonogo_scene",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "ganontikasonogo_room_0",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "ganontikasonogo_room_1",
+            "type": "Room"
+        },
+        {
+            "vrom": null,
+            "name": "bump_texture_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "anime_model_1_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "anime_model_2_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "anime_model_3_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "anime_model_4_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "anime_model_5_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "anime_model_6_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "anime_texture_1_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "anime_texture_2_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "anime_texture_3_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "anime_texture_4_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "anime_texture_5_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "anime_texture_6_static",
+            "type": "Unknow"
+        },
+        {
+            "vrom": null,
+            "name": "softsprite_matrix_static",
+            "type": "Unknow"
+        }
+    ]
+}
