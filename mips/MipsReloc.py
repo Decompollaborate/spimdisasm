@@ -78,8 +78,12 @@ class Reloc(File):
             offset = 0
             for r in self.entries:
                 offsetHex = toHex(offset, 5)[2:]
+                vramHex = ""
+                if self.vRamStart != -1:
+                    currentVram = self.getVramOffset(offset)
+                    vramHex = toHex(currentVram, 8)[2:]
                 relocHex = toHex(r.reloc, 8)[2:]
                 line = str(r)
 
-                f.write(f"/* {offsetHex} {relocHex} */  {line}\n")
+                f.write(f"/* {offsetHex} {vramHex} {relocHex} */  {line}\n")
                 offset += 4
