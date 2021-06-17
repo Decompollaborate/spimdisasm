@@ -3,12 +3,21 @@
 from __future__ import annotations
 
 from .Utils import *
-
+# TODO: remove?
+from .ZeldaTables import OverlayTableEntry
 
 class File:
-    def __init__(self, array_of_bytes: bytearray):
+    def __init__(self, array_of_bytes: bytearray, filename: str, version: str, tableEntry: OverlayTableEntry=None, args=None):
         self.bytes: bytearray = array_of_bytes
         self.words: List[int] = bytesToBEWords(self.bytes)
+        self.filename: str = filename
+        self.version: str = version
+        self.args = args
+        self.vRamStart: int = -1
+        self.initVarsAddress: int = -1
+        if tableEntry is not None:
+            self.vRamStart = tableEntry.vramStart
+            self.initVarsAddress = tableEntry.initVars
 
     @property
     def size(self):
@@ -18,9 +27,9 @@ class File:
         return len(self.words)
 
     def getHash(self):
-        return get_str_hash(self.bytes)
+        return getStrHash(self.bytes)
 
-    def compareToFile(self, other_file: File, args):
+    def compareToFile(self, other_file: File):
         hash_one = self.getHash()
         hash_two = other_file.getHash()
 
@@ -52,22 +61,24 @@ class File:
 
         return result
 
-    def blankOutDifferences(self, other: File, args):
+    def blankOutDifferences(self, other: File):
+        if self.args is not None and self.args.dont_remove_ptrs:
+            return
         was_updated = False
-        if args.ignore80 or args.ignore06 or args.ignore04:
+        if self.args is not None and (self.args.ignore80 or self.args.ignore06 or self.args.ignore04):
             min_len = min(self.sizew, other.sizew)
             for i in range(min_len):
-                if args.ignore80:
+                if self.args.ignore80:
                     if ((self.words[i] >> 24) & 0xFF) == 0x80 and ((other.words[i] >> 24) & 0xFF) == 0x80:
                         self.words[i] = 0x80000000
                         other.words[i] = 0x80000000
                         was_updated = True
-                if args.ignore06:
+                if self.args.ignore06:
                     if ((self.words[i] >> 24) & 0xFF) == 0x06 and ((other.words[i] >> 24) & 0xFF) == 0x06:
                         self.words[i] = 0x06000000
                         other.words[i] = 0x06000000
                         was_updated = True
-                if args.ignore04:
+                if self.args.ignore04:
                     if ((self.words[i] >> 24) & 0xFF) == 0x04 and ((other.words[i] >> 24) & 0xFF) == 0x04:
                         self.words[i] = 0x04000000
                         other.words[i] = 0x04000000
@@ -76,5 +87,16 @@ class File:
             self.updateBytes()
             other.updateBytes()
 
+    def removePointers(self):
+        pass
+
     def updateBytes(self):
         beWordsToBytes(self.words, self.bytes)
+        # Truncate extra data
+        self.bytes = self.bytes[:self.sizew*4]
+
+    def saveToFile(self, filepath: str):
+        if self.size == 0:
+            return
+        writeBytearrayToFile(filepath, self.bytes)
+
