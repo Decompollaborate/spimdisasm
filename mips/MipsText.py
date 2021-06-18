@@ -95,12 +95,12 @@ class Text(File):
                 result += 1
         return result
 
-    def blankOutDifferences(self, other_file: File):
+    def blankOutDifferences(self, other_file: File) -> bool:
         if not GlobalConfig.REMOVE_POINTERS:
-            return
-        super().blankOutDifferences(other_file)
+            return False
+
         if not isinstance(other_file, Text):
-            return
+            return False
 
         was_updated = False
 
@@ -181,9 +181,12 @@ class Text(File):
             self.updateWords()
             other_file.updateWords()
 
-    def removePointers(self):
+        was_updated = super().blankOutDifferences(other_file) or was_updated
+        return was_updated
+
+    def removePointers(self) -> bool:
         if not GlobalConfig.REMOVE_POINTERS:
-            return
+            return False
 
         was_updated = False
 
@@ -191,8 +194,6 @@ class Text(File):
             was_updated = self.deleteCallers_Graph_OpenDisps()
 
         was_updated = self.removeTrailingNops() or was_updated
-
-        super().removePointers()
 
         lui_registers = dict()
         for i in range(len(self.instructions)):
@@ -223,6 +224,9 @@ class Text(File):
 
         if was_updated:
             self.updateWords()
+        was_updated = super().removePointers() or was_updated
+        return was_updated
+
 
     def deleteCallers_Graph_OpenDisps(self) -> bool:
         was_updated = False
@@ -267,6 +271,7 @@ class Text(File):
             del self.instructions[first_nop:]
         return was_updated
 
+    # TODO: remove?
     def updateWords(self):
         self.words = []
         for instr in self.instructions:

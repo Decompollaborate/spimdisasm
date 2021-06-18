@@ -17,10 +17,10 @@ class File:
         self.initVarsAddress: int = -1
 
     @property
-    def size(self):
+    def size(self) -> int:
         return len(self.bytes)
     @property
-    def sizew(self):
+    def sizew(self) -> int:
         return len(self.words)
 
     def getVramOffset(self, localOffset: int) -> int:
@@ -28,10 +28,10 @@ class File:
             return self.offset + localOffset
         return self.vRamStart + self.offset + localOffset
 
-    def getHash(self):
+    def getHash(self) -> str:
         return getStrHash(self.bytes)
 
-    def compareToFile(self, other_file: File):
+    def compareToFile(self, other_file: File) -> dict:
         hash_one = self.getHash()
         hash_two = other_file.getHash()
 
@@ -58,9 +58,10 @@ class File:
 
         return result
 
-    def blankOutDifferences(self, other: File):
+    def blankOutDifferences(self, other: File) -> bool:
         if not GlobalConfig.REMOVE_POINTERS:
-            return
+            return False
+
         was_updated = False
         if GlobalConfig.IGNORE_80 or GlobalConfig.IGNORE_06 or GlobalConfig.IGNORE_04:
             min_len = min(self.sizew, other.sizew)
@@ -80,12 +81,14 @@ class File:
                         self.words[i] = 0x04000000
                         other.words[i] = 0x04000000
                         was_updated = True
-        if was_updated:
-            self.updateBytes()
-            other.updateBytes()
 
-    def removePointers(self):
-        pass
+        return was_updated
+
+    def removePointers(self) -> bool:
+        if not GlobalConfig.REMOVE_POINTERS:
+            return False
+
+        return False
 
     def updateBytes(self):
         beWordsToBytes(self.words, self.bytes)

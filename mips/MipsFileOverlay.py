@@ -107,22 +107,19 @@ class FileOverlay(FileGeneric):
 
         return result
 
-    def blankOutDifferences(self, other_file: File):
+    def blankOutDifferences(self, other_file: File) -> bool:
         if not GlobalConfig.REMOVE_POINTERS:
-            return
+            return False
 
-        if not isinstance(other_file, FileOverlay):
-            super().blankOutDifferences(other_file)
-            return
+        was_updated = super().blankOutDifferences(other_file)
+        if isinstance(other_file, FileOverlay):
+            was_updated = self.reloc.blankOutDifferences(other_file.reloc) or was_updated
 
-        self.reloc.blankOutDifferences(other_file.reloc)
+        return was_updated
 
-        self.updateBytes()
-        other_file.updateBytes()
-
-    def removePointers(self):
+    def removePointers(self) -> bool:
         if not GlobalConfig.REMOVE_POINTERS:
-            return
+            return False
 
         for entry in self.reloc.entries:
             section = entry.getSectionName()
@@ -172,22 +169,18 @@ class FileOverlay(FileGeneric):
                 pass
                 #raise RuntimeError(f"Invalid reloc section <{section}> in file '{self.version}/{self.filename}'. Reloc: {entry}")
 
+        was_updated = super().removePointers()
+        was_updated = self.reloc.removePointers() or was_updated
 
-        self.text.removePointers()
-        self.data.removePointers()
-        self.rodata.removePointers()
-        self.bss.removePointers()
-        self.reloc.removePointers()
-
-        self.updateBytes()
+        return was_updated
 
     def updateBytes(self):
-        self.words = self.text.words + self.data.words + self.rodata.words + self.bss.words + self.reloc.words
-        File.updateBytes(self)
+        self.text.updateBytes()
+        self.data.updateBytes()
+        self.rodata.updateBytes()
+        self.bss.updateBytes()
+        self.reloc.updateBytes()
 
     def saveToFile(self, filepath: str):
-        self.text.saveToFile(filepath)
-        self.data.saveToFile(filepath)
-        self.rodata.saveToFile(filepath)
-        self.bss.saveToFile(filepath)
+        super().saveToFile(filepath)
         self.reloc.saveToFile(filepath)
