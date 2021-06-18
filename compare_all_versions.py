@@ -174,7 +174,7 @@ def main():
     parser.add_argument("versionlist", help="Path to version list.")
     parser.add_argument("filelist", help="List of filenames of the ROM that will be compared.")
     parser.add_argument("--noheader", help="Disables the csv header.", action="store_true")
-    parser.add_argument("--overlays", help="Treats the files in filelist as overlays.", action="store_true")
+    # parser.add_argument("--overlays", help="Treats the files in filelist as overlays.", action="store_true")
     parser.add_argument("--savetofile", help="Specify a folder where each part of an overlay will be written.", metavar="FOLDER")
     parser.add_argument("--ignore04", help="Ignores words starting with 0x04.", action="store_true")
     parser.add_argument("--track-registers", help="Set for how many instructions a register will be tracked.", type=int)
