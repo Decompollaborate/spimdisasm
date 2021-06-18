@@ -60,7 +60,7 @@ ACTOR_ID_MAX = 0x01D7
 
 # The offset of the overlay table in file `code`.
 offset_ActorOverlayTable = {
-    "ntsc_0.9" : 0x0D7280,
+    "ntsc_1.0_rc" : 0x0D7280,
     "ntsc_1.0" : 0x0D7490,
     "ntsc_1.1" : 0x0D7650,
     "pal_1.0" : 0xD4D80,
@@ -78,4 +78,46 @@ offset_ActorOverlayTable = {
     "jp_gc_ce" : 0x0D6B40,
     "ique_cn" : 0x0D7180,
     "ique_tw" : 0x0D6AA0,
+}
+
+codeDataStart = {
+    "ntsc_1.0_rc" : 0x0D6400,
+    "ntsc_1.0" : 0x0D6610,
+    "ntsc_1.1" : 0x0D67D0,
+    "pal_1.0" : 0x0D3F20,
+    "ntsc_1.2" : 0x0D6610,
+    "pal_1.1" : 0x0D3F60,
+    "jp_gc" : 0x0D5CE0,
+    "jp_mq" : 0x0D5CC0,
+    "usa_gc" : 0x0D5CC0,
+    "usa_mq" : 0x0D5CA0,
+    "pal_gc" : 0x0D3620,
+    "pal_gc_dbg" : 0x0F85E0,
+    "pal_gc_dbg2" : 0x0F85E0,
+    "pal_mq" : 0x0D3600,
+    "pal_mq_dbg" : 0x0F85C0,
+    "jp_gc_ce" : 0x0D5CC0,
+    "ique_cn" : 0x0D6330,
+    "ique_tw" : 0x0D5C10,
+}
+
+codeVramStart = {
+    "ntsc_1.0_rc" : 0x800110A0,
+    "ntsc_1.0" : 0x800110A0,
+    "ntsc_1.1" : 0x800110A0,
+    "pal_1.0" : 0x800116E0,
+    "ntsc_1.2" : 0x800116E0,
+    "pal_1.1" : 0x800116E0,
+    "jp_gc" : 0x80010EE0,
+    "jp_mq" : 0x80010EE0,
+    "usa_gc" : 0x80010EE0,
+    "usa_mq" : 0x80010EE0,
+    "pal_gc" : 0x80010F00,
+    "pal_gc_dbg" : 0x8001CE60,
+    "pal_gc_dbg2" : 0x8001CE60,
+    "pal_mq" : 0x80010F00,
+    "pal_mq_dbg" : 0x8001CE60,
+    "jp_gc_ce" : 0x80010EE0,
+    "ique_cn" : 0x80018FA0,
+    "ique_tw" : 0x80018A40,
 }
