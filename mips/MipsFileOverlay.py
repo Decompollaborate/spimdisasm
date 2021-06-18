@@ -96,6 +96,7 @@ class FileOverlay(FileGeneric):
         #    print("func_80"+toHex(f, 6)[2:])
         """
 
+        self.text.removeTrailingNops()
         self.text.findFunctions()
 
 
