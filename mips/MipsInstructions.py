@@ -254,7 +254,11 @@ class Instruction:
 
         if self.getOpcodeName() == "NOP":
             return "nop"
-        if self.isIType():
+        if self.isIType5():
+            result = f"{opcode} {rt},"
+            result = result.ljust(14, ' ')
+            return f"{result} {immediate}"
+        elif self.isIType():
             # TODO: use float registers
             result = f"{opcode} {rt},"
             result = result.ljust(14, ' ')
@@ -276,10 +280,6 @@ class Instruction:
             return f"{result} {immediate}"
         elif self.isIType4():
             result = f"{opcode} {rs},"
-            result = result.ljust(14, ' ')
-            return f"{result} {immediate}"
-        elif self.isIType5():
-            result = f"{opcode} {rt},"
             result = result.ljust(14, ' ')
             return f"{result} {immediate}"
         elif self.isJType():
