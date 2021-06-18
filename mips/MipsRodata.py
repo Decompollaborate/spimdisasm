@@ -8,12 +8,11 @@ from .MipsFile import File
 
 
 class Rodata(File):
-    def removePointers(self):
+    def removePointers(self) -> bool:
         if not GlobalConfig.REMOVE_POINTERS:
-            return
-        super().removePointers()
+             False
 
-        was_updated = False
+        was_updated = super().removePointers()
         for i in range(self.sizew):
             top_byte = (self.words[i] >> 24) & 0xFF
             if top_byte == 0x80:
@@ -23,8 +22,7 @@ class Rodata(File):
                 self.words[i] = top_byte << 24
                 was_updated = True
 
-        if was_updated:
-            self.updateBytes()
+        return was_updated
 
     def saveToFile(self, filepath: str):
         super().saveToFile(filepath + ".rodata")
@@ -46,4 +44,3 @@ class Rodata(File):
 
                 f.write(f"/* {offsetHex} {vramHex} {rodataHex} */  .word  {line}\n")
                 offset += 4
-

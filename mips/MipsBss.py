@@ -8,11 +8,12 @@ from .MipsFile import File
 
 
 class Bss(File):
-    def removePointers(self):
+    def removePointers(self) -> bool:
         if not GlobalConfig.REMOVE_POINTERS:
-            return
-        super().removePointers()
-        self.updateBytes()
+            return False
+        # TODO ?
+        # super().removePointers()
+        return False
 
     def saveToFile(self, filepath: str):
         super().saveToFile(filepath + ".bss")

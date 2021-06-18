@@ -55,11 +55,21 @@ def compare_baseroms(args, filelist):
         if filename.startswith("ovl_"):
             file_one = FileOverlay(file_one_data, filename, args.version1)
             file_two = FileOverlay(file_two_data, filename, args.version2)
+        elif filename == "code":
+            file_one = FileCode(file_one_data, filename, args.version1)
+            file_two = FileCode(file_two_data, filename, args.version2)
         else:
             file_one = File(file_one_data, filename, args.version1)
             file_two = File(file_two_data, filename, args.version2)
 
-        file_one.blankOutDifferences(file_two)
+        if GlobalConfig.REMOVE_POINTERS:
+            both_updated = file_one.blankOutDifferences(file_two)
+            one_updated = file_one.removePointers()
+            two_updated = file_two.removePointers()
+            if both_updated or one_updated:
+                file_one.updateBytes()
+            if both_updated or two_updated:
+                file_two.updateBytes()
 
         comparison = file_one.compareToFile(file_two)
 
@@ -97,6 +107,32 @@ def compare_baseroms(args, filelist):
             missing = len(missing_in_one)
             print(f"Missing:    {missing}/{total} ({round(100*missing/total, 2)}%)")
             print(f"Missing 2:  {len(missing_in_two)}")
+
+def print_section_as_csv(args, index: int, filename: str, section_name: str, section: dict):
+    equal = section["equal"]
+
+    if equal and args.print not in ("all", "equals"):
+        return
+    if not equal and args.print not in ("all", "diffs"):
+        return
+
+    len_one = section["size_one"]
+    len_two = section["size_two"]
+    if len_one > 0 or len_two > 0:
+        if len_one > 0:
+            div = round(len_two/len_one, 3)
+        else:
+            div = "Inf"
+        size_difference = len_two - len_one
+        diff_bytes = section["diff_bytes"]
+        diff_words = section["diff_words"]
+        print(f'{index},{filename} {section_name},{equal},{len_one},{len_two},{div},{size_difference},{diff_bytes},{diff_words}', end="")
+        if args.split_files:
+            if "text" in section:
+                print(f',{section["text"]["diff_opcode"]},{section["text"]["same_opcode_same_args"]}', end="")
+            else:
+                print(",,", end="")
+        print()
 
 def compare_to_csv(args, filelist):
     index = -1
@@ -139,70 +175,38 @@ def compare_to_csv(args, filelist):
             len_one = "" if is_missing_in_one else len(file_one_data)
             len_two = "" if is_missing_in_two else len(file_two_data)
 
+            print(f'{index},{filename},{equal},{len_one},{len_two},{div},{size_difference},{diff_bytes},{diff_words}', end="")
+            if args.split_files:
+                print(",,", end="")
+            print()
+
         else:
-            if filename.startswith("ovl_"):
+            if args.split_files and filename.startswith("ovl_"):
                 file_one = FileOverlay(file_one_data, filename, args.version1)
                 file_two = FileOverlay(file_two_data, filename, args.version2)
-            elif filename == "code":
+            elif args.split_files and filename == "code":
                 file_one = FileCode(file_one_data, filename, args.version1)
                 file_two = FileCode(file_two_data, filename, args.version2)
             else:
                 file_one = File(file_one_data, filename, args.version1)
                 file_two = File(file_two_data, filename, args.version2)
 
-            if not not args.dont_remove_ptrs:
-                file_one.blankOutDifferences(file_two)
-                file_one.removePointers()
-                file_two.removePointers()
+            if GlobalConfig.REMOVE_POINTERS:
+                both_updated = file_one.blankOutDifferences(file_two)
+                one_updated = file_one.removePointers()
+                two_updated = file_two.removePointers()
+                if both_updated or one_updated:
+                    file_one.updateBytes()
+                if both_updated or two_updated:
+                    file_two.updateBytes()
 
             comparison = file_one.compareToFile(file_two)
-            equal = comparison["equal"]
-
-            if equal and args.print not in ("all", "equals"):
-                continue
-            if not equal and args.print not in ("all", "diffs"):
-                continue
-            len_one = comparison["size_one"]
-            len_two = comparison["size_two"]
-            if len_one > 0:
-                div = round(len_two/len_one, 3)
+            if "filesections" in comparison:
+                for section_name in comparison["filesections"]:
+                    section = comparison["filesections"][section_name]
+                    print_section_as_csv(args, index, filename, section_name, section)
             else:
-                div = "Inf"
-            size_difference = len_two - len_one
-            diff_bytes = comparison["diff_bytes"]
-            diff_words = comparison["diff_words"]
-
-        if args.split_files and len(comparison) > 0 and "filesections" in comparison:
-            for section_name in comparison["filesections"]:
-                section = comparison["filesections"][section_name]
-                equal = section["equal"]
-
-                if equal and args.print not in ("all", "equals"):
-                    continue
-                if not equal and args.print not in ("all", "diffs"):
-                    continue
-
-                len_one = section["size_one"]
-                len_two = section["size_two"]
-                if len_one > 0 or len_two > 0:
-                    if len_one > 0:
-                        div = round(len_two/len_one, 3)
-                    else:
-                        div = "Inf"
-                    size_difference = len_two - len_one
-                    diff_bytes = section["diff_bytes"]
-                    diff_words = section["diff_words"]
-                    print(f'{index},{filename} {section_name},{equal},{len_one},{len_two},{div},{size_difference},{diff_bytes},{diff_words}', end="")
-                    if "text" in section:
-                        print(f',{section["text"]["diff_opcode"]},{section["text"]["same_opcode_same_args"]}', end="")
-                    else:
-                        print(",,", end="")
-                    print()
-        else:
-            print(f'{index},{filename},{equal},{len_one},{len_two},{div},{size_difference},{diff_bytes},{diff_words}', end="")
-            if args.split_files:
-                print(",,", end="")
-            print()
+                print_section_as_csv(args, index, filename, "", comparison)
 
 
 def main():

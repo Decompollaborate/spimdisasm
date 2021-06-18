@@ -124,7 +124,9 @@ def compareOverlayAcrossVersions(filename: str, versionsList: List[str], dmaAddr
             f = File(array_of_bytes, filename, version)
 
         if GlobalConfig.REMOVE_POINTERS:
-            f.removePointers()
+            was_updated = f.removePointers()
+            if was_updated:
+                f.updateBytes()
 
         if args.savetofile:
             new_file_path = os.path.join(args.savetofile, version, filename)

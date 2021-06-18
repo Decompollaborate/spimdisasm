@@ -33,47 +33,49 @@ class FileGeneric(File):
         return self.text.nFuncs
 
     def compareToFile(self, other_file: File):
-        result = super().compareToFile(other_file)
-
         if isinstance(other_file, FileGeneric):
-            result["filesections"] = {
-                "text": self.text.compareToFile(other_file.text),
-                "data": self.data.compareToFile(other_file.data),
-                "rodata": self.rodata.compareToFile(other_file.rodata),
-                "bss": self.bss.compareToFile(other_file.bss),
+            return {"filesections": {
+                    "text": self.text.compareToFile(other_file.text),
+                    "data": self.data.compareToFile(other_file.data),
+                    "rodata": self.rodata.compareToFile(other_file.rodata),
+                    # "bss": self.bss.compareToFile(other_file.bss),
+                }
             }
 
-        return result
+        return super().compareToFile(other_file)
 
-    def blankOutDifferences(self, other_file: File):
+    def blankOutDifferences(self, other_file: File) -> bool:
         if not GlobalConfig.REMOVE_POINTERS:
-            return
+            return False
 
         if not isinstance(other_file, FileGeneric):
-            return
+            return False
 
-        self.text.blankOutDifferences(other_file.text)
-        self.data.blankOutDifferences(other_file.data)
-        self.rodata.blankOutDifferences(other_file.rodata)
-        self.bss.blankOutDifferences(other_file.bss)
+        was_updated = False
+        was_updated = self.text.blankOutDifferences(other_file.text) or was_updated
+        was_updated = self.data.blankOutDifferences(other_file.data) or was_updated
+        was_updated = self.rodata.blankOutDifferences(other_file.rodata) or was_updated
+        was_updated = self.bss.blankOutDifferences(other_file.bss) or was_updated
 
-        self.updateBytes()
-        other_file.updateBytes()
+        return was_updated
 
-    def removePointers(self):
+    def removePointers(self) -> bool:
         if not GlobalConfig.REMOVE_POINTERS:
-            return
+            return False
 
-        self.text.removePointers()
-        self.data.removePointers()
-        self.rodata.removePointers()
-        self.bss.removePointers()
+        was_updated = False
+        was_updated = self.text.removePointers() or was_updated
+        was_updated = self.data.removePointers() or was_updated
+        was_updated = self.rodata.removePointers() or was_updated
+        was_updated = self.bss.removePointers() or was_updated
 
-        self.updateBytes()
+        return was_updated
 
     def updateBytes(self):
-        self.words = self.text.words + self.data.words + self.rodata.words + self.bss.words
-        super().updateBytes()
+        self.text.updateBytes()
+        self.data.updateBytes()
+        self.rodata.updateBytes()
+        self.bss.updateBytes()
 
     def saveToFile(self, filepath: str):
         self.text.saveToFile(filepath)

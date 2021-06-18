@@ -8,10 +8,9 @@ from .MipsFile import File
 
 
 class Data(File):
-    def removePointers(self):
+    def removePointers(self) -> bool:
         if not GlobalConfig.REMOVE_POINTERS:
-            return
-        super().removePointers()
+            return False
 
         was_updated = False
         for i in range(self.sizew):
@@ -23,8 +22,7 @@ class Data(File):
                 self.words[i] = top_byte << 24
                 was_updated = True
 
-        if was_updated:
-            self.updateBytes() 
+        return was_updated
 
     def saveToFile(self, filepath: str):
         super().saveToFile(filepath + ".data")

@@ -48,27 +48,3 @@ class FileCode(FileGeneric):
         self.bss.vRamStart = self.vRamStart
 
         self.text.findFunctions()
-
-
-    def compareToFile(self, other_file: File):
-        result = super().compareToFile(other_file)
-        return result
-
-    def blankOutDifferences(self, other_file: File):
-        if not GlobalConfig.REMOVE_POINTERS:
-            return
-
-        super().blankOutDifferences(other_file)
-
-
-    def removePointers(self):
-        if not GlobalConfig.REMOVE_POINTERS:
-            return
-        super().removePointers()
-
-    def saveToFile(self, filepath: str):
-        super().saveToFile(filepath)
-        #self.text.saveToFile(filepath)
-        #self.data.saveToFile(filepath)
-        #self.rodata.saveToFile(filepath)
-        #self.bss.saveToFile(filepath)

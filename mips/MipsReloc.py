@@ -71,21 +71,21 @@ class Reloc(File):
         # TODO
         return result
 
-    def blankOutDifferences(self, other_file: File):
+    def blankOutDifferences(self, other_file: File) -> bool:
         if not GlobalConfig.REMOVE_POINTERS:
-            return
+            return False
+
         # TODO ?
         # super().blankOutDifferences(File)
-        # self.updateBytes()
-        return
+        return False
 
-    def removePointers(self):
+    def removePointers(self) -> bool:
+        if not GlobalConfig.REMOVE_POINTERS:
+            return False
+
         # TODO ?
-        return
-        #if not GlobalConfig.REMOVE_POINTERS:
-        #    return
         #super().removePointers()
-        #self.updateBytes()
+        return False
 
     def saveToFile(self, filepath: str):
         super().saveToFile(filepath + ".reloc")
