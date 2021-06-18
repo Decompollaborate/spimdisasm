@@ -32,28 +32,6 @@ def getVersionAbbr(filename: str) -> str:
     return filename
 
 
-# in JAL format. # Real address would be (address << 2)
-address_Graph_OpenDisps = {
-    "ntsc_1.0_rc" : 0x001F856,
-    "ntsc_1.0" : 0x001F8A6,
-    "ntsc_1.1" : 0x001F8A6,
-    "pal_1.0" : 0x001FA2A,
-    "ntsc_1.2" : 0x001FA4A,
-    "pal_1.1" : 0x001FA2A,
-    "jp_gc" : 0x001F792,
-    "jp_mq" : 0x001F792,
-    "usa_gc" : 0x001F78A,
-    "usa_mq" : 0x001F78A,
-    "pal_gc" : 0x001F77E,
-    "pal_gc_dbg" : 0x0,
-    "pal_gc_dbg2" : 0x0,
-    "pal_mq" : 0x001F77E,
-    "pal_mq_dbg" : 0x0031AB1,
-    "jp_gc_ce" : 0x001F78A,
-    "ique_cn" : 0x0,
-    "ique_tw" : 0x0,
-}
-
 ENTRYPOINT = 0x80000400
 
 ACTOR_ID_MAX = 0x01D7

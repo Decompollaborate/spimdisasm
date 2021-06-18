@@ -192,14 +192,12 @@ def main():
     parser.add_argument("--savetofile", help="Specify a folder where each part of an overlay will be written.", metavar="FOLDER")
     parser.add_argument("--ignore04", help="Ignores words starting with 0x04.", action="store_true")
     parser.add_argument("--track-registers", help="Set for how many instructions a register will be tracked.", type=int)
-    parser.add_argument("--delete-opendisps", help="Will try to find and delete every function that calls Graph_OpenDisps.", action="store_true")
     parser.add_argument("--ignore-branches", help="Ignores the address of every branch, jump and jal.", action="store_true")
     parser.add_argument("--dont-remove-ptrs", help="Disable the pointer removal feature.", action="store_true")
     args = parser.parse_args()
 
     GlobalConfig.REMOVE_POINTERS = not args.dont_remove_ptrs
     GlobalConfig.IGNORE_BRANCHES = args.ignore_branches
-    GlobalConfig.DELETE_OPENDISPS = args.delete_opendisps
     if args.track_registers is not None:
         GlobalConfig.TRACK_REGISTERS = args.track_registers
     GlobalConfig.IGNORE_04 = args.ignore04

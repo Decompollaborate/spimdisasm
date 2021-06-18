@@ -47,4 +47,5 @@ class FileCode(FileGeneric):
         self.bss.offset = bss_start
         self.bss.vRamStart = self.vRamStart
 
+        self.text.removeTrailingNops()
         self.text.findFunctions()

@@ -10,6 +10,5 @@ class GlobalConfig:
     IGNORE_04: bool = False # Ignores words that starts in 0x04
 
     TRACK_REGISTERS: int = 8 # Set for how many instructions a register will be tracked.
-    DELETE_OPENDISPS: bool = False # Will try to find and delete every function that calls Graph_OpenDisps.
 
     WRITE_BINARY: bool = True # write to files splitted binaries
