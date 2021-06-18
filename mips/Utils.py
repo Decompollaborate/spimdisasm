@@ -49,7 +49,6 @@ def beWordsToBytes(words_list: List[int], buffer: bytearray) -> bytearray:
     struct.pack_into(big_endian_format, buffer, 0, *words_list)
     return buffer
 
-
 def runCommandGetOutput(command: str, args: List[str]) -> List[str] | None:
     try:
         output = subprocess.check_output([command, *args]).decode("utf-8")

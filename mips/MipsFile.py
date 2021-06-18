@@ -93,6 +93,6 @@ class File:
         self.bytes = self.bytes[:self.sizew*4]
 
     def saveToFile(self, filepath: str):
-        if self.size == 0:
+        if self.size == 0 or not GlobalConfig.WRITE_BINARY:
             return
         writeBytearrayToFile(filepath, self.bytes)
