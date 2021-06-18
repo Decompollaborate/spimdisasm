@@ -24,7 +24,7 @@ FILE_TABLE_OFFSET = {
     "JP MQ":        0x07170,
     "USA GC":       0x07170,
     "USA MQ":       0x07170,
-    "PAL GC DBG":   0x0,
+    "PAL GC DBG":   0x12F70,
     "PAL MQ DBG":   0x12F70,
     "PAL GC DBG2":  0x12F70,
     "PAL GC":       0x07170,
@@ -92,7 +92,7 @@ def readFilelists():
     FILE_NAMES["PAL 1.1"] = FILE_NAMES["PAL 1.0"]
 
     FILE_NAMES["PAL GC DBG2"] = FILE_NAMES["PAL MQ DBG"]
-    FILE_NAMES["PAL GC DBG1"] = FILE_NAMES["PAL MQ DBG"]
+    FILE_NAMES["PAL GC DBG"] = FILE_NAMES["PAL MQ DBG"]
 
     FILE_NAMES["IQUE TW"] = FILE_NAMES["IQUE CN"]
 
