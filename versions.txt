@@ -1,4 +1,4 @@
-ntsc_0.9
+ntsc_1.0_rc
 ntsc_1.0
 ntsc_1.1
 pal_1.0

@@ -9,9 +9,7 @@ from .MipsText import Text
 from .MipsData import Data
 from .MipsRodata import Rodata
 from .MipsBss import Bss
-from .MipsInstructions import wordToInstruction
-from .ZeldaTables import OverlayTableEntry
-from .ZeldaOffsets import codeDataStart, codeVramStart
+from .ZeldaOffsets import codeVramStart, codeDataStart, codeRodataStart
 
 
 class FileCode(File):
@@ -22,8 +20,7 @@ class FileCode(File):
 
         text_start = 0
         data_start = codeDataStart[version]
-        # rodata_start = codeRodataStart[version]
-        rodata_start = self.size
+        rodata_start = codeRodataStart[version]
         # bss_start = codeBssStart[version]
         bss_start = self.size
 
@@ -42,7 +39,7 @@ class FileCode(File):
         self.rodata.offset = rodata_start
         self.rodata.vRamStart = self.vRamStart
 
-        self.bss = Data(self.bytes[bss_start:self.size], filename, version)
+        self.bss = Bss(self.bytes[bss_start:self.size], filename, version)
         self.bss.parent = self
         self.bss.offset = bss_start
         self.bss.vRamStart = self.vRamStart

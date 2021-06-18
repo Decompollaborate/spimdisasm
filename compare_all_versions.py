@@ -146,7 +146,7 @@ def compareOverlayAcrossVersions(filename: str, versionsList: List[str], dmaAddr
             subfiles = {
                 ".text" : f.text,
                 ".data" : f.data,
-                #".rodata" : f.rodata,
+                ".rodata" : f.rodata,
                 #".bss" : f.bss,
             }
         else:
@@ -243,7 +243,7 @@ def main():
 
     if not args.noheader:
         # Print csv header
-        print("Object name", end="")
+        print("File name", end="")
         for ver in versionsList:
             print("," + ver, end="")
         print(",Different versions", end="")
@@ -254,7 +254,7 @@ def main():
     #     compareFunction = compareOverlayAcrossVersions
     compareFunction = compareOverlayAcrossVersions
 
-    numCores = cpu_count() + 1
+    numCores = cpu_count()
     p = Pool(numCores)
     for column in p.imap(partial(compareFunction, versionsList=versionsList, dmaAddresses=dmaAddresses, actorOverlayTable=actorOverlayTable, args=args), filesList):
         for row in column:
