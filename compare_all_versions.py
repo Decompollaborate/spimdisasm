@@ -12,6 +12,7 @@ from mips.Utils import *
 from mips.GlobalConfig import GlobalConfig
 from mips.MipsFile import File
 from mips.MipsOverlay import Overlay
+from mips.MipsFileCode import FileCode
 from mips.ZeldaTables import OverlayTableEntry
 from mips import ZeldaOffsets
 
@@ -95,6 +96,7 @@ def compareOverlayAcrossVersions(filename: str, versionsList: List[str], dmaAddr
         return column
 
     is_overlay = filename.startswith("ovl_")
+    is_code = filename == "code"
 
     for version in versionsList:
         path = os.path.join("baserom_" + version, filename)
@@ -118,9 +120,14 @@ def compareOverlayAcrossVersions(filename: str, versionsList: List[str], dmaAddr
                         break
 
             f = Overlay(array_of_bytes, filename, version, tableEntry=tableEntry)
+        elif is_code:
+            f = FileCode(array_of_bytes, filename, version)
         else:
             f = File(array_of_bytes, filename, version)
-        f.removePointers()
+
+        if GlobalConfig.REMOVE_POINTERS:
+            f.removePointers()
+
         if args.savetofile:
             new_file_path = os.path.join(args.savetofile, version, filename)
             f.saveToFile(new_file_path)
@@ -134,6 +141,13 @@ def compareOverlayAcrossVersions(filename: str, versionsList: List[str], dmaAddr
                 ".rodata" : f.rodata,
                 #".bss" : f.bss,
                 #".reloc" : f.reloc,
+            }
+        elif isinstance(f, FileCode):
+            subfiles = {
+                ".text" : f.text,
+                ".data" : f.data,
+                #".rodata" : f.rodata,
+                #".bss" : f.bss,
             }
         else:
             subfiles = {
@@ -179,10 +193,12 @@ def main():
     parser.add_argument("--ignore04", help="Ignores words starting with 0x04.", action="store_true")
     parser.add_argument("--track-registers", help="Set for how many instructions a register will be tracked.", type=int)
     parser.add_argument("--delete-opendisps", help="Will try to find and delete every function that calls Graph_OpenDisps.", action="store_true")
+    parser.add_argument("--ignore-branches", help="Ignores the address of every branch, jump and jal.", action="store_true")
     parser.add_argument("--dont-remove-ptrs", help="Disable the pointer removal feature.", action="store_true")
     args = parser.parse_args()
 
     GlobalConfig.REMOVE_POINTERS = not args.dont_remove_ptrs
+    GlobalConfig.IGNORE_BRANCHES = args.ignore_branches
     GlobalConfig.DELETE_OPENDISPS = args.delete_opendisps
     if args.track_registers is not None:
         GlobalConfig.TRACK_REGISTERS = args.track_registers
@@ -233,9 +249,10 @@ def main():
         print(",Different versions", end="")
         print()
 
-    compareFunction = compareFileAcrossVersions
-    if args.overlays:
-        compareFunction = compareOverlayAcrossVersions
+    # compareFunction = compareFileAcrossVersions
+    # if args.overlays:
+    #     compareFunction = compareOverlayAcrossVersions
+    compareFunction = compareOverlayAcrossVersions
 
     numCores = cpu_count() + 1
     p = Pool(numCores)

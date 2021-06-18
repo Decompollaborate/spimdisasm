@@ -9,6 +9,7 @@ from mips.Utils import *
 from mips.GlobalConfig import GlobalConfig
 from mips.MipsFile import File
 from mips.MipsOverlay import Overlay
+from mips.MipsFileCode import FileCode
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 root_dir = script_dir + "/.."
@@ -72,12 +73,12 @@ def compare_baseroms(args, filelist):
                 print(f"{filename} not OK")
                 print_result_different(comparison, 1)
 
-                if "ovl" in comparison:
-                    for section_name in comparison["ovl"]:
-                        section = comparison["ovl"][section_name]
+                if "filesections" in comparison:
+                    for section_name in comparison["filesections"]:
+                        section = comparison["filesections"][section_name]
 
                         if section["size_one"] == 0:
-                            continue        
+                            continue
 
                         if section["equal"] and args.print in ("all", "equals"):
                             print(f"\t\t{section_name} OK")
@@ -104,7 +105,7 @@ def compare_to_csv(args, filelist):
     column2 = args.version2 if args.column2 is None else args.column2
 
     print(f"Index,File,Are equals,Size in {column1},Size in {column2},Size proportion,Size difference,Bytes different,Words different", end="")
-    if args.overlays:
+    if args.split_files:
         print(",Opcodes difference,Same opcode but different arguments", end="")
     print(flush=True)
 
@@ -142,6 +143,9 @@ def compare_to_csv(args, filelist):
             if filename.startswith("ovl_"):
                 file_one = Overlay(file_one_data, filename, args.version1)
                 file_two = Overlay(file_two_data, filename, args.version2)
+            elif filename == "code":
+                file_one = FileCode(file_one_data, filename, args.version1)
+                file_two = FileCode(file_two_data, filename, args.version2)
             else:
                 file_one = File(file_one_data, filename, args.version1)
                 file_two = File(file_two_data, filename, args.version2)
@@ -165,9 +169,9 @@ def compare_to_csv(args, filelist):
             diff_bytes = comparison["diff_bytes"]
             diff_words = comparison["diff_words"]
 
-        if args.overlays and len(comparison) > 0 and "ovl" in comparison:
-            for section_name in comparison["ovl"]:
-                section = comparison["ovl"][section_name]
+        if args.split_files and len(comparison) > 0 and "filesections" in comparison:
+            for section_name in comparison["filesections"]:
+                section = comparison["filesections"][section_name]
                 equal = section["equal"]
 
                 if equal and args.print not in ("all", "equals"):
@@ -193,7 +197,7 @@ def compare_to_csv(args, filelist):
                     print()
         else:
             print(f'{index},{filename},{equal},{len_one},{len_two},{div},{size_difference},{diff_bytes},{diff_words}', end="")
-            if args.overlays:
+            if args.split_files:
                 print(",,", end="")
             print()
 
@@ -208,9 +212,8 @@ def main():
     parser.add_argument("version2", help="A version of the game to compare. The files will be read from baserom_version2. For example: baserom_pal_mq")
     parser.add_argument("filelist", help="Path to the filelist that will be used.")
     parser.add_argument("--print", help="Select what will be printed for a cleaner output. Default is 'all'.", choices=["all", "equals", "diffs", "missing"], default="all")
-    # parser.add_argument("--filetype", help="Filters by filetype. Default: all",  choices=["all", "Unknown", "Overlay", "Object", "Texture", "Room", "Scene", "Other"], default="all")
-    parser.add_argument("--overlays", help="Treats each section of the overalays as separate files.", action="store_true")
-    parser.add_argument("--csv", help="Print the output in csv format instead.", action="store_true")
+    parser.add_argument("--split-files", help="Treats each section of a a file as separate files.", action="store_true")
+    parser.add_argument("--no-csv", help="Don't print the output in csv format.", action="store_true")
     parser.add_argument("--ignore80", help="Ignores words differences that starts in 0x80XXXXXX", action="store_true")
     parser.add_argument("--ignore06", help="Ignores words differences that starts in 0x06XXXXXX", action="store_true")
     parser.add_argument("--ignore04", help="Ignores words differences that starts in 0x04XXXXXX", action="store_true")
@@ -232,7 +235,7 @@ def main():
     filelist = readFile(args.filelist)
     # filelist = readJson(args.filelist)
 
-    if args.csv:
+    if not args.no_csv:
         compare_to_csv(args, filelist)
     else:
         compare_baseroms(args, filelist)

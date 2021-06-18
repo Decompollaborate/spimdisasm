@@ -109,7 +109,7 @@ class Overlay(File):
         result = super().compareToFile(other_file)
 
         if isinstance(other_file, Overlay):
-            result["ovl"] = {
+            result["filesections"] = {
                 "text": self.text.compareToFile(other_file.text),
                 "data": self.data.compareToFile(other_file.data),
                 "rodata": self.rodata.compareToFile(other_file.rodata),
@@ -128,10 +128,7 @@ class Overlay(File):
 
         self.text.blankOutDifferences(other_file.text)
 
-        self.words = self.text.words + self.data.words + self.rodata.words + self.bss.words + self.header + self.reloc.words + self.tail
         self.updateBytes()
-
-        other_file.words = other_file.text.words + other_file.data.words  + other_file.rodata.words + other_file.bss.words + other_file.header + other_file.reloc.words + other_file.tail
         other_file.updateBytes()
 
     def removePointers(self):

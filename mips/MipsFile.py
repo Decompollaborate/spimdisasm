@@ -55,11 +55,6 @@ class File:
             for i in range(min_len):
                 if self.words[i] != other_file.words[i]:
                     result["diff_words"] += 1
-                    #if isinstance(self, Text) and isinstance(other_file, Text):
-                        #eprint(f"Differing instruction: {self.instructions[i]}")
-                        #eprint(f"Differing instruction: {other_file.instructions[i]}")
-                        #eprint(f"")
-                        #pass
 
         return result
 
