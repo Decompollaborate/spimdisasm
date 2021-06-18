@@ -204,6 +204,7 @@ def main():
         GlobalConfig.TRACK_REGISTERS = args.track_registers
     GlobalConfig.IGNORE_04 = args.ignore04
 
+    # Read filelist
     versionsList = []
     with open(args.versionlist) as f:
         for version in f:
@@ -227,7 +228,7 @@ def main():
                     filename, *data = line.strip().split(",")
                     dmaAddresses[version][filename] = list(map(int, data))
 
-        codePath = os.path.join("baserom_" + version, "code")
+        codePath = os.path.join(f"baserom_{version}", "code")
 
         if os.path.exists(codePath) and version in ZeldaOffsets.offset_ActorOverlayTable:
             tableOffset = ZeldaOffsets.offset_ActorOverlayTable[version]

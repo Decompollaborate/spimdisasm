@@ -5,6 +5,26 @@ from __future__ import annotations
 from .Utils import *
 
 
+class DmaEntry:
+    def __init__(self, vromStart: int, vromEnd: int, romStart: int, romEnd: int):
+        self.vromStart: int = vromStart
+        self.vromEnd: int = vromEnd
+        self.romStart: int = romStart
+        self.romEnd: int = romEnd
+
+
+def getDmaAddresses(version: str) -> Dict[str, DmaEntry]:
+    filetable = f'baserom_{version}/dma_addresses.txt'
+    table: Dict[str, DmaEntry] = dict()
+    if os.path.exists(filetable):
+        with open(filetable) as f:
+            for line in f:
+                filename, *data = line.strip().split(",")
+                virtStart, virtEnd, physStart, physEnd = map(int, data)
+                table[filename] = DmaEntry(virtStart, virtEnd, physStart, physEnd)
+    return table
+
+
 class OverlayTableEntry:
     def __init__(self, array_of_bytes: bytearray):
         wordsArray = bytesToBEWords(array_of_bytes)
