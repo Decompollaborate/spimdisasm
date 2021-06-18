@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from .Utils import *
+from .GlobalConfig import GlobalConfig
 from .MipsFile import File
 from .MipsInstructions import Instruction, wordToInstruction
-# TODO: remove?
-from .ZeldaTables import OverlayTableEntry
+from .MipsFunction import Function
+
 from .ZeldaOffsets import address_Graph_OpenDisps
-from .GlobalConfig import GlobalConfig
 
 
 class Text(File):
@@ -19,8 +19,7 @@ class Text(File):
         for word in self.words:
             self.instructions.append(wordToInstruction(word))
 
-        # TODO: make this a class?
-        self.functions: List[List[Instruction]] = list()
+        self.functions: List[Function] = list()
 
     @property
     def nInstr(self):
@@ -28,15 +27,24 @@ class Text(File):
 
     def findFunctions(self):
         functionEnded = False
-        func = list()
+        funcBody = list()
         offset = 0
+        i = 0
         farthestBranch = 0
         for instr in self.instructions:
-            func.append(instr)
+            funcBody.append(instr)
             if functionEnded:
+                funcName = f"func_{i}"
+                vram = -1
+                if self.vRamStart != -1:
+                    vram = self.getVramOffset(offset)
+                    funcName = "func_" + toHex(self.getVramOffset(offset), 6)[2:] + f" # {i}"
+                func = Function(funcName, funcBody)
+                func.vram = vram
                 self.functions.append(func)
-                func = list()
+                funcBody = list()
                 functionEnded = False
+                i += 1
 
             if instr.isBranch():
                 branch = from2Complement(instr.immediate, 16) + 1
@@ -48,8 +56,11 @@ class Text(File):
 
             offset += 4
             farthestBranch -= 1
-        if len(func) > 0:
-            self.functions.append(func)
+        if len(funcBody) > 0:
+            funcName = f"func_{i}"
+            if self.vRamStart != -1:
+                funcName = "func_" + toHex(self.getVramOffset(offset), 6)[2:] + f" # {i}"
+            self.functions.append(Function(funcName, funcBody))
 
     def compareToFile(self, other: File):
         result = super().compareToFile(other)
@@ -264,14 +275,11 @@ class Text(File):
             i = 0
             offset = 0
             for func in self.functions:
-                funcName = f"func_{i}"
-                if self.vRamStart != -1:
-                    funcName = "func_" + toHex(self.vRamStart + offset, 6)[2:]
-                f.write(f"glabel {funcName}\n")
+                f.write(f"glabel {func.name}\n")
                 functionOffset = offset
                 processed = []
                 offsetsBranches = set()
-                for instr in func:
+                for instr in func.instructions:
                     offsetHex = toHex(offset, 5)[2:]
                     vramHex = ""
                     if self.vRamStart != -1:
@@ -311,3 +319,7 @@ class Text(File):
 
                 f.write("\n")
                 i += 1
+
+def readMipsText(file, version):
+    filename = f"baserom_{version}/{file}"
+    return Text(readFileAsBytearray(filename), filename, version)
