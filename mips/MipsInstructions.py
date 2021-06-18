@@ -474,7 +474,7 @@ class InstructionSpecial(Instruction):
             result = f"{formated_opcode} {rs},".ljust(14, ' ')
             return f"{result} {rt}"
         elif opcode in ("SYSCALL", "BREAK", "SYNC"):
-            code = (self.instr_index) >> 6
+            code = (self.instr_index) >> 16
             result = f"{formated_opcode} {code}"
             return result
         return super().__str__()
