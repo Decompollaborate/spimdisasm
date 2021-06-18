@@ -4,17 +4,20 @@ from __future__ import annotations
 
 from .Utils import *
 from .GlobalConfig import GlobalConfig
+
 from .MipsFile import File
 from .MipsText import Text
 from .MipsData import Data
 from .MipsRodata import Rodata
 from .MipsBss import Bss
 from .MipsReloc import Reloc
+from .MipsFileGeneric import FileGeneric
+
 from .MipsInstructions import wordToInstruction
 from .ZeldaTables import OverlayTableEntry
 
 
-class Overlay(File):
+class FileOverlay(FileGeneric):
     def __init__(self, array_of_bytes: bytearray, filename: str, version: str, tableEntry: OverlayTableEntry=None):
         super().__init__(array_of_bytes, filename, version)
 
@@ -99,25 +102,20 @@ class Overlay(File):
     def compareToFile(self, other_file: File):
         result = super().compareToFile(other_file)
 
-        if isinstance(other_file, Overlay):
-            result["filesections"] = {
-                "text": self.text.compareToFile(other_file.text),
-                "data": self.data.compareToFile(other_file.data),
-                "rodata": self.rodata.compareToFile(other_file.rodata),
-                "bss": self.bss.compareToFile(other_file.bss),
-                "reloc": self.reloc.compareToFile(other_file.reloc),
-            }
+        if isinstance(other_file, FileOverlay):
+            result["filesections"]["reloc"] = self.reloc.compareToFile(other_file.reloc)
 
         return result
 
     def blankOutDifferences(self, other_file: File):
         if not GlobalConfig.REMOVE_POINTERS:
             return
-        super().blankOutDifferences(other_file)
-        if not isinstance(other_file, Overlay):
+
+        if not isinstance(other_file, FileOverlay):
+            super().blankOutDifferences(other_file)
             return
 
-        self.text.blankOutDifferences(other_file.text)
+        self.reloc.blankOutDifferences(other_file.reloc)
 
         self.updateBytes()
         other_file.updateBytes()
@@ -125,7 +123,6 @@ class Overlay(File):
     def removePointers(self):
         if not GlobalConfig.REMOVE_POINTERS:
             return
-        super().removePointers()
 
         for entry in self.reloc.entries:
             section = entry.getSectionName()
@@ -185,8 +182,8 @@ class Overlay(File):
         self.updateBytes()
 
     def updateBytes(self):
-        self.words = self.text.words + self.data.words + self.rodata.words + self.bss.words + self.header + self.reloc.words + self.tail
-        super().updateBytes()
+        self.words = self.text.words + self.data.words + self.rodata.words + self.bss.words + self.reloc.words
+        File.updateBytes(self)
 
     def saveToFile(self, filepath: str):
         self.text.saveToFile(filepath)

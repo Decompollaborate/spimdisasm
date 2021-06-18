@@ -71,6 +71,14 @@ class Reloc(File):
         # TODO
         return result
 
+    def blankOutDifferences(self, other_file: File):
+        if not GlobalConfig.REMOVE_POINTERS:
+            return
+        # TODO ?
+        # super().blankOutDifferences(File)
+        # self.updateBytes()
+        return
+
     def removePointers(self):
         # TODO ?
         return

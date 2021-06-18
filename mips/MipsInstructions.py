@@ -539,13 +539,11 @@ class InstructionRegimm(Instruction):
         return f"{result} {immediate}"
 
 def wordToInstruction(word: int) -> Instruction:
-    if ((word >> 26) & 0xFF) == 0x00:
+    if ((word >> 26) & 0x3F) == 0x00:
         return InstructionSpecial(word)
-    if ((word >> 26) & 0xFF) == 0x01:
+    if ((word >> 26) & 0x3F) == 0x01:
         return InstructionRegimm(word)
-    if ((word >> 26) & 0xFF) == 0x11:
+    if ((word >> 26) & 0x3F) == 0x11:
         # COP1
         pass
     return Instruction(word)
-
-

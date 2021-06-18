@@ -8,7 +8,7 @@ import os
 from mips.Utils import *
 from mips.GlobalConfig import GlobalConfig
 from mips.MipsFile import File
-from mips.MipsOverlay import Overlay
+from mips.MipsFileOverlay import FileOverlay
 from mips.MipsFileCode import FileCode
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -53,8 +53,8 @@ def compare_baseroms(args, filelist):
         file_two_data = readFileAsBytearray(filepath_two)
 
         if filename.startswith("ovl_"):
-            file_one = Overlay(file_one_data, filename, args.version1)
-            file_two = Overlay(file_two_data, filename, args.version2)
+            file_one = FileOverlay(file_one_data, filename, args.version1)
+            file_two = FileOverlay(file_two_data, filename, args.version2)
         else:
             file_one = File(file_one_data, filename, args.version1)
             file_two = File(file_two_data, filename, args.version2)
@@ -141,8 +141,8 @@ def compare_to_csv(args, filelist):
 
         else:
             if filename.startswith("ovl_"):
-                file_one = Overlay(file_one_data, filename, args.version1)
-                file_two = Overlay(file_two_data, filename, args.version2)
+                file_one = FileOverlay(file_one_data, filename, args.version1)
+                file_two = FileOverlay(file_two_data, filename, args.version2)
             elif filename == "code":
                 file_one = FileCode(file_one_data, filename, args.version1)
                 file_two = FileCode(file_two_data, filename, args.version2)
@@ -150,7 +150,10 @@ def compare_to_csv(args, filelist):
                 file_one = File(file_one_data, filename, args.version1)
                 file_two = File(file_two_data, filename, args.version2)
 
-            file_one.blankOutDifferences(file_two)
+            if not not args.dont_remove_ptrs:
+                file_one.blankOutDifferences(file_two)
+                file_one.removePointers()
+                file_two.removePointers()
 
             comparison = file_one.compareToFile(file_two)
             equal = comparison["equal"]
