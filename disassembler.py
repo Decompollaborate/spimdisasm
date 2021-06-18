@@ -8,7 +8,7 @@ import argparse
 from mips.Utils import *
 from mips.GlobalConfig import GlobalConfig
 from mips.MipsText import Text
-from mips.MipsOverlay import Overlay
+from mips.MipsFileOverlay import FileOverlay
 from mips.MipsFileCode import FileCode
 from mips.ZeldaTables import DmaEntry, getDmaAddresses
 
@@ -34,7 +34,7 @@ def disassembleFile(version: str, filename: str, outputfolder: str, dmaAddresses
             #        break
 
         print("Overlay detected. Parsing...")
-        f = Overlay(array_of_bytes, filename, version, tableEntry=tableEntry)
+        f = FileOverlay(array_of_bytes, filename, version, tableEntry=tableEntry)
     elif is_code:
         print("code detected. Parsing...")
         f = FileCode(array_of_bytes, filename, version)
@@ -42,13 +42,17 @@ def disassembleFile(version: str, filename: str, outputfolder: str, dmaAddresses
         print("Unknown file type. Assuming .text. Parsing...")
         f = Text(array_of_bytes, filename, version)
 
+    print()
+    print(f"Found {f.nFuncs} functions.")
+
     new_file_folder = os.path.join(outputfolder, version, filename)
     os.makedirs(new_file_folder, exist_ok=True)
     new_file_path = os.path.join(new_file_folder, filename)
 
-    print(f"Disassembling to {new_file_path}")
+    print(f"Writing files to {new_file_folder}")
     f.saveToFile(new_file_path)
 
+    print()
     print("Disassembling complete!")
     print("Goodbye.")
 

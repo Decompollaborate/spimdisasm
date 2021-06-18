@@ -11,9 +11,9 @@ from functools import partial
 from mips.Utils import *
 from mips.GlobalConfig import GlobalConfig
 from mips.MipsFile import File
-from mips.MipsOverlay import Overlay
+from mips.MipsFileOverlay import FileOverlay
 from mips.MipsFileCode import FileCode
-from mips.ZeldaTables import OverlayTableEntry
+from mips.ZeldaTables import OverlayTableEntry, getDmaAddresses, DmaEntry
 from mips import ZeldaOffsets
 
 
@@ -49,7 +49,7 @@ def getHashesOfFiles(args, filesPath: List[str]) -> List[str]:
             hashList.append(line)
     return hashList
 
-def compareFileAcrossVersions(filename: str, versionsList: List[str], dmaAddresses: dict, actorOverlayTable: Dict[str, List[OverlayTableEntry]], args) -> List[List[str]]:
+def compareFileAcrossVersions(filename: str, versionsList: List[str], dmaAddresses: dict, actorOverlayTable: dict, args) -> List[List[str]]:
     md5arglist = list(map(lambda orig_string: "baserom_" + orig_string + "/" + filename, versionsList))
     # os.system( "md5sum " + " ".join(filesPath) )
 
@@ -87,7 +87,7 @@ def compareFileAcrossVersions(filename: str, versionsList: List[str], dmaAddress
             row.append("")
     return [row]
 
-def compareOverlayAcrossVersions(filename: str, versionsList: List[str], dmaAddresses: dict, actorOverlayTable: Dict[str, List[OverlayTableEntry]], args) -> List[List[str]]:
+def compareOverlayAcrossVersions(filename: str, versionsList: List[str], dmaAddresses: Dict[str, Dict[str, DmaEntry]], actorOverlayTable: Dict[str, List[OverlayTableEntry]], args) -> List[List[str]]:
     column = []
     filesHashes = dict() # "filename": {"NN0": hash}
     firstFilePerHash = dict() # "filename": {hash: "NN0"}
@@ -106,20 +106,18 @@ def compareOverlayAcrossVersions(filename: str, versionsList: List[str], dmaAddr
             continue
 
         if is_overlay:
-            virtStart, virtEnd, physStart, physEnd = -1, -1, -1, -1
             tableEntry = None
             if version in dmaAddresses:
                 versionData = dmaAddresses[version]
                 if filename in versionData:
                     dmaData = versionData[filename]
-                    virtStart, virtEnd, physStart, physEnd = dmaData
-            if virtStart != -1 and version in actorOverlayTable:
-                for entry in actorOverlayTable[version]:
-                    if entry.vromStart == virtStart:
-                        tableEntry = entry
-                        break
+                    if version in actorOverlayTable:
+                        for entry in actorOverlayTable[version]:
+                            if entry.vromStart == dmaData.vromStart:
+                                tableEntry = entry
+                                break
 
-            f = Overlay(array_of_bytes, filename, version, tableEntry=tableEntry)
+            f = FileOverlay(array_of_bytes, filename, version, tableEntry=tableEntry)
         elif is_code:
             f = FileCode(array_of_bytes, filename, version)
         else:
@@ -134,7 +132,7 @@ def compareOverlayAcrossVersions(filename: str, versionsList: List[str], dmaAddr
 
         abbr = ZeldaOffsets.getVersionAbbr(path)
 
-        if isinstance(f, Overlay):
+        if isinstance(f, FileOverlay):
             subfiles = {
                 ".text" : f.text,
                 ".data" : f.data,
@@ -217,16 +215,10 @@ def main():
         for ver in versionsList:
             os.makedirs(os.path.join(args.savetofile, ver), exist_ok=True)
 
-    dmaAddresses = dict()
+    dmaAddresses: Dict[str, Dict[str, DmaEntry]] = dict()
     actorOverlayTable: Dict[str, List[OverlayTableEntry]] = dict()
     for version in versionsList:
-        filetable = f'baserom_{version}/dma_addresses.txt'
-        if os.path.exists(filetable):
-            dmaAddresses[version] = dict()
-            with open(filetable) as f:
-                for line in f:
-                    filename, *data = line.strip().split(",")
-                    dmaAddresses[version][filename] = list(map(int, data))
+        dmaAddresses[version] = getDmaAddresses(version)
 
         codePath = os.path.join(f"baserom_{version}", "code")
 

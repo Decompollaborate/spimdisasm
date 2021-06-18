@@ -22,8 +22,12 @@ class Text(File):
         self.functions: List[Function] = list()
 
     @property
-    def nInstr(self):
+    def nInstr(self) -> int:
         return len(self.instructions)
+
+    @property
+    def nFuncs(self) -> int:
+        return len(self.functions)
 
     def findFunctions(self):
         functionEnded = False
