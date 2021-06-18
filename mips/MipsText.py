@@ -29,6 +29,7 @@ class Text(File):
         functionEnded = False
         funcBody = list()
         offset = 0
+        funcStartOffset = 0
         i = 0
         farthestBranch = 0
         for instr in self.instructions:
@@ -37,14 +38,15 @@ class Text(File):
                 funcName = f"func_{i}"
                 vram = -1
                 if self.vRamStart != -1:
-                    vram = self.getVramOffset(offset)
-                    funcName = "func_" + toHex(self.getVramOffset(offset), 6)[2:] + f" # {i}"
+                    vram = self.getVramOffset(funcStartOffset)
+                    funcName = "func_" + toHex(self.getVramOffset(funcStartOffset), 6)[2:] + f" # {i}"
                 func = Function(funcName, funcBody)
                 func.vram = vram
                 self.functions.append(func)
                 funcBody = list()
                 functionEnded = False
                 i += 1
+                funcStartOffset = offset + 4
 
             if instr.isBranch():
                 branch = from2Complement(instr.immediate, 16) + 1
@@ -59,7 +61,7 @@ class Text(File):
         if len(funcBody) > 0:
             funcName = f"func_{i}"
             if self.vRamStart != -1:
-                funcName = "func_" + toHex(self.getVramOffset(offset), 6)[2:] + f" # {i}"
+                funcName = "func_" + toHex(self.getVramOffset(funcStartOffset), 6)[2:] + f" # {i}"
             self.functions.append(Function(funcName, funcBody))
 
     def compareToFile(self, other: File):
