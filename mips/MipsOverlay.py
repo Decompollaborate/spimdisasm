@@ -30,8 +30,7 @@ class Overlay(File):
         data_size = self.words[self.headerWPos+1]
         rodata_size = self.words[self.headerWPos+2]
         bss_size = self.words[self.headerWPos+3]
-        header_size = 4*5
-        reloc_size = 4*self.words[self.headerWPos+4]
+        reloc_size = 4*5 + 4*self.words[self.headerWPos+4]
 
         start = 0
         end = text_size
@@ -67,20 +66,12 @@ class Overlay(File):
         self.bss.vRamStart = self.vRamStart
         self.bss.initVarsAddress = self.initVarsAddress
 
-        #start += bss_size
         start += rodata_size
-        end += header_size
-        self.header = bytesToBEWords(self.bytes[start:end])
-
-        start += header_size
-        end += reloc_size
-        self.reloc = Reloc(self.bytes[start:end], filename, version)
+        self.reloc = Reloc(self.bytes[start:], filename, version)
         self.reloc.parent = self
         self.reloc.offset = start
         self.reloc.vRamStart = self.vRamStart
         self.reloc.initVarsAddress = self.initVarsAddress
-
-        self.tail = bytesToBEWords(self.bytes[end:])
 
         """
         functions = set()

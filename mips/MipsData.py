@@ -71,6 +71,7 @@ class Data(File):
                         f.write(f"/* %05X %08X {toHex(self.words[i+5], 8)[2:]} */  .word  {destroy}\n" % (offset + 0x14, currentVram + 0x14))
                         f.write(f"/* %05X %08X {toHex(self.words[i+6], 8)[2:]} */  .word  {update}\n" % (offset + 0x18, currentVram + 0x18))
                         f.write(f"/* %05X %08X {toHex(self.words[i+7], 8)[2:]} */  .word  {draw}\n" % (offset + 0x1C, currentVram + 0x1C))
+                        f.write("\n")
 
                         i += 8
                         offset += 0x20
