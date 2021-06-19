@@ -29,14 +29,26 @@ class Text(File):
 
     def findFunctions(self):
         functionEnded = False
-        index = 0
         farthestBranch = 0
         funcsStartsList = [0]
 
-        for instr in self.instructions:
+        # TODO: do something with this information
+        fileBoundaries = list()
+
+        index = 0
+        nInstr = self.nInstr
+        while index < nInstr:
+            instr = self.instructions[index]
             if functionEnded:
                 functionEnded = False
-                funcsStartsList.append(index + 1)
+                index += 1
+                while index < nInstr:
+                    instr = self.instructions[index]
+                    if instr.getOpcodeName() != "NOP":
+                        fileBoundaries.append(index)
+                        break
+                    index += 1
+                funcsStartsList.append(index)
 
             if instr.isBranch():
                 branch = from2Complement(instr.immediate, 16) + 1
