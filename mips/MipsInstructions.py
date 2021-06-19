@@ -538,12 +538,50 @@ class InstructionRegimm(Instruction):
         result = result.ljust(14, ' ')
         return f"{result} {immediate}"
 
+class InstructionCoprocessor1(Instruction):
+    def isBranch(self) -> bool:
+        opcode = self.getOpcodeName()
+        if opcode in ("BC1T", "BC1TL", "BC1F", "BC1FL"):
+            return True
+        return False
+    def isTrap(self) -> bool:
+        return False
+
+    def getOpcodeName(self) -> str:
+        if self.rs == 0b01_000:
+            tf = (self.instr >> 16) & 0x01
+            nd = (self.instr >> 17) & 0x01
+            opcodeName = "BC1"
+            if tf: # Branch on FP True
+                opcodeName += "T"
+            else: # Branch on FP False
+                opcodeName += "F"
+            if nd: # Likely
+                opcodeName += "L"
+            return opcodeName
+        # TODO: implement the rest
+        return super().getOpcodeName()
+
+    def __str__(self) -> str:
+        if self.isBranch():
+            opcode = self.getOpcodeName().lower().ljust(7, ' ')
+            immediate = toHex(self.immediate, 4)
+
+            result = opcode
+            return f"{result} {immediate}"
+        return super().__str__()
+
 def wordToInstruction(word: int) -> Instruction:
     if ((word >> 26) & 0x3F) == 0x00:
         return InstructionSpecial(word)
     if ((word >> 26) & 0x3F) == 0x01:
         return InstructionRegimm(word)
+    if ((word >> 26) & 0x3F) == 0x10:
+        # COP0
+        pass
     if ((word >> 26) & 0x3F) == 0x11:
-        # COP1
+        return InstructionCoprocessor1(word)
+    if ((word >> 26) & 0x3F) == 0x12:
+        # COP2
         pass
     return Instruction(word)
