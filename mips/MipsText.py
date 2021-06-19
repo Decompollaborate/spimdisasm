@@ -42,12 +42,15 @@ class Text(File):
             if functionEnded:
                 functionEnded = False
                 index += 1
+                isboundary = False
                 while index < nInstr:
                     instr = self.instructions[index]
                     if instr.getOpcodeName() != "NOP":
-                        fileBoundaries.append(index)
+                        if isboundary:
+                            fileBoundaries.append(index)
                         break
                     index += 1
+                    isboundary = True
                 funcsStartsList.append(index)
 
             if instr.isBranch():
