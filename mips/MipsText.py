@@ -29,42 +29,55 @@ class Text(File):
 
     def findFunctions(self):
         functionEnded = False
-        funcBody = list()
-        offset = 0
-        funcStartOffset = 0
-        i = 0
+        index = 0
         farthestBranch = 0
+        funcsStartsList = [0]
+
         for instr in self.instructions:
-            funcBody.append(instr)
             if functionEnded:
-                funcName = f"func_{i}"
-                vram = -1
-                if self.vRamStart != -1:
-                    vram = self.getVramOffset(funcStartOffset)
-                    funcName = "func_" + toHex(self.getVramOffset(funcStartOffset), 6)[2:] + f" # {i}"
-                func = Function(funcName, funcBody)
-                func.vram = vram
-                self.functions.append(func)
-                funcBody = list()
                 functionEnded = False
-                i += 1
-                funcStartOffset = offset + 4
+                funcsStartsList.append(index + 1)
 
             if instr.isBranch():
                 branch = from2Complement(instr.immediate, 16) + 1
                 if branch > farthestBranch:
+                    # keep track of the farthest branch target
                     farthestBranch = branch
+                if branch < 0:
+                    # make sure to not branch outside of the current function
+                    j = len(funcsStartsList) - 1
+                    while j >= 0:
+                        if index + branch < funcsStartsList[j]:
+                            del funcsStartsList[j]
+                        else:
+                            break
+                        j -= 1
 
-            if instr.getOpcodeName() == "JR" and instr.getRegisterName(instr.rs) == "$ra" and not farthestBranch > 0:
-                functionEnded = True
+            if not (farthestBranch > 0):
+                opcodeName = instr.getOpcodeName()
+                if opcodeName == "JR" and instr.getRegisterName(instr.rs) == "$ra":
+                    functionEnded = True
+                #elif opcodeName == "J":
+                #    functionEnded = True
 
-            offset += 4
+            index += 1
             farthestBranch -= 1
-        if len(funcBody) > 0:
+
+        i = 0
+        for startIndex in range(len(funcsStartsList)-1):
+            start = funcsStartsList[startIndex]
+            end = funcsStartsList[startIndex+1]
+
             funcName = f"func_{i}"
+            vram = -1
             if self.vRamStart != -1:
-                funcName = "func_" + toHex(self.getVramOffset(funcStartOffset), 6)[2:] + f" # {i}"
-            self.functions.append(Function(funcName, funcBody))
+                vram = self.getVramOffset(start*4)
+                funcName = "func_" + toHex(self.getVramOffset(start*4), 6)[2:] + f" # {i}"
+
+            func = Function(funcName, self.instructions[start:end])
+            func.vram = vram
+            self.functions.append(func)
+            i += 1
 
     def compareToFile(self, other: File):
         result = super().compareToFile(other)
