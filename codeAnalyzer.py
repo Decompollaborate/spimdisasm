@@ -96,21 +96,23 @@ while i < len(palMqDbg_filesStarts) - 1:
 
     i += 1
 
+totalFunctions = 0
 for text in palMqDbg_texts:
-    print(text.filename)
-    print("boundaries:", len(text.fileBoundaries))
-    for i in range(len(text.fileBoundaries)-1):
-        a = text.fileBoundaries[i]
-        b = text.fileBoundaries[i+1]
-        #if b-a <= 0x100:
-        #    print("\t", toHex(a, 6), toHex(b-a, 4))
-        print("\t", toHex(a, 6), toHex(b-a, 4))
+    print(text.filename, f" functions: {len(text.functions)} ")
+    totalFunctions += len(text.functions)
     if len(text.fileBoundaries) > 0:
-        print("\t", toHex(text.fileBoundaries[-1], 6))
+        print("boundaries:", len(text.fileBoundaries))
+        for i in range(len(text.fileBoundaries)-1):
+            a = text.fileBoundaries[i]
+            b = text.fileBoundaries[i+1]
+            #if b-a <= 0x100:
+            #    print("\t", toHex(a, 6), toHex(b-a, 4))
+            print("\t", toHex(a, 6), toHex(b-a, 2))
+        print("\t", toHex(text.fileBoundaries[-1], 6), toHex((text.size + text.offset) - text.fileBoundaries[-1], 2))
 
-
-    print("functions:", len(text.functions))
     print()
+
+print(f"Total functions found: {totalFunctions}\n")
 
 OUTPUT_FOLDER = "splits"
 
@@ -120,5 +122,5 @@ for text in palMqDbg_texts:
     os.makedirs(new_file_folder, exist_ok=True)
     new_file_path = os.path.join(new_file_folder, text.filename)
 
-    print(f"Writing file {new_file_path}")
+    # print(f"Writing file {new_file_path}")
     text.saveToFile(new_file_path)

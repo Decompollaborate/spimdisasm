@@ -194,8 +194,8 @@ class Text(File):
                         vramHex = toHex(self.getVramOffset(offset), 6)[2:]
                     instrHex = toHex(instr.instr, 8)[2:]
 
-                    # comment = ""
-                    comment = f"/* {offsetHex} {vramHex} {instrHex} */"
+                    # comment = " "
+                    comment = f" /* {offsetHex} {vramHex} {instrHex} */"
 
                     line = str(instr)
                     if instr.isBranch():
