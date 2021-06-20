@@ -186,6 +186,7 @@ class Text(File):
                 functionOffset = offset
                 processed = []
                 offsetsBranches = set()
+                # TODO: move a bunch of this logic to Function
                 for instr in func.instructions:
                     offsetHex = toHex(offset, 5)[2:]
                     vramHex = ""

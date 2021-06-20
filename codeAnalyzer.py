@@ -14,7 +14,6 @@ from mips.ZeldaTables import DmaEntry, getDmaAddresses
 from mips.ZeldaOffsets import codeVramStart, codeDataStart, codeRodataStart
 
 from mips.codeFunctionMapPalMqDbg import codeFunctionMapPalMqDbg
-from mips.ZeldaCodeSplits import codeFilesStarts
 
 GlobalConfig.REMOVE_POINTERS = False
 GlobalConfig.IGNORE_BRANCHES = False
@@ -22,6 +21,35 @@ GlobalConfig.IGNORE_04 = False
 GlobalConfig.IGNORE_06 = False
 GlobalConfig.IGNORE_80 = False
 GlobalConfig.WRITE_BINARY = False
+
+def readCodeSplitsCsv():
+    splits = dict()
+    with open("code_splits.csv") as f:
+        header = f.readline().split(",")[3::3]
+        splits = { h: dict() for h in header }
+        f.readline()
+
+        for row in f:
+            filename1, filename2, _, *data = row.strip().split(",")
+            name = filename1 or filename2
+            if name == "":
+                continue
+
+            for i in range(len(header)):
+                h = header[i]
+                offset, vram, size = data[i*3:(i+1)*3]
+                if offset == "" or offset == "-":
+                    continue
+
+                offset = int(offset, 16)
+                if size == "" or size == "-":
+                    size = -1
+                else:
+                    size = int(size, 16)
+
+                splits[h][name] = (offset, size)
+
+    return splits
 
 
 parser = argparse.ArgumentParser()
@@ -36,20 +64,27 @@ palMqDbg_Code_array = readVersionedFileAsBytearrray(CODE, VERSION)
 # remove data
 palMqDbg_Code_array = palMqDbg_Code_array[:codeDataStart[VERSION]]
 
+codeSplits = readCodeSplitsCsv()
+
 palMqDbg_filesStarts = list()
-palMqDbg_filesStarts.append(("start", 0))
-for codeFilename, versionsSplits in codeFilesStarts.items():
-    start = versionsSplits[VERSION]
-    if start < 0:
-        continue
-    palMqDbg_filesStarts.append((codeFilename, start))
-palMqDbg_filesStarts.append(("end", codeDataStart[VERSION]))
+for codeFilename, (offset, size) in codeSplits[VERSION].items():
+    palMqDbg_filesStarts.append((offset, size, codeFilename))
+palMqDbg_filesStarts.append((codeDataStart[VERSION], 0, "end"))
+
+palMqDbg_filesStarts.sort()
 
 palMqDbg_texts: List[Text] = []
 i = 0
 while i < len(palMqDbg_filesStarts) - 1:
-    filename, start = palMqDbg_filesStarts[i]
-    _, end = palMqDbg_filesStarts[i+1]
+    start, size, filename = palMqDbg_filesStarts[i]
+    nextStart, _, _ = palMqDbg_filesStarts[i+1]
+
+    end = start + size
+    if size < 0:
+        end = nextStart
+
+    if end < nextStart:
+        palMqDbg_filesStarts.insert(i+1, (end, -1, f"file_{toHex(end, 6)}"))
 
     text = Text(palMqDbg_Code_array[start:end], filename, CODE)
     text.offset = start
