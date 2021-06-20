@@ -19,6 +19,9 @@ class Text(File):
 
         self.functions: List[Function] = list()
 
+        # TODO: do something with this information
+        self.fileBoundaries: List[int] = list()
+
     @property
     def nInstr(self) -> int:
         return len(self.instructions)
@@ -32,9 +35,6 @@ class Text(File):
         farthestBranch = 0
         funcsStartsList = [0]
 
-        # TODO: do something with this information
-        fileBoundaries = list()
-
         index = 0
         nInstr = self.nInstr
         while index < nInstr:
@@ -47,11 +47,14 @@ class Text(File):
                     instr = self.instructions[index]
                     if instr.getOpcodeName() != "NOP":
                         if isboundary:
-                            fileBoundaries.append(index)
+                            self.fileBoundaries.append(self.offset + index*4)
                         break
                     index += 1
                     isboundary = True
                 funcsStartsList.append(index)
+                if index >= len(self.instructions):
+                    break
+                instr = self.instructions[index]
 
             if instr.isBranch():
                 branch = from2Complement(instr.immediate, 16) + 1
@@ -224,6 +227,6 @@ class Text(File):
                 f.write("\n")
                 i += 1
 
-def readMipsText(file, version):
+def readMipsText(file: str, version: str) -> Text:
     filename = f"baserom_{version}/{file}"
     return Text(readFileAsBytearray(filename), filename, version)

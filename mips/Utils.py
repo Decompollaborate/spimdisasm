@@ -64,3 +64,7 @@ def from2Complement(number: int, bits: int) -> int:
     if isNegative:
         return -((~number + 1) & ((1 << bits) - 1))
     return number
+
+def readVersionedFileAsBytearrray(file: str, version: str) -> bytearray:
+    filename = f"baserom_{version}/{file}"
+    return readFileAsBytearray(filename)

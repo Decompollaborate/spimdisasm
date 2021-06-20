@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 
-
 from mips.Utils import *
 from mips.GlobalConfig import GlobalConfig
 from mips.MipsText import Text
