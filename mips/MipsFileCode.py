@@ -5,7 +5,6 @@ from __future__ import annotations
 from .Utils import *
 from .GlobalConfig import GlobalConfig
 
-from .MipsFile import File
 from .MipsText import Text
 from .MipsData import Data
 from .MipsRodata import Rodata

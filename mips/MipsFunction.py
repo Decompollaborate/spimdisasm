@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from .Utils import *
 from .GlobalConfig import GlobalConfig
-from .MipsInstructions import Instruction
+from .Instructions import InstructionBase
 
 class Function:
-    def __init__(self, name: str, instructions: List[Instruction]):
+    def __init__(self, name: str, instructions: List[InstructionBase]):
         self.name: str = name
-        self.instructions: List[Instruction] = list(instructions)
+        self.instructions: List[InstructionBase] = list(instructions)
         self.vram: int = -1
 
     @property

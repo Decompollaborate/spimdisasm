@@ -5,7 +5,7 @@ from __future__ import annotations
 from .Utils import *
 from .GlobalConfig import GlobalConfig
 from .MipsFile import File
-from .MipsInstructions import Instruction, wordToInstruction
+from .Instructions import InstructionBase, wordToInstruction
 from .MipsFunction import Function
 
 
@@ -13,7 +13,7 @@ class Text(File):
     def __init__(self, array_of_bytes: bytearray, filename: str, version: str):
         super().__init__(array_of_bytes, filename, version)
 
-        self.instructions: List[Instruction] = list()
+        self.instructions: List[InstructionBase] = list()
         for word in self.words:
             self.instructions.append(wordToInstruction(word))
 
