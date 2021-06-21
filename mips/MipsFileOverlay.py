@@ -13,7 +13,7 @@ from .MipsBss import Bss
 from .MipsReloc import Reloc
 from .MipsFileGeneric import FileGeneric
 
-from .MipsInstructions import wordToInstruction
+from .Instructions import wordToInstruction
 from .ZeldaTables import OverlayTableEntry
 
 
