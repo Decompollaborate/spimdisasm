@@ -28,6 +28,34 @@ class InstructionBase:
     def baseRegister(self) -> int:
         return self.rs
 
+    @property
+    def fmt(self) -> int:
+        return self.rs
+
+    @property
+    def ft(self) -> int:
+        return self.rt
+    @property
+    def fs(self) -> int:
+        return self.rd
+    @property
+    def fd(self) -> int:
+        return self.sa
+
+    @property
+    def nd(self) -> int:
+        return (self.rt >> 0) & 0x01
+    @property
+    def tf(self) -> int:
+        return (self.rt >> 1) & 0x01
+    @property
+    def fc(self) -> int:
+        return (self.function >> 4) & 0x03
+    @property
+    def cond(self) -> int:
+        return (self.function >> 0) & 0x0F
+
+
     def isImplemented(self) -> bool:
         return False
 

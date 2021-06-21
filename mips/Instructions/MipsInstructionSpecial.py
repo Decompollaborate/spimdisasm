@@ -193,21 +193,21 @@ class InstructionSpecial(InstructionBase):
 
         elif self.isRType(): # OP rd, rs, rt
             rd = self.getRegisterName(self.rd)
-            result = f"{opcode} {rd},"
+            result = f"{formated_opcode} {rd},"
             result = result.ljust(14, ' ')
             result += f" {rs},"
             result = result.ljust(19, ' ')
             return f"{result} {rt}"
         elif self.isRType2(): # OP rd, rt, rs
             rd = self.getRegisterName(self.rd)
-            result = f"{opcode} {rd},"
+            result = f"{formated_opcode} {rd},"
             result = result.ljust(14, ' ')
             result += f" {rt},"
             result = result.ljust(19, ' ')
             return f"{result} {rs}"
         elif self.isSaType(): # OP rd, rt, sa
             rd = self.getRegisterName(self.rd)
-            result = f"{opcode} {rd},"
+            result = f"{formated_opcode} {rd},"
             result = result.ljust(14, ' ')
             result += f" {rt},"
             result = result.ljust(19, ' ')
