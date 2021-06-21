@@ -102,13 +102,28 @@ for text in palMqDbg_texts:
     totalFunctions += len(text.functions)
     if len(text.fileBoundaries) > 0:
         print("boundaries:", len(text.fileBoundaries))
+
         for i in range(len(text.fileBoundaries)-1):
-            a = text.fileBoundaries[i]
-            b = text.fileBoundaries[i+1]
-            #if b-a <= 0x100:
-            #    print("\t", toHex(a, 6), toHex(b-a, 4))
-            print("\t", toHex(a, 6), toHex(b-a, 2))
-        print("\t", toHex(text.fileBoundaries[-1], 6), toHex((text.size + text.offset) - text.fileBoundaries[-1], 2))
+            start = text.fileBoundaries[i]
+            end = text.fileBoundaries[i+1]
+
+            functionsInBoundary = 0
+            for func in text.functions:
+                funcOffset = func.vram - codeVramStart[VERSION]
+                if start <= funcOffset < end:
+                    functionsInBoundary += 1
+            print("\t", toHex(start, 6)[2:], toHex(end-start, 3)[2:], "\t functions:", functionsInBoundary)
+
+
+        start = text.fileBoundaries[-1]
+        end = text.size + text.offset
+
+        functionsInBoundary = 0
+        for func in text.functions:
+            funcOffset = func.vram - codeVramStart[VERSION]
+            if start <= funcOffset < end:
+                functionsInBoundary += 1
+        print("\t", toHex(start, 6)[2:], toHex(end-start, 3)[2:], "\t functions:", functionsInBoundary)
 
     print()
 

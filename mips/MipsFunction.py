@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from .Utils import *
 from .GlobalConfig import GlobalConfig
-from .MipsInstructions import Instruction, wordToInstruction
+from .MipsInstructions import Instruction
 
 class Function:
     def __init__(self, name: str, instructions: List[Instruction]):
