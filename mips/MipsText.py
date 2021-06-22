@@ -152,6 +152,7 @@ class Text(File):
     def removeTrailingNops(self) -> bool:
         was_updated = False
         first_nop = self.nInstr
+        # TODO consider moving this to Function
         for i in range(self.nInstr-1, 0-1, -1):
             instr = self.instructions[i]
             opcodeName = instr.getOpcodeName()
@@ -180,7 +181,7 @@ class Text(File):
         with open(filepath + ".text.asm", "w") as f:
             f.write(".section .text\n\n")
             i = 0
-            offset = 0
+            offset = self.offset
             for func in self.functions:
                 f.write(f"glabel {func.name}\n")
                 functionOffset = offset
