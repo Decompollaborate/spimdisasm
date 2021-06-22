@@ -7,11 +7,26 @@ from .GlobalConfig import GlobalConfig
 from .Instructions import InstructionBase
 
 class Function:
-    def __init__(self, name: str, instructions: List[InstructionBase], inFileOffset: int):
+    def __init__(self, name: str, instructions: List[InstructionBase], inFileOffset: int, vram: int = -1):
         self.name: str = name
         self.instructions: List[InstructionBase] = list(instructions)
-        self.inFileOffset = inFileOffset
-        self.vram: int = -1
+        self.inFileOffset: int = inFileOffset
+        self.vram: int = vram
+        self.labels: Dict[int, str] = dict()
+
+        instructionOffset = 0
+        for instr in self.instructions:
+            if instr.isBranch():
+                addr = from2Complement(instr.immediate, 16)
+                branch = instructionOffset + addr*4 + 1*4
+                if self.vram >= 0:
+                    label = ".L" + toHex(self.vram + branch, 5)[2:]
+                else:
+                    label = ".L" + toHex(self.inFileOffset + branch, 5)[2:]
+
+                self.labels[self.inFileOffset + branch] = label
+
+            instructionOffset += 4
 
     @property
     def nInstr(self) -> int:
@@ -147,46 +162,31 @@ class Function:
         output += f"glabel {self.name}\n"
 
         instructionOffset = 0
-        processed = []
-        offsetsBranches = set()
+        auxOffset = self.inFileOffset
         for instr in self.instructions:
-            offsetHex = toHex(self.inFileOffset + instructionOffset, 5)[2:]
+            offsetHex = toHex(auxOffset, 5)[2:]
             vramHex = ""
             if self.vram >= 0:
                 vramHex = toHex(self.vram + instructionOffset, 8)[2:]
             instrHex = toHex(instr.instr, 8)[2:]
 
-            # comment = " "
             comment = f" /* {offsetHex} {vramHex} {instrHex} */"
 
-            line = str(instr)
+            line = instr.disassemble()
             if instr.isBranch():
-                line = line[:-6]
                 addr = from2Complement(instr.immediate, 16)
-                branch = instructionOffset + addr*4 + 1*4
-                offsetsBranches.add(self.inFileOffset + branch)
-                if self.vram >= 0:
-                    line += ".L" + toHex(self.vram + branch, 5)[2:]
-                else:
-                    line += ".L" + toHex(self.inFileOffset + branch, 5)[2:]
+                branch = auxOffset + addr*4 + 1*4
+                if branch in self.labels:
+                    # TODO: this shouldn't be hardcoded
+                    line = line[:-6]
+                    line += self.labels[branch]
 
-            data = {"comment": comment, "instr": instr, "line": line}
-            processed.append(data)
-
-            instructionOffset += 4
-
-        instructionOffset = 0
-        auxOffset = self.inFileOffset
-        for data in processed:
-            line = data["comment"] + "  " + data["line"]
-            if auxOffset in offsetsBranches:
-                if self.vram >= 0:
-                    line = ".L" + toHex(self.vram + instructionOffset, 5)[2:] + ":\n" + line
-                else:
-                    line = ".L" + toHex(auxOffset, 5)[2:] + ":\n" + line
+            line = comment + "  " + line
+            if auxOffset in self.labels:
+                line = self.labels[auxOffset] + ":\n" + line
             output += line + "\n"
 
-            auxOffset += 4
             instructionOffset += 4
+            auxOffset += 4
 
         return output

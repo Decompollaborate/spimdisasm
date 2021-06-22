@@ -92,8 +92,7 @@ class Text(File):
                 vram = self.getVramOffset(start*4)
                 funcName = "func_" + toHex(self.getVramOffset(start*4), 6)[2:] + f" # {i}"
 
-            func = Function(funcName, self.instructions[start:end], self.offset + start*4)
-            func.vram = vram
+            func = Function(funcName, self.instructions[start:end], self.offset + start*4, vram=vram)
             self.functions.append(func)
             i += 1
 
