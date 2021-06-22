@@ -11,10 +11,11 @@ class InstructionCoprocessor1(InstructionBase):
     Cop1Opcodes_ByFormat = {
         0b00_000: "MFC1", # Move Word From Floating-Point
         0b00_001: "DMFC1", # Doubleword Move From Floating-Point
-        0b00_000: "CFC1", # Move Control Word from Floating-Point
-        0b00_000: "MTC1", # Move Word to Floating-Point
-        0b00_000: "DMTC1", # Doubleword Move To Floating-Point
-        0b00_000: "CTC1", # Move Control Word to Floating-Point
+        0b00_010: "CFC1", # Move Control Word from Floating-Point
+
+        0b00_100: "MTC1", # Move Word to Floating-Point
+        0b00_101: "DMTC1", # Doubleword Move To Floating-Point
+        0b00_110: "CTC1", # Move Control Word to Floating-Point
     }
     Cop1Opcodes_ByFunction = {
         0b000_000: "ADD", # Floating-Point Add # fd, fs, ft
