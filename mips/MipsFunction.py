@@ -7,9 +7,10 @@ from .GlobalConfig import GlobalConfig
 from .Instructions import InstructionBase
 
 class Function:
-    def __init__(self, name: str, instructions: List[InstructionBase]):
+    def __init__(self, name: str, instructions: List[InstructionBase], inFileOffset: int):
         self.name: str = name
         self.instructions: List[InstructionBase] = list(instructions)
+        self.inFileOffset = inFileOffset
         self.vram: int = -1
 
     @property
@@ -138,3 +139,54 @@ class Function:
                 was_updated = True
 
         return was_updated
+
+
+    def disassemble(self) -> str:
+        output = ""
+
+        output += f"glabel {self.name}\n"
+
+        instructionOffset = 0
+        processed = []
+        offsetsBranches = set()
+        for instr in self.instructions:
+            offsetHex = toHex(self.inFileOffset + instructionOffset, 5)[2:]
+            vramHex = ""
+            if self.vram >= 0:
+                vramHex = toHex(self.vram + instructionOffset, 8)[2:]
+            instrHex = toHex(instr.instr, 8)[2:]
+
+            # comment = " "
+            comment = f" /* {offsetHex} {vramHex} {instrHex} */"
+
+            line = str(instr)
+            if instr.isBranch():
+                line = line[:-6]
+                addr = from2Complement(instr.immediate, 16)
+                branch = instructionOffset + addr*4 + 1*4
+                offsetsBranches.add(self.inFileOffset + branch)
+                if self.vram >= 0:
+                    line += ".L" + toHex(self.vram + branch, 5)[2:]
+                else:
+                    line += ".L" + toHex(self.inFileOffset + branch, 5)[2:]
+
+            data = {"comment": comment, "instr": instr, "line": line}
+            processed.append(data)
+
+            instructionOffset += 4
+
+        instructionOffset = 0
+        auxOffset = self.inFileOffset
+        for data in processed:
+            line = data["comment"] + "  " + data["line"]
+            if auxOffset in offsetsBranches:
+                if self.vram >= 0:
+                    line = ".L" + toHex(self.vram + instructionOffset, 5)[2:] + ":\n" + line
+                else:
+                    line = ".L" + toHex(auxOffset, 5)[2:] + ":\n" + line
+            output += line + "\n"
+
+            auxOffset += 4
+            instructionOffset += 4
+
+        return output

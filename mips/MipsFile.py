@@ -24,7 +24,7 @@ class File:
         return len(self.words)
 
     def getVramOffset(self, localOffset: int) -> int:
-        if self.vRamStart == -1:
+        if self.vRamStart < 0:
             return self.offset + localOffset
         return self.vRamStart + self.offset + localOffset
 
