@@ -92,7 +92,7 @@ class Text(File):
                 vram = self.getVramOffset(start*4)
                 funcName = "func_" + toHex(self.getVramOffset(start*4), 6)[2:] + f" # {i}"
 
-            func = Function(funcName, self.instructions[start:end])
+            func = Function(funcName, self.instructions[start:end], self.offset + start*4)
             func.vram = vram
             self.functions.append(func)
             i += 1
@@ -183,49 +183,7 @@ class Text(File):
             i = 0
             offset = self.offset
             for func in self.functions:
-                f.write(f"glabel {func.name}\n")
-                functionOffset = offset
-                processed = []
-                offsetsBranches = set()
-                # TODO: move a bunch of this logic to Function
-                for instr in func.instructions:
-                    offsetHex = toHex(offset, 5)[2:]
-                    vramHex = ""
-                    if self.vRamStart != -1:
-                        vramHex = toHex(self.getVramOffset(offset), 6)[2:]
-                    instrHex = toHex(instr.instr, 8)[2:]
-
-                    # comment = " "
-                    comment = f" /* {offsetHex} {vramHex} {instrHex} */"
-
-                    line = str(instr)
-                    if instr.isBranch():
-                        line = line[:-6]
-                        addr = from2Complement(instr.immediate, 16)
-                        branch = offset + 1*4 + addr*4
-                        offsetsBranches.add(branch)
-                        if self.vRamStart != -1:
-                            line += ".L" + toHex(self.vRamStart + branch, 5)[2:]
-                        else:
-                            line += ".L" + toHex(branch, 5)[2:]
-
-                    data = {"comment": comment, "instr": instr, "line": line}
-                    processed.append(data)
-
-                    offset += 4
-
-                auxOffset = functionOffset
-                for data in processed:
-                    line = data["comment"] + "  " + data["line"]
-                    if auxOffset in offsetsBranches:
-                        if self.vRamStart != -1:
-                            line = ".L" + toHex(self.vRamStart + auxOffset, 5)[2:] + ":\n" + line
-                        else:
-                            line = ".L" + toHex(auxOffset, 5)[2:] + ":\n" + line
-                    f.write(line + "\n")
-
-                    auxOffset += 4
-
+                f.write(func.disassemble())
                 f.write("\n")
                 i += 1
 
