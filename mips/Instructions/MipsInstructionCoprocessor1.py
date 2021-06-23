@@ -71,7 +71,7 @@ class InstructionCoprocessor1(InstructionBase):
             return True
         return False
 
-    def isFloatInstruction(self):
+    def isFloatInstruction(self) -> bool:
         return True
 
     def isBranch(self) -> bool:

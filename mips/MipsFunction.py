@@ -12,7 +12,9 @@ class Function:
         self.instructions: List[InstructionBase] = list(instructions)
         self.inFileOffset: int = inFileOffset
         self.vram: int = vram
+
         self.labels: Dict[int, str] = dict()
+        self.otherFunctions: Dict[int, str] = dict()
 
         instructionOffset = 0
         for instr in self.instructions:
@@ -25,6 +27,12 @@ class Function:
                     label = ".L" + toHex(self.inFileOffset + branch, 5)[2:]
 
                 self.labels[self.inFileOffset + branch] = label
+                if self.vram >= 0:
+                    self.labels[self.vram + branch] = label
+
+            elif instr.isJType():
+                target = 0x80000000 | instr.instr_index << 2
+                self.otherFunctions[target] = "func_" + toHex(target, 8)[2:]
 
             instructionOffset += 4
 

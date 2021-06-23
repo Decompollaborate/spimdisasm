@@ -59,7 +59,7 @@ class InstructionBase:
     def isImplemented(self) -> bool:
         return False
 
-    def isFloatInstruction(self):
+    def isFloatInstruction(self) -> bool:
         return False
 
 
