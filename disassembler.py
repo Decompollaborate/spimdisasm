@@ -9,11 +9,13 @@ from mips.GlobalConfig import GlobalConfig
 from mips.MipsText import Text
 from mips.MipsFileOverlay import FileOverlay
 from mips.MipsFileCode import FileCode
+from mips.MipsFileBoot import FileBoot
 from mips.ZeldaTables import DmaEntry, getDmaAddresses
 
 def disassembleFile(version: str, filename: str, outputfolder: str, dmaAddresses: Dict[str, DmaEntry]):
     is_overlay = filename.startswith("ovl_")
     is_code = filename == "code"
+    is_boot = filename == "boot"
 
     path = os.path.join(f"baserom_{version}", filename)
 
@@ -37,6 +39,9 @@ def disassembleFile(version: str, filename: str, outputfolder: str, dmaAddresses
     elif is_code:
         print("code detected. Parsing...")
         f = FileCode(array_of_bytes, filename, version)
+    elif is_boot:
+        print("boot detected. Parsing...")
+        f = FileBoot(array_of_bytes, filename, version)
     else:
         print("Unknown file type. Assuming .text. Parsing...")
         f = Text(array_of_bytes, filename, version)
