@@ -10,6 +10,7 @@ from mips.GlobalConfig import GlobalConfig
 from mips.MipsFile import File
 from mips.MipsFileOverlay import FileOverlay
 from mips.MipsFileCode import FileCode
+from mips.MipsFileBoot import FileBoot
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 root_dir = script_dir + "/.."
@@ -58,6 +59,9 @@ def compare_baseroms(args, filelist):
         elif filename == "code":
             file_one = FileCode(file_one_data, filename, args.version1)
             file_two = FileCode(file_two_data, filename, args.version2)
+        elif filename == "boot":
+            file_one = FileBoot(file_one_data, filename, args.version1)
+            file_two = FileBoot(file_two_data, filename, args.version2)
         else:
             file_one = File(file_one_data, filename, args.version1)
             file_two = File(file_two_data, filename, args.version2)

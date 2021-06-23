@@ -11,8 +11,10 @@ from functools import partial
 from mips.Utils import *
 from mips.GlobalConfig import GlobalConfig
 from mips.MipsFile import File
+from mips.MipsFileGeneric import FileGeneric
 from mips.MipsFileOverlay import FileOverlay
 from mips.MipsFileCode import FileCode
+from mips.MipsFileBoot import FileBoot
 from mips.ZeldaTables import OverlayTableEntry, getDmaAddresses, DmaEntry
 from mips import ZeldaOffsets
 
@@ -97,6 +99,7 @@ def compareOverlayAcrossVersions(filename: str, versionsList: List[str], dmaAddr
 
     is_overlay = filename.startswith("ovl_")
     is_code = filename == "code"
+    is_boot = filename == "boot"
 
     for version in versionsList:
         path = os.path.join("baserom_" + version, filename)
@@ -120,6 +123,8 @@ def compareOverlayAcrossVersions(filename: str, versionsList: List[str], dmaAddr
             f = FileOverlay(array_of_bytes, filename, version, tableEntry=tableEntry)
         elif is_code:
             f = FileCode(array_of_bytes, filename, version)
+        elif is_boot:
+            f = FileBoot(array_of_bytes, filename, version)
         else:
             f = File(array_of_bytes, filename, version)
 
@@ -129,7 +134,7 @@ def compareOverlayAcrossVersions(filename: str, versionsList: List[str], dmaAddr
                 f.updateBytes()
 
         if args.savetofile:
-            new_file_path = os.path.join(args.savetofile, version, filename)
+            new_file_path = os.path.join(args.savetofile, version, filename, filename)
             f.saveToFile(new_file_path)
 
         abbr = ZeldaOffsets.getVersionAbbr(path)
@@ -142,7 +147,7 @@ def compareOverlayAcrossVersions(filename: str, versionsList: List[str], dmaAddr
                 #".bss" : f.bss,
                 #".reloc" : f.reloc,
             }
-        elif isinstance(f, FileCode):
+        elif isinstance(f, FileGeneric):
             subfiles = {
                 ".text" : f.text,
                 ".data" : f.data,
@@ -213,7 +218,10 @@ def main():
 
     if args.savetofile is not None:
         for ver in versionsList:
-            os.makedirs(os.path.join(args.savetofile, ver), exist_ok=True)
+            for filename in filesList:
+                if filename.startswith("#"):
+                    continue
+                os.makedirs(os.path.join(args.savetofile, ver, filename), exist_ok=True)
 
     dmaAddresses: Dict[str, Dict[str, DmaEntry]] = dict()
     actorOverlayTable: Dict[str, List[OverlayTableEntry]] = dict()

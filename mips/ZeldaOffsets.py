@@ -58,6 +58,69 @@ offset_ActorOverlayTable = {
     "ique_tw" : 0x0D6AA0,
 }
 
+bootVramStart = {
+    "ntsc_1.0_rc" : 0x80000460,
+    "ntsc_1.0" : 0x80000460,
+    "ntsc_1.1" : 0x80000460,
+    "pal_1.0" : 0x80000460,
+    "ntsc_1.2" : 0x80000460,
+    "pal_1.1" : 0x80000460,
+    "jp_gc" : 0x80000460,
+    "jp_mq" : 0x80000460,
+    "usa_gc" : 0x80000460,
+    "usa_mq" : 0x80000460,
+    "pal_gc" : 0x80000460,
+    "pal_gc_dbg" : 0x80000460,
+    "pal_gc_dbg2" : 0x80000460,
+    "pal_mq" : 0x80000460,
+    "pal_mq_dbg" : 0x80000460,
+    "jp_gc_ce" : 0x80000460,
+    "ique_cn" : 0x80000450, # iQue likes to be special
+    "ique_tw" : 0x80000450,
+}
+
+bootDataStart = {
+    "ntsc_1.0_rc" : -1,
+    "ntsc_1.0" : -1,
+    "ntsc_1.1" : -1,
+    "pal_1.0" : -1,
+    "ntsc_1.2" : -1,
+    "pal_1.1" : -1,
+    "jp_gc" : -1,
+    "jp_mq" : -1,
+    "usa_gc" : -1,
+    "usa_mq" : -1,
+    "pal_gc" : -1,
+    "pal_gc_dbg" : -1,
+    "pal_gc_dbg2" : -1,
+    "pal_mq" : 0x5C70,
+    "pal_mq_dbg" : 0x8FD0,
+    "jp_gc_ce" : -1,
+    "ique_cn" : -1,
+    "ique_tw" : -1,
+}
+
+bootRodataStart = {
+    "ntsc_1.0_rc" : -1,
+    "ntsc_1.0" : -1,
+    "ntsc_1.1" : -1,
+    "pal_1.0" : -1,
+    "ntsc_1.2" : -1,
+    "pal_1.1" : -1,
+    "jp_gc" : -1,
+    "jp_mq" : -1,
+    "usa_gc" : -1,
+    "usa_mq" : -1,
+    "pal_gc" : -1,
+    "pal_gc_dbg" : -1,
+    "pal_gc_dbg2" : -1,
+    "pal_mq" : -1,
+    "pal_mq_dbg" : 0xAB60,
+    "jp_gc_ce" : -1,
+    "ique_cn" : -1,
+    "ique_tw" : -1,
+}
+
 codeVramStart = {
     "ntsc_1.0_rc" : 0x800110A0,
     "ntsc_1.0" : 0x800110A0,
