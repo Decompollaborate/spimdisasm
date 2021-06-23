@@ -20,7 +20,7 @@ def disassembleFile(version: str, filename: str, outputfolder: str, dmaAddresses
     array_of_bytes = readFileAsBytearray(path)
     if len(array_of_bytes) == 0:
         eprint(f"File '{path}' not found!")
-        return
+        exit(-1)
 
     if is_overlay:
         tableEntry = None
@@ -40,6 +40,7 @@ def disassembleFile(version: str, filename: str, outputfolder: str, dmaAddresses
     else:
         print("Unknown file type. Assuming .text. Parsing...")
         f = Text(array_of_bytes, filename, version)
+        f.findFunctions()
 
     print()
     print(f"Found {f.nFuncs} functions.")
