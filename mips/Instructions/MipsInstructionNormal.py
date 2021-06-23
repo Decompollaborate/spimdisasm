@@ -90,6 +90,12 @@ class InstructionNormal(InstructionBase):
             return False
         return True
 
+    def isFloatInstruction(self) -> bool:
+        opcode = self.getOpcodeName()
+        if opcode in ("LWC1", "LDC1", "SWC1", "SDC1"):
+            return True
+        return False
+
     def isBranch(self) -> bool:
         opcode = self.getOpcodeName()
         if opcode in ("BEQ", "BEQL", "BLEZ", "BLEZL", "BNE", "BNEL", "BGTZ", "BGTZL"):
@@ -177,24 +183,27 @@ class InstructionNormal(InstructionBase):
         rs = self.getRegisterName(self.rs)
         rt = self.getRegisterName(self.rt)
         immediate = toHex(self.immediate, 4)
+        result = f"{opcode} "
 
         if "COP" in self.getOpcodeName(): # Hack until I implement COPz instructions
             instr_index = toHex(self.instr_index, 7)
-            return f"{opcode} {instr_index}"
+            result += instr_index
+            return result
 
-        if self.getOpcodeName() == "NOP":
-            return "nop"
         if self.isIType5():
-            result = f"{opcode} {rt},"
+            result += f"{rt},"
             result = result.ljust(14, ' ')
             return f"{result} {immediate}"
         elif self.isIType():
-            # TODO: use float registers
-            result = f"{opcode} {rt},"
+            if self.isFloatInstruction():
+                result += f"{self.getFloatRegisterName(self.rt)},"
+            else:
+                result += f"{rt},"
+
             result = result.ljust(14, ' ')
             return f"{result} {immediate}({rs})"
         elif self.isIType2():
-            result = f"{opcode} {rs},"
+            result += f"{rs},"
             result = result.ljust(14, ' ')
             result += f" {rt},"
             result = result.ljust(19, ' ')
@@ -203,13 +212,13 @@ class InstructionNormal(InstructionBase):
                     result = "b".ljust(7, ' ')
             return f"{result} {immediate}"
         elif self.isIType3():
-            result = f"{opcode} {rt},"
+            result += f"{rt},"
             result = result.ljust(14, ' ')
             result += f" {rs},"
             result = result.ljust(19, ' ')
             return f"{result} {immediate}"
         elif self.isIType4():
-            result = f"{opcode} {rs},"
+            result += f"{rs},"
             result = result.ljust(14, ' ')
             return f"{result} {immediate}"
         elif self.isJType():
@@ -217,8 +226,7 @@ class InstructionNormal(InstructionBase):
             # return f"{opcode} {instr_index}"
             instrIndexHex = toHex(self.instr_index<<2, 6)[2:]
             label = f"func_80{instrIndexHex}"
-            #if (self.instr_index<<2) % 16 == 0 and (self.instr_index<<2) & 0x800000:
-                #print(label)
-            return f"{opcode} {label}"
+            result += label
+            return result
         return super().disassemble()
 
