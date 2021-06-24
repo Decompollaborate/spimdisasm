@@ -12,9 +12,11 @@ class Function:
         self.instructions: List[InstructionBase] = list(instructions)
         self.inFileOffset: int = inFileOffset
         self.vram: int = vram
+        self.index: int = -1
 
         self.labels: Dict[int, str] = dict()
-        self.otherFunctions: Dict[int, str] = dict()
+        self.referencedFunctions: Dict[int, str] = dict()
+        self.referencedFakeFunctions: Dict[int, str] = dict()
 
         instructionOffset = 0
         for instr in self.instructions:
@@ -32,7 +34,12 @@ class Function:
 
             elif instr.isJType():
                 target = 0x80000000 | instr.instr_index << 2
-                self.otherFunctions[target] = "func_" + toHex(target, 8)[2:]
+                if instr.getOpcodeName() == "J":
+                    label = "fakefunc_" + toHex(target, 8)[2:]
+                    self.referencedFakeFunctions[target] = label
+                else:
+                    label = "func_" + toHex(target, 8)[2:]
+                    self.referencedFunctions[target] = label
 
             instructionOffset += 4
 
@@ -167,7 +174,10 @@ class Function:
     def disassemble(self) -> str:
         output = ""
 
-        output += f"glabel {self.name}\n"
+        output += f"glabel {self.name}"
+        if self.index >= 0:
+            output += f" # {self.index}"
+        output += "\n"
 
         instructionOffset = 0
         auxOffset = self.inFileOffset
@@ -192,6 +202,8 @@ class Function:
             line = comment + "  " + line
             if auxOffset in self.labels:
                 line = self.labels[auxOffset] + ":\n" + line
+            elif self.vram + instructionOffset in self.referencedFakeFunctions:
+                line = self.referencedFakeFunctions[self.vram + instructionOffset] + ":\n" + line
             output += line + "\n"
 
             instructionOffset += 4
