@@ -15,8 +15,6 @@ from mips.MipsContext import Context
 
 from mips.ZeldaOffsets import codeVramStart, codeDataStart, codeRodataStart
 
-from mips.codeFunctionMapPalMqDbg import codeFunctionMapPalMqDbg
-
 GlobalConfig.REMOVE_POINTERS = False
 GlobalConfig.IGNORE_BRANCHES = False
 GlobalConfig.IGNORE_04 = False

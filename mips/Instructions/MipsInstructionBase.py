@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from ..Utils import *
+from ..MipsContext import Context
 
 
 class InstructionBase:
@@ -140,17 +141,19 @@ class InstructionBase:
         return hex(register)
 
 
-    def disassemble(self) -> str:
+    def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName().lower().ljust(7, ' ')
         rs = self.getRegisterName(self.rs)
         rt = self.getRegisterName(self.rt)
         immediate = toHex(self.immediate, 4)
+        if immOverride is not None:
+            immediate = immOverride
 
         return f"ERROR # {opcode} {rs} {rt} {immediate}"
 
 
     def __str__(self) -> str:
-        return self.disassemble()
+        return self.disassemble(None)
 
     def __repr__(self) -> str:
         return self.__str__()

@@ -38,9 +38,17 @@ class Data(File):
                 w = self.words[i]
                 offsetHex = toHex(offset, 5)[2:]
                 vramHex = ""
+                label = ""
                 if self.vRamStart != -1:
                     currentVram = self.getVramOffset(offset)
                     vramHex = toHex(currentVram, 8)[2:]
+
+                    if self.context is not None:
+                        if currentVram in self.context.symbols:
+                            label = "glabel " + self.context.symbols[currentVram] + "\n"
+                        elif currentVram in self.context.labels:
+                            label = "glabel " + self.context.labels[currentVram] + "\n"
+
                     if currentVram == self.initVarsAddress:
                         f.write(f"glabel {self.filename}_InitVars\n")
                         actorId = toHex((w >> 16) & 0xFFFF, 4)
@@ -76,8 +84,13 @@ class Data(File):
                         continue
 
                 dataHex = toHex(w, 8)[2:]
-                line = toHex(w, 8)
+                value = toHex(w, 8)
 
-                f.write(f"/* {offsetHex} {vramHex} {dataHex} */  .word  {line}\n")
+                comment = ""
+                if GlobalConfig.ASM_COMMENT:
+                    comment = f" /* {offsetHex} {vramHex} {dataHex} */ "
+
+                line = f"{label}{comment} .word  {value}"
+                f.write(line + "\n")
                 i += 1
                 offset += 4

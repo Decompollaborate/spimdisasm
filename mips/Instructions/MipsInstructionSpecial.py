@@ -5,6 +5,7 @@ from __future__ import annotations
 from ..Utils import *
 
 from .MipsInstructionBase import InstructionBase
+from ..MipsContext import Context
 
 
 class InstructionSpecial(InstructionBase):
@@ -151,11 +152,12 @@ class InstructionSpecial(InstructionBase):
         return name
 
 
-    def disassemble(self) -> str:
+    def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName()
         formated_opcode = opcode.lower().ljust(7, ' ')
         rs = self.getRegisterName(self.rs)
         rt = self.getRegisterName(self.rt)
+        rd = self.getRegisterName(self.rd)
 
         if opcode == "MOVCI": # Hack until I implement MOVCI instructions
             instr_index = toHex(self.instr_index, 7)
@@ -163,8 +165,8 @@ class InstructionSpecial(InstructionBase):
 
         if opcode == "NOP":
             return "nop"
+
         elif opcode == "MOVE": # OP rd, rs
-            rd = self.getRegisterName(self.rd)
             result = f"{formated_opcode} {rd},"
             result = result.ljust(14, ' ')
             return f"{result} {rs}"
@@ -173,14 +175,14 @@ class InstructionSpecial(InstructionBase):
             result = f"{formated_opcode} {rs}"
             return result
         elif opcode == "JALR":
-            rd = ""
-            if self.rd != 31:
-                rd = self.getRegisterName(self.rd) + ","
+            if self.rd == 31:
+                rd = ""
+            else:
+                rd += ","
                 rd = rd.ljust(6, ' ')
             result = f"{formated_opcode} {rd}{rs}"
             return result
         elif opcode in ("MFHI", "MFLO"):
-            rd = self.getRegisterName(self.rd)
             return f"{formated_opcode} {rd}"
         elif opcode in ("MULT", "MULTU", "DIV", "DIVU", 
                 "DMULT", "DMULTU", "DDIV", "DDIVU") or self.isTrap(): # OP  rs, rt
@@ -192,26 +194,23 @@ class InstructionSpecial(InstructionBase):
             return result
 
         elif self.isRType(): # OP rd, rs, rt
-            rd = self.getRegisterName(self.rd)
             result = f"{formated_opcode} {rd},"
             result = result.ljust(14, ' ')
             result += f" {rs},"
             result = result.ljust(19, ' ')
             return f"{result} {rt}"
         elif self.isRType2(): # OP rd, rt, rs
-            rd = self.getRegisterName(self.rd)
             result = f"{formated_opcode} {rd},"
             result = result.ljust(14, ' ')
             result += f" {rt},"
             result = result.ljust(19, ' ')
             return f"{result} {rs}"
         elif self.isSaType(): # OP rd, rt, sa
-            rd = self.getRegisterName(self.rd)
             result = f"{formated_opcode} {rd},"
             result = result.ljust(14, ' ')
             result += f" {rt},"
             result = result.ljust(19, ' ')
             return f"{result} {self.sa}"
 
-        return super().disassemble()
+        return super().disassemble(context)
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 from ..Utils import *
 
 from .MipsInstructionBase import InstructionBase
+from ..MipsContext import Context
 
 
 class InstructionCoprocessor1(InstructionBase):
@@ -186,14 +187,15 @@ class InstructionCoprocessor1(InstructionBase):
         return f"COP1.{fmt}({function})"
 
 
-    def disassemble(self) -> str:
+    def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName().lower().ljust(7, ' ')
-        # rs = self.getRegisterName(self.rs)
         rt = self.getRegisterName(self.rt)
         ft = self.getFloatRegisterName(self.ft)
         fs = self.getFloatRegisterName(self.fs)
         fd = self.getFloatRegisterName(self.fd)
         immediate = toHex(self.immediate, 4)
+        if immOverride is not None:
+            immediate = immOverride
 
         if self.fmt in InstructionCoprocessor1.Cop1Opcodes_ByFormat:
             result = f"{opcode} {rt},"
