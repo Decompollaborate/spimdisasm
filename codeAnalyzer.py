@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import csv
 
 from mips.Utils import *
 from mips.GlobalConfig import GlobalConfig
@@ -25,29 +26,36 @@ GlobalConfig.WRITE_BINARY = False
 def readCodeSplitsCsv():
     splits = dict()
     with open("code_splits.csv") as f:
-        header = f.readline().split(",")[3::3]
-        splits = { h: dict() for h in header }
-        f.readline()
-
-        for row in f:
-            filename1, filename2, _, *data = row.strip().split(",")
-            name = filename1 or filename2
-            if name == "":
-                continue
-
-            for i in range(len(header)):
-                h = header[i]
-                offset, vram, size = data[i*3:(i+1)*3]
-                if offset == "" or offset == "-":
+        csvReader = csv.reader(f)
+        i = 0
+        header: List[str] = []
+        for row in csvReader:
+            if i == 0:
+                header = row[3::3]
+                splits = { h: dict() for h in header }
+            elif i >= 2:
+                filename1, filename2, _, *data = row
+                name = filename1 or filename2
+                if name == "":
                     continue
 
-                offset = int(offset, 16)
-                if size == "" or size == "-":
-                    size = -1
-                else:
-                    size = int(size, 16)
+                for i in range(len(header)):
+                    h = header[i]
+                    if h == "":
+                        continue
+                    offset, vram, size = data[i*3:(i+1)*3]
+                    if offset == "" or offset == "-":
+                        continue
 
-                splits[h][name] = (offset, size)
+                    offset = int(offset, 16)
+                    if size == "" or size == "-":
+                        size = -1
+                    else:
+                        size = int(size, 16)
+
+                    splits[h][name] = (offset, size)
+
+            i += 1
 
     return splits
 
