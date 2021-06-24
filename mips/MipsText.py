@@ -96,6 +96,9 @@ class Text(File):
                 else:
                     funcName = "func_" + toHex(self.getVramOffset(start*4), 6)[2:]
 
+                if vram not in self.context.funcAddresses:
+                    self.context.funcAddresses[vram] = funcName
+
             func = Function(funcName, self.instructions[start:end], self.context, self.offset + start*4, vram=vram)
             func.index = i
             self.functions.append(func)

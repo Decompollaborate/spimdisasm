@@ -241,7 +241,11 @@ class Function:
             elif instr.isIType():
                 if instructionOffset in self.pointersPerInstruction:
                     address = self.pointersPerInstruction[instructionOffset]
-                    symbol = self.context.symbols[address]
+                    symbol = None
+                    if address in self.context.funcAddresses:
+                        symbol = self.context.funcAddresses[address]
+                    else:
+                        symbol = self.context.symbols[address]
                     if instr.getOpcodeName() == "LUI":
                         immOverride = f"%hi({symbol})"
                     else:
