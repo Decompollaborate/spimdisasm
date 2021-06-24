@@ -17,9 +17,17 @@ class Function:
         self.labels: Dict[int, str] = dict()
         self.referencedFunctions: Dict[int, str] = dict()
         self.referencedFakeFunctions: Dict[int, str] = dict()
+        self.symbols: Dict[int, str] = dict()
+
+        # TODO: this needs a better name
+        self.pointersPerInstruction: Dict[int, int] = dict()
+
+        trackedRegisters: Dict[int, int] = dict()
 
         instructionOffset = 0
         for instr in self.instructions:
+            isLui = False
+
             if instr.isBranch():
                 addr = from2Complement(instr.immediate, 16)
                 branch = instructionOffset + addr*4 + 1*4
@@ -40,6 +48,34 @@ class Function:
                 else:
                     label = "func_" + toHex(target, 8)[2:]
                     self.referencedFunctions[target] = label
+
+            # symbol finder
+            elif instr.isIType():
+                opcode = instr.getOpcodeName()
+                isLui = opcode == "LUI"
+                if isLui:
+                    trackedRegisters[instr.rt] = instructionOffset//4
+                elif instr.isIType() and opcode not in ("ANDI", "ORI", "XORI"):
+                    rs = instr.rs
+                    if rs in trackedRegisters:
+                        luiInstr = self.instructions[trackedRegisters[rs]]
+                        upperHalf = luiInstr.immediate << 16
+                        lowerHalf = from2Complement(instr.immediate, 16)
+                        address = upperHalf + lowerHalf
+                        self.symbols[address] = "D_" + toHex(address, 8)[2:]
+                        self.pointersPerInstruction[instructionOffset] = address
+                        self.pointersPerInstruction[trackedRegisters[rs]*4] = address
+
+            if not instr.isFloatInstruction():
+                if not isLui and instr.modifiesRt():
+                    rt = instr.rt
+                    if rt in trackedRegisters:
+                        del trackedRegisters[rt]
+
+                if instr.modifiesRd():
+                    rd = instr.rd
+                    if rd in trackedRegisters:
+                        del trackedRegisters[rd]
 
             instructionOffset += 4
 
@@ -198,6 +234,24 @@ class Function:
                     # TODO: this shouldn't be hardcoded
                     line = line[:-6]
                     line += self.labels[branch]
+            elif instr.isIType():
+                # TODO: don't hardcode
+                if instructionOffset in self.pointersPerInstruction:
+                    address = self.pointersPerInstruction[instructionOffset]
+                    symbol = self.symbols[address]
+                    if instr.getOpcodeName() == "LUI":
+                        line = line[:-6]
+                        line += f"%hi({symbol})"
+                    else:
+                        if "(" in line:
+                            *line, aux = line.split("(")
+                            line = "(".join(line)
+                            line = line[:-6]
+                            line += f"%lo({symbol})"
+                            line += "(" + aux
+                        else:
+                            line = line[:-6]
+                            line += f"%lo({symbol})"
 
             line = comment + "  " + line
             if auxOffset in self.labels:

@@ -102,54 +102,52 @@ class InstructionNormal(InstructionBase):
             return True
         return super().isBranch()
 
-    def isJType(self) -> bool: # OP LABEL
+    # OP LABEL
+    def isJType(self) -> bool:
         opcode = self.getOpcodeName()
         if opcode in ("J", "JAL"):
             return True
         return super().isJType()
 
-    def isIType(self) -> bool: # OP rt, IMM(rs)
+    def isIType(self) -> bool:
+        if self.isBranch():
+            return False
         if self.isJType():
             return False
-        if self.isIType2():
-            return False
-        if self.isIType3():
-            return False
-        if self.isIType4():
-            return False
-        if self.isIType5():
-            return False
         return True
-    def isIType2(self) -> bool: # OP  rs, rt, IMM
+
+    # OP  rs, IMM
+    def isUnaryBranch(self) -> bool:
+        opcode = self.getOpcodeName()
+        if opcode in ("BLEZ", "BGTZ", "BLEZL", "BGTZL"):
+            return True
+        return False
+
+    # OP  rs, rt, IMM
+    def isBinaryBranch(self) -> bool:
         opcode = self.getOpcodeName()
         if opcode == "BEQ" or opcode == "BEQL":
             return True
         if opcode == "BNE" or opcode == "BNEL":
             return True
         return False
-    def isIType3(self) -> bool: # OP  rt, rs, IMM
-        opcode = self.getOpcodeName()
-        if opcode == "ADDI" or opcode == "ADDIU":
-            return True
-        if opcode == "ANDI":
-            return True
-        if opcode == "DADDI" or opcode == "DADDIU":
-            return True
-        if opcode == "ORI" or opcode == "XORI":
-            return True
-        if opcode == "SLTI" or opcode == "SLTIU":
-            return True
-        return False
-    def isIType4(self) -> bool: # OP  rs, IMM
-        opcode = self.getOpcodeName()
-        if opcode in ("BLEZ", "BGTZ", "BLEZL", "BGTZL"):
-            return True
-        return False
-    def isIType5(self) -> bool: # OP  rt, IMM
+
+    # OP  rt, IMM
+    def isUnaryOperation(self) -> bool:
         opcode = self.getOpcodeName()
         if opcode in ("LUI", ):
             return True
         return False
+
+    # OP  rt, rs, IMM
+    def isBinaryOperation(self) -> bool:
+        opcode = self.getOpcodeName()
+        if opcode in ("ADDI", "ADDIU", "ANDI", "DADDI", "DADDIU", "ORI", "XORI", "SLTI", "SLTIU"):
+            return True
+        return False
+
+    def isOperation(self) -> bool:
+        return self.isBinaryOperation() or self.isUnaryOperation()
 
 
     def sameOpcode(self, other: InstructionBase) -> bool:
@@ -190,43 +188,49 @@ class InstructionNormal(InstructionBase):
             result += instr_index
             return result
 
-        if self.isIType5():
-            result += f"{rt},"
-            result = result.ljust(14, ' ')
-            return f"{result} {immediate}"
-        elif self.isIType():
-            if self.isFloatInstruction():
-                result += f"{self.getFloatRegisterName(self.rt)},"
-            else:
-                result += f"{rt},"
-
-            result = result.ljust(14, ' ')
-            return f"{result} {immediate}({rs})"
-        elif self.isIType2():
-            result += f"{rs},"
-            result = result.ljust(14, ' ')
-            result += f" {rt},"
-            result = result.ljust(19, ' ')
-            if self.getOpcodeName() == "BEQ":
-                if self.rs == 0 and self.rt == 0:
-                    result = "b".ljust(7, ' ')
-            return f"{result} {immediate}"
-        elif self.isIType3():
-            result += f"{rt},"
-            result = result.ljust(14, ' ')
-            result += f" {rs},"
-            result = result.ljust(19, ' ')
-            return f"{result} {immediate}"
-        elif self.isIType4():
-            result += f"{rs},"
-            result = result.ljust(14, ' ')
-            return f"{result} {immediate}"
-        elif self.isJType():
+        if self.isJType():
             # instr_index = toHex(self.instr_index, 7)
             # return f"{opcode} {instr_index}"
             instrIndexHex = toHex(self.instr_index<<2, 6)[2:]
             label = f"func_80{instrIndexHex}"
             result += label
             return result
-        return super().disassemble()
+
+        if self.isBranch():
+            result += f"{rs},"
+            result = result.ljust(14, ' ')
+            # OP  rs, IMM
+            if self.isUnaryBranch():
+                pass
+            # OP  rs, rt, IMM
+            elif self.isBinaryBranch():
+                result += f" {rt},"
+                result = result.ljust(19, ' ')
+                if self.getOpcodeName() == "BEQ":
+                    if self.rs == 0 and self.rt == 0:
+                        result = "b".ljust(7, ' ')
+            result += f" {immediate}"
+            return result
+
+        if self.isOperation():
+            result += f"{rt},"
+            result = result.ljust(14, ' ')
+            # OP  rt, IMM
+            if self.isUnaryOperation():
+                pass
+            # OP  rt, rs, IMM
+            elif self.isBinaryOperation():
+                result += f" {rs},"
+                result = result.ljust(19, ' ')
+            result += f" {immediate}"
+            return result
+
+        # OP rt, IMM(rs)
+        if self.isFloatInstruction():
+            result += f"{self.getFloatRegisterName(self.rt)},"
+        else:
+            result += f"{rt},"
+
+        result = result.ljust(14, ' ')
+        return f"{result} {immediate}({rs})"
 
