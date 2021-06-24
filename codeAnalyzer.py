@@ -7,10 +7,11 @@ import csv
 
 from mips.Utils import *
 from mips.GlobalConfig import GlobalConfig
-from mips.MipsText import Text, readMipsText
+from mips.MipsText import Text
 from mips.MipsFileOverlay import FileOverlay
 from mips.MipsFileCode import FileCode
 from mips.ZeldaTables import DmaEntry, getDmaAddresses
+from mips.MipsContext import Context
 
 from mips.ZeldaOffsets import codeVramStart, codeDataStart, codeRodataStart
 
@@ -24,41 +25,34 @@ GlobalConfig.IGNORE_80 = False
 GlobalConfig.WRITE_BINARY = False
 
 def readCodeSplitsCsv():
-    splits = dict()
-    with open("code_splits.csv") as f:
-        csvReader = csv.reader(f)
-        i = 0
-        header: List[str] = []
-        for row in csvReader:
-            if i == 0:
-                header = row[3::3]
-                splits = { h: dict() for h in header }
-            elif i >= 2:
-                filename1, filename2, _, *data = row
-                name = filename1 or filename2
-                if name == "":
-                    continue
+    code_splits_file = readCsv("code_splits.csv")
 
-                for i in range(len(header)):
-                    h = header[i]
-                    if h == "":
-                        continue
-                    offset, vram, size = data[i*3:(i+1)*3]
-                    if offset == "" or offset == "-":
-                        continue
+    header = code_splits_file[0][3::3]
+    splits = { h: dict() for h in header }
 
-                    offset = int(offset, 16)
-                    if size == "" or size == "-":
-                        size = -1
-                    else:
-                        size = int(size, 16)
+    for i in range(2, len(code_splits_file)):
+        row = code_splits_file[i]
+        filename1, filename2, _, *data = row
+        name = filename1 or filename2
+        if name == "":
+            continue
 
-                    splits[h][name] = (offset, size)
+        for i in range(len(header)):
+            h = header[i]
+            if h == "":
+                continue
+            offset, vram, size = data[i*3:(i+1)*3]
+            if offset == "" or offset == "-":
+                continue
 
-            i += 1
+            offset = int(offset, 16)
+            if size == "" or size == "-":
+                size = -1
+            else:
+                size = int(size, 16)
 
+            splits[h][name] = (offset, size)
     return splits
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument("version", help="Select which baserom folder will be used. Example: ique_cn would look up in folder baserom_ique_cn")
@@ -73,6 +67,8 @@ palMqDbg_Code_array = readVersionedFileAsBytearrray(CODE, VERSION)
 palMqDbg_Code_array = palMqDbg_Code_array[:codeDataStart[VERSION]]
 
 codeSplits = readCodeSplitsCsv()
+context = Context()
+context.readFunctionMap(VERSION)
 
 palMqDbg_filesStarts = list()
 for codeFilename, (offset, size) in codeSplits[VERSION].items():
@@ -94,14 +90,13 @@ while i < len(palMqDbg_filesStarts) - 1:
     if end < nextStart:
         palMqDbg_filesStarts.insert(i+1, (end, -1, f"file_{toHex(end, 6)}"))
 
-    text = Text(palMqDbg_Code_array[start:end], filename, CODE)
+    text = Text(palMqDbg_Code_array[start:end], filename, CODE, context)
     text.offset = start
     text.vRamStart = codeVramStart[VERSION]
 
     text.findFunctions()
 
     palMqDbg_texts.append(text)
-
     i += 1
 
 totalFunctions = 0

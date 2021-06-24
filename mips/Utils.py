@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 import os
 import hashlib
 import json
@@ -68,3 +69,12 @@ def from2Complement(number: int, bits: int) -> int:
 def readVersionedFileAsBytearrray(file: str, version: str) -> bytearray:
     filename = f"baserom_{version}/{file}"
     return readFileAsBytearray(filename)
+
+def readCsv(filepath: str) -> List[List[str]]:
+    data: List[List[str]] = []
+    with open(filepath) as f:
+        csvReader = csv.reader(f)
+        for row in csvReader:
+            data.append(list(row))
+
+    return data

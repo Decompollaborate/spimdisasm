@@ -15,6 +15,7 @@ from mips.MipsFileGeneric import FileGeneric
 from mips.MipsFileOverlay import FileOverlay
 from mips.MipsFileCode import FileCode
 from mips.MipsFileBoot import FileBoot
+from mips.MipsContext import Context
 from mips.ZeldaTables import OverlayTableEntry, getDmaAddresses, DmaEntry
 from mips import ZeldaOffsets
 
@@ -51,7 +52,7 @@ def getHashesOfFiles(args, filesPath: List[str]) -> List[str]:
             hashList.append(line)
     return hashList
 
-def compareFileAcrossVersions(filename: str, versionsList: List[str], dmaAddresses: dict, actorOverlayTable: dict, args) -> List[List[str]]:
+def compareFileAcrossVersions(filename: str, versionsList: List[str], contextPerVersion: Dict[str, Context], dmaAddresses: dict, actorOverlayTable: dict, args) -> List[List[str]]:
     md5arglist = list(map(lambda orig_string: "baserom_" + orig_string + "/" + filename, versionsList))
     # os.system( "md5sum " + " ".join(filesPath) )
 
@@ -89,7 +90,7 @@ def compareFileAcrossVersions(filename: str, versionsList: List[str], dmaAddress
             row.append("")
     return [row]
 
-def compareOverlayAcrossVersions(filename: str, versionsList: List[str], dmaAddresses: Dict[str, Dict[str, DmaEntry]], actorOverlayTable: Dict[str, List[OverlayTableEntry]], args) -> List[List[str]]:
+def compareOverlayAcrossVersions(filename: str, versionsList: List[str], contextPerVersion: Dict[str, Context], dmaAddresses: Dict[str, Dict[str, DmaEntry]], actorOverlayTable: Dict[str, List[OverlayTableEntry]], args) -> List[List[str]]:
     column = []
     filesHashes = dict() # "filename": {"NN0": hash}
     firstFilePerHash = dict() # "filename": {hash: "NN0"}
@@ -120,13 +121,13 @@ def compareOverlayAcrossVersions(filename: str, versionsList: List[str], dmaAddr
                                 tableEntry = entry
                                 break
 
-            f = FileOverlay(array_of_bytes, filename, version, tableEntry=tableEntry)
+            f = FileOverlay(array_of_bytes, filename, version, contextPerVersion[version], tableEntry=tableEntry)
         elif is_code:
-            f = FileCode(array_of_bytes, filename, version)
+            f = FileCode(array_of_bytes, filename, version, contextPerVersion[version])
         elif is_boot:
-            f = FileBoot(array_of_bytes, filename, version)
+            f = FileBoot(array_of_bytes, filename, version, contextPerVersion[version])
         else:
-            f = File(array_of_bytes, filename, version)
+            f = File(array_of_bytes, filename, version, contextPerVersion[version])
 
         if GlobalConfig.REMOVE_POINTERS:
             was_updated = f.removePointers()
@@ -223,6 +224,11 @@ def main():
                     continue
                 os.makedirs(os.path.join(args.savetofile, ver, filename), exist_ok=True)
 
+    contextPerVersion: Dict[str, Context] = dict()
+    for version in versionsList:
+        contextPerVersion[version] = Context()
+        contextPerVersion[version].readFunctionMap(version)
+
     dmaAddresses: Dict[str, Dict[str, DmaEntry]] = dict()
     actorOverlayTable: Dict[str, List[OverlayTableEntry]] = dict()
     for version in versionsList:
@@ -257,7 +263,7 @@ def main():
 
     numCores = cpu_count()
     p = Pool(numCores)
-    for column in p.imap(partial(compareFunction, versionsList=versionsList, dmaAddresses=dmaAddresses, actorOverlayTable=actorOverlayTable, args=args), filesList):
+    for column in p.imap(partial(compareFunction, versionsList=versionsList, contextPerVersion=contextPerVersion, dmaAddresses=dmaAddresses, actorOverlayTable=actorOverlayTable, args=args), filesList):
         for row in column:
             # Print csv row
             for cell in row:

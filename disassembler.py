@@ -10,9 +10,10 @@ from mips.MipsText import Text
 from mips.MipsFileOverlay import FileOverlay
 from mips.MipsFileCode import FileCode
 from mips.MipsFileBoot import FileBoot
+from mips.MipsContext import Context
 from mips.ZeldaTables import DmaEntry, getDmaAddresses
 
-def disassembleFile(version: str, filename: str, outputfolder: str, dmaAddresses: Dict[str, DmaEntry]):
+def disassembleFile(version: str, filename: str, outputfolder: str, context: Context, dmaAddresses: Dict[str, DmaEntry]):
     is_overlay = filename.startswith("ovl_")
     is_code = filename == "code"
     is_boot = filename == "boot"
@@ -35,16 +36,16 @@ def disassembleFile(version: str, filename: str, outputfolder: str, dmaAddresses
             #        break
 
         print("Overlay detected. Parsing...")
-        f = FileOverlay(array_of_bytes, filename, version, tableEntry=tableEntry)
+        f = FileOverlay(array_of_bytes, filename, version, context, tableEntry=tableEntry)
     elif is_code:
         print("code detected. Parsing...")
-        f = FileCode(array_of_bytes, filename, version)
+        f = FileCode(array_of_bytes, filename, version, context)
     elif is_boot:
         print("boot detected. Parsing...")
-        f = FileBoot(array_of_bytes, filename, version)
+        f = FileBoot(array_of_bytes, filename, version, context)
     else:
         print("Unknown file type. Assuming .text. Parsing...")
-        f = Text(array_of_bytes, filename, version)
+        f = Text(array_of_bytes, filename, version, context)
         f.findFunctions()
 
     print()
@@ -77,9 +78,11 @@ def disassemblerMain():
     GlobalConfig.IGNORE_80 = False
     GlobalConfig.WRITE_BINARY = False
 
+    context = Context()
+    context.readFunctionMap(args.version)
     dmaAddresses: Dict[str, DmaEntry] = getDmaAddresses(args.version)
 
-    disassembleFile(args.version, args.file, args.outputfolder, dmaAddresses)
+    disassembleFile(args.version, args.file, args.outputfolder, context, dmaAddresses)
 
 
 if __name__ == "__main__":

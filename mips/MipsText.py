@@ -7,11 +7,12 @@ from .GlobalConfig import GlobalConfig
 from .MipsFile import File
 from .Instructions import InstructionBase, wordToInstruction
 from .MipsFunction import Function
+from .MipsContext import Context
 
 
 class Text(File):
-    def __init__(self, array_of_bytes: bytearray, filename: str, version: str):
-        super().__init__(array_of_bytes, filename, version)
+    def __init__(self, array_of_bytes: bytearray, filename: str, version: str, context: Context):
+        super().__init__(array_of_bytes, filename, version, context)
 
         self.instructions: List[InstructionBase] = list()
         for word in self.words:
@@ -88,11 +89,14 @@ class Text(File):
 
             funcName = f"func_{i}"
             vram = -1
-            if self.vRamStart != -1:
+            if self.vRamStart >= 0:
                 vram = self.getVramOffset(start*4)
-                funcName = "func_" + toHex(self.getVramOffset(start*4), 6)[2:]
+                if vram in self.context.funcAddresses:
+                    funcName = self.context.funcAddresses[vram]
+                else:
+                    funcName = "func_" + toHex(self.getVramOffset(start*4), 6)[2:]
 
-            func = Function(funcName, self.instructions[start:end], self.offset + start*4, vram=vram)
+            func = Function(funcName, self.instructions[start:end], self.context, self.offset + start*4, vram=vram)
             func.index = i
             self.functions.append(func)
             i += 1
@@ -180,13 +184,10 @@ class Text(File):
 
         with open(filepath + ".text.asm", "w") as f:
             f.write(".section .text\n\n")
-            i = 0
-            offset = self.offset
             for func in self.functions:
                 f.write(func.disassemble())
                 f.write("\n")
-                i += 1
 
 def readMipsText(file: str, version: str) -> Text:
     filename = f"baserom_{version}/{file}"
-    return Text(readFileAsBytearray(filename), filename, version)
+    return Text(readFileAsBytearray(filename), filename, version, Context())
