@@ -68,7 +68,10 @@ class InstructionBase:
     def isTrap(self) -> bool:
         return False
 
-    def isJType(self) -> bool: # OP LABEL
+    def isJType(self) -> bool:
+        return False
+
+    def isIType(self) -> bool:
         return False
 
 
