@@ -10,22 +10,23 @@ from .MipsData import Data
 from .MipsRodata import Rodata
 from .MipsBss import Bss
 from .ZeldaOffsets import codeVramStart, codeDataStart, codeRodataStart
+from .MipsContext import Context
 
 # Not intended to be instanced
 class FileGeneric(File):
-    def __init__(self, array_of_bytes: bytearray, filename: str, version: str):
-        super().__init__(array_of_bytes, filename, version)
+    def __init__(self, array_of_bytes: bytearray, filename: str, version: str, context: Context):
+        super().__init__(array_of_bytes, filename, version, context)
 
-        self.text = Text(bytearray(0), filename, version)
+        self.text = Text(bytearray(0), filename, version, context)
         self.text.parent = self
 
-        self.data = Data(bytearray(0), filename, version)
+        self.data = Data(bytearray(0), filename, version, context)
         self.data.parent = self
 
-        self.rodata = Rodata(bytearray(0), filename, version)
+        self.rodata = Rodata(bytearray(0), filename, version, context)
         self.rodata.parent = self
 
-        self.bss = Bss(bytearray(0), filename, version)
+        self.bss = Bss(bytearray(0), filename, version, context)
         self.rodata.parent = self
 
     @property

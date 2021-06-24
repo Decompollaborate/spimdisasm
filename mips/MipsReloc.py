@@ -5,6 +5,7 @@ from __future__ import annotations
 from .Utils import *
 from .GlobalConfig import GlobalConfig
 from .MipsFile import File
+from .MipsContext import Context
 
 
 class RelocEntry:
@@ -45,8 +46,8 @@ class RelocEntry:
         return self.__str__()
 
 class Reloc(File):
-    def __init__(self, array_of_bytes: bytearray, filename: str, version: str):
-        super().__init__(array_of_bytes, filename, version)
+    def __init__(self, array_of_bytes: bytearray, filename: str, version: str, context: Context):
+        super().__init__(array_of_bytes, filename, version, context)
 
         self.textSize = self.words[0]
         self.dataSize = self.words[1]

@@ -12,14 +12,15 @@ from .MipsRodata import Rodata
 from .MipsBss import Bss
 from .MipsReloc import Reloc
 from .MipsFileGeneric import FileGeneric
+from .MipsContext import Context
 
 from .Instructions import wordToInstruction
 from .ZeldaTables import OverlayTableEntry
 
 
 class FileOverlay(FileGeneric):
-    def __init__(self, array_of_bytes: bytearray, filename: str, version: str, tableEntry: OverlayTableEntry=None):
-        super().__init__(array_of_bytes, filename, version)
+    def __init__(self, array_of_bytes: bytearray, filename: str, version: str, context: Context, tableEntry: OverlayTableEntry=None):
+        super().__init__(array_of_bytes, filename, version, context)
 
         if tableEntry is not None:
             self.vRamStart = tableEntry.vramStart
@@ -37,7 +38,7 @@ class FileOverlay(FileGeneric):
 
         start = 0
         end = text_size
-        self.text = Text(self.bytes[start:end], filename, version)
+        self.text = Text(self.bytes[start:end], filename, version, context)
         self.text.parent = self
         self.text.offset = start
         self.text.vRamStart = self.vRamStart
@@ -45,7 +46,7 @@ class FileOverlay(FileGeneric):
 
         start += text_size
         end += data_size
-        self.data = Data(self.bytes[start:end], filename, version)
+        self.data = Data(self.bytes[start:end], filename, version, context)
         self.data.parent = self
         self.data.offset = start
         self.data.vRamStart = self.vRamStart
@@ -53,7 +54,7 @@ class FileOverlay(FileGeneric):
 
         start += data_size
         end += rodata_size
-        self.rodata = Rodata(self.bytes[start:end], filename, version)
+        self.rodata = Rodata(self.bytes[start:end], filename, version, context)
         self.rodata.parent = self
         self.rodata.offset = start
         self.rodata.vRamStart = self.vRamStart
@@ -63,14 +64,14 @@ class FileOverlay(FileGeneric):
         #end += bss_size
         #self.bss = Bss(self.bytes[start:end], filename, version)
         # TODO
-        self.bss = Bss(self.bytes[0:0], filename, version)
+        self.bss = Bss(self.bytes[0:0], filename, version, context)
         self.bss.parent = self
         self.bss.offset = start
         self.bss.vRamStart = self.vRamStart
         self.bss.initVarsAddress = self.initVarsAddress
 
         start += rodata_size
-        self.reloc = Reloc(self.bytes[start:], filename, version)
+        self.reloc = Reloc(self.bytes[start:], filename, version, context)
         self.reloc.parent = self
         self.reloc.offset = start
         self.reloc.vRamStart = self.vRamStart

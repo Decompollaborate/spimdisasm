@@ -5,20 +5,18 @@ from __future__ import annotations
 from .Utils import *
 from .GlobalConfig import GlobalConfig
 from .Instructions import InstructionBase
+from .MipsContext import Context
 
 class Function:
-    def __init__(self, name: str, instructions: List[InstructionBase], inFileOffset: int, vram: int = -1):
+    def __init__(self, name: str, instructions: List[InstructionBase], context: Context, inFileOffset: int, vram: int = -1):
         self.name: str = name
         self.instructions: List[InstructionBase] = list(instructions)
+        self.context: Context = context
         self.inFileOffset: int = inFileOffset
         self.vram: int = vram
         self.index: int = -1
 
-        self.labels: Dict[int, str] = dict()
-        self.referencedFunctions: Dict[int, str] = dict()
-        self.referencedFakeFunctions: Dict[int, str] = dict()
-        self.symbols: Dict[int, str] = dict()
-
+        self.localLabels: Dict[int, str] = dict()
         # TODO: this needs a better name
         self.pointersPerInstruction: Dict[int, int] = dict()
 
@@ -29,25 +27,31 @@ class Function:
             isLui = False
 
             if instr.isBranch():
-                addr = from2Complement(instr.immediate, 16)
-                branch = instructionOffset + addr*4 + 1*4
+                diff = from2Complement(instr.immediate, 16)
+                branch = instructionOffset + diff*4 + 1*4
                 if self.vram >= 0:
-                    label = ".L" + toHex(self.vram + branch, 5)[2:]
+                    if self.vram + branch in self.context.labels:
+                        label =  self.context.labels[self.vram + branch]
+                    else:
+                        label = ".L" + toHex(self.vram + branch, 5)[2:]
                 else:
                     label = ".L" + toHex(self.inFileOffset + branch, 5)[2:]
 
-                self.labels[self.inFileOffset + branch] = label
+                self.localLabels[self.inFileOffset + branch] = label
                 if self.vram >= 0:
-                    self.labels[self.vram + branch] = label
+                    if self.vram + branch not in self.context.labels:
+                        self.context.labels[self.vram + branch] = label
 
             elif instr.isJType():
                 target = 0x80000000 | instr.instr_index << 2
                 if instr.getOpcodeName() == "J":
-                    label = "fakefunc_" + toHex(target, 8)[2:]
-                    self.referencedFakeFunctions[target] = label
+                    if target not in self.context.fakeFunctions:
+                        label = "fakefunc_" + toHex(target, 8)[2:]
+                        self.context.fakeFunctions[target] = label
                 else:
-                    label = "func_" + toHex(target, 8)[2:]
-                    self.referencedFunctions[target] = label
+                    if target not in self.context.funcAddresses:
+                        label = "func_" + toHex(target, 8)[2:]
+                        self.context.funcAddresses[target] = label
 
             # symbol finder
             elif instr.isIType():
@@ -62,7 +66,8 @@ class Function:
                         upperHalf = luiInstr.immediate << 16
                         lowerHalf = from2Complement(instr.immediate, 16)
                         address = upperHalf + lowerHalf
-                        self.symbols[address] = "D_" + toHex(address, 8)[2:]
+                        if address not in self.context.symbols:
+                            self.context.symbols[address] = "D_" + toHex(address, 8)[2:]
                         self.pointersPerInstruction[instructionOffset] = address
                         self.pointersPerInstruction[trackedRegisters[rs]*4] = address
 
@@ -227,18 +232,34 @@ class Function:
             comment = f" /* {offsetHex} {vramHex} {instrHex} */"
 
             line = instr.disassemble()
-            if instr.isBranch():
-                addr = from2Complement(instr.immediate, 16)
-                branch = auxOffset + addr*4 + 1*4
-                if branch in self.labels:
+            if instr.isJType():
+                # TODO: don't hardcode
+                left, address = line.split("func_")
+                address = int(address, 16)
+                if address in self.context.funcAddresses:
+                    line = left + self.context.funcAddresses[address]
+                elif address in self.context.symbols:
+                    line = left + self.context.symbols[address]
+                elif address in self.context.labels:
+                    line = left + self.context.labels[address]
+                elif address in self.context.fakeFunctions:
+                    line = left + self.context.fakeFunctions[address]
+            elif instr.isBranch():
+                diff = from2Complement(instr.immediate, 16)
+                branch = instructionOffset + diff*4 + 1*4
+                if self.vram >= 0 and self.vram + branch in self.context.labels:
                     # TODO: this shouldn't be hardcoded
                     line = line[:-6]
-                    line += self.labels[branch]
+                    line += self.context.labels[self.vram + branch]
+                elif self.inFileOffset + branch in self.localLabels:
+                    # TODO: this shouldn't be hardcoded
+                    line = line[:-6]
+                    line += self.localLabels[self.inFileOffset + branch]
             elif instr.isIType():
                 # TODO: don't hardcode
                 if instructionOffset in self.pointersPerInstruction:
                     address = self.pointersPerInstruction[instructionOffset]
-                    symbol = self.symbols[address]
+                    symbol = self.context.symbols[address]
                     if instr.getOpcodeName() == "LUI":
                         line = line[:-6]
                         line += f"%hi({symbol})"
@@ -254,10 +275,13 @@ class Function:
                             line += f"%lo({symbol})"
 
             line = comment + "  " + line
-            if auxOffset in self.labels:
-                line = self.labels[auxOffset] + ":\n" + line
-            elif self.vram + instructionOffset in self.referencedFakeFunctions:
-                line = self.referencedFakeFunctions[self.vram + instructionOffset] + ":\n" + line
+
+            if self.vram >= 0 and self.vram + instructionOffset in self.context.labels:
+                line = self.context.labels[self.vram + instructionOffset] + ":\n" + line
+            elif auxOffset in self.localLabels:
+                line = self.localLabels[auxOffset] + ":\n" + line
+            elif self.vram + instructionOffset in self.context.fakeFunctions:
+                line = self.context.fakeFunctions[self.vram + instructionOffset] + ":\n" + line
             output += line + "\n"
 
             instructionOffset += 4

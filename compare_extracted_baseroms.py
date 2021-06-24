@@ -11,6 +11,7 @@ from mips.MipsFile import File
 from mips.MipsFileOverlay import FileOverlay
 from mips.MipsFileCode import FileCode
 from mips.MipsFileBoot import FileBoot
+from mips.MipsContext import Context
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 root_dir = script_dir + "/.."
@@ -34,6 +35,11 @@ def compare_baseroms(args, filelist):
     equals = 0
     different = 0
 
+    context_one = Context()
+    context_two = Context()
+    context_one.readFunctionMap(args.version1)
+    context_two.readFunctionMap(args.version2)
+
     for filename in filelist:
         filepath_one = os.path.join(baserom_path + args.version1, filename)
         filepath_two = os.path.join(baserom_path + args.version2, filename)
@@ -54,17 +60,17 @@ def compare_baseroms(args, filelist):
         file_two_data = readFileAsBytearray(filepath_two)
 
         if filename.startswith("ovl_"):
-            file_one = FileOverlay(file_one_data, filename, args.version1)
-            file_two = FileOverlay(file_two_data, filename, args.version2)
+            file_one = FileOverlay(file_one_data, filename, args.version1, context_one)
+            file_two = FileOverlay(file_two_data, filename, args.version2, context_two)
         elif filename == "code":
-            file_one = FileCode(file_one_data, filename, args.version1)
-            file_two = FileCode(file_two_data, filename, args.version2)
+            file_one = FileCode(file_one_data, filename, args.version1, context_one)
+            file_two = FileCode(file_two_data, filename, args.version2, context_two)
         elif filename == "boot":
-            file_one = FileBoot(file_one_data, filename, args.version1)
-            file_two = FileBoot(file_two_data, filename, args.version2)
+            file_one = FileBoot(file_one_data, filename, args.version1, context_one)
+            file_two = FileBoot(file_two_data, filename, args.version2, context_two)
         else:
-            file_one = File(file_one_data, filename, args.version1)
-            file_two = File(file_two_data, filename, args.version2)
+            file_one = File(file_one_data, filename, args.version1, context_one)
+            file_two = File(file_two_data, filename, args.version2, context_two)
 
         if GlobalConfig.REMOVE_POINTERS:
             both_updated = file_one.blankOutDifferences(file_two)
@@ -144,6 +150,11 @@ def compare_to_csv(args, filelist):
     column1 = args.version1 if args.column1 is None else args.column1
     column2 = args.version2 if args.column2 is None else args.column2
 
+    context_one = Context()
+    context_two = Context()
+    context_one.readFunctionMap(args.version1)
+    context_two.readFunctionMap(args.version2)
+
     print(f"Index,File,Are equals,Size in {column1},Size in {column2},Size proportion,Size difference,Bytes different,Words different", end="")
     if args.split_files:
         print(",Opcodes difference,Same opcode but different arguments", end="")
@@ -186,14 +197,17 @@ def compare_to_csv(args, filelist):
 
         else:
             if args.split_files and filename.startswith("ovl_"):
-                file_one = FileOverlay(file_one_data, filename, args.version1)
-                file_two = FileOverlay(file_two_data, filename, args.version2)
+                file_one = FileOverlay(file_one_data, filename, args.version1, context_one)
+                file_two = FileOverlay(file_two_data, filename, args.version2, context_two)
             elif args.split_files and filename == "code":
-                file_one = FileCode(file_one_data, filename, args.version1)
-                file_two = FileCode(file_two_data, filename, args.version2)
+                file_one = FileCode(file_one_data, filename, args.version1, context_one)
+                file_two = FileCode(file_two_data, filename, args.version2, context_two)
+            elif filename == "boot":
+                file_one = FileBoot(file_one_data, filename, args.version1, context_one)
+                file_two = FileBoot(file_two_data, filename, args.version2, context_two)
             else:
-                file_one = File(file_one_data, filename, args.version1)
-                file_two = File(file_two_data, filename, args.version2)
+                file_one = File(file_one_data, filename, args.version1, context_one)
+                file_two = File(file_two_data, filename, args.version2, context_two)
 
             if GlobalConfig.REMOVE_POINTERS:
                 both_updated = file_one.blankOutDifferences(file_two)

@@ -4,13 +4,15 @@ from __future__ import annotations
 
 from .Utils import *
 from .GlobalConfig import GlobalConfig
+from .MipsContext import Context
 
 class File:
-    def __init__(self, array_of_bytes: bytearray, filename: str, version: str):
+    def __init__(self, array_of_bytes: bytearray, filename: str, version: str, context: Context):
         self.bytes: bytearray = array_of_bytes
         self.words: List[int] = bytesToBEWords(self.bytes)
         self.filename: str = filename
         self.version: str = version
+        self.context: Context = context
         self.parent: File|None = None
         self.offset: int = 0 # in-file offset
         self.vRamStart: int = -1
