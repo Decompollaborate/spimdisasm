@@ -229,60 +229,40 @@ class Function:
                 vramHex = toHex(self.vram + instructionOffset, 8)[2:]
             instrHex = toHex(instr.instr, 8)[2:]
 
-            comment = f" /* {offsetHex} {vramHex} {instrHex} */"
-
-            line = instr.disassemble()
-            if instr.isJType():
-                # TODO: don't hardcode
-                left, address = line.split("func_")
-                address = int(address, 16)
-                if address in self.context.funcAddresses:
-                    line = left + self.context.funcAddresses[address]
-                elif address in self.context.symbols:
-                    line = left + self.context.symbols[address]
-                elif address in self.context.labels:
-                    line = left + self.context.labels[address]
-                elif address in self.context.fakeFunctions:
-                    line = left + self.context.fakeFunctions[address]
-            elif instr.isBranch():
+            immOverride = None
+            if instr.isBranch():
                 diff = from2Complement(instr.immediate, 16)
                 branch = instructionOffset + diff*4 + 1*4
                 if self.vram >= 0 and self.vram + branch in self.context.labels:
-                    # TODO: this shouldn't be hardcoded
-                    line = line[:-6]
-                    line += self.context.labels[self.vram + branch]
+                    immOverride = self.context.labels[self.vram + branch]
                 elif self.inFileOffset + branch in self.localLabels:
-                    # TODO: this shouldn't be hardcoded
-                    line = line[:-6]
-                    line += self.localLabels[self.inFileOffset + branch]
+                    immOverride = self.localLabels[self.inFileOffset + branch]
+
             elif instr.isIType():
-                # TODO: don't hardcode
                 if instructionOffset in self.pointersPerInstruction:
                     address = self.pointersPerInstruction[instructionOffset]
                     symbol = self.context.symbols[address]
                     if instr.getOpcodeName() == "LUI":
-                        line = line[:-6]
-                        line += f"%hi({symbol})"
+                        immOverride = f"%hi({symbol})"
                     else:
-                        if "(" in line:
-                            *line, aux = line.split("(")
-                            line = "(".join(line)
-                            line = line[:-6]
-                            line += f"%lo({symbol})"
-                            line += "(" + aux
-                        else:
-                            line = line[:-6]
-                            line += f"%lo({symbol})"
+                        immOverride= f"%lo({symbol})"
 
-            line = comment + "  " + line
+            line = instr.disassemble(self.context, immOverride)
 
+            comment = ""
+            if GlobalConfig.ASM_COMMENT:
+                comment = f" /* {offsetHex} {vramHex} {instrHex} */ "
+            line = comment + " " + line
+
+            label = ""
             if self.vram >= 0 and self.vram + instructionOffset in self.context.labels:
-                line = self.context.labels[self.vram + instructionOffset] + ":\n" + line
+                label = self.context.labels[self.vram + instructionOffset] + ":\n"
             elif auxOffset in self.localLabels:
-                line = self.localLabels[auxOffset] + ":\n" + line
+                label = self.localLabels[auxOffset] + ":\n"
             elif self.vram + instructionOffset in self.context.fakeFunctions:
-                line = self.context.fakeFunctions[self.vram + instructionOffset] + ":\n" + line
-            output += line + "\n"
+                label = self.context.fakeFunctions[self.vram + instructionOffset] + ":\n"
+
+            output += label + line + "\n"
 
             instructionOffset += 4
             auxOffset += 4

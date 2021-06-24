@@ -5,6 +5,7 @@ from __future__ import annotations
 from ..Utils import *
 
 from .MipsInstructionBase import InstructionBase
+from ..MipsContext import Context
 
 
 class InstructionNormal(InstructionBase):
@@ -176,11 +177,14 @@ class InstructionNormal(InstructionBase):
         return super().getOpcodeName()
 
 
-    def disassemble(self) -> str:
+    def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName().lower().ljust(7, ' ')
         rs = self.getRegisterName(self.rs)
         rt = self.getRegisterName(self.rt)
         immediate = toHex(self.immediate, 4)
+        if immOverride is not None:
+            immediate = immOverride
+
         result = f"{opcode} "
 
         if "COP" in self.getOpcodeName(): # Hack until I implement COPz instructions
@@ -191,10 +195,19 @@ class InstructionNormal(InstructionBase):
         if self.isJType():
             # instr_index = toHex(self.instr_index, 7)
             # return f"{opcode} {instr_index}"
-            instrIndexHex = toHex(self.instr_index<<2, 6)[2:]
-            label = f"func_80{instrIndexHex}"
-            result += label
-            return result
+            vram = (self.instr_index<<2) | 0x80000000
+            instrIndexHex = toHex(vram, 6)[2:]
+            label = f"func_{instrIndexHex}"
+            if context is not None:
+                if vram in context.funcAddresses:
+                    label = context.funcAddresses[vram]
+                elif vram in context.symbols:
+                    label = context.symbols[vram]
+                elif vram in context.labels:
+                    label = context.labels[vram]
+                elif vram in context.fakeFunctions:
+                    label = context.fakeFunctions[vram]
+            return f"{result} {label}"
 
         if self.isBranch():
             result += f"{rs},"
@@ -209,8 +222,7 @@ class InstructionNormal(InstructionBase):
                 if self.getOpcodeName() == "BEQ":
                     if self.rs == 0 and self.rt == 0:
                         result = "b".ljust(7, ' ')
-            result += f" {immediate}"
-            return result
+            return f"{result} {immediate}"
 
         if self.isOperation():
             result += f"{rt},"
@@ -222,8 +234,7 @@ class InstructionNormal(InstructionBase):
             elif self.isBinaryOperation():
                 result += f" {rs},"
                 result = result.ljust(19, ' ')
-            result += f" {immediate}"
-            return result
+            return f"{result} {immediate}"
 
         # OP rt, IMM(rs)
         if self.isFloatInstruction():

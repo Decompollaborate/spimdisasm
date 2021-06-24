@@ -12,3 +12,5 @@ class GlobalConfig:
     TRACK_REGISTERS: int = 8 # Set for how many instructions a register will be tracked.
 
     WRITE_BINARY: bool = True # write to files splitted binaries
+
+    ASM_COMMENT: bool = True

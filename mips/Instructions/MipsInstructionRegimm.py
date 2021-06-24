@@ -5,6 +5,7 @@ from __future__ import annotations
 from ..Utils import *
 
 from .MipsInstructionBase import InstructionBase
+from ..MipsContext import Context
 
 
 class InstructionRegimm(InstructionBase):
@@ -69,10 +70,13 @@ class InstructionRegimm(InstructionBase):
         return InstructionRegimm.RegimmOpcodes.get(self.rt, f"REGIMM({opcode})")
 
 
-    def disassemble(self) -> str:
+    # OP  rs, IMM
+    def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName().lower().ljust(7, ' ')
         rs = self.getRegisterName(self.rs)
         immediate = toHex(self.immediate, 4)
+        if immOverride is not None:
+            immediate = immOverride
 
         result = f"{opcode} {rs},"
         result = result.ljust(14, ' ')

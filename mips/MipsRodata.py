@@ -36,11 +36,23 @@ class Rodata(File):
             for w in self.words:
                 offsetHex = toHex(offset, 5)[2:]
                 vramHex = ""
+                label = ""
                 if self.vRamStart != -1:
                     currentVram = self.getVramOffset(offset)
                     vramHex = toHex(currentVram, 8)[2:]
-                rodataHex = toHex(w, 8)[2:]
-                line = toHex(w, 8)
 
-                f.write(f"/* {offsetHex} {vramHex} {rodataHex} */  .word  {line}\n")
+                    if self.context is not None:
+                        if currentVram in self.context.symbols:
+                            label = "glabel " + self.context.symbols[currentVram] + "\n"
+                        elif currentVram in self.context.labels:
+                            label = "glabel " + self.context.labels[currentVram] + "\n"
+                rodataHex = toHex(w, 8)[2:]
+                value = toHex(w, 8)
+
+                comment = ""
+                if GlobalConfig.ASM_COMMENT:
+                    comment = f" /* {offsetHex} {vramHex} {rodataHex} */ "
+
+                line = f"{label}{comment} .word  {value}"
+                f.write(line + "\n")
                 offset += 4
