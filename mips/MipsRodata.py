@@ -42,10 +42,9 @@ class Rodata(File):
                     vramHex = toHex(currentVram, 8)[2:]
 
                     if self.context is not None:
-                        if currentVram in self.context.symbols:
-                            label = "glabel " + self.context.symbols[currentVram] + "\n"
-                        elif currentVram in self.context.labels:
-                            label = "glabel " + self.context.labels[currentVram] + "\n"
+                        auxLabel = self.context.getGenericLabel(currentVram) or self.context.getGenericSymbol(currentVram)
+                        if auxLabel is not None:
+                            label = "glabel " + auxLabel + "\n"
                 rodataHex = toHex(w, 8)[2:]
                 value = toHex(w, 8)
 

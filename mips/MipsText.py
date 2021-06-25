@@ -96,8 +96,9 @@ class Text(File):
             vram = -1
             if self.vRamStart >= 0:
                 vram = self.getVramOffset(start*4)
-                if vram in self.context.funcAddresses:
-                    funcName = self.context.funcAddresses[vram]
+                funcNameAux = self.context.getFunctionName(vram)
+                if funcNameAux is not None:
+                    funcName = funcNameAux
                 else:
                     funcName = "func_" + toHex(self.getVramOffset(start*4), 6)[2:]
 

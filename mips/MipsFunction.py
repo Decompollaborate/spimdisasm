@@ -22,17 +22,20 @@ class Function:
         self.pointersPerInstruction: Dict[int, int] = dict()
 
         trackedRegisters: Dict[int, int] = dict()
+        registersValues: Dict[int, int] = dict()
 
         instructionOffset = 0
         for instr in self.instructions:
             isLui = False
+            opcode = instr.getOpcodeName()
 
             if instr.isBranch():
                 diff = from2Complement(instr.immediate, 16)
                 branch = instructionOffset + diff*4 + 1*4
                 if self.vram >= 0:
-                    if self.vram + branch in self.context.labels:
-                        label =  self.context.labels[self.vram + branch]
+                    auxLabel = self.context.getGenericLabel(self.vram + branch)
+                    if auxLabel is not None:
+                        label = auxLabel
                     else:
                         label = ".L" + toHex(self.vram + branch, 5)[2:]
                 else:
@@ -57,7 +60,6 @@ class Function:
 
             # symbol finder
             elif instr.isIType():
-                opcode = instr.getOpcodeName()
                 isLui = opcode == "LUI"
                 if isLui:
                     trackedRegisters[instr.rt] = instructionOffset//4
@@ -72,6 +74,15 @@ class Function:
                             self.context.symbols[address] = "D_" + toHex(address, 8)[2:]
                         self.pointersPerInstruction[instructionOffset] = address
                         self.pointersPerInstruction[trackedRegisters[rs]*4] = address
+                        registersValues[instr.rt] = address
+
+            elif opcode == "JR":
+                rs = instr.rs
+                if instr.getRegisterName(rs) != "$ra":
+                    if rs in registersValues:
+                        address = registersValues[rs]
+                        if address not in self.context.jumpTables:
+                            self.context.jumpTables[address] = "jtbl_" + toHex(address, 8)[2:]
 
             if not instr.isFloatInstruction():
                 if not isLui and instr.modifiesRt():
@@ -80,9 +91,10 @@ class Function:
                         del trackedRegisters[rt]
 
                 if instr.modifiesRd():
-                    rd = instr.rd
-                    if rd in trackedRegisters:
-                        del trackedRegisters[rd]
+                    if opcode not in ("ADDU",):
+                        rd = instr.rd
+                        if rd in trackedRegisters:
+                            del trackedRegisters[rd]
 
             instructionOffset += 4
 
@@ -182,23 +194,22 @@ class Function:
                 if not GlobalConfig.IGNORE_BRANCHES:
                     diff = from2Complement(instr.immediate, 16)
                     branch = instructionOffset + diff*4 + 1*4
-                    if self.vram >= 0 and self.vram + branch in self.context.labels:
-                        immOverride = self.context.labels[self.vram + branch]
+                    label = self.context.getGenericLabel(self.vram + branch)
+                    if self.vram >= 0 and label is not None:
+                        immOverride = label
                     elif self.inFileOffset + branch in self.localLabels:
                         immOverride = self.localLabels[self.inFileOffset + branch]
 
             elif instr.isIType():
                 if not self.pointersRemoved and instructionOffset in self.pointersPerInstruction:
                     address = self.pointersPerInstruction[instructionOffset]
-                    symbol = None
-                    if address in self.context.funcAddresses:
-                        symbol = self.context.funcAddresses[address]
-                    else:
-                        symbol = self.context.symbols[address]
-                    if instr.getOpcodeName() == "LUI":
-                        immOverride = f"%hi({symbol})"
-                    else:
-                        immOverride= f"%lo({symbol})"
+
+                    symbol = self.context.getGenericSymbol(address)
+                    if symbol is not None:
+                        if instr.getOpcodeName() == "LUI":
+                            immOverride = f"%hi({symbol})"
+                        else:
+                            immOverride= f"%lo({symbol})"
 
             line = instr.disassemble(self.context, immOverride)
 
@@ -209,8 +220,12 @@ class Function:
 
             label = ""
             if not GlobalConfig.IGNORE_BRANCHES:
-                if self.vram >= 0 and self.vram + instructionOffset in self.context.labels:
-                    label = self.context.labels[self.vram + instructionOffset] + ":\n"
+                labelAux = self.context.getGenericLabel(self.vram + instructionOffset)
+                if self.vram >= 0 and labelAux is not None:
+                    if self.vram + instructionOffset in self.context.jumpTablesLabels:
+                        label = "glabel " + labelAux + "\n"
+                    else:
+                        label = labelAux + ":\n"
                 elif auxOffset in self.localLabels:
                     label = self.localLabels[auxOffset] + ":\n"
                 elif self.vram + instructionOffset in self.context.fakeFunctions:
