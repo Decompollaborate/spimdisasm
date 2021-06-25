@@ -7,7 +7,7 @@ import os
 import hashlib
 import json
 import struct
-from typing import List, Dict
+from typing import List, Dict, Tuple
 import subprocess
 import sys
 import shutil
