@@ -242,7 +242,6 @@ def main():
     parser.add_argument("--ignore80", help="Ignores words differences that starts in 0x80XXXXXX", action="store_true")
     parser.add_argument("--ignore06", help="Ignores words differences that starts in 0x06XXXXXX", action="store_true")
     parser.add_argument("--ignore04", help="Ignores words differences that starts in 0x04XXXXXX", action="store_true")
-    parser.add_argument("--track-registers", help="Set for how many instructions a register will be tracked.", type=int)
     parser.add_argument("--ignore-branches", help="Ignores the address of every branch, jump and jal.", action="store_true")
     parser.add_argument("--dont-remove-ptrs", help="Disable the pointer removal feature.", action="store_true")
     parser.add_argument("--column1", help="Name for column one (baserom) in the csv.", default=None)
@@ -251,8 +250,6 @@ def main():
 
     GlobalConfig.REMOVE_POINTERS = not args.dont_remove_ptrs
     GlobalConfig.IGNORE_BRANCHES = args.ignore_branches
-    if args.track_registers is not None:
-        GlobalConfig.TRACK_REGISTERS = args.track_registers
     GlobalConfig.IGNORE_04 = args.ignore04
     GlobalConfig.IGNORE_06 = args.ignore06
     GlobalConfig.IGNORE_80 = args.ignore80
