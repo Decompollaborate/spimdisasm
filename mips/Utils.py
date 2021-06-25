@@ -10,6 +10,7 @@ import struct
 from typing import List, Dict
 import subprocess
 import sys
+import shutil
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)

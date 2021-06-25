@@ -63,6 +63,9 @@ class Text(File):
                     # keep track of the farthest branch target
                     farthestBranch = branch
                 if branch < 0:
+                    if branch + index < 0:
+                        # Whatever we are reading is not a valid instruction
+                        break
                     # make sure to not branch outside of the current function
                     j = len(funcsStartsList) - 1
                     while j >= 0:
@@ -83,9 +86,15 @@ class Text(File):
             farthestBranch -= 1
 
         i = 0
-        for startIndex in range(len(funcsStartsList)-1):
+        startsCount = len(funcsStartsList)
+        for startIndex in range(startsCount):
             start = funcsStartsList[startIndex]
-            end = funcsStartsList[startIndex+1]
+            end = nInstr
+            if startIndex + 1 < startsCount:
+                end = funcsStartsList[startIndex+1]
+
+            if start >= end:
+                break
 
             funcName = f"func_{i}"
             vram = -1
