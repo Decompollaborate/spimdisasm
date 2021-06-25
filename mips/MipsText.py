@@ -14,18 +14,10 @@ class Text(File):
     def __init__(self, array_of_bytes: bytearray, filename: str, version: str, context: Context):
         super().__init__(array_of_bytes, filename, version, context)
 
-        self.instructions: List[InstructionBase] = list()
-        for word in self.words:
-            self.instructions.append(wordToInstruction(word))
-
         self.functions: List[Function] = list()
 
         # TODO: do something with this information
         self.fileBoundaries: List[int] = list()
-
-    @property
-    def nInstr(self) -> int:
-        return len(self.instructions)
 
     @property
     def nFuncs(self) -> int:
@@ -36,16 +28,20 @@ class Text(File):
         farthestBranch = 0
         funcsStartsList = [0]
 
+        instructions: List[InstructionBase] = list()
+        for word in self.words:
+            instructions.append(wordToInstruction(word))
+
         index = 0
-        nInstr = self.nInstr
+        nInstr = len(instructions)
         while index < nInstr:
-            instr = self.instructions[index]
+            instr = instructions[index]
             if functionEnded:
                 functionEnded = False
                 index += 1
                 isboundary = False
                 while index < nInstr:
-                    instr = self.instructions[index]
+                    instr = instructions[index]
                     if instr.getOpcodeName() != "NOP":
                         if isboundary:
                             self.fileBoundaries.append(self.offset + index*4)
@@ -53,9 +49,9 @@ class Text(File):
                     index += 1
                     isboundary = True
                 funcsStartsList.append(index)
-                if index >= len(self.instructions):
+                if index >= len(instructions):
                     break
-                instr = self.instructions[index]
+                instr = instructions[index]
 
             if instr.isBranch():
                 branch = from2Complement(instr.immediate, 16) + 1
@@ -108,7 +104,7 @@ class Text(File):
                 if vram not in self.context.funcAddresses:
                     self.context.funcAddresses[vram] = funcName
 
-            func = Function(funcName, self.instructions[start:end], self.context, self.offset + start*4, vram=vram)
+            func = Function(funcName, instructions[start:end], self.context, self.offset + start*4, vram=vram)
             func.index = i
             self.functions.append(func)
             i += 1
@@ -167,28 +163,18 @@ class Text(File):
 
     def removeTrailingNops(self) -> bool:
         was_updated = False
-        first_nop = self.nInstr
-        # TODO consider moving this to Function
-        for i in range(self.nInstr-1, 0-1, -1):
-            instr = self.instructions[i]
-            opcodeName = instr.getOpcodeName()
-            if opcodeName != "NOP":
-                if opcodeName == "JR" and instr.getRegisterName(instr.rs) == "$ra":
-                    first_nop += 1
-                break
-            first_nop = i
-        if first_nop < self.nInstr:
+
+        if self.nFuncs > 0:
+            self.functions[-1].removeTrailingNops()
             was_updated = True
-            del self.instructions[first_nop:]
+
         return was_updated
 
     def updateBytes(self):
-        self.instructions = []
-        for func in self.functions:
-            self.instructions += func.instructions
         self.words = []
-        for instr in self.instructions:
-            self.words.append(instr.instr)
+        for func in self.functions:
+            for instr in func.instructions:
+                self.words.append(instr.instr)
         super().updateBytes()
 
     def saveToFile(self, filepath: str):

@@ -15,6 +15,7 @@ class Function:
         self.inFileOffset: int = inFileOffset
         self.vram: int = vram
         self.index: int = -1
+        self.pointersRemoved: bool = False
 
         self.localLabels: Dict[int, str] = dict()
         # TODO: this needs a better name
@@ -52,6 +53,7 @@ class Function:
                     if target not in self.context.funcAddresses:
                         label = "func_" + toHex(target, 8)[2:]
                         self.context.funcAddresses[target] = label
+                self.pointersPerInstruction[instructionOffset] = target
 
             # symbol finder
             elif instr.isIType():
@@ -110,69 +112,13 @@ class Function:
 
         was_updated = False
 
-        lui_found = False
-        lui_pos = 0
-        lui_1_register = 0
-        lui_2_register = 0
-
         for i in range(min(self.nInstr, other_func.nInstr)):
             instr1 = self.instructions[i]
             instr2 = other_func.instructions[i]
-            if GlobalConfig.IGNORE_BRANCHES:
-                if instr1.sameOpcode(instr2):
-                    if instr1.isBranch() and instr2.isBranch():
-                        instr1.blankOut()
-                        instr2.blankOut()
-                        was_updated = True
-                    elif instr1.isJType():
-                        instr1.blankOut()
-                        instr2.blankOut()
-                        was_updated = True
-
-            opcode = instr1.getOpcodeName()
-
-            if instr1.sameOpcode(instr2):
-                if not lui_found:
-                    if opcode == "LUI":
-                        lui_found = True
-                        lui_pos = i
-                        lui_1_register = instr1.rt
-                        lui_2_register = instr2.rt
-                else:
-                    if opcode == "ADDIU":
-                        if instr1.rs == lui_1_register and instr2.rs == lui_2_register:
-                            instr1.blankOut()
-                            instr2.blankOut()
-                            self.instructions[lui_pos].blankOut() # lui
-                            other_func.instructions[lui_pos].blankOut() # lui
-                            lui_found = False
-                            was_updated = True
-                    elif opcode == "LW":
-                        if instr1.rs == lui_1_register and instr2.rs == lui_2_register:
-                            instr1.blankOut()
-                            instr2.blankOut()
-                            self.instructions[lui_pos].blankOut() # lui
-                            other_func.instructions[lui_pos].blankOut() # lui
-                            lui_found = False
-                            was_updated = True
-                    elif opcode == "LWC1" or opcode == "LWC2":
-                        if instr1.rs == lui_1_register and instr2.rs == lui_2_register:
-                            instr1.blankOut()
-                            instr2.blankOut()
-                            self.instructions[lui_pos].blankOut() # lui
-                            other_func.instructions[lui_pos].blankOut() # lui
-                            lui_found = False
-                            was_updated = True
-                    elif opcode == "ORI":
-                        if instr1.rs == lui_1_register and instr2.rs == lui_2_register:
-                            instr1.blankOut()
-                            instr2.blankOut()
-                            self.instructions[lui_pos].blankOut() # lui
-                            other_func.instructions[lui_pos].blankOut() # lui
-                            lui_found = False
-                        was_updated = True
-            if i > lui_pos + GlobalConfig.TRACK_REGISTERS:
-                lui_found = False
+            if instr1.sameOpcodeButDifferentArguments(instr2):
+                instr1.blankOut()
+                instr2.blankOut()
+                was_updated = True
 
         return was_updated
 
@@ -182,33 +128,35 @@ class Function:
 
         was_updated = False
 
-        lui_registers = dict()
-        for i in range(len(self.instructions)):
+        for instructionOffset in self.pointersPerInstruction:
+            self.instructions[instructionOffset//4].blankOut()
+        was_updated = len(self.pointersPerInstruction) > 0 or was_updated
+
+        if GlobalConfig.IGNORE_BRANCHES:
+            for offset in self.localLabels:
+                self.instructions[(offset-self.inFileOffset)//4].blankOut()
+            was_updated = len(self.localLabels) > 0 or was_updated
+
+        self.pointersRemoved = True
+
+        return was_updated
+
+    def removeTrailingNops(self) -> bool:
+        was_updated = False
+        first_nop = self.nInstr
+
+        for i in range(self.nInstr-1, 0-1, -1):
             instr = self.instructions[i]
-            opcode = instr.getOpcodeName()
+            opcodeName = instr.getOpcodeName()
+            if opcodeName != "NOP":
+                if opcodeName == "JR" and instr.getRegisterName(instr.rs) == "$ra":
+                    first_nop += 1
+                break
+            first_nop = i
 
-            # Clean the tracked registers after X instructions have passed.
-            lui_registers_aux = dict()
-            for lui_reg in lui_registers:
-                lui_pos, instructions_left = lui_registers[lui_reg]
-                instructions_left -= 1
-                if instructions_left > 0:
-                    lui_registers_aux[lui_reg] = [lui_pos, instructions_left]
-            lui_registers = lui_registers_aux
-
-            if opcode == "LUI":
-                lui_registers[instr.rt] = [i, GlobalConfig.TRACK_REGISTERS]
-            elif opcode in ("ADDIU", "LW", "LWU", "LWC1", "LWC2", "ORI", "LH", "LHU", "LB", "LBU", "SW", "SWL", "SWR", "SWC1", "SWC2", "SB", "SH", "SDR"):
-                rs = instr.rs
-                if rs in lui_registers:
-                    lui_pos, _ = lui_registers[rs]
-                    self.instructions[lui_pos].blankOut() # lui
-                    instr.blankOut()
-                    was_updated = True
-            elif instr.isJType():
-                instr.blankOut()
-                was_updated = True
-
+        if first_nop < self.nInstr:
+            was_updated = True
+            del self.instructions[first_nop:]
         return was_updated
 
 
@@ -231,15 +179,16 @@ class Function:
 
             immOverride = None
             if instr.isBranch():
-                diff = from2Complement(instr.immediate, 16)
-                branch = instructionOffset + diff*4 + 1*4
-                if self.vram >= 0 and self.vram + branch in self.context.labels:
-                    immOverride = self.context.labels[self.vram + branch]
-                elif self.inFileOffset + branch in self.localLabels:
-                    immOverride = self.localLabels[self.inFileOffset + branch]
+                if not GlobalConfig.IGNORE_BRANCHES:
+                    diff = from2Complement(instr.immediate, 16)
+                    branch = instructionOffset + diff*4 + 1*4
+                    if self.vram >= 0 and self.vram + branch in self.context.labels:
+                        immOverride = self.context.labels[self.vram + branch]
+                    elif self.inFileOffset + branch in self.localLabels:
+                        immOverride = self.localLabels[self.inFileOffset + branch]
 
             elif instr.isIType():
-                if instructionOffset in self.pointersPerInstruction:
+                if not self.pointersRemoved and instructionOffset in self.pointersPerInstruction:
                     address = self.pointersPerInstruction[instructionOffset]
                     symbol = None
                     if address in self.context.funcAddresses:
@@ -259,12 +208,13 @@ class Function:
             line = comment + " " + line
 
             label = ""
-            if self.vram >= 0 and self.vram + instructionOffset in self.context.labels:
-                label = self.context.labels[self.vram + instructionOffset] + ":\n"
-            elif auxOffset in self.localLabels:
-                label = self.localLabels[auxOffset] + ":\n"
-            elif self.vram + instructionOffset in self.context.fakeFunctions:
-                label = self.context.fakeFunctions[self.vram + instructionOffset] + ":\n"
+            if not GlobalConfig.IGNORE_BRANCHES:
+                if self.vram >= 0 and self.vram + instructionOffset in self.context.labels:
+                    label = self.context.labels[self.vram + instructionOffset] + ":\n"
+                elif auxOffset in self.localLabels:
+                    label = self.localLabels[auxOffset] + ":\n"
+                elif self.vram + instructionOffset in self.context.fakeFunctions:
+                    label = self.context.fakeFunctions[self.vram + instructionOffset] + ":\n"
 
             output += label + line + "\n"
 

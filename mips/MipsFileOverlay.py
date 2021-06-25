@@ -77,26 +77,6 @@ class FileOverlay(FileGeneric):
         self.reloc.vRamStart = self.vRamStart
         self.reloc.initVarsAddress = self.initVarsAddress
 
-        """
-        functions = set()
-        lastHigh = 0
-        for relocEntry in self.reloc.entries:
-            if relocEntry.getSectionName() == ".text":
-                relocType = relocEntry.getTypeName()
-                offset = relocEntry.offset >> 2
-                if relocType == "R_MIPS_26":
-                    # print(self.text.instructions[offset])
-                    functions.add(self.text.instructions[offset].instr_index<<2)
-                elif relocType == "R_MIPS_HI16":
-                    lastHigh = self.text.instructions[offset].immediate
-                elif relocType == "R_MIPS_LO16":
-                    low = self.text.instructions[offset].immediate
-                    # print (toHex((lastHigh << 16) | low, 8)[2:])
-        #print(len(functions))
-        #for f in sorted(functions):
-        #    print("func_80"+toHex(f, 6)[2:])
-        """
-
         self.text.removeTrailingNops()
         self.text.findFunctions()
 
@@ -130,13 +110,17 @@ class FileOverlay(FileGeneric):
             if entry.reloc == 0:
                 continue
             if section == ".text":
-                instr = self.text.instructions[offset]
-                if type_name == "R_MIPS_26":
-                    self.text.instructions[offset] = wordToInstruction(instr.instr & 0xFC000000)
-                elif type_name in ("R_MIPS_HI16", "R_MIPS_LO16"):
-                    self.text.instructions[offset] = wordToInstruction(instr.instr & 0xFFFF0000)
-                else:
-                    raise RuntimeError(f"Invalid <{type_name}> in .text of file '{self.version}/{self.filename}'. Reloc: {entry}")
+                for func in self.text.functions[::-1]:
+                    if entry.offset >= func.inFileOffset:
+                        offset = (entry.offset- func.inFileOffset)//4
+                        instr = func.instructions[offset]
+                        if type_name == "R_MIPS_26":
+                            func.instructions[offset] = wordToInstruction(instr.instr & 0xFC000000)
+                        elif type_name in ("R_MIPS_HI16", "R_MIPS_LO16"):
+                            func.instructions[offset] = wordToInstruction(instr.instr & 0xFFFF0000)
+                        else:
+                            raise RuntimeError(f"Invalid <{type_name}> in .text of file '{self.version}/{self.filename}'. Reloc: {entry}")
+                        break
             elif section == ".data":
                 word = self.data.words[offset]
                 if type_name == "R_MIPS_32":
@@ -171,7 +155,8 @@ class FileOverlay(FileGeneric):
                 pass
                 #raise RuntimeError(f"Invalid reloc section <{section}> in file '{self.version}/{self.filename}'. Reloc: {entry}")
 
-        was_updated = super().removePointers()
+        was_updated = self.reloc.nRelocs >= 0
+        was_updated = super().removePointers() or was_updated
         was_updated = self.reloc.removePointers() or was_updated
 
         return was_updated
