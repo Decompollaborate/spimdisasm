@@ -200,13 +200,13 @@ class InstructionNormal(InstructionBase):
             label = f"func_{instrIndexHex}"
             if context is not None:
                 if vram in context.funcAddresses:
-                    label = context.funcAddresses[vram]
+                    label = context.funcAddresses[vram] + f" # func_{instrIndexHex}"
                 elif vram in context.symbols:
-                    label = context.symbols[vram]
+                    label = context.symbols[vram] + f" # func_{instrIndexHex}"
                 elif vram in context.labels:
-                    label = context.labels[vram]
+                    label = context.labels[vram] + f" # func_{instrIndexHex}"
                 elif vram in context.fakeFunctions:
-                    label = context.fakeFunctions[vram]
+                    label = context.fakeFunctions[vram] + f" # func_{instrIndexHex}"
             return f"{result}{label}"
 
         if self.isBranch():
