@@ -13,7 +13,7 @@ from mips.MipsFileBoot import FileBoot
 from mips.MipsContext import Context
 from mips.ZeldaTables import DmaEntry, getDmaAddresses
 
-def disassembleFile(version: str, filename: str, outputfolder: str, context: Context, dmaAddresses: Dict[str, DmaEntry]):
+def disassembleFile(version: str, filename: str, outputfolder: str, context: Context, dmaAddresses: Dict[str, DmaEntry], vram: int = -1, textend: int = -1):
     is_overlay = filename.startswith("ovl_")
     is_code = filename == "code"
     is_boot = filename == "boot"
@@ -45,7 +45,17 @@ def disassembleFile(version: str, filename: str, outputfolder: str, context: Con
         f = FileBoot(array_of_bytes, filename, version, context)
     else:
         print("Unknown file type. Assuming .text. Parsing...")
-        f = Text(array_of_bytes, filename, version, context)
+
+        text_data = array_of_bytes
+        if textend >= 0:
+            print(f"Parsing until offset {toHex(textend, 2)}")
+            text_data = array_of_bytes[:textend]
+
+        f = Text(text_data, filename, version, context)
+
+        if vram >= 0:
+            print(f"Using VRAM {toHex(vram, 8)[2:]}")
+            f.vRamStart = vram
         f.findFunctions()
 
     print()
@@ -69,6 +79,8 @@ def disassemblerMain():
     parser.add_argument("version", help="Select which baserom folder will be used. Example: ique_cn would look up in folder baserom_ique_cn")
     parser.add_argument("file", help="File to be disassembled from the baserom folder.")
     parser.add_argument("outputfolder", help="Path to output folder.")
+    parser.add_argument("--vram", help="Set the VRAM address for unknown files.", default="-1")
+    parser.add_argument("--text-end-offset", help="Set the offset of the end of .text section for unknown files.", default="-1")
     args = parser.parse_args()
 
     GlobalConfig.REMOVE_POINTERS = False
@@ -82,7 +94,7 @@ def disassemblerMain():
     context.readFunctionMap(args.version)
     dmaAddresses: Dict[str, DmaEntry] = getDmaAddresses(args.version)
 
-    disassembleFile(args.version, args.file, args.outputfolder, context, dmaAddresses)
+    disassembleFile(args.version, args.file, args.outputfolder, context, dmaAddresses, int(args.vram, 16), int(args.text_end_offset, 16))
 
 
 if __name__ == "__main__":

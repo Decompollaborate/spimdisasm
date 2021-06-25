@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import csv
 
 from mips.Utils import *
 from mips.GlobalConfig import GlobalConfig
@@ -132,10 +131,11 @@ print(f"Total functions found: {totalFunctions}\n")
 
 OUTPUT_FOLDER = "splits"
 
-print(f"Writing files to {OUTPUT_FOLDER}/")
+new_file_folder = os.path.join(OUTPUT_FOLDER, VERSION, CODE)
+shutil.rmtree(new_file_folder, ignore_errors=True)
+print(f"Writing files to {new_file_folder}/")
+os.makedirs(new_file_folder, exist_ok=True)
 for text in palMqDbg_texts:
-    new_file_folder = os.path.join(OUTPUT_FOLDER, VERSION, CODE)
-    os.makedirs(new_file_folder, exist_ok=True)
     new_file_path = os.path.join(new_file_folder, text.filename)
 
     # print(f"Writing file {new_file_path}")

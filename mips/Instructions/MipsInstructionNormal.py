@@ -207,7 +207,7 @@ class InstructionNormal(InstructionBase):
                     label = context.labels[vram]
                 elif vram in context.fakeFunctions:
                     label = context.fakeFunctions[vram]
-            return f"{result} {label}"
+            return f"{result}{label}"
 
         if self.isBranch():
             result += f"{rs},"
