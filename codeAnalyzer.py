@@ -39,14 +39,15 @@ def readCodeSplitsCsv():
             if h == "":
                 continue
             offset, vram, size = data[i*3:(i+1)*3]
-            if offset == "" or offset == "-":
+            try:
+                offset = int(offset, 16)
+            except:
                 continue
 
-            offset = int(offset, 16)
-            if size == "" or size == "-":
-                size = -1
-            else:
+            try:
                 size = int(size, 16)
+            except:
+                size = -1
 
             splits[h][name] = (offset, size)
     return splits
