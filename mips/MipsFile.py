@@ -18,12 +18,17 @@ class File:
         self.vRamStart: int = -1
         self.initVarsAddress: int = -1
 
+        self.pointersOffsets: List[int]= list()
+
     @property
     def size(self) -> int:
         return len(self.bytes)
     @property
     def sizew(self) -> int:
         return len(self.words)
+
+    def analyze(self):
+        pass
 
     def getVramOffset(self, localOffset: int) -> int:
         if self.vRamStart < 0:

@@ -33,6 +33,12 @@ class FileGeneric(File):
     def nFuncs(self) -> int:
         return self.text.nFuncs
 
+    def analyze(self):
+        self.text.analyze()
+        self.data.analyze()
+        self.rodata.analyze()
+        self.bss.analyze()
+
     def compareToFile(self, other_file: File):
         if isinstance(other_file, FileGeneric):
             return {"filesections": {

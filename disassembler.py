@@ -56,7 +56,8 @@ def disassembleFile(version: str, filename: str, outputfolder: str, context: Con
         if vram >= 0:
             print(f"Using VRAM {toHex(vram, 8)[2:]}")
             f.vRamStart = vram
-        f.findFunctions()
+
+    f.analyze()
 
     print()
     print(f"Found {f.nFuncs} functions.")

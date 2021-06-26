@@ -77,8 +77,30 @@ class FileOverlay(FileGeneric):
         self.reloc.vRamStart = self.vRamStart
         self.reloc.initVarsAddress = self.initVarsAddress
 
+
+    def analyze(self):
+        for entry in self.reloc.entries:
+            section = entry.getSectionName()
+            # type_name = entry.getTypeName()
+            offset = entry.offset
+            if entry.reloc == 0:
+                continue
+            if section == ".text":
+                self.text.pointersOffsets.append(offset)
+            elif section == ".data":
+                self.data.pointersOffsets.append(offset)
+            elif section == ".rodata":
+                self.rodata.pointersOffsets.append(offset)
+            elif section == ".bss":
+                self.bss.pointersOffsets.append(offset)
+
         self.text.removeTrailingNops()
-        self.text.findFunctions()
+
+        self.text.analyze()
+        self.data.analyze()
+        self.rodata.analyze()
+        self.bss.analyze()
+        self.reloc.analyze()
 
 
     def compareToFile(self, other_file: File):

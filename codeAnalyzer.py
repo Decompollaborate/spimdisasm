@@ -7,7 +7,8 @@ import argparse
 from mips.Utils import *
 from mips.GlobalConfig import GlobalConfig
 from mips.MipsText import Text
-from mips.MipsFileOverlay import FileOverlay
+from mips.MipsData import Data
+from mips.MipsRodata import Rodata
 from mips.MipsFileCode import FileCode
 from mips.ZeldaTables import DmaEntry, getDmaAddresses
 from mips.MipsContext import Context
@@ -61,8 +62,6 @@ CODE = "code"
 VERSION = args.version
 
 palMqDbg_Code_array = readVersionedFileAsBytearrray(CODE, VERSION)
-# remove data
-palMqDbg_Code_array = palMqDbg_Code_array[:codeDataStart[VERSION]]
 
 codeSplits = readCodeSplitsCsv()
 context = Context()
@@ -88,14 +87,23 @@ while i < len(palMqDbg_filesStarts) - 1:
     if end < nextStart:
         palMqDbg_filesStarts.insert(i+1, (end, -1, f"file_{toHex(end, 6)}"))
 
-    text = Text(palMqDbg_Code_array[start:end], filename, CODE, context)
+    text = Text(palMqDbg_Code_array[start:end], filename, VERSION, context)
     text.offset = start
     text.vRamStart = codeVramStart[VERSION]
 
-    text.findFunctions()
+    text.analyze()
 
     palMqDbg_texts.append(text)
     i += 1
+
+section_data = Data(palMqDbg_Code_array[codeDataStart[VERSION]:codeRodataStart[VERSION]], CODE, VERSION, context)
+section_rodata = Rodata(palMqDbg_Code_array[codeRodataStart[VERSION]:], CODE, VERSION, context)
+
+section_data.vRamStart = codeVramStart[VERSION] + codeDataStart[VERSION]
+section_rodata.vRamStart = codeVramStart[VERSION] + codeRodataStart[VERSION]
+
+section_data.analyze()
+section_rodata.analyze()
 
 totalFunctions = 0
 for text in palMqDbg_texts:
@@ -134,10 +142,13 @@ OUTPUT_FOLDER = "splits"
 
 new_file_folder = os.path.join(OUTPUT_FOLDER, VERSION, CODE)
 shutil.rmtree(new_file_folder, ignore_errors=True)
-print(f"Writing files to {new_file_folder}/")
+print(f"Writing files to {new_file_folder}")
 os.makedirs(new_file_folder, exist_ok=True)
 for text in palMqDbg_texts:
     new_file_path = os.path.join(new_file_folder, text.filename)
 
     # print(f"Writing file {new_file_path}")
     text.saveToFile(new_file_path)
+
+section_data.saveToFile(new_file_folder)
+section_rodata.saveToFile(new_file_folder)

@@ -72,6 +72,9 @@ def compare_baseroms(args, filelist):
             file_one = File(file_one_data, filename, args.version1, context_one)
             file_two = File(file_two_data, filename, args.version2, context_two)
 
+        file_one.analyze()
+        file_two.analyze()
+
         if GlobalConfig.REMOVE_POINTERS:
             both_updated = file_one.blankOutDifferences(file_two)
             one_updated = file_one.removePointers()

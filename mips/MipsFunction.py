@@ -21,6 +21,11 @@ class Function:
         # TODO: this needs a better name
         self.pointersPerInstruction: Dict[int, int] = dict()
 
+    @property
+    def nInstr(self) -> int:
+        return len(self.instructions)
+
+    def analyze(self):
         trackedRegisters: Dict[int, int] = dict()
         registersValues: Dict[int, int] = dict()
 
@@ -97,10 +102,6 @@ class Function:
                             del trackedRegisters[rd]
 
             instructionOffset += 4
-
-    @property
-    def nInstr(self) -> int:
-        return len(self.instructions)
 
     def countDiffOpcodes(self, other: Function) -> int:
         result = 0

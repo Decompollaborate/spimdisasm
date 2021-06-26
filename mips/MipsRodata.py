@@ -8,6 +8,32 @@ from .MipsFile import File
 
 
 class Rodata(File):
+    def analyze(self):
+        offset = 0
+        partOfJumpTable = False
+        if self.vRamStart != -1:
+            for w in self.words:
+                currentVram = self.getVramOffset(offset)
+                if currentVram in self.context.jumpTables:
+                    partOfJumpTable = True
+
+                elif partOfJumpTable:
+                    if offset in self.pointersOffsets:
+                        partOfJumpTable = True
+
+                    elif self.context.getGenericSymbol(currentVram) is not None:
+                        partOfJumpTable = False
+
+                    elif ((w >> 24) & 0xFF) != 0x80:
+                        partOfJumpTable = False
+
+                if partOfJumpTable:
+                    if w not in self.context.jumpTablesLabels:
+                        self.context.jumpTablesLabels[w] = f"jmplabel_{toHex(w, 8)[2:]}"
+
+                offset += 4
+
+
     def removePointers(self) -> bool:
         if not GlobalConfig.REMOVE_POINTERS:
              False
@@ -37,6 +63,9 @@ class Rodata(File):
                 offsetHex = toHex(offset, 5)[2:]
                 vramHex = ""
                 label = ""
+                rodataHex = toHex(w, 8)[2:]
+                value = toHex(w, 8)
+
                 if self.vRamStart != -1:
                     currentVram = self.getVramOffset(offset)
                     vramHex = toHex(currentVram, 8)[2:]
@@ -45,8 +74,9 @@ class Rodata(File):
                         auxLabel = self.context.getGenericLabel(currentVram) or self.context.getGenericSymbol(currentVram)
                         if auxLabel is not None:
                             label = "glabel " + auxLabel + "\n"
-                rodataHex = toHex(w, 8)[2:]
-                value = toHex(w, 8)
+
+                if w in self.context.jumpTablesLabels:
+                    value = self.context.jumpTablesLabels[w]
 
                 comment = ""
                 if GlobalConfig.ASM_COMMENT:

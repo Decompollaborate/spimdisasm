@@ -23,7 +23,7 @@ class Text(File):
     def nFuncs(self) -> int:
         return len(self.functions)
 
-    def findFunctions(self):
+    def analyze(self):
         functionEnded = False
         farthestBranch = 0
         funcsStartsList = [0]
@@ -107,6 +107,7 @@ class Text(File):
 
             func = Function(funcName, instructions[start:end], self.context, self.offset + start*4, vram=vram)
             func.index = i
+            func.analyze()
             self.functions.append(func)
             i += 1
 
