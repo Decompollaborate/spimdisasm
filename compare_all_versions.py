@@ -129,6 +129,8 @@ def compareOverlayAcrossVersions(filename: str, versionsList: List[str], context
         else:
             f = File(array_of_bytes, filename, version, contextPerVersion[version])
 
+        f.analyze()
+
         if GlobalConfig.REMOVE_POINTERS:
             was_updated = f.removePointers()
             if was_updated:
