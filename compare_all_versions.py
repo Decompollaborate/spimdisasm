@@ -215,6 +215,8 @@ def main():
     parser.add_argument("--ignore04", help="Ignores words starting with 0x04.", action="store_true")
     parser.add_argument("--ignore-branches", help="Ignores the address of every branch, jump and jal.", action="store_true")
     parser.add_argument("--dont-remove-ptrs", help="Disable the pointer removal feature.", action="store_true")
+    parser.add_argument("--disable-multiprocessing", help="", action="store_true")
+    parser.add_argument("--save-context", help="Saves the context to a file. The provided filename will be suffixed with the corresponding version.", metavar="FILENAME")
     args = parser.parse_args()
 
     GlobalConfig.REMOVE_POINTERS = not args.dont_remove_ptrs
@@ -277,14 +279,36 @@ def main():
     #     compareFunction = compareOverlayAcrossVersions
     compareFunction = compareOverlayAcrossVersions
 
-    numCores = cpu_count()
-    p = Pool(numCores)
-    for column in p.imap(partial(compareFunction, versionsList=versionsList, contextPerVersion=contextPerVersion, dmaAddresses=dmaAddresses, actorOverlayTable=actorOverlayTable, args=args), filesList):
-        for row in column:
-            # Print csv row
-            for cell in row:
-                print(cell + ",", end="")
-            print(countUnique(row)-1)
+    if args.disable_multiprocessing:
+        for filename in filesList:
+            for row in compareFunction(filename, versionsList=versionsList, contextPerVersion=contextPerVersion, dmaAddresses=dmaAddresses, actorOverlayTable=actorOverlayTable, args=args):
+                # Print csv row
+                for cell in row:
+                    print(cell + ",", end="")
+                print(countUnique(row)-1)
+    else:
+        numCores = cpu_count()
+        p = Pool(numCores)
+        for column in p.imap(partial(compareFunction, versionsList=versionsList, contextPerVersion=contextPerVersion, dmaAddresses=dmaAddresses, actorOverlayTable=actorOverlayTable, args=args), filesList):
+            for row in column:
+                # Print csv row
+                for cell in row:
+                    print(cell + ",", end="")
+                print(countUnique(row)-1)
+
+    if args.save_context is not None:
+        head, tail = os.path.split(args.save_context)
+        os.makedirs(head, exist_ok=True)
+        name = tail
+        extension = ""
+        if "." in tail:
+            *aux, extension = tail.split(".")
+            name = ".".join(aux)
+            extension = "." + extension
+        name = os.path.join(head, name)
+        for version, context in contextPerVersion.items():
+            context.saveContextToFile(f"{name}_{version}{extension}")
+
 
 if __name__ == "__main__":
     main()
