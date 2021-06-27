@@ -7,6 +7,7 @@ import argparse
 from mips.Utils import *
 from mips.GlobalConfig import GlobalConfig
 from mips.MipsText import Text
+from mips.MipsFileGeneric import FileGeneric
 from mips.MipsFileOverlay import FileOverlay
 from mips.MipsFileCode import FileCode
 from mips.MipsFileBoot import FileBoot
@@ -86,6 +87,15 @@ def disassembleFile(version: str, filename: str, outputfolder: str, context: Con
     new_file_folder = os.path.join(outputfolder, version, filename)
     os.makedirs(new_file_folder, exist_ok=True)
     new_file_path = os.path.join(new_file_folder, filename)
+
+    nBoundaries: int = 0
+    if isinstance(f, FileGeneric):
+        for name, text in f.textList.items():
+            nBoundaries += len(text.fileBoundaries)
+    else:
+        nBoundaries += len(f.fileBoundaries)
+    if nBoundaries > 0:
+        print(f"Found {nBoundaries} file boundaries.")
 
     print(f"Writing files to {new_file_folder}")
     f.saveToFile(new_file_path)
