@@ -28,6 +28,11 @@ class FileBoot(FileGeneric):
         # bss_start = bootBssStart[version]
         bss_start = self.size
 
+        if rodata_start < 0:
+            rodata_start = self.size
+        if data_start < 0:
+            data_start = rodata_start
+
         textStarts = getFileStartsFromEntries(textSplits, data_start)
         dataStarts = getFileStartsFromEntries(dataSplits, rodata_start)
         rodataStarts = getFileStartsFromEntries(rodataSplits, bss_start)
