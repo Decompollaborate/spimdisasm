@@ -92,6 +92,7 @@ def disassemblerMain():
     parser.add_argument("--vram", help="Set the VRAM address for unknown files.", default="-1")
     parser.add_argument("--text-end-offset", help="Set the offset of the end of .text section for unknown files.", default="-1")
     parser.add_argument("--disable-asm-comments", help="Disables the comments in assembly code.", action="store_true")
+    parser.add_argument("--save-context", help="Saves the context to a file. The provided filename will be suffixed with the corresponding version.", metavar="FILENAME")
     args = parser.parse_args()
 
     GlobalConfig.REMOVE_POINTERS = False
@@ -107,6 +108,18 @@ def disassemblerMain():
     dmaAddresses: Dict[str, DmaEntry] = getDmaAddresses(args.version)
 
     disassembleFile(args.version, args.file, args.outputfolder, context, dmaAddresses, int(args.vram, 16), int(args.text_end_offset, 16))
+
+    if args.save_context is not None:
+        head, tail = os.path.split(args.save_context)
+        os.makedirs(head, exist_ok=True)
+        name = tail
+        extension = ""
+        if "." in tail:
+            *aux, extension = tail.split(".")
+            name = ".".join(aux)
+            extension = "." + extension
+        name = os.path.join(head, name)
+        context.saveContextToFile(f"{name}_{args.version}{extension}")
 
 
 if __name__ == "__main__":
