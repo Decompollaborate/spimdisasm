@@ -5,7 +5,7 @@ from __future__ import annotations
 from .Utils import *
 from .GlobalConfig import GlobalConfig
 
-from .MipsFile import File
+from .MipsFileBase import FileBase
 from .MipsText import Text
 from .MipsData import Data
 from .MipsRodata import Rodata
@@ -22,61 +22,74 @@ class FileOverlay(FileGeneric):
     def __init__(self, array_of_bytes: bytearray, filename: str, version: str, context: Context, tableEntry: OverlayTableEntry=None):
         super().__init__(array_of_bytes, filename, version, context)
 
+        self.initVarsAddress = -1
         if tableEntry is not None:
             self.vRamStart = tableEntry.vramStart
             self.initVarsAddress = tableEntry.initVars
 
         seekup = self.words[-1]
-        self.headerBPos = self.size - seekup
-        self.headerWPos = self.headerBPos//4
+        headerBPos = self.size - seekup
+        headerWPos = headerBPos//4
 
-        text_size = self.words[self.headerWPos]
-        data_size = self.words[self.headerWPos+1]
-        rodata_size = self.words[self.headerWPos+2]
-        bss_size = self.words[self.headerWPos+3]
-        reloc_size = 4*5 + 4*self.words[self.headerWPos+4]
+        text_size = self.words[headerWPos]
+        data_size = self.words[headerWPos+1]
+        rodata_size = self.words[headerWPos+2]
+        bss_size = self.words[headerWPos+3]
+        reloc_size = 4*5 + 4*self.words[headerWPos+4]
 
         start = 0
         end = text_size
-        self.text = Text(self.bytes[start:end], filename, version, context)
-        self.text.parent = self
-        self.text.offset = start
-        self.text.vRamStart = self.vRamStart
-        self.text.initVarsAddress = self.initVarsAddress
+        text = Text(self.bytes[start:end], filename, version, context)
+        text.parent = self
+        text.offset = start
+        text.vRamStart = self.vRamStart
+        self.textList[""] = text
 
         start += text_size
         end += data_size
-        self.data = Data(self.bytes[start:end], filename, version, context)
-        self.data.parent = self
-        self.data.offset = start
-        self.data.vRamStart = self.vRamStart
-        self.data.initVarsAddress = self.initVarsAddress
+        data = Data(self.bytes[start:end], filename, version, context)
+        data.parent = self
+        data.offset = start
+        data.vRamStart = self.vRamStart
+        self.dataList[""] = data
 
         start += data_size
         end += rodata_size
-        self.rodata = Rodata(self.bytes[start:end], filename, version, context)
-        self.rodata.parent = self
-        self.rodata.offset = start
-        self.rodata.vRamStart = self.vRamStart
-        self.rodata.initVarsAddress = self.initVarsAddress
+        rodata = Rodata(self.bytes[start:end], filename, version, context)
+        rodata.parent = self
+        rodata.offset = start
+        rodata.vRamStart = self.vRamStart
+        self.rodataList[""] = rodata
 
         #start += rodata_size
         #end += bss_size
         #self.bss = Bss(self.bytes[start:end], filename, version)
         # TODO
-        self.bss = Bss(self.bytes[0:0], filename, version, context)
-        self.bss.parent = self
-        self.bss.offset = start
-        self.bss.vRamStart = self.vRamStart
-        self.bss.initVarsAddress = self.initVarsAddress
+        bss = Bss(self.bytes[0:0], filename, version, context)
+        bss.parent = self
+        bss.offset = start
+        bss.vRamStart = self.vRamStart
+        self.bssList[""] = bss
 
         start += rodata_size
         self.reloc = Reloc(self.bytes[start:], filename, version, context)
         self.reloc.parent = self
         self.reloc.offset = start
         self.reloc.vRamStart = self.vRamStart
-        self.reloc.initVarsAddress = self.initVarsAddress
 
+
+    def getHash(self) -> str:
+        bytes = bytearray(0)
+        for section in self.textList.values():
+            bytes += section.bytes
+        for section in self.dataList.values():
+            bytes += section.bytes
+        for section in self.rodataList.values():
+            bytes += section.bytes
+        for section in self.bssList.values():
+            bytes += section.bytes
+        bytes += self.reloc.bytes
+        return getStrHash(bytes)
 
     def analyze(self):
         for entry in self.reloc.entries:
@@ -86,32 +99,29 @@ class FileOverlay(FileGeneric):
             if entry.reloc == 0:
                 continue
             if section == ".text":
-                self.text.pointersOffsets.append(offset)
+                self.textList[self.filename].pointersOffsets.append(offset)
             elif section == ".data":
-                self.data.pointersOffsets.append(offset)
+                self.dataList[self.filename].pointersOffsets.append(offset)
             elif section == ".rodata":
-                self.rodata.pointersOffsets.append(offset)
+                self.rodataList[self.filename].pointersOffsets.append(offset)
             elif section == ".bss":
-                self.bss.pointersOffsets.append(offset)
+                self.bssList[self.filename].pointersOffsets.append(offset)
 
-        self.text.removeTrailingNops()
+        # self.textList[self.filename].removeTrailingNops()
 
-        self.text.analyze()
-        self.data.analyze()
-        self.rodata.analyze()
-        self.bss.analyze()
+        super().analyze()
         self.reloc.analyze()
 
 
-    def compareToFile(self, other_file: File):
+    def compareToFile(self, other_file: FileBase):
         result = super().compareToFile(other_file)
 
         if isinstance(other_file, FileOverlay):
-            result["filesections"]["reloc"] = self.reloc.compareToFile(other_file.reloc)
+            result["filesections"]["reloc"] = {self.reloc.filename: self.reloc.compareToFile(other_file.reloc)}
 
         return result
 
-    def blankOutDifferences(self, other_file: File) -> bool:
+    def blankOutDifferences(self, other_file: FileBase) -> bool:
         if not GlobalConfig.REMOVE_POINTERS:
             return False
 
@@ -125,6 +135,7 @@ class FileOverlay(FileGeneric):
         if not GlobalConfig.REMOVE_POINTERS:
             return False
 
+        """
         for entry in self.reloc.entries:
             section = entry.getSectionName()
             type_name = entry.getTypeName()
@@ -176,6 +187,7 @@ class FileOverlay(FileGeneric):
             else:
                 pass
                 #raise RuntimeError(f"Invalid reloc section <{section}> in file '{self.version}/{self.filename}'. Reloc: {entry}")
+        """
 
         was_updated = self.reloc.nRelocs >= 0
         was_updated = super().removePointers() or was_updated
@@ -184,10 +196,7 @@ class FileOverlay(FileGeneric):
         return was_updated
 
     def updateBytes(self):
-        self.text.updateBytes()
-        self.data.updateBytes()
-        self.rodata.updateBytes()
-        self.bss.updateBytes()
+        super().updateBytes()
         self.reloc.updateBytes()
 
     def saveToFile(self, filepath: str):

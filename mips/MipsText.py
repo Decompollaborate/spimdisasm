@@ -4,13 +4,14 @@ from __future__ import annotations
 
 from .Utils import *
 from .GlobalConfig import GlobalConfig
-from .MipsFile import File
+from .MipsFileBase import FileBase
+from .MipsSection import Section
 from .Instructions import InstructionBase, wordToInstruction
 from .MipsFunction import Function
 from .MipsContext import Context
 
 
-class Text(File):
+class Text(Section):
     def __init__(self, array_of_bytes: bytearray, filename: str, version: str, context: Context):
         super().__init__(array_of_bytes, filename, version, context)
 
@@ -111,7 +112,7 @@ class Text(File):
             self.functions.append(func)
             i += 1
 
-    def compareToFile(self, other: File):
+    def compareToFile(self, other: FileBase):
         result = super().compareToFile(other)
 
         if isinstance(other, Text):
@@ -138,7 +139,7 @@ class Text(File):
             result += func.countSameOpcodeButDifferentArguments(other_func)
         return result
 
-    def blankOutDifferences(self, other_file: File) -> bool:
+    def blankOutDifferences(self, other_file: FileBase) -> bool:
         if not GlobalConfig.REMOVE_POINTERS:
             return False
 

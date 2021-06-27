@@ -9,6 +9,6 @@ class GlobalConfig:
     IGNORE_06: bool = False # Ignores words that starts in 0x06
     IGNORE_04: bool = False # Ignores words that starts in 0x04
 
-    WRITE_BINARY: bool = True # write to files splitted binaries
+    WRITE_BINARY: bool = False # write to files splitted binaries
 
     ASM_COMMENT: bool = True

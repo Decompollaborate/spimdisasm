@@ -10,12 +10,13 @@ from functools import partial
 
 from mips.Utils import *
 from mips.GlobalConfig import GlobalConfig
-from mips.MipsFile import File
+from mips.MipsSection import Section
 from mips.MipsFileGeneric import FileGeneric
 from mips.MipsFileOverlay import FileOverlay
 from mips.MipsFileCode import FileCode
 from mips.MipsFileBoot import FileBoot
 from mips.MipsContext import Context
+from mips.MipsSplitEntry import readSplitsFromCsv
 from mips.ZeldaTables import OverlayTableEntry, getDmaAddresses, DmaEntry
 from mips import ZeldaOffsets
 
@@ -102,6 +103,21 @@ def compareOverlayAcrossVersions(filename: str, versionsList: List[str], context
     is_code = filename == "code"
     is_boot = filename == "boot"
 
+    textSplits = {version: dict() for version in versionsList}
+    dataSplits = {version: dict() for version in versionsList}
+    rodataSplits = {version: dict() for version in versionsList}
+    bssSplits = {version: dict() for version in versionsList}
+    if is_code:
+        textSplits = readSplitsFromCsv("csvsplits/code_text.csv") if os.path.exists("csvsplits/code_text.csv") else textSplits
+        dataSplits = readSplitsFromCsv("csvsplits/code_data.csv") if os.path.exists("csvsplits/code_data.csv") else dataSplits
+        rodataSplits = readSplitsFromCsv("csvsplits/code_rodata.csv") if os.path.exists("csvsplits/code_rodata.csv") else rodataSplits
+        bssSplits = readSplitsFromCsv("csvsplits/code_bss.csv") if os.path.exists("csvsplits/code_bss.csv") else bssSplits
+    elif is_boot:
+        textSplits = readSplitsFromCsv("csvsplits/boot_text.csv") if os.path.exists("csvsplits/boot_text.csv") else textSplits
+        dataSplits = readSplitsFromCsv("csvsplits/boot_data.csv") if os.path.exists("csvsplits/boot_data.csv") else dataSplits
+        rodataSplits = readSplitsFromCsv("csvsplits/boot_rodata.csv") if os.path.exists("csvsplits/boot_rodata.csv") else rodataSplits
+        bssSplits = readSplitsFromCsv("csvsplits/boot_bss.csv") if os.path.exists("csvsplits/boot_bss.csv") else bssSplits
+
     for version in versionsList:
         path = os.path.join("baserom_" + version, filename)
 
@@ -123,11 +139,11 @@ def compareOverlayAcrossVersions(filename: str, versionsList: List[str], context
 
             f = FileOverlay(array_of_bytes, filename, version, contextPerVersion[version], tableEntry=tableEntry)
         elif is_code:
-            f = FileCode(array_of_bytes, filename, version, contextPerVersion[version])
+            f = FileCode(array_of_bytes, version, contextPerVersion[version], textSplits[version], dataSplits[version], rodataSplits[version], bssSplits[version])
         elif is_boot:
-            f = FileBoot(array_of_bytes, filename, version, contextPerVersion[version])
+            f = FileBoot(array_of_bytes, version, contextPerVersion[version], textSplits[version], dataSplits[version], rodataSplits[version], bssSplits[version])
         else:
-            f = File(array_of_bytes, filename, version, contextPerVersion[version])
+            f = Section(array_of_bytes, filename, version, contextPerVersion[version])
 
         f.analyze()
 
@@ -142,39 +158,34 @@ def compareOverlayAcrossVersions(filename: str, versionsList: List[str], context
 
         abbr = ZeldaOffsets.getVersionAbbr(path)
 
-        if isinstance(f, FileOverlay):
+        if isinstance(f, FileGeneric):
             subfiles = {
-                ".text" : f.text,
-                ".data" : f.data,
-                ".rodata" : f.rodata,
-                #".bss" : f.bss,
-                #".reloc" : f.reloc,
-            }
-        elif isinstance(f, FileGeneric):
-            subfiles = {
-                ".text" : f.text,
-                ".data" : f.data,
-                ".rodata" : f.rodata,
+                ".text" : f.textList,
+                ".data" : f.dataList,
+                ".rodata" : f.rodataList,
                 #".bss" : f.bss,
             }
         else:
             subfiles = {
-                "" : f,
+                "" : {"": f},
             }
 
-        for section, sub in subfiles.items():
-            file_section = filename + section
-            if file_section not in filesHashes:
-                filesHashes[file_section] = dict()
-                firstFilePerHash[file_section] = dict()
+        for sectionName, sectionCat in subfiles.items():
+            for name, sub in sectionCat.items():
+                if name != "":
+                    name = "." + name
+                file_section = filename + name + sectionName
+                if file_section not in filesHashes:
+                    filesHashes[file_section] = dict()
+                    firstFilePerHash[file_section] = dict()
 
-            f_hash = sub.getHash()
-            # Map each abbreviation to its hash.
-            filesHashes[file_section][abbr] = f_hash
+                f_hash = sub.getHash()
+                # Map each abbreviation to its hash.
+                filesHashes[file_section][abbr] = f_hash
 
-            # Find out where in which version this hash appeared for first time.
-            if f_hash not in firstFilePerHash[file_section]:
-                firstFilePerHash[file_section][f_hash] = abbr
+                # Find out where in which version this hash appeared for first time.
+                if f_hash not in firstFilePerHash[file_section]:
+                    firstFilePerHash[file_section][f_hash] = abbr
 
     for file_section in filesHashes:
         row = [file_section]

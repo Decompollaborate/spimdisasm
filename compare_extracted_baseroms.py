@@ -7,11 +7,12 @@ import os
 
 from mips.Utils import *
 from mips.GlobalConfig import GlobalConfig
-from mips.MipsFile import File
+from mips.MipsSection import Section
 from mips.MipsFileOverlay import FileOverlay
 from mips.MipsFileCode import FileCode
 from mips.MipsFileBoot import FileBoot
 from mips.MipsContext import Context
+from mips.MipsSplitEntry import readSplitsFromCsv
 
 script_dir = os.path.dirname(os.path.realpath(__file__))
 root_dir = script_dir + "/.."
@@ -63,14 +64,22 @@ def compare_baseroms(args, filelist):
             file_one = FileOverlay(file_one_data, filename, args.version1, context_one)
             file_two = FileOverlay(file_two_data, filename, args.version2, context_two)
         elif filename == "code":
-            file_one = FileCode(file_one_data, filename, args.version1, context_one)
-            file_two = FileCode(file_two_data, filename, args.version2, context_two)
+            textSplits = readSplitsFromCsv("csvsplits/code_text.csv") if os.path.exists("csvsplits/code_text.csv") else {args.version1: dict(), args.version2: dict()}
+            dataSplits = readSplitsFromCsv("csvsplits/code_data.csv") if os.path.exists("csvsplits/code_data.csv") else {args.version1: dict(), args.version2: dict()}
+            rodataSplits = readSplitsFromCsv("csvsplits/code_rodata.csv") if os.path.exists("csvsplits/code_rodata.csv") else {args.version1: dict(), args.version2: dict()}
+            bssSplits = readSplitsFromCsv("csvsplits/code_bss.csv") if os.path.exists("csvsplits/code_bss.csv") else {args.version1: dict(), args.version2: dict()}
+            file_one = FileCode(file_one_data, args.version1, context_one, textSplits[args.version1], dataSplits[args.version1], rodataSplits[args.version1], bssSplits[args.version1])
+            file_two = FileCode(file_two_data, args.version2, context_two, textSplits[args.version2], dataSplits[args.version2], rodataSplits[args.version2], bssSplits[args.version2])
         elif filename == "boot":
-            file_one = FileBoot(file_one_data, filename, args.version1, context_one)
-            file_two = FileBoot(file_two_data, filename, args.version2, context_two)
+            textSplits = readSplitsFromCsv("csvsplits/boot_text.csv") if os.path.exists("csvsplits/boot_text.csv") else {args.version1: dict(), args.version2: dict()}
+            dataSplits = readSplitsFromCsv("csvsplits/boot_data.csv") if os.path.exists("csvsplits/boot_data.csv") else {args.version1: dict(), args.version2: dict()}
+            rodataSplits = readSplitsFromCsv("csvsplits/boot_rodata.csv") if os.path.exists("csvsplits/boot_rodata.csv") else {args.version1: dict(), args.version2: dict()}
+            bssSplits = readSplitsFromCsv("csvsplits/boot_bss.csv") if os.path.exists("csvsplits/boot_bss.csv") else {args.version1: dict(), args.version2: dict()}
+            file_one = FileBoot(file_one_data, args.version1, context_one, textSplits[args.version1], dataSplits[args.version1], rodataSplits[args.version1], bssSplits[args.version1])
+            file_two = FileBoot(file_two_data, args.version2, context_two, textSplits[args.version2], dataSplits[args.version2], rodataSplits[args.version2], bssSplits[args.version2])
         else:
-            file_one = File(file_one_data, filename, args.version1, context_one)
-            file_two = File(file_two_data, filename, args.version2, context_two)
+            file_one = Section(file_one_data, filename, args.version1, context_one)
+            file_two = Section(file_two_data, filename, args.version2, context_two)
 
         file_one.analyze()
         file_two.analyze()
@@ -203,14 +212,25 @@ def compare_to_csv(args, filelist):
                 file_one = FileOverlay(file_one_data, filename, args.version1, context_one)
                 file_two = FileOverlay(file_two_data, filename, args.version2, context_two)
             elif args.split_files and filename == "code":
-                file_one = FileCode(file_one_data, filename, args.version1, context_one)
-                file_two = FileCode(file_two_data, filename, args.version2, context_two)
+                textSplits = readSplitsFromCsv("csvsplits/code_text.csv") if os.path.exists("csvsplits/code_text.csv") else {args.version1: dict(), args.version2: dict()}
+                dataSplits = readSplitsFromCsv("csvsplits/code_data.csv") if os.path.exists("csvsplits/code_data.csv") else {args.version1: dict(), args.version2: dict()}
+                rodataSplits = readSplitsFromCsv("csvsplits/code_rodata.csv") if os.path.exists("csvsplits/code_rodata.csv") else {args.version1: dict(), args.version2: dict()}
+                bssSplits = readSplitsFromCsv("csvsplits/code_bss.csv") if os.path.exists("csvsplits/code_bss.csv") else {args.version1: dict(), args.version2: dict()}
+                file_one = FileCode(file_one_data, args.version1, context_one, textSplits[args.version1], dataSplits[args.version1], rodataSplits[args.version1], bssSplits[args.version1])
+                file_two = FileCode(file_two_data, args.version2, context_two, textSplits[args.version2], dataSplits[args.version2], rodataSplits[args.version2], bssSplits[args.version2])
             elif filename == "boot":
-                file_one = FileBoot(file_one_data, filename, args.version1, context_one)
-                file_two = FileBoot(file_two_data, filename, args.version2, context_two)
+                textSplits = readSplitsFromCsv("csvsplits/boot_text.csv") if os.path.exists("csvsplits/boot_text.csv") else {args.version1: dict(), args.version2: dict()}
+                dataSplits = readSplitsFromCsv("csvsplits/boot_data.csv") if os.path.exists("csvsplits/boot_data.csv") else {args.version1: dict(), args.version2: dict()}
+                rodataSplits = readSplitsFromCsv("csvsplits/boot_rodata.csv") if os.path.exists("csvsplits/boot_rodata.csv") else {args.version1: dict(), args.version2: dict()}
+                bssSplits = readSplitsFromCsv("csvsplits/boot_bss.csv") if os.path.exists("csvsplits/boot_bss.csv") else {args.version1: dict(), args.version2: dict()}
+                file_one = FileBoot(file_one_data, args.version1, context_one, textSplits[args.version1], dataSplits[args.version1], rodataSplits[args.version1], bssSplits[args.version1])
+                file_two = FileBoot(file_two_data, args.version2, context_two, textSplits[args.version2], dataSplits[args.version2], rodataSplits[args.version2], bssSplits[args.version2])
             else:
-                file_one = File(file_one_data, filename, args.version1, context_one)
-                file_two = File(file_two_data, filename, args.version2, context_two)
+                file_one = Section(file_one_data, filename, args.version1, context_one)
+                file_two = Section(file_two_data, filename, args.version2, context_two)
+
+            file_one.analyze()
+            file_two.analyze()
 
             if GlobalConfig.REMOVE_POINTERS:
                 both_updated = file_one.blankOutDifferences(file_two)
@@ -225,7 +245,11 @@ def compare_to_csv(args, filelist):
             if "filesections" in comparison:
                 for section_name in comparison["filesections"]:
                     section = comparison["filesections"][section_name]
-                    print_section_as_csv(args, index, filename, section_name, section)
+                    for n, sub in section.items():
+                        aux_section_name = section_name
+                        if n != filename:
+                            aux_section_name = f"{n} {section_name}"
+                        print_section_as_csv(args, index, filename, aux_section_name, sub)
             else:
                 print_section_as_csv(args, index, filename, "", comparison)
 
