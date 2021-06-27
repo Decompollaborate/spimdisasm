@@ -115,25 +115,25 @@ class Context:
                 file = self.symbolToFile.get(address, "")
                 jal = (address & 0x00FFFFFF) >> 2
                 jal = 0x0C000000 | jal
-                f.write(f"{file},{toHex(address, 8)},{name},{toHex(jal, 8)}\n")
-
-            for address, name in self.labels.items():
-                file = self.symbolToFile.get(address, "")
-                f.write(f"{file},{toHex(address, 8)},{name},\n")
-
-            for address, name in self.symbols.items():
-                file = self.symbolToFile.get(address, "")
-                f.write(f"{file},{toHex(address, 8)},{name},\n")
+                f.write(f"function,{file},{toHex(address, 8)},{name},{toHex(jal, 8)}\n")
 
             for address, name in self.jumpTables.items():
                 file = self.symbolToFile.get(address, "")
-                f.write(f"{file},{toHex(address, 8)},{name},\n")
+                f.write(f"jump_table,{file},{toHex(address, 8)},{name},\n")
 
             for address, name in self.jumpTablesLabels.items():
                 file = self.symbolToFile.get(address, "")
-                f.write(f"{file},{toHex(address, 8)},{name},\n")
+                f.write(f"jump_table_label,{file},{toHex(address, 8)},{name},\n")
+
+            for address, name in self.labels.items():
+                file = self.symbolToFile.get(address, "")
+                f.write(f"label,{file},{toHex(address, 8)},{name},\n")
+
+            for address, name in self.symbols.items():
+                file = self.symbolToFile.get(address, "")
+                f.write(f"symbol,{file},{toHex(address, 8)},{name},\n")
 
             for address, name in self.fakeFunctions.items():
                 file = self.symbolToFile.get(address, "")
-                f.write(f"{file},{toHex(address, 8)},{name},\n")
+                f.write(f"fake_function,{file},{toHex(address, 8)},{name},\n")
 

@@ -12,7 +12,8 @@ from mips.MipsFileCode import FileCode
 from mips.MipsFileBoot import FileBoot
 from mips.MipsContext import Context
 from mips.MipsSplitEntry import readSplitsFromCsv
-from mips.ZeldaTables import DmaEntry, getDmaAddresses
+from mips.ZeldaTables import DmaEntry, getDmaAddresses, OverlayTableEntry
+from mips import ZeldaOffsets
 
 def disassembleFile(version: str, filename: str, outputfolder: str, context: Context, dmaAddresses: Dict[str, DmaEntry], vram: int = -1, textend: int = -1):
     is_overlay = filename.startswith("ovl_")
@@ -27,16 +28,27 @@ def disassembleFile(version: str, filename: str, outputfolder: str, context: Con
         exit(-1)
 
     if is_overlay:
+        print("Overlay detected. Parsing...")
+
         tableEntry = None
         # TODO
-        #if filename in dmaAddresses:
-        #    dmaEntry = dmaAddresses[filename]
-            #for entry in actorOverlayTable:
-            #    if entry.vromStart == dmaEntry.vromStart:
-            #        tableEntry = entry
-            #        break
+        if filename in dmaAddresses:
+            dmaEntry = dmaAddresses[filename]
 
-        print("Overlay detected. Parsing...")
+            codePath = os.path.join(f"baserom_{version}", "code")
+
+            if os.path.exists(codePath) and version in ZeldaOffsets.offset_ActorOverlayTable:
+                tableOffset = ZeldaOffsets.offset_ActorOverlayTable[version]
+                if tableOffset != 0x0:
+                    codeData = readFileAsBytearray(codePath)
+                    i = 0
+                    while i < ZeldaOffsets.ACTOR_ID_MAX:
+                        entry = OverlayTableEntry(codeData[tableOffset + i*0x20 : tableOffset + (i+1)*0x20])
+                        if entry.vromStart == dmaEntry.vromStart:
+                            tableEntry = entry
+                            break
+                        i += 1
+
         f = FileOverlay(array_of_bytes, filename, version, context, tableEntry=tableEntry)
     elif is_code:
         print("code detected. Parsing...")
