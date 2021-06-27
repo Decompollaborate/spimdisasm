@@ -1,4 +1,4 @@
-ntsc_1.0_rc
+ntsc_0.9
 ntsc_1.0
 ntsc_1.1
 pal_1.0
@@ -8,9 +8,9 @@ jp_gc
 jp_mq
 usa_gc
 usa_mq
-pal_gc_dbg
-pal_mq_dbg
+pal_gc_dbg1
 pal_gc_dbg2
+pal_mq_dbg
 pal_gc
 pal_mq
 jp_gc_ce
