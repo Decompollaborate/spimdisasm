@@ -5,7 +5,6 @@ from __future__ import annotations
 
 versions = {
     "ntsc_0.9" : "NNR",
-    "ntsc_1.0_rc" : "NNR",
     "ntsc_1.0" : "NN0",
     "ntsc_1.1" : "NN1",
     "pal_1.0" : "NP0",
@@ -40,7 +39,6 @@ ACTOR_ID_MAX = 0x01D7
 # The offset of the overlay table in file `code`.
 offset_ActorOverlayTable = {
     "ntsc_0.9" : 0x0D7280,
-    "ntsc_1.0_rc" : 0x0D7280,
     "ntsc_1.0" : 0x0D7490,
     "ntsc_1.1" : 0x0D7650,
     "pal_1.0" : 0xD4D80,
@@ -62,7 +60,6 @@ offset_ActorOverlayTable = {
 
 bootVramStart = {
     "ntsc_0.9" : 0x80000460,
-    "ntsc_1.0_rc" : 0x80000460,
     "ntsc_1.0" : 0x80000460,
     "ntsc_1.1" : 0x80000460,
     "pal_1.0" : 0x80000460,
@@ -84,7 +81,6 @@ bootVramStart = {
 
 bootDataStart = {
     "ntsc_0.9" : -1,
-    "ntsc_1.0_rc" : -1,
     "ntsc_1.0" : -1,
     "ntsc_1.1" : -1,
     "pal_1.0" : 0x62B0,
@@ -127,7 +123,6 @@ bootRodataStart = {
 
 codeVramStart = {
     "ntsc_0.9" : 0x800110A0,
-    "ntsc_1.0_rc" : 0x800110A0,
     "ntsc_1.0" : 0x800110A0,
     "ntsc_1.1" : 0x800110A0,
     "pal_1.0" : 0x800116E0,
@@ -149,7 +144,6 @@ codeVramStart = {
 
 codeDataStart = {
     "ntsc_0.9" : 0x0D6400,
-    "ntsc_1.0_rc" : 0x0D6400,
     "ntsc_1.0" : 0x0D6610,
     "ntsc_1.1" : 0x0D67D0,
     "pal_1.0" : 0x0D3F20,
@@ -171,7 +165,6 @@ codeDataStart = {
 
 codeRodataStart = {
     "ntsc_0.9" : 0x0F4A50,
-    "ntsc_1.0_rc" : 0x0F4A50,
     "ntsc_1.0" : 0x0F4C60,
     "ntsc_1.1" : 0x0F4E20,
     "pal_1.0" : 0x0F2570,
