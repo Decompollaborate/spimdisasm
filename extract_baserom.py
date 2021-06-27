@@ -14,7 +14,7 @@ import zlib
 ROM_FILE_NAME = 'baserom.z64'
 ROM_FILE_NAME_V = 'baserom_{}.z64'
 FILE_TABLE_OFFSET = {
-    "NTSC 1.0 RC":  0x07430, # a.k.a. 0.9
+    "NTSC 0.9":     0x07430, # a.k.a. NTSC 1.0 RC
     "NTSC 1.0":     0x07430,
     "NTSC 1.1":     0x07430,
     "PAL 1.0":      0x07950,
@@ -24,23 +24,23 @@ FILE_TABLE_OFFSET = {
     "JP MQ":        0x07170,
     "USA GC":       0x07170,
     "USA MQ":       0x07170,
-    "PAL GC DBG":   0x12F70,
-    "PAL MQ DBG":   0x12F70,
+    "PAL GC DBG1":  0x12F70,
     "PAL GC DBG2":  0x12F70,
+    "PAL MQ DBG":   0x12F70,
     "PAL GC":       0x07170,
     "PAL MQ":       0x07170,
     "JP GC CE":     0x07170, # Zelda collection
     "IQUE CN":      0x0B7A0,
     "IQUE TW":      0x0B240
 }
-FILE_TABLE_OFFSET["NTSC J 1.0 RC"]  = FILE_TABLE_OFFSET["NTSC 1.0 RC"]
-FILE_TABLE_OFFSET["NTSC J 1.0"]     = FILE_TABLE_OFFSET["NTSC 1.0"]
-FILE_TABLE_OFFSET["NTSC J 1.1"]     = FILE_TABLE_OFFSET["NTSC 1.1"]
-FILE_TABLE_OFFSET["NTSC J 1.2"]     = FILE_TABLE_OFFSET["NTSC 1.2"]
-FILE_TABLE_OFFSET["PAL WII 1.1"]    = FILE_TABLE_OFFSET["PAL 1.1"]
+FILE_TABLE_OFFSET["NTSC J 0.9"]   = FILE_TABLE_OFFSET["NTSC 0.9"]
+FILE_TABLE_OFFSET["NTSC J 1.0"]   = FILE_TABLE_OFFSET["NTSC 1.0"]
+FILE_TABLE_OFFSET["NTSC J 1.1"]   = FILE_TABLE_OFFSET["NTSC 1.1"]
+FILE_TABLE_OFFSET["NTSC J 1.2"]   = FILE_TABLE_OFFSET["NTSC 1.2"]
+FILE_TABLE_OFFSET["PAL WII 1.1"]  = FILE_TABLE_OFFSET["PAL 1.1"]
 
 FILE_NAMES: Dict[str, List[str] | None] = {
-    "NTSC 1.0 RC":  None, 
+    "NTSC 0.9":     None, 
     "NTSC 1.0":     None,
     "NTSC 1.1":     None,
     "PAL 1.0":      None,
@@ -50,20 +50,20 @@ FILE_NAMES: Dict[str, List[str] | None] = {
     "JP MQ":        None,
     "USA GC":       None,
     "USA MQ":       None,
-    "PAL GC DBG":   None,
-    "PAL MQ DBG":   None,
+    "PAL GC DBG1":   None,
     "PAL GC DBG2":  None,
+    "PAL MQ DBG":   None,
     "PAL GC":       None,
     "PAL MQ":       None,
     "JP GC CE":     None, # Zelda collector's edition
     "IQUE CN":      None,
     "IQUE TW":      None
 }
-FILE_NAMES["NTSC J 1.0 RC"]  = FILE_NAMES["NTSC 1.0 RC"]
-FILE_NAMES["NTSC J 1.0"]     = FILE_NAMES["NTSC 1.0"]
-FILE_NAMES["NTSC J 1.1"]     = FILE_NAMES["NTSC 1.1"]
-FILE_NAMES["NTSC J 1.2"]     = FILE_NAMES["NTSC 1.2"]
-FILE_NAMES["PAL WII 1.1"]    = FILE_NAMES["PAL 1.1"]
+FILE_NAMES["NTSC J 0.9"]  = FILE_NAMES["NTSC 0.9"]
+FILE_NAMES["NTSC J 1.0"]  = FILE_NAMES["NTSC 1.0"]
+FILE_NAMES["NTSC J 1.1"]  = FILE_NAMES["NTSC 1.1"]
+FILE_NAMES["NTSC J 1.2"]  = FILE_NAMES["NTSC 1.2"]
+FILE_NAMES["PAL WII 1.1"] = FILE_NAMES["PAL 1.1"]
 
 romData = None
 Edition = "" # "pal_mq"
@@ -91,20 +91,20 @@ def readFilelists():
 
     FILE_NAMES["PAL 1.1"] = FILE_NAMES["PAL 1.0"]
 
+    FILE_NAMES["PAL GC DBG1"] = FILE_NAMES["PAL MQ DBG"]
     FILE_NAMES["PAL GC DBG2"] = FILE_NAMES["PAL MQ DBG"]
-    FILE_NAMES["PAL GC DBG"] = FILE_NAMES["PAL MQ DBG"]
 
     FILE_NAMES["IQUE TW"] = FILE_NAMES["IQUE CN"]
 
-    FILE_NAMES["NTSC 1.0 RC"] = FILE_NAMES["NTSC 1.0"]
+    FILE_NAMES["NTSC 0.9"] = FILE_NAMES["NTSC 1.0"]
     FILE_NAMES["NTSC 1.1"] = FILE_NAMES["NTSC 1.0"]
     FILE_NAMES["NTSC 1.2"] = FILE_NAMES["NTSC 1.0"]
 
-    FILE_NAMES["NTSC J 1.0 RC"]  = FILE_NAMES["NTSC 1.0 RC"]
-    FILE_NAMES["NTSC J 1.0"]     = FILE_NAMES["NTSC 1.0"]
-    FILE_NAMES["NTSC J 1.1"]     = FILE_NAMES["NTSC 1.1"]
-    FILE_NAMES["NTSC J 1.2"]     = FILE_NAMES["NTSC 1.2"]
-    FILE_NAMES["PAL WII 1.1"]    = FILE_NAMES["PAL 1.1"]
+    FILE_NAMES["NTSC J 0.9"]  = FILE_NAMES["NTSC 0.9"]
+    FILE_NAMES["NTSC J 1.0"]  = FILE_NAMES["NTSC 1.0"]
+    FILE_NAMES["NTSC J 1.1"]  = FILE_NAMES["NTSC 1.1"]
+    FILE_NAMES["NTSC J 1.2"]  = FILE_NAMES["NTSC 1.2"]
+    FILE_NAMES["PAL WII 1.1"] = FILE_NAMES["PAL 1.1"]
 
 def initialize_worker(rom_data, dmaTable):
     global romData

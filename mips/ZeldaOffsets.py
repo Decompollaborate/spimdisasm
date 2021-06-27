@@ -4,7 +4,7 @@ from __future__ import annotations
 
 
 versions = {
-    "ntsc_1.0_rc" : "NNR",
+    "ntsc_0.9" : "NNR",
     "ntsc_1.0" : "NN0",
     "ntsc_1.1" : "NN1",
     "pal_1.0" : "NP0",
@@ -15,7 +15,7 @@ versions = {
     "usa_gc" : "GUO",
     "usa_mq" : "GUM",
     "pal_gc" : "GPO",
-    "pal_gc_dbg" : "GPOD",
+    "pal_gc_dbg1" : "GPOD1",
     "pal_gc_dbg2" : "GPOD2",
     "pal_mq" : "GPM",
     "pal_mq_dbg" : "GPMD",
@@ -38,7 +38,7 @@ ACTOR_ID_MAX = 0x01D7
 
 # The offset of the overlay table in file `code`.
 offset_ActorOverlayTable = {
-    "ntsc_1.0_rc" : 0x0D7280,
+    "ntsc_0.9" : 0x0D7280,
     "ntsc_1.0" : 0x0D7490,
     "ntsc_1.1" : 0x0D7650,
     "pal_1.0" : 0xD4D80,
@@ -49,7 +49,7 @@ offset_ActorOverlayTable = {
     "usa_gc" : 0x0D6B40,
     "usa_mq" : 0x0D6B20,
     "pal_gc" : 0x0D44A0,
-    "pal_gc_dbg" : 0x0F9460,
+    "pal_gc_dbg1" : 0x0F9460,
     "pal_gc_dbg2" : 0x0F9460,
     "pal_mq" : 0x0D4480,
     "pal_mq_dbg" : 0x0F9440,
@@ -59,7 +59,7 @@ offset_ActorOverlayTable = {
 }
 
 bootVramStart = {
-    "ntsc_1.0_rc" : 0x80000460,
+    "ntsc_0.9" : 0x80000460,
     "ntsc_1.0" : 0x80000460,
     "ntsc_1.1" : 0x80000460,
     "pal_1.0" : 0x80000460,
@@ -70,7 +70,7 @@ bootVramStart = {
     "usa_gc" : 0x80000460,
     "usa_mq" : 0x80000460,
     "pal_gc" : 0x80000460,
-    "pal_gc_dbg" : 0x80000460,
+    "pal_gc_dbg1" : 0x80000460,
     "pal_gc_dbg2" : 0x80000460,
     "pal_mq" : 0x80000460,
     "pal_mq_dbg" : 0x80000460,
@@ -80,49 +80,49 @@ bootVramStart = {
 }
 
 bootDataStart = {
-    "ntsc_1.0_rc" : -1,
+    "ntsc_0.9" : -1,
     "ntsc_1.0" : -1,
     "ntsc_1.1" : -1,
-    "pal_1.0" : -1,
-    "ntsc_1.2" : -1,
-    "pal_1.1" : -1,
-    "jp_gc" : -1,
-    "jp_mq" : -1,
-    "usa_gc" : -1,
-    "usa_mq" : -1,
-    "pal_gc" : -1,
-    "pal_gc_dbg" : -1,
-    "pal_gc_dbg2" : -1,
+    "pal_1.0" : 0x62B0,
+    "ntsc_1.2" : 0x6310,
+    "pal_1.1" : 0x62B0,
+    "jp_gc" : 0x5C70,
+    "jp_mq" : 0x5C70,
+    "usa_gc" : 0x5C70,
+    "usa_mq" : 0x5C70,
+    "pal_gc" : 0x5C70,
+    "pal_gc_dbg1" : 0x8FD0,
+    "pal_gc_dbg2" : 0x8FD0,
     "pal_mq" : 0x5C70,
     "pal_mq_dbg" : 0x8FD0,
-    "jp_gc_ce" : -1,
-    "ique_cn" : -1,
-    "ique_tw" : -1,
+    "jp_gc_ce" : 0x5C70,
+    "ique_cn" : 0x98F0,
+    "ique_tw" : 0x9380,
 }
 
 bootRodataStart = {
-    "ntsc_1.0_rc" : -1,
-    "ntsc_1.0" : -1,
-    "ntsc_1.1" : -1,
-    "pal_1.0" : -1,
-    "ntsc_1.2" : -1,
-    "pal_1.1" : -1,
-    "jp_gc" : -1,
-    "jp_mq" : -1,
-    "usa_gc" : -1,
-    "usa_mq" : -1,
-    "pal_gc" : -1,
-    "pal_gc_dbg" : -1,
-    "pal_gc_dbg2" : -1,
-    "pal_mq" : -1,
+    "ntsc_0.9" : 0x60F0,
+    "ntsc_1.0" : 0x60F0,
+    "ntsc_1.1" : 0x60F0,
+    "pal_1.0" : 0x6610,
+    "ntsc_1.2" : 0x6620,
+    "pal_1.1" : 0x6610,
+    "jp_gc" : 0x5F40,
+    "jp_mq" : 0x5F40,
+    "usa_gc" : 0x5F40,
+    "usa_mq" : 0x5F40,
+    "pal_gc" : 0x5F40,
+    "pal_gc_dbg1" : 0xAB60,
+    "pal_gc_dbg2" : 0xAB60,
+    "pal_mq" : 0x5F40,
     "pal_mq_dbg" : 0xAB60,
-    "jp_gc_ce" : -1,
-    "ique_cn" : -1,
-    "ique_tw" : -1,
+    "jp_gc_ce" : 0x5F40,
+    "ique_cn" : 0x9D40,
+    "ique_tw" : 0x97F0,
 }
 
 codeVramStart = {
-    "ntsc_1.0_rc" : 0x800110A0,
+    "ntsc_0.9" : 0x800110A0,
     "ntsc_1.0" : 0x800110A0,
     "ntsc_1.1" : 0x800110A0,
     "pal_1.0" : 0x800116E0,
@@ -133,7 +133,7 @@ codeVramStart = {
     "usa_gc" : 0x80010EE0,
     "usa_mq" : 0x80010EE0,
     "pal_gc" : 0x80010F00,
-    "pal_gc_dbg" : 0x8001CE60,
+    "pal_gc_dbg1" : 0x8001CE60,
     "pal_gc_dbg2" : 0x8001CE60,
     "pal_mq" : 0x80010F00,
     "pal_mq_dbg" : 0x8001CE60,
@@ -143,7 +143,7 @@ codeVramStart = {
 }
 
 codeDataStart = {
-    "ntsc_1.0_rc" : 0x0D6400,
+    "ntsc_0.9" : 0x0D6400,
     "ntsc_1.0" : 0x0D6610,
     "ntsc_1.1" : 0x0D67D0,
     "pal_1.0" : 0x0D3F20,
@@ -154,7 +154,7 @@ codeDataStart = {
     "usa_gc" : 0x0D5CC0,
     "usa_mq" : 0x0D5CA0,
     "pal_gc" : 0x0D3620,
-    "pal_gc_dbg" : 0x0F85E0,
+    "pal_gc_dbg1" : 0x0F85E0,
     "pal_gc_dbg2" : 0x0F85E0,
     "pal_mq" : 0x0D3600,
     "pal_mq_dbg" : 0x0F85C0,
@@ -164,7 +164,7 @@ codeDataStart = {
 }
 
 codeRodataStart = {
-    "ntsc_1.0_rc" : 0x0F4A50,
+    "ntsc_0.9" : 0x0F4A50,
     "ntsc_1.0" : 0x0F4C60,
     "ntsc_1.1" : 0x0F4E20,
     "pal_1.0" : 0x0F2570,
@@ -175,7 +175,7 @@ codeRodataStart = {
     "usa_gc" : 0x0F3E70,
     "usa_mq" : 0x0F3E50,
     "pal_gc" : 0x0F17D0,
-    "pal_gc_dbg" : 0x117EF0,
+    "pal_gc_dbg1" : 0x117EF0,
     "pal_gc_dbg2" : 0x117EF0,
     "pal_mq" : 0x0F17B0,
     "pal_mq_dbg" : 0x117ED0,

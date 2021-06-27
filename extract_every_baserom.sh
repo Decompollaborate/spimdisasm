@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-./extract_baserom.py -j ntsc_1.0_rc
+./extract_baserom.py -j ntsc_0.9
 ./extract_baserom.py -j ntsc_1.0
 ./extract_baserom.py -j ntsc_1.1
 ./extract_baserom.py -j pal_1.0
