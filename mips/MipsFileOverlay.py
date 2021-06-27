@@ -99,15 +99,15 @@ class FileOverlay(FileGeneric):
             if entry.reloc == 0:
                 continue
             if section == ".text":
-                self.textList[self.filename].pointersOffsets.append(offset)
+                self.textList[""].pointersOffsets.append(offset)
             elif section == ".data":
-                self.dataList[self.filename].pointersOffsets.append(offset)
+                self.dataList[""].pointersOffsets.append(offset)
             elif section == ".rodata":
-                self.rodataList[self.filename].pointersOffsets.append(offset)
+                self.rodataList[""].pointersOffsets.append(offset)
             elif section == ".bss":
-                self.bssList[self.filename].pointersOffsets.append(offset)
+                self.bssList[""].pointersOffsets.append(offset)
 
-        # self.textList[self.filename].removeTrailingNops()
+        # self.textList[""].removeTrailingNops()
 
         super().analyze()
         self.reloc.analyze()
