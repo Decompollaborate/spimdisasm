@@ -91,6 +91,7 @@ def disassemblerMain():
     parser.add_argument("outputfolder", help="Path to output folder.")
     parser.add_argument("--vram", help="Set the VRAM address for unknown files.", default="-1")
     parser.add_argument("--text-end-offset", help="Set the offset of the end of .text section for unknown files.", default="-1")
+    parser.add_argument("--disable-asm-comments", help="Disables the comments in assembly code.", action="store_true")
     args = parser.parse_args()
 
     GlobalConfig.REMOVE_POINTERS = False
@@ -99,6 +100,7 @@ def disassemblerMain():
     GlobalConfig.IGNORE_06 = False
     GlobalConfig.IGNORE_80 = False
     GlobalConfig.WRITE_BINARY = False
+    GlobalConfig.ASM_COMMENT = not args.disable_asm_comments
 
     context = Context()
     context.readFunctionMap(args.version)

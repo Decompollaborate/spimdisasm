@@ -209,6 +209,9 @@ def main():
     parser.add_argument("--noheader", help="Disables the csv header.", action="store_true")
     # parser.add_argument("--overlays", help="Treats the files in filelist as overlays.", action="store_true")
     parser.add_argument("--savetofile", help="Specify a folder where each part of an overlay will be written.", metavar="FOLDER")
+    parser.add_argument("--disable-asm-comments", help="Disables the comments in assembly code when using --savetofile.", action="store_true")
+    parser.add_argument("--ignore80", help="Ignores words differences that starts in 0x80XXXXXX", action="store_true")
+    parser.add_argument("--ignore06", help="Ignores words differences that starts in 0x06XXXXXX", action="store_true")
     parser.add_argument("--ignore04", help="Ignores words starting with 0x04.", action="store_true")
     parser.add_argument("--ignore-branches", help="Ignores the address of every branch, jump and jal.", action="store_true")
     parser.add_argument("--dont-remove-ptrs", help="Disable the pointer removal feature.", action="store_true")
@@ -217,6 +220,9 @@ def main():
     GlobalConfig.REMOVE_POINTERS = not args.dont_remove_ptrs
     GlobalConfig.IGNORE_BRANCHES = args.ignore_branches
     GlobalConfig.IGNORE_04 = args.ignore04
+    GlobalConfig.IGNORE_06 = args.ignore06
+    GlobalConfig.IGNORE_80 = args.ignore80
+    GlobalConfig.ASM_COMMENT = not args.disable_asm_comments
 
     # Read filelist
     versionsList = []
