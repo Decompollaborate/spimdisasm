@@ -18,7 +18,7 @@ class FileBase:
         self.offset: int = 0 # in-file offset
         self.vRamStart: int = -1
 
-        self.pointersOffsets: List[int]= list()
+        self.pointersOffsets: List[int] = list()
 
     @property
     def size(self) -> int:

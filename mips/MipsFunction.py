@@ -20,6 +20,9 @@ class Function:
         self.localLabels: Dict[int, str] = dict()
         # TODO: this needs a better name
         self.pointersPerInstruction: Dict[int, int] = dict()
+        self.branchInstructions: List[int] = list()
+
+        self.pointersOffsets: List[int] = list()
 
     @property
     def nInstr(self) -> int:
@@ -50,6 +53,7 @@ class Function:
                 if self.vram >= 0:
                     if self.vram + branch not in self.context.labels:
                         self.context.labels[self.vram + branch] = label
+                self.branchInstructions.append(instructionOffset)
 
             elif instr.isJType():
                 target = 0x80000000 | instr.instr_index << 2
@@ -145,10 +149,18 @@ class Function:
             self.instructions[instructionOffset//4].blankOut()
         was_updated = len(self.pointersPerInstruction) > 0 or was_updated
 
+        for fileOffset in self.pointersOffsets:
+            index = (fileOffset - self.inFileOffset)//4
+            if index < 0:
+                continue
+            if index >= self.nInstr:
+                continue
+            self.instructions[index].blankOut()
+
         if GlobalConfig.IGNORE_BRANCHES:
-            for offset in self.localLabels:
-                self.instructions[(offset-self.inFileOffset)//4].blankOut()
-            was_updated = len(self.localLabels) > 0 or was_updated
+            for instructionOffset in self.branchInstructions:
+                self.instructions[instructionOffset//4].blankOut()
+            was_updated = len(self.branchInstructions) > 0 or was_updated
 
         self.pointersRemoved = True
 

@@ -108,6 +108,7 @@ class Text(Section):
 
             func = Function(funcName, instructions[start:end], self.context, self.offset + start*4, vram=vram)
             func.index = i
+            func.pointersOffsets += self.pointersOffsets
             func.analyze()
             self.functions.append(func)
             i += 1
