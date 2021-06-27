@@ -21,6 +21,8 @@ class FileGeneric(FileBase):
         self.rodataList : Dict[str, Rodata] = dict()
         self.bssList: Dict[str, Bss] = dict()
 
+        self.initVarsAddress = -1
+
     @property
     def nFuncs(self) -> int:
         nFuncs = 0
@@ -178,11 +180,19 @@ class FileGeneric(FileBase):
             section.updateBytes()
 
     def saveToFile(self, filepath: str):
-        for section in self.textList.values():
-            section.saveToFile(filepath)
-        for section in self.dataList.values():
-            section.saveToFile(filepath)
-        for section in self.rodataList.values():
-            section.saveToFile(filepath)
-        for section in self.bssList.values():
-            section.saveToFile(filepath)
+        for name, section in self.textList.items():
+            if name != "":
+                name = " " + name
+            section.saveToFile(filepath + name)
+        for name, section in self.dataList.items():
+            if name != "":
+                name = " " + name
+            section.saveToFile(filepath + name)
+        for name, section in self.rodataList.items():
+            if name != "":
+                name = " " + name
+            section.saveToFile(filepath + name)
+        for name, section in self.bssList.items():
+            if name != "":
+                name = " " + name
+            section.saveToFile(filepath + name)
