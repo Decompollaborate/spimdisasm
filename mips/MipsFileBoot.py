@@ -11,13 +11,14 @@ from .MipsRodata import Rodata
 from .MipsBss import Bss
 from .MipsFileGeneric import FileGeneric
 from .MipsContext import Context
+from .MipsSplitEntry import SplitEntry, getFileStartsFromEntries
 
 from .ZeldaOffsets import bootVramStart, bootDataStart, bootRodataStart
 
 
 class FileBoot(FileGeneric):
-    def __init__(self, array_of_bytes: bytearray, filename: str, version: str, context: Context):
-        super().__init__(array_of_bytes, filename, version, context)
+    def __init__(self, array_of_bytes: bytearray, version: str, context: Context, textSplits: Dict[str, SplitEntry], dataSplits: Dict[str, SplitEntry], rodataSplits: Dict[str, SplitEntry], bssSplits: Dict[str, SplitEntry]):
+        super().__init__(array_of_bytes, "boot", version, context)
 
         self.vRamStart = bootVramStart[version]
 
@@ -27,22 +28,68 @@ class FileBoot(FileGeneric):
         # bss_start = bootBssStart[version]
         bss_start = self.size
 
-        self.text = Text(self.bytes[text_start:data_start], filename, version, context)
-        self.text.parent = self
-        self.text.offset = text_start
-        self.text.vRamStart = self.vRamStart
+        textStarts = getFileStartsFromEntries(textSplits, data_start)
+        dataStarts = getFileStartsFromEntries(dataSplits, rodata_start)
+        rodataStarts = getFileStartsFromEntries(rodataSplits, bss_start)
+        bssStarts = getFileStartsFromEntries(bssSplits, self.size)
 
-        self.data = Data(self.bytes[data_start:rodata_start], filename, version, context)
-        self.data.parent = self
-        self.data.offset = data_start
-        self.data.vRamStart = self.vRamStart
+        if len(textSplits) == 0:
+            textStarts.insert(0, (text_start, textStarts[0][0]-text_start, ""))
+        if len(dataSplits) == 0:
+            dataStarts.insert(0, (data_start, dataStarts[0][0]-data_start, ""))
+        if len(rodataSplits) == 0:
+            rodataStarts.insert(0, (rodata_start, rodataStarts[0][0]-rodata_start, ""))
+        #if len(bssSplits) == 0:
+        #    bssStarts.insert(0, (bss_start, bssStarts[0][0]-bss_start, ""))
 
-        self.rodata = Rodata(self.bytes[rodata_start:bss_start], filename, version, context)
-        self.rodata.parent = self
-        self.rodata.offset = rodata_start
-        self.rodata.vRamStart = self.vRamStart
+        i = 0
+        while i < len(textStarts) - 1:
+            start, size, filename = textStarts[i]
+            end = start + size
 
-        self.bss = Bss(self.bytes[bss_start:self.size], filename, version, context)
-        self.bss.parent = self
-        self.bss.offset = bss_start
-        self.bss.vRamStart = self.vRamStart
+            text = Text(self.bytes[start:end], filename, version, context)
+            text.parent = self
+            text.offset = start
+            text.vRamStart = self.vRamStart
+
+            self.textList[filename] = text
+            i += 1
+
+        i = 0
+        while i < len(dataStarts) - 1:
+            start, size, filename = dataStarts[i]
+            end = start + size
+
+            data = Data(self.bytes[start:end], filename, version, context)
+            data.parent = self
+            data.offset = start
+            data.vRamStart = self.vRamStart
+
+            self.dataList[filename] = data
+            i += 1
+
+        i = 0
+        while i < len(rodataStarts) - 1:
+            start, size, filename = rodataStarts[i]
+            end = start + size
+
+            rodata = Rodata(self.bytes[start:end], filename, version, context)
+            rodata.parent = self
+            rodata.offset = start
+            rodata.vRamStart = self.vRamStart
+
+            self.rodataList[filename] = rodata
+            i += 1
+
+        i = 0
+        while i < len(bssStarts) - 1:
+            start, size, filename = bssStarts[i]
+            end = start + size
+
+            bss = Bss(self.bytes[start:end], filename, version, context)
+            bss.parent = self
+            bss.offset = start
+            bss.vRamStart = self.vRamStart
+
+            self.bssList[filename] = bss
+            i += 1

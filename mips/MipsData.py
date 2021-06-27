@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from .Utils import *
 from .GlobalConfig import GlobalConfig
-from .MipsFile import File
+from .MipsFileBase import FileBase
+from .MipsSection import Section
 
 
-class Data(File):
+class Data(Section):
     def removePointers(self) -> bool:
         if not GlobalConfig.REMOVE_POINTERS:
             return False
@@ -32,6 +33,10 @@ class Data(File):
 
         with open(filepath + ".data.asm", "w") as f:
             f.write(".section .data\n\n")
+
+            initVarsAddress = -1
+            if self.parent is not None:
+                initVarsAddress = self.parent.initVarsAddress
             offset = 0
             i = 0
             while i < self.sizew:
@@ -48,7 +53,7 @@ class Data(File):
                         if auxLabel is not None:
                             label = "glabel " + auxLabel + "\n"
 
-                    if currentVram == self.initVarsAddress:
+                    if currentVram == initVarsAddress:
                         f.write(f"glabel {self.filename}_InitVars\n")
                         actorId = toHex((w >> 16) & 0xFFFF, 4)
                         category = toHex((w >> 8) & 0xFF, 2)

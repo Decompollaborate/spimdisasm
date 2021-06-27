@@ -23,7 +23,7 @@ GlobalConfig.IGNORE_80 = False
 GlobalConfig.WRITE_BINARY = False
 
 def readCodeSplitsCsv():
-    code_splits_file = readCsv("code_splits.csv")
+    code_splits_file = readCsv("csvsplits/code_text.csv")
 
     header = code_splits_file[0][3::3]
     splits = { h: dict() for h in header }

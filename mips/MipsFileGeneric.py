@@ -4,54 +4,108 @@ from __future__ import annotations
 
 from .Utils import *
 from .GlobalConfig import GlobalConfig
-from .MipsFile import File
+from .MipsFileBase import FileBase, createEmptyFile
 from .MipsText import Text
 from .MipsData import Data
 from .MipsRodata import Rodata
 from .MipsBss import Bss
-from .ZeldaOffsets import codeVramStart, codeDataStart, codeRodataStart
 from .MipsContext import Context
 
 # Not intended to be instanced
-class FileGeneric(File):
+class FileGeneric(FileBase):
     def __init__(self, array_of_bytes: bytearray, filename: str, version: str, context: Context):
         super().__init__(array_of_bytes, filename, version, context)
 
-        self.text = Text(bytearray(0), filename, version, context)
-        self.text.parent = self
-
-        self.data = Data(bytearray(0), filename, version, context)
-        self.data.parent = self
-
-        self.rodata = Rodata(bytearray(0), filename, version, context)
-        self.rodata.parent = self
-
-        self.bss = Bss(bytearray(0), filename, version, context)
-        self.rodata.parent = self
+        self.textList: Dict[str, Text] = dict()
+        self.dataList: Dict[str, Data] = dict()
+        self.rodataList : Dict[str, Rodata] = dict()
+        self.bssList: Dict[str, Bss] = dict()
 
     @property
     def nFuncs(self) -> int:
-        return self.text.nFuncs
+        nFuncs = 0
+        for text in self.textList.values():
+            nFuncs += text.nFuncs
+        return nFuncs
+
+    def getHash(self) -> str:
+        bytes = bytearray(0)
+        for section in self.textList.values():
+            bytes += section.bytes
+        for section in self.dataList.values():
+            bytes += section.bytes
+        for section in self.rodataList.values():
+            bytes += section.bytes
+        for section in self.bssList.values():
+            bytes += section.bytes
+        return getStrHash(bytes)
 
     def analyze(self):
-        self.text.analyze()
-        self.data.analyze()
-        self.rodata.analyze()
-        self.bss.analyze()
+        for section in self.textList.values():
+            section.analyze()
+        for section in self.dataList.values():
+            section.analyze()
+        for section in self.rodataList.values():
+            section.analyze()
+        for section in self.bssList.values():
+            section.analyze()
 
-    def compareToFile(self, other_file: File):
+    def compareToFile(self, other_file: FileBase):
         if isinstance(other_file, FileGeneric):
-            return {"filesections": {
-                    "text": self.text.compareToFile(other_file.text),
-                    "data": self.data.compareToFile(other_file.data),
-                    "rodata": self.rodata.compareToFile(other_file.rodata),
-                    # "bss": self.bss.compareToFile(other_file.bss),
-                }
+            filesections = {
+                "text": dict(),
+                "data": dict(),
+                "rodata": dict(),
+                # "bss": dict(),
             }
+
+            for section_name, section in self.textList.items():
+                if section_name in other_file.textList:
+                    other_section = other_file.textList[section_name]
+                    filesections["text"][section_name] = section.compareToFile(other_section)
+                else:
+                    filesections["text"][section_name] = section.compareToFile(createEmptyFile())
+            for section_name, other_section in other_file.textList.items():
+                if section_name in self.textList:
+                    section = self.textList[section_name]
+                    if section_name not in filesections["text"]:
+                        filesections["text"][section_name] = section.compareToFile(other_section)
+                else:
+                    filesections["text"][section_name] = createEmptyFile().compareToFile(other_section)
+
+            for section_name, section in self.dataList.items():
+                if section_name in other_file.dataList:
+                    other_section = other_file.dataList[section_name]
+                    filesections["data"][section_name] = section.compareToFile(other_section)
+                else:
+                    filesections["data"][section_name] = section.compareToFile(createEmptyFile())
+            for section_name, other_section in other_file.dataList.items():
+                if section_name in self.dataList:
+                    section = self.dataList[section_name]
+                    if section_name not in filesections["data"]:
+                        filesections["data"][section_name] = section.compareToFile(other_section)
+                else:
+                    filesections["data"][section_name] = createEmptyFile().compareToFile(other_section)
+
+            for section_name, section in self.rodataList.items():
+                if section_name in other_file.rodataList:
+                    other_section = other_file.rodataList[section_name]
+                    filesections["rodata"][section_name] = section.compareToFile(other_section)
+                else:
+                    filesections["rodata"][section_name] = section.compareToFile(createEmptyFile())
+            for section_name, other_section in other_file.rodataList.items():
+                if section_name in self.rodataList:
+                    section = self.rodataList[section_name]
+                    if section_name not in filesections["rodata"]:
+                        filesections["rodata"][section_name] = section.compareToFile(other_section)
+                else:
+                    filesections["rodata"][section_name] = createEmptyFile().compareToFile(other_section)
+
+            return {"filesections": filesections}
 
         return super().compareToFile(other_file)
 
-    def blankOutDifferences(self, other_file: File) -> bool:
+    def blankOutDifferences(self, other_file: FileBase) -> bool:
         if not GlobalConfig.REMOVE_POINTERS:
             return False
 
@@ -59,10 +113,41 @@ class FileGeneric(File):
             return False
 
         was_updated = False
-        was_updated = self.text.blankOutDifferences(other_file.text) or was_updated
-        was_updated = self.data.blankOutDifferences(other_file.data) or was_updated
-        was_updated = self.rodata.blankOutDifferences(other_file.rodata) or was_updated
-        was_updated = self.bss.blankOutDifferences(other_file.bss) or was_updated
+        for section_name, section in self.textList.items():
+            if section_name in other_file.textList:
+                other_section = other_file.textList[section_name]
+                was_updated = section.blankOutDifferences(other_section) or was_updated
+        for section_name, other_section in other_file.textList.items():
+            if section_name in self.textList:
+                section = self.textList[section_name]
+                was_updated = section.blankOutDifferences(other_section) or was_updated
+
+        for section_name, section in self.dataList.items():
+            if section_name in other_file.dataList:
+                other_section = other_file.dataList[section_name]
+                was_updated = section.blankOutDifferences(other_section) or was_updated
+        for section_name, other_section in other_file.dataList.items():
+            if section_name in self.dataList:
+                section = self.dataList[section_name]
+                was_updated = section.blankOutDifferences(other_section) or was_updated
+
+        for section_name, section in self.rodataList.items():
+            if section_name in other_file.rodataList:
+                other_section = other_file.rodataList[section_name]
+                was_updated = section.blankOutDifferences(other_section) or was_updated
+        for section_name, other_section in other_file.rodataList.items():
+            if section_name in self.rodataList:
+                section = self.rodataList[section_name]
+                was_updated = section.blankOutDifferences(other_section) or was_updated
+
+        for section_name, section in self.bssList.items():
+            if section_name in other_file.bssList:
+                other_section = other_file.bssList[section_name]
+                was_updated = section.blankOutDifferences(other_section) or was_updated
+        for section_name, other_section in other_file.bssList.items():
+            if section_name in self.bssList:
+                section = self.bssList[section_name]
+                was_updated = section.blankOutDifferences(other_section) or was_updated
 
         return was_updated
 
@@ -71,21 +156,33 @@ class FileGeneric(File):
             return False
 
         was_updated = False
-        was_updated = self.text.removePointers() or was_updated
-        was_updated = self.data.removePointers() or was_updated
-        was_updated = self.rodata.removePointers() or was_updated
-        was_updated = self.bss.removePointers() or was_updated
+        for section in self.textList.values():
+            was_updated = section.removePointers() or was_updated
+        for section in self.dataList.values():
+            was_updated = section.removePointers() or was_updated
+        for section in self.rodataList.values():
+            was_updated = section.removePointers() or was_updated
+        for section in self.bssList.values():
+            was_updated = section.removePointers() or was_updated
 
         return was_updated
 
     def updateBytes(self):
-        self.text.updateBytes()
-        self.data.updateBytes()
-        self.rodata.updateBytes()
-        self.bss.updateBytes()
+        for section in self.textList.values():
+            section.updateBytes()
+        for section in self.dataList.values():
+            section.updateBytes()
+        for section in self.rodataList.values():
+            section.updateBytes()
+        for section in self.bssList.values():
+            section.updateBytes()
 
     def saveToFile(self, filepath: str):
-        self.text.saveToFile(filepath)
-        self.data.saveToFile(filepath)
-        self.rodata.saveToFile(filepath)
-        self.bss.saveToFile(filepath)
+        for section in self.textList.values():
+            section.saveToFile(filepath)
+        for section in self.dataList.values():
+            section.saveToFile(filepath)
+        for section in self.rodataList.values():
+            section.saveToFile(filepath)
+        for section in self.bssList.values():
+            section.saveToFile(filepath)

@@ -11,6 +11,7 @@ from mips.MipsFileOverlay import FileOverlay
 from mips.MipsFileCode import FileCode
 from mips.MipsFileBoot import FileBoot
 from mips.MipsContext import Context
+from mips.MipsSplitEntry import readSplitsFromCsv
 from mips.ZeldaTables import DmaEntry, getDmaAddresses
 
 def disassembleFile(version: str, filename: str, outputfolder: str, context: Context, dmaAddresses: Dict[str, DmaEntry], vram: int = -1, textend: int = -1):
@@ -39,10 +40,18 @@ def disassembleFile(version: str, filename: str, outputfolder: str, context: Con
         f = FileOverlay(array_of_bytes, filename, version, context, tableEntry=tableEntry)
     elif is_code:
         print("code detected. Parsing...")
-        f = FileCode(array_of_bytes, filename, version, context)
+        textSplits = readSplitsFromCsv("csvsplits/code_text.csv") if os.path.exists("csvsplits/code_text.csv") else {version: dict()}
+        dataSplits = readSplitsFromCsv("csvsplits/code_data.csv") if os.path.exists("csvsplits/code_data.csv") else {version: dict()}
+        rodataSplits = readSplitsFromCsv("csvsplits/code_rodata.csv") if os.path.exists("csvsplits/code_rodata.csv") else {version: dict()}
+        bssSplits = readSplitsFromCsv("csvsplits/code_bss.csv") if os.path.exists("csvsplits/code_bss.csv") else {version: dict()}
+        f = FileCode(array_of_bytes, version, context, textSplits[version], dataSplits[version], rodataSplits[version], bssSplits[version])
     elif is_boot:
         print("boot detected. Parsing...")
-        f = FileBoot(array_of_bytes, filename, version, context)
+        textSplits = readSplitsFromCsv("csvsplits/boot_text.csv") if os.path.exists("csvsplits/boot_text.csv") else {version: dict()}
+        dataSplits = readSplitsFromCsv("csvsplits/boot_data.csv") if os.path.exists("csvsplits/boot_data.csv") else {version: dict()}
+        rodataSplits = readSplitsFromCsv("csvsplits/boot_rodata.csv") if os.path.exists("csvsplits/boot_rodata.csv") else {version: dict()}
+        bssSplits = readSplitsFromCsv("csvsplits/boot_bss.csv") if os.path.exists("csvsplits/boot_bss.csv") else {version: dict()}
+        f = FileBoot(array_of_bytes, version, context, textSplits[version], dataSplits[version], rodataSplits[version], bssSplits[version])
     else:
         print("Unknown file type. Assuming .text. Parsing...")
 

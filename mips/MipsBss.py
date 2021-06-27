@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from .Utils import *
 from .GlobalConfig import GlobalConfig
-from .MipsFile import File
+from .MipsFileBase import FileBase
+from .MipsSection import Section
 
 
-class Bss(File):
+class Bss(Section):
     def removePointers(self) -> bool:
         if not GlobalConfig.REMOVE_POINTERS:
             return False

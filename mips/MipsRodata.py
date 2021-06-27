@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from .Utils import *
 from .GlobalConfig import GlobalConfig
-from .MipsFile import File
+from .MipsFileBase import FileBase
+from .MipsSection import Section
 
 
-class Rodata(File):
+class Rodata(Section):
     def analyze(self):
         offset = 0
         partOfJumpTable = False
