@@ -68,9 +68,9 @@ context = Context()
 context.readFunctionMap(VERSION)
 
 palMqDbg_filesStarts = list()
-for codeFilename, (offset, size) in codeSplits[VERSION].items():
+for codeFilename, (offset, size) in codeSplits.get(VERSION, {}).items():
     palMqDbg_filesStarts.append((offset, size, codeFilename))
-palMqDbg_filesStarts.append((codeDataStart[VERSION], 0, "end"))
+palMqDbg_filesStarts.append((codeDataStart.get(VERSION, -1), 0, "end"))
 
 palMqDbg_filesStarts.sort()
 
@@ -89,18 +89,18 @@ while i < len(palMqDbg_filesStarts) - 1:
 
     text = Text(palMqDbg_Code_array[start:end], filename, VERSION, context)
     text.offset = start
-    text.vRamStart = codeVramStart[VERSION]
+    text.vRamStart = codeVramStart.get(VERSION, -1)
 
     text.analyze()
 
     palMqDbg_texts.append(text)
     i += 1
 
-section_data = Data(palMqDbg_Code_array[codeDataStart[VERSION]:codeRodataStart[VERSION]], CODE, VERSION, context)
-section_rodata = Rodata(palMqDbg_Code_array[codeRodataStart[VERSION]:], CODE, VERSION, context)
+section_data = Data(palMqDbg_Code_array[codeDataStart.get(VERSION, -1):codeRodataStart.get(VERSION, -1)], CODE, VERSION, context)
+section_rodata = Rodata(palMqDbg_Code_array[codeRodataStart.get(VERSION, -1):], CODE, VERSION, context)
 
-section_data.vRamStart = codeVramStart[VERSION] + codeDataStart[VERSION]
-section_rodata.vRamStart = codeVramStart[VERSION] + codeRodataStart[VERSION]
+section_data.vRamStart = codeVramStart.get(VERSION, -1) + codeDataStart.get(VERSION, -1)
+section_rodata.vRamStart = codeVramStart.get(VERSION, -1) + codeRodataStart.get(VERSION, -1)
 
 section_data.analyze()
 section_rodata.analyze()
@@ -118,7 +118,7 @@ for text in palMqDbg_texts:
 
             functionsInBoundary = 0
             for func in text.functions:
-                funcOffset = func.vram - codeVramStart[VERSION]
+                funcOffset = func.vram - codeVramStart.get(VERSION, -1)
                 if start <= funcOffset < end:
                     functionsInBoundary += 1
             print("\t", toHex(start, 6)[2:], toHex(end-start, 3)[2:], "\t functions:", functionsInBoundary)
@@ -129,7 +129,7 @@ for text in palMqDbg_texts:
 
         functionsInBoundary = 0
         for func in text.functions:
-            funcOffset = func.vram - codeVramStart[VERSION]
+            funcOffset = func.vram - codeVramStart.get(VERSION, -1)
             if start <= funcOffset < end:
                 functionsInBoundary += 1
         print("\t", toHex(start, 6)[2:], toHex(end-start, 3)[2:], "\t functions:", functionsInBoundary)
