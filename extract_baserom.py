@@ -31,7 +31,7 @@ FILE_TABLE_OFFSET = {
     "PAL MQ":       0x07170,
     "JP GC CE":     0x07170, # Zelda collection
     "IQUE CN":      0x0B7A0,
-    "IQUE TW":      0x0B240
+    "IQUE TW":      0x0B240,
 }
 FILE_TABLE_OFFSET["NTSC J 0.9"]   = FILE_TABLE_OFFSET["NTSC 0.9"]
 FILE_TABLE_OFFSET["NTSC J 1.0"]   = FILE_TABLE_OFFSET["NTSC 1.0"]
@@ -57,7 +57,7 @@ FILE_NAMES: Dict[str, List[str] | None] = {
     "PAL MQ":       None,
     "JP GC CE":     None, # Zelda collector's edition
     "IQUE CN":      None,
-    "IQUE TW":      None
+    "IQUE TW":      None,
 }
 FILE_NAMES["NTSC J 0.9"]  = FILE_NAMES["NTSC 0.9"]
 FILE_NAMES["NTSC J 1.0"]  = FILE_NAMES["NTSC 1.0"]

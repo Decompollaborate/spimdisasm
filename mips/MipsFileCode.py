@@ -20,12 +20,12 @@ class FileCode(FileGeneric):
     def __init__(self, array_of_bytes: bytearray, version: str, context: Context, textSplits: Dict[str, SplitEntry], dataSplits: Dict[str, SplitEntry], rodataSplits: Dict[str, SplitEntry], bssSplits: Dict[str, SplitEntry]):
         super().__init__(array_of_bytes, "code", version, context)
 
-        self.vRamStart = codeVramStart[version]
+        self.vRamStart = codeVramStart.get(version, -1)
 
         text_start = 0
-        data_start = codeDataStart[version]
-        rodata_start = codeRodataStart[version]
-        # bss_start = codeBssStart[version]
+        data_start = codeDataStart.get(version, -1)
+        rodata_start = codeRodataStart.get(version, -1)
+        # bss_start = codeBssStart.get(version, -1)
         bss_start = self.size
 
         textStarts = getFileStartsFromEntries(textSplits, data_start)
