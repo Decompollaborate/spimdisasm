@@ -110,11 +110,11 @@ def readFilelists():
     
     FILE_NAMES["GATEWAY"] = FILE_NAMES["IQUE CN"]
 
-def initialize_worker(rom_data, dmaTable):
+def initialize_worker(rom_data):#, dmaTable):
     global romData
     global globalDmaTable
     romData = rom_data
-    globalDmaTable = dmaTable
+    # globalDmaTable = dmaTable
 
 def read_uint32_be(offset):
     return struct.unpack('>I', romData[offset:offset+4])[0]
@@ -161,22 +161,26 @@ def ExtractFunc(i):
     physStart = read_uint32_be(entryOffset + 8)
     physEnd   = read_uint32_be(entryOffset + 12)
 
+    displayedPhysEnd = physEnd
+    
     if physEnd == 0:  # uncompressed
         compressed = False
         size = virtEnd - virtStart
+        compressString = ""
+        actualPhysEnd = physStart + size
+        if showEnd:
+            displayedPhysEnd = actualPhysEnd
     else:             # compressed
         compressed = True
         size = physEnd - physStart
+        compressString = "compressed"
 
-    globalDmaTable[versionName].append(virtStart)
-    globalDmaTable[versionName].append(virtEnd)
-    globalDmaTable[versionName].append(physStart)
-    globalDmaTable[versionName].append(physEnd)
-    
-    # if compressed:
-    #     globalDmaTable[versionName].append("compressed")
-    # else:
-    #     globalDmaTable[versionName].append("")
+    print(f"{versionName},{virtStart:X},{virtEnd:X},{physStart:X},{displayedPhysEnd:X},{compressString}")
+
+    # globalDmaTable[versionName].append(virtStart)
+    # globalDmaTable[versionName].append(virtEnd)
+    # globalDmaTable[versionName].append(physStart)
+    # globalDmaTable[versionName].append(physEnd)
 
     # print('extracting ' + filename + " (0x%08X, 0x%08X)" % (virtStart, virtEnd))
     # write_output_file(filename, physStart, size)
@@ -220,10 +224,10 @@ def extract_rom(): #(j):
         print('Failed to read file ' + filename)
         sys.exit(1)
 
-    manager = Manager()
-    dmaTable = manager.dict()
-    for name in file_names_table:
-        dmaTable[name] = manager.list()
+    # manager = Manager()
+    # dmaTable = manager.dict()
+    # for name in file_names_table:
+    #     dmaTable[name] = manager.list()
 
     # extract files
     # if j:
@@ -233,33 +237,37 @@ def extract_rom(): #(j):
     #         p.map(ExtractFunc, range(len(file_names_table)))
     # else:
     if True:
-        initialize_worker(rom_data, dmaTable)
+        initialize_worker(rom_data)#, dmaTable)
         for i in range(len(file_names_table)):
             ExtractFunc(i)
 
     # filetable = f'baserom_{Edition}/dma_addresses.txt'
     # print(f"Creating {filetable}")
     # with open(filetable, "w") as f:
-    if True:
-        for filename, data in dmaTable.items():
-            # f.write(",".join([filename] + list(map(str, data))) + "\n")
-            print(",".join([filename] + list(map(str, data))))
+    # if True:
+    #     for filename, data in dmaTable.items():
+    #         # f.write(",".join([filename] + list(map(str, data))) + "\n")
+    #         print(",".join([filename] + list(map(str, data))))
 
 def main():
-    description = "Extracts files from the rom. Will try to read the rom 'baserom_version.z64', or 'baserom.z64' if that doesn't exists."
+    description = "Extracts the dmadata table from the rom. Will try to read the rom 'baserom_version.z64', or 'baserom.z64' if that doesn't exists."
 
     parser = argparse.ArgumentParser(description=description, formatter_class=argparse.RawTextHelpFormatter)
     choices = [x.lower().replace(" ", "_") for x in FILE_TABLE_OFFSET]
     parser.add_argument("edition", help="Select the version of the game to extract.", choices=choices, default="pal_mq_dbg", nargs='?')
     # parser.add_argument("-j", help="Enables multiprocessing.", action="store_true")
+    parser.add_argument("--show-end", help="Show physical ROM end addresses for uncompressed files", action="store_true")
     args = parser.parse_args()
 
     global Edition
     global Version
+    global showEnd
 
     Edition = args.edition
     Version = Edition.upper().replace("_", " ")
+    showEnd = args.show_end
 
+    print("File name,VROM start,VROM end,ROM start,ROM end,Compressed?")
     extract_rom() #(args.j)
 
 if __name__ == "__main__":
