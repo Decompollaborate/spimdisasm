@@ -51,7 +51,7 @@ FILE_NAMES: Dict[str, List[str] | None] = {
     "JP MQ":        None,
     "USA GC":       None,
     "USA MQ":       None,
-    "PAL GC DBG1":   None,
+    "PAL GC DBG1":  None,
     "PAL GC DBG2":  None,
     "PAL MQ DBG":   None,
     "PAL GC":       None,
@@ -59,7 +59,7 @@ FILE_NAMES: Dict[str, List[str] | None] = {
     "JP GC CE":     None, # Zelda collector's edition
     "IQUE CN":      None,
     "IQUE TW":      None,
-     "GATEWAY":      None,
+    "GATEWAY":      None,
 }
 FILE_NAMES["NTSC J 0.9"]  = FILE_NAMES["NTSC 0.9"]
 FILE_NAMES["NTSC J 1.0"]  = FILE_NAMES["NTSC 1.0"]

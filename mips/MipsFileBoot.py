@@ -20,13 +20,18 @@ class FileBoot(FileGeneric):
     def __init__(self, array_of_bytes: bytearray, version: str, context: Context, textSplits: Dict[str, SplitEntry], dataSplits: Dict[str, SplitEntry], rodataSplits: Dict[str, SplitEntry], bssSplits: Dict[str, SplitEntry]):
         super().__init__(array_of_bytes, "boot", version, context)
 
-        self.vRamStart = bootVramStart[version]
+        self.vRamStart = bootVramStart.get(version, -1)
 
         text_start = 0
-        data_start = bootDataStart[version]
-        rodata_start = bootRodataStart[version]
-        # bss_start = bootBssStart[version]
+        data_start = bootDataStart.get(version, -1)
+        rodata_start = bootRodataStart.get(version, -1)
+        # bss_start = bootBssStart.get(version, -1)
         bss_start = self.size
+
+        if rodata_start < 0:
+            rodata_start = self.size
+        if data_start < 0:
+            data_start = rodata_start
 
         textStarts = getFileStartsFromEntries(textSplits, data_start)
         dataStarts = getFileStartsFromEntries(dataSplits, rodata_start)

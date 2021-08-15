@@ -7,12 +7,14 @@ import argparse
 from mips.Utils import *
 from mips.GlobalConfig import GlobalConfig
 from mips.MipsText import Text
+from mips.MipsFileGeneric import FileGeneric
 from mips.MipsFileOverlay import FileOverlay
 from mips.MipsFileCode import FileCode
 from mips.MipsFileBoot import FileBoot
 from mips.MipsContext import Context
 from mips.MipsSplitEntry import readSplitsFromCsv
-from mips.ZeldaTables import DmaEntry, getDmaAddresses
+from mips.ZeldaTables import DmaEntry, getDmaAddresses, OverlayTableEntry
+from mips import ZeldaOffsets
 
 def disassembleFile(version: str, filename: str, outputfolder: str, context: Context, dmaAddresses: Dict[str, DmaEntry], vram: int = -1, textend: int = -1):
     is_overlay = filename.startswith("ovl_")
@@ -27,16 +29,27 @@ def disassembleFile(version: str, filename: str, outputfolder: str, context: Con
         exit(-1)
 
     if is_overlay:
+        print("Overlay detected. Parsing...")
+
         tableEntry = None
         # TODO
-        #if filename in dmaAddresses:
-        #    dmaEntry = dmaAddresses[filename]
-            #for entry in actorOverlayTable:
-            #    if entry.vromStart == dmaEntry.vromStart:
-            #        tableEntry = entry
-            #        break
+        if filename in dmaAddresses:
+            dmaEntry = dmaAddresses[filename]
 
-        print("Overlay detected. Parsing...")
+            codePath = os.path.join(f"baserom_{version}", "code")
+
+            if os.path.exists(codePath) and version in ZeldaOffsets.offset_ActorOverlayTable:
+                tableOffset = ZeldaOffsets.offset_ActorOverlayTable[version]
+                if tableOffset != 0x0:
+                    codeData = readFileAsBytearray(codePath)
+                    i = 0
+                    while i < ZeldaOffsets.ACTOR_ID_MAX:
+                        entry = OverlayTableEntry(codeData[tableOffset + i*0x20 : tableOffset + (i+1)*0x20])
+                        if entry.vromStart == dmaEntry.vromStart:
+                            tableEntry = entry
+                            break
+                        i += 1
+
         f = FileOverlay(array_of_bytes, filename, version, context, tableEntry=tableEntry)
     elif is_code:
         print("code detected. Parsing...")
@@ -44,14 +57,14 @@ def disassembleFile(version: str, filename: str, outputfolder: str, context: Con
         dataSplits = readSplitsFromCsv("csvsplits/code_data.csv") if os.path.exists("csvsplits/code_data.csv") else {version: dict()}
         rodataSplits = readSplitsFromCsv("csvsplits/code_rodata.csv") if os.path.exists("csvsplits/code_rodata.csv") else {version: dict()}
         bssSplits = readSplitsFromCsv("csvsplits/code_bss.csv") if os.path.exists("csvsplits/code_bss.csv") else {version: dict()}
-        f = FileCode(array_of_bytes, version, context, textSplits[version], dataSplits[version], rodataSplits[version], bssSplits[version])
+        f = FileCode(array_of_bytes, version, context, textSplits.get(version, {}), dataSplits.get(version, {}), rodataSplits.get(version, {}), bssSplits.get(version, {}))
     elif is_boot:
         print("boot detected. Parsing...")
         textSplits = readSplitsFromCsv("csvsplits/boot_text.csv") if os.path.exists("csvsplits/boot_text.csv") else {version: dict()}
         dataSplits = readSplitsFromCsv("csvsplits/boot_data.csv") if os.path.exists("csvsplits/boot_data.csv") else {version: dict()}
         rodataSplits = readSplitsFromCsv("csvsplits/boot_rodata.csv") if os.path.exists("csvsplits/boot_rodata.csv") else {version: dict()}
         bssSplits = readSplitsFromCsv("csvsplits/boot_bss.csv") if os.path.exists("csvsplits/boot_bss.csv") else {version: dict()}
-        f = FileBoot(array_of_bytes, version, context, textSplits[version], dataSplits[version], rodataSplits[version], bssSplits[version])
+        f = FileBoot(array_of_bytes, version, context, textSplits.get(version, {}), dataSplits.get(version, {}), rodataSplits.get(version, {}), bssSplits.get(version, {}))
     else:
         print("Unknown file type. Assuming .text. Parsing...")
 
@@ -74,6 +87,15 @@ def disassembleFile(version: str, filename: str, outputfolder: str, context: Con
     new_file_folder = os.path.join(outputfolder, version, filename)
     os.makedirs(new_file_folder, exist_ok=True)
     new_file_path = os.path.join(new_file_folder, filename)
+
+    nBoundaries: int = 0
+    if isinstance(f, FileGeneric):
+        for name, text in f.textList.items():
+            nBoundaries += len(text.fileBoundaries)
+    else:
+        nBoundaries += len(f.fileBoundaries)
+    if nBoundaries > 0:
+        print(f"Found {nBoundaries} file boundaries.")
 
     print(f"Writing files to {new_file_folder}")
     f.saveToFile(new_file_path)
