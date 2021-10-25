@@ -27,6 +27,9 @@ class FileBase:
     def sizew(self) -> int:
         return len(self.words)
 
+    def setVRamStart(self, vRamStart: int):
+        self.vRamStart = vRamStart
+
     def getVramOffset(self, localOffset: int) -> int:
         if self.vRamStart < 0:
             return self.offset + localOffset
