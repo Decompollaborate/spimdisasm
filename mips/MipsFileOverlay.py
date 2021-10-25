@@ -27,6 +27,9 @@ class FileOverlay(FileGeneric):
             self.vRamStart = tableEntry.vramStart
             self.initVarsAddress = tableEntry.initVars
 
+        if filename in context.files:
+            self.vRamStart = context.files[filename].vram
+
         seekup = self.words[-1]
         headerBPos = self.size - seekup
         headerWPos = headerBPos//4

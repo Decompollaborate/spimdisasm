@@ -17,7 +17,7 @@ from .ZeldaOffsets import bootVramStart, bootDataStart, bootRodataStart
 
 
 class FileBoot(FileGeneric):
-    def __init__(self, array_of_bytes: bytearray, version: str, context: Context, textSplits: Dict[str, SplitEntry], dataSplits: Dict[str, SplitEntry], rodataSplits: Dict[str, SplitEntry], bssSplits: Dict[str, SplitEntry]):
+    def __init__(self, array_of_bytes: bytearray, version: str, context: Context, textSplits: Dict[str, SplitEntry] = {}, dataSplits: Dict[str, SplitEntry] = {}, rodataSplits: Dict[str, SplitEntry] = {}, bssSplits: Dict[str, SplitEntry] = {}):
         super().__init__(array_of_bytes, "boot", version, context)
 
         self.vRamStart = bootVramStart.get(version, -1)

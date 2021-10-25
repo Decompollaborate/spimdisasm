@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from .Utils import *
-
+import ast
 
 class ContextFile:
     def __init__(self, name: str, vram: int):
@@ -11,10 +11,25 @@ class ContextFile:
         self.vram: int = vram
         self.references: List[int] = list()
 
+class ContextSegment:
+    def __init__(self, segmentName: str, segmentInputPath: str, segmentType: str, subsections):
+        self.name: str = segmentName
+        self.inputPath: str = segmentInputPath
+        self.type: str = segmentType
+        self.subsections: list = subsections
+
+class ContextVariable:
+    def __init__(self, vram: int, name: str):
+        self.vram: int = vram
+        self.name: str = name
+        self.type: str = ""
+        self.arrayInfo: str = ""
+        self.size: int = -1
 
 class Context:
     def __init__(self):
         self.files: Dict[str, ContextFile] = dict()
+        self.segments: Dict[str, ContextSegment] = dict()
 
         self.funcsInFiles: Dict[str, List[int]] = dict()
         self.symbolToFile: Dict[int, str] = dict()
@@ -22,7 +37,7 @@ class Context:
         self.funcAddresses: Dict[int, str] = dict()
 
         self.labels: Dict[int, str] = dict()
-        self.symbols: Dict[int, str] = dict()
+        self.symbols: Dict[int, ContextVariable] = dict()
 
         # Where the jump table is
         self.jumpTables: Dict[int, str] = dict()
@@ -47,7 +62,7 @@ class Context:
             return self.jumpTables[vramAddress]
 
         if vramAddress in self.symbols:
-            return self.symbols[vramAddress]
+            return self.symbols[vramAddress].name
 
         if vramAddress in self.fakeFunctions:
             return self.fakeFunctions[vramAddress]
@@ -62,7 +77,7 @@ class Context:
             return self.jumpTables[vramAddress]
 
         if vramAddress in self.symbols:
-            return self.symbols[vramAddress]
+            return self.symbols[vramAddress].name
 
         return None
 
@@ -82,13 +97,13 @@ class Context:
         return None
 
 
-    def addFunction(self, filename: str, vramAddress: int, name: str):
-        if filename in self.files:
+    def addFunction(self, filename: str|None, vramAddress: int, name: str):
+        if filename is not None and filename in self.files:
             if vramAddress not in self.files[filename].references:
                 self.files[filename].references.append(vramAddress)
         if vramAddress not in self.funcAddresses:
             self.funcAddresses[vramAddress] = name
-        if vramAddress not in self.symbolToFile:
+        if vramAddress not in self.symbolToFile and filename is not None:
             self.symbolToFile[vramAddress] = filename
 
 
@@ -108,6 +123,33 @@ class Context:
             self.funcsInFiles[filename].append(vram)
             self.funcAddresses[vram] = func_name
             self.symbolToFile[vram] = filename
+
+    def readMMAddressMaps(self, filesPath: str, functionsPath: str, variablesPath: str):
+        with open(filesPath) as infile:
+            files_spec = ast.literal_eval(infile.read())
+
+        for segmentName, segmentInputPath, segmentType, subsections, subfiles  in files_spec:
+            self.segments[segmentName] = ContextSegment(segmentName, segmentInputPath, segmentType, subsections)
+            for ram, subname in subfiles.items():
+                self.files[subname] = ContextFile(subname, ram)
+
+        with open(functionsPath) as infile:
+            functions_ast = ast.literal_eval(infile.read())
+
+        for vram, funcData in functions_ast.items():
+            funcName = funcData[0]
+            self.addFunction(None, vram, funcName)
+
+        with open(variablesPath) as infile:
+            variables_ast = ast.literal_eval(infile.read())
+
+        for vram, varData in variables_ast.items():
+            varName, varType, varArrayInfo, varSize = varData
+            contVar = ContextVariable(vram, varName)
+            contVar.type = varType
+            contVar.arrayInfo = varArrayInfo
+            contVar.size = varSize
+            self.symbols[vram] = contVar
 
     def saveContextToFile(self, filepath: str):
         with open(filepath, "w") as f:
