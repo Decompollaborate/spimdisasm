@@ -53,8 +53,6 @@ def mmDisasmMain():
         f = FileOverlay(array_of_bytes, filename, version, context)
     elif segment.type == "code":
         print("code detected. Parsing...")
-        print("TODO. ABORTING")
-        exit(-1)
         f = FileCode(array_of_bytes, version, context)
     elif segment.type == "boot":
         print("boot detected. Parsing...")
@@ -78,7 +76,7 @@ def mmDisasmMain():
     print()
     print(f"Found {f.nFuncs} functions.")
 
-    new_file_folder = "asm"
+    new_file_folder = "asm/mm_ntsc_usa"
     print(f"Writing files to {new_file_folder}")
     new_file_path = f"{new_file_folder}/{filename}"
     f.saveToFile(new_file_path)
