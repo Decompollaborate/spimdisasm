@@ -18,7 +18,7 @@ class FileGeneric(FileBase):
 
         self.textList: Dict[str, Text] = dict()
         self.dataList: Dict[str, Data] = dict()
-        self.rodataList : Dict[str, Rodata] = dict()
+        self.rodataList: Dict[str, Rodata] = dict()
         self.bssList: Dict[str, Bss] = dict()
 
         self.initVarsAddress = -1
@@ -29,6 +29,17 @@ class FileGeneric(FileBase):
         for text in self.textList.values():
             nFuncs += text.nFuncs
         return nFuncs
+
+    def setVRamStart(self, vRamStart: int):
+        super().setVRamStart(vRamStart)
+        for text in self.textList.values():
+            text.setVRamStart(vRamStart)
+        for data in self.dataList.values():
+            data.setVRamStart(vRamStart)
+        for rodata in self.rodataList.values():
+            rodata.setVRamStart(vRamStart)
+        for bss in self.bssList.values():
+            bss.setVRamStart(vRamStart)
 
     def getHash(self) -> str:
         bytes = bytearray(0)

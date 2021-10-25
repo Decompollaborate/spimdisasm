@@ -78,6 +78,10 @@ class FileOverlay(FileGeneric):
         self.reloc.vRamStart = self.vRamStart
 
 
+    def setVRamStart(self, vRamStart: int):
+        super().setVRamStart(vRamStart)
+        self.reloc.vRamStart = vRamStart
+
     def getHash(self) -> str:
         bytes = bytearray(0)
         for section in self.textList.values():

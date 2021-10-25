@@ -34,7 +34,8 @@ def getVersionAbbr(filename: str) -> str:
 
 ENTRYPOINT = 0x80000400
 
-ACTOR_ID_MAX = 0x01D7
+ACTOR_ID_MAX    = 0x01D7
+ACTOR_ID_MAX_MM = 0x2B2
 
 # The offset of the overlay table in file `code`.
 offset_ActorOverlayTable = {
@@ -56,6 +57,9 @@ offset_ActorOverlayTable = {
     "jp_gc_ce" : 0x0D6B40,
     "ique_cn" : 0x0D7180,
     "ique_tw" : 0x0D6AA0,
+
+    # mm
+    "mm_ntsc_usa": 0x109510,
 }
 
 bootVramStart = {
