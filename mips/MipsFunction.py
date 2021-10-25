@@ -5,7 +5,7 @@ from __future__ import annotations
 from .Utils import *
 from .GlobalConfig import GlobalConfig
 from .Instructions import InstructionBase
-from .MipsContext import Context
+from .MipsContext import Context, ContextVariable
 
 class Function:
     def __init__(self, name: str, instructions: List[InstructionBase], context: Context, inFileOffset: int, vram: int = -1):
@@ -80,7 +80,7 @@ class Function:
                         lowerHalf = from2Complement(instr.immediate, 16)
                         address = upperHalf + lowerHalf
                         if address not in self.context.symbols:
-                            self.context.symbols[address] = "D_" + toHex(address, 8)[2:]
+                            self.context.symbols[address] = ContextVariable(address, "D_" + toHex(address, 8)[2:])
                         self.pointersPerInstruction[instructionOffset] = address
                         self.pointersPerInstruction[trackedRegisters[rs]*4] = address
                         registersValues[instr.rt] = address
