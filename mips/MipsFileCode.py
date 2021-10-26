@@ -56,19 +56,19 @@ class FileCode(FileGeneric):
                 vramSegmentEnd = max(vramSegmentEnd, end)
 
         if self.vRamStart != -1:
-            sortedFiles = sorted(context.files.items(), key=lambda x: x[1].vram)
+            sortedFiles = sorted(context.files.items())
             for i, x in enumerate(sortedFiles):
-                subfileName, subfileData = x
-                if subfileData.vram < self.vRamStart:
+                subfileVram, subfileData = x
+                if subfileVram < self.vRamStart:
                     continue
-                if subfileData.vram >= vramSegmentEnd:
+                if subfileVram >= vramSegmentEnd:
                     break
 
-                start = subfileData.vram - self.vRamStart
-                size = vramSegmentEnd - subfileData.vram
+                start = subfileVram - self.vRamStart
+                size = vramSegmentEnd - subfileVram
                 if i+1 < len(sortedFiles):
-                    size = sortedFiles[i+1][1].vram - subfileData.vram
-                filename = subfileName
+                    size = sortedFiles[i+1][1].vram - subfileVram
+                filename = subfileData.name
 
                 data = (start, size, filename)
                 #print(hex(start), hex(size), subfileName)
@@ -77,9 +77,9 @@ class FileCode(FileGeneric):
                     textStarts.append(data)
                 elif data_start <= start < rodata_start:
                     dataStarts.append(data)
-                if rodata_start <= start < bss_start:
+                elif rodata_start <= start < bss_start:
                     rodataStarts.append(data)
-                if bss_start <= start:
+                elif bss_start <= start:
                     bssStarts.append(data)
         else:
             textStarts = getFileStartsFromEntries(textSplits, data_start)
