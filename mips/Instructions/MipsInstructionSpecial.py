@@ -94,8 +94,7 @@ class InstructionSpecial(InstructionBase):
 
 
     def isBranch(self) -> bool:
-        opcode = self.getOpcodeName()
-        return opcode == "JR"
+        return False
     def isTrap(self) -> bool:
         opcode = self.getOpcodeName()
         return opcode in ("TGE", "TGEU", "TLT", "TLTU", "TEQ", "TNE")
