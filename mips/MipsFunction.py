@@ -189,14 +189,14 @@ class Function:
         output = ""
 
         output += f"glabel {self.name}"
-        if self.index >= 0:
-            output += f" # {self.index}"
+        #if self.index >= 0:
+        #    output += f" # {self.index}"
         output += "\n"
 
         instructionOffset = 0
         auxOffset = self.inFileOffset
         for instr in self.instructions:
-            offsetHex = toHex(auxOffset, 5)[2:]
+            offsetHex = toHex(auxOffset, 6)[2:]
             vramHex = ""
             if self.vram >= 0:
                 vramHex = toHex(self.vram + instructionOffset, 8)[2:]
@@ -226,9 +226,10 @@ class Function:
 
             line = instr.disassemble(self.context, immOverride)
 
+            #comment = " "
             comment = ""
             if GlobalConfig.ASM_COMMENT:
-                comment = f" /* {offsetHex} {vramHex} {instrHex} */ "
+                comment = f"/* {offsetHex} {vramHex} {instrHex} */ "
             line = comment + " " + line
 
             label = ""

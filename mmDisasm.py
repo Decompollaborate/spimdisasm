@@ -78,7 +78,7 @@ def mmDisasmMain():
 
     new_file_folder = "asm/mm_ntsc_usa"
     print(f"Writing files to {new_file_folder}")
-    new_file_path = f"{new_file_folder}/{filename}"
+    new_file_path = f"{new_file_folder}/{filename}/"
     f.saveToFile(new_file_path)
 
 if __name__ == "__main__":

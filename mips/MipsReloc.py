@@ -95,7 +95,7 @@ class Reloc(Section):
         if self.size == 0:
             return
 
-        with open(filepath + ".reloc.asm", "w") as f:
+        with open(filepath + ".reloc.s", "w") as f:
             offset = 0
             currentVram = self.getVramOffset(offset)
 

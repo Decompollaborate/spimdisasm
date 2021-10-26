@@ -154,7 +154,7 @@ class InstructionSpecial(InstructionBase):
 
     def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName()
-        formated_opcode = opcode.lower().ljust(7, ' ')
+        formated_opcode = opcode.lower().ljust(7+4, ' ')
         rs = self.getRegisterName(self.rs)
         rt = self.getRegisterName(self.rt)
         rd = self.getRegisterName(self.rd)

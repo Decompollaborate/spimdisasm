@@ -178,7 +178,7 @@ class InstructionNormal(InstructionBase):
 
 
     def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
-        opcode = self.getOpcodeName().lower().ljust(7, ' ')
+        opcode = self.getOpcodeName().lower().ljust(7+4, ' ')
         rs = self.getRegisterName(self.rs)
         rt = self.getRegisterName(self.rt)
         immediate = toHex(self.immediate, 4)
