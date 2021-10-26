@@ -94,7 +94,8 @@ class InstructionSpecial(InstructionBase):
 
 
     def isBranch(self) -> bool:
-        return False
+        opcode = self.getOpcodeName()
+        return opcode == "JR"
     def isTrap(self) -> bool:
         opcode = self.getOpcodeName()
         return opcode in ("TGE", "TGEU", "TLT", "TLTU", "TEQ", "TNE")
@@ -154,7 +155,7 @@ class InstructionSpecial(InstructionBase):
 
     def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName()
-        formated_opcode = opcode.lower().ljust(7+4, ' ')
+        formated_opcode = opcode.lower().ljust(self.ljustWidthOpcode, ' ')
         rs = self.getRegisterName(self.rs)
         rt = self.getRegisterName(self.rt)
         rd = self.getRegisterName(self.rd)
