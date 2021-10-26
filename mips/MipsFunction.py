@@ -193,6 +193,8 @@ class Function:
         #    output += f" # {self.index}"
         output += "\n"
 
+        wasLastInstABranch = False
+
         instructionOffset = 0
         auxOffset = self.inFileOffset
         for instr in self.instructions:
@@ -224,13 +226,18 @@ class Function:
                         else:
                             immOverride= f"%lo({symbol})"
 
+            if wasLastInstABranch:
+                instr.ljustWidthOpcode -= 1
+
             line = instr.disassemble(self.context, immOverride)
 
             #comment = " "
             comment = ""
             if GlobalConfig.ASM_COMMENT:
-                comment = f"/* {offsetHex} {vramHex} {instrHex} */ "
-            line = comment + " " + line
+                comment = f"/* {offsetHex} {vramHex} {instrHex} */  "
+            if wasLastInstABranch:
+                comment += " "
+            line = comment + line
 
             label = ""
             if not GlobalConfig.IGNORE_BRANCHES:
@@ -246,6 +253,8 @@ class Function:
                     label = self.context.fakeFunctions[self.vram + instructionOffset] + ":\n"
 
             output += label + line + "\n"
+
+            wasLastInstABranch = instr.isBranch() or instr.isJType()
 
             instructionOffset += 4
             auxOffset += 4
