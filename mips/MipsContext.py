@@ -9,7 +9,7 @@ class ContextFile:
     def __init__(self, name: str, vram: int):
         self.name: str = name
         self.vram: int = vram
-        self.references: List[int] = list()
+        #self.references: List[int] = list()
 
 class ContextSegment:
     def __init__(self, segmentName: str, segmentInputPath: str, segmentType: str, subsections):
@@ -28,7 +28,7 @@ class ContextVariable:
 
 class Context:
     def __init__(self):
-        self.files: Dict[str, ContextFile] = dict()
+        self.files: Dict[int, ContextFile] = dict()
         self.segments: Dict[str, ContextSegment] = dict()
 
         self.funcsInFiles: Dict[str, List[int]] = dict()
@@ -98,9 +98,9 @@ class Context:
 
 
     def addFunction(self, filename: str|None, vramAddress: int, name: str):
-        if filename is not None and filename in self.files:
-            if vramAddress not in self.files[filename].references:
-                self.files[filename].references.append(vramAddress)
+        #if filename is not None and filename in self.files:
+        #    if vramAddress not in self.files[filename].references:
+        #        self.files[filename].references.append(vramAddress)
         if vramAddress not in self.funcAddresses:
             self.funcAddresses[vramAddress] = name
         if vramAddress not in self.symbolToFile and filename is not None:
@@ -130,8 +130,10 @@ class Context:
 
         for segmentName, segmentInputPath, segmentType, subsections, subfiles  in files_spec:
             self.segments[segmentName] = ContextSegment(segmentName, segmentInputPath, segmentType, subsections)
-            for ram, subname in subfiles.items():
-                self.files[subname] = ContextFile(subname, ram)
+            for vram, subname in subfiles.items():
+                if subname == "":
+                    subname = f"{segmentName}_{toHex(vram, 8)[2:]}"
+                self.files[vram] = ContextFile(subname, vram)
 
         with open(functionsPath) as infile:
             functions_ast = ast.literal_eval(infile.read())
