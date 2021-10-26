@@ -188,7 +188,7 @@ class InstructionCoprocessor1(InstructionBase):
 
 
     def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
-        opcode = self.getOpcodeName().lower().ljust(7, ' ')
+        opcode = self.getOpcodeName().lower().ljust(7+4, ' ')
         rt = self.getRegisterName(self.rt)
         ft = self.getFloatRegisterName(self.ft)
         fs = self.getFloatRegisterName(self.fs)

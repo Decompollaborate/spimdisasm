@@ -192,18 +192,18 @@ class FileGeneric(FileBase):
 
     def saveToFile(self, filepath: str):
         for name, section in self.textList.items():
-            if name != "":
+            if name != "" and not filepath.endswith("/"):
                 name = " " + name
             section.saveToFile(filepath + name)
         for name, section in self.dataList.items():
-            if name != "":
+            if name != "" and not filepath.endswith("/"):
                 name = " " + name
             section.saveToFile(filepath + name)
         for name, section in self.rodataList.items():
-            if name != "":
+            if name != "" and not filepath.endswith("/"):
                 name = " " + name
             section.saveToFile(filepath + name)
         for name, section in self.bssList.items():
-            if name != "":
+            if name != "" and not filepath.endswith("/"):
                 name = " " + name
             section.saveToFile(filepath + name)

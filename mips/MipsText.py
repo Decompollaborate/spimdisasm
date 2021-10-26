@@ -183,7 +183,7 @@ class Text(Section):
     def saveToFile(self, filepath: str):
         super().saveToFile(filepath + ".text")
 
-        with open(filepath + ".text.asm", "w") as f:
+        with open(filepath + ".text.s", "w") as f:
             f.write(".section .text\n\n")
             for func in self.functions:
                 f.write(func.disassemble())

@@ -54,7 +54,7 @@ class Data(Section):
         if self.size == 0:
             return
 
-        with open(filepath + ".data.asm", "w") as f:
+        with open(filepath + ".data.s", "w") as f:
             f.write(".section .data\n\n")
 
             initVarsAddress = -1

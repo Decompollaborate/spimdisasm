@@ -72,7 +72,7 @@ class InstructionRegimm(InstructionBase):
 
     # OP  rs, IMM
     def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
-        opcode = self.getOpcodeName().lower().ljust(7, ' ')
+        opcode = self.getOpcodeName().lower().ljust(7+4, ' ')
         rs = self.getRegisterName(self.rs)
         immediate = toHex(self.immediate, 4)
         if immOverride is not None:
