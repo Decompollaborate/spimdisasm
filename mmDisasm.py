@@ -77,8 +77,9 @@ def mmDisasmMain():
     print(f"Found {f.nFuncs} functions.")
 
     new_file_folder = "asm/mm_ntsc_usa"
-    print(f"Writing files to {new_file_folder}")
     new_file_path = f"{new_file_folder}/{filename}/"
+    print(f"Writing files to {new_file_path}")
+    os.makedirs(new_file_path, exist_ok=True)
     f.saveToFile(new_file_path)
 
 if __name__ == "__main__":

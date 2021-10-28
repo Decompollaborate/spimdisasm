@@ -61,10 +61,11 @@ class Data(Section):
             if self.parent is not None:
                 initVarsAddress = self.parent.initVarsAddress
             offset = 0
+            inFileOffset = self.offset
             i = 0
             while i < self.sizew:
                 w = self.words[i]
-                offsetHex = toHex(offset, 5)[2:]
+                offsetHex = toHex(inFileOffset, 6)[2:]
                 vramHex = ""
                 label = ""
                 if self.vRamStart != -1:
@@ -112,12 +113,19 @@ class Data(Section):
 
                 dataHex = toHex(w, 8)[2:]
                 value = toHex(w, 8)
+                if self.context is not None:
+                    symbol = self.context.getAnySymbol(w)
+                    if symbol is not None:
+                        value = symbol
 
+                #comment = " "
                 comment = ""
                 if GlobalConfig.ASM_COMMENT:
-                    comment = f" /* {offsetHex} {vramHex} {dataHex} */ "
+                    #comment = f"/* {offsetHex} {vramHex} {dataHex} */"
+                    comment = f"/* {offsetHex} {vramHex} */"
 
-                line = f"{label}{comment} .word  {value}"
+                line = f"{label}{comment} .word {value}"
                 f.write(line + "\n")
                 i += 1
                 offset += 4
+                inFileOffset += 4
