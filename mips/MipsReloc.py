@@ -120,7 +120,7 @@ class Reloc(Section):
                 relocHex = toHex(r.reloc, 8)[2:]
                 line = str(r)
 
-                f.write(f"/* {offsetHex} {vramHex} {relocHex} */  {line}\n")
+                f.write(f"/* {offsetHex} {vramHex} {relocHex} */  .word 0x{relocHex} # {line}\n")
                 offset += 4
 
             f.write("\n")

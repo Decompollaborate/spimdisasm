@@ -49,7 +49,7 @@ class FileOverlay(FileGeneric):
         text.parent = self
         text.offset = start
         text.vRamStart = self.vRamStart
-        self.textList[""] = text
+        self.textList[self.filename] = text
 
         start += text_size
         end += data_size
@@ -57,7 +57,7 @@ class FileOverlay(FileGeneric):
         data.parent = self
         data.offset = start
         data.vRamStart = self.vRamStart
-        self.dataList[""] = data
+        self.dataList[self.filename] = data
 
         start += data_size
         end += rodata_size
@@ -65,7 +65,7 @@ class FileOverlay(FileGeneric):
         rodata.parent = self
         rodata.offset = start
         rodata.vRamStart = self.vRamStart
-        self.rodataList[""] = rodata
+        self.rodataList[self.filename] = rodata
 
         #start += rodata_size
         #end += bss_size
@@ -75,7 +75,7 @@ class FileOverlay(FileGeneric):
         bss.parent = self
         bss.offset = start
         bss.vRamStart = self.vRamStart
-        self.bssList[""] = bss
+        self.bssList[self.filename] = bss
 
         start += rodata_size
         self.reloc = Reloc(self.bytes[start:], filename, version, context)
@@ -109,15 +109,15 @@ class FileOverlay(FileGeneric):
             if entry.reloc == 0:
                 continue
             if section == ".text":
-                self.textList[""].pointersOffsets.append(offset)
+                self.textList[self.filename].pointersOffsets.append(offset)
             elif section == ".data":
-                self.dataList[""].pointersOffsets.append(offset)
+                self.dataList[self.filename].pointersOffsets.append(offset)
             elif section == ".rodata":
-                self.rodataList[""].pointersOffsets.append(offset)
+                self.rodataList[self.filename].pointersOffsets.append(offset)
             elif section == ".bss":
-                self.bssList[""].pointersOffsets.append(offset)
+                self.bssList[self.filename].pointersOffsets.append(offset)
 
-        # self.textList[""].removeTrailingNops()
+        # self.textList[self.filename].removeTrailingNops()
 
         super().analyze()
         self.reloc.analyze()
@@ -211,4 +211,4 @@ class FileOverlay(FileGeneric):
 
     def saveToFile(self, filepath: str):
         super().saveToFile(filepath)
-        self.reloc.saveToFile(filepath)
+        self.reloc.saveToFile(filepath + self.reloc.filename)
