@@ -24,6 +24,8 @@ class Function:
 
         self.pointersOffsets: List[int] = list()
 
+        self.referencedVRams: Set[int] = set()
+
     @property
     def nInstr(self) -> int:
         return len(self.instructions)
@@ -41,6 +43,7 @@ class Function:
                 diff = from2Complement(instr.immediate, 16)
                 branch = instructionOffset + diff*4 + 1*4
                 if self.vram >= 0:
+                    self.referencedVRams.add(self.vram + branch)
                     auxLabel = self.context.getGenericLabel(self.vram + branch)
                     if auxLabel is not None:
                         label = auxLabel
@@ -80,6 +83,7 @@ class Function:
                         upperHalf = luiInstr.immediate << 16
                         lowerHalf = from2Complement(instr.immediate, 16)
                         address = upperHalf + lowerHalf
+                        self.referencedVRams.add(address)
                         if address not in self.context.symbols:
                             if GlobalConfig.ADD_NEW_SYMBOLS:
                                 self.context.symbols[address] = ContextVariable(address, "D_" + toHex(address, 8)[2:])
@@ -92,6 +96,7 @@ class Function:
                 if instr.getRegisterName(rs) != "$ra":
                     if rs in registersValues:
                         address = registersValues[rs]
+                        self.referencedVRams.add(address)
                         if address not in self.context.jumpTables:
                             self.context.jumpTables[address] = "jtbl_" + toHex(address, 8)[2:]
 
