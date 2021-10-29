@@ -184,10 +184,19 @@ class Text(Section):
         super().saveToFile(filepath + ".text")
 
         with open(filepath + ".text.s", "w") as f:
-            f.write(".section .text\n\n")
+            f.write(".include \"macro.inc\"\n")
+            f.write("\n")
+            f.write("# assembler directives\n")
+            f.write(".set noat      # allow manual use of $at\n")
+            f.write(".set noreorder # don't insert nops after branches\n")
+            f.write(".set gp=64     # allow use of 64-bit general purpose registers\n")
+            f.write("\n")
+            f.write(".section .text\n")
+            f.write("\n")
+            f.write(".balign 16\n")
             for func in self.functions:
-                f.write(func.disassemble())
                 f.write("\n")
+                f.write(func.disassemble())
 
 def readMipsText(file: str, version: str) -> Text:
     filename = f"baserom_{version}/{file}"

@@ -150,6 +150,11 @@ class InstructionNormal(InstructionBase):
     def isOperation(self) -> bool:
         return self.isBinaryOperation() or self.isUnaryOperation()
 
+    def isUnsigned(self) -> bool:
+        opcode = self.getOpcodeName()
+        if opcode in ("LUI", "ANDI", "ORI", "XORI", ):
+            return True
+        return False
 
     def sameOpcode(self, other: InstructionBase) -> bool:
         if self.opcode != other.opcode:
@@ -183,6 +188,8 @@ class InstructionNormal(InstructionBase):
         rt = self.getRegisterName(self.rt)
         #immediate = toHex(self.immediate, 4)
         immediate = hex(self.immediate)
+        if not self.isUnsigned():
+            immediate = hex(from2Complement(self.immediate, 16))
         if immOverride is not None:
             immediate = immOverride
 
@@ -250,4 +257,3 @@ class InstructionNormal(InstructionBase):
 
         result = result.ljust(14, ' ')
         return f"{result} {immediate}({rs})"
-

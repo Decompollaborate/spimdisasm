@@ -58,10 +58,21 @@ class Rodata(Section):
             return
 
         with open(filepath + ".rodata.s", "w") as f:
-            f.write(".section .rodata\n\n")
+            f.write(".include \"macro.inc\"\n")
+            f.write("\n")
+            f.write("# assembler directives\n")
+            f.write(".set noat      # allow manual use of $at\n")
+            f.write(".set noreorder # don't insert nops after branches\n")
+            f.write(".set gp=64     # allow use of 64-bit general purpose registers\n")
+            f.write("\n")
+            f.write(".section .rodata\n")
+            f.write("\n")
+            f.write(".balign 16\n")
+            f.write("\n")
+
             offset = 0
             for w in self.words:
-                offsetHex = toHex(offset, 5)[2:]
+                offsetHex = toHex(offset, 6)[2:]
                 vramHex = ""
                 label = ""
                 rodataHex = toHex(w, 8)[2:]
@@ -81,7 +92,7 @@ class Rodata(Section):
 
                 comment = ""
                 if GlobalConfig.ASM_COMMENT:
-                    comment = f" /* {offsetHex} {vramHex} {rodataHex} */ "
+                    comment = f"/* {offsetHex} {vramHex} {rodataHex} */ "
 
                 line = f"{label}{comment} .word  {value}"
                 f.write(line + "\n")

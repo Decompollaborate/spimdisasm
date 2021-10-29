@@ -71,7 +71,8 @@ class Function:
             elif instr.isIType():
                 isLui = opcode == "LUI"
                 if isLui:
-                    trackedRegisters[instr.rt] = instructionOffset//4
+                    if instr.immediate >= 0x4000: # filter out stuff that may not be a real symbol
+                        trackedRegisters[instr.rt] = instructionOffset//4
                 elif instr.isIType() and opcode not in ("ANDI", "ORI", "XORI"):
                     rs = instr.rs
                     if rs in trackedRegisters:
