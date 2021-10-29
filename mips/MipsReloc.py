@@ -99,7 +99,16 @@ class Reloc(Section):
             offset = 0
             currentVram = self.getVramOffset(offset)
 
-            f.write(".section .ovl\n\n")
+            f.write(".include \"macro.inc\"\n")
+            f.write("\n")
+            f.write("# assembler directives\n")
+            f.write(".set noat      # allow manual use of $at\n")
+            f.write(".set noreorder # don't insert nops after branches\n")
+            f.write(".set gp=64     # allow use of 64-bit general purpose registers\n")
+            f.write("\n")
+            f.write(".section .ovl\n")
+            f.write("\n")
+            f.write(".balign 16\n")
 
             f.write(f"glabel {self.filename}OverlayInfo\n")
 
@@ -132,7 +141,7 @@ class Reloc(Section):
                     vramHex = toHex(currentVram, 8)[2:]
                 padcHex = toHex(pad, 8)
 
-                f.write(f"/* {offsetHex} {vramHex} {padcHex[2:]} */  {padcHex}\n")
+                f.write(f"/* {offsetHex} {vramHex} {padcHex[2:]} */  .word {padcHex}\n")
                 offset += 4
 
             f.write(f"glabel {self.filename}OverlayInfoOffset\n")

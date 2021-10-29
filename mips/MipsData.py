@@ -55,7 +55,16 @@ class Data(Section):
             return
 
         with open(filepath + ".data.s", "w") as f:
-            f.write(".section .data\n\n")
+            f.write(".include \"macro.inc\"\n")
+            f.write("\n")
+            f.write("# assembler directives\n")
+            f.write(".set noat      # allow manual use of $at\n")
+            f.write(".set noreorder # don't insert nops after branches\n")
+            f.write(".set gp=64     # allow use of 64-bit general purpose registers\n")
+            f.write("\n")
+            f.write(".section .data\n")
+            f.write("\n")
+            f.write(".balign 16\n")
 
             initVarsAddress = -1
             if self.parent is not None:
@@ -75,10 +84,10 @@ class Data(Section):
                     if self.context is not None:
                         auxLabel = self.context.getGenericLabel(currentVram) or self.context.getGenericSymbol(currentVram)
                         if auxLabel is not None:
-                            label = "glabel " + auxLabel + "\n"
+                            label = "\nglabel " + auxLabel + "\n"
 
                     if currentVram == initVarsAddress:
-                        f.write(f"glabel {self.filename}_InitVars\n")
+                        f.write(f"\nglabel {self.filename}_InitVars\n")
                         actorId = toHex((w >> 16) & 0xFFFF, 4)
                         category = toHex((w >> 8) & 0xFF, 2)
                         flags = toHex((self.words[i+1]), 8)
