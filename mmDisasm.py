@@ -53,8 +53,11 @@ def mmDisasmMain():
         print("Overlay detected. Parsing...")
 
         f = FileOverlay(array_of_bytes, filename, version, context)
+        subfolder = "overlays"
     elif segment.type == "code":
         print("code detected. Parsing...")
+        print("TODO. ABORTING")
+        exit(-1)
         f = FileCode(array_of_bytes, version, context)
     elif segment.type == "boot":
         print("boot detected. Parsing...")
@@ -66,23 +69,35 @@ def mmDisasmMain():
         print("TODO. ABORTING")
         exit(-1)
 
-        text_data = array_of_bytes
-        if textend >= 0:
-            print(f"Parsing until offset {toHex(textend, 2)}")
-            text_data = array_of_bytes[:textend]
+        #text_data = array_of_bytes
+        #if textend >= 0:
+        #    print(f"Parsing until offset {toHex(textend, 2)}")
+        #    text_data = array_of_bytes[:textend]
 
-        f = Text(text_data, filename, version, context)
+        #f = Text(text_data, filename, version, context)
 
     f.analyze()
 
     print()
     print(f"Found {f.nFuncs} functions.")
 
-    new_file_folder = "asm/mm_ntsc_usa"
-    new_file_path = f"{new_file_folder}/{filename}/"
+    new_file_path = os.path.join("asm", subfolder, filename)
     print(f"Writing files to {new_file_path}")
     os.makedirs(new_file_path, exist_ok=True)
-    f.saveToFile(new_file_path)
+    for name, section in f.textList.items():
+        section.saveToFile(os.path.join(new_file_path, name))
+
+    new_file_path = os.path.join("data", filename)
+    print(f"Writing files to {new_file_path}")
+    os.makedirs(new_file_path, exist_ok=True)
+    for name, section in f.dataList.items():
+        section.saveToFile(os.path.join(new_file_path, name))
+    for name, section in f.rodataList.items():
+        section.saveToFile(os.path.join(new_file_path, name))
+    for name, section in f.bssList.items():
+        section.saveToFile(os.path.join(new_file_path, name))
+    if isinstance(f, FileOverlay):
+        f.reloc.saveToFile(os.path.join(new_file_path, f.reloc.filename))
 
 if __name__ == "__main__":
     mmDisasmMain()
