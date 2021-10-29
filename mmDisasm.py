@@ -100,12 +100,17 @@ def mmDisasmMain():
                     if intersection:
                         sortedSymbolVRams = sorted(rodata.symbolsVRams)
                         #print(func.name, intersection)
-                        for vram in intersection:
+                        wasSectionNameWrote = False
+
+                        for vram in sorted(intersection):
                             #print(hex(vram))
                             nextVramIndex = sortedSymbolVRams.index(vram) + 1
                             nextVram = float("inf") if nextVramIndex >= len(sortedSymbolVRams) else sortedSymbolVRams[nextVramIndex]
 
-                            file.write(".late_rodata\n")
+                            if not wasSectionNameWrote:
+                                file.write(".late_rodata\n")
+                                wasSectionNameWrote = True
+
                             #file.write(f"glabel {context.getGenericSymbol(vram, tryPlusOffset=False)}\n")
                             for i in range(len(rodata.words)):
                                 rodataVram = rodata.getVramOffset(i*4)

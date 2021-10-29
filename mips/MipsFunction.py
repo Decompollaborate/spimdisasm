@@ -238,6 +238,9 @@ class Function:
 
             line = instr.disassemble(self.context, immOverride)
 
+            if wasLastInstABranch:
+                instr.ljustWidthOpcode += 1
+
             #comment = " "
             comment = ""
             if GlobalConfig.ASM_COMMENT:
