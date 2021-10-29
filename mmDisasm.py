@@ -87,6 +87,44 @@ def mmDisasmMain():
     for name, section in f.textList.items():
         section.saveToFile(os.path.join(new_file_path, name))
 
+    new_file_path = os.path.join("asm", "non_matchings", subfolder, filename)
+    print(f"Writing files to {new_file_path}")
+    os.makedirs(new_file_path, exist_ok=True)
+    for name, section in f.textList.items():
+        for func in section.functions:
+            #print(func.name)
+            with open(os.path.join(new_file_path, func.name) + ".s", "w") as file:
+                if name in f.rodataList:
+                    rodata = f.rodataList[name]
+                    intersection = func.referencedVRams & rodata.symbolsVRams
+                    if intersection:
+                        sortedSymbolVRams = sorted(rodata.symbolsVRams)
+                        #print(func.name, intersection)
+                        for vram in intersection:
+                            #print(hex(vram))
+                            nextVramIndex = sortedSymbolVRams.index(vram) + 1
+                            nextVram = float("inf") if nextVramIndex >= len(sortedSymbolVRams) else sortedSymbolVRams[nextVramIndex]
+
+                            file.write(".late_rodata\n")
+                            #file.write(f"glabel {context.getGenericSymbol(vram, tryPlusOffset=False)}\n")
+                            for i in range(len(rodata.words)):
+                                rodataVram = rodata.getVramOffset(i*4)
+                                if rodataVram < vram:
+                                    continue
+                                if rodataVram >= nextVram:
+                                    break
+
+                                file.write(rodata.getNthWord(i))
+                                file.write("\n")
+
+                            file.write("\n")
+
+                #print(func.referencedVRams)
+
+                file.write(".text\n")
+                file.write(func.disassemble())
+        #section.saveToFile(os.path.join(new_file_path, name))
+
     new_file_path = os.path.join("data", filename)
     print(f"Writing files to {new_file_path}")
     os.makedirs(new_file_path, exist_ok=True)

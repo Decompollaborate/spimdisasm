@@ -6,9 +6,17 @@ from .Utils import *
 from .GlobalConfig import GlobalConfig
 from .MipsFileBase import FileBase
 from .MipsSection import Section
+from .MipsContext import Context
 
 
 class Rodata(Section):
+    def __init__(self, array_of_bytes: bytearray, filename: str, version: str, context: Context):
+        super().__init__(array_of_bytes, filename, version, context)
+
+        # addresses of symbols in this rodata section
+        self.symbolsVRams: Set[int] = set()
+
+
     def analyze(self):
         offset = 0
         partOfJumpTable = False
@@ -32,6 +40,10 @@ class Rodata(Section):
                     if w not in self.context.jumpTablesLabels:
                         self.context.jumpTablesLabels[w] = f"jmplabel_{toHex(w, 8)[2:]}"
 
+                auxLabel = self.context.getGenericLabel(currentVram) or self.context.getGenericSymbol(currentVram, tryPlusOffset=False)
+                if auxLabel is not None:
+                    self.symbolsVRams.add(currentVram)
+
                 offset += 4
 
 
@@ -51,6 +63,35 @@ class Rodata(Section):
 
         return was_updated
 
+    def getNthWord(self, i: int) -> str:
+        offset = i * 4
+        w = self.words[i]
+
+        offsetHex = toHex(offset, 6)[2:]
+        vramHex = ""
+        label = ""
+        rodataHex = toHex(w, 8)[2:]
+        value = toHex(w, 8)
+
+        if self.vRamStart != -1:
+            currentVram = self.getVramOffset(offset)
+            vramHex = toHex(currentVram, 8)[2:]
+
+            if self.context is not None:
+                auxLabel = self.context.getGenericLabel(currentVram) or self.context.getGenericSymbol(currentVram, tryPlusOffset=False)
+                if auxLabel is not None:
+                    label = "\nglabel " + auxLabel + "\n"
+
+        if w in self.context.jumpTablesLabels:
+            value = self.context.jumpTablesLabels[w]
+
+        comment = ""
+        if GlobalConfig.ASM_COMMENT:
+            comment = f"/* {offsetHex} {vramHex} {rodataHex} */ "
+
+        return f"{label}{comment} .word  {value}"
+
+
     def saveToFile(self, filepath: str):
         super().saveToFile(filepath + ".rodata")
 
@@ -69,30 +110,5 @@ class Rodata(Section):
             f.write("\n")
             f.write(".balign 16\n")
 
-            offset = 0
-            for w in self.words:
-                offsetHex = toHex(offset, 6)[2:]
-                vramHex = ""
-                label = ""
-                rodataHex = toHex(w, 8)[2:]
-                value = toHex(w, 8)
-
-                if self.vRamStart != -1:
-                    currentVram = self.getVramOffset(offset)
-                    vramHex = toHex(currentVram, 8)[2:]
-
-                    if self.context is not None:
-                        auxLabel = self.context.getGenericLabel(currentVram) or self.context.getGenericSymbol(currentVram, tryPlusOffset=False)
-                        if auxLabel is not None:
-                            label = "\nglabel " + auxLabel + "\n"
-
-                if w in self.context.jumpTablesLabels:
-                    value = self.context.jumpTablesLabels[w]
-
-                comment = ""
-                if GlobalConfig.ASM_COMMENT:
-                    comment = f"/* {offsetHex} {vramHex} {rodataHex} */ "
-
-                line = f"{label}{comment} .word  {value}"
-                f.write(line + "\n")
-                offset += 4
+            for i in range(len(self.words)):
+                f.write(self.getNthWord(i) + "\n")
