@@ -112,11 +112,12 @@ class Reloc(Section):
 
             f.write(f"glabel {self.filename}OverlayInfo\n")
 
-            f.write(f"/* %05X %08X %08X */  .word  {self.textSize} # {self.filename}TextSize\n" % (offset + 0x0, currentVram + 0x0, self.textSize))
-            f.write(f"/* %05X %08X %08X */  .word  {self.dataSize} # {self.filename}DataSize\n" % (offset + 0x4, currentVram + 0x4, self.dataSize))
-            f.write(f"/* %05X %08X %08X */  .word  {self.rodataSize} # {self.filename}RodataSize\n" % (offset + 0x8, currentVram + 0x8, self.rodataSize))
-            f.write(f"/* %05X %08X %08X */  .word  {self.bssSize} # {self.filename}BssSize\n" % (offset + 0xC, currentVram + 0xC, self.bssSize))
-            f.write(f"/* %05X %08X %08X */  .word  {self.relocCount} # {self.filename}RelocCount\n" % (offset + 0x10, currentVram + 0x10, self.relocCount))
+            f.write(f"/* %05X %08X %08X */  .word _{self.filename}SegmentTextSize # {self.textSize}\n" % (offset + 0x0, currentVram + 0x0, self.textSize))
+            f.write(f"/* %05X %08X %08X */  .word _{self.filename}SegmentDataSize # {self.dataSize}\n" % (offset + 0x4, currentVram + 0x4, self.dataSize))
+            f.write(f"/* %05X %08X %08X */  .word _{self.filename}SegmentRoDataSize # {self.rodataSize}\n" % (offset + 0x8, currentVram + 0x8, self.rodataSize))
+            f.write(f"/* %05X %08X %08X */  .word _{self.filename}SegmentBssSize # {self.bssSize}\n" % (offset + 0xC, currentVram + 0xC, self.bssSize))
+            f.write(f"\n")
+            f.write(f"/* %05X %08X %08X */  .word  {self.relocCount} # reloc_count\n" % (offset + 0x10, currentVram + 0x10, self.relocCount))
             f.write(f"\n")
 
             f.write(f"glabel {self.filename}OverlayRelocations\n")

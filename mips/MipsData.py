@@ -82,7 +82,7 @@ class Data(Section):
                     vramHex = toHex(currentVram, 8)[2:]
 
                     if self.context is not None:
-                        auxLabel = self.context.getGenericLabel(currentVram) or self.context.getGenericSymbol(currentVram)
+                        auxLabel = self.context.getGenericLabel(currentVram) or self.context.getGenericSymbol(currentVram, tryPlusOffset=False)
                         if auxLabel is not None:
                             label = "\nglabel " + auxLabel + "\n"
 

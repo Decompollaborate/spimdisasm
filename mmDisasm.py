@@ -31,6 +31,8 @@ def mmDisasmMain():
     GlobalConfig.IGNORE_80 = False
     GlobalConfig.WRITE_BINARY = False
     #GlobalConfig.ASM_COMMENT = not args.disable_asm_comments
+    GlobalConfig.ADD_NEW_SYMBOLS = False
+    GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET = True
 
     context = Context()
     context.readMMAddressMaps("../mm/tools/disasm/files.txt", "../mm/tools/disasm/functions.txt", "../mm/tools/disasm/variables.txt")
