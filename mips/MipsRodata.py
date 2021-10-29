@@ -68,7 +68,6 @@ class Rodata(Section):
             f.write(".section .rodata\n")
             f.write("\n")
             f.write(".balign 16\n")
-            f.write("\n")
 
             offset = 0
             for w in self.words:
@@ -83,9 +82,9 @@ class Rodata(Section):
                     vramHex = toHex(currentVram, 8)[2:]
 
                     if self.context is not None:
-                        auxLabel = self.context.getGenericLabel(currentVram) or self.context.getGenericSymbol(currentVram)
+                        auxLabel = self.context.getGenericLabel(currentVram) or self.context.getGenericSymbol(currentVram, tryPlusOffset=False)
                         if auxLabel is not None:
-                            label = "glabel " + auxLabel + "\n"
+                            label = "\nglabel " + auxLabel + "\n"
 
                 if w in self.context.jumpTablesLabels:
                     value = self.context.jumpTablesLabels[w]

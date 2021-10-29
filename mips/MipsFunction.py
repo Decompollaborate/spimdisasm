@@ -81,7 +81,8 @@ class Function:
                         lowerHalf = from2Complement(instr.immediate, 16)
                         address = upperHalf + lowerHalf
                         if address not in self.context.symbols:
-                            self.context.symbols[address] = ContextVariable(address, "D_" + toHex(address, 8)[2:])
+                            if GlobalConfig.ADD_NEW_SYMBOLS:
+                                self.context.symbols[address] = ContextVariable(address, "D_" + toHex(address, 8)[2:])
                         self.pointersPerInstruction[instructionOffset] = address
                         self.pointersPerInstruction[trackedRegisters[rs]*4] = address
                         registersValues[instr.rt] = address
@@ -255,7 +256,7 @@ class Function:
 
             output += label + line + "\n"
 
-            wasLastInstABranch = instr.isBranch() or instr.isJType()
+            wasLastInstABranch = instr.isBranch() or instr.isJType() or instr.getOpcodeName() in ("JR", "JALR")
 
             instructionOffset += 4
             auxOffset += 4

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from mips.GlobalConfig import GlobalConfig
+
 from .Utils import *
 import ast
 
@@ -69,7 +71,7 @@ class Context:
 
         return None
 
-    def getGenericSymbol(self, vramAddress: int) -> str|None:
+    def getGenericSymbol(self, vramAddress: int, tryPlusOffset: bool = True) -> str|None:
         if vramAddress in self.funcAddresses:
             return self.funcAddresses[vramAddress]
 
@@ -78,6 +80,16 @@ class Context:
 
         if vramAddress in self.symbols:
             return self.symbols[vramAddress].name
+
+        if GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET and tryPlusOffset:
+            # merges the dictionaries
+            vramSymbols = sorted({**self.funcAddresses, **self.jumpTables, **self.symbols}.items(), reverse=True)
+            for vram, symbol in vramSymbols:
+                if vramAddress > vram:
+                    symbolName = symbol
+                    if isinstance(symbol, ContextVariable):
+                        symbolName = symbol.name
+                    return f"{symbolName} + {toHex(vramAddress - vram, 1)}"
 
         return None
 
