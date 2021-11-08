@@ -12,6 +12,7 @@ class GlobalConfig:
     WRITE_BINARY: bool = False # write to files splitted binaries
 
     ASM_COMMENT: bool = True
+    FUNCTION_ASM_COUNT: bool = True
 
     ADD_NEW_SYMBOLS: bool = True
     PRODUCE_SYMBOLS_PLUS_OFFSET: bool = False
