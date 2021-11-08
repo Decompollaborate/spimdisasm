@@ -104,12 +104,14 @@ def mmDisasmMain():
                     intersection = func.referencedVRams & rodata.symbolsVRams
                     if intersection:
                         sortedSymbolVRams = sorted(rodata.symbolsVRams)
+                        indicesUsed = [False for x in range(len(sortedSymbolVRams))]
                         #print(func.name, intersection)
 
                         for vram in sorted(intersection):
                             #print(hex(vram))
                             nextVramIndex = sortedSymbolVRams.index(vram) + 1
                             nextVram = float("inf") if nextVramIndex >= len(sortedSymbolVRams) else sortedSymbolVRams[nextVramIndex]
+                            indicesUsed[nextVramIndex-1] = True
 
                             #if not wasRodataSectionNameWrote:
                             #    file.write(".late_rodata\n")
@@ -135,6 +137,39 @@ def mmDisasmMain():
                             #file.write("\n")
                             rodata_stuff.append("\n")
 
+                        i = 0
+                        while i < len(indicesUsed):
+                            isUsed = indicesUsed[i]
+                            if isUsed:
+                                i += 1
+                                continue
+
+                            vram = sortedSymbolVRams[i]
+                            #rodataIndex = (vram - rodata.vRamStart) // 4
+
+                            nextVram = float("inf")
+                            otherHalf = indicesUsed[i+1:]
+                            if True in otherHalf:
+                                nextVramIndex = otherHalf.index(True) + i+1
+                                nextVram = sortedSymbolVRams[nextVramIndex]
+
+                            rodataSymbol = context.getGenericSymbol(vram, False)
+                            with open(os.path.join(new_file_path, rodataSymbol) + ".s", "w") as rodata_text_file:
+                                rodata_text_file.write("rdata\n")
+
+                                for i in range(len(rodata.words)):
+                                    rodataVram = rodata.getVramOffset(i*4)
+                                    if rodataVram < vram:
+                                        continue
+                                    if rodataVram >= nextVram:
+                                        break
+
+                                    #file.write(rodata.getNthWord(i))
+                                    #file.write("\n")
+                                    rodata_stuff.append(rodata.getNthWord(i))
+                                    rodata_stuff.append("\n")
+                            i += 1
+
                 #print(func.referencedVRams)
 
                 #if wasRodataSectionNameWrote:
@@ -149,6 +184,8 @@ def mmDisasmMain():
                         file.write(".late_rodata_alignment {align}\n")
                     for x in rodata_stuff:
                         file.write(x)
+
+                    file.write("\n.text\n")
                 file.write(func.disassemble())
         #section.saveToFile(os.path.join(new_file_path, name))
 
@@ -163,6 +200,8 @@ def mmDisasmMain():
         section.saveToFile(os.path.join(new_file_path, name))
     if isinstance(f, FileOverlay):
         f.reloc.saveToFile(os.path.join(new_file_path, f.reloc.filename))
+
+    print()
 
 if __name__ == "__main__":
     mmDisasmMain()
