@@ -30,7 +30,8 @@ def mmDisasmMain():
     GlobalConfig.IGNORE_06 = False
     GlobalConfig.IGNORE_80 = False
     GlobalConfig.WRITE_BINARY = False
-    #GlobalConfig.ASM_COMMENT = not args.disable_asm_comments
+    GlobalConfig.ASM_COMMENT = True
+    GlobalConfig.FUNCTION_ASM_COUNT = False
     GlobalConfig.ADD_NEW_SYMBOLS = False
     GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET = True
 

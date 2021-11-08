@@ -196,8 +196,9 @@ class Function:
         output = ""
 
         output += f"glabel {self.name}"
-        #if self.index >= 0:
-        #    output += f" # {self.index}"
+        if GlobalConfig.FUNCTION_ASM_COUNT:
+            if self.index >= 0:
+                output += f" # {self.index}"
         output += "\n"
 
         wasLastInstABranch = False
