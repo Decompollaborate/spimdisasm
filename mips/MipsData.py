@@ -54,17 +54,27 @@ class Data(Section):
         if self.size == 0:
             return
 
-        with open(filepath + ".data.asm", "w") as f:
-            f.write(".section .data\n\n")
+        with open(filepath + ".data.s", "w") as f:
+            f.write(".include \"macro.inc\"\n")
+            f.write("\n")
+            f.write("# assembler directives\n")
+            f.write(".set noat      # allow manual use of $at\n")
+            f.write(".set noreorder # don't insert nops after branches\n")
+            f.write(".set gp=64     # allow use of 64-bit general purpose registers\n")
+            f.write("\n")
+            f.write(".section .data\n")
+            f.write("\n")
+            f.write(".balign 16\n")
 
             initVarsAddress = -1
             if self.parent is not None:
                 initVarsAddress = self.parent.initVarsAddress
             offset = 0
+            inFileOffset = self.offset
             i = 0
             while i < self.sizew:
                 w = self.words[i]
-                offsetHex = toHex(offset, 5)[2:]
+                offsetHex = toHex(inFileOffset, 6)[2:]
                 vramHex = ""
                 label = ""
                 if self.vRamStart != -1:
@@ -72,12 +82,12 @@ class Data(Section):
                     vramHex = toHex(currentVram, 8)[2:]
 
                     if self.context is not None:
-                        auxLabel = self.context.getGenericLabel(currentVram) or self.context.getGenericSymbol(currentVram)
+                        auxLabel = self.context.getGenericLabel(currentVram) or self.context.getGenericSymbol(currentVram, tryPlusOffset=False)
                         if auxLabel is not None:
-                            label = "glabel " + auxLabel + "\n"
+                            label = "\nglabel " + auxLabel + "\n"
 
                     if currentVram == initVarsAddress:
-                        f.write(f"glabel {self.filename}_InitVars\n")
+                        f.write(f"\nglabel {self.filename}_InitVars\n")
                         actorId = toHex((w >> 16) & 0xFFFF, 4)
                         category = toHex((w >> 8) & 0xFF, 2)
                         flags = toHex((self.words[i+1]), 8)
@@ -112,12 +122,19 @@ class Data(Section):
 
                 dataHex = toHex(w, 8)[2:]
                 value = toHex(w, 8)
+                if self.context is not None:
+                    symbol = self.context.getAnySymbol(w)
+                    if symbol is not None:
+                        value = symbol
 
+                #comment = " "
                 comment = ""
                 if GlobalConfig.ASM_COMMENT:
-                    comment = f" /* {offsetHex} {vramHex} {dataHex} */ "
+                    #comment = f"/* {offsetHex} {vramHex} {dataHex} */"
+                    comment = f"/* {offsetHex} {vramHex} */"
 
-                line = f"{label}{comment} .word  {value}"
+                line = f"{label}{comment} .word {value}"
                 f.write(line + "\n")
                 i += 1
                 offset += 4
+                inFileOffset += 4

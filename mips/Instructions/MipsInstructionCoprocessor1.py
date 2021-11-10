@@ -188,12 +188,13 @@ class InstructionCoprocessor1(InstructionBase):
 
 
     def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
-        opcode = self.getOpcodeName().lower().ljust(7, ' ')
+        opcode = self.getOpcodeName().lower().ljust(self.ljustWidthOpcode, ' ')
         rt = self.getRegisterName(self.rt)
         ft = self.getFloatRegisterName(self.ft)
         fs = self.getFloatRegisterName(self.fs)
         fd = self.getFloatRegisterName(self.fd)
-        immediate = toHex(self.immediate, 4)
+        #immediate = toHex(self.immediate, 4)
+        immediate = hex(self.immediate)
         if immOverride is not None:
             immediate = immOverride
 
@@ -229,6 +230,6 @@ class InstructionCoprocessor1(InstructionBase):
             result += f" {fs}"
             return result
 
-        opcode = "COP1".lower().ljust(7, ' ')
+        opcode = "COP1".lower().ljust(self.ljustWidthOpcode, ' ')
         instr_index = toHex(self.instr_index, 7)
         return f"{opcode} {instr_index}"
