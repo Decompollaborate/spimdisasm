@@ -9,8 +9,8 @@ import hashlib
 ROM_FILE_NAME = 'baserom'
 
 VERSIONS_HASHES = {
-    "NTSC 1.0 RC":      "21f7b4a4ff463464bfc23498c1ab9da1", # a.k.a. 0.9
-    "NTSC J 1.0 RC":    None,
+    "NTSC 0.9 RC":      "21f7b4a4ff463464bfc23498c1ab9da1", # a.k.a. NTSC 1.0 RC
+    "NTSC J 0.9 RC":    None,
     "NTSC 1.0":         "5bd1fe107bf8106b2ab6650abecd54d6", # Need to double check.
     "NTSC J 1.0":       None,
     "NTSC 1.1":         "721fdcc6f5f34be55c43a807f2a16af4", # Need to double check.
@@ -31,7 +31,19 @@ VERSIONS_HASHES = {
     "PAL MQ":           "1618403427e4344a57833043db5ce3c3", # I think it's right.
     "JP GC CE":         "0c13e0449a28ea5b925cdb8af8d29768", # Zelda collection
     "IQUE CN":          "0ab48b2d44a74b3bb2d384f6170c2742",
-    "IQUE TW":          "a475e9f8615513666a265c464708ae8f"
+    "IQUE TW":          "a475e9f8615513666a265c464708ae8f",
+
+    # MM
+    "MM NTSC JP 1.0":   "c38a7f6f6b61862ea383a75cdf888279",
+    "MM NTSC JP 1.1":   None,
+    #"MM NTSC KIOSK":    None,
+    "MM NTSC USA":      "2a0a8acb61538235bc1094d297fb6556",
+    #"MM PAL 1.0":       None,
+    "MM PAL DBG":       None,
+    #"MM PAL 1.1":       None,
+    #"USA GC":           None,
+    #"PAL GC":           None.
+    #"JP GC":            None,
 }
 
 def getStrHash(byte_array):
