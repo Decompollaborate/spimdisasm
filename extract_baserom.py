@@ -32,7 +32,10 @@ FILE_TABLE_OFFSET = {
     "JP GC CE":     0x07170, # Zelda collection
     "IQUE CN":      0x0B7A0,
     "IQUE TW":      0x0B240,
-    "GATEWAY":      0x0AC80,
+    "GATEWAY":      0x0AC80, # fake
+
+    # MM
+    "MM NTSC USA":  0x1A500,
 }
 FILE_TABLE_OFFSET["NTSC J 0.9"]   = FILE_TABLE_OFFSET["NTSC 0.9"]
 FILE_TABLE_OFFSET["NTSC J 1.0"]   = FILE_TABLE_OFFSET["NTSC 1.0"]
@@ -41,7 +44,7 @@ FILE_TABLE_OFFSET["NTSC J 1.2"]   = FILE_TABLE_OFFSET["NTSC 1.2"]
 FILE_TABLE_OFFSET["PAL WII 1.1"]  = FILE_TABLE_OFFSET["PAL 1.1"]
 
 FILE_NAMES: Dict[str, List[str] | None] = {
-    "NTSC 0.9":     None, 
+    "NTSC 0.9":     None,
     "NTSC 1.0":     None,
     "NTSC 1.1":     None,
     "PAL 1.0":      None,
@@ -59,7 +62,10 @@ FILE_NAMES: Dict[str, List[str] | None] = {
     "JP GC CE":     None, # Zelda collector's edition
     "IQUE CN":      None,
     "IQUE TW":      None,
-    "GATEWAY":      None,
+    "GATEWAY":      None, # fake
+
+    # MM
+    "MM NTSC USA":  None,
 }
 FILE_NAMES["NTSC J 0.9"]  = FILE_NAMES["NTSC 0.9"]
 FILE_NAMES["NTSC J 1.0"]  = FILE_NAMES["NTSC 1.0"]
@@ -107,8 +113,11 @@ def readFilelists():
     FILE_NAMES["NTSC J 1.1"]  = FILE_NAMES["NTSC 1.1"]
     FILE_NAMES["NTSC J 1.2"]  = FILE_NAMES["NTSC 1.2"]
     FILE_NAMES["PAL WII 1.1"] = FILE_NAMES["PAL 1.1"]
-    
+
     FILE_NAMES["GATEWAY"] = FILE_NAMES["IQUE CN"]
+
+    # MM
+    FILE_NAMES["MM NTSC USA"] = readFile("filelists/filelist_mm_ntsc_usa.txt")
 
 def initialize_worker(rom_data, dmaTable):
     global romData
@@ -161,6 +170,13 @@ def ExtractFunc(i):
     physStart = read_uint32_be(entryOffset + 8)
     physEnd   = read_uint32_be(entryOffset + 12)
 
+    if physStart == 0xFFFFFFFF and physEnd == 0xFFFFFFFF: # file deleted
+        if (virtEnd - virtStart) == 0:
+            return
+        physStart = virtStart
+        physEnd = 0
+        compressed = False
+        size = virtEnd - virtStart
     if physEnd == 0:  # uncompressed
         compressed = False
         size = virtEnd - virtStart
