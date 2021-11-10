@@ -35,7 +35,16 @@ FILE_TABLE_OFFSET = {
     "GATEWAY":      0x0AC80, # fake
 
     # MM
+    "MM NTSC JP 1.0": 0x1C110,
+    "MM NTSC JP 1.1": 0x1C050,
+    #"MM NTSC KIOSK":0x,
     "MM NTSC USA":  0x1A500,
+    #"MM PAL 1.0":   0x,
+    "MM PAL DBG":   0x24F60,
+    #"MM PAL 1.1":   0x,
+    #"USA GC":       0x,
+    #"PAL GC":       0x.
+    #"JP GC":        0x,
 }
 FILE_TABLE_OFFSET["NTSC J 0.9"]   = FILE_TABLE_OFFSET["NTSC 0.9"]
 FILE_TABLE_OFFSET["NTSC J 1.0"]   = FILE_TABLE_OFFSET["NTSC 1.0"]
@@ -65,7 +74,16 @@ FILE_NAMES: Dict[str, List[str] | None] = {
     "GATEWAY":      None, # fake
 
     # MM
+    "MM NTSC JP 1.0": None,
+    "MM NTSC JP 1.1": None,
+    #"MM NTSC KIOSK":None,
     "MM NTSC USA":  None,
+    #"MM PAL 1.0":   None,
+    "MM PAL DBG":   None,
+    #"MM PAL 1.1":   None,
+    #"USA GC":       None,
+    #"PAL GC":       None.
+    #"JP GC":        None,
 }
 FILE_NAMES["NTSC J 0.9"]  = FILE_NAMES["NTSC 0.9"]
 FILE_NAMES["NTSC J 1.0"]  = FILE_NAMES["NTSC 1.0"]
@@ -117,6 +135,7 @@ def readFilelists():
     FILE_NAMES["GATEWAY"] = FILE_NAMES["IQUE CN"]
 
     # MM
+    FILE_NAMES["MM NTSC JP 1.0"] = readFile("filelists/filelist_mm_ntsc_jp_1.0.txt")
     FILE_NAMES["MM NTSC USA"] = readFile("filelists/filelist_mm_ntsc_usa.txt")
 
 def initialize_worker(rom_data, dmaTable):
