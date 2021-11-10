@@ -15,6 +15,8 @@ class InstructionBase:
         self.sa = (instr >>  6) & 0x1F
         self.function = (instr >> 0) & 0x3F
 
+        self.ljustWidthOpcode = 7+4
+
     @property
     def instr(self) -> int:
         return (self.opcode << 26) | (self.rs << 21) | (self.rt << 16) | (self.immediate)
@@ -142,10 +144,11 @@ class InstructionBase:
 
 
     def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
-        opcode = self.getOpcodeName().lower().ljust(7, ' ')
+        opcode = self.getOpcodeName().lower().ljust(self.ljustWidthOpcode, ' ')
         rs = self.getRegisterName(self.rs)
         rt = self.getRegisterName(self.rt)
-        immediate = toHex(self.immediate, 4)
+        #immediate = toHex(self.immediate, 4)
+        immediate = hex(self.immediate)
         if immOverride is not None:
             immediate = immOverride
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 from .Utils import *
 from .GlobalConfig import GlobalConfig
 from .Instructions import InstructionBase
-from .MipsContext import Context
+from .MipsContext import Context, ContextVariable
 
 class Function:
     def __init__(self, name: str, instructions: List[InstructionBase], context: Context, inFileOffset: int, vram: int = -1):
@@ -24,6 +24,8 @@ class Function:
 
         self.pointersOffsets: List[int] = list()
 
+        self.referencedVRams: Set[int] = set()
+
     @property
     def nInstr(self) -> int:
         return len(self.instructions)
@@ -41,6 +43,7 @@ class Function:
                 diff = from2Complement(instr.immediate, 16)
                 branch = instructionOffset + diff*4 + 1*4
                 if self.vram >= 0:
+                    self.referencedVRams.add(self.vram + branch)
                     auxLabel = self.context.getGenericLabel(self.vram + branch)
                     if auxLabel is not None:
                         label = auxLabel
@@ -71,7 +74,8 @@ class Function:
             elif instr.isIType():
                 isLui = opcode == "LUI"
                 if isLui:
-                    trackedRegisters[instr.rt] = instructionOffset//4
+                    if instr.immediate >= 0x4000: # filter out stuff that may not be a real symbol
+                        trackedRegisters[instr.rt] = instructionOffset//4
                 elif instr.isIType() and opcode not in ("ANDI", "ORI", "XORI"):
                     rs = instr.rs
                     if rs in trackedRegisters:
@@ -79,8 +83,10 @@ class Function:
                         upperHalf = luiInstr.immediate << 16
                         lowerHalf = from2Complement(instr.immediate, 16)
                         address = upperHalf + lowerHalf
+                        self.referencedVRams.add(address)
                         if address not in self.context.symbols:
-                            self.context.symbols[address] = "D_" + toHex(address, 8)[2:]
+                            if GlobalConfig.ADD_NEW_SYMBOLS:
+                                self.context.symbols[address] = ContextVariable(address, "D_" + toHex(address, 8)[2:])
                         self.pointersPerInstruction[instructionOffset] = address
                         self.pointersPerInstruction[trackedRegisters[rs]*4] = address
                         registersValues[instr.rt] = address
@@ -90,6 +96,7 @@ class Function:
                 if instr.getRegisterName(rs) != "$ra":
                     if rs in registersValues:
                         address = registersValues[rs]
+                        self.referencedVRams.add(address)
                         if address not in self.context.jumpTables:
                             self.context.jumpTables[address] = "jtbl_" + toHex(address, 8)[2:]
 
@@ -189,14 +196,17 @@ class Function:
         output = ""
 
         output += f"glabel {self.name}"
-        if self.index >= 0:
-            output += f" # {self.index}"
+        if GlobalConfig.FUNCTION_ASM_COUNT:
+            if self.index >= 0:
+                output += f" # {self.index}"
         output += "\n"
+
+        wasLastInstABranch = False
 
         instructionOffset = 0
         auxOffset = self.inFileOffset
         for instr in self.instructions:
-            offsetHex = toHex(auxOffset, 5)[2:]
+            offsetHex = toHex(auxOffset, 6)[2:]
             vramHex = ""
             if self.vram >= 0:
                 vramHex = toHex(self.vram + instructionOffset, 8)[2:]
@@ -224,12 +234,21 @@ class Function:
                         else:
                             immOverride= f"%lo({symbol})"
 
+            if wasLastInstABranch:
+                instr.ljustWidthOpcode -= 1
+
             line = instr.disassemble(self.context, immOverride)
 
+            if wasLastInstABranch:
+                instr.ljustWidthOpcode += 1
+
+            #comment = " "
             comment = ""
             if GlobalConfig.ASM_COMMENT:
-                comment = f" /* {offsetHex} {vramHex} {instrHex} */ "
-            line = comment + " " + line
+                comment = f"/* {offsetHex} {vramHex} {instrHex} */  "
+            if wasLastInstABranch:
+                comment += " "
+            line = comment + line
 
             label = ""
             if not GlobalConfig.IGNORE_BRANCHES:
@@ -245,6 +264,8 @@ class Function:
                     label = self.context.fakeFunctions[self.vram + instructionOffset] + ":\n"
 
             output += label + line + "\n"
+
+            wasLastInstABranch = instr.isBranch() or instr.isJType() or instr.getOpcodeName() in ("JR", "JALR")
 
             instructionOffset += 4
             auxOffset += 4

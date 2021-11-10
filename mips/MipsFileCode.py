@@ -17,7 +17,7 @@ from .ZeldaOffsets import codeVramStart, codeDataStart, codeRodataStart
 
 
 class FileCode(FileGeneric):
-    def __init__(self, array_of_bytes: bytearray, version: str, context: Context, textSplits: Dict[str, SplitEntry], dataSplits: Dict[str, SplitEntry], rodataSplits: Dict[str, SplitEntry], bssSplits: Dict[str, SplitEntry]):
+    def __init__(self, array_of_bytes: bytearray, version: str, context: Context, textSplits: Dict[str, SplitEntry] = {}, dataSplits: Dict[str, SplitEntry] = {}, rodataSplits: Dict[str, SplitEntry] = {}, bssSplits: Dict[str, SplitEntry] = {}):
         super().__init__(array_of_bytes, "code", version, context)
 
         self.vRamStart = codeVramStart.get(version, -1)
@@ -28,19 +28,72 @@ class FileCode(FileGeneric):
         # bss_start = codeBssStart.get(version, -1)
         bss_start = self.size
 
+        vramSegmentEnd = 0x80FFFFFF
+
+        # TODO: remove
         textStarts = getFileStartsFromEntries(textSplits, data_start)
         dataStarts = getFileStartsFromEntries(dataSplits, rodata_start)
         rodataStarts = getFileStartsFromEntries(rodataSplits, bss_start)
         bssStarts = getFileStartsFromEntries(bssSplits, self.size)
 
-        if len(textSplits) == 0:
-            textStarts.insert(0, (text_start, textStarts[0][0]-text_start, ""))
-        if len(dataSplits) == 0:
-            dataStarts.insert(0, (data_start, dataStarts[0][0]-data_start, ""))
-        if len(rodataSplits) == 0:
-            rodataStarts.insert(0, (rodata_start, rodataStarts[0][0]-rodata_start, ""))
-        #if len(bssSplits) == 0:
-        #    bssStarts.insert(0, (bss_start, bssStarts[0][0]-bss_start, ""))
+        ## MM stuff
+        if "code" in context.segments:
+            for start, end, subsectionName, _ in context.segments["code"].subsections:
+                #print(hex(start), hex(end), subsectionName)
+                if self.vRamStart == -1:
+                    self.vRamStart = start
+                    vramSegmentEnd = end
+
+                if subsectionName == "text":
+                    text_start = start - self.vRamStart
+                if subsectionName == "data":
+                    data_start = start - self.vRamStart
+                if subsectionName == "rodata":
+                    rodata_start = start - self.vRamStart
+                if subsectionName == "bss":
+                    bss_start = start - self.vRamStart
+
+                vramSegmentEnd = max(vramSegmentEnd, end)
+
+        if self.vRamStart != -1:
+            sortedFiles = sorted(context.files.items())
+            for i, x in enumerate(sortedFiles):
+                subfileVram, subfileData = x
+                if subfileVram < self.vRamStart:
+                    continue
+                if subfileVram >= vramSegmentEnd:
+                    break
+
+                start = subfileVram - self.vRamStart
+                size = vramSegmentEnd - subfileVram
+                if i+1 < len(sortedFiles):
+                    size = sortedFiles[i+1][1].vram - subfileVram
+                filename = subfileData.name
+
+                data = (start, size, filename)
+                #print(hex(start), hex(size), subfileName)
+
+                if text_start <= start < data_start:
+                    textStarts.append(data)
+                elif data_start <= start < rodata_start:
+                    dataStarts.append(data)
+                elif rodata_start <= start < bss_start:
+                    rodataStarts.append(data)
+                elif bss_start <= start:
+                    bssStarts.append(data)
+        else:
+            textStarts = getFileStartsFromEntries(textSplits, data_start)
+            dataStarts = getFileStartsFromEntries(dataSplits, rodata_start)
+            rodataStarts = getFileStartsFromEntries(rodataSplits, bss_start)
+            bssStarts = getFileStartsFromEntries(bssSplits, self.size)
+            if len(textSplits) == 0:
+                textStarts.insert(0, (text_start, textStarts[0][0]-text_start, ""))
+            if len(dataSplits) == 0:
+                dataStarts.insert(0, (data_start, dataStarts[0][0]-data_start, ""))
+            if len(rodataSplits) == 0:
+                rodataStarts.insert(0, (rodata_start, rodataStarts[0][0]-rodata_start, ""))
+            #if len(bssSplits) == 0:
+            #    bssStarts.insert(0, (bss_start, bssStarts[0][0]-bss_start, ""))
 
         i = 0
         while i < len(textStarts) - 1:

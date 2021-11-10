@@ -44,6 +44,7 @@ def disassembleFile(version: str, filename: str, outputfolder: str, context: Con
                     codeData = readFileAsBytearray(codePath)
                     i = 0
                     while i < ZeldaOffsets.ACTOR_ID_MAX:
+                    #while i < ZeldaOffsets.ACTOR_ID_MAX_MM:
                         entry = OverlayTableEntry(codeData[tableOffset + i*0x20 : tableOffset + (i+1)*0x20])
                         if entry.vromStart == dmaEntry.vromStart:
                             tableEntry = entry
@@ -75,9 +76,9 @@ def disassembleFile(version: str, filename: str, outputfolder: str, context: Con
 
         f = Text(text_data, filename, version, context)
 
-        if vram >= 0:
-            print(f"Using VRAM {toHex(vram, 8)[2:]}")
-            f.vRamStart = vram
+    if vram >= 0:
+        print(f"Using VRAM {toHex(vram, 8)[2:]}")
+        f.setVRamStart(vram)
 
     f.analyze()
 

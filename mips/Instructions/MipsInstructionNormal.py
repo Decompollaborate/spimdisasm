@@ -150,6 +150,11 @@ class InstructionNormal(InstructionBase):
     def isOperation(self) -> bool:
         return self.isBinaryOperation() or self.isUnaryOperation()
 
+    def isUnsigned(self) -> bool:
+        opcode = self.getOpcodeName()
+        if opcode in ("LUI", "ANDI", "ORI", "XORI", ):
+            return True
+        return False
 
     def sameOpcode(self, other: InstructionBase) -> bool:
         if self.opcode != other.opcode:
@@ -178,10 +183,13 @@ class InstructionNormal(InstructionBase):
 
 
     def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
-        opcode = self.getOpcodeName().lower().ljust(7, ' ')
+        opcode = self.getOpcodeName().lower().ljust(self.ljustWidthOpcode, ' ')
         rs = self.getRegisterName(self.rs)
         rt = self.getRegisterName(self.rt)
-        immediate = toHex(self.immediate, 4)
+        #immediate = toHex(self.immediate, 4)
+        immediate = hex(self.immediate)
+        if not self.isUnsigned():
+            immediate = hex(from2Complement(self.immediate, 16))
         if immOverride is not None:
             immediate = immOverride
 
@@ -201,7 +209,8 @@ class InstructionNormal(InstructionBase):
             if context is not None:
                 symbol = context.getAnySymbol(vram)
                 if symbol is not None:
-                    label = f"{symbol} # func_{instrIndexHex}"
+                    #label = f"{symbol} # func_{instrIndexHex}"
+                    label = f"{symbol}"
             return f"{result}{label}"
 
         if self.isBranch():
@@ -214,9 +223,18 @@ class InstructionNormal(InstructionBase):
             elif self.isBinaryBranch():
                 result += f" {rt},"
                 result = result.ljust(19, ' ')
-                if self.getOpcodeName() == "BEQ":
+                opcode_base = self.getOpcodeName()
+                if opcode_base == "BEQ":
                     if self.rs == 0 and self.rt == 0:
-                        result = "b".ljust(7, ' ')
+                        result = "b".ljust(self.ljustWidthOpcode, ' ')
+                    #elif self.rt == 0:
+                    #    result = "beqz".ljust(self.ljustWidthOpcode, ' ')
+                    #    result += f" {rs},"
+                #else:
+                #    if self.rt == 0:
+                #        result = opcode_base.lower() +"z"
+                #        result = result.ljust(self.ljustWidthOpcode, ' ')
+                #        result += f" {rs},"
             return f"{result} {immediate}"
 
         if self.isOperation():
@@ -239,4 +257,3 @@ class InstructionNormal(InstructionBase):
 
         result = result.ljust(14, ' ')
         return f"{result} {immediate}({rs})"
-

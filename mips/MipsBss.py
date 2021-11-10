@@ -22,7 +22,7 @@ class Bss(Section):
         if self.size == 0:
             return
 
-        with open(filepath + ".bss.asm", "w") as f:
+        with open(filepath + ".bss.s", "w") as f:
             # f.write(".section .bss\n\n.balign 16\n\n")
             offset = 0
             for w in self.words:

@@ -154,7 +154,7 @@ class InstructionSpecial(InstructionBase):
 
     def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName()
-        formated_opcode = opcode.lower().ljust(7, ' ')
+        formated_opcode = opcode.lower().ljust(self.ljustWidthOpcode, ' ')
         rs = self.getRegisterName(self.rs)
         rt = self.getRegisterName(self.rt)
         rd = self.getRegisterName(self.rd)
@@ -184,7 +184,7 @@ class InstructionSpecial(InstructionBase):
             return result
         elif opcode in ("MFHI", "MFLO"):
             return f"{formated_opcode} {rd}"
-        elif opcode in ("MULT", "MULTU", "DIV", "DIVU", 
+        elif opcode in ("MULT", "MULTU",
                 "DMULT", "DMULTU", "DDIV", "DDIVU") or self.isTrap(): # OP  rs, rt
             result = f"{formated_opcode} {rs},".ljust(14, ' ')
             return f"{result} {rt}"
