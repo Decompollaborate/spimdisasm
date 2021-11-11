@@ -34,8 +34,8 @@ VERSIONS_HASHES = {
     "IQUE TW":          "a475e9f8615513666a265c464708ae8f",
 
     # MM
-    "MM JP 1.0":        "c38a7f6f6b61862ea383a75cdf888279",
-    "MM JP 1.1":        None,
+    "MM JP 1.0":        "15d1a2217cad61c39cfecbffa0703e25",
+    "MM JP 1.1":        "c38a7f6f6b61862ea383a75cdf888279",
     #"MM USA KIOSK":    None,
     "MM USA":      "2a0a8acb61538235bc1094d297fb6556",
     #"MM PAL 1.0":       None,
