@@ -68,9 +68,12 @@ context = Context()
 context.readFunctionMap(VERSION)
 
 palMqDbg_filesStarts = list()
-for codeFilename, (offset, size) in codeSplits.get(VERSION, {}).items():
-    palMqDbg_filesStarts.append((offset, size, codeFilename))
-palMqDbg_filesStarts.append((codeDataStart.get(VERSION, -1), 0, "end"))
+if VERSION in codeSplits:
+    for codeFilename, (offset, size) in codeSplits[VERSION].items():
+        palMqDbg_filesStarts.append((offset, size, codeFilename))
+else:
+    palMqDbg_filesStarts.append((0, len(palMqDbg_Code_array), "start_dummy_000000"))
+palMqDbg_filesStarts.append((codeDataStart.get(VERSION, 0xFFFFFFFF), 0, "end"))
 
 palMqDbg_filesStarts.sort()
 

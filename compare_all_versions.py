@@ -108,15 +108,31 @@ def compareOverlayAcrossVersions(filename: str, versionsList: List[str], context
     rodataSplits = {version: dict() for version in versionsList}
     bssSplits = {version: dict() for version in versionsList}
     if is_code:
-        textSplits = readSplitsFromCsv("csvsplits/code_text.csv") if os.path.exists("csvsplits/code_text.csv") else textSplits
-        dataSplits = readSplitsFromCsv("csvsplits/code_data.csv") if os.path.exists("csvsplits/code_data.csv") else dataSplits
-        rodataSplits = readSplitsFromCsv("csvsplits/code_rodata.csv") if os.path.exists("csvsplits/code_rodata.csv") else rodataSplits
-        bssSplits = readSplitsFromCsv("csvsplits/code_bss.csv") if os.path.exists("csvsplits/code_bss.csv") else bssSplits
+        if os.path.exists("csvsplits/code_text.csv"):
+            for k, v in readSplitsFromCsv("csvsplits/code_text.csv").items():
+                textSplits[k] = v
+        if os.path.exists("csvsplits/code_data.csv"):
+            for k, v in readSplitsFromCsv("csvsplits/code_data.csv").items():
+                dataSplits[k] = v
+        if os.path.exists("csvsplits/code_rodata.csv"):
+            for k, v in readSplitsFromCsv("csvsplits/code_rodata.csv").items():
+                rodataSplits[k] = v
+        if os.path.exists("csvsplits/code_bss.csv"):
+            for k, v in readSplitsFromCsv("csvsplits/code_bss.csv").items():
+                bssSplits[k] = v
     elif is_boot:
-        textSplits = readSplitsFromCsv("csvsplits/boot_text.csv") if os.path.exists("csvsplits/boot_text.csv") else textSplits
-        dataSplits = readSplitsFromCsv("csvsplits/boot_data.csv") if os.path.exists("csvsplits/boot_data.csv") else dataSplits
-        rodataSplits = readSplitsFromCsv("csvsplits/boot_rodata.csv") if os.path.exists("csvsplits/boot_rodata.csv") else rodataSplits
-        bssSplits = readSplitsFromCsv("csvsplits/boot_bss.csv") if os.path.exists("csvsplits/boot_bss.csv") else bssSplits
+        if os.path.exists("csvsplits/boot_text.csv"):
+            for k, v in readSplitsFromCsv("csvsplits/boot_text.csv").items():
+                textSplits[k] = v
+        if os.path.exists("csvsplits/boot_data.csv"):
+            for k, v in readSplitsFromCsv("csvsplits/boot_data.csv").items():
+                dataSplits[k] = v
+        if os.path.exists("csvsplits/boot_rodata.csv"):
+            for k, v in readSplitsFromCsv("csvsplits/boot_rodata.csv").items():
+                rodataSplits[k] = v
+        if os.path.exists("csvsplits/boot_bss.csv"):
+            for k, v in readSplitsFromCsv("csvsplits/boot_bss.csv").items():
+                bssSplits[k] = v
 
     for version in versionsList:
         path = os.path.join("baserom_" + version, filename)
