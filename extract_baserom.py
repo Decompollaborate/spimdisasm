@@ -35,10 +35,10 @@ FILE_TABLE_OFFSET = {
     "GATEWAY":      0x0AC80, # fake
 
     # MM
-    "MM NTSC JP 1.0": 0x1C110,
-    "MM NTSC JP 1.1": 0x1C050,
+    "MM JP 1.0":    0x1C110,
+    "MM JP 1.1":    0x1C050,
     #"MM USA KIOSK":0x,
-    "MM NTSC USA":  0x1A500,
+    "MM USA":       0x1A500,
     #"MM PAL 1.0":   0x,
     "MM PAL DBG":   0x24F60,
     #"MM PAL 1.1":   0x,
@@ -91,7 +91,7 @@ FILE_NAMES["NTSC J 1.1"]  = FILE_NAMES["NTSC 1.1"]
 FILE_NAMES["NTSC J 1.2"]  = FILE_NAMES["NTSC 1.2"]
 FILE_NAMES["PAL WII 1.1"] = FILE_NAMES["PAL 1.1"]
 
-romData = None
+romData: bytes = None
 Edition = "" # "pal_mq"
 Version = "" # "PAL MQ"
 
@@ -138,7 +138,7 @@ def readFilelists():
     FILE_NAMES["MM JP 1.0"] = readFile("filelists/filelist_mm_jp_1.0.txt")
     FILE_NAMES["MM USA"] = readFile("filelists/filelist_mm_usa.txt")
 
-def initialize_worker(rom_data, dmaTable):
+def initialize_worker(rom_data: bytes, dmaTable: dict):
     global romData
     global globalDmaTable
     romData = rom_data
@@ -224,12 +224,42 @@ def ExtractFunc(i):
 
 #####################################################################
 
+def printBuildData(rom_data: bytes):
+    buildDataOffset = FILE_TABLE_OFFSET[Version] - 16*3
+    buildTeam = ""
+    i = 0
+    while rom_data[buildDataOffset + i] != 0:
+        buildTeam += chr(rom_data[buildDataOffset + i])
+        i += 1
+
+    i += 1
+
+    buildDate = ""
+    while rom_data[buildDataOffset + i] != 0:
+        buildDate += chr(rom_data[buildDataOffset + i])
+        i += 1
+
+    i += 1
+
+    buildMakeOption = ""
+    while rom_data[buildDataOffset + i] != 0:
+        buildMakeOption += chr(rom_data[buildDataOffset + i])
+        i += 1
+
+    print("========================================")
+    print(f"| Build team:   {buildTeam}".ljust(39) + "|")
+    print(f"| Build date:   {buildDate}".ljust(39) + "|")
+    #print(f"| Make Option:  {buildMakeOption}".ljust(39) + "|")
+    print("========================================")
+
+
+
 def extract_rom(j):
     readFilelists()
 
     file_names_table = FILE_NAMES[Version]
     if file_names_table is None:
-        print(f"'{Edition}' is not supported yet.")
+        print(f"'{Edition}' is not supported yet because the filelist is missing.")
         sys.exit(2)
 
     try:
@@ -265,6 +295,8 @@ def extract_rom(j):
         initialize_worker(rom_data, dmaTable)
         for i in range(len(file_names_table)):
             ExtractFunc(i)
+
+    printBuildData(rom_data)
 
     filetable = f'baserom_{Edition}/dma_addresses.txt'
     print(f"Creating {filetable}")
