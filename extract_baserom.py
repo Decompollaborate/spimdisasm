@@ -37,7 +37,7 @@ FILE_TABLE_OFFSET = {
     # MM
     "MM JP 1.0":    0x1C110,
     "MM JP 1.1":    0x1C050,
-    #"MM USA DEMO":0x,
+    "MM USA DEMO":  0x1AB50,
     "MM USA":       0x1A500,
     #"MM PAL 1.0":   0x,
     "MM PAL DBG":   0x24F60,
@@ -76,14 +76,14 @@ FILE_NAMES: Dict[str, List[str] | None] = {
     # MM
     "MM JP 1.0":    None,
     "MM JP 1.1":    None,
-    #"MM USA DEMO":None,
+    "MM USA DEMO":  None,
     "MM USA":       None,
     #"MM PAL 1.0":   None,
     "MM PAL DBG":   None,
     #"MM PAL 1.1":   None,
-    #"MM USA GC":       None,
-    #"MM PAL GC":       None,
-    #"MM JP GC":        None,
+    #"MM USA GC":    None,
+    #"MM PAL GC":    None,
+    #"MM JP GC":     None,
 }
 FILE_NAMES["NTSC J 0.9"]  = FILE_NAMES["NTSC 0.9"]
 FILE_NAMES["NTSC J 1.0"]  = FILE_NAMES["NTSC 1.0"]
@@ -136,7 +136,9 @@ def readFilelists():
 
     # MM
     FILE_NAMES["MM JP 1.0"] = readFile("filelists/filelist_mm_jp_1.0.txt")
+    FILE_NAMES["MM USA DEMO"] = readFile("filelists/filelist_mm_usa_demo.txt")
     FILE_NAMES["MM USA"] = readFile("filelists/filelist_mm_usa.txt")
+    FILE_NAMES["MM PAL DBG"] = readFile("filelists/filelist_mm_pal_dbg.txt")
 
     FILE_NAMES["MM JP 1.1"] = FILE_NAMES["MM JP 1.0"]
 
