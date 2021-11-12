@@ -43,7 +43,7 @@ FILE_TABLE_OFFSET = {
     "MM PAL DBG":   0x24F60,
     "MM PAL 1.1":   0x1A8D0,
     "MM USA GC":    0x1AE90,
-    #"MM PAL GC":    0x,
+    "MM PAL GC":    0x1AE90,
     #"MM JP GC":     0x,
 }
 FILE_TABLE_OFFSET["NTSC J 0.9"]   = FILE_TABLE_OFFSET["NTSC 0.9"]
@@ -82,7 +82,7 @@ FILE_NAMES: Dict[str, List[str] | None] = {
     "MM PAL DBG":   None,
     "MM PAL 1.1":   None,
     "MM USA GC":    None,
-    #"MM PAL GC":    None,
+    "MM PAL GC":    None,
     #"MM JP GC":     None,
 }
 FILE_NAMES["NTSC J 0.9"]  = FILE_NAMES["NTSC 0.9"]
@@ -140,6 +140,7 @@ def readFilelists():
     FILE_NAMES["MM USA"] = readFile("filelists/filelist_mm_usa.txt")
     FILE_NAMES["MM PAL DBG"] = readFile("filelists/filelist_mm_pal_dbg.txt")
     FILE_NAMES["MM USA GC"] = readFile("filelists/filelist_mm_usa_gc.txt")
+    FILE_NAMES["MM PAL GC"] = readFile("filelists/filelist_mm_pal_gc.txt")
 
     FILE_NAMES["MM JP 1.1"] = FILE_NAMES["MM JP 1.0"]
     FILE_NAMES["MM PAL 1.0"] = FILE_NAMES["MM PAL DBG"]
@@ -262,6 +263,7 @@ def printBuildData(rom_data: bytes):
     print("========================================")
 
 def extract_rom(j):
+    print("Reading filelists...")
     readFilelists()
 
     file_names_table = FILE_NAMES[Version]
