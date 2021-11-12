@@ -26,7 +26,7 @@ class ContextVariable:
         self.name: str = name
         self.type: str = ""
         self.arrayInfo: str = ""
-        self.size: int = -1
+        self.size: int = 4
 
 class Context:
     def __init__(self):
@@ -85,7 +85,10 @@ class Context:
             # merges the dictionaries
             vramSymbols = sorted({**self.funcAddresses, **self.jumpTables, **self.symbols}.items(), reverse=True)
             for vram, symbol in vramSymbols:
-                if vramAddress > vram:
+                symbolSize = 4
+                if isinstance(symbol, ContextVariable):
+                    symbolSize = symbol.size
+                if vramAddress > vram and vramAddress < vram + symbolSize:
                     symbolName = symbol
                     if isinstance(symbol, ContextVariable):
                         symbolName = symbol.name
@@ -165,6 +168,28 @@ class Context:
             contVar.size = varSize
             self.symbols[vram] = contVar
 
+    def readVariablesCsv(self, filepath: str):
+        if not os.path.exists(filepath):
+            return
+
+        variables_file = readCsv(filepath)
+        for vram, varName, varType, varSize in variables_file:
+            vram = int(vram, 16)
+            varSize = int(varSize, 0)
+            contVar = ContextVariable(vram, varName)
+            contVar.type = varType
+            contVar.size = varSize
+            self.symbols[vram] = contVar
+
+    def readFunctionsCsv(self, filepath: str):
+        if not os.path.exists(filepath):
+            return
+
+        functions_file = readCsv(filepath)
+        for vram, funcName in functions_file:
+            vram = int(vram, 16)
+            self.addFunction(None, vram, funcName)
+
     def saveContextToFile(self, filepath: str):
         with open(filepath, "w") as f:
             for address, name in self.funcAddresses.items():
@@ -187,7 +212,7 @@ class Context:
 
             for address, name in self.symbols.items():
                 file = self.symbolToFile.get(address, "")
-                f.write(f"symbol,{file},{toHex(address, 8)},{name},\n")
+                f.write(f"symbol,{file},{toHex(address, 8)},{name.name},\n")
 
             for address, name in self.fakeFunctions.items():
                 file = self.symbolToFile.get(address, "")
