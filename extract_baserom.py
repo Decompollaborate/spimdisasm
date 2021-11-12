@@ -42,9 +42,9 @@ FILE_TABLE_OFFSET = {
     "MM PAL 1.0":   0x1A650,
     "MM PAL DBG":   0x24F60,
     "MM PAL 1.1":   0x1A8D0,
-    #"MM USA GC":       0x,
-    #"MM PAL GC":       0x,
-    #"MM JP GC":        0x,
+    "MM USA GC":    0x1AE90,
+    #"MM PAL GC":    0x,
+    #"MM JP GC":     0x,
 }
 FILE_TABLE_OFFSET["NTSC J 0.9"]   = FILE_TABLE_OFFSET["NTSC 0.9"]
 FILE_TABLE_OFFSET["NTSC J 1.0"]   = FILE_TABLE_OFFSET["NTSC 1.0"]
@@ -81,7 +81,7 @@ FILE_NAMES: Dict[str, List[str] | None] = {
     "MM PAL 1.0":   None,
     "MM PAL DBG":   None,
     "MM PAL 1.1":   None,
-    #"MM USA GC":    None,
+    "MM USA GC":    None,
     #"MM PAL GC":    None,
     #"MM JP GC":     None,
 }
@@ -139,6 +139,7 @@ def readFilelists():
     FILE_NAMES["MM USA DEMO"] = readFile("filelists/filelist_mm_usa_demo.txt")
     FILE_NAMES["MM USA"] = readFile("filelists/filelist_mm_usa.txt")
     FILE_NAMES["MM PAL DBG"] = readFile("filelists/filelist_mm_pal_dbg.txt")
+    FILE_NAMES["MM USA GC"] = readFile("filelists/filelist_mm_usa_gc.txt")
 
     FILE_NAMES["MM JP 1.1"] = FILE_NAMES["MM JP 1.0"]
     FILE_NAMES["MM PAL 1.0"] = FILE_NAMES["MM PAL DBG"]
@@ -239,7 +240,8 @@ def printBuildData(rom_data: bytes):
         buildTeam += chr(rom_data[buildDataOffset + i])
         i += 1
 
-    i += 1
+    while rom_data[buildDataOffset + i] == 0:
+        i += 1
 
     buildDate = ""
     while rom_data[buildDataOffset + i] != 0:
