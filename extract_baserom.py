@@ -211,6 +211,7 @@ def ExtractFunc(i):
     print('extracting ' + filename + " (0x%08X, 0x%08X)" % (virtStart, virtEnd))
     write_output_file(filename, physStart, size)
     if compressed:
+        # print(f"decompressing {filename}")
         if Edition in ("ique_cn", "ique_tw"):
             data = readFileAsBytearray(filename)
             decompressed = decompressZlib(data)
@@ -251,8 +252,6 @@ def printBuildData(rom_data: bytes):
     print(f"| Build date:   {buildDate}".ljust(39) + "|")
     #print(f"| Make Option:  {buildMakeOption}".ljust(39) + "|")
     print("========================================")
-
-
 
 def extract_rom(j):
     readFilelists()
