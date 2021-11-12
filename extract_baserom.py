@@ -39,9 +39,9 @@ FILE_TABLE_OFFSET = {
     "MM JP 1.1":    0x1C050,
     "MM USA DEMO":  0x1AB50,
     "MM USA":       0x1A500,
-    #"MM PAL 1.0":   0x,
+    "MM PAL 1.0":   0x1A650,
     "MM PAL DBG":   0x24F60,
-    #"MM PAL 1.1":   0x,
+    "MM PAL 1.1":   0x1A8D0,
     #"MM USA GC":       0x,
     #"MM PAL GC":       0x,
     #"MM JP GC":        0x,
@@ -78,9 +78,9 @@ FILE_NAMES: Dict[str, List[str] | None] = {
     "MM JP 1.1":    None,
     "MM USA DEMO":  None,
     "MM USA":       None,
-    #"MM PAL 1.0":   None,
+    "MM PAL 1.0":   None,
     "MM PAL DBG":   None,
-    #"MM PAL 1.1":   None,
+    "MM PAL 1.1":   None,
     #"MM USA GC":    None,
     #"MM PAL GC":    None,
     #"MM JP GC":     None,
@@ -141,6 +141,8 @@ def readFilelists():
     FILE_NAMES["MM PAL DBG"] = readFile("filelists/filelist_mm_pal_dbg.txt")
 
     FILE_NAMES["MM JP 1.1"] = FILE_NAMES["MM JP 1.0"]
+    FILE_NAMES["MM PAL 1.0"] = FILE_NAMES["MM PAL DBG"]
+    FILE_NAMES["MM PAL 1.1"] = FILE_NAMES["MM PAL 1.0"]
 
 def initialize_worker(rom_data: bytes, dmaTable: dict):
     global romData
