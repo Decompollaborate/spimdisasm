@@ -13,6 +13,7 @@ class Function:
         self.instructions: List[InstructionBase] = list(instructions)
         self.context: Context = context
         self.inFileOffset: int = inFileOffset
+        self.commentOffset: int = 0
         self.vram: int = vram
         self.index: int = -1
         self.pointersRemoved: bool = False
@@ -76,7 +77,7 @@ class Function:
                 if isLui:
                     if instr.immediate >= 0x4000: # filter out stuff that may not be a real symbol
                         trackedRegisters[instr.rt] = instructionOffset//4
-                elif instr.isIType() and opcode not in ("ANDI", "ORI", "XORI"):
+                elif instr.isIType() and opcode not in ("ANDI", "ORI", "XORI", "CACHE"):
                     rs = instr.rs
                     if rs in trackedRegisters:
                         luiInstr = self.instructions[trackedRegisters[rs]]
@@ -84,7 +85,7 @@ class Function:
                         lowerHalf = from2Complement(instr.immediate, 16)
                         address = upperHalf + lowerHalf
                         self.referencedVRams.add(address)
-                        if address not in self.context.symbols:
+                        if self.context.getGenericSymbol(address) is None:
                             if GlobalConfig.ADD_NEW_SYMBOLS:
                                 self.context.symbols[address] = ContextVariable(address, "D_" + toHex(address, 8)[2:])
                         self.pointersPerInstruction[instructionOffset] = address
@@ -206,7 +207,7 @@ class Function:
         instructionOffset = 0
         auxOffset = self.inFileOffset
         for instr in self.instructions:
-            offsetHex = toHex(auxOffset, 6)[2:]
+            offsetHex = toHex(auxOffset + self.commentOffset, 6)[2:]
             vramHex = ""
             if self.vram >= 0:
                 vramHex = toHex(self.vram + instructionOffset, 8)[2:]

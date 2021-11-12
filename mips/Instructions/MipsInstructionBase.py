@@ -138,6 +138,8 @@ class InstructionBase:
         return hex(register)
 
     def getFloatRegisterName(self, register: int) -> str:
+        if register == 31:
+            return "$31"
         if 0 <= register <= 31:
             return "$f" + str(register)
         return hex(register)

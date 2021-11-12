@@ -62,7 +62,7 @@ class InstructionNormal(InstructionBase):
         0b101_100: "SDL", # Store Doubleword Left
         0b101_101: "SDR", # Store Doubleword Right
         0b101_110: "SWR", # Store Word Right
-        # 0b101_111: "",
+        0b101_111: "CACHE", # Cache
 
         0b110_000: "LL", # Load Linked word
         0b110_001: "LWC1", # Load Word to Coprocessor z
@@ -166,6 +166,8 @@ class InstructionNormal(InstructionBase):
     def modifiesRt(self) -> bool:
         if self.isBranch():
             return False
+        if self.isJType():
+            return False
         opcode = self.getOpcodeName()
         if opcode in ("SB", "SH", "SWL", "SW", "SDL", "SDR", "SWR"):
             return False
@@ -183,7 +185,8 @@ class InstructionNormal(InstructionBase):
 
 
     def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
-        opcode = self.getOpcodeName().lower().ljust(self.ljustWidthOpcode, ' ')
+        opcode = self.getOpcodeName()
+        formated_opcode = opcode.lower().ljust(self.ljustWidthOpcode, ' ')
         rs = self.getRegisterName(self.rs)
         rt = self.getRegisterName(self.rt)
         #immediate = toHex(self.immediate, 4)
@@ -193,9 +196,9 @@ class InstructionNormal(InstructionBase):
         if immOverride is not None:
             immediate = immOverride
 
-        result = f"{opcode} "
+        result = f"{formated_opcode} "
 
-        if "COP" in self.getOpcodeName(): # Hack until I implement COPz instructions
+        if "COP" in opcode: # Hack until I implement COPz instructions
             instr_index = toHex(self.instr_index, 7)
             result += instr_index
             return result
@@ -223,8 +226,7 @@ class InstructionNormal(InstructionBase):
             elif self.isBinaryBranch():
                 result += f" {rt},"
                 result = result.ljust(19, ' ')
-                opcode_base = self.getOpcodeName()
-                if opcode_base == "BEQ":
+                if opcode == "BEQ":
                     if self.rs == 0 and self.rt == 0:
                         result = "b".ljust(self.ljustWidthOpcode, ' ')
                     #elif self.rt == 0:
@@ -232,7 +234,7 @@ class InstructionNormal(InstructionBase):
                     #    result += f" {rs},"
                 #else:
                 #    if self.rt == 0:
-                #        result = opcode_base.lower() +"z"
+                #        result = opcode.lower() +"z"
                 #        result = result.ljust(self.ljustWidthOpcode, ' ')
                 #        result += f" {rs},"
             return f"{result} {immediate}"
@@ -251,9 +253,11 @@ class InstructionNormal(InstructionBase):
 
         # OP rt, IMM(rs)
         if self.isFloatInstruction():
-            result += f"{self.getFloatRegisterName(self.rt)},"
+            result += f"{self.getFloatRegisterName(self.rt)}"
+        elif opcode == "CACHE":
+            result += f"{toHex(self.rt, 2)}"
         else:
-            result += f"{rt},"
+            result += f"{rt}"
 
         result = result.ljust(14, ' ')
-        return f"{result} {immediate}({rs})"
+        return f"{result}, {immediate}({rs})"
