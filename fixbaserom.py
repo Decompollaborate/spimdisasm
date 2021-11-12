@@ -36,14 +36,14 @@ VERSIONS_HASHES = {
     # MM
     "MM JP 1.0":        "15d1a2217cad61c39cfecbffa0703e25",
     "MM JP 1.1":        "c38a7f6f6b61862ea383a75cdf888279",
-    #"MM USA KIOSK":    None,
-    "MM USA":      "2a0a8acb61538235bc1094d297fb6556",
-    #"MM PAL 1.0":       None,
-    "MM PAL DBG":       None,
-    #"MM PAL 1.1":       None,
-    #"USA GC":           None,
-    #"PAL GC":           None.
-    #"JP GC":            None,
+    "MM USA DEMO":      "8f281800fba5ddcb1d2b377731fc0215",
+    "MM USA":           "2a0a8acb61538235bc1094d297fb6556",
+    "MM PAL 1.0":       "13fab67e603b002ceaf0eea84130e973",
+    "MM PAL DBG":       "71fbae5d2b27926ea54e92ce2fc91622",
+    "MM PAL 1.1":       "beccfded43a2f159d03555027462a950",
+    "MM USA GC":        "ac0751dbc23ab2ec0c3144203aca0003",
+    "MM PAL GC":        "dbe9af0db46256e42b5c67902b696549",
+    "MM JP GC":         "d3929aadf7640f8c5b4ce8321ad4393a",
 }
 
 def getStrHash(byte_array):
