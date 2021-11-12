@@ -138,6 +138,8 @@ def readFilelists():
     FILE_NAMES["MM JP 1.0"] = readFile("filelists/filelist_mm_jp_1.0.txt")
     FILE_NAMES["MM USA"] = readFile("filelists/filelist_mm_usa.txt")
 
+    FILE_NAMES["MM JP 1.1"] = FILE_NAMES["MM JP 1.0"]
+
 def initialize_worker(rom_data: bytes, dmaTable: dict):
     global romData
     global globalDmaTable
