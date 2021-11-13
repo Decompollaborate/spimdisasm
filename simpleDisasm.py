@@ -17,7 +17,7 @@ from mips.ZeldaTables import DmaEntry, getDmaAddresses, OverlayTableEntry
 from mips import ZeldaOffsets
 
 
-def simpleDisasmFile(path: str, outputPath: str, offsetStart: int, offsetEnd: int, vram: int):
+def simpleDisasmFile(path: str, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context):
     array_of_bytes = readFileAsBytearray(path)
 
     array_of_bytes = array_of_bytes
@@ -27,8 +27,6 @@ def simpleDisasmFile(path: str, outputPath: str, offsetStart: int, offsetEnd: in
     if offsetStart >= 0:
         print(f"Parsing since offset {toHex(offsetStart, 2)}")
         array_of_bytes = array_of_bytes[offsetStart:]
-
-    context = Context()
 
     f = Text(array_of_bytes, "raw", "ver", context)
 
@@ -99,7 +97,7 @@ def disassemblerMain():
 
     context = Context()
 
-    simpleDisasmFile(args.binary, args.output, int(args.start, 16), int(args.end, 16), int(args.vram, 16))
+    simpleDisasmFile(args.binary, args.output, int(args.start, 16), int(args.end, 16), int(args.vram, 16), context)
 
     if args.save_context is not None:
         head, tail = os.path.split(args.save_context)
@@ -111,7 +109,7 @@ def disassemblerMain():
             name = ".".join(aux)
             extension = "." + extension
         name = os.path.join(head, name)
-        context.saveContextToFile(f"{name}_{args.version}{extension}")
+        context.saveContextToFile(f"{name}_{extension}")
 
 
 if __name__ == "__main__":
