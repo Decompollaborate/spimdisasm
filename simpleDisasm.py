@@ -17,9 +17,7 @@ from mips.ZeldaTables import DmaEntry, getDmaAddresses, OverlayTableEntry
 from mips import ZeldaOffsets
 
 
-def simpleDisasmFile(path: str, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context):
-    array_of_bytes = readFileAsBytearray(path)
-
+def simpleDisasmFile(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context):
     array_of_bytes = array_of_bytes
     if offsetEnd >= 0:
         print(f"Parsing until offset {toHex(offsetEnd, 2)}")
@@ -36,6 +34,7 @@ def simpleDisasmFile(path: str, outputPath: str, offsetStart: int, offsetEnd: in
 
     print("Analzing")
     f.analyze()
+    f.setCommentOffset(offsetStart)
 
     print()
     print(f"Found {f.nFuncs} functions.")
@@ -71,10 +70,6 @@ def simpleDisasmFile(path: str, outputPath: str, offsetStart: int, offsetEnd: in
     print(f"Writing files to {outputPath}")
     f.saveToFile(outputPath)
 
-    print()
-    print("Disassembling complete!")
-    print("Goodbye.")
-
 
 def disassemblerMain():
     description = ""
@@ -87,6 +82,7 @@ def disassemblerMain():
     parser.add_argument("--save-context", help="Saves the context to a file. The provided filename will be suffixed with the corresponding version.", metavar="FILENAME")
     parser.add_argument("--functions", help="Path to a functions csv")
     parser.add_argument("--variables", help="Path to a variables csv")
+    parser.add_argument("--file-splits", help="Path to a file splits csv")
     args = parser.parse_args()
 
     GlobalConfig.REMOVE_POINTERS = False
@@ -103,7 +99,19 @@ def disassemblerMain():
     if args.variables is not None:
         context.readVariablesCsv(args.variables)
 
-    simpleDisasmFile(args.binary, args.output, int(args.start, 16), int(args.end, 16), int(args.vram, 16), context)
+    array_of_bytes = readFileAsBytearray(args.binary)
+    if args.file_splits is None:
+        simpleDisasmFile(array_of_bytes, args.output, int(args.start, 16), int(args.end, 16), int(args.vram, 16), context)
+    else:
+        splits = readCsv(args.file_splits)
+        for i, (vram, fileName, offset) in enumerate(splits):
+            print(i, vram, fileName, offset)
+            vram = int(vram, 16)
+            offset = int(offset, 16)
+            nextOffset = 0xFFFFFF
+            if i + 1 < len(splits):
+                nextOffset = int(splits[i+1][2], 16)
+            simpleDisasmFile(array_of_bytes, f"{args.output}/{fileName}", offset, nextOffset, vram, context)
 
     if args.save_context is not None:
         head, tail = os.path.split(args.save_context)
@@ -116,6 +124,10 @@ def disassemblerMain():
             extension = "." + extension
         name = os.path.join(head, name)
         context.saveContextToFile(f"{name}_{extension}")
+
+    print()
+    print("Disassembling complete!")
+    print("Goodbye.")
 
 
 if __name__ == "__main__":

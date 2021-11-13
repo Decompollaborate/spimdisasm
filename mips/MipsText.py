@@ -198,6 +198,10 @@ class Text(Section):
                 f.write("\n")
                 f.write(func.disassemble())
 
+    def setCommentOffset(self, commentOffset: int):
+        for func in self.functions:
+            func.commentOffset = commentOffset
+
 def readMipsText(file: str, version: str) -> Text:
     filename = f"baserom_{version}/{file}"
     return Text(readFileAsBytearray(filename), filename, version, Context())
