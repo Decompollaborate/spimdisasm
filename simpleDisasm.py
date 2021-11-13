@@ -50,7 +50,24 @@ def simpleDisasmFile(path: str, outputPath: str, offsetStart: int, offsetEnd: in
             start = f.fileBoundaries[i]
             end = f.fileBoundaries[i+1]
 
-            print(f"    {start:06X}  {end-start:03X}")
+            functionsInBoundary = 0
+            for func in f.functions:
+                funcOffset = func.vram - vram
+                if start <= funcOffset < end:
+                    functionsInBoundary += 1
+            print("\t", toHex(start, 6)[2:], toHex(end-start, 3)[2:], "\t functions:", functionsInBoundary)
+
+
+        start = f.fileBoundaries[-1]
+        end = f.size + f.offset
+
+        functionsInBoundary = 0
+        for func in f.functions:
+            funcOffset = func.vram - vram
+            if start <= funcOffset < end:
+                functionsInBoundary += 1
+        print("\t", toHex(start, 6)[2:], toHex(end-start, 3)[2:], "\t functions:", functionsInBoundary)
+
         print()
 
     print(f"Writing files to {outputPath}")
