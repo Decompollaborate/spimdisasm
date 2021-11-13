@@ -165,6 +165,26 @@ class Context:
             contVar.size = varSize
             self.symbols[vram] = contVar
 
+    def readVariablesCsv(self, filepath: str):
+        if not os.path.exists(filepath):
+            return
+
+        variables_file = readCsv(filepath)
+        for vram, varName, varType in variables_file:
+            vram = int(vram, 16)
+            contVar = ContextVariable(vram, varName)
+            contVar.type = varType
+            self.symbols[vram] = contVar
+
+    def readFunctionsCsv(self, filepath: str):
+        if not os.path.exists(filepath):
+            return
+
+        functions_file = readCsv(filepath)
+        for vram, funcName in functions_file:
+            vram = int(vram, 16)
+            self.addFunction(None, vram, funcName)
+
     def saveContextToFile(self, filepath: str):
         with open(filepath, "w") as f:
             for address, name in self.funcAddresses.items():
