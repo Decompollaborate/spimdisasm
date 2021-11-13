@@ -85,6 +85,8 @@ def disassemblerMain():
     parser.add_argument("--end", help="",  default="0xFFFFFF")
     parser.add_argument("--vram", help="Set the VRAM address", default="-1")
     parser.add_argument("--save-context", help="Saves the context to a file. The provided filename will be suffixed with the corresponding version.", metavar="FILENAME")
+    parser.add_argument("--functions", help="Path to a functions csv")
+    parser.add_argument("--variables", help="Path to a variables csv")
     args = parser.parse_args()
 
     GlobalConfig.REMOVE_POINTERS = False
@@ -96,6 +98,10 @@ def disassemblerMain():
     GlobalConfig.ASM_COMMENT = True
 
     context = Context()
+    if args.functions is not None:
+        context.readFunctionsCsv(args.functions)
+    if args.variables is not None:
+        context.readVariablesCsv(args.variables)
 
     simpleDisasmFile(args.binary, args.output, int(args.start, 16), int(args.end, 16), int(args.vram, 16), context)
 
