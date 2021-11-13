@@ -13,6 +13,7 @@ class Function:
         self.instructions: List[InstructionBase] = list(instructions)
         self.context: Context = context
         self.inFileOffset: int = inFileOffset
+        self.commentOffset: int = 0
         self.vram: int = vram
         self.index: int = -1
         self.pointersRemoved: bool = False
@@ -206,7 +207,7 @@ class Function:
         instructionOffset = 0
         auxOffset = self.inFileOffset
         for instr in self.instructions:
-            offsetHex = toHex(auxOffset, 6)[2:]
+            offsetHex = toHex(auxOffset + self.commentOffset, 6)[2:]
             vramHex = ""
             if self.vram >= 0:
                 vramHex = toHex(self.vram + instructionOffset, 8)[2:]
