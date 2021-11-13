@@ -187,7 +187,7 @@ class Context:
 
             for address, name in self.symbols.items():
                 file = self.symbolToFile.get(address, "")
-                f.write(f"symbol,{file},{toHex(address, 8)},{name},\n")
+                f.write(f"symbol,{file},{toHex(address, 8)},{name.name},\n")
 
             for address, name in self.fakeFunctions.items():
                 file = self.symbolToFile.get(address, "")
