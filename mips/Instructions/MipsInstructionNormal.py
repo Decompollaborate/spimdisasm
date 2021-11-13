@@ -166,6 +166,8 @@ class InstructionNormal(InstructionBase):
     def modifiesRt(self) -> bool:
         if self.isBranch():
             return False
+        if self.isJType():
+            return False
         opcode = self.getOpcodeName()
         if opcode in ("SB", "SH", "SWL", "SW", "SDL", "SDR", "SWR"):
             return False
