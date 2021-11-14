@@ -85,7 +85,7 @@ class Function:
                         lowerHalf = from2Complement(instr.immediate, 16)
                         address = upperHalf + lowerHalf
                         self.referencedVRams.add(address)
-                        if address not in self.context.symbols:
+                        if self.context.getGenericSymbol(address) is None:
                             if GlobalConfig.ADD_NEW_SYMBOLS:
                                 self.context.symbols[address] = ContextVariable(address, "D_" + toHex(address, 8)[2:])
                         self.pointersPerInstruction[instructionOffset] = address

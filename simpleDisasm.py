@@ -92,6 +92,7 @@ def disassemblerMain():
     GlobalConfig.IGNORE_80 = False
     GlobalConfig.WRITE_BINARY = False
     GlobalConfig.ASM_COMMENT = True
+    GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET = True
 
     context = Context()
     if args.functions is not None:
