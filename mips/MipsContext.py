@@ -26,7 +26,7 @@ class ContextVariable:
         self.name: str = name
         self.type: str = ""
         self.arrayInfo: str = ""
-        self.size: int = -1
+        self.size: int = 4
 
 class Context:
     def __init__(self):
@@ -85,7 +85,10 @@ class Context:
             # merges the dictionaries
             vramSymbols = sorted({**self.funcAddresses, **self.jumpTables, **self.symbols}.items(), reverse=True)
             for vram, symbol in vramSymbols:
-                if vramAddress > vram:
+                symbolSize = 4
+                if isinstance(symbol, ContextVariable):
+                    symbolSize = symbol.size
+                if vramAddress > vram and vramAddress < vram + symbolSize:
                     symbolName = symbol
                     if isinstance(symbol, ContextVariable):
                         symbolName = symbol.name
@@ -170,10 +173,12 @@ class Context:
             return
 
         variables_file = readCsv(filepath)
-        for vram, varName, varType in variables_file:
+        for vram, varName, varType, varSize in variables_file:
             vram = int(vram, 16)
+            varSize = int(varSize, 0)
             contVar = ContextVariable(vram, varName)
             contVar.type = varType
+            contVar.size = varSize
             self.symbols[vram] = contVar
 
     def readFunctionsCsv(self, filepath: str):
