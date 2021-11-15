@@ -109,7 +109,7 @@ def disassemblerMain():
         simpleDisasmFile(array_of_bytes, args.output, int(args.start, 16), int(args.end, 16), int(args.vram, 16), context)
     else:
         splits = readCsv(args.file_splits)
-        for i, (vram, fileName, offset) in enumerate(splits):
+        for i, (offset, vram, fileName) in enumerate(splits):
             print(i, vram, fileName, offset)
             vram = int(vram, 16)
             offset = int(offset, 16)
