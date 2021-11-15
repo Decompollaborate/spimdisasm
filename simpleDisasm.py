@@ -160,14 +160,22 @@ def disassemblerMain():
         context.readVariablesCsv(args.variables)
 
     array_of_bytes = readFileAsBytearray(args.binary)
+    input_name = os.path.splitext(os.path.split(args.binary)[1])[0]
+
     if args.file_splits is None:
         simpleDisasmFile(array_of_bytes, args.output, int(args.start, 16), int(args.end, 16), int(args.vram, 16), context)
     else:
         splits = readCsv(args.file_splits)
 
+        splits = [x for x in splits if len(x) > 0]
+
         modeCallback = None
         outputPath = args.output
-        for i, (offset, vram, fileName) in enumerate(splits):
+        for i, row in enumerate(splits):
+            if row[0].startswith("#"):
+                continue
+
+            offset, vram, fileName = row
             if fileName == ".text":
                 modeCallback = simpleDisasmFile
                 outputPath = args.output
@@ -190,11 +198,14 @@ def disassemblerMain():
                 else:
                     nextOffset = int(splits[i+1][0], 16)
 
+            if fileName == "":
+                fileName = f"{input_name}_{vram:08X}"
 
             if modeCallback is None:
                 eprint("Error! Section not set!")
                 exit(1)
             modeCallback(array_of_bytes, f"{outputPath}/{fileName}", offset, nextOffset, vram, context)
+            print()
 
     if args.save_context is not None:
         head, tail = os.path.split(args.save_context)
