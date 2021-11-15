@@ -16,6 +16,7 @@ class FileBase:
 
         self.parent: FileBase|None = None
         self.offset: int = 0 # in-file offset
+        self.commentOffset: int = 0
         self.vRamStart: int = -1
 
         self.pointersOffsets: List[int] = list()
@@ -95,6 +96,9 @@ class FileBase:
         if self.size == 0 or not GlobalConfig.WRITE_BINARY:
             return
         writeBytearrayToFile(filepath, self.bytes)
+
+    def setCommentOffset(self, commentOffset: int):
+        self.commentOffset = commentOffset
 
 def createEmptyFile() -> FileBase:
     return FileBase(bytearray(0), "", "", Context())

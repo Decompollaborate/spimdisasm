@@ -74,7 +74,7 @@ class Data(Section):
             i = 0
             while i < self.sizew:
                 w = self.words[i]
-                offsetHex = toHex(inFileOffset, 6)[2:]
+                offsetHex = toHex(inFileOffset + self.commentOffset, 6)[2:]
                 vramHex = ""
                 label = ""
                 if self.vRamStart != -1:

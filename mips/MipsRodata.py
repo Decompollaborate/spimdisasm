@@ -67,7 +67,7 @@ class Rodata(Section):
         offset = i * 4
         w = self.words[i]
 
-        offsetHex = toHex(offset, 6)[2:]
+        offsetHex = toHex(offset + self.commentOffset, 6)[2:]
         vramHex = ""
         label = ""
         rodataHex = toHex(w, 8)[2:]

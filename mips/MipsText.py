@@ -212,6 +212,7 @@ class Text(Section):
                 f.write(func.disassemble())
 
     def setCommentOffset(self, commentOffset: int):
+        super().setCommentOffset(commentOffset)
         for func in self.functions:
             func.commentOffset = commentOffset
 
