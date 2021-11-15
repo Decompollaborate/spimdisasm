@@ -8,6 +8,7 @@ from .MipsInstructionBase import InstructionBase
 from .MipsInstructionNormal import InstructionNormal
 from .MipsInstructionSpecial import InstructionSpecial
 from .MipsInstructionRegimm import InstructionRegimm
+from .MipsInstructionCoprocessor0 import InstructionCoprocessor0
 from .MipsInstructionCoprocessor1 import InstructionCoprocessor1
 
 
@@ -17,8 +18,7 @@ def wordToInstruction(word: int) -> InstructionBase:
     if ((word >> 26) & 0x3F) == 0x01:
         return InstructionRegimm(word)
     if ((word >> 26) & 0x3F) == 0x10:
-        # COP0
-        pass
+        return InstructionCoprocessor0(word)
     if ((word >> 26) & 0x3F) == 0x11:
         return InstructionCoprocessor1(word)
     if ((word >> 26) & 0x3F) == 0x12:
