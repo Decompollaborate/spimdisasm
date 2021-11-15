@@ -96,6 +96,21 @@ class Context:
 
         return None
 
+    def getSymbol(self, vramAddress: int, tryPlusOffset: bool = True, checkUpperLimit: bool = True) -> ContextVariable|None:
+        if vramAddress in self.symbols:
+            return self.symbols[vramAddress]
+
+        if GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET and tryPlusOffset:
+            vramSymbols = sorted(self.symbols.items(), reverse=True)
+            for vram, symbol in vramSymbols:
+                symbolSize = symbol.size
+                if vramAddress > vram:
+                    if checkUpperLimit:
+                        if vramAddress >= vram + symbolSize:
+                            continue
+                    return symbol
+        return None
+
     def getGenericLabel(self, vramAddress: int) -> str|None:
         if vramAddress in self.jumpTablesLabels:
             return self.jumpTablesLabels[vramAddress]
@@ -210,9 +225,9 @@ class Context:
                 file = self.symbolToFile.get(address, "")
                 f.write(f"label,{file},{toHex(address, 8)},{name},\n")
 
-            for address, name in self.symbols.items():
+            for address, symbol in self.symbols.items():
                 file = self.symbolToFile.get(address, "")
-                f.write(f"symbol,{file},{toHex(address, 8)},{name.name},\n")
+                f.write(f"symbol,{file},{toHex(address, 8)},{symbol.name},{symbol.type},{symbol.size}\n")
 
             for address, name in self.fakeFunctions.items():
                 file = self.symbolToFile.get(address, "")

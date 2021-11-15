@@ -92,10 +92,19 @@ class InstructionNormal(InstructionBase):
         return True
 
     def isFloatInstruction(self) -> bool:
+        if self.isDoubleFloatInstruction():
+            return True
         opcode = self.getOpcodeName()
-        if opcode in ("LWC1", "LDC1", "SWC1", "SDC1"):
+        if opcode in ("LWC1", "SWC1"):
             return True
         return False
+
+    def isDoubleFloatInstruction(self) -> bool:
+        opcode = self.getOpcodeName()
+        if opcode in ("LDC1", "SDC1"):
+            return True
+        return False
+
 
     def isBranch(self) -> bool:
         opcode = self.getOpcodeName()

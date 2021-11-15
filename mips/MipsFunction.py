@@ -92,7 +92,13 @@ class Function:
                         self.referencedVRams.add(address)
                         if self.context.getGenericSymbol(address) is None:
                             if GlobalConfig.ADD_NEW_SYMBOLS:
-                                self.context.symbols[address] = ContextVariable(address, "D_" + toHex(address, 8)[2:])
+                                contextVar = ContextVariable(address, "D_" + toHex(address, 8)[2:])
+                                if instr.isFloatInstruction():
+                                    if instr.isDoubleFloatInstruction():
+                                        contextVar.type = "f64"
+                                    else:
+                                        contextVar.type = "f32"
+                                self.context.symbols[address] = contextVar
                         self.pointersPerInstruction[instructionOffset] = address
                         self.pointersPerInstruction[trackedRegisters[rs]*4] = address
                         registersValues[instr.rt] = address
