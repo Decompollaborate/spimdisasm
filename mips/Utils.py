@@ -51,6 +51,12 @@ def beWordsToBytes(words_list: List[int], buffer: bytearray) -> bytearray:
     struct.pack_into(big_endian_format, buffer, 0, *words_list)
     return buffer
 
+def wordToFloat(word: int) -> float:
+    return struct.unpack('>f', struct.pack('>I', word))[0]
+
+def qwordToDouble(qword: int) -> float:
+    return struct.unpack('>d', struct.pack('>Q', qword))[0]
+
 def runCommandGetOutput(command: str, args: List[str]) -> List[str] | None:
     try:
         output = subprocess.check_output([command, *args]).decode("utf-8")

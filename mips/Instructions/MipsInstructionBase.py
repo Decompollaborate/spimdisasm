@@ -65,6 +65,9 @@ class InstructionBase:
     def isFloatInstruction(self) -> bool:
         return False
 
+    def isDoubleFloatInstruction(self) -> bool:
+        return False
+
 
     def isBranch(self) -> bool:
         return False

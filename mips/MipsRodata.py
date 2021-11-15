@@ -63,7 +63,7 @@ class Rodata(Section):
 
         return was_updated
 
-    def getNthWord(self, i: int) -> str:
+    def getNthWord(self, i: int) -> Tuple[str, int]:
         offset = i * 4
         w = self.words[i]
 
@@ -73,23 +73,47 @@ class Rodata(Section):
         rodataHex = toHex(w, 8)[2:]
         value = toHex(w, 8)
 
-        if self.vRamStart != -1:
+        isFloat = False
+        isDouble = False
+        dotType = ".word"
+        skip = 0
+
+        if self.vRamStart > -1:
             currentVram = self.getVramOffset(offset)
             vramHex = toHex(currentVram, 8)[2:]
 
             if self.context is not None:
-                auxLabel = self.context.getGenericLabel(currentVram) or self.context.getGenericSymbol(currentVram, tryPlusOffset=False)
+                auxLabel = self.context.getGenericLabel(currentVram)
+                if auxLabel is None:
+                    auxLabel = self.context.getGenericSymbol(currentVram, tryPlusOffset=False)
                 if auxLabel is not None:
                     label = "\nglabel " + auxLabel + "\n"
 
-        if w in self.context.jumpTablesLabels:
+                contextVar = self.context.getSymbol(currentVram, True, False)
+                if contextVar is not None:
+                    type = contextVar.type
+                    if type in ("f32", "Vec3f"):
+                        isFloat = True
+                    elif type == "f64":
+                        isDouble = True
+
+        if isFloat:
+            dotType = ".float"
+            value = wordToFloat(w)
+        elif isDouble:
+            dotType = ".double"
+            otherHalf = self.words[i+1]
+            value = qwordToDouble((w << 32) | otherHalf)
+            rodataHex += toHex(otherHalf, 8)[2:]
+            skip = 1
+        elif w in self.context.jumpTablesLabels:
             value = self.context.jumpTablesLabels[w]
 
         comment = ""
         if GlobalConfig.ASM_COMMENT:
             comment = f"/* {offsetHex} {vramHex} {rodataHex} */ "
 
-        return f"{label}{comment} .word  {value}"
+        return f"{label}{comment} {dotType}  {value}", skip
 
 
     def saveToFile(self, filepath: str):
@@ -110,5 +134,11 @@ class Rodata(Section):
             f.write("\n")
             f.write(".balign 16\n")
 
-            for i in range(len(self.words)):
-                f.write(self.getNthWord(i) + "\n")
+            i = 0
+            while i < len(self.words):
+                data, skip = self.getNthWord(i)
+                f.write(data + "\n")
+
+                i += skip
+
+                i += 1
