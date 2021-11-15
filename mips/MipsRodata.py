@@ -75,6 +75,8 @@ class Rodata(Section):
 
         isFloat = False
         isDouble = False
+        isAsciz = False
+        typeSize = 0
         dotType = ".word"
         skip = 0
 
@@ -92,10 +94,13 @@ class Rodata(Section):
                 contextVar = self.context.getSymbol(currentVram, True, False)
                 if contextVar is not None:
                     type = contextVar.type
+                    typeSize = contextVar.size
                     if type in ("f32", "Vec3f"):
                         isFloat = True
                     elif type == "f64":
                         isDouble = True
+                    elif type == "char":
+                        isAsciz = True
 
         if isFloat:
             dotType = ".float"
@@ -106,6 +111,18 @@ class Rodata(Section):
             value = qwordToDouble((w << 32) | otherHalf)
             rodataHex += toHex(otherHalf, 8)[2:]
             skip = 1
+        elif isAsciz:
+            dotType = ".asciz"
+            j = 0
+            buf = bytearray()
+            while j < typeSize and self.bytes[4*i + j] != 0:
+                buf.append(self.bytes[4*i + j])
+                j += 1
+            decodedValue = buf.decode("EUC-JP").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t").replace("\t", "\\t")
+            value = f'"{decodedValue}"'
+            value += "\n" + (24 * " ") + ".balign 4"
+            rodataHex = ""
+            skip = (typeSize - 1) // 4
         elif w in self.context.jumpTablesLabels:
             value = self.context.jumpTablesLabels[w]
 
