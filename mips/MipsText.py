@@ -28,15 +28,20 @@ class Text(Section):
         functionEnded = False
         farthestBranch = 0
         funcsStartsList = [0]
+        unimplementedInstructionsFuncList = []
 
         instructions: List[InstructionBase] = list()
         for word in self.words:
             instructions.append(wordToInstruction(word))
 
+        isInstrImplemented = True
         index = 0
         nInstr = len(instructions)
         while index < nInstr:
             instr = instructions[index]
+            if not instr.isImplemented():
+                isInstrImplemented = False
+
             if functionEnded:
                 functionEnded = False
                 index += 1
@@ -50,6 +55,8 @@ class Text(Section):
                     index += 1
                     isboundary = True
                 funcsStartsList.append(index)
+                unimplementedInstructionsFuncList.append(not isInstrImplemented)
+                isInstrImplemented = True
                 if index >= len(instructions):
                     break
                 instr = instructions[index]
@@ -68,6 +75,7 @@ class Text(Section):
                     while j >= 0:
                         if index + branch < funcsStartsList[j]:
                             del funcsStartsList[j]
+                            del unimplementedInstructionsFuncList[j-1]
                         else:
                             break
                         j -= 1
@@ -82,10 +90,13 @@ class Text(Section):
             index += 1
             farthestBranch -= 1
 
+        unimplementedInstructionsFuncList.append(not isInstrImplemented)
+
         i = 0
         startsCount = len(funcsStartsList)
         for startIndex in range(startsCount):
             start = funcsStartsList[startIndex]
+            hasUnimplementedIntrs = unimplementedInstructionsFuncList[startIndex]
             end = nInstr
             if startIndex + 1 < startsCount:
                 end = funcsStartsList[startIndex+1]
@@ -103,11 +114,13 @@ class Text(Section):
                 else:
                     funcName = "func_" + toHex(self.getVramOffset(start*4), 6)[2:]
 
-                self.context.addFunction(self.filename, vram, funcName)
+                if not hasUnimplementedIntrs:
+                    self.context.addFunction(self.filename, vram, funcName)
 
             func = Function(funcName, instructions[start:end], self.context, self.offset + start*4, vram=vram)
             func.index = i
             func.pointersOffsets += self.pointersOffsets
+            func.hasUnimplementedIntrs = hasUnimplementedIntrs
             func.analyze()
             self.functions.append(func)
             i += 1
