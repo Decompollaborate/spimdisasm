@@ -27,11 +27,16 @@ class Function:
 
         self.referencedVRams: Set[int] = set()
 
+        self.hasUnimplementedIntrs: bool = False
+
     @property
     def nInstr(self) -> int:
         return len(self.instructions)
 
     def analyze(self):
+        if self.hasUnimplementedIntrs:
+            return
+
         trackedRegisters: Dict[int, int] = dict()
         registersValues: Dict[int, int] = dict()
 
@@ -192,9 +197,11 @@ class Function:
             del self.instructions[first_nop:]
         return was_updated
 
-
     def disassemble(self) -> str:
         output = ""
+
+        if self.hasUnimplementedIntrs:
+            return self.disassembleAsData()
 
         output += f"glabel {self.name}"
         if GlobalConfig.FUNCTION_ASM_COUNT:
@@ -267,6 +274,39 @@ class Function:
             output += label + line + "\n"
 
             wasLastInstABranch = instr.isBranch() or instr.isJType() or instr.getOpcodeName() in ("JR", "JALR")
+
+            instructionOffset += 4
+            auxOffset += 4
+
+        return output
+
+    def disassembleAsData(self) -> str:
+        output = ""
+
+        instructionOffset = 0
+        auxOffset = self.inFileOffset
+        for instr in self.instructions:
+            offsetHex = toHex(auxOffset + self.commentOffset, 6)[2:]
+            vramHex = ""
+            label = ""
+            if self.vram >= 0:
+                vramHex = toHex(self.vram + instructionOffset, 8)[2:]
+                if self.context is not None:
+                    auxLabel = self.context.getGenericLabel(self.vram + instructionOffset) or self.context.getGenericSymbol(self.vram + instructionOffset, tryPlusOffset=False)
+                    if auxLabel is not None:
+                        label = f"\nglabel {auxLabel}\n"
+
+            instrHex = toHex(instr.instr, 8)[2:]
+
+            line = f".word  0x{instrHex}"
+
+            #comment = " "
+            comment = ""
+            if GlobalConfig.ASM_COMMENT:
+                comment = f"/* {offsetHex} {vramHex} {instrHex} */  "
+            line = comment + line
+
+            output += label + line + "\n"
 
             instructionOffset += 4
             auxOffset += 4
