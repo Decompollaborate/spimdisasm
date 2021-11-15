@@ -67,6 +67,10 @@ def simpleDisasmFile(array_of_bytes: bytearray, outputPath: str, offsetStart: in
 
         print()
 
+    # Create directories
+    head, tail = os.path.split(outputPath)
+    os.makedirs(head, exist_ok=True)
+
     print(f"Writing files to {outputPath}")
     f.saveToFile(outputPath)
 
