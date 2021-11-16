@@ -64,11 +64,7 @@ def simpleDisasmFile(array_of_bytes: bytearray, outputPath: str, offsetStart: in
 
         print()
 
-    # Create directories
-    os.makedirs(head, exist_ok=True)
-
-    print(f"Writing files to {outputPath}")
-    f.saveToFile(outputPath)
+    return f
 
 
 def simpleDisasmData(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context):
@@ -93,11 +89,7 @@ def simpleDisasmData(array_of_bytes: bytearray, outputPath: str, offsetStart: in
 
     print()
 
-    # Create directories
-    os.makedirs(head, exist_ok=True)
-
-    print(f"Writing files to {outputPath}")
-    f.saveToFile(outputPath)
+    return f
 
 
 def simpleDisasmRodata(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context):
@@ -122,11 +114,7 @@ def simpleDisasmRodata(array_of_bytes: bytearray, outputPath: str, offsetStart: 
 
     print()
 
-    # Create directories
-    os.makedirs(head, exist_ok=True)
-
-    print(f"Writing files to {outputPath}")
-    f.saveToFile(outputPath)
+    return f
 
 
 def simpleDisasmBss(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context):
@@ -147,11 +135,7 @@ def simpleDisasmBss(array_of_bytes: bytearray, outputPath: str, offsetStart: int
 
     print()
 
-    # Create directories
-    os.makedirs(head, exist_ok=True)
-
-    print(f"Writing files to {outputPath}")
-    f.saveToFile(outputPath)
+    return f
 
 
 def disassemblerMain():
@@ -186,6 +170,8 @@ def disassemblerMain():
 
     array_of_bytes = readFileAsBytearray(args.binary)
     input_name = os.path.splitext(os.path.split(args.binary)[1])[0]
+
+    processedFiles = []
 
     if args.file_splits is None:
         simpleDisasmFile(array_of_bytes, args.output, int(args.start, 16), int(args.end, 16), int(args.vram, 16), context)
@@ -234,8 +220,19 @@ def disassemblerMain():
             if modeCallback is None:
                 eprint("Error! Section not set!")
                 exit(1)
-            modeCallback(array_of_bytes, f"{outputPath}/{fileName}", offset, nextOffset, vram, context)
+            f = modeCallback(array_of_bytes, f"{outputPath}/{fileName}", offset, nextOffset, vram, context)
+            processedFiles.append((f"{outputPath}/{fileName}", f))
             print()
+
+    print("Writing files...")
+    for path, f in processedFiles:
+        head, tail = os.path.split(path)
+
+        # Create directories
+        os.makedirs(head, exist_ok=True)
+
+        print(f"Writing {path}")
+        f.saveToFile(path)
 
     if args.save_context is not None:
         head, tail = os.path.split(args.save_context)
