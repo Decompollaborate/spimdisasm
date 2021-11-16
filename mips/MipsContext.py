@@ -188,7 +188,12 @@ class Context:
             return
 
         variables_file = readCsv(filepath)
-        for vram, varName, varType, varSize in variables_file:
+        for row in variables_file:
+            if len(row) == 0:
+                continue
+
+            vram, varName, varType, varSize = row
+
             vram = int(vram, 16)
             varSize = int(varSize, 0)
             contVar = ContextVariable(vram, varName)
@@ -201,7 +206,12 @@ class Context:
             return
 
         functions_file = readCsv(filepath)
-        for vram, funcName in functions_file:
+        for row in functions_file:
+            if len(row) == 0:
+                continue
+
+            vram, funcName = row
+
             vram = int(vram, 16)
             self.addFunction(None, vram, funcName)
 
