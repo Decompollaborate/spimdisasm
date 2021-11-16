@@ -80,7 +80,9 @@ def readVersionedFileAsBytearrray(file: str, version: str) -> bytearray:
 def readCsv(filepath: str) -> List[List[str]]:
     data: List[List[str]] = []
     with open(filepath) as f:
-        csvReader = csv.reader(f)
+        lines = f.readlines()
+        processedLines = [x.strip().split("#")[0] for x in lines]
+        csvReader = csv.reader(processedLines)
         for row in csvReader:
             data.append(list(row))
 

@@ -197,9 +197,6 @@ def disassemblerMain():
         modeCallback = None
         outputPath = args.output
         for i, row in enumerate(splits):
-            if row[0].startswith("#"):
-                continue
-
             offset, vram, fileName = row
             if fileName == ".text":
                 modeCallback = simpleDisasmFile
