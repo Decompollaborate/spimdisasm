@@ -129,6 +129,31 @@ def simpleDisasmRodata(array_of_bytes: bytearray, outputPath: str, offsetStart: 
     f.saveToFile(outputPath)
 
 
+def simpleDisasmBss(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context):
+    head, tail = os.path.split(outputPath)
+
+    if vram < 0:
+        return
+
+    f = Bss(vram, vram + offsetEnd - offsetStart, tail, "ver", context)
+
+    if vram >= 0:
+        print(f"Using VRAM {toHex(vram, 2)}")
+        f.setVRamStart(vram)
+
+    print("Analzing")
+    f.analyze()
+    f.setCommentOffset(offsetStart)
+
+    print()
+
+    # Create directories
+    os.makedirs(head, exist_ok=True)
+
+    print(f"Writing files to {outputPath}")
+    f.saveToFile(outputPath)
+
+
 def disassemblerMain():
     description = ""
     parser = argparse.ArgumentParser(description=description)
@@ -188,12 +213,20 @@ def disassemblerMain():
                 modeCallback = simpleDisasmRodata
                 outputPath = args.data_output
                 continue
+            elif fileName == ".bss":
+                modeCallback = simpleDisasmBss
+                outputPath = args.data_output
+                continue
+            elif fileName == ".end":
+                break
 
             vram = int(vram, 16)
             offset = int(offset, 16)
             nextOffset = 0xFFFFFF
             if i + 1 < len(splits):
-                if splits[i+1][2].startswith("."):
+                if splits[i+1][2] == ".end":
+                    nextOffset = int(splits[i+1][0], 16)
+                elif splits[i+1][2].startswith("."):
                     nextOffset = int(splits[i+2][0], 16)
                 else:
                     nextOffset = int(splits[i+1][0], 16)
