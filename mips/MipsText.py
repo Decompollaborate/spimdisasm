@@ -6,7 +6,7 @@ from .Utils import *
 from .GlobalConfig import GlobalConfig
 from .MipsFileBase import FileBase
 from .MipsSection import Section
-from .Instructions import InstructionBase, wordToInstruction
+from .Instructions import InstructionBase, wordToInstruction, InstructionCoprocessor0
 from .MipsFunction import Function
 from .MipsContext import Context
 
@@ -38,6 +38,8 @@ class Text(Section):
         registersValues: Dict[int, int] = dict()
         instructionOffset = 0
 
+        isLikelyHandwritten = False
+
         isInstrImplemented = True
         index = 0
         nInstr = len(instructions)
@@ -48,6 +50,7 @@ class Text(Section):
 
             if functionEnded:
                 functionEnded = False
+                isLikelyHandwritten = False
                 index += 1
                 isboundary = False
                 while index < nInstr:
@@ -64,6 +67,19 @@ class Text(Section):
                 if index >= len(instructions):
                     break
                 instr = instructions[index]
+
+            if not isLikelyHandwritten:
+                opcodeName = instr.getOpcodeName()
+                if opcodeName in ("COP2",):
+                    isLikelyHandwritten = True
+                    isInstrImplemented = False
+                elif isinstance(instr, InstructionCoprocessor0):
+                #if isinstance(instr, InstructionCoprocessor0):
+                    isLikelyHandwritten = True
+                elif instr.getRegisterName(instr.rs) in ("$k0", "$k1"):
+                    isLikelyHandwritten = True
+                elif instr.getRegisterName(instr.rt) in ("$k0", "$k1"):
+                    isLikelyHandwritten = True
 
             if instr.isBranch():
                 branch = from2Complement(instr.immediate, 16) + 1
@@ -85,12 +101,12 @@ class Text(Section):
                         j -= 1
 
             elif instr.isIType():
-                opcode = instr.getOpcodeName()
-                isLui = opcode == "LUI"
+                opcodeName = instr.getOpcodeName()
+                isLui = opcodeName == "LUI"
                 if isLui:
                     if instr.immediate >= 0x4000: # filter out stuff that may not be a real symbol
                         trackedRegisters[instr.rt] = instructionOffset//4
-                elif instr.isIType() and opcode not in ("ANDI", "ORI", "XORI", "CACHE"):
+                elif instr.isIType() and opcodeName not in ("ANDI", "ORI", "XORI", "CACHE"):
                     rs = instr.rs
                     if rs in trackedRegisters:
                         luiInstr = instructions[trackedRegisters[rs]]
@@ -110,10 +126,10 @@ class Text(Section):
                             functionEnded = True
                             trackedRegisters.clear()
                             registersValues.clear()
-                #elif opcodeName == "J":
-                #    functionEnded = True
-                #    trackedRegisters.clear()
-                #    registersValues.clear()
+                elif opcodeName == "J" and isLikelyHandwritten:
+                    functionEnded = True
+                    trackedRegisters.clear()
+                    registersValues.clear()
 
             index += 1
             farthestBranch -= 1
