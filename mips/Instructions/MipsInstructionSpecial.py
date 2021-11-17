@@ -110,11 +110,10 @@ class InstructionSpecial(InstructionBase):
         return True # Not for all cases, but good enough
     def isRType2(self) -> bool: # OP rd, rt, rs
         opcode = self.getOpcodeName()
-        return opcode in ("DSLLV", "DSRLV", "DSRAV")
+        return opcode in ("DSLLV", "DSRLV", "DSRAV", "SLLV", "SRLV", "SRAV")
     def isSaType(self) -> bool: # OP rd, rt, sa
         opcode = self.getOpcodeName()
         return opcode in ("SLL", "SRL", "SRA", "DSLL", "DSRL", "DSRA", "DSLL32", "DSRL32", "DSRA32")
-
 
     def sameOpcode(self, other: InstructionBase) -> bool:
         if self.opcode != other.opcode:
