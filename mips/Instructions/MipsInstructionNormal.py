@@ -89,6 +89,8 @@ class InstructionNormal(InstructionBase):
         opcode = self.getOpcodeName()
         if opcode in ("SPECIAL", "REGIMM", "COP0", "COP1", "COP2", "COP3"):
             return False
+        if opcode in ("LWC2", "SWC2", "LDC2", "SDC2"):
+            return False
         return True
 
     def isFloatInstruction(self) -> bool:
