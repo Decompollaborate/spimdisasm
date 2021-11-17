@@ -34,6 +34,10 @@ class Text(Section):
         for word in self.words:
             instructions.append(wordToInstruction(word))
 
+        trackedRegisters: Dict[int, int] = dict()
+        registersValues: Dict[int, int] = dict()
+        instructionOffset = 0
+
         isInstrImplemented = True
         index = 0
         nInstr = len(instructions)
@@ -80,15 +84,40 @@ class Text(Section):
                             break
                         j -= 1
 
+            elif instr.isIType():
+                opcode = instr.getOpcodeName()
+                isLui = opcode == "LUI"
+                if isLui:
+                    if instr.immediate >= 0x4000: # filter out stuff that may not be a real symbol
+                        trackedRegisters[instr.rt] = instructionOffset//4
+                elif instr.isIType() and opcode not in ("ANDI", "ORI", "XORI", "CACHE"):
+                    rs = instr.rs
+                    if rs in trackedRegisters:
+                        luiInstr = instructions[trackedRegisters[rs]]
+                        upperHalf = luiInstr.immediate << 16
+                        lowerHalf = from2Complement(instr.immediate, 16)
+                        registersValues[instr.rt] = upperHalf + lowerHalf
+
             if not (farthestBranch > 0):
                 opcodeName = instr.getOpcodeName()
-                if opcodeName == "JR" and instr.getRegisterName(instr.rs) == "$ra":
-                    functionEnded = True
+                if opcodeName == "JR":
+                    if instr.getRegisterName(instr.rs) == "$ra":
+                        functionEnded = True
+                        trackedRegisters.clear()
+                        registersValues.clear()
+                    else:
+                        if instr.rs in registersValues:
+                            functionEnded = True
+                            trackedRegisters.clear()
+                            registersValues.clear()
                 #elif opcodeName == "J":
                 #    functionEnded = True
+                #    trackedRegisters.clear()
+                #    registersValues.clear()
 
             index += 1
             farthestBranch -= 1
+            instructionOffset += 4
 
         unimplementedInstructionsFuncList.append(not isInstrImplemented)
 
