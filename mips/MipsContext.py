@@ -37,7 +37,7 @@ class Context:
         self.funcsInFiles: Dict[str, List[int]] = dict()
         self.symbolToFile: Dict[int, str] = dict()
 
-        self.funcAddresses: Dict[int, str] = dict()
+        self.funcAddresses: Dict[int, ContextVariable] = dict()
 
         self.labels: Dict[int, str] = dict()
         self.symbols: Dict[int, ContextVariable] = dict()
@@ -53,7 +53,7 @@ class Context:
 
     def getAnySymbol(self, vramAddress: int) -> str|None:
         if vramAddress in self.funcAddresses:
-            return self.funcAddresses[vramAddress]
+            return self.funcAddresses[vramAddress].name
 
         if vramAddress in self.jumpTablesLabels:
             return self.jumpTablesLabels[vramAddress]
@@ -74,7 +74,7 @@ class Context:
 
     def getGenericSymbol(self, vramAddress: int, tryPlusOffset: bool = True) -> str|None:
         if vramAddress in self.funcAddresses:
-            return self.funcAddresses[vramAddress]
+            return self.funcAddresses[vramAddress].name
 
         if vramAddress in self.jumpTables:
             return self.jumpTables[vramAddress]
@@ -123,7 +123,7 @@ class Context:
 
         return None
 
-    def getFunctionName(self, vramAddress: int) -> str|None:
+    def getFunction(self, vramAddress: int) -> ContextVariable|None:
         if vramAddress in self.funcAddresses:
             return self.funcAddresses[vramAddress]
 
@@ -135,7 +135,9 @@ class Context:
         #    if vramAddress not in self.files[filename].references:
         #        self.files[filename].references.append(vramAddress)
         if vramAddress not in self.funcAddresses:
-            self.funcAddresses[vramAddress] = name
+            contextSymbol = ContextVariable(vramAddress, name)
+            contextSymbol.type = "@function"
+            self.funcAddresses[vramAddress] = contextSymbol
         if vramAddress not in self.symbolToFile and filename is not None:
             self.symbolToFile[vramAddress] = filename
 
@@ -178,7 +180,9 @@ class Context:
             if filename not in self.funcsInFiles:
                 self.funcsInFiles[filename] = []
             self.funcsInFiles[filename].append(vram)
-            self.funcAddresses[vram] = func_name
+            contextFuncSymbol = ContextVariable(vram, func_name)
+            contextFuncSymbol.type = "@function"
+            self.funcAddresses[vram] = contextFuncSymbol
             self.symbolToFile[vram] = filename
 
     def readMMAddressMaps(self, filesPath: str, functionsPath: str, variablesPath: str):
@@ -244,11 +248,11 @@ class Context:
 
     def saveContextToFile(self, filepath: str):
         with open(filepath, "w") as f:
-            for address, name in self.funcAddresses.items():
+            for address, symbol in self.funcAddresses.items():
                 file = self.symbolToFile.get(address, "")
                 jal = (address & 0x00FFFFFF) >> 2
                 jal = 0x0C000000 | jal
-                f.write(f"function,{file},{toHex(address, 8)},{name},{toHex(jal, 8)}\n")
+                f.write(f"function,{file},{toHex(address, 8)},{symbol.name},{toHex(jal, 8)},{symbol.isDefined}\n")
 
             for address, name in self.jumpTables.items():
                 file = self.symbolToFile.get(address, "")
