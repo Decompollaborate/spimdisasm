@@ -96,11 +96,15 @@ class Rodata(Section):
                     type = contextVar.type
                     typeSize = contextVar.size
                     if type in ("f32", "Vec3f"):
-                        isFloat = True
+                        # Filter out NaN and infinity
+                        if (w & 0x7F800000) != 0x7F800000:
+                            isFloat = True
                     elif type == "f64":
-                        # Prevent accidentally losing symbols
-                        if self.context.getGenericSymbol(currentVram+4, False) is None:
-                            isDouble = True
+                        # Filter out NaN and infinity
+                        if (((w << 32) | self.words[i+1]) & 0x7FF0000000000000) != 0x7FF0000000000000:
+                            # Prevent accidentally losing symbols
+                            if self.context.getGenericSymbol(currentVram+4, False) is None:
+                                isDouble = True
                     elif type == "char":
                         isAsciz = True
 
