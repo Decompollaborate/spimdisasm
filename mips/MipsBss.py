@@ -58,6 +58,8 @@ class Bss(Section):
                 if symbolVram >= self.bssVramEnd:
                     break
 
+                self.context.symbols[symbolVram].isDefined = True
+
                 offsetHex = toHex(inFileOffset + self.commentOffset, 6)[2:]
                 vramHex = toHex(symbolVram, 8)[2:]
 

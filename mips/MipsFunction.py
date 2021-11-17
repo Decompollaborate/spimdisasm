@@ -60,20 +60,15 @@ class Function:
 
                 self.localLabels[self.inFileOffset + branch] = label
                 if self.vram >= 0:
-                    if self.vram + branch not in self.context.labels:
-                        self.context.labels[self.vram + branch] = label
+                    self.context.addBranchLabel(self.vram + branch, label)
                 self.branchInstructions.append(instructionOffset)
 
             elif instr.isJType():
                 target = 0x80000000 | instr.instr_index << 2
                 if instr.getOpcodeName() == "J":
-                    if target not in self.context.fakeFunctions:
-                        label = "fakefunc_" + toHex(target, 8)[2:]
-                        self.context.fakeFunctions[target] = label
+                    self.context.addFakeFunction(target, "fakefunc_" + toHex(target, 8)[2:])
                 else:
-                    if target not in self.context.funcAddresses:
-                        label = "func_" + toHex(target, 8)[2:]
-                        self.context.funcAddresses[target] = label
+                    self.context.addFunction(None, target, "func_" + toHex(target, 8)[2:])
                 self.pointersPerInstruction[instructionOffset] = target
 
             # symbol finder
@@ -109,8 +104,7 @@ class Function:
                     if rs in registersValues:
                         address = registersValues[rs]
                         self.referencedVRams.add(address)
-                        if address not in self.context.jumpTables:
-                            self.context.jumpTables[address] = "jtbl_" + toHex(address, 8)[2:]
+                        self.context.addJumpTable(address, "jtbl_" + toHex(address, 8)[2:])
 
             if not instr.isFloatInstruction():
                 if not isLui and instr.modifiesRt():
@@ -301,6 +295,10 @@ class Function:
                     auxLabel = self.context.getGenericLabel(self.vram + instructionOffset) or self.context.getGenericSymbol(self.vram + instructionOffset, tryPlusOffset=False)
                     if auxLabel is not None:
                         label = f"\nglabel {auxLabel}\n"
+
+                    contextVar = self.context.getSymbol(self.vram + instructionOffset, False)
+                    if contextVar is not None:
+                        contextVar.isDefined = True
 
             instrHex = toHex(instr.instr, 8)[2:]
 

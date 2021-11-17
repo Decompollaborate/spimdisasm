@@ -27,6 +27,7 @@ class ContextVariable:
         self.type: str = ""
         self.arrayInfo: str = ""
         self.size: int = 4
+        self.isDefined = False
 
 class Context:
     def __init__(self):
@@ -101,11 +102,13 @@ class Context:
             return self.symbols[vramAddress]
 
         if GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET and tryPlusOffset:
-            vramSymbols = sorted(self.symbols.items(), reverse=True)
+            vramSymbols = sorted({**self.funcAddresses, **self.jumpTables, **self.symbols}.items(), reverse=True)
             for vram, symbol in vramSymbols:
-                symbolSize = symbol.size
                 if vramAddress > vram:
+                    if not isinstance(symbol, ContextVariable):
+                        break
                     if checkUpperLimit:
+                        symbolSize = symbol.size
                         if vramAddress >= vram + symbolSize:
                             continue
                     return symbol
@@ -135,6 +138,30 @@ class Context:
             self.funcAddresses[vramAddress] = name
         if vramAddress not in self.symbolToFile and filename is not None:
             self.symbolToFile[vramAddress] = filename
+
+        if vramAddress in self.symbols:
+            self.symbols[vramAddress].isDefined = True
+
+    def addBranchLabel(self, vramAddress: int, name: str):
+        if vramAddress not in self.labels:
+            self.labels[vramAddress] = name
+
+        if vramAddress in self.symbols:
+            self.symbols[vramAddress].isDefined = True
+
+    def addJumpTable(self, vramAddress: int, name: str):
+        if vramAddress not in self.jumpTables:
+            self.jumpTables[vramAddress] = name
+
+        if vramAddress in self.symbols:
+            self.symbols[vramAddress].isDefined = True
+
+    def addFakeFunction(self, vramAddress: int, name: str):
+        if vramAddress not in self.fakeFunctions:
+            self.fakeFunctions[vramAddress] = name
+
+        if vramAddress in self.symbols:
+            self.symbols[vramAddress].isDefined = True
 
 
     def readFunctionMap(self, version: str):
@@ -237,7 +264,7 @@ class Context:
 
             for address, symbol in self.symbols.items():
                 file = self.symbolToFile.get(address, "")
-                f.write(f"symbol,{file},{toHex(address, 8)},{symbol.name},{symbol.type},{symbol.size}\n")
+                f.write(f"symbol,{file},{toHex(address, 8)},{symbol.name},{symbol.type},{symbol.size},{symbol.isDefined}\n")
 
             for address, name in self.fakeFunctions.items():
                 file = self.symbolToFile.get(address, "")

@@ -20,7 +20,7 @@ class Rodata(Section):
     def analyze(self):
         offset = 0
         partOfJumpTable = False
-        if self.vRamStart != -1:
+        if self.vRamStart > -1:
             for w in self.words:
                 currentVram = self.getVramOffset(offset)
                 if currentVram in self.context.jumpTables:
@@ -98,9 +98,14 @@ class Rodata(Section):
                     if type in ("f32", "Vec3f"):
                         isFloat = True
                     elif type == "f64":
-                        isDouble = True
+                        # Prevent accidentally losing symbols
+                        if self.context.getGenericSymbol(currentVram+4, False) is None:
+                            isDouble = True
                     elif type == "char":
                         isAsciz = True
+
+                    if contextVar.vram == currentVram:
+                        contextVar.isDefined = True
 
         if isFloat:
             dotType = ".float"
