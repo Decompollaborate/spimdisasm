@@ -137,14 +137,17 @@ class Text(Section):
             vram = -1
             if self.vRamStart >= 0:
                 vram = self.getVramOffset(start*4)
-                funcNameAux = self.context.getFunctionName(vram)
-                if funcNameAux is not None:
-                    funcName = funcNameAux
+                funcSymbol = self.context.getFunction(vram)
+                if funcSymbol is not None:
+                    funcName = funcSymbol.name
                 else:
                     funcName = "func_" + toHex(self.getVramOffset(start*4), 6)[2:]
 
                 if not hasUnimplementedIntrs:
                     self.context.addFunction(self.filename, vram, funcName)
+                    funcSymbol = self.context.getFunction(vram)
+                    if funcSymbol is not None:
+                        funcSymbol.isDefined = True
 
             func = Function(funcName, instructions[start:end], self.context, self.offset + start*4, vram=vram)
             func.index = i
