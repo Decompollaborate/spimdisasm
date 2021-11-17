@@ -9,29 +9,6 @@ from .MipsSection import Section
 
 
 class Data(Section):
-    def analyze(self):
-        if self.vRamStart > -1:
-            if self.parent is not None:
-                initVarsAddress = self.parent.initVarsAddress
-                if initVarsAddress > -1:
-                    initVarsOffset = (initVarsAddress-self.vRamStart-self.offset)//4
-
-                    initVram = self.words[initVarsOffset + 4]
-                    if initVram != 0:
-                        self.context.addFunction(self.filename, initVram, f"{self.filename}_Init")
-
-                    destroyVram = self.words[initVarsOffset + 5]
-                    if destroyVram != 0:
-                        self.context.addFunction(self.filename, destroyVram, f"{self.filename}_Destroy")
-
-                    updateVram = self.words[initVarsOffset + 6]
-                    if updateVram != 0:
-                        self.context.addFunction(self.filename, updateVram, f"{self.filename}_Update")
-
-                    drawVram = self.words[initVarsOffset + 7]
-                    if drawVram != 0:
-                        self.context.addFunction(self.filename, drawVram, f"{self.filename}_Draw")
-
     def removePointers(self) -> bool:
         if not GlobalConfig.REMOVE_POINTERS:
             return False
