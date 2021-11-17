@@ -38,7 +38,7 @@ class Rodata(Section):
 
                 if partOfJumpTable:
                     if w not in self.context.jumpTablesLabels:
-                        self.context.jumpTablesLabels[w] = f"jmplabel_{toHex(w, 8)[2:]}"
+                        self.context.jumpTablesLabels[w] = f"L{toHex(w, 8)[2:]}"
 
                 auxLabel = self.context.getGenericLabel(currentVram) or self.context.getGenericSymbol(currentVram, tryPlusOffset=False)
                 if auxLabel is not None:
