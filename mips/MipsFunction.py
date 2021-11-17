@@ -45,6 +45,13 @@ class Function:
             isLui = False
             opcode = instr.getOpcodeName()
 
+            if not instr.isImplemented():
+                # Abort analysis
+                self.hasUnimplementedIntrs = True
+                if self.vram in self.context.funcAddresses:
+                    del self.context.funcAddresses[self.vram]
+                return
+
             if instr.isBranch():
                 diff = from2Complement(instr.immediate, 16)
                 branch = instructionOffset + diff*4 + 1*4

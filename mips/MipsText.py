@@ -63,10 +63,10 @@ class Text(Section):
                     isboundary = True
                 funcsStartsList.append(index)
                 unimplementedInstructionsFuncList.append(not isInstrImplemented)
-                isInstrImplemented = True
                 if index >= len(instructions):
                     break
                 instr = instructions[index]
+                isInstrImplemented = instr.isImplemented()
 
             if not isLikelyHandwritten:
                 opcodeName = instr.getOpcodeName()
