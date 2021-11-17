@@ -174,7 +174,8 @@ def disassemblerMain():
     processedFiles = []
 
     if args.file_splits is None:
-        simpleDisasmFile(array_of_bytes, args.output, int(args.start, 16), int(args.end, 16), int(args.vram, 16), context)
+        f =  simpleDisasmFile(array_of_bytes, args.output, int(args.start, 16), int(args.end, 16), int(args.vram, 16), context)
+        processedFiles.append((args.output, f))
     else:
         splits = readCsv(args.file_splits)
 
