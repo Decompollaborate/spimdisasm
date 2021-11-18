@@ -142,6 +142,9 @@ class Context:
         if vramAddress not in self.symbolToFile and filename is not None:
             self.symbolToFile[vramAddress] = filename
 
+        if vramAddress in self.fakeFunctions:
+            del self.fakeFunctions[vramAddress]
+
         if vramAddress in self.symbols:
             self.symbols[vramAddress].isDefined = True
 
