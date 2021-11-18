@@ -7,6 +7,76 @@ from ..MipsContext import Context
 
 
 class InstructionBase:
+    Cop0RegisterNames = {
+        0: "Index",
+        1: "Random",
+        2: "EntryLo0",
+        3: "EntryLo1",
+        4: "Context",
+        5: "PageMask",
+        6: "Wired",
+        7: "Reserved07",
+        8: "BadVaddr",
+        9: "Count",
+        10: "EntryHi",
+        11: "Compare",
+        12: "Status",
+        13: "Cause",
+        14: "EPC",
+        15: "PRevID",
+        16: "Config",
+        17: "LLAddr",
+        18: "WatchLo",
+        19: "WatchHi",
+        20: "XContext",
+        21: "Reserved21",
+        22: "Reserved22",
+        23: "Reserved23",
+        24: "Reserved24",
+        25: "Reserved25",
+        26: "PErr",
+        27: "CacheErr",
+        28: "TagLo",
+        29: "TagHi",
+        30: "ErrorEPC",
+        31: "Reserved31",
+    }
+
+    Cop2RegisterNames = {
+        0: "$0",
+        1: "$1",
+        2: "$2",
+        3: "$3",
+        4: "$4",
+        5: "$5",
+        6: "$6",
+        7: "$7",
+        8: "$8",
+        9: "$9",
+        10: "$10",
+        11: "$11",
+        12: "$12",
+        13: "$13",
+        14: "$14",
+        15: "$15",
+        16: "$16",
+        17: "$17",
+        18: "$18",
+        19: "$19",
+        20: "$20",
+        21: "$21",
+        22: "$22",
+        23: "$23",
+        24: "$24",
+        25: "$25",
+        26: "$26",
+        27: "$27",
+        28: "$28",
+        29: "$29",
+        30: "$30",
+        31: "$31",
+    }
+
     def __init__(self, instr: int):
         self.opcode = (instr >> 26) & 0x3F
         self.rs = (instr >> 21) & 0x1F # rs
@@ -138,14 +208,24 @@ class InstructionBase:
             return "$fp"
         elif register == 31:
             return "$ra"
-        return hex(register)
+        return f"${register:02X}"
 
     def getFloatRegisterName(self, register: int) -> str:
         if register == 31:
             return "$31"
         if 0 <= register <= 31:
             return "$f" + str(register)
-        return hex(register)
+        return f"${register:02X}"
+
+    def getCop0RegisterName(self, register: int) -> str:
+        if register in InstructionBase.Cop0RegisterNames:
+            return InstructionBase.Cop0RegisterNames[register]
+        return f"${register:02X}"
+
+    def getCop2RegisterName(self, register: int) -> str:
+        if register in InstructionBase.Cop2RegisterNames:
+            return InstructionBase.Cop2RegisterNames[register]
+        return f"${register:02X}"
 
 
     def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
