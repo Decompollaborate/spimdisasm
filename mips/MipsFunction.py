@@ -80,6 +80,7 @@ class Function:
 
             # symbol finder
             elif instr.isIType():
+                # TODO: Consider following branches
                 isLui = opcode == "LUI"
                 if isLui:
                     if instr.immediate >= 0x4000: # filter out stuff that may not be a real symbol

@@ -89,9 +89,6 @@ class InstructionNormal(InstructionBase):
         opcode = self.getOpcodeName()
         if opcode in ("SPECIAL", "REGIMM", "COP0", "COP1", "COP2", "COP3"):
             return False
-        if opcode in ("LWC2", "SWC2", "LDC2", "SDC2"):
-            # TODO
-            return False
         return True
 
     def isFloatInstruction(self) -> bool:
@@ -210,11 +207,6 @@ class InstructionNormal(InstructionBase):
 
         result = f"{formated_opcode} "
 
-        if "COP" in opcode: # Hack until I implement COPz instructions
-            instr_index = toHex(self.instr_index, 7)
-            result += instr_index
-            return result
-
         if self.isJType():
             # instr_index = toHex(self.instr_index, 7)
             # return f"{opcode} {instr_index}"
@@ -265,11 +257,14 @@ class InstructionNormal(InstructionBase):
 
         # OP rt, IMM(rs)
         if self.isFloatInstruction():
-            result += f"{self.getFloatRegisterName(self.rt)}"
+            result += self.getFloatRegisterName(self.rt)
         elif opcode == "CACHE":
-            result += f"{toHex(self.rt, 2)}"
+            result += toHex(self.rt, 2)
+        elif opcode in ("LWC2", "SWC2", "LDC2", "SDC2"):
+            result += self.getCop2RegisterName(self.rt)
         else:
-            result += f"{rt}"
+            result += rt
 
+        result += ","
         result = result.ljust(14, ' ')
-        return f"{result}, {immediate}({rs})"
+        return f"{result} {immediate}({rs})"

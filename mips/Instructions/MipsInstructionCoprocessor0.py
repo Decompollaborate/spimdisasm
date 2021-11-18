@@ -27,40 +27,6 @@ class InstructionCoprocessor0(InstructionBase):
         0b011_000: "ERET", # Return from Exception
     }
 
-    Cop0RegisterNames = {
-        0: "Index",
-        1: "Random",
-        2: "EntryLo0",
-        3: "EntryLo1",
-        4: "Context",
-        5: "PageMask",
-        6: "Wired",
-        7: "Reserved07",
-        8: "BadVaddr",
-        9: "Count",
-        10: "EntryHi",
-        11: "Compare",
-        12: "Status",
-        13: "Cause",
-        14: "EPC",
-        15: "PRevID",
-        16: "Config",
-        17: "LLAddr",
-        18: "WatchLo",
-        19: "WatchHi",
-        20: "XContext",
-        21: "Reserved21",
-        22: "Reserved22",
-        23: "Reserved23",
-        24: "Reserved24",
-        25: "Reserved25",
-        26: "PErr",
-        27: "CacheErr",
-        28: "TagLo",
-        29: "TagHi",
-        30: "ErrorEPC",
-        31: "Reserved31",
-    }
 
     def isImplemented(self) -> bool:
         if self.fmt in InstructionCoprocessor0.Cop0Opcodes_ByFormat:
@@ -148,11 +114,6 @@ class InstructionCoprocessor0(InstructionBase):
         fmt = toHex(self.fmt, 2)
         function = toHex(self.function, 2)
         return f"COP0.{fmt}({function})"
-
-    def getCop0RegisterName(self, register: int) -> str:
-        if register in InstructionCoprocessor0.Cop0RegisterNames:
-            return InstructionCoprocessor0.Cop0RegisterNames[register]
-        return hex(register)
 
 
     def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
