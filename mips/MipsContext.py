@@ -20,7 +20,7 @@ class ContextSegment:
         self.type: str = segmentType
         self.subsections: list = subsections
 
-class ContextVariable:
+class ContextSymbol:
     def __init__(self, vram: int, name: str):
         self.vram: int = vram
         self.name: str = name
@@ -38,10 +38,10 @@ class Context:
         self.funcsInFiles: Dict[str, List[int]] = dict()
         self.symbolToFile: Dict[int, str] = dict()
 
-        self.funcAddresses: Dict[int, ContextVariable] = dict()
+        self.funcAddresses: Dict[int, ContextSymbol] = dict()
 
         self.labels: Dict[int, str] = dict()
-        self.symbols: Dict[int, ContextVariable] = dict()
+        self.symbols: Dict[int, ContextSymbol] = dict()
 
         # Where the jump table is
         self.jumpTables: Dict[int, str] = dict()
@@ -88,17 +88,17 @@ class Context:
             vramSymbols = sorted({**self.funcAddresses, **self.jumpTables, **self.symbols}.items(), reverse=True)
             for vram, symbol in vramSymbols:
                 symbolSize = 4
-                if isinstance(symbol, ContextVariable):
+                if isinstance(symbol, ContextSymbol):
                     symbolSize = symbol.size
                 if vramAddress > vram and vramAddress < vram + symbolSize:
                     symbolName = symbol
-                    if isinstance(symbol, ContextVariable):
+                    if isinstance(symbol, ContextSymbol):
                         symbolName = symbol.name
                     return f"{symbolName} + {toHex(vramAddress - vram, 1)}"
 
         return None
 
-    def getSymbol(self, vramAddress: int, tryPlusOffset: bool = True, checkUpperLimit: bool = True) -> ContextVariable|None:
+    def getSymbol(self, vramAddress: int, tryPlusOffset: bool = True, checkUpperLimit: bool = True) -> ContextSymbol|None:
         if vramAddress in self.symbols:
             return self.symbols[vramAddress]
 
@@ -106,7 +106,7 @@ class Context:
             vramSymbols = sorted({**self.funcAddresses, **self.jumpTables, **self.symbols}.items(), reverse=True)
             for vram, symbol in vramSymbols:
                 if vramAddress > vram:
-                    if not isinstance(symbol, ContextVariable):
+                    if not isinstance(symbol, ContextSymbol):
                         break
                     if checkUpperLimit:
                         symbolSize = symbol.size
@@ -124,7 +124,7 @@ class Context:
 
         return None
 
-    def getFunction(self, vramAddress: int) -> ContextVariable|None:
+    def getFunction(self, vramAddress: int) -> ContextSymbol|None:
         if vramAddress in self.funcAddresses:
             return self.funcAddresses[vramAddress]
 
@@ -136,7 +136,7 @@ class Context:
         #    if vramAddress not in self.files[filename].references:
         #        self.files[filename].references.append(vramAddress)
         if vramAddress not in self.funcAddresses:
-            contextSymbol = ContextVariable(vramAddress, name)
+            contextSymbol = ContextSymbol(vramAddress, name)
             contextSymbol.type = "@function"
             self.funcAddresses[vramAddress] = contextSymbol
         if vramAddress not in self.symbolToFile and filename is not None:
@@ -184,7 +184,7 @@ class Context:
             if filename not in self.funcsInFiles:
                 self.funcsInFiles[filename] = []
             self.funcsInFiles[filename].append(vram)
-            contextFuncSymbol = ContextVariable(vram, func_name)
+            contextFuncSymbol = ContextSymbol(vram, func_name)
             contextFuncSymbol.type = "@function"
             contextFuncSymbol.isUserDefined = True
             self.funcAddresses[vram] = contextFuncSymbol
@@ -214,7 +214,7 @@ class Context:
 
         for vram, varData in variables_ast.items():
             varName, varType, varArrayInfo, varSize = varData
-            contVar = ContextVariable(vram, varName)
+            contVar = ContextSymbol(vram, varName)
             contVar.type = varType
             contVar.arrayInfo = varArrayInfo
             contVar.size = varSize
@@ -234,7 +234,7 @@ class Context:
 
             vram = int(vram, 16)
             varSize = int(varSize, 0)
-            contVar = ContextVariable(vram, varName)
+            contVar = ContextSymbol(vram, varName)
             contVar.type = varType
             contVar.size = varSize
             contVar.isUserDefined = True

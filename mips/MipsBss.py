@@ -6,7 +6,7 @@ from .Utils import *
 from .GlobalConfig import GlobalConfig
 from .MipsFileBase import FileBase
 from .MipsSection import Section
-from .MipsContext import Context, ContextVariable
+from .MipsContext import Context, ContextSymbol
 
 
 class Bss(Section):
@@ -36,7 +36,7 @@ class Bss(Section):
             f.write(".balign 16\n")
 
             if self.context.getSymbol(self.bssVramStart, False) is None:
-                contextVar = ContextVariable(self.bssVramStart, "D_" + toHex(self.bssVramStart, 8)[2:])
+                contextVar = ContextSymbol(self.bssVramStart, "D_" + toHex(self.bssVramStart, 8)[2:])
                 contextVar.isDefined = True
                 self.context.symbols[self.bssVramStart] = contextVar
 
