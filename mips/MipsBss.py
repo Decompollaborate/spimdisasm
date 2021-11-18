@@ -17,17 +17,6 @@ class Bss(Section):
         self.bssVramEnd: int = bssVramEnd
 
 
-    def analyze(self):
-        if self.context is not None:
-            self.context.symbols
-
-    def removePointers(self) -> bool:
-        if not GlobalConfig.REMOVE_POINTERS:
-            return False
-        # TODO ?
-        # super().removePointers()
-        return False
-
     def saveToFile(self, filepath: str):
         super().saveToFile(filepath + ".bss")
 
@@ -65,7 +54,8 @@ class Bss(Section):
 
                 space = self.bssVramEnd - symbolVram
                 if i + 1 < len(sortedSymbols):
-                    space = sortedSymbols[i+1][0] - symbolVram
+                    if sortedSymbols[i+1][0] <= self.bssVramEnd:
+                        space = sortedSymbols[i+1][0] - symbolVram
 
                 label = f"\nglabel {symbol.name}\n"
                 f.write(f"{label}/* {offsetHex} {vramHex} */  .space  {toHex(space, 2)}\n")
