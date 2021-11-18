@@ -151,6 +151,7 @@ def disassemblerMain():
     parser.add_argument("--functions", help="Path to a functions csv")
     parser.add_argument("--variables", help="Path to a variables csv")
     parser.add_argument("--file-splits", help="Path to a file splits csv")
+    parser.add_argument("--disable-stderr-progress", help="When stdout is redericted a progress status is printed to stderr. Pass this flag to disable this behaviour",  action="store_true")
     args = parser.parse_args()
 
     GlobalConfig.REMOVE_POINTERS = False
@@ -181,10 +182,20 @@ def disassemblerMain():
 
         splits = [x for x in splits if len(x) > 0]
 
+        splitsCount = len(splits)
+        lenLastLine = 80
+
         modeCallback = None
         outputPath = args.output
         for i, row in enumerate(splits):
             offset, vram, fileName = row
+
+            if isStdoutRedirected() and not args.disable_stderr_progress:
+                eprint(lenLastLine*" " + "\r", end="")
+                progressStr = f" Analizing: {round(i/splitsCount * 100, 2)}%. File: {fileName}\r"
+                lenLastLine = len(progressStr)
+                eprint(progressStr, end="")
+
             if fileName == ".text":
                 modeCallback = simpleDisasmFile
                 outputPath = args.output
@@ -225,8 +236,18 @@ def disassemblerMain():
             processedFiles.append((f"{outputPath}/{fileName}", f))
             print()
 
+
+    processedFilesCount = len(processedFiles)
+    lenLastLine = 80
+
     print("Writing files...")
-    for path, f in processedFiles:
+    for i, (path, f) in enumerate(processedFiles):
+        if isStdoutRedirected() and not args.disable_stderr_progress:
+            eprint(lenLastLine*" " + "\r", end="")
+            progressStr = f" Writing: {round(i/processedFilesCount * 100, 2)}%. File: {path}\r"
+            lenLastLine = len(progressStr)
+            eprint(progressStr, end="")
+
         head, tail = os.path.split(path)
 
         # Create directories
@@ -246,6 +267,10 @@ def disassemblerMain():
             extension = "." + extension
         name = os.path.join(head, name)
         context.saveContextToFile(f"{name}_{extension}")
+
+    if isStdoutRedirected() and not args.disable_stderr_progress:
+        eprint(lenLastLine*" " + "\r", end="")
+        eprint(f"Done: {args.binary}")
 
     print()
     print("Disassembling complete!")

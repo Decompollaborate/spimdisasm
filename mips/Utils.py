@@ -15,6 +15,10 @@ import shutil
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
+# https://stackoverflow.com/questions/1512457/determining-if-stdout-for-a-python-process-is-redirected
+def isStdoutRedirected() -> bool:
+    return not sys.stdout.isatty()
+
 # Returns the md5 hash of a bytearray
 def getStrHash(byte_array: bytearray) -> str:
     return str(hashlib.md5(byte_array).hexdigest())
