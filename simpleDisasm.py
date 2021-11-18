@@ -193,7 +193,7 @@ def disassemblerMain():
 
             if isStdoutRedirected() and not args.disable_stderr_progress:
                 eprint(lenLastLine*" " + "\r", end="")
-                progressStr = f" Analizing: {round(i/splitsCount * 100, 2)}%. File: {fileName}\r"
+                progressStr = f" Analizing: {round(i/splitsCount * 100, 1)}%. File: {fileName}\r"
                 lenLastLine = len(progressStr)
                 eprint(progressStr, end="")
 
@@ -245,7 +245,7 @@ def disassemblerMain():
     for i, (path, f) in enumerate(processedFiles):
         if isStdoutRedirected() and not args.disable_stderr_progress:
             eprint(lenLastLine*" " + "\r", end="")
-            progressStr = f" Writing: {round(i/processedFilesCount * 100, 2)}%. File: {path}\r"
+            progressStr = f" Writing: {round(i/processedFilesCount * 100, 1)}%. File: {path}\r"
             lenLastLine = len(progressStr)
             eprint(progressStr, end="")
 
