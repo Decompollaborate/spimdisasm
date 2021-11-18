@@ -52,6 +52,7 @@ class Text(Section):
                 functionEnded = False
                 isLikelyHandwritten = False
                 index += 1
+                instructionOffset += 4
                 isboundary = False
                 while index < nInstr:
                     instr = instructions[index]
@@ -60,7 +61,12 @@ class Text(Section):
                             self.fileBoundaries.append(self.offset + index*4)
                         break
                     index += 1
+                    instructionOffset += 4
                     isboundary = True
+
+                trackedRegisters.clear()
+                registersValues.clear()
+
                 funcsStartsList.append(index)
                 unimplementedInstructionsFuncList.append(not isInstrImplemented)
                 if index >= len(instructions):
@@ -119,17 +125,19 @@ class Text(Section):
                 if opcodeName == "JR":
                     if instr.getRegisterName(instr.rs) == "$ra":
                         functionEnded = True
-                        trackedRegisters.clear()
-                        registersValues.clear()
                     else:
                         if instr.rs in registersValues:
                             functionEnded = True
-                            trackedRegisters.clear()
-                            registersValues.clear()
                 elif opcodeName == "J" and isLikelyHandwritten:
                     functionEnded = True
-                    trackedRegisters.clear()
-                    registersValues.clear()
+
+            if self.vRamStart > 0 and self.context is not None:
+                if GlobalConfig.TRUST_USER_FUNCTIONS:
+                    vram = self.getVramOffset(instructionOffset) + 8
+                    funcContext = self.context.getFunction(vram)
+                    if funcContext is not None:
+                        if funcContext.isUserDefined:
+                            functionEnded = True
 
             index += 1
             farthestBranch -= 1
@@ -151,7 +159,7 @@ class Text(Section):
 
             funcName = f"func_{i}"
             vram = -1
-            if self.vRamStart >= 0:
+            if self.vRamStart > 0:
                 vram = self.getVramOffset(start*4)
                 funcSymbol = self.context.getFunction(vram)
                 if funcSymbol is not None:

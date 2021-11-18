@@ -28,6 +28,7 @@ class ContextVariable:
         self.arrayInfo: str = ""
         self.size: int = 4
         self.isDefined = False
+        self.isUserDefined = False
 
 class Context:
     def __init__(self):
@@ -182,6 +183,7 @@ class Context:
             self.funcsInFiles[filename].append(vram)
             contextFuncSymbol = ContextVariable(vram, func_name)
             contextFuncSymbol.type = "@function"
+            contextFuncSymbol.isUserDefined = True
             self.funcAddresses[vram] = contextFuncSymbol
             self.symbolToFile[vram] = filename
 
@@ -202,6 +204,7 @@ class Context:
         for vram, funcData in functions_ast.items():
             funcName = funcData[0]
             self.addFunction(None, vram, funcName)
+            self.funcAddresses[vram].isUserDefined = True
 
         with open(variablesPath) as infile:
             variables_ast = ast.literal_eval(infile.read())
@@ -212,6 +215,7 @@ class Context:
             contVar.type = varType
             contVar.arrayInfo = varArrayInfo
             contVar.size = varSize
+            contVar.isUserDefined = True
             self.symbols[vram] = contVar
 
     def readVariablesCsv(self, filepath: str):
@@ -230,6 +234,7 @@ class Context:
             contVar = ContextVariable(vram, varName)
             contVar.type = varType
             contVar.size = varSize
+            contVar.isUserDefined = True
             self.symbols[vram] = contVar
 
     def readFunctionsCsv(self, filepath: str):
@@ -245,6 +250,7 @@ class Context:
 
             vram = int(vram, 16)
             self.addFunction(None, vram, funcName)
+            self.funcAddresses[vram].isUserDefined = True
 
     def saveContextToFile(self, filepath: str):
         with open(filepath, "w") as f:

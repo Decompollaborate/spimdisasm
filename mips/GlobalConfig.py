@@ -16,3 +16,5 @@ class GlobalConfig:
 
     ADD_NEW_SYMBOLS: bool = True
     PRODUCE_SYMBOLS_PLUS_OFFSET: bool = False
+
+    TRUST_USER_FUNCTIONS: bool = True
