@@ -5,7 +5,7 @@ from __future__ import annotations
 from .Utils import *
 from .GlobalConfig import GlobalConfig
 from .Instructions import InstructionBase
-from .MipsContext import Context, ContextVariable
+from .MipsContext import Context, ContextSymbol
 
 class Function:
     def __init__(self, name: str, instructions: List[InstructionBase], context: Context, inFileOffset: int, vram: int = -1):
@@ -94,7 +94,7 @@ class Function:
                         self.referencedVRams.add(address)
                         if self.context.getGenericSymbol(address) is None:
                             if GlobalConfig.ADD_NEW_SYMBOLS:
-                                contextVar = ContextVariable(address, "D_" + toHex(address, 8)[2:])
+                                contextVar = ContextSymbol(address, "D_" + toHex(address, 8)[2:])
                                 if instr.isFloatInstruction():
                                     if instr.isDoubleFloatInstruction():
                                         contextVar.type = "f64"
