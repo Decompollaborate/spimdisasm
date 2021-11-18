@@ -162,6 +162,7 @@ def disassemblerMain():
     GlobalConfig.WRITE_BINARY = False
     GlobalConfig.ASM_COMMENT = True
     GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET = True
+    GlobalConfig.TRUST_USER_FUNCTIONS = True
 
     context = Context()
     if args.functions is not None:
