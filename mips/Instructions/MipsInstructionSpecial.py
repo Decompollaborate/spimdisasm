@@ -183,8 +183,7 @@ class InstructionSpecial(InstructionBase):
             return result
         elif opcode in ("MFHI", "MFLO"):
             return f"{formated_opcode} {rd}"
-        elif opcode in ("MULT", "MULTU",
-                "DMULT", "DMULTU", "DDIVU") or self.isTrap(): # OP  rs, rt
+        elif opcode in ("MULT", "MULTU", "DMULT", "DMULTU") or self.isTrap(): # OP  rs, rt
             result = f"{formated_opcode} {rs},".ljust(14, ' ')
             return f"{result} {rt}"
         elif opcode in ("SYSCALL", "BREAK", "SYNC"):
