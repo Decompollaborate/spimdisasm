@@ -122,6 +122,9 @@ class Context:
         return None
 
     def getGenericLabel(self, vramAddress: int) -> str|None:
+        if vramAddress in self.funcAddresses:
+            return self.funcAddresses[vramAddress].name
+
         if vramAddress in self.jumpTablesLabels:
             return self.jumpTablesLabels[vramAddress]
 

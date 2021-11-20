@@ -280,16 +280,20 @@ class Function:
 
             label = ""
             if not GlobalConfig.IGNORE_BRANCHES:
-                labelAux = self.context.getGenericLabel(self.vram + instructionOffset)
+                currentVram = self.vram + instructionOffset
+                labelAux = self.context.getGenericLabel(currentVram)
                 if self.vram >= 0 and labelAux is not None:
-                    if self.vram + instructionOffset in self.context.jumpTablesLabels:
+                    if self.context.getFunction(currentVram) is not None:
+                        # Skip over functions to avoid duplication
+                        pass
+                    elif currentVram in self.context.jumpTablesLabels:
                         label = "glabel " + labelAux + "\n"
                     else:
                         label = labelAux + ":\n"
                 elif auxOffset in self.localLabels:
                     label = self.localLabels[auxOffset] + ":\n"
-                elif self.vram + instructionOffset in self.context.fakeFunctions:
-                    label = self.context.fakeFunctions[self.vram + instructionOffset] + ":\n"
+                elif currentVram in self.context.fakeFunctions:
+                    label = self.context.fakeFunctions[currentVram] + ":\n"
 
             output += label + line + "\n"
 
