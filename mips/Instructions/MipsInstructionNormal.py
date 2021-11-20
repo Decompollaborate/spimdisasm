@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from mips.Instructions.MipsConstants import InstructionId
+
 from ..Utils import *
 
 from .MipsInstructionBase import InstructionBase
@@ -9,113 +11,117 @@ from ..MipsContext import Context
 
 
 class InstructionNormal(InstructionBase):
-    NormalOpcodes = {
-        0b000_000: "SPECIAL",
-        0b000_001: "REGIMM",
-        0b000_010: "J", # Jump
-        0b000_011: "JAL", # Jump And Link
-        0b000_100: "BEQ", # Branch on EQual
-        0b000_101: "BNE", # Branch on Not Equal
-        0b000_110: "BLEZ", # Branch on Less than or Equal to Zero
-        0b000_111: "BGTZ", # Branch on Greater Than Zero
+    NormalOpcodes: Dict[int, InstructionId] = {
+        # 0b000_000: "SPECIAL",
+        # 0b000_001: "REGIMM",
+        0b000_010: InstructionId.J,
+        0b000_011: InstructionId.JAL,
+        0b000_100: InstructionId.BEQ,
+        0b000_101: InstructionId.BNE,
+        0b000_110: InstructionId.BLEZ,
+        0b000_111: InstructionId.BGTZ,
 
-        0b001_000: "ADDI", # Add Immediate
-        0b001_001: "ADDIU", # Add Immediate Unsigned Word
-        0b001_010: "SLTI", # Set on Less Than Immediate
-        0b001_011: "SLTIU", # Set on Less Than Immediate Unsigned
-        0b001_100: "ANDI", # And Immediate
-        0b001_101: "ORI", # Or Immediate
-        0b001_110: "XORI", # eXclusive OR Immediate
-        0b001_111: "LUI", # Load Upper Immediate
+        0b001_000: InstructionId.ADDI,
+        0b001_001: InstructionId.ADDIU,
+        0b001_010: InstructionId.SLTI,
+        0b001_011: InstructionId.SLTIU,
+        0b001_100: InstructionId.ANDI,
+        0b001_101: InstructionId.ORI,
+        0b001_110: InstructionId.XORI,
+        0b001_111: InstructionId.LUI,
 
-        0b010_000: "COP0", # Coprocessor OPeration z
-        0b010_001: "COP1", # Coprocessor OPeration z
-        0b010_010: "COP2", # Coprocessor OPeration z
-        0b010_011: "COP3", # Coprocessor OPeration z
-        0b010_100: "BEQL", # Branch on EQual Likely
-        0b010_101: "BNEL", # Branch on Not Equal Likely
-        0b010_110: "BLEZL", # Branch on Less than or Equal to Zero Likely
-        0b010_111: "BGTZL", # Branch on Greater Than Zero Likely
+        # 0b010_000: "COP0", # Coprocessor OPeration z
+        # 0b010_001: "COP1", # Coprocessor OPeration z
+        # 0b010_010: "COP2", # Coprocessor OPeration z
+        # 0b010_011: "COP3", # Coprocessor OPeration z
+        0b010_100: InstructionId.BEQL,
+        0b010_101: InstructionId.BNEL,
+        0b010_110: InstructionId.BLEZL,
+        0b010_111: InstructionId.BGTZL,
 
-        0b011_000: "DADDI", # Doubleword add Immediate
-        0b011_001: "DADDIU", # Doubleword add Immediate Unsigned
-        0b011_010: "LDL", # Load Doubleword Left
-        0b011_011: "LDR", # Load Doubleword Right
+        0b011_000: InstructionId.DADDI,
+        0b011_001: InstructionId.DADDIU,
+        0b011_010: InstructionId.LDL,
+        0b011_011: InstructionId.LDR,
         # 0b011_100: "",
         # 0b011_101: "",
         # 0b011_110: "",
         # 0b011_111: "",
 
-        0b100_000: "LB", # Load Byte
-        0b100_001: "LH", # Load Halfword
-        0b100_010: "LWL", # Load Word Left
-        0b100_011: "LW", # Load Word
-        0b100_100: "LBU", # Load Byte Insigned
-        0b100_101: "LHU", # Load Halfword Unsigned
-        0b100_110: "LWR", # Load Word Right
-        0b100_111: "LWU", # Load Word Unsigned
+        0b100_000: InstructionId.LB,
+        0b100_001: InstructionId.LH,
+        0b100_010: InstructionId.LWL,
+        0b100_011: InstructionId.LW,
+        0b100_100: InstructionId.LBU,
+        0b100_101: InstructionId.LHU,
+        0b100_110: InstructionId.LWR,
+        0b100_111: InstructionId.LWU,
 
-        0b101_000: "SB", # Store Byte
-        0b101_001: "SH", # Store Halfword
-        0b101_010: "SWL", # Store Word Left
-        0b101_011: "SW", # Store Word
-        0b101_100: "SDL", # Store Doubleword Left
-        0b101_101: "SDR", # Store Doubleword Right
-        0b101_110: "SWR", # Store Word Right
-        0b101_111: "CACHE", # Cache
+        0b101_000: InstructionId.SB,
+        0b101_001: InstructionId.SH,
+        0b101_010: InstructionId.SWL,
+        0b101_011: InstructionId.SW,
+        0b101_100: InstructionId.SDL,
+        0b101_101: InstructionId.SDR,
+        0b101_110: InstructionId.SWR,
+        0b101_111: InstructionId.CACHE,
 
-        0b110_000: "LL", # Load Linked word
-        0b110_001: "LWC1", # Load Word to Coprocessor z
-        0b110_010: "LWC2", # Load Word to Coprocessor z
-        0b110_011: "PREF", # Prefetch
-        0b110_100: "LLD", # Load Linked Doubleword
-        0b110_101: "LDC1", # Load Doubleword to Coprocessor z
-        0b110_110: "LDC2", # Load Doubleword to Coprocessor z
-        0b110_111: "LD", # Load Doubleword
+        0b110_000: InstructionId.LL,
+        0b110_001: InstructionId.LWC1,
+        0b110_010: InstructionId.LWC2,
+        0b110_011: InstructionId.PREF,
+        0b110_100: InstructionId.LLD,
+        0b110_101: InstructionId.LDC1,
+        0b110_110: InstructionId.LDC2,
+        0b110_111: InstructionId.LD,
 
-        0b111_000: "SC", # Store Conditional word
-        0b111_001: "SWC1", # Store Word from Coprocessor z
-        0b111_010: "SWC2", # Store Word from Coprocessor z
+        0b111_000: InstructionId.SC,
+        0b111_001: InstructionId.SWC1,
+        0b111_010: InstructionId.SWC2,
         # 0b111_011: "",
-        0b111_100: "SCD", # Store Conditional Doubleword
-        0b111_101: "SDC1", # Store Doubleword from Coprocessor z
-        0b111_110: "SDC2", # Store Doubleword from Coprocessor z
-        0b111_111: "SD", # Store Doubleword
+        0b111_100: InstructionId.SCD,
+        0b111_101: InstructionId.SDC1,
+        0b111_110: InstructionId.SDC2,
+        0b111_111: InstructionId.SD,
     }
 
-    def isImplemented(self) -> bool:
-        if self.opcode not in InstructionNormal.NormalOpcodes:
-            return False
-        opcode = self.getOpcodeName()
-        if opcode in ("SPECIAL", "REGIMM", "COP0", "COP1", "COP2", "COP3"):
-            return False
-        return True
+    def __init__(self, instr: int):
+        super().__init__(instr)
+
+        self.uniqueId = InstructionNormal.NormalOpcodes.get(self.opcode, InstructionId.INVALID)
+        if self.rt == 0:
+            if self.uniqueId == InstructionId.BEQ:
+                if self.rs == 0:
+                    self.uniqueId = InstructionId.B
+                else:
+                    self.uniqueId = InstructionId.BEQZ
+            elif self.uniqueId == InstructionId.BNE:
+                self.uniqueId = InstructionId.BNEZ
+
 
     def isFloatInstruction(self) -> bool:
         if self.isDoubleFloatInstruction():
             return True
-        opcode = self.getOpcodeName()
-        if opcode in ("LWC1", "SWC1"):
+        if self.uniqueId in (InstructionId.LWC1, InstructionId.SWC1):
             return True
         return False
 
     def isDoubleFloatInstruction(self) -> bool:
-        opcode = self.getOpcodeName()
-        if opcode in ("LDC1", "SDC1"):
+        if self.uniqueId in (InstructionId.LDC1, InstructionId.SDC1):
             return True
         return False
 
 
     def isBranch(self) -> bool:
-        opcode = self.getOpcodeName()
-        if opcode in ("BEQ", "BEQL", "BLEZ", "BLEZL", "BNE", "BNEL", "BGTZ", "BGTZL"):
+        if self.uniqueId in (InstructionId.BEQ, InstructionId.BEQL, InstructionId.BLEZ, InstructionId.BLEZL,
+                             InstructionId.BNE, InstructionId.BNEL, InstructionId.BGTZ, InstructionId.BGTZL,
+                             InstructionId.BEQZ, InstructionId.BNEZ, InstructionId.B):
             return True
         return super().isBranch()
 
     # OP LABEL
     def isJType(self) -> bool:
-        opcode = self.getOpcodeName()
-        if opcode in ("J", "JAL"):
+        if self.uniqueId in (InstructionId.J, InstructionId.JAL):
             return True
         return super().isJType()
 
@@ -128,31 +134,28 @@ class InstructionNormal(InstructionBase):
 
     # OP  rs, IMM
     def isUnaryBranch(self) -> bool:
-        opcode = self.getOpcodeName()
-        if opcode in ("BLEZ", "BGTZ", "BLEZL", "BGTZL"):
+        if self.uniqueId in (InstructionId.BLEZ, InstructionId.BGTZ, InstructionId.BLEZL, InstructionId.BGTZL,
+                             InstructionId.BEQZ, InstructionId.BNEZ):
             return True
         return False
 
     # OP  rs, rt, IMM
     def isBinaryBranch(self) -> bool:
-        opcode = self.getOpcodeName()
-        if opcode == "BEQ" or opcode == "BEQL":
-            return True
-        if opcode == "BNE" or opcode == "BNEL":
+        if self.uniqueId in (InstructionId.BEQ, InstructionId.BEQL, InstructionId.BNE, InstructionId.BNEL):
             return True
         return False
 
     # OP  rt, IMM
     def isUnaryOperation(self) -> bool:
-        opcode = self.getOpcodeName()
-        if opcode in ("LUI", ):
+        if self.uniqueId in (InstructionId.LUI, ):
             return True
         return False
 
     # OP  rt, rs, IMM
     def isBinaryOperation(self) -> bool:
-        opcode = self.getOpcodeName()
-        if opcode in ("ADDI", "ADDIU", "ANDI", "DADDI", "DADDIU", "ORI", "XORI", "SLTI", "SLTIU"):
+        if self.uniqueId in (InstructionId.ADDI, InstructionId.ADDIU, InstructionId.ANDI, InstructionId.DADDI,
+                             InstructionId.DADDIU, InstructionId.ORI, InstructionId.XORI, InstructionId.SLTI,
+                             InstructionId.SLTIU):
             return True
         return False
 
@@ -160,16 +163,9 @@ class InstructionNormal(InstructionBase):
         return self.isBinaryOperation() or self.isUnaryOperation()
 
     def isUnsigned(self) -> bool:
-        opcode = self.getOpcodeName()
-        if opcode in ("LUI", "ANDI", "ORI", "XORI", ):
+        if self.uniqueId in (InstructionId.LUI, InstructionId.ANDI, InstructionId.ORI, InstructionId.XORI):
             return True
         return False
-
-    def sameOpcode(self, other: InstructionBase) -> bool:
-        if self.opcode != other.opcode:
-            return False
-
-        return self.isImplemented()
 
 
     def modifiesRt(self) -> bool:
@@ -177,20 +173,18 @@ class InstructionNormal(InstructionBase):
             return False
         if self.isJType():
             return False
-        opcode = self.getOpcodeName()
-        if opcode in ("SB", "SH", "SWL", "SW", "SDL", "SDR", "SWR"):
+
+        if self.uniqueId in (InstructionId.SB, InstructionId.SH, InstructionId.SWL, InstructionId.SW, 
+                             InstructionId.SDL, InstructionId.SDR, InstructionId.SWR):
             return False
-        if opcode in ("LWC1", "LWC2", "LDC1", "LDC2"): # Changes the value of the coprocessor's register
+
+        # Changes the value of the coprocessor's register
+        if self.uniqueId in (InstructionId.LWC1, InstructionId.LWC2, InstructionId.LDC1, InstructionId.LDC2):
             return False
-        if opcode in ("SWC1", "SWC2", "SDC1", "SDC2"):
+
+        if self.uniqueId in (InstructionId.SWC1, InstructionId.SWC2, InstructionId.SDC1, InstructionId.SDC2):
             return False
         return super().modifiesRt()
-
-
-    def getOpcodeName(self) -> str:
-        if self.opcode in InstructionNormal.NormalOpcodes:
-            return InstructionNormal.NormalOpcodes[self.opcode]
-        return super().getOpcodeName()
 
 
     def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
@@ -230,17 +224,9 @@ class InstructionNormal(InstructionBase):
             elif self.isBinaryBranch():
                 result += f" {rt},"
                 result = result.ljust(19, ' ')
-                if opcode == "BEQ":
-                    if self.rs == 0 and self.rt == 0:
-                        result = "b".ljust(self.ljustWidthOpcode, ' ')
-                    #elif self.rt == 0:
-                    #    result = "beqz".ljust(self.ljustWidthOpcode, ' ')
-                    #    result += f" {rs},"
-                #else:
-                #    if self.rt == 0:
-                #        result = opcode.lower() +"z"
-                #        result = result.ljust(self.ljustWidthOpcode, ' ')
-                #        result += f" {rs},"
+            # OP  IMM
+            else:
+                result = f"{formated_opcode}"
             return f"{result} {immediate}"
 
         if self.isOperation():
@@ -258,9 +244,9 @@ class InstructionNormal(InstructionBase):
         # OP rt, IMM(rs)
         if self.isFloatInstruction():
             result += self.getFloatRegisterName(self.rt)
-        elif opcode == "CACHE":
+        elif self.uniqueId == InstructionId.CACHE:
             result += toHex(self.rt, 2)
-        elif opcode in ("LWC2", "SWC2", "LDC2", "SDC2"):
+        elif self.uniqueId in (InstructionId.LWC2, InstructionId.SWC2, InstructionId.LDC2, InstructionId.SDC2):
             result += self.getCop2RegisterName(self.rt)
         else:
             result += rt

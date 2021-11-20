@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from mips.Instructions.MipsConstants import InstructionId
+
 from ..Utils import *
 
 from .MipsInstructionBase import InstructionBase
@@ -10,70 +12,59 @@ from ..MipsContext import Context
 
 class InstructionCoprocessor0(InstructionBase):
     Cop0Opcodes_ByFormat = {
-        0b00_000: "MFC0", # Move word From CP0
-        0b00_001: "DMFC0", # Doubleword Move From CP0
-        0b00_010: "CFC0", # Move control word From CP0
+        0b00_000: InstructionId.MFC0,
+        0b00_001: InstructionId.DMFC0,
+        0b00_010: InstructionId.CFC0,
         # 0b00_011: "",
-        0b00_100: "MTC0", # Move word to CP0
-        0b00_101: "DMTC0", # Doubleword Move To CP0
-        0b00_110: "CTC0", # Move control word To CP0
+        0b00_100: InstructionId.MTC0,
+        0b00_101: InstructionId.DMTC0,
+        0b00_110: InstructionId.CTC0,
         # 0b00_111: "",
     }
     Cop0Opcodes_ByFunction = {
-        0b000_001: "TLBR", # Read Indexed TLB Entry
-        0b000_010: "TLBWI", # Write Indexed TLB Entry
-        0b000_110: "TLBWR", # Write Random TLB Entry
-        0b001_000: "TLBP", # Probe TLB for Matching Entry
-        0b011_000: "ERET", # Return from Exception
+        0b000_001: InstructionId.TLBR,
+        0b000_010: InstructionId.TLBWI,
+        0b000_110: InstructionId.TLBWR,
+        0b001_000: InstructionId.TLBP,
+        0b011_000: InstructionId.ERET,
     }
 
+    def __init__(self, instr: int):
+        super().__init__(instr)
 
-    def isImplemented(self) -> bool:
         if self.fmt in InstructionCoprocessor0.Cop0Opcodes_ByFormat:
-            return True
-        if self.fmt == 0b01_000:
-            return True
-        if self.fmt == 0b10_000:
-            if self.function in InstructionCoprocessor0.Cop0Opcodes_ByFunction:
-                return True
-        return False
+            self.uniqueId = InstructionCoprocessor0.Cop0Opcodes_ByFormat[self.fmt]
+        elif self.fmt == 0b01_000: # fmt = BC
+            if self.tf:
+                if self.nd:
+                    self.uniqueId = InstructionId.BC0TL
+                else:
+                    self.uniqueId = InstructionId.BC0T
+            else:
+                if self.nd:
+                    self.uniqueId = InstructionId.BC0FL
+                else:
+                    self.uniqueId = InstructionId.BC0F
+        elif self.function in InstructionCoprocessor0.Cop0Opcodes_ByFunction:
+            self.uniqueId = InstructionCoprocessor0.Cop0Opcodes_ByFunction[self.function]
+
 
     def isBranch(self) -> bool:
-        opcode = self.getOpcodeName()
-        if opcode in ("BC0T", "BC0TL", "BC0F", "BC0FL"):
+        if self.uniqueId in (InstructionId.BC0T, InstructionId.BC0TL, InstructionId.BC0F, InstructionId.BC0FL):
             return True
-        return False
-
-
-    def sameOpcode(self, other: InstructionBase) -> bool:
-        if self.opcode != other.opcode:
-            return False
-
-        if self.fmt == other.fmt:
-            if self.fmt in InstructionCoprocessor0.Cop0Opcodes_ByFormat:
-                return True
-            if self.fmt == 0b01_000:
-                if self.tf == other.tf and self.nd == other.nd:
-                    return True
-                return False
-
-            return self.function == other.function
-
         return False
 
 
     def modifiesRt(self) -> bool:
         if self.isBranch():
             return False
-        opcode = self.getOpcodeName()
-        if opcode in ("MFC0", "DMFC0", "CFC0"):
+        if self.uniqueId in (InstructionId.MFC0, InstructionId.DMFC0, InstructionId.CFC0):
             return True
         # TODO
         return super().modifiesRt()
     def modifiesRd(self) -> bool:
-        opcode = self.getOpcodeName()
         # modifying fs shouldn't be the same as modifying rd
-        #if opcode in ("MTC0", "DMTC0", "CTC0"):
+        #if self.uniqueId in (InstructionId.MTC0, InstructionId.DMTC0, InstructionId.CTC0):
         #    return True
         # TODO
         return super().modifiesRd()
@@ -93,27 +84,6 @@ class InstructionCoprocessor0(InstructionBase):
             self.rt = 0
             self.rd = 0
             self.sa = 0
-
-    def getOpcodeName(self) -> str:
-        if self.fmt in InstructionCoprocessor0.Cop0Opcodes_ByFormat:
-            return InstructionCoprocessor0.Cop0Opcodes_ByFormat[self.fmt]
-
-        if self.fmt == 0b01_000: # fmt = BC
-            opcodeName = "BC0"
-            if self.tf: # Branch on FP True
-                opcodeName += "T"
-            else: # Branch on FP False
-                opcodeName += "F"
-            if self.nd: # Likely
-                opcodeName += "L"
-            return opcodeName
-
-        if self.function in InstructionCoprocessor0.Cop0Opcodes_ByFunction:
-            return InstructionCoprocessor0.Cop0Opcodes_ByFunction[self.function]
-
-        fmt = toHex(self.fmt, 2)
-        function = toHex(self.function, 2)
-        return f"COP0.{fmt}({function})"
 
 
     def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:

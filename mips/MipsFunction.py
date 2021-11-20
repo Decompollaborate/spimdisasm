@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from .Utils import *
 from .GlobalConfig import GlobalConfig
-from .Instructions import InstructionBase
+from .Instructions import InstructionBase, InstructionId
 from .MipsContext import Context, ContextSymbol
 
 class Function:
@@ -43,7 +43,6 @@ class Function:
         instructionOffset = 0
         for instr in self.instructions:
             isLui = False
-            opcode = instr.getOpcodeName()
 
             if not instr.isImplemented():
                 # Abort analysis
@@ -72,7 +71,7 @@ class Function:
 
             elif instr.isJType():
                 target = 0x80000000 | instr.instr_index << 2
-                if instr.getOpcodeName() == "J":
+                if instr.uniqueId == InstructionId.J:
                     self.context.addFakeFunction(target, "fakefunc_" + toHex(target, 8)[2:])
                 else:
                     self.context.addFunction(None, target, "func_" + toHex(target, 8)[2:])
@@ -81,11 +80,11 @@ class Function:
             # symbol finder
             elif instr.isIType():
                 # TODO: Consider following branches
-                isLui = opcode == "LUI"
+                isLui = instr.uniqueId == InstructionId.LUI
                 if isLui:
                     if instr.immediate >= 0x4000: # filter out stuff that may not be a real symbol
                         trackedRegisters[instr.rt] = instructionOffset//4
-                elif instr.isIType() and opcode not in ("ANDI", "ORI", "XORI", "CACHE"):
+                elif instr.isIType() and instr.uniqueId not in (InstructionId.ANDI, InstructionId.ORI, InstructionId.XORI, InstructionId.CACHE):
                     rs = instr.rs
                     if rs in trackedRegisters:
                         luiInstr = self.instructions[trackedRegisters[rs]]
@@ -106,7 +105,7 @@ class Function:
                         self.pointersPerInstruction[trackedRegisters[rs]*4] = address
                         registersValues[instr.rt] = address
 
-            elif opcode == "JR":
+            elif instr.uniqueId == InstructionId.JR:
                 rs = instr.rs
                 if instr.getRegisterName(rs) != "$ra":
                     if rs in registersValues:
@@ -121,7 +120,7 @@ class Function:
                         del trackedRegisters[rt]
 
                 if instr.modifiesRd():
-                    if opcode not in ("ADDU",):
+                    if instr.uniqueId not in (InstructionId.ADDU,):
                         rd = instr.rd
                         if rd in trackedRegisters:
                             del trackedRegisters[rd]
@@ -193,9 +192,8 @@ class Function:
 
         for i in range(self.nInstr-1, 0-1, -1):
             instr = self.instructions[i]
-            opcodeName = instr.getOpcodeName()
-            if opcodeName != "NOP":
-                if opcodeName == "JR" and instr.getRegisterName(instr.rs) == "$ra":
+            if instr.uniqueId != InstructionId.NOP:
+                if instr.uniqueId == InstructionId.JR and instr.getRegisterName(instr.rs) == "$ra":
                     first_nop += 1
                 break
             first_nop = i
@@ -245,7 +243,7 @@ class Function:
 
                     symbol = self.context.getGenericSymbol(address)
                     if symbol is not None:
-                        if instr.getOpcodeName() == "LUI":
+                        if instr.uniqueId == InstructionId.LUI:
                             immOverride = f"%hi({symbol})"
                         else:
                             immOverride= f"%lo({symbol})"
@@ -281,7 +279,7 @@ class Function:
 
             output += label + line + "\n"
 
-            wasLastInstABranch = instr.isBranch() or instr.isJType() or instr.getOpcodeName() in ("JR", "JALR")
+            wasLastInstABranch = instr.isBranch() or instr.isJType() or instr.uniqueId in (InstructionId.JR, InstructionId.JALR)
 
             instructionOffset += 4
             auxOffset += 4
