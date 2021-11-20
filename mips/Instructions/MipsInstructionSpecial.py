@@ -161,7 +161,7 @@ class InstructionSpecial(InstructionBase):
         if self.uniqueId == InstructionId.NOP:
             return "nop"
 
-        elif self.uniqueId == InstructionId.MOVE: # OP rd, rs
+        elif self.uniqueId in (InstructionId.MOVE, InstructionId.NOT): # OP rd, rs
             result = f"{formated_opcode} {rd},"
             result = result.ljust(14, ' ')
             return f"{result} {rs}"
@@ -186,6 +186,11 @@ class InstructionSpecial(InstructionBase):
             code = (self.instr_index) >> 16
             result = f"{formated_opcode} {code}"
             return result
+
+        elif self.uniqueId in (InstructionId.NEGU,):
+            result = f"{formated_opcode} {rd},"
+            result = result.ljust(14, ' ')
+            return f"{result} {rt}"
 
         elif self.isRType(): # OP rd, rs, rt
             result = f"{formated_opcode} {rd},"
