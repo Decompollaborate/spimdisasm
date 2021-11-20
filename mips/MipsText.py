@@ -6,7 +6,7 @@ from .Utils import *
 from .GlobalConfig import GlobalConfig
 from .MipsFileBase import FileBase
 from .MipsSection import Section
-from .Instructions import InstructionBase, wordToInstruction, InstructionCoprocessor0
+from .Instructions import InstructionBase, wordToInstruction, InstructionId, InstructionCoprocessor0, InstructionCoprocessor2
 from .MipsFunction import Function
 from .MipsContext import Context
 
@@ -56,7 +56,7 @@ class Text(Section):
                 isboundary = False
                 while index < nInstr:
                     instr = instructions[index]
-                    if instr.getOpcodeName() != "NOP":
+                    if instr.uniqueId != InstructionId.NOP:
                         if isboundary:
                             self.fileBoundaries.append(self.offset + index*4)
                         break
@@ -75,12 +75,10 @@ class Text(Section):
                 isInstrImplemented = instr.isImplemented()
 
             if not isLikelyHandwritten:
-                opcodeName = instr.getOpcodeName()
-                if opcodeName in ("COP2",):
+                if isinstance(instr, InstructionCoprocessor2):
                     isLikelyHandwritten = True
                     isInstrImplemented = False
                 elif isinstance(instr, InstructionCoprocessor0):
-                #if isinstance(instr, InstructionCoprocessor0):
                     isLikelyHandwritten = True
                 elif instr.getRegisterName(instr.rs) in ("$k0", "$k1"):
                     isLikelyHandwritten = True
@@ -107,12 +105,11 @@ class Text(Section):
                         j -= 1
 
             elif instr.isIType():
-                opcodeName = instr.getOpcodeName()
-                isLui = opcodeName == "LUI"
+                isLui = instr.uniqueId == InstructionId.LUI
                 if isLui:
                     if instr.immediate >= 0x4000: # filter out stuff that may not be a real symbol
                         trackedRegisters[instr.rt] = instructionOffset//4
-                elif instr.isIType() and opcodeName not in ("ANDI", "ORI", "XORI", "CACHE"):
+                elif instr.isIType() and instr.uniqueId not in (InstructionId.ANDI, InstructionId.ORI, InstructionId.XORI, InstructionId.CACHE):
                     rs = instr.rs
                     if rs in trackedRegisters:
                         luiInstr = instructions[trackedRegisters[rs]]
@@ -121,14 +118,13 @@ class Text(Section):
                         registersValues[instr.rt] = upperHalf + lowerHalf
 
             if not (farthestBranch > 0):
-                opcodeName = instr.getOpcodeName()
-                if opcodeName == "JR":
+                if instr.uniqueId == InstructionId.JR:
                     if instr.getRegisterName(instr.rs) == "$ra":
                         functionEnded = True
                     else:
                         if instr.rs in registersValues:
                             functionEnded = True
-                elif opcodeName == "J" and isLikelyHandwritten:
+                elif instr.uniqueId == InstructionId.J and isLikelyHandwritten:
                     functionEnded = True
 
             if self.vRamStart > 0 and self.context is not None:

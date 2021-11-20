@@ -106,18 +106,6 @@ class Context:
             return self.symbols[vramAddress]
 
         if GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET and tryPlusOffset:
-            """
-            vramSymbols = sorted({**self.funcAddresses, **self.jumpTables, **self.symbols}.items(), reverse=True)
-            for vram, symbol in vramSymbols:
-                if vramAddress > vram:
-                    if not isinstance(symbol, ContextSymbol):
-                        break
-                    if checkUpperLimit:
-                        symbolSize = symbol.size
-                        if vramAddress >= vram + symbolSize:
-                            continue
-                    return symbol
-            """
             rangeObj = self.symbols.irange(maximum=vramAddress, reverse=True)
             for vram in rangeObj:
                 contextSym: ContextSymbol = self.symbols[vram]

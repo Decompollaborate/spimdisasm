@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from mips.Instructions.MipsConstants import InstructionId
+
 from ..Utils import *
 
 from .MipsInstructionBase import InstructionBase
@@ -10,113 +12,127 @@ from ..MipsContext import Context
 
 class InstructionCoprocessor1(InstructionBase):
     Cop1Opcodes_ByFormat = {
-        0b00_000: "MFC1", # Move Word From Floating-Point
-        0b00_001: "DMFC1", # Doubleword Move From Floating-Point
-        0b00_010: "CFC1", # Move Control Word from Floating-Point
+        0b00_000: InstructionId.MFC1,
+        0b00_001: InstructionId.DMFC1,
+        0b00_010: InstructionId.CFC1,
 
-        0b00_100: "MTC1", # Move Word to Floating-Point
-        0b00_101: "DMTC1", # Doubleword Move To Floating-Point
-        0b00_110: "CTC1", # Move Control Word to Floating-Point
+        0b00_100: InstructionId.MTC1,
+        0b00_101: InstructionId.DMTC1,
+        0b00_110: InstructionId.CTC1,
     }
     Cop1Opcodes_ByFunction = {
-        0b000_000: "ADD", # Floating-Point Add # fd, fs, ft
-        0b000_001: "SUB", # Floating-Point Add # fd, fs, ft
-        0b000_010: "MUL", # Floating-Point Multiply # fd, fs, ft
-        0b000_011: "DIV", # Floating-Point Divide # fd, fs, ft
+        0b000_000: { 0: InstructionId.ADD_S, 1: InstructionId.ADD_D },
+        0b000_001: { 0: InstructionId.SUB_S, 1: InstructionId.SUB_D },
+        0b000_010: { 0: InstructionId.MUL_S, 1: InstructionId.MUL_D },
+        0b000_011: { 0: InstructionId.DIV_S, 1: InstructionId.DIV_D },
 
-        0b000_100: "SQRT", # Floating-Point Square Root # fd, fs
-        0b000_101: "ABS", # Floating-Point Absolute Value # fd, fs
-        0b000_110: "MOV", # Floating-Point Move # fd, fs
-        0b000_111: "NEG", # Floating-Point Negate # fd, fs
+        0b000_100: { 0: InstructionId.SQRT_S, 1: InstructionId.SQRT_D },
+        0b000_101: { 0: InstructionId.ABS_S,  1: InstructionId.ABS_D },
+        0b000_110: { 0: InstructionId.MOV_S,  1: InstructionId.MOV_D },
+        0b000_111: { 0: InstructionId.NEG_S,  1: InstructionId.NEG_D },
 
-        0b001_000: "ROUND.L", # Floating-Point Round to Long Fixed-Point # fd, fs
-        0b001_001: "TRUNC.L", # Floating-Point Truncate to Long Fixed-Point # fd, fs
-        0b001_010: "CEIL.L", # Floating-Point Ceiling Convert to Long Fixed-Point # fd, fs
-        0b001_011: "FLOOR.L", # Floating-Point Floor Convert to Long Fixed-Point # fd, fs
+        0b001_000: { 0: InstructionId.ROUND_L_S, 1: InstructionId.ROUND_L_D },
+        0b001_001: { 0: InstructionId.TRUNC_L_S, 1: InstructionId.TRUNC_L_D },
+        0b001_010: { 0: InstructionId.CEIL_L_S, 1: InstructionId.CEIL_L_D },
+        0b001_011: { 0: InstructionId.FLOOR_L_S, 1: InstructionId.FLOOR_L_D },
 
-        0b001_100: "ROUND.W", # Floating-Point Round to Word Fixed-Point # fd, fs
-        0b001_101: "TRUNC.W", # Floating-Point Truncate to Word Fixed-Point # fd, fs
-        0b001_110: "CEIL.W", # Floating-Point Ceiling Convert to Word Fixed-Point # fd, fs
-        0b001_111: "FLOOR.W", # Floating-Point Floor Convert to Word Fixed-Point # fd, fs
+        0b001_100: { 0: InstructionId.ROUND_W_S, 1: InstructionId.ROUND_W_D },
+        0b001_101: { 0: InstructionId.TRUNC_W_S, 1: InstructionId.TRUNC_W_D },
+        0b001_110: { 0: InstructionId.CEIL_W_S, 1: InstructionId.CEIL_W_D },
+        0b001_111: { 0: InstructionId.FLOOR_W_S, 1: InstructionId.FLOOR_W_D },
     }
     CompareConditionsCodes = {
-        0b0_000: "F", # False
-        0b0_001: "UN", # UNordered
-        0b0_010: "EQ", # EQual
-        0b0_011: "UEQ", # Unordered or EQual
-        0b0_100: "OLT", # Ordered or Less Than
-        0b0_101: "ULT", # Unordered or Less Than
-        0b0_110: "OLE", # Ordered or Less than or Equal
-        0b0_111: "ULE", # Unordered or Less than or Equal
+        0b0_000: { 0: InstructionId.C_F_S,    1: InstructionId.C_F_D }, # False
+        0b0_001: { 0: InstructionId.C_UN_S,   1: InstructionId.C_UN_D }, # UNordered
+        0b0_010: { 0: InstructionId.C_EQ_S,   1: InstructionId.C_EQ_D }, # EQual
+        0b0_011: { 0: InstructionId.C_UEQ_S,  1: InstructionId.C_UEQ_D }, # Unordered or EQual
+        0b0_100: { 0: InstructionId.C_OLT_S,  1: InstructionId.C_OLT_D }, # Ordered or Less Than
+        0b0_101: { 0: InstructionId.C_ULT_S,  1: InstructionId.C_ULT_D }, # Unordered or Less Than
+        0b0_110: { 0: InstructionId.C_OLE_S,  1: InstructionId.C_OLE_D }, # Ordered or Less than or Equal
+        0b0_111: { 0: InstructionId.C_ULE_S,  1: InstructionId.C_ULE_D }, # Unordered or Less than or Equal
 
-        0b1_000: "SF", # Signaling False
-        0b1_001: "NGLE", # Not Greater than or Less than or Equal
-        0b1_010: "SEQ", # Signaling Equal
-        0b1_011: "NGL", # Not Greater than or Less than
-        0b1_100: "LT", # Less than
-        0b1_101: "NGE", # Not Greater than or Equal
-        0b1_110: "LE", # Less than or Equal
-        0b1_111: "NGT", # Not Greater than
+        0b1_000: { 0: InstructionId.C_SF_S,   1: InstructionId.C_SF_D }, # Signaling False
+        0b1_001: { 0: InstructionId.C_NGLE_S, 1: InstructionId.C_NGLE_D }, # Not Greater than or Less than or Equal
+        0b1_010: { 0: InstructionId.C_SEQ_S,  1: InstructionId.C_SEQ_D }, # Signaling Equal
+        0b1_011: { 0: InstructionId.C_NGL_S,  1: InstructionId.C_NGL_D }, # Not Greater than or Less than
+        0b1_100: { 0: InstructionId.C_LT_S,   1: InstructionId.C_LT_D }, # Less than
+        0b1_101: { 0: InstructionId.C_NGE_S,  1: InstructionId.C_NGE_D }, # Not Greater than or Equal
+        0b1_110: { 0: InstructionId.C_LE_S,   1: InstructionId.C_LE_D }, # Less than or Equal
+        0b1_111: { 0: InstructionId.C_NGT_S,  1: InstructionId.C_NGT_D }, # Not Greater than
+    }
+    ConvertCodes = {
+        0b000: { 0b001: InstructionId.CVT_S_D, 0b100: InstructionId.CVT_S_W, 0b101: InstructionId.CVT_S_L },
+        0b001: { 0b000: InstructionId.CVT_D_S, 0b100: InstructionId.CVT_D_W, 0b101: InstructionId.CVT_D_L },
+        0b100: { 0b000: InstructionId.CVT_W_S, 0b001: InstructionId.CVT_W_D, },
+        0b101: { 0b000: InstructionId.CVT_L_S, 0b001: InstructionId.CVT_L_D, },
     }
 
-    def isImplemented(self) -> bool:
+    def __init__(self, instr: int):
+        super().__init__(instr)
+
         if self.fmt in InstructionCoprocessor1.Cop1Opcodes_ByFormat:
-            return True
-        if self.fmt == 0b01_000: # fmt = BC
-            return True
-        if self.function in InstructionCoprocessor1.Cop1Opcodes_ByFunction:
-            return True
-        if self.fc == 0b11:
-            return True
-        if self.fc == 0b10:
-            return True
-        return False
+            self.uniqueId = InstructionCoprocessor1.Cop1Opcodes_ByFormat[self.fmt]
+
+        elif self.fmt == 0b01_000: # fmt = BC
+            tf = (self.instr >> 16) & 0x01
+            nd = (self.instr >> 17) & 0x01
+            if tf:
+                if nd:
+                    self.uniqueId = InstructionId.BC1TL
+                else:
+                    self.uniqueId = InstructionId.BC1T
+            else:
+                if nd:
+                    self.uniqueId = InstructionId.BC1FL
+                else:
+                    self.uniqueId = InstructionId.BC1F
+
+        elif self.function in InstructionCoprocessor1.Cop1Opcodes_ByFunction:
+            perFmt = InstructionCoprocessor1.Cop1Opcodes_ByFunction[self.function]
+            fmt = self.fmt & 0x07
+            if fmt in perFmt:
+                self.uniqueId = perFmt[fmt]
+
+        elif self.fc == 0b11:
+            if self.cond in InstructionCoprocessor1.CompareConditionsCodes:
+                perFmt = InstructionCoprocessor1.CompareConditionsCodes[self.cond]
+                fmt = self.fmt & 0x07
+                if fmt in perFmt:
+                    self.uniqueId = perFmt[fmt]
+
+        elif self.fc == 0b10:
+            fun = self.function & 0x07
+            if fun in InstructionCoprocessor1.ConvertCodes:
+                perFmt = InstructionCoprocessor1.ConvertCodes[fun]
+                fmt = self.fmt & 0x07
+                if fmt in perFmt:
+                    self.uniqueId = perFmt[fmt]
 
     def isFloatInstruction(self) -> bool:
         return True
 
     def isBranch(self) -> bool:
-        opcode = self.getOpcodeName()
-        if opcode in ("BC1T", "BC1TL", "BC1F", "BC1FL"):
+        if self.uniqueId in (InstructionId.BC1T, InstructionId.BC1TL, InstructionId.BC1F, InstructionId.BC1FL):
             return True
         return False
 
     def isBinaryOperation(self) -> bool:
-        opcode = self.getOpcodeName().split(".")[0]
-        if opcode in ("ADD", "SUB", "MUL", "DIV"):
+        if self.uniqueId in (InstructionId.ADD_S, InstructionId.ADD_D, InstructionId.SUB_S, InstructionId.SUB_D,
+                             InstructionId.MUL_S, InstructionId.MUL_D, InstructionId.DIV_S, InstructionId.DIV_D):
             return True
-        return False
-
-
-    def sameOpcode(self, other: InstructionBase) -> bool:
-        if self.opcode != other.opcode:
-            return False
-
-        if self.fmt == other.fmt:
-            if self.fmt in InstructionCoprocessor1.Cop1Opcodes_ByFormat:
-                return True
-            if self.fmt == 0b01_000: # fmt = BC
-                if self.tf == other.tf and self.nd == other.nd:
-                    return True
-                return False
-
-            return self.function == other.function
-
         return False
 
 
     def modifiesRt(self) -> bool:
         if self.isBranch():
             return False
-        opcode = self.getOpcodeName()
-        if opcode in ("MFC1", "DMFC1", "CFC1"):
+        if self.uniqueId in (InstructionId.MFC1, InstructionId.DMFC1, InstructionId.CFC1):
             return True
         # TODO
         return super().modifiesRt()
     def modifiesRd(self) -> bool:
-        opcode = self.getOpcodeName()
         # modifying fs shouldn't be the same as modifying rd
-        #if opcode in ("MTC1", "DMTC1", "CTC1"):
+        #if self.uniqueId in (InstructionId.MTC1, InstructionId.DMTC1, InstructionId.CTC1):
         #    return True
         # TODO
         return super().modifiesRd()
@@ -141,50 +157,8 @@ class InstructionCoprocessor1(InstructionBase):
             self.rd = 0
             self.sa = 0
 
-    def getFmtStr(self, fmt: int) -> str:
-        fmt_low = fmt & 0x07
-        if fmt_low == 0b000:
-            return "S"
-        elif fmt_low == 0b001:
-            return "D"
-        elif fmt_low == 0b100:
-            return "W"
-        elif fmt_low == 0b101:
-            return "L"
-        return toHex(fmt, 2)
-
     def getOpcodeName(self) -> str:
-        if self.fmt in InstructionCoprocessor1.Cop1Opcodes_ByFormat:
-            return InstructionCoprocessor1.Cop1Opcodes_ByFormat[self.fmt]
-
-        if self.fmt == 0b01_000: # fmt = BC
-            tf = (self.instr >> 16) & 0x01
-            nd = (self.instr >> 17) & 0x01
-            opcodeName = "BC1"
-            if tf: # Branch on FP True
-                opcodeName += "T"
-            else: # Branch on FP False
-                opcodeName += "F"
-            if nd: # Likely
-                opcodeName += "L"
-            return opcodeName
-
-        fmt = self.getFmtStr(self.fmt)
-
-        if self.function in InstructionCoprocessor1.Cop1Opcodes_ByFunction:
-            opcode = InstructionCoprocessor1.Cop1Opcodes_ByFunction[self.function]
-            return f"{opcode}.{fmt}"
-
-        if self.fc == 0b11:
-            cond = InstructionCoprocessor1.CompareConditionsCodes[self.cond]
-            return f"C.{cond}.{fmt}"
-
-        if self.fc == 0b10:
-            dst_fmt = self.getFmtStr(self.function)
-            return f"CVT.{dst_fmt}.{fmt}"
-
-        function = toHex(self.function, 2)
-        return f"COP1.{fmt}({function})"
+        return super().getOpcodeName().replace("_", ".")
 
 
     def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:

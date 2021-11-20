@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from ..Utils import *
 from ..MipsContext import Context
-
+from .MipsConstants import InstructionId
 
 class InstructionBase:
     Cop0RegisterNames = {
@@ -85,6 +85,8 @@ class InstructionBase:
         self.sa = (instr >>  6) & 0x1F
         self.function = (instr >> 0) & 0x3F
 
+        self.uniqueId: InstructionId = InstructionId.INVALID
+
         self.ljustWidthOpcode = 7+4
 
     @property
@@ -130,7 +132,7 @@ class InstructionBase:
 
 
     def isImplemented(self) -> bool:
-        return False
+        return self.uniqueId != InstructionId.INVALID
 
     def isFloatInstruction(self) -> bool:
         return False
@@ -152,7 +154,11 @@ class InstructionBase:
 
 
     def sameOpcode(self, other: InstructionBase) -> bool:
-        return self.opcode == other.opcode
+        if self.uniqueId == InstructionId.INVALID:
+            return False
+        if other.uniqueId == InstructionId.INVALID:
+            return False
+        return self.uniqueId == other.uniqueId
 
     def sameBaseRegister(self, other: InstructionBase):
         return self.baseRegister == other.baseRegister
@@ -180,6 +186,8 @@ class InstructionBase:
 
 
     def getOpcodeName(self) -> str:
+        if self.uniqueId != InstructionId.INVALID:
+            return self.uniqueId.name
         opcode = toHex(self.opcode, 2)
         return f"({opcode})"
 

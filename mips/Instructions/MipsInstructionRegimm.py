@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from mips.Instructions.MipsConstants import InstructionId
+
 from ..Utils import *
 
 from .MipsInstructionBase import InstructionBase
@@ -9,47 +11,43 @@ from ..MipsContext import Context
 
 
 class InstructionRegimm(InstructionBase):
-    RegimmOpcodes = {
-        0b00_000: "BLTZ",
-        0b00_001: "BGEZ",
-        0b00_010: "BLTZL",
-        0b00_011: "BGEZL",
+    RegimmOpcodes: Dict[int, InstructionId] = {
+        0b00_000: InstructionId.BLTZ,
+        0b00_001: InstructionId.BGEZ,
+        0b00_010: InstructionId.BLTZL,
+        0b00_011: InstructionId.BGEZL,
 
-        0b01_000: "TGEI",
-        0b01_001: "TGEIU",
-        0b01_010: "TLTI",
-        0b01_011: "TLTIU",
+        0b01_000: InstructionId.TGEI,
+        0b01_001: InstructionId.TGEIU,
+        0b01_010: InstructionId.TLTI,
+        0b01_011: InstructionId.TLTIU,
 
-        0b10_000: "BLTZAL",
-        0b10_001: "BGEZAL",
-        0b10_010: "BLTZALL",
-        0b10_011: "BGEZALL",
+        0b10_000: InstructionId.BLTZAL,
+        0b10_001: InstructionId.BGEZAL,
+        0b10_010: InstructionId.BLTZALL,
+        0b10_011: InstructionId.BGEZALL,
 
-        0b01_100: "TEQI",
-        0b01_110: "TNEI",
+        0b01_100: InstructionId.TEQI,
+        0b01_110: InstructionId.TNEI,
     }
 
-    def isImplemented(self) -> bool:
-        return self.rt in InstructionRegimm.RegimmOpcodes
+    def __init__(self, instr: int):
+        super().__init__(instr)
+
+        self.uniqueId = InstructionRegimm.RegimmOpcodes.get(self.rt, InstructionId.INVALID)
 
 
     def isBranch(self) -> bool:
-        opcode = self.getOpcodeName()
-        if opcode in ("BLTZ", "BGEZ", "BLTZL", "BGEZL"):
+        if self.uniqueId in (InstructionId.BLTZ, InstructionId.BGEZ, InstructionId.BLTZL, InstructionId.BGEZL):
             return True
-        if opcode in ("BLTZAL", "BGEZAL", "BLTZALL", "BGEZALL"):
+        if self.uniqueId in (InstructionId.BLTZAL, InstructionId.BGEZAL, InstructionId.BLTZALL, InstructionId.BGEZALL):
             return True
         return False
     def isTrap(self) -> bool:
-        opcode = self.getOpcodeName()
-        return opcode in ("TGEI", "TGEIU", "TLTI", "TLTIU", "TEQI", "TNEI")
-
-
-    def sameOpcode(self, other: InstructionBase) -> bool:
-        if self.opcode != other.opcode:
-            return False
-
-        return self.rt == other.rt
+        if self.uniqueId in (InstructionId.TGEI, InstructionId.TGEIU, InstructionId.TLTI, InstructionId.TLTIU,
+                             InstructionId.TEQI, InstructionId.TNEI):
+            return True
+        return False
 
 
     def modifiesRt(self) -> bool:
@@ -63,11 +61,6 @@ class InstructionRegimm(InstructionBase):
         self.rd = 0
         self.sa = 0
         self.function = 0
-
-
-    def getOpcodeName(self) -> str:
-        opcode = toHex(self.rt, 2)
-        return InstructionRegimm.RegimmOpcodes.get(self.rt, f"REGIMM({opcode})")
 
 
     # OP  rs, IMM
