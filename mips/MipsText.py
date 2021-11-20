@@ -8,7 +8,7 @@ from .MipsFileBase import FileBase
 from .MipsSection import Section
 from .Instructions import InstructionBase, wordToInstruction, InstructionId, InstructionCoprocessor0, InstructionCoprocessor2
 from .MipsFunction import Function
-from .MipsContext import Context
+from .MipsContext import Context, ContextSymbol
 
 
 class Text(Section):
@@ -161,18 +161,32 @@ class Text(Section):
                 if funcSymbol is not None:
                     funcName = funcSymbol.name
                 else:
-                    funcName = "func_" + toHex(self.getVramOffset(start*4), 6)[2:]
+                    funcName = "func_" + toHex(vram, 6)[2:]
+                    if self.newStuffSuffix:
+                        if vram >= self.vRamStart:
+                            funcName += f"_{self.newStuffSuffix}"
 
                 if not hasUnimplementedIntrs:
                     self.context.addFunction(self.filename, vram, funcName)
                     funcSymbol = self.context.getFunction(vram)
                     if funcSymbol is not None:
                         funcSymbol.isDefined = True
+                else:
+                    if vram in self.context.symbols:
+                        self.context.symbols[vram].isDefined = True
+                    else:
+                        contextSym = ContextSymbol(vram, "D_" + toHex(vram, 6)[2:])
+                        contextSym.isDefined = True
+                        if self.newStuffSuffix:
+                            if vram >= self.vRamStart:
+                                contextSym.name += f"_{self.newStuffSuffix}"
+                        self.context.symbols[vram] = contextSym
 
             func = Function(funcName, instructions[start:end], self.context, self.offset + start*4, vram=vram)
             func.index = i
             func.pointersOffsets += self.pointersOffsets
             func.hasUnimplementedIntrs = hasUnimplementedIntrs
+            func.parent = self
             func.analyze()
             self.functions.append(func)
             i += 1

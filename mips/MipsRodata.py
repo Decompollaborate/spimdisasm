@@ -18,9 +18,9 @@ class Rodata(Section):
 
 
     def analyze(self):
-        offset = 0
-        partOfJumpTable = False
         if self.vRamStart > -1:
+            offset = 0
+            partOfJumpTable = False
             for w in self.words:
                 currentVram = self.getVramOffset(offset)
                 if currentVram in self.context.jumpTables:
@@ -40,9 +40,14 @@ class Rodata(Section):
                     if w not in self.context.jumpTablesLabels:
                         self.context.jumpTablesLabels[w] = f"L{toHex(w, 8)[2:]}"
 
-                auxLabel = self.context.getGenericLabel(currentVram) or self.context.getGenericSymbol(currentVram, tryPlusOffset=False)
+                auxLabel = self.context.getGenericLabel(currentVram)
                 if auxLabel is not None:
                     self.symbolsVRams.add(currentVram)
+
+                contextSymbol = self.context.getSymbol(currentVram, tryPlusOffset=False)
+                if contextSymbol is not None:
+                    self.symbolsVRams.add(currentVram)
+                    contextSymbol.isDefined = True
 
                 offset += 4
 

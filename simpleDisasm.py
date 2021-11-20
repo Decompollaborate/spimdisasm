@@ -13,7 +13,7 @@ from mips.MipsBss import Bss
 from mips.MipsContext import Context
 
 
-def simpleDisasmFile(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context):
+def simpleDisasmFile(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context, newStuffSuffix: str=""):
     head, tail = os.path.split(outputPath)
 
     if offsetEnd >= 0:
@@ -24,12 +24,13 @@ def simpleDisasmFile(array_of_bytes: bytearray, outputPath: str, offsetStart: in
         array_of_bytes = array_of_bytes[offsetStart:]
 
     f = Text(array_of_bytes, tail, "ver", context)
+    f.newStuffSuffix = newStuffSuffix
 
     if vram >= 0:
         print(f"Using VRAM {toHex(vram, 2)}")
         f.setVRamStart(vram)
 
-    print("Analzing")
+    print("Analyzing")
     f.analyze()
     f.setCommentOffset(offsetStart)
 
@@ -67,7 +68,7 @@ def simpleDisasmFile(array_of_bytes: bytearray, outputPath: str, offsetStart: in
     return f
 
 
-def simpleDisasmData(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context):
+def simpleDisasmData(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context, newStuffSuffix: str=""):
     head, tail = os.path.split(outputPath)
 
     if offsetEnd >= 0:
@@ -78,12 +79,13 @@ def simpleDisasmData(array_of_bytes: bytearray, outputPath: str, offsetStart: in
         array_of_bytes = array_of_bytes[offsetStart:]
 
     f = Data(array_of_bytes, tail, "ver", context)
+    f.newStuffSuffix = newStuffSuffix
 
     if vram >= 0:
         print(f"Using VRAM {toHex(vram, 2)}")
         f.setVRamStart(vram)
 
-    print("Analzing")
+    print("Analyzing")
     f.analyze()
     f.setCommentOffset(offsetStart)
 
@@ -92,7 +94,7 @@ def simpleDisasmData(array_of_bytes: bytearray, outputPath: str, offsetStart: in
     return f
 
 
-def simpleDisasmRodata(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context):
+def simpleDisasmRodata(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context, newStuffSuffix: str=""):
     head, tail = os.path.split(outputPath)
 
     if offsetEnd >= 0:
@@ -103,12 +105,13 @@ def simpleDisasmRodata(array_of_bytes: bytearray, outputPath: str, offsetStart: 
         array_of_bytes = array_of_bytes[offsetStart:]
 
     f = Rodata(array_of_bytes, tail, "ver", context)
+    f.newStuffSuffix = newStuffSuffix
 
     if vram >= 0:
         print(f"Using VRAM {toHex(vram, 2)}")
         f.setVRamStart(vram)
 
-    print("Analzing")
+    print("Analyzing")
     f.analyze()
     f.setCommentOffset(offsetStart)
 
@@ -117,25 +120,39 @@ def simpleDisasmRodata(array_of_bytes: bytearray, outputPath: str, offsetStart: 
     return f
 
 
-def simpleDisasmBss(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context):
+def simpleDisasmBss(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context, newStuffSuffix: str=""):
     head, tail = os.path.split(outputPath)
 
     if vram < 0:
         return
 
     f = Bss(vram, vram + offsetEnd - offsetStart, tail, "ver", context)
+    f.newStuffSuffix = newStuffSuffix
 
     if vram >= 0:
         print(f"Using VRAM {toHex(vram, 2)}")
         f.setVRamStart(vram)
 
-    print("Analzing")
+    print("Analyzing")
     f.analyze()
     f.setCommentOffset(offsetStart)
 
     print()
 
     return f
+
+
+def writeSection(x):
+    path, f = x
+
+    head, tail = os.path.split(path)
+
+    # Create directories
+    os.makedirs(head, exist_ok=True)
+
+    f.saveToFile(path)
+
+    return path
 
 
 def disassemblerMain():
@@ -148,10 +165,11 @@ def disassemblerMain():
     parser.add_argument("--end", help="",  default="0xFFFFFF")
     parser.add_argument("--vram", help="Set the VRAM address", default="-1")
     parser.add_argument("--save-context", help="Saves the context to a file. The provided filename will be suffixed with the corresponding version.", metavar="FILENAME")
-    parser.add_argument("--functions", help="Path to a functions csv")
-    parser.add_argument("--variables", help="Path to a variables csv")
+    parser.add_argument("--functions", help="Path to a functions csv", action="append")
+    parser.add_argument("--variables", help="Path to a variables csv", action="append")
     parser.add_argument("--file-splits", help="Path to a file splits csv")
     parser.add_argument("--disable-stderr-progress", help="When stdout is redericted a progress status is printed to stderr. Pass this flag to disable this behaviour",  action="store_true")
+    parser.add_argument("--add-filename", help="Adds the filename of the file to the generated function/variable name")
     args = parser.parse_args()
 
     GlobalConfig.REMOVE_POINTERS = False
@@ -164,19 +182,24 @@ def disassemblerMain():
     GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET = True
     GlobalConfig.TRUST_USER_FUNCTIONS = True
 
+    newStuffSuffix = args.add_filename
+    if newStuffSuffix is None:
+        newStuffSuffix = ""
+
     context = Context()
-    if args.functions is not None:
-        context.readFunctionsCsv(args.functions)
-    if args.variables is not None:
-        context.readVariablesCsv(args.variables)
+    for funcsPath in args.functions:
+        context.readFunctionsCsv(funcsPath)
+    for varsPath in args.variables:
+        context.readVariablesCsv(varsPath)
 
     array_of_bytes = readFileAsBytearray(args.binary)
     input_name = os.path.splitext(os.path.split(args.binary)[1])[0]
 
     processedFiles = []
+    lenLastLine = 80
 
     if args.file_splits is None:
-        f =  simpleDisasmFile(array_of_bytes, args.output, int(args.start, 16), int(args.end, 16), int(args.vram, 16), context)
+        f =  simpleDisasmFile(array_of_bytes, args.output, int(args.start, 16), int(args.end, 16), int(args.vram, 16), context, newStuffSuffix)
         processedFiles.append((args.output, f))
     else:
         splits = readCsv(args.file_splits)
@@ -184,7 +207,6 @@ def disassemblerMain():
         splits = [x for x in splits if len(x) > 0]
 
         splitsCount = len(splits)
-        lenLastLine = 80
 
         modeCallback = None
         outputPath = args.output
@@ -193,8 +215,8 @@ def disassemblerMain():
 
             if isStdoutRedirected() and not args.disable_stderr_progress:
                 eprint(lenLastLine*" " + "\r", end="")
-                progressStr = f" Analizing: {round(i/splitsCount * 100, 1)}%. File: {fileName}\r"
-                lenLastLine = len(progressStr)
+                progressStr = f" Analyzing: {i/splitsCount:%}. File: {fileName}\r"
+                lenLastLine = max(len(progressStr), lenLastLine)
                 eprint(progressStr, end="")
 
             if fileName == ".text":
@@ -233,29 +255,22 @@ def disassemblerMain():
             if modeCallback is None:
                 eprint("Error! Section not set!")
                 exit(1)
-            f = modeCallback(array_of_bytes, f"{outputPath}/{fileName}", offset, nextOffset, vram, context)
+            f = modeCallback(array_of_bytes, f"{outputPath}/{fileName}", offset, nextOffset, vram, context, newStuffSuffix)
             processedFiles.append((f"{outputPath}/{fileName}", f))
             print()
 
-
     processedFilesCount = len(processedFiles)
-    lenLastLine = 80
 
     print("Writing files...")
     for i, (path, f) in enumerate(processedFiles):
         if isStdoutRedirected() and not args.disable_stderr_progress:
             eprint(lenLastLine*" " + "\r", end="")
-            progressStr = f" Writing: {round(i/processedFilesCount * 100, 1)}%. File: {path}\r"
-            lenLastLine = len(progressStr)
+            progressStr = f" Writing: {i/processedFilesCount:%}. File: {path}\r"
+            lenLastLine = max(len(progressStr), lenLastLine)
             eprint(progressStr, end="")
-
-        head, tail = os.path.split(path)
-
-        # Create directories
-        os.makedirs(head, exist_ok=True)
-
         print(f"Writing {path}")
-        f.saveToFile(path)
+
+        writeSection((path, f))
 
     if args.save_context is not None:
         head, tail = os.path.split(args.save_context)
