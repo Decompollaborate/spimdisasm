@@ -95,14 +95,20 @@ class Text(Section):
                         # Whatever we are reading is not a valid instruction
                         break
                     # make sure to not branch outside of the current function
-                    j = len(funcsStartsList) - 1
-                    while j >= 0:
-                        if index + branch < funcsStartsList[j]:
-                            del funcsStartsList[j]
-                            del unimplementedInstructionsFuncList[j-1]
-                        else:
-                            break
-                        j -= 1
+                    if not isLikelyHandwritten:
+                        j = len(funcsStartsList) - 1
+                        while j >= 0:
+                            if index + branch < funcsStartsList[j]:
+                                if GlobalConfig.TRUST_USER_FUNCTIONS:
+                                    vram = self.getVramOffset(funcsStartsList[j]*4)
+                                    if self.context.getFunction(vram) is not None:
+                                        j -= 1
+                                        continue
+                                del funcsStartsList[j]
+                                del unimplementedInstructionsFuncList[j-1]
+                            else:
+                                break
+                            j -= 1
 
             elif instr.isIType():
                 isLui = instr.uniqueId == InstructionId.LUI
