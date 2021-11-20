@@ -21,6 +21,8 @@ class FileBase:
 
         self.pointersOffsets: List[int] = list()
 
+        self.newStuffSuffix = ""
+
     @property
     def size(self) -> int:
         return len(self.bytes)

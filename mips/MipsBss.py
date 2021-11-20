@@ -16,6 +16,28 @@ class Bss(Section):
         self.bssVramStart: int = bssVramStart
         self.bssVramEnd: int = bssVramEnd
 
+    def analyze(self):
+        if self.context.getSymbol(self.bssVramStart, False) is None:
+            contextSym = ContextSymbol(self.bssVramStart, "D_" + toHex(self.bssVramStart, 8)[2:])
+            contextSym.isDefined = True
+            if self.newStuffSuffix:
+                contextSym.name += f"_{self.newStuffSuffix}"
+            self.context.symbols[self.bssVramStart] = contextSym
+
+        sortedSymbols = sorted(self.context.symbols.items())
+        i = 0
+        while i < len(sortedSymbols):
+            symbolVram, symbol = sortedSymbols[i]
+            if symbolVram < self.bssVramStart:
+                i += 1
+                continue
+            if symbolVram >= self.bssVramEnd:
+                break
+
+            self.context.symbols[symbolVram].isDefined = True
+
+            i += 1
+
 
     def saveToFile(self, filepath: str):
         super().saveToFile(filepath + ".bss")
@@ -34,11 +56,6 @@ class Bss(Section):
             f.write(".section .bss\n")
             f.write("\n")
             f.write(".balign 16\n")
-
-            if self.context.getSymbol(self.bssVramStart, False) is None:
-                contextVar = ContextSymbol(self.bssVramStart, "D_" + toHex(self.bssVramStart, 8)[2:])
-                contextVar.isDefined = True
-                self.context.symbols[self.bssVramStart] = contextVar
 
             offset = 0
             inFileOffset = self.offset

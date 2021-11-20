@@ -29,12 +29,23 @@ class Function:
 
         self.hasUnimplementedIntrs: bool = False
 
+        self.parent: Any = None
+
     @property
     def nInstr(self) -> int:
         return len(self.instructions)
 
     def analyze(self):
         if self.hasUnimplementedIntrs:
+            if self.vram > -1 and self.context is not None:
+                offset = 0
+                for instr in self.instructions:
+                    currentVram = self.vram + offset
+                    contextSym = self.context.getSymbol(currentVram, False)
+                    if contextSym is not None:
+                        contextSym.isDefined = True
+
+                    offset += 4
             return
 
         trackedRegisters: Dict[int, int] = dict()
@@ -94,13 +105,16 @@ class Function:
                         self.referencedVRams.add(address)
                         if self.context.getGenericSymbol(address) is None:
                             if GlobalConfig.ADD_NEW_SYMBOLS:
-                                contextVar = ContextSymbol(address, "D_" + toHex(address, 8)[2:])
+                                contextSym = ContextSymbol(address, "D_" + toHex(address, 8)[2:])
                                 if instr.isFloatInstruction():
                                     if instr.isDoubleFloatInstruction():
-                                        contextVar.type = "f64"
+                                        contextSym.type = "f64"
                                     else:
-                                        contextVar.type = "f32"
-                                self.context.symbols[address] = contextVar
+                                        contextSym.type = "f32"
+                                if self.parent.newStuffSuffix:
+                                    if address >= self.vram:
+                                        contextSym.name += f"_{self.parent.newStuffSuffix}"
+                                self.context.symbols[address] = contextSym
                         self.pointersPerInstruction[instructionOffset] = address
                         self.pointersPerInstruction[trackedRegisters[rs]*4] = address
                         registersValues[instr.rt] = address

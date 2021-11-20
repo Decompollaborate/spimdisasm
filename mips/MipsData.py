@@ -9,6 +9,19 @@ from .MipsSection import Section
 
 
 class Data(Section):
+    def analyze(self):
+        if self.vRamStart > -1:
+            offset = 0
+            for w in self.words:
+                currentVram = self.getVramOffset(offset)
+
+                contextSymbol = self.context.getSymbol(currentVram, tryPlusOffset=False)
+                if contextSymbol is not None:
+                    contextSymbol.isDefined = True
+
+                offset += 4
+
+
     def removePointers(self) -> bool:
         if not GlobalConfig.REMOVE_POINTERS:
             return False
