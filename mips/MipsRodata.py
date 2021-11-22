@@ -112,6 +112,8 @@ class Rodata(Section):
                                 isDouble = True
                     elif type == "char":
                         isAsciz = True
+                        if contextVar.vram != currentVram:
+                            typeSize = 0x10000
 
                     if contextVar.vram == currentVram:
                         contextVar.isDefined = True
@@ -139,7 +141,7 @@ class Rodata(Section):
             value = f'"{decodedValue}"'
             value += "\n" + (24 * " ") + ".balign 4"
             rodataHex = ""
-            skip = (typeSize - 1) // 4
+            skip = j // 4
         elif w in self.context.jumpTablesLabels:
             value = self.context.jumpTablesLabels[w]
 
