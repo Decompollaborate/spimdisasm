@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from mips.Instructions.MipsConstants import InstructionId
+from .MipsConstants import InstructionId
 
 from ..Utils import *
 
