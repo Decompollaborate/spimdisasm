@@ -5,7 +5,7 @@ from __future__ import annotations
 import ast
 from sortedcontainers import SortedDict
 
-from mips.GlobalConfig import GlobalConfig
+from .GlobalConfig import GlobalConfig
 
 from .Utils import *
 
