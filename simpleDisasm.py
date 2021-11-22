@@ -170,6 +170,7 @@ def disassemblerMain():
     parser.add_argument("--file-splits", help="Path to a file splits csv")
     parser.add_argument("--disable-stderr-progress", help="When stdout is redericted a progress status is printed to stderr. Pass this flag to disable this behaviour",  action="store_true")
     parser.add_argument("--add-filename", help="Adds the filename of the file to the generated function/variable name")
+    parser.add_argument("--disasm-unknown", help="",  action="store_true")
     args = parser.parse_args()
 
     GlobalConfig.REMOVE_POINTERS = False
@@ -181,6 +182,7 @@ def disassemblerMain():
     GlobalConfig.ASM_COMMENT = True
     GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET = True
     GlobalConfig.TRUST_USER_FUNCTIONS = True
+    GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS = args.disasm_unknown
 
     newStuffSuffix = args.add_filename
     if newStuffSuffix is None:

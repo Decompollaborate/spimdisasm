@@ -36,7 +36,7 @@ class Function:
         return len(self.instructions)
 
     def analyze(self):
-        if self.hasUnimplementedIntrs:
+        if not GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS and self.hasUnimplementedIntrs:
             if self.vram > -1 and self.context is not None:
                 offset = 0
                 for instr in self.instructions:
@@ -55,11 +55,9 @@ class Function:
         for instr in self.instructions:
             isLui = False
 
-            if not instr.isImplemented():
+            if not GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS and not instr.isImplemented():
                 # Abort analysis
                 self.hasUnimplementedIntrs = True
-                if self.vram in self.context.funcAddresses:
-                    del self.context.funcAddresses[self.vram]
                 return
 
             if instr.isBranch():
@@ -220,8 +218,9 @@ class Function:
     def disassemble(self) -> str:
         output = ""
 
-        if self.hasUnimplementedIntrs:
-            return self.disassembleAsData()
+        if not GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS:
+            if self.hasUnimplementedIntrs:
+                return self.disassembleAsData()
 
         output += f"glabel {self.name}"
         if GlobalConfig.FUNCTION_ASM_COUNT:
