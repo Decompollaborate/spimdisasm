@@ -85,6 +85,12 @@ class InstructionCoprocessor0(InstructionBase):
             self.rd = 0
             self.sa = 0
 
+    def getOpcodeName(self) -> str:
+        if self.uniqueId == InstructionId.INVALID:
+            opcode = toHex(self.function, 2)
+            return f"COP0({opcode})"
+        return super().getOpcodeName()
+
 
     def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName()

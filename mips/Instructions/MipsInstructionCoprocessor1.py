@@ -158,6 +158,9 @@ class InstructionCoprocessor1(InstructionBase):
             self.sa = 0
 
     def getOpcodeName(self) -> str:
+        if self.uniqueId == InstructionId.INVALID:
+            opcode = toHex(self.function, 2)
+            return f"COP1({opcode})"
         return super().getOpcodeName().replace("_", ".")
 
 

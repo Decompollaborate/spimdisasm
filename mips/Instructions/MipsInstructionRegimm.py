@@ -62,6 +62,12 @@ class InstructionRegimm(InstructionBase):
         self.sa = 0
         self.function = 0
 
+    def getOpcodeName(self) -> str:
+        if self.uniqueId == InstructionId.INVALID:
+            opcode = toHex(self.rt, 2)
+            return f"Regimm({opcode})"
+        return super().getOpcodeName()
+
 
     # OP  rs, IMM
     def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:

@@ -186,6 +186,12 @@ class InstructionNormal(InstructionBase):
             return False
         return super().modifiesRt()
 
+    def getOpcodeName(self) -> str:
+        if self.uniqueId == InstructionId.INVALID:
+            opcode = toHex(self.opcode, 2)
+            return f"Unknown({opcode})"
+        return super().getOpcodeName()
+
 
     def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName()

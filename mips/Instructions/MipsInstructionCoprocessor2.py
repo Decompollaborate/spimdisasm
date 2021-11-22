@@ -14,5 +14,5 @@ class InstructionCoprocessor2(InstructionBase):
 
 
     def getOpcodeName(self) -> str:
-        opcode = toHex(self.opcode, 2)
+        opcode = toHex(self.function, 2)
         return f"COP2({opcode})"

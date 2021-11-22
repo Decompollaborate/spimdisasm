@@ -172,7 +172,7 @@ class Text(Section):
                         if vram >= self.vRamStart:
                             funcName += f"_{self.newStuffSuffix}"
 
-                if not hasUnimplementedIntrs:
+                if GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS or not hasUnimplementedIntrs:
                     self.context.addFunction(self.filename, vram, funcName)
                     funcSymbol = self.context.getFunction(vram)
                     if funcSymbol is not None:
