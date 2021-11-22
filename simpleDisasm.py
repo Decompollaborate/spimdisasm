@@ -187,10 +187,12 @@ def disassemblerMain():
         newStuffSuffix = ""
 
     context = Context()
-    for funcsPath in args.functions:
-        context.readFunctionsCsv(funcsPath)
-    for varsPath in args.variables:
-        context.readVariablesCsv(varsPath)
+    if args.functions is not None:
+        for funcsPath in args.functions:
+            context.readFunctionsCsv(funcsPath)
+    if args.variables is not None:
+        for varsPath in args.variables:
+            context.readVariablesCsv(varsPath)
 
     array_of_bytes = readFileAsBytearray(args.binary)
     input_name = os.path.splitext(os.path.split(args.binary)[1])[0]
