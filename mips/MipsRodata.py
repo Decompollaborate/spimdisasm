@@ -132,6 +132,9 @@ class Rodata(Section):
             while j < typeSize and self.bytes[4*i + j] != 0:
                 buf.append(self.bytes[4*i + j])
                 j += 1
+            if self.bytes[4*i + j] != 0:
+                dotType = ".ascii"
+                buf.append(self.bytes[4*i + j])
             decodedValue = buf.decode("EUC-JP").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t").replace("\t", "\\t")
             value = f'"{decodedValue}"'
             value += "\n" + (24 * " ") + ".balign 4"
