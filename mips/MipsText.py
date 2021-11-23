@@ -38,7 +38,7 @@ class Text(Section):
         registersValues: Dict[int, int] = dict()
         instructionOffset = 0
 
-        isLikelyHandwritten = False
+        isLikelyHandwritten = self.isHandwritten
 
         isInstrImplemented = True
         index = 0
@@ -50,7 +50,7 @@ class Text(Section):
 
             if functionEnded:
                 functionEnded = False
-                isLikelyHandwritten = False
+                isLikelyHandwritten = self.isHandwritten
                 index += 1
                 instructionOffset += 4
                 isboundary = False

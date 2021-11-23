@@ -13,7 +13,7 @@ from mips.MipsBss import Bss
 from mips.MipsContext import Context
 
 
-def simpleDisasmFile(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context, newStuffSuffix: str=""):
+def simpleDisasmFile(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context, isHandwritten: bool=False, newStuffSuffix: str=""):
     head, tail = os.path.split(outputPath)
 
     if offsetEnd >= 0:
@@ -24,6 +24,7 @@ def simpleDisasmFile(array_of_bytes: bytearray, outputPath: str, offsetStart: in
         array_of_bytes = array_of_bytes[offsetStart:]
 
     f = Text(array_of_bytes, tail, "ver", context)
+    f.isHandwritten = isHandwritten
     f.newStuffSuffix = newStuffSuffix
 
     if vram >= 0:
@@ -68,7 +69,7 @@ def simpleDisasmFile(array_of_bytes: bytearray, outputPath: str, offsetStart: in
     return f
 
 
-def simpleDisasmData(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context, newStuffSuffix: str=""):
+def simpleDisasmData(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context, isHandwritten: bool=False, newStuffSuffix: str=""):
     head, tail = os.path.split(outputPath)
 
     if offsetEnd >= 0:
@@ -79,6 +80,7 @@ def simpleDisasmData(array_of_bytes: bytearray, outputPath: str, offsetStart: in
         array_of_bytes = array_of_bytes[offsetStart:]
 
     f = Data(array_of_bytes, tail, "ver", context)
+    f.isHandwritten = isHandwritten
     f.newStuffSuffix = newStuffSuffix
 
     if vram >= 0:
@@ -94,7 +96,7 @@ def simpleDisasmData(array_of_bytes: bytearray, outputPath: str, offsetStart: in
     return f
 
 
-def simpleDisasmRodata(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context, newStuffSuffix: str=""):
+def simpleDisasmRodata(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context, isHandwritten: bool=False, newStuffSuffix: str=""):
     head, tail = os.path.split(outputPath)
 
     if offsetEnd >= 0:
@@ -105,6 +107,7 @@ def simpleDisasmRodata(array_of_bytes: bytearray, outputPath: str, offsetStart: 
         array_of_bytes = array_of_bytes[offsetStart:]
 
     f = Rodata(array_of_bytes, tail, "ver", context)
+    f.isHandwritten = isHandwritten
     f.newStuffSuffix = newStuffSuffix
 
     if vram >= 0:
@@ -120,13 +123,14 @@ def simpleDisasmRodata(array_of_bytes: bytearray, outputPath: str, offsetStart: 
     return f
 
 
-def simpleDisasmBss(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context, newStuffSuffix: str=""):
+def simpleDisasmBss(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context, isHandwritten: bool=False, newStuffSuffix: str=""):
     head, tail = os.path.split(outputPath)
 
     if vram < 0:
         return
 
     f = Bss(vram, vram + offsetEnd - offsetStart, tail, "ver", context)
+    f.isHandwritten = isHandwritten
     f.newStuffSuffix = newStuffSuffix
 
     if vram >= 0:
@@ -203,11 +207,10 @@ def disassemblerMain():
     lenLastLine = 80
 
     if args.file_splits is None:
-        f =  simpleDisasmFile(array_of_bytes, args.output, int(args.start, 16), int(args.end, 16), int(args.vram, 16), context, newStuffSuffix)
+        f =  simpleDisasmFile(array_of_bytes, args.output, int(args.start, 16), int(args.end, 16), int(args.vram, 16), context, False, newStuffSuffix)
         processedFiles.append((args.output, f))
     else:
         splits = readCsv(args.file_splits)
-
         splits = [x for x in splits if len(x) > 0]
 
         splitsCount = len(splits)
@@ -216,6 +219,12 @@ def disassemblerMain():
         outputPath = args.output
         for i, row in enumerate(splits):
             offset, vram, fileName = row
+
+            isHandwritten = False
+            offset = offset.upper()
+            if offset[-1] == "H":
+                isHandwritten = True
+                offset = offset[:-1]
 
             if isStdoutRedirected() and not args.disable_stderr_progress:
                 eprint(lenLastLine*" " + "\r", end="")
@@ -247,11 +256,14 @@ def disassemblerMain():
             nextOffset = 0xFFFFFF
             if i + 1 < len(splits):
                 if splits[i+1][2] == ".end":
-                    nextOffset = int(splits[i+1][0], 16)
+                    nextOffsetStr = splits[i+1][0]
                 elif splits[i+1][2].startswith("."):
-                    nextOffset = int(splits[i+2][0], 16)
+                    nextOffsetStr = splits[i+2][0]
                 else:
-                    nextOffset = int(splits[i+1][0], 16)
+                    nextOffsetStr = splits[i+1][0]
+                if nextOffsetStr.upper()[-1] == "H":
+                    nextOffsetStr = nextOffsetStr[:-1]
+                nextOffset = int(nextOffsetStr, 16)
 
             if fileName == "":
                 fileName = f"{input_name}_{vram:08X}"
@@ -259,7 +271,7 @@ def disassemblerMain():
             if modeCallback is None:
                 eprint("Error! Section not set!")
                 exit(1)
-            f = modeCallback(array_of_bytes, f"{outputPath}/{fileName}", offset, nextOffset, vram, context, newStuffSuffix)
+            f = modeCallback(array_of_bytes, f"{outputPath}/{fileName}", offset, nextOffset, vram, context, isHandwritten, newStuffSuffix)
             processedFiles.append((f"{outputPath}/{fileName}", f))
             print()
 
