@@ -118,6 +118,10 @@ class InstructionNormal(InstructionBase):
                              InstructionId.BEQZ, InstructionId.BNEZ, InstructionId.B):
             return True
         return super().isBranch()
+    def isBranchLikely(self) -> bool:
+        if self.uniqueId in (InstructionId.BEQL, InstructionId.BLEZL, InstructionId.BNEL, InstructionId.BGTZL):
+            return True
+        return False
 
     # OP LABEL
     def isJType(self) -> bool:

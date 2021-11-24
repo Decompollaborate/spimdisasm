@@ -43,6 +43,10 @@ class InstructionRegimm(InstructionBase):
         if self.uniqueId in (InstructionId.BLTZAL, InstructionId.BGEZAL, InstructionId.BLTZALL, InstructionId.BGEZALL):
             return True
         return False
+    def isBranchLikely(self) -> bool:
+        if self.uniqueId in (InstructionId.BLTZL, InstructionId.BGEZL, InstructionId.BLTZALL, InstructionId.BGEZALL):
+            return True
+        return False
     def isTrap(self) -> bool:
         if self.uniqueId in (InstructionId.TGEI, InstructionId.TGEIU, InstructionId.TLTI, InstructionId.TLTIU,
                              InstructionId.TEQI, InstructionId.TNEI):

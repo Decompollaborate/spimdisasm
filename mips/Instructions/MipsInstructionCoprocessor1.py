@@ -115,6 +115,10 @@ class InstructionCoprocessor1(InstructionBase):
         if self.uniqueId in (InstructionId.BC1T, InstructionId.BC1TL, InstructionId.BC1F, InstructionId.BC1FL):
             return True
         return False
+    def isBranchLikely(self) -> bool:
+        if self.uniqueId in (InstructionId.BC1TL, InstructionId.BC1FL):
+            return True
+        return False
 
     def isBinaryOperation(self) -> bool:
         if self.uniqueId in (InstructionId.ADD_S, InstructionId.ADD_D, InstructionId.SUB_S, InstructionId.SUB_D,

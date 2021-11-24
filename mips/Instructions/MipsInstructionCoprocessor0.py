@@ -53,6 +53,10 @@ class InstructionCoprocessor0(InstructionBase):
         if self.uniqueId in (InstructionId.BC0T, InstructionId.BC0TL, InstructionId.BC0F, InstructionId.BC0FL):
             return True
         return False
+    def isBranchLikely(self) -> bool:
+        if self.uniqueId in (InstructionId.BC0TL, InstructionId.BC0FL):
+            return True
+        return False
 
 
     def modifiesRt(self) -> bool:

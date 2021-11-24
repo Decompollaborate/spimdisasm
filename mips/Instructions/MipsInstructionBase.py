@@ -143,6 +143,8 @@ class InstructionBase:
 
     def isBranch(self) -> bool:
         return False
+    def isBranchLikely(self) -> bool:
+        return False
     def isTrap(self) -> bool:
         return False
 

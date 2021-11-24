@@ -93,7 +93,11 @@ class Function:
             elif instr.isIType():
                 # TODO: Consider following branches
                 isLui = instr.uniqueId == InstructionId.LUI
-                if isLui:
+                if self.instructions[instructionOffset//4 - 1].isBranchLikely():
+                    # If the previous instructions is a branch likely, then nulify the effects of this instruction
+                    # just for simplicity
+                    pass
+                elif isLui:
                     if instr.immediate >= 0x4000: # filter out stuff that may not be a real symbol
                         trackedRegisters[instr.rt] = instructionOffset//4
                     trackedRegistersAll[instr.rt] = instructionOffset//4
