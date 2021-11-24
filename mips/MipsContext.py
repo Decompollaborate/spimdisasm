@@ -54,6 +54,8 @@ class Context:
         # Functions jumped into Using J instead of JAL
         self.fakeFunctions: Dict[int, str] = dict()
 
+        self.constants: Dict[int, str] = dict()
+
 
     def getAnySymbol(self, vramAddress: int) -> str|None:
         if vramAddress in self.funcAddresses:
@@ -136,6 +138,12 @@ class Context:
     def getFunction(self, vramAddress: int) -> ContextSymbol|None:
         if vramAddress in self.funcAddresses:
             return self.funcAddresses[vramAddress]
+
+        return None
+
+    def getConstant(self, constantValue: int) -> str|None:
+        if constantValue in self.constants:
+            return self.constants[constantValue]
 
         return None
 
@@ -267,6 +275,21 @@ class Context:
             vram = int(vram, 16)
             self.addFunction(None, vram, funcName)
             self.funcAddresses[vram].isUserDefined = True
+
+    def readConstantsCsv(self, filepath: str):
+        if not os.path.exists(filepath):
+            return
+
+        constants_file = readCsv(filepath)
+        for row in constants_file:
+            if len(row) == 0:
+                continue
+
+            constantValue, constantName = row
+
+            constantValue = int(constantValue, 16)
+            self.constants[constantValue] = constantName
+
 
     def saveContextToFile(self, filepath: str):
         with open(filepath, "w") as f:

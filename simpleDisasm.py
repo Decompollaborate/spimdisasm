@@ -171,6 +171,7 @@ def disassemblerMain():
     parser.add_argument("--save-context", help="Saves the context to a file. The provided filename will be suffixed with the corresponding version.", metavar="FILENAME")
     parser.add_argument("--functions", help="Path to a functions csv", action="append")
     parser.add_argument("--variables", help="Path to a variables csv", action="append")
+    parser.add_argument("--constants", help="Path to a constants csv", action="append")
     parser.add_argument("--file-splits", help="Path to a file splits csv")
     parser.add_argument("--add-filename", help="Adds the filename of the file to the generated function/variable name")
     parser.add_argument("--disasm-unknown", help="Force disassembly of functions with unknown instructions",  action="store_true")
@@ -202,6 +203,9 @@ def disassemblerMain():
     if args.variables is not None:
         for varsPath in args.variables:
             context.readVariablesCsv(varsPath)
+    if args.constants is not None:
+        for constantsPath in args.constants:
+            context.readConstantsCsv(constantsPath)
 
     array_of_bytes = readFileAsBytearray(args.binary)
     input_name = os.path.splitext(os.path.split(args.binary)[1])[0]
