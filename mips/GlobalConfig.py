@@ -22,12 +22,22 @@ class GlobalConfig:
     TRUST_USER_FUNCTIONS: bool = True
     DISASSEMBLE_UNKNOWN_INSTRUCTIONS: bool = False
 
+    QUIET: bool = False
     VERBOSE: bool = False
 
+def printQuietless(*args, **kwargs):
+    if not GlobalConfig.QUIET:
+        print(*args, **kwargs)
+
+def epprintQuietless(*args, **kwargs):
+    if not GlobalConfig.QUIET:
+        print(*args, file=sys.stderr, **kwargs)
+
+
 def printVerbose(*args, **kwargs):
-    if GlobalConfig.VERBOSE:
+    if not GlobalConfig.QUIET and GlobalConfig.VERBOSE:
         print(*args, **kwargs)
 
 def eprintVerbose(*args, **kwargs):
-    if GlobalConfig.VERBOSE:
+    if not GlobalConfig.QUIET and GlobalConfig.VERBOSE:
         print(*args, file=sys.stderr, **kwargs)
