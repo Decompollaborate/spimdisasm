@@ -313,9 +313,13 @@ class Context:
 
             for address, symbol in self.symbols.items():
                 file = self.symbolToFile.get(address, "")
-                f.write(f"symbol,{file},{toHex(address, 8)},{symbol.name},{symbol.type},{symbol.size},{symbol.isDefined}\n")
+                f.write(f"symbol,{file},{toHex(address, 8)},{symbol.name},{symbol.type},{symbol.size},{symbol.isDefined or symbol.isUserDefined}\n")
 
             for address, name in self.fakeFunctions.items():
                 file = self.symbolToFile.get(address, "")
                 f.write(f"fake_function,{file},{toHex(address, 8)},{name},\n")
+
+            for address, name in self.constants.items():
+                file = self.symbolToFile.get(address, "")
+                f.write(f"constants,{file},{toHex(address, 8)},{name},\n")
 
