@@ -152,7 +152,8 @@ def writeSection(x):
     head, tail = os.path.split(path)
 
     # Create directories
-    os.makedirs(head, exist_ok=True)
+    if head != "":
+        os.makedirs(head, exist_ok=True)
 
     f.saveToFile(path)
 
@@ -290,7 +291,8 @@ def disassemblerMain():
 
     if args.save_context is not None:
         head, tail = os.path.split(args.save_context)
-        os.makedirs(head, exist_ok=True)
+        if head != "":
+            os.makedirs(head, exist_ok=True)
         name = tail
         extension = ""
         if "." in tail:
