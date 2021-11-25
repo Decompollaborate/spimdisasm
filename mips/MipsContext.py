@@ -78,6 +78,25 @@ class Context:
 
         return None
 
+    # Like getAnySymbol, but it doesn't search in self.symbols
+    def getAnyNonSymbol(self, vramAddress: int) -> str|None:
+        if vramAddress in self.funcAddresses:
+            return self.funcAddresses[vramAddress].name
+
+        if vramAddress in self.jumpTablesLabels:
+            return self.jumpTablesLabels[vramAddress]
+
+        if vramAddress in self.labels:
+            return self.labels[vramAddress]
+
+        if vramAddress in self.jumpTables:
+            return self.jumpTables[vramAddress]
+
+        if vramAddress in self.fakeFunctions:
+            return self.fakeFunctions[vramAddress]
+
+        return None
+
     def getGenericSymbol(self, vramAddress: int, tryPlusOffset: bool = True) -> str|None:
         if vramAddress in self.funcAddresses:
             return self.funcAddresses[vramAddress].name
@@ -162,33 +181,17 @@ class Context:
         if vramAddress in self.fakeFunctions:
             del self.fakeFunctions[vramAddress]
 
-        if vramAddress in self.symbols:
-            # ??
-            self.symbols[vramAddress].isDefined = True
-
     def addBranchLabel(self, vramAddress: int, name: str):
         if vramAddress not in self.labels:
             self.labels[vramAddress] = name
-
-        if vramAddress in self.symbols:
-            # ??
-            self.symbols[vramAddress].isDefined = True
 
     def addJumpTable(self, vramAddress: int, name: str):
         if vramAddress not in self.jumpTables:
             self.jumpTables[vramAddress] = name
 
-        if vramAddress in self.symbols:
-            # ??
-            self.symbols[vramAddress].isDefined = True
-
     def addFakeFunction(self, vramAddress: int, name: str):
         if vramAddress not in self.fakeFunctions:
             self.fakeFunctions[vramAddress] = name
-
-        if vramAddress in self.symbols:
-            # ??
-            self.symbols[vramAddress].isDefined = True
 
 
     def readFunctionMap(self, version: str):
@@ -312,6 +315,9 @@ class Context:
                 f.write(f"label,{file},{toHex(address, 8)},{name},\n")
 
             for address, symbol in self.symbols.items():
+                if self.getAnyNonSymbol(address) is not None:
+                    # Filter out symbols defined in other categories
+                    continue
                 file = self.symbolToFile.get(address, "")
                 f.write(f"symbol,{file},{toHex(address, 8)},{symbol.name},{symbol.type},{symbol.size},{symbol.isDefined or symbol.isUserDefined}\n")
 
