@@ -37,6 +37,32 @@ class Function:
     def nInstr(self) -> int:
         return len(self.instructions)
 
+
+    def _processSymbol(self, luiInstr: InstructionBase, luiOffset: int, lowerInstr: InstructionBase, lowerOffset: int) -> int:
+        upperHalf = luiInstr.immediate << 16
+        lowerHalf = from2Complement(lowerInstr.immediate, 16)
+        address = upperHalf + lowerHalf
+        self.referencedVRams.add(address)
+        if self.context.getGenericSymbol(address) is None:
+            if GlobalConfig.ADD_NEW_SYMBOLS:
+                contextSym = ContextSymbol(address, "D_" + toHex(address, 8)[2:])
+                if lowerInstr.isFloatInstruction():
+                    if lowerInstr.isDoubleFloatInstruction():
+                        contextSym.type = "f64"
+                    else:
+                        contextSym.type = "f32"
+                if self.parent.newStuffSuffix:
+                    if address >= self.vram:
+                        contextSym.name += f"_{self.parent.newStuffSuffix}"
+                self.context.symbols[address] = contextSym
+        #if lowerOffset not in self.pointersPerInstruction:
+        #    self.pointersPerInstruction[lowerOffset] = address
+        #if luiOffset not in self.pointersPerInstruction:
+        #    self.pointersPerInstruction[luiOffset] = address
+        self.pointersPerInstruction[lowerOffset] = address
+        self.pointersPerInstruction[luiOffset] = address
+        return address
+
     def analyze(self):
         if not GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS and self.hasUnimplementedIntrs:
             if self.vram > -1 and self.context is not None:
@@ -97,43 +123,29 @@ class Function:
                 if isLui:
                     if instr.immediate >= 0x4000: # filter out stuff that may not be a real symbol
                         if lastInstr.isBranch():
-                            # If the previous instructions is a branch likely, do a
+                            # If the previous instructions is a branch, do a
                             # look-ahead and check the branch target for possible pointers
                             diff = from2Complement(lastInstr.immediate, 16)
                             branch = instructionOffset + diff*4
-                            targetInstr = self.instructions[branch//4]
-                            if targetInstr.uniqueId == InstructionId.JR and targetInstr.getRegisterName(targetInstr.rs) == "$ra":
-                                # If the target instruction is a JR $ra, then look up its delay slot instead
-                                targetInstr = self.instructions[branch//4 + 1]
-                            if targetInstr.isIType() and targetInstr.rs == instr.rt:
-                                if targetInstr.uniqueId not in (InstructionId.LUI, InstructionId.ANDI, InstructionId.ORI, InstructionId.XORI, InstructionId.CACHE):
-                                    upperHalf = instr.immediate << 16
-                                    lowerHalf = from2Complement(targetInstr.immediate, 16)
-                                    address = upperHalf + lowerHalf
-                                    self.referencedVRams.add(address)
-                                    if self.context.getGenericSymbol(address) is None:
-                                        if GlobalConfig.ADD_NEW_SYMBOLS:
-                                            contextSym = ContextSymbol(address, "D_" + toHex(address, 8)[2:])
-                                            if targetInstr.isFloatInstruction():
-                                                if targetInstr.isDoubleFloatInstruction():
-                                                    contextSym.type = "f64"
-                                                else:
-                                                    contextSym.type = "f32"
-                                            if self.parent.newStuffSuffix:
-                                                if address >= self.vram:
-                                                    contextSym.name += f"_{self.parent.newStuffSuffix}"
-                                            self.context.symbols[address] = contextSym
-                                    self.pointersPerInstruction[instructionOffset] = address # Current instruction (LUI)
-                                    self.pointersPerInstruction[branch] = address # Target instruction
-                            if not (lastInstr.isBranchLikely() or lastInstr.uniqueId == InstructionId.B):
-                                # If the previous instructions is a branch likely, then nulify 
-                                # the effects of this instruction for future analysis
-                                trackedRegisters[instr.rt] = instructionOffset//4
+                            if branch > 0:
+                                targetInstr = self.instructions[branch//4]
+                                if targetInstr.uniqueId == InstructionId.JR and targetInstr.getRegisterName(targetInstr.rs) == "$ra":
+                                    # If the target instruction is a JR $ra, then look up its delay slot instead
+                                    targetInstr = self.instructions[branch//4 + 1]
+                                if targetInstr.isIType() and targetInstr.rs == instr.rt:
+                                    if targetInstr.uniqueId not in (InstructionId.LUI, InstructionId.ANDI, InstructionId.ORI, InstructionId.XORI, InstructionId.CACHE):
+                                        self._processSymbol(instr, instructionOffset, targetInstr, branch)
+
+                                if not (lastInstr.isBranchLikely() or lastInstr.uniqueId == InstructionId.B):
+                                    # If the previous instructions is a branch likely, then nulify 
+                                    # the effects of this instruction for future analysis
+                                    trackedRegisters[instr.rt] = instructionOffset//4
                         else:
                             trackedRegisters[instr.rt] = instructionOffset//4
                     trackedRegistersAll[instr.rt] = instructionOffset//4
                 else:
                     if instr.uniqueId == InstructionId.ORI:
+                        # Constants
                         rs = instr.rs
                         if rs in trackedRegistersAll:
                             luiInstr = self.instructions[trackedRegistersAll[rs]]
@@ -148,24 +160,7 @@ class Function:
                         rs = instr.rs
                         if rs in trackedRegisters:
                             luiInstr = self.instructions[trackedRegisters[rs]]
-                            upperHalf = luiInstr.immediate << 16
-                            lowerHalf = from2Complement(instr.immediate, 16)
-                            address = upperHalf + lowerHalf
-                            self.referencedVRams.add(address)
-                            if self.context.getGenericSymbol(address) is None:
-                                if GlobalConfig.ADD_NEW_SYMBOLS:
-                                    contextSym = ContextSymbol(address, "D_" + toHex(address, 8)[2:])
-                                    if instr.isFloatInstruction():
-                                        if instr.isDoubleFloatInstruction():
-                                            contextSym.type = "f64"
-                                        else:
-                                            contextSym.type = "f32"
-                                    if self.parent.newStuffSuffix:
-                                        if address >= self.vram:
-                                            contextSym.name += f"_{self.parent.newStuffSuffix}"
-                                    self.context.symbols[address] = contextSym
-                            self.pointersPerInstruction[instructionOffset] = address # Current instruction
-                            self.pointersPerInstruction[trackedRegisters[rs]*4] = address # LUI
+                            address = self._processSymbol(luiInstr, trackedRegisters[rs]*4, instr, instructionOffset)
                             registersValues[instr.rt] = address
 
             elif instr.uniqueId == InstructionId.JR:
@@ -210,6 +205,20 @@ class Function:
                         del trackedRegisters[rt]
                     if rt in trackedRegistersAll:
                         del trackedRegistersAll[rt]
+
+            # look-ahead symbol finder
+            lastInstr = self.instructions[instructionOffset//4 - 1]
+            if lastInstr.isBranch():
+                diff = from2Complement(lastInstr.immediate, 16)
+                branch = instructionOffset + diff*4
+                if branch > 0 and branch//4 < len(self.instructions):
+                    targetInstr = self.instructions[branch//4]
+                    if targetInstr.isIType():
+                        if targetInstr.uniqueId not in (InstructionId.LUI, InstructionId.ANDI, InstructionId.ORI, InstructionId.XORI, InstructionId.CACHE):
+                            rs = targetInstr.rs
+                            if rs in trackedRegisters:
+                                luiInstr = self.instructions[trackedRegisters[rs]]
+                                self._processSymbol(luiInstr, trackedRegisters[rs]*4, targetInstr, branch)
 
             instructionOffset += 4
 
