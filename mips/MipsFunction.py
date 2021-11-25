@@ -155,7 +155,15 @@ class Function:
                         del trackedRegistersAll[rt]
 
                 if instr.modifiesRd():
-                    if instr.uniqueId not in (InstructionId.ADDU,):
+                    # Usually array offsets use an ADDU to add the index of the array
+                    if instr.uniqueId == InstructionId.ADDU:
+                        if instr.rd != instr.rs and instr.rd != instr.rt:
+                            rd = instr.rd
+                            if rd in trackedRegisters:
+                                del trackedRegisters[rd]
+                            if rd in trackedRegistersAll:
+                                del trackedRegistersAll[rd]
+                    else:
                         rd = instr.rd
                         if rd in trackedRegisters:
                             del trackedRegisters[rd]
