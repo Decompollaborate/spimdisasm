@@ -200,6 +200,17 @@ class Function:
                         if rd in trackedRegistersAll:
                             del trackedRegistersAll[rd]
 
+            else:
+                if instr.uniqueId in (InstructionId.MTC1, InstructionId.DMTC1, InstructionId.CTC1):
+                    # IDO usually use a register as a temp when loading a constant value
+                    # into the float coprocessor, after that IDO never re-uses the value
+                    # in that register for anything else
+                    rt = instr.rt
+                    if rt in trackedRegisters:
+                        del trackedRegisters[rt]
+                    if rt in trackedRegistersAll:
+                        del trackedRegistersAll[rt]
+
             instructionOffset += 4
 
     def countDiffOpcodes(self, other: Function) -> int:
