@@ -55,12 +55,12 @@ class Function:
                     if address >= self.vram:
                         contextSym.name += f"_{self.parent.newStuffSuffix}"
                 self.context.symbols[address] = contextSym
-        #if lowerOffset not in self.pointersPerInstruction:
-        #    self.pointersPerInstruction[lowerOffset] = address
-        #if luiOffset not in self.pointersPerInstruction:
-        #    self.pointersPerInstruction[luiOffset] = address
-        self.pointersPerInstruction[lowerOffset] = address
-        self.pointersPerInstruction[luiOffset] = address
+
+        if lowerOffset not in self.pointersPerInstruction:
+            self.pointersPerInstruction[lowerOffset] = address
+        if luiOffset not in self.pointersPerInstruction:
+            self.pointersPerInstruction[luiOffset] = address
+
         return address
 
     def analyze(self):
