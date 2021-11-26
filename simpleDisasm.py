@@ -160,32 +160,45 @@ def writeSection(x):
 
 
 def disassemblerMain():
-    description = ""
+    description = "General purpose N64-mips disassembler"
     parser = argparse.ArgumentParser(description=description)
+
     parser.add_argument("binary", help="Path to input binary")
     parser.add_argument("output", help="Path to output")
+
     parser.add_argument("--data-output", help="Path to output the data and rodata disassembly")
+
     parser.add_argument("--start", help="", default="0")
     parser.add_argument("--end", help="",  default="0xFFFFFF")
     parser.add_argument("--vram", help="Set the VRAM address", default="-1")
+
     parser.add_argument("--save-context", help="Saves the context to a file. The provided filename will be suffixed with the corresponding version.", metavar="FILENAME")
+
     parser.add_argument("--functions", help="Path to a functions csv", action="append")
     parser.add_argument("--variables", help="Path to a variables csv", action="append")
     parser.add_argument("--constants", help="Path to a constants csv", action="append")
     parser.add_argument("--file-splits", help="Path to a file splits csv")
+
     parser.add_argument("--add-filename", help="Adds the filename of the file to the generated function/variable name")
+
     parser.add_argument("--disasm-unknown", help="Force disassembly of functions with unknown instructions",  action="store_true")
+
     parser.add_argument("-v", "--verbose", help="Enable verbose mode",  action="store_true")
     parser.add_argument("-q", "--quiet", help="Silence most output",  action="store_true")
+
+    parser.add_argument("--disable-asm-comments", help="Disables the comments in assembly code", action="store_true")
+    parser.add_argument("--write-binary", help="Produce a binary of the processed file", action="store_true")
+    parser.add_argument("--nuke-pointers", help="Use every technique available to remove pointers", action="store_true")
+
     args = parser.parse_args()
 
-    GlobalConfig.REMOVE_POINTERS = False
-    GlobalConfig.IGNORE_BRANCHES = False
-    GlobalConfig.IGNORE_04 = False
-    GlobalConfig.IGNORE_06 = False
-    GlobalConfig.IGNORE_80 = False
-    GlobalConfig.WRITE_BINARY = False
-    GlobalConfig.ASM_COMMENT = True
+    GlobalConfig.REMOVE_POINTERS = args.nuke_pointers
+    GlobalConfig.IGNORE_BRANCHES = args.nuke_pointers
+    GlobalConfig.IGNORE_04 = args.nuke_pointers
+    GlobalConfig.IGNORE_06 = args.nuke_pointers
+    GlobalConfig.IGNORE_80 = args.nuke_pointers
+    GlobalConfig.WRITE_BINARY = args.write_binary
+    GlobalConfig.ASM_COMMENT = not args.disable_asm_comments
     GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET = True
     GlobalConfig.TRUST_USER_FUNCTIONS = True
     GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS = args.disasm_unknown
@@ -283,6 +296,16 @@ def disassemblerMain():
             printVerbose()
 
     processedFilesCount = len(processedFiles)
+    if args.nuke_pointers:
+        printVerbose("Nuking pointers...")
+        for i, (path, f) in enumerate(processedFiles):
+            printVerbose(f"Nuking pointers of {path}")
+            printQuietless(lenLastLine*" " + "\r", end="")
+            progressStr = f" Nuking pointers: {i/processedFilesCount:%}. File: {path}\r"
+            lenLastLine = max(len(progressStr), lenLastLine)
+            printQuietless(progressStr, end="")
+
+            f.removePointers()
 
     printVerbose("Writing files...")
     for i, (path, f) in enumerate(processedFiles):
