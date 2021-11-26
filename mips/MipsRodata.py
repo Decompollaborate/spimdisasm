@@ -81,7 +81,6 @@ class Rodata(Section):
         isFloat = False
         isDouble = False
         isAsciz = False
-        typeSize = 0
         dotType = ".word"
         skip = 0
 
@@ -99,7 +98,6 @@ class Rodata(Section):
                 contextVar = self.context.getSymbol(currentVram, True, False)
                 if contextVar is not None:
                     type = contextVar.type
-                    typeSize = contextVar.size
                     if type in ("f32", "Vec3f"):
                         # Filter out NaN and infinity
                         if (w & 0x7F800000) != 0x7F800000:
@@ -112,8 +110,6 @@ class Rodata(Section):
                                 isDouble = True
                     elif type == "char":
                         isAsciz = True
-                        if contextVar.vram != currentVram:
-                            typeSize = 0x10000
 
                     if contextVar.vram == currentVram:
                         contextVar.isDefined = True
@@ -131,7 +127,7 @@ class Rodata(Section):
             dotType = ".asciz"
             j = 0
             buf = bytearray()
-            while j < typeSize and self.bytes[4*i + j] != 0:
+            while self.bytes[4*i + j] != 0:
                 buf.append(self.bytes[4*i + j])
                 j += 1
             if self.bytes[4*i + j] != 0:
