@@ -51,7 +51,10 @@ def simpleDisasmFile(array_of_bytes: bytearray, outputPath: str, offsetStart: in
                 funcOffset = func.vram - vram
                 if start <= funcOffset < end:
                     functionsInBoundary += 1
-            printVerbose("\t", toHex(start, 6)[2:], toHex(end-start, 3)[2:], "\t functions:", functionsInBoundary)
+            fileVram = 0
+            if vram > -1:
+                fileVram = start + vram
+            printVerbose("\t", toHex(start+offsetStart, 6)[2:], toHex(end-start, 4)[2:], toHex(fileVram, 8)[2:], "\t functions:", functionsInBoundary)
 
         start = f.fileBoundaries[-1]
         end = f.size + f.offset
@@ -61,7 +64,10 @@ def simpleDisasmFile(array_of_bytes: bytearray, outputPath: str, offsetStart: in
             funcOffset = func.vram - vram
             if start <= funcOffset < end:
                 functionsInBoundary += 1
-        printVerbose("\t", toHex(start, 6)[2:], toHex(end-start, 3)[2:], "\t functions:", functionsInBoundary)
+        fileVram = 0
+        if vram > -1:
+            fileVram = start + vram
+        printVerbose("\t", toHex(start+offsetStart, 6)[2:], toHex(end-start, 4)[2:], toHex(fileVram, 8)[2:], "\t functions:", functionsInBoundary)
 
         printVerbose()
 
