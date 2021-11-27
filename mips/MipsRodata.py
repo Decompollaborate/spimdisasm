@@ -6,7 +6,7 @@ from .Utils import *
 from .GlobalConfig import GlobalConfig
 from .MipsFileBase import FileBase
 from .MipsSection import Section
-from .MipsContext import Context
+from .MipsContext import Context, ContextSymbol
 
 
 class Rodata(Section):
@@ -39,6 +39,18 @@ class Rodata(Section):
                 if partOfJumpTable:
                     if w not in self.context.jumpTablesLabels:
                         self.context.jumpTablesLabels[w] = f"L{toHex(w, 8)[2:]}"
+                elif currentVram in self.context.newPointersInData:
+                    if self.context.getAnySymbol(currentVram) is None:
+                        contextSym = ContextSymbol(currentVram, "D_" + toHex(currentVram, 8)[2:])
+                        try:
+                            decodeString(self.bytes, offset)
+                            if self.bytes[offset] != 0:
+                                # Filter out empty strings
+                                contextSym.type = "char"
+                        except UnicodeDecodeError:
+                            pass
+                        self.context.symbols[currentVram] = contextSym
+                        self.context.newPointersInData.remove(currentVram)
 
                 auxLabel = self.context.getGenericLabel(currentVram)
                 if auxLabel is not None:
@@ -124,20 +136,17 @@ class Rodata(Section):
             rodataHex += toHex(otherHalf, 8)[2:]
             skip = 1
         elif isAsciz:
-            dotType = ".asciz"
-            j = 0
-            buf = bytearray()
-            while self.bytes[4*i + j] != 0:
-                buf.append(self.bytes[4*i + j])
-                j += 1
-            if self.bytes[4*i + j] != 0:
-                dotType = ".ascii"
-                buf.append(self.bytes[4*i + j])
-            decodedValue = buf.decode("EUC-JP").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t").replace("\t", "\\t")
-            value = f'"{decodedValue}"'
-            value += "\n" + (24 * " ") + ".balign 4"
-            rodataHex = ""
-            skip = j // 4
+            try:
+                decodedValue, rawStringSize = decodeString(self.bytes, 4*i)
+                dotType = ".asciz"
+                value = f'"{decodedValue}"'
+                value += "\n" + (24 * " ") + ".balign 4"
+                rodataHex = ""
+                skip = rawStringSize // 4
+            except UnicodeDecodeError:
+                # Not a string
+                isAsciz = False
+                pass
         elif w in self.context.jumpTablesLabels:
             value = self.context.jumpTablesLabels[w]
 

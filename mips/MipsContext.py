@@ -56,6 +56,8 @@ class Context:
 
         self.constants: Dict[int, str] = dict()
 
+        self.newPointersInData: Set[int] = set()
+
 
     def getAnySymbol(self, vramAddress: int) -> str|None:
         if vramAddress in self.funcAddresses:

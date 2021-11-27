@@ -91,3 +91,12 @@ def readCsv(filepath: str) -> List[List[str]]:
             data.append(list(row))
 
     return data
+
+def decodeString(buf: bytearray, offset: int) -> Tuple[str, int]:
+    dst = bytearray()
+    i = 0
+    while buf[offset + i] != 0:
+        dst.append(buf[offset + i])
+        i += 1
+    result = dst.decode("EUC-JP").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t").replace('"', '\\"').replace("\f", "\\f")
+    return result, i

@@ -19,6 +19,10 @@ class Data(Section):
                 if contextSymbol is not None:
                     contextSymbol.isDefined = True
 
+                if w >= self.vRamStart and w < 0x84000000:
+                    if self.context.getAnySymbol(w) is None:
+                        self.context.newPointersInData.add(w)
+
                 offset += 4
 
 
