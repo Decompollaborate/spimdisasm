@@ -197,6 +197,7 @@ def disassemblerMain():
     parser.add_argument("--nuke-pointers", help="Use every technique available to remove pointers", action="store_true")
 
     parser.add_argument("--non-libultra", help="Don't use built-in libultra symbols", action="store_true")
+    parser.add_argument("--non-hardware-regs", help="Don't use built-in hardware registers symbols", action="store_true")
 
     args = parser.parse_args()
 
@@ -221,6 +222,8 @@ def disassemblerMain():
     context.fillDefaultBannedSymbols()
     if not args.non_libultra:
         context.fillLibultraSymbols()
+    if not args.non_hardware_regs:
+        context.fillHardwareRegs()
 
     if args.functions is not None:
         for funcsPath in args.functions:

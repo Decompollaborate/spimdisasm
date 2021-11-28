@@ -222,6 +222,111 @@ class Context:
             contextSym.size = size
             self.symbols[vram] = contextSym
 
+    def fillHardwareRegs(self):
+        # OS hardware registers
+        hardwareRegs = {
+            # Signal Processor Registers
+            0xA4040000: "D_A4040000", # SP_MEM_ADDR_REG
+            0xA4040004: "D_A4040004", # SP_DRAM_ADDR_REG
+            0xA4040008: "D_A4040008", # SP_RD_LEN_REG
+            0xA404000C: "D_A404000C", # SP_WR_LEN_REG
+            0xA4040010: "D_A4040010", # SP_STATUS_REG
+            0xA4040014: "D_A4040014", # SP_DMA_FULL_REG
+            0xA4040018: "D_A4040018", # SP_DMA_BUSY_REG
+            0xA404001C: "D_A404001C", # SP_SEMAPHORE_REG
+
+            0xA4080000: "D_A4080000", # SP PC
+
+            # Display Processor Command Registers / Rasterizer Interface
+            0xA4100000: "D_A4100000", # DPC_START_REG
+            0xA4100004: "D_A4100004", # DPC_END_REG
+            0xA4100008: "D_A4100008", # DPC_CURRENT_REG
+            0xA410000C: "D_A410000C", # DPC_STATUS_REG
+            0xA4100010: "D_A4100010", # DPC_CLOCK_REG
+            0xA4100014: "D_A4100014", # DPC_BUFBUSY_REG
+            0xA4100018: "D_A4100018", # DPC_PIPEBUSY_REG
+            0xA410001C: "D_A410001C", # DPC_TMEM_REG
+
+            # Display Processor Span Registers
+            0xA4200000: "D_A4200000", # DPS_TBIST_REG / DP_TMEM_BIST
+            0xA4200004: "D_A4200004", # DPS_TEST_MODE_REG
+            0xA4200008: "D_A4200008", # DPS_BUFTEST_ADDR_REG
+            0xA420000C: "D_A420000C", # DPS_BUFTEST_DATA_REG
+
+            # MIPS Interface Registers
+            0xA4300000: "D_A4300000", # MI_MODE_REG / MI_INIT_MODE_REG
+            0xA4300004: "D_A4300004", # MI_VERSION_REG
+            0xA4300008: "D_A4300008", # MI_INTR_REG
+            0xA430000C: "D_A430000C", # MI_INTR_MASK_REG
+
+            # Video Interface Registers
+            0xA4400000: "D_A4400000", # VI_STATUS_REG / VI_CONTROL_REG
+            0xA4400004: "D_A4400004", # VI_DRAM_ADDR_REG / VI_ORIGIN_REG
+            0xA4400008: "D_A4400008", # VI_WIDTH_REG
+            0xA440000C: "D_A440000C", # VI_INTR_REG
+            0xA4400010: "D_A4400010", # VI_CURRENT_REG
+            0xA4400014: "D_A4400014", # VI_BURST_REG / VI_TIMING_REG
+            0xA4400018: "D_A4400018", # VI_V_SYNC_REG
+            0xA440001C: "D_A440001C", # VI_H_SYNC_REG
+            0xA4400020: "D_A4400020", # VI_LEAP_REG
+            0xA4400024: "D_A4400024", # VI_H_START_REG
+            0xA4400028: "D_A4400028", # VI_V_START_REG
+            0xA440002C: "D_A440002C", # VI_V_BURST_REG
+            0xA4400030: "D_A4400030", # VI_X_SCALE_REG
+            0xA4400034: "D_A4400034", # VI_Y_SCALE_REG
+
+            # Audio Interface Registers
+            0xA4500000: "D_A4500000", # AI_DRAM_ADDR_REG
+            0xA4500004: "D_A4500004", # AI_LEN_REG
+            0xA4500008: "D_A4500008", # AI_CONTROL_REG
+            0xA450000C: "D_A450000C", # AI_STATUS_REG
+            0xA4500010: "D_A4500010", # AI_DACRATE_REG
+            0xA4500014: "D_A4500014", # AI_BITRATE_REG
+
+            # Peripheral/Parallel Interface Registers
+            0xA4600000: "D_A4600000", # PI_DRAM_ADDR_REG
+            0xA4600004: "D_A4600004", # PI_CART_ADDR_REG
+            0xA4600005: "D_A4600005",
+            0xA4600006: "D_A4600006",
+            0xA4600007: "D_A4600007",
+            0xA4600008: "D_A4600008", # PI_RD_LEN_REG
+            0xA460000C: "D_A460000C", # PI_WR_LEN_REG
+            0xA4600010: "D_A4600010", # PI_STATUS_REG
+            0xA4600014: "D_A4600014", # PI_BSD_DOM1_LAT_REG # PI dom1 latency
+            0xA4600018: "D_A4600018", # PI_BSD_DOM1_PWD_REG # PI dom1 pulse width
+            0xA460001C: "D_A460001C", # PI_BSD_DOM1_PGS_REG # PI dom1 page size
+            0xA4600020: "D_A4600020", # PI_BSD_DOM1_RLS_REG # PI dom1 release
+            0xA4600024: "D_A4600024", # PI_BSD_DOM2_LAT_REG # PI dom2 latency
+            0xA4600028: "D_A4600028", # PI_BSD_DOM2_LWD_REG # PI dom2 pulse width
+            0xA460002C: "D_A460002C", # PI_BSD_DOM2_PGS_REG # PI dom2 page size
+            0xA4600030: "D_A4600030", # PI_BSD_DOM2_RLS_REG # PI dom2 release
+
+            # RDRAM Interface Registers
+            0xA4700000: "D_A4700000", # RI_MODE_REG
+            0xA4700004: "D_A4700004", # RI_CONFIG_REG
+            0xA4700008: "D_A4700008", # RI_CURRENT_LOAD_REG
+            0xA470000C: "D_A470000C", # RI_SELECT_REG
+            0xA4700010: "D_A4700010", # RI_REFRESH_REG
+            0xA4700014: "D_A4700014", # RI_LATENCY_REG
+            0xA4700018: "D_A4700018", # RI_RERROR_REG
+            0xA470001C: "D_A470001C", # RI_WERROR_REG
+
+            # Serial Interface Registers
+            0xA4800000: "D_A4800000", # SI_DRAM_ADDR_REG
+            0xA4800004: "D_A4800004", # SI_PIF_ADDR_RD64B_REG
+            0xA4800008: "D_A4800008", # reserved
+            0xA480000C: "D_A480000C", # reserved
+            0xA4800010: "D_A4800010", # SI_PIF_ADDR_WR64B_REG
+            0xA4800014: "D_A4800014", # reserved
+            0xA4800018: "D_A4800018", # SI_STATUS_REG
+        }
+
+        for vram, name in hardwareRegs.items():
+            contextSym = ContextSymbol(vram, name)
+            contextSym.type = "@hardwarereg"
+            contextSym.size = 4
+            self.symbols[vram] = contextSym
+
 
     def readFunctionMap(self, version: str):
         functionmap_filename = f"functionmap/{version}.csv"
