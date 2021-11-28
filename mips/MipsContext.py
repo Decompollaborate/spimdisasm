@@ -220,6 +220,7 @@ class Context:
             contextSym = ContextSymbol(vram, name)
             contextSym.type = type
             contextSym.size = size
+            contextSym.isUserDefined = True
             self.symbols[vram] = contextSym
 
     def fillHardwareRegs(self):
@@ -325,6 +326,7 @@ class Context:
             contextSym = ContextSymbol(vram, name)
             contextSym.type = "@hardwarereg"
             contextSym.size = 4
+            contextSym.isUserDefined = True
             self.symbols[vram] = contextSym
 
 

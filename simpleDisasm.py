@@ -336,14 +336,7 @@ def disassemblerMain():
         head, tail = os.path.split(args.save_context)
         if head != "":
             os.makedirs(head, exist_ok=True)
-        name = tail
-        extension = ""
-        if "." in tail:
-            *aux, extension = tail.split(".")
-            name = ".".join(aux)
-            extension = "." + extension
-        name = os.path.join(head, name)
-        context.saveContextToFile(f"{name}_{extension}")
+        context.saveContextToFile(args.save_context)
 
     printQuietless(lenLastLine*" " + "\r", end="")
     printQuietless(f"Done: {args.binary}")
