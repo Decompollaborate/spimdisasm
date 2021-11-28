@@ -203,6 +203,25 @@ class Context:
         banned = {0x80000010, 0x80000020}
         self.bannedSymbols |= banned
 
+    def fillLibultraSymbols(self):
+        libultraSyms = {
+            0x80000300: ("osTvType",       "u32", 0x4),
+            0x80000304: ("osRomType",      "u32", 0x4),
+            0x80000308: ("osRomBase",      "u32", 0x4),
+            0x8000030C: ("osResetType",    "u32", 0x4),
+            0x80000310: ("osCicId",        "u32", 0x4),
+            0x80000314: ("osVersion",      "u32", 0x4),
+            0x80000304: ("osRomType",      "u32", 0x4),
+            0x80000318: ("osMemSize",      "u32", 0x4),
+            0x8000031C: ("osAppNmiBuffer", "u8",  0x40),
+        }
+
+        for vram, (name, type, size) in libultraSyms.items():
+            contextSym = ContextSymbol(vram, name)
+            contextSym.type = type
+            contextSym.size = size
+            self.symbols[vram] = contextSym
+
 
     def readFunctionMap(self, version: str):
         functionmap_filename = f"functionmap/{version}.csv"
