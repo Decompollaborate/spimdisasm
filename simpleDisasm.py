@@ -196,6 +196,8 @@ def disassemblerMain():
     parser.add_argument("--write-binary", help="Produce a binary of the processed file", action="store_true")
     parser.add_argument("--nuke-pointers", help="Use every technique available to remove pointers", action="store_true")
 
+    parser.add_argument("--non-libultra", help="Don't use built-in libultra symbols", action="store_true")
+
     args = parser.parse_args()
 
     GlobalConfig.REMOVE_POINTERS = args.nuke_pointers
@@ -217,6 +219,9 @@ def disassemblerMain():
 
     context = Context()
     context.fillDefaultBannedSymbols()
+    if not args.non_libultra:
+        context.fillLibultraSymbols()
+
     if args.functions is not None:
         for funcsPath in args.functions:
             context.readFunctionsCsv(funcsPath)
