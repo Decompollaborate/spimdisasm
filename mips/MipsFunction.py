@@ -38,10 +38,13 @@ class Function:
         return len(self.instructions)
 
 
-    def _processSymbol(self, luiInstr: InstructionBase, luiOffset: int, lowerInstr: InstructionBase, lowerOffset: int) -> int:
+    def _processSymbol(self, luiInstr: InstructionBase, luiOffset: int, lowerInstr: InstructionBase, lowerOffset: int) -> int|None:
         upperHalf = luiInstr.immediate << 16
         lowerHalf = from2Complement(lowerInstr.immediate, 16)
         address = upperHalf + lowerHalf
+        if address in self.context.bannedSymbols:
+            return None
+
         self.referencedVRams.add(address)
         if self.context.getGenericSymbol(address) is None:
             if GlobalConfig.ADD_NEW_SYMBOLS:
@@ -161,7 +164,8 @@ class Function:
                         if rs in trackedRegisters:
                             luiInstr = self.instructions[trackedRegisters[rs]]
                             address = self._processSymbol(luiInstr, trackedRegisters[rs]*4, instr, instructionOffset)
-                            registersValues[instr.rt] = address
+                            if address is not None:
+                                registersValues[instr.rt] = address
 
             elif instr.uniqueId == InstructionId.JR:
                 rs = instr.rs
