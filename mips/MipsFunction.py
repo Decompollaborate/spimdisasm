@@ -134,7 +134,8 @@ class Function:
                                 targetInstr = self.instructions[branch//4]
                                 if targetInstr.uniqueId == InstructionId.JR and targetInstr.getRegisterName(targetInstr.rs) == "$ra":
                                     # If the target instruction is a JR $ra, then look up its delay slot instead
-                                    targetInstr = self.instructions[branch//4 + 1]
+                                    branch += 4
+                                    targetInstr = self.instructions[branch//4]
                                 if targetInstr.isIType() and targetInstr.rs == instr.rt:
                                     if targetInstr.uniqueId not in (InstructionId.LUI, InstructionId.ANDI, InstructionId.ORI, InstructionId.XORI, InstructionId.CACHE):
                                         self._processSymbol(instr, instructionOffset, targetInstr, branch)
