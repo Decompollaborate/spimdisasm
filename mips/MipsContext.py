@@ -58,6 +58,9 @@ class Context:
 
         self.newPointersInData: Set[int] = set()
 
+        # Stuff that looks like pointers, but the disassembler shouldn't count it as a pointer
+        self.bannedSymbols: Set[int] = set()
+
 
     def getAnySymbol(self, vramAddress: int) -> str|None:
         if vramAddress in self.funcAddresses:
@@ -196,6 +199,11 @@ class Context:
             self.fakeFunctions[vramAddress] = name
 
 
+    def fillDefaultBannedSymbols(self):
+        banned = {0x80000010, 0x80000020}
+        self.bannedSymbols |= banned
+
+
     def readFunctionMap(self, version: str):
         functionmap_filename = f"functionmap/{version}.csv"
         if not os.path.exists(functionmap_filename):
@@ -330,4 +338,3 @@ class Context:
             for address, name in self.constants.items():
                 file = self.symbolToFile.get(address, "")
                 f.write(f"constants,{file},{toHex(address, 8)},{name},\n")
-

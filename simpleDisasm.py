@@ -216,6 +216,7 @@ def disassemblerMain():
         newStuffSuffix = ""
 
     context = Context()
+    context.fillDefaultBannedSymbols()
     if args.functions is not None:
         for funcsPath in args.functions:
             context.readFunctionsCsv(funcsPath)
