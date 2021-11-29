@@ -464,3 +464,11 @@ class Context:
             for address, name in self.constants.items():
                 file = self.symbolToFile.get(address, "")
                 f.write(f"constants,{file},{toHex(address, 8)},{name},\n")
+
+            for address in self.newPointersInData:
+                file = self.symbolToFile.get(address, "")
+                f.write(f"new_pointer_in_data,{file},{toHex(address, 8)},,\n")
+
+            for address in self.bannedSymbols:
+                file = self.symbolToFile.get(address, "")
+                f.write(f"banned_symbol,{file},{toHex(address, 8)},,\n")

@@ -357,6 +357,11 @@ class Function:
                             immOverride = f"%hi({symbol})"
                         else:
                             immOverride= f"%lo({symbol})"
+                    else:
+                        if instr.uniqueId == InstructionId.LUI:
+                            immOverride = f"(0x{constant:X} >> 16)"
+                        else:
+                            immOverride = f"(0x{constant:X} & 0xFFFF)"
 
             if wasLastInstABranch:
                 instr.ljustWidthOpcode -= 1
