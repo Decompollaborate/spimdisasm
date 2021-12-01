@@ -42,9 +42,6 @@ class Bss(Section):
     def saveToFile(self, filepath: str):
         super().saveToFile(filepath + ".bss")
 
-        if self.context is None:
-            return
-
         with open(filepath + ".bss.s", "w") as f:
             f.write(".include \"macro.inc\"\n")
             f.write("\n")

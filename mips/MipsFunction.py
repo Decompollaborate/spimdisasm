@@ -68,7 +68,7 @@ class Function:
 
     def analyze(self):
         if not GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS and self.hasUnimplementedIntrs:
-            if self.vram > -1 and self.context is not None:
+            if self.vram > -1:
                 offset = 0
                 for instr in self.instructions:
                     currentVram = self.vram + offset
@@ -416,14 +416,13 @@ class Function:
             label = ""
             if self.vram >= 0:
                 vramHex = toHex(self.vram + instructionOffset, 8)[2:]
-                if self.context is not None:
-                    auxLabel = self.context.getGenericLabel(self.vram + instructionOffset) or self.context.getGenericSymbol(self.vram + instructionOffset, tryPlusOffset=False)
-                    if auxLabel is not None:
-                        label = f"\nglabel {auxLabel}\n"
+                auxLabel = self.context.getGenericLabel(self.vram + instructionOffset) or self.context.getGenericSymbol(self.vram + instructionOffset, tryPlusOffset=False)
+                if auxLabel is not None:
+                    label = f"\nglabel {auxLabel}\n"
 
-                    contextVar = self.context.getSymbol(self.vram + instructionOffset, False)
-                    if contextVar is not None:
-                        contextVar.isDefined = True
+                contextVar = self.context.getSymbol(self.vram + instructionOffset, False)
+                if contextVar is not None:
+                    contextVar.isDefined = True
 
             instrHex = toHex(instr.instr, 8)[2:]
 

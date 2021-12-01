@@ -100,31 +100,30 @@ class Rodata(Section):
             currentVram = self.getVramOffset(offset)
             vramHex = toHex(currentVram, 8)[2:]
 
-            if self.context is not None:
-                auxLabel = self.context.getGenericLabel(currentVram)
-                if auxLabel is None:
-                    auxLabel = self.context.getGenericSymbol(currentVram, tryPlusOffset=False)
-                if auxLabel is not None:
-                    label = "\nglabel " + auxLabel + "\n"
+            auxLabel = self.context.getGenericLabel(currentVram)
+            if auxLabel is None:
+                auxLabel = self.context.getGenericSymbol(currentVram, tryPlusOffset=False)
+            if auxLabel is not None:
+                label = "\nglabel " + auxLabel + "\n"
 
-                contextVar = self.context.getSymbol(currentVram, True, False)
-                if contextVar is not None:
-                    type = contextVar.type
-                    if type in ("f32", "Vec3f"):
-                        # Filter out NaN and infinity
-                        if (w & 0x7F800000) != 0x7F800000:
-                            isFloat = True
-                    elif type == "f64":
-                        # Filter out NaN and infinity
-                        if (((w << 32) | self.words[i+1]) & 0x7FF0000000000000) != 0x7FF0000000000000:
-                            # Prevent accidentally losing symbols
-                            if self.context.getGenericSymbol(currentVram+4, False) is None:
-                                isDouble = True
-                    elif type == "char":
-                        isAsciz = True
+            contextVar = self.context.getSymbol(currentVram, True, False)
+            if contextVar is not None:
+                type = contextVar.type
+                if type in ("f32", "Vec3f"):
+                    # Filter out NaN and infinity
+                    if (w & 0x7F800000) != 0x7F800000:
+                        isFloat = True
+                elif type == "f64":
+                    # Filter out NaN and infinity
+                    if (((w << 32) | self.words[i+1]) & 0x7FF0000000000000) != 0x7FF0000000000000:
+                        # Prevent accidentally losing symbols
+                        if self.context.getGenericSymbol(currentVram+4, False) is None:
+                            isDouble = True
+                elif type == "char":
+                    isAsciz = True
 
-                    if contextVar.vram == currentVram:
-                        contextVar.isDefined = True
+                if contextVar.vram == currentVram:
+                    contextVar.isDefined = True
 
         if isFloat:
             dotType = ".float"

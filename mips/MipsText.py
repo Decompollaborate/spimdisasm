@@ -133,7 +133,7 @@ class Text(Section):
                 elif instr.uniqueId == InstructionId.J and isLikelyHandwritten:
                     functionEnded = True
 
-            if self.vRamStart > 0 and self.context is not None:
+            if self.vRamStart > 0:
                 if GlobalConfig.TRUST_USER_FUNCTIONS:
                     vram = self.getVramOffset(instructionOffset) + 8
                     funcContext = self.context.getFunction(vram)
