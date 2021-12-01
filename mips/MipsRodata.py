@@ -88,7 +88,7 @@ class Rodata(Section):
         vramHex = ""
         label = ""
         rodataHex = toHex(w, 8)[2:]
-        value = toHex(w, 8)
+        value: Any = toHex(w, 8)
 
         isFloat = False
         isDouble = False
