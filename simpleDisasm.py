@@ -250,6 +250,11 @@ def disassemblerMain():
 
         splitsCount = len(splits)
 
+        textOutput = args.output
+        dataOutput = args.data_output
+        if dataOutput is None:
+            dataOutput = textOutput
+
         modeCallback = None
         outputPath = args.output
         for i, row in enumerate(splits):
@@ -263,19 +268,19 @@ def disassemblerMain():
 
             if fileName == ".text":
                 modeCallback = simpleDisasmFile
-                outputPath = args.output
+                outputPath = textOutput
                 continue
             elif fileName == ".data":
                 modeCallback = simpleDisasmData
-                outputPath = args.data_output
+                outputPath = dataOutput
                 continue
             elif fileName == ".rodata":
                 modeCallback = simpleDisasmRodata
-                outputPath = args.data_output
+                outputPath = dataOutput
                 continue
             elif fileName == ".bss":
                 modeCallback = simpleDisasmBss
-                outputPath = args.data_output
+                outputPath = dataOutput
                 continue
             elif fileName == ".end":
                 break
