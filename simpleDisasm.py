@@ -6,6 +6,7 @@ import argparse
 
 from mips.Utils import *
 from mips.GlobalConfig import GlobalConfig, printQuietless, printVerbose
+from mips.FileSplitFormat import FileSplitFormat, FileSectionType
 from mips.MipsText import Text
 from mips.MipsData import Data
 from mips.MipsRodata import Rodata
@@ -245,8 +246,7 @@ def disassemblerMain():
         f =  simpleDisasmFile(array_of_bytes, args.output, int(args.start, 16), int(args.end, 16), int(args.vram, 16), context, False, newStuffSuffix)
         processedFiles.append((args.output, f))
     else:
-        splits = readCsv(args.file_splits)
-        splits = [x for x in splits if len(x) > 0]
+        splits = FileSplitFormat(args.file_splits)
 
         splitsCount = len(splits)
 
@@ -257,47 +257,22 @@ def disassemblerMain():
 
         modeCallback = None
         outputPath = args.output
-        for i, row in enumerate(splits):
-            offset, vram, fileName = row
+        i = 0
+        for row in splits:
+            offset, vram, fileName, section, nextOffset, isHandwritten = row
 
-            isHandwritten = False
-            offset = offset.upper()
-            if offset[-1] == "H":
-                isHandwritten = True
-                offset = offset[:-1]
-
-            if fileName == ".text":
+            if section == FileSectionType.Text:
                 modeCallback = simpleDisasmFile
                 outputPath = textOutput
-                continue
-            elif fileName == ".data":
+            elif section == FileSectionType.Data:
                 modeCallback = simpleDisasmData
                 outputPath = dataOutput
-                continue
-            elif fileName == ".rodata":
+            elif section == FileSectionType.Rodata:
                 modeCallback = simpleDisasmRodata
                 outputPath = dataOutput
-                continue
-            elif fileName == ".bss":
+            elif section == FileSectionType.Bss:
                 modeCallback = simpleDisasmBss
                 outputPath = dataOutput
-                continue
-            elif fileName == ".end":
-                break
-
-            vram = int(vram, 16)
-            offset = int(offset, 16)
-            nextOffset = 0xFFFFFF
-            if i + 1 < len(splits):
-                if splits[i+1][2] == ".end":
-                    nextOffsetStr = splits[i+1][0]
-                elif splits[i+1][2].startswith("."):
-                    nextOffsetStr = splits[i+2][0]
-                else:
-                    nextOffsetStr = splits[i+1][0]
-                if nextOffsetStr.upper()[-1] == "H":
-                    nextOffsetStr = nextOffsetStr[:-1]
-                nextOffset = int(nextOffsetStr, 16)
 
             if fileName == "":
                 fileName = f"{input_name}_{vram:08X}"
@@ -314,6 +289,7 @@ def disassemblerMain():
             printQuietless(progressStr, end="", flush=True)
 
             printVerbose()
+            i += 1
 
     processedFilesCount = len(processedFiles)
     if args.nuke_pointers:
