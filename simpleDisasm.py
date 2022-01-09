@@ -196,6 +196,7 @@ def disassemblerMain():
     parser.add_argument("--disable-asm-comments", help="Disables the comments in assembly code", action="store_true")
     parser.add_argument("--write-binary", help="Produce a binary of the processed file", action="store_true")
     parser.add_argument("--nuke-pointers", help="Use every technique available to remove pointers", action="store_true")
+    parser.add_argument("--ignore-words", help="A space separated list of hex numbers. Word differences will be ignored that starts in any of the provided arguments. Max value: FF. Only works when --nuke-pointers is passed", action="extend", nargs="+")
 
     parser.add_argument("--non-libultra", help="Don't use built-in libultra symbols", action="store_true")
     parser.add_argument("--non-hardware-regs", help="Don't use built-in hardware registers symbols", action="store_true")
@@ -204,9 +205,11 @@ def disassemblerMain():
 
     GlobalConfig.REMOVE_POINTERS = args.nuke_pointers
     GlobalConfig.IGNORE_BRANCHES = args.nuke_pointers
-    GlobalConfig.IGNORE_04 = args.nuke_pointers
-    GlobalConfig.IGNORE_06 = args.nuke_pointers
-    GlobalConfig.IGNORE_80 = args.nuke_pointers
+    if args.nuke_pointers:
+        GlobalConfig.IGNORE_WORD_LIST.add(0x80)
+    if args.ignore_words:
+        for upperByte in args.ignore_words:
+            GlobalConfig.IGNORE_WORD_LIST.add(int(upperByte, 16))
     GlobalConfig.WRITE_BINARY = args.write_binary
     GlobalConfig.ASM_COMMENT = not args.disable_asm_comments
     GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET = True
