@@ -280,6 +280,7 @@ def disassemblerMain():
             if modeCallback is None:
                 eprint("Error! Section not set!")
                 exit(1)
+            printVerbose(f"Reading '{fileName}'")
             f = modeCallback(array_of_bytes, f"{outputPath}/{fileName}", offset, nextOffset, vram, context, isHandwritten, newStuffSuffix)
             processedFiles.append((f"{outputPath}/{fileName}", f))
 
@@ -288,7 +289,7 @@ def disassemblerMain():
             lenLastLine = max(len(progressStr), lenLastLine)
             printQuietless(progressStr, end="", flush=True)
 
-            printVerbose()
+            printVerbose("\n")
             i += 1
 
     processedFilesCount = len(processedFiles)
