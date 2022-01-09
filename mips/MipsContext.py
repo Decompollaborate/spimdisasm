@@ -31,6 +31,7 @@ class ContextSymbol:
         self.size: int = 4
         self.isDefined = False
         self.isUserDefined = False
+        self.isBss = False
 
 class Context:
     def __init__(self):
