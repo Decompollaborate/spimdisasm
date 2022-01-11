@@ -47,42 +47,48 @@ class Bss(Section):
             self.context.symbols[vram].isBss = True
 
 
+    def disassembleToFile(self, f: TextIO):
+        f.write(".include \"macro.inc\"\n")
+        f.write("\n")
+        f.write("# assembler directives\n")
+        f.write(".set noat      # allow manual use of $at\n")
+        f.write(".set noreorder # don't insert nops after branches\n")
+        f.write(".set gp=64     # allow use of 64-bit general purpose registers\n")
+        f.write("\n")
+        f.write(".section .bss\n")
+        f.write("\n")
+        f.write(".balign 16\n")
+
+        offset = 0
+        # Needs to move this to a list because the algorithm requires to check the size of a bss variable based on the next bss variable' vram
+        # TODO: sorted() may not be required here anymore because of SortedDict. Test if removing it doesn't break anything
+        sortedSymbols = sorted(self.context.symbols.irange(minimum=self.bssVramStart, maximum=self.bssVramEnd, inclusive=(True, False)))
+        i = 0
+        while i < len(sortedSymbols):
+            symbolVram = sortedSymbols[i]
+            symbol = self.context.symbols[symbolVram]
+
+            self.context.symbols[symbolVram].isDefined = True
+
+            offsetHex = toHex(self.offset + (symbolVram - self.bssVramStart) + self.commentOffset, 6)[2:]
+            vramHex = toHex(symbolVram, 8)[2:]
+
+            # Calculate the space of the bss variable
+            space = self.bssVramEnd - symbolVram
+            if i + 1 < len(sortedSymbols):
+                if sortedSymbols[i+1] <= self.bssVramEnd:
+                    space = sortedSymbols[i+1] - symbolVram
+
+            label = f"\nglabel {symbol.name}\n"
+            f.write(f"{label}/* {offsetHex} {vramHex} */  .space  {toHex(space, 2)}\n")
+            offset += 4
+            i += 1
+
     def saveToFile(self, filepath: str):
         super().saveToFile(filepath + ".bss")
 
-        with open(filepath + ".bss.s", "w") as f:
-            f.write(".include \"macro.inc\"\n")
-            f.write("\n")
-            f.write("# assembler directives\n")
-            f.write(".set noat      # allow manual use of $at\n")
-            f.write(".set noreorder # don't insert nops after branches\n")
-            f.write(".set gp=64     # allow use of 64-bit general purpose registers\n")
-            f.write("\n")
-            f.write(".section .bss\n")
-            f.write("\n")
-            f.write(".balign 16\n")
-
-            offset = 0
-            # Needs to move this to a list because the algorithm requires to check the size of a bss variable based on the next bss variable' vram
-            # TODO: sorted() may not be required here anymore because of SortedDict. Test if removing it doesn't break anything
-            sortedSymbols = sorted(self.context.symbols.irange(minimum=self.bssVramStart, maximum=self.bssVramEnd, inclusive=(True, False)))
-            i = 0
-            while i < len(sortedSymbols):
-                symbolVram = sortedSymbols[i]
-                symbol = self.context.symbols[symbolVram]
-
-                self.context.symbols[symbolVram].isDefined = True
-
-                offsetHex = toHex(self.offset + (symbolVram - self.bssVramStart) + self.commentOffset, 6)[2:]
-                vramHex = toHex(symbolVram, 8)[2:]
-
-                # Calculate the space of the bss variable
-                space = self.bssVramEnd - symbolVram
-                if i + 1 < len(sortedSymbols):
-                    if sortedSymbols[i+1] <= self.bssVramEnd:
-                        space = sortedSymbols[i+1] - symbolVram
-
-                label = f"\nglabel {symbol.name}\n"
-                f.write(f"{label}/* {offsetHex} {vramHex} */  .space  {toHex(space, 2)}\n")
-                offset += 4
-                i += 1
+        if filepath == "-":
+            self.disassembleToFile(sys.stdout)
+        else:
+            with open(filepath + ".bss.s", "w") as f:
+                self.disassembleToFile(f)
