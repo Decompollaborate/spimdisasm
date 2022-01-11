@@ -265,23 +265,29 @@ class Text(Section):
                 self.words.append(instr.instr)
         super().updateBytes()
 
+    def disassembleToFile(self, f: TextIO):
+        f.write(".include \"macro.inc\"\n")
+        f.write("\n")
+        f.write("# assembler directives\n")
+        f.write(".set noat      # allow manual use of $at\n")
+        f.write(".set noreorder # don't insert nops after branches\n")
+        f.write(".set gp=64     # allow use of 64-bit general purpose registers\n")
+        f.write("\n")
+        f.write(".section .text\n")
+        f.write("\n")
+        f.write(".balign 16\n")
+        for func in self.functions:
+            f.write("\n")
+            f.write(func.disassemble())
+
     def saveToFile(self, filepath: str):
         super().saveToFile(filepath + ".text")
 
-        with open(filepath + ".text.s", "w") as f:
-            f.write(".include \"macro.inc\"\n")
-            f.write("\n")
-            f.write("# assembler directives\n")
-            f.write(".set noat      # allow manual use of $at\n")
-            f.write(".set noreorder # don't insert nops after branches\n")
-            f.write(".set gp=64     # allow use of 64-bit general purpose registers\n")
-            f.write("\n")
-            f.write(".section .text\n")
-            f.write("\n")
-            f.write(".balign 16\n")
-            for func in self.functions:
-                f.write("\n")
-                f.write(func.disassemble())
+        if filepath == "-":
+            self.disassembleToFile(sys.stdout)
+        else:
+            with open(filepath + ".text.s", "w") as f:
+                self.disassembleToFile(f)
 
     def setCommentOffset(self, commentOffset: int):
         super().setCommentOffset(commentOffset)

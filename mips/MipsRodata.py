@@ -156,29 +156,35 @@ class Rodata(Section):
         return f"{label}{comment} {dotType}  {value}", skip
 
 
+    def disassembleToFile(self, f: TextIO):
+        f.write(".include \"macro.inc\"\n")
+        f.write("\n")
+        f.write("# assembler directives\n")
+        f.write(".set noat      # allow manual use of $at\n")
+        f.write(".set noreorder # don't insert nops after branches\n")
+        f.write(".set gp=64     # allow use of 64-bit general purpose registers\n")
+        f.write("\n")
+        f.write(".section .rodata\n")
+        f.write("\n")
+        f.write(".balign 16\n")
+
+        i = 0
+        while i < len(self.words):
+            data, skip = self.getNthWord(i)
+            f.write(data + "\n")
+
+            i += skip
+
+            i += 1
+
     def saveToFile(self, filepath: str):
         super().saveToFile(filepath + ".rodata")
 
         if self.size == 0:
             return
 
-        with open(filepath + ".rodata.s", "w") as f:
-            f.write(".include \"macro.inc\"\n")
-            f.write("\n")
-            f.write("# assembler directives\n")
-            f.write(".set noat      # allow manual use of $at\n")
-            f.write(".set noreorder # don't insert nops after branches\n")
-            f.write(".set gp=64     # allow use of 64-bit general purpose registers\n")
-            f.write("\n")
-            f.write(".section .rodata\n")
-            f.write("\n")
-            f.write(".balign 16\n")
-
-            i = 0
-            while i < len(self.words):
-                data, skip = self.getNthWord(i)
-                f.write(data + "\n")
-
-                i += skip
-
-                i += 1
+        if filepath == "-":
+            self.disassembleToFile(sys.stdout)
+        else:
+            with open(filepath + ".rodata.s", "w") as f:
+                self.disassembleToFile(f)

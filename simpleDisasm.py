@@ -171,7 +171,7 @@ def disassemblerMain():
     parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument("binary", help="Path to input binary")
-    parser.add_argument("output", help="Path to output")
+    parser.add_argument("output", help="Path to output. Use '-' to print to stdout instead")
 
     parser.add_argument("--data-output", help="Path to output the data and rodata disassembly")
 
@@ -314,6 +314,9 @@ def disassemblerMain():
         progressStr = f" Writing: {i/processedFilesCount:%}. File: {path}\r"
         lenLastLine = max(len(progressStr), lenLastLine)
         printQuietless(progressStr, end="")
+
+        if path == "-":
+            printQuietless()
 
         writeSection((path, f))
 
