@@ -20,7 +20,7 @@ from .MipsInstructionCoprocessor2 import InstructionCoprocessor2
 from .MipsInstructionNormalRsp import InstructionNormalRsp
 from .MipsInstructionSpecialRsp import InstructionSpecialRsp
 from .MipsInstructionRegimmRsp import InstructionRegimmRsp
-# from .MipsInstructionCoprocessor0Rsp import InstructionCoprocessor0Rsp
+from .MipsInstructionCoprocessor0Rsp import InstructionCoprocessor0Rsp
 # from .MipsInstructionCoprocessor1Rsp import InstructionCoprocessor1Rsp
 from .MipsInstructionCoprocessor2Rsp import InstructionCoprocessor2Rsp
 
@@ -47,9 +47,9 @@ def wordToInstructionRsp(word: int) -> InstructionBase:
         return InstructionSpecialRsp(word)
     if ((word >> 26) & 0x3F) == 0x01:
         return InstructionRegimmRsp(word)
+    if ((word >> 26) & 0x3F) == 0x10:
+        return InstructionCoprocessor0Rsp(word)
     # TODO?
-    # if ((word >> 26) & 0x3F) == 0x10:
-    #     return InstructionCoprocessor0Rsp(word)
     # if ((word >> 26) & 0x3F) == 0x11:
     #     return InstructionCoprocessor1Rsp(word)
     if ((word >> 26) & 0x3F) == 0x12:
