@@ -189,7 +189,7 @@ def disassemblerMain():
     parser.add_argument("--add-filename", help="Adds the filename of the file to the generated function/variable name")
 
     parser.add_argument("--disasm-unknown", help="Force disassembly of functions with unknown instructions",  action="store_true")
-    parser.add_argument("--disasm-rsp", help="Experimental. Enables the detection and disassembly of rsp instructions",  action="store_true")
+    parser.add_argument("--disasm-rsp", help="Experimental. Enables the detection and disassembly of rsp abi instructions. Warning: In its current state the generated asm may not be assemblable to a matching binary",  action="store_true")
 
     parser.add_argument("-v", "--verbose", help="Enable verbose mode",  action="store_true")
     parser.add_argument("-q", "--quiet", help="Silence most output",  action="store_true")
