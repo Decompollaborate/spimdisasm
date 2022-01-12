@@ -7,17 +7,52 @@ from ..MipsContext import Context
 from .MipsConstants import InstructionId, InstructionVectorId
 
 class InstructionBase:
+    GprRegisterNames = {
+        0:  "$zero",
+        1:  "$at",
+        2:  "$v0",
+        3:  "$v1",
+        4:  "$a0",
+        5:  "$a1",
+        6:  "$a2",
+        7:  "$a3",
+        8:  "$t0",
+        9:  "$t1",
+        10: "$t2",
+        11: "$t3",
+        12: "$t4",
+        13: "$t5",
+        14: "$t6",
+        15: "$t7",
+        16: "$s0",
+        17: "$s1",
+        18: "$s2",
+        19: "$s3",
+        20: "$s4",
+        21: "$s5",
+        22: "$s6",
+        23: "$s7",
+        24: "$t8",
+        25: "$t9",
+        26: "$k0",
+        27: "$k1",
+        28: "$gp",
+        29: "$sp",
+        30: "$fp",
+        31: "$ra",
+    }
+
     Cop0RegisterNames = {
-        0: "Index",
-        1: "Random",
-        2: "EntryLo0",
-        3: "EntryLo1",
-        4: "Context",
-        5: "PageMask",
-        6: "Wired",
-        7: "Reserved07",
-        8: "BadVaddr",
-        9: "Count",
+        0:  "Index",
+        1:  "Random",
+        2:  "EntryLo0",
+        3:  "EntryLo1",
+        4:  "Context",
+        5:  "PageMask",
+        6:  "Wired",
+        7:  "Reserved07",
+        8:  "BadVaddr",
+        9:  "Count",
         10: "EntryHi",
         11: "Compare",
         12: "Status",
@@ -42,17 +77,53 @@ class InstructionBase:
         31: "Reserved31",
     }
 
+    # Float registers
+    Cop1RegisterNames = {
+        0:  "$f0",
+        1:  "$f1",
+        2:  "$f2",
+        3:  "$f3",
+        4:  "$f4",
+        5:  "$f5",
+        6:  "$f6",
+        7:  "$f7",
+        8:  "$f8",
+        9:  "$f9",
+        10: "$f10",
+        11: "$f11",
+        12: "$f12",
+        13: "$f13",
+        14: "$f14",
+        15: "$f15",
+        16: "$f16",
+        17: "$f17",
+        18: "$f18",
+        19: "$f19",
+        20: "$f20",
+        21: "$f21",
+        22: "$f22",
+        23: "$f23",
+        24: "$f24",
+        25: "$f25",
+        26: "$f26",
+        27: "$f27",
+        28: "$f28",
+        29: "$f29",
+        30: "$f30",
+        31: "$FpcCsr",
+    }
+
     Cop2RegisterNames = {
-        0: "$0",
-        1: "$1",
-        2: "$2",
-        3: "$3",
-        4: "$4",
-        5: "$5",
-        6: "$6",
-        7: "$7",
-        8: "$8",
-        9: "$9",
+        0:  "$0",
+        1:  "$1",
+        2:  "$2",
+        3:  "$3",
+        4:  "$4",
+        5:  "$5",
+        6:  "$6",
+        7:  "$7",
+        8:  "$8",
+        9:  "$9",
         10: "$10",
         11: "$11",
         12: "$12",
@@ -75,6 +146,60 @@ class InstructionBase:
         29: "$29",
         30: "$30",
         31: "$31",
+    }
+
+    GprRspRegisterNames = {
+        0:  "$zero",
+        1:  "$1",
+        2:  "$2",
+        3:  "$3",
+        4:  "$4",
+        5:  "$5",
+        6:  "$6",
+        7:  "$7",
+        8:  "$8",
+        9:  "$9",
+        10: "$10",
+        11: "$11",
+        12: "$12",
+        13: "$13",
+        14: "$14",
+        15: "$15",
+        16: "$16",
+        17: "$17",
+        18: "$18",
+        19: "$19",
+        20: "$20",
+        21: "$21",
+        22: "$22",
+        23: "$23",
+        24: "$24",
+        25: "$25",
+        26: "$26",
+        27: "$27",
+        28: "$28",
+        29: "$29",
+        30: "$30",
+        31: "$31",
+    }
+
+    Cop0RspRegisterNames = {
+        0:  "SP_MEM_ADDR",
+        1:  "SP_DRAM_ADDR",
+        2:  "SP_RD_LEN",
+        3:  "SP_WR_LEN",
+        4:  "SP_STATUS",
+        5:  "SP_DMA_FULL",
+        6:  "SP_DMA_BUSY",
+        7:  "SP_SEMAPHORE",
+        8:  "DPC_START",
+        9:  "DPC_END",
+        10: "DPC_CURRENT",
+        11: "DPC_STATUS",
+        12: "DPC_CLOCK",
+        13: "DPC_BUFBUSY",
+        14: "DPC_PIPEBUSY",
+        15: "DPC_TMEM",
     }
 
     def __init__(self, instr: int):
@@ -222,38 +347,10 @@ class InstructionBase:
         return f"({opcode})"
 
     def getRegisterName(self, register: int) -> str:
-        if register == 0:
-            return "$zero"
-        elif register == 1:
-            return "$at"
-        elif 2 <= register <= 3:
-            return "$v" + str(register-2)
-        elif 4 <= register <= 7:
-            return "$a" + str(register-4)
-        elif 8 <= register <= 15:
-            return "$t" + str(register-8)
-        elif 16 <= register <= 23:
-            return "$s" + str(register-16)
-        elif 24 <= register <= 25:
-            return "$t" + str(register-24 + 8)
-        elif 26 <= register <= 27:
-            return "$k" + str(register-26)
-        elif register == 28:
-            return "$gp"
-        elif register == 29:
-            return "$sp"
-        elif register == 30:
-            return "$fp"
-        elif register == 31:
-            return "$ra"
-        return f"${register:02X}"
+        return self.GprRegisterNames.get(register, f"${register:02X}")
 
     def getFloatRegisterName(self, register: int) -> str:
-        if register == 31:
-            return "$31"
-        if 0 <= register <= 31:
-            return "$f" + str(register)
-        return f"${register:02X}"
+        return self.Cop1RegisterNames.get(register, f"${register:02X}")
 
     def getCop0RegisterName(self, register: int) -> str:
         if register in InstructionBase.Cop0RegisterNames:
@@ -264,6 +361,12 @@ class InstructionBase:
         if register in InstructionBase.Cop2RegisterNames:
             return InstructionBase.Cop2RegisterNames[register]
         return f"${register:02X}"
+
+    def getGprRspRegisterName(self, register: int) -> str:
+        return self.GprRspRegisterNames.get(register, f"${register:02X}")
+
+    def getCop0RspRegisterName(self, register: int) -> str:
+        return self.Cop0RspRegisterNames.get(register, f"${register:02X}")
 
 
     def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
