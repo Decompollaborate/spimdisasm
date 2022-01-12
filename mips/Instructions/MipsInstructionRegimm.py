@@ -34,7 +34,14 @@ class InstructionRegimm(InstructionBase):
     def __init__(self, instr: int):
         super().__init__(instr)
 
-        self.uniqueId = InstructionRegimm.RegimmOpcodes.get(self.rt, InstructionId.INVALID)
+        self.opcodesDict = dict(InstructionRegimm.RegimmOpcodes)
+        self.processUniqueId()
+
+
+    def processUniqueId(self):
+        super().processUniqueId()
+
+        self.uniqueId = self.opcodesDict.get(self.rt, InstructionId.INVALID)
 
 
     def isBranch(self) -> bool:

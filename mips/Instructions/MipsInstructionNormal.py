@@ -88,7 +88,14 @@ class InstructionNormal(InstructionBase):
     def __init__(self, instr: int):
         super().__init__(instr)
 
-        self.uniqueId = InstructionNormal.NormalOpcodes.get(self.opcode, InstructionId.INVALID)
+        self.opcodesDict = dict(InstructionNormal.NormalOpcodes)
+        self.processUniqueId()
+
+
+    def processUniqueId(self):
+        super().processUniqueId()
+
+        self.uniqueId = self.opcodesDict.get(self.opcode, InstructionId.INVALID)
         if self.rt == 0:
             if self.uniqueId == InstructionId.BEQ:
                 if self.rs == 0:
@@ -97,7 +104,6 @@ class InstructionNormal(InstructionBase):
                     self.uniqueId = InstructionId.BEQZ
             elif self.uniqueId == InstructionId.BNE:
                 self.uniqueId = InstructionId.BNEZ
-
 
     def isFloatInstruction(self) -> bool:
         if self.isDoubleFloatInstruction():

@@ -148,10 +148,10 @@ class InstructionId(enum.Enum):
     DSRL32    = enum.auto() # Doubleword Shift Right Logical plus 32
     DSRA32    = enum.auto() # Doubleword Shift Right Arithmetic plus 32
 
-    BLTZ      = enum.auto()
-    BGEZ      = enum.auto()
-    BLTZL     = enum.auto()
-    BGEZL     = enum.auto()
+    BLTZ      = enum.auto() # Branch on Less Than Zero
+    BGEZ      = enum.auto() # Branch on Greater than or Equal to Zero
+    BLTZL     = enum.auto() # Branch on Less Than Zero Likely
+    BGEZL     = enum.auto() # Branch on Greater than or Equal to Zero Likely
 
     TGEI      = enum.auto()
     TGEIU     = enum.auto()
