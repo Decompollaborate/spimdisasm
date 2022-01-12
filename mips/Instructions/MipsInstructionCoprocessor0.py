@@ -32,6 +32,13 @@ class InstructionCoprocessor0(InstructionBase):
     def __init__(self, instr: int):
         super().__init__(instr)
 
+        # self.opcodesDict = 
+        self.processUniqueId()
+
+
+    def processUniqueId(self):
+        super().processUniqueId()
+
         if self.fmt in InstructionCoprocessor0.Cop0Opcodes_ByFormat:
             self.uniqueId = InstructionCoprocessor0.Cop0Opcodes_ByFormat[self.fmt]
         elif self.fmt == 0b01_000: # fmt = BC
@@ -47,7 +54,6 @@ class InstructionCoprocessor0(InstructionBase):
                     self.uniqueId = InstructionId.BC0F
         elif self.function in InstructionCoprocessor0.Cop0Opcodes_ByFunction:
             self.uniqueId = InstructionCoprocessor0.Cop0Opcodes_ByFunction[self.function]
-
 
     def isBranch(self) -> bool:
         if self.uniqueId in (InstructionId.BC0T, InstructionId.BC0TL, InstructionId.BC0F, InstructionId.BC0FL):

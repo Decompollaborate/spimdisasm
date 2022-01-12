@@ -85,6 +85,7 @@ class InstructionBase:
         self.sa = (instr >>  6) & 0x1F
         self.function = (instr >> 0) & 0x3F
 
+        self.opcodesDict: Dict[int, InstructionId] = dict()
         self.uniqueId: InstructionId = InstructionId.INVALID
 
         self.ljustWidthOpcode = 7+4
@@ -130,6 +131,9 @@ class InstructionBase:
     def cond(self) -> int:
         return (self.function >> 0) & 0x0F
 
+
+    def processUniqueId(self):
+        self.uniqueId = self.opcodesDict.get(self.opcode, InstructionId.INVALID)
 
     def isImplemented(self) -> bool:
         return self.uniqueId != InstructionId.INVALID

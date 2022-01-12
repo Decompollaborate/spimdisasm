@@ -88,7 +88,14 @@ class InstructionSpecial(InstructionBase):
     def __init__(self, instr: int):
         super().__init__(instr)
 
-        self.uniqueId = InstructionSpecial.SpecialOpcodes.get(self.function, InstructionId.INVALID)
+        self.opcodesDict = dict(InstructionSpecial.SpecialOpcodes)
+        self.processUniqueId()
+
+
+    def processUniqueId(self):
+        super().processUniqueId()
+
+        self.uniqueId = self.opcodesDict.get(self.function, InstructionId.INVALID)
         if self.instr == 0:
             self.uniqueId = InstructionId.NOP
         elif self.rt == 0:
