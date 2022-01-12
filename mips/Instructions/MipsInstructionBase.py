@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from ..Utils import *
 from ..MipsContext import Context
-from .MipsConstants import InstructionId
+from .MipsConstants import InstructionId, InstructionVectorId
 
 class InstructionBase:
     Cop0RegisterNames = {
@@ -85,8 +85,8 @@ class InstructionBase:
         self.sa = (instr >>  6) & 0x1F
         self.function = (instr >> 0) & 0x3F
 
-        self.opcodesDict: Dict[int, InstructionId] = dict()
-        self.uniqueId: InstructionId = InstructionId.INVALID
+        self.opcodesDict: Dict[int, InstructionId | InstructionVectorId] = dict()
+        self.uniqueId: InstructionId|InstructionVectorId = InstructionId.INVALID
 
         self.ljustWidthOpcode = 7+4
 
@@ -130,6 +130,26 @@ class InstructionBase:
     @property
     def cond(self) -> int:
         return (self.function >> 0) & 0x0F
+
+    # vector registers
+    @property
+    def vd(self) -> int:
+        return self.sa
+    @property
+    def vs(self) -> int:
+        return self.rd
+    @property
+    def vt(self) -> int:
+        return self.rt
+    @property
+    def e(self) -> int:
+        return self.rs & 0xF
+
+
+    def __getitem__(self, key):
+        if key < 0 or key > 31:
+            raise IndexError()
+        return (self.instr >> key) & 0x1
 
 
     def processUniqueId(self):

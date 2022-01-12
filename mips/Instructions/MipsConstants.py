@@ -342,3 +342,39 @@ class InstructionId(enum.Enum):
     MOVE      = enum.auto() # Move
     NEGU      = enum.auto() 
     NOT       = enum.auto() # Not
+
+
+@enum.unique
+class InstructionVectorId(enum.Enum):
+    INVALID   = -1
+
+    VMULF     = enum.auto()
+    VMULU     = enum.auto()
+    VMUDL     = enum.auto()
+    VMUDM     = enum.auto()
+    VMUDN     = enum.auto()
+    VMUDH     = enum.auto()
+    VMACF     = enum.auto()
+    VMACU     = enum.auto()
+    VMADL     = enum.auto()
+    VMADM     = enum.auto()
+    VMADN     = enum.auto()
+    VMADH     = enum.auto()
+    VADD      = enum.auto()
+    VADDC     = enum.auto()
+    VSAR      = enum.auto()
+    VAND      = enum.auto()
+    VNAND     = enum.auto()
+    VOR       = enum.auto()
+    VNOR      = enum.auto()
+    VXOR      = enum.auto()
+    VNXOR     = enum.auto()
+
+    VLT       = enum.auto()
+    VEQ       = enum.auto()
+    VNE       = enum.auto()
+    VGE       = enum.auto()
+    VCL       = enum.auto()
+    VCH       = enum.auto()
+    VCR       = enum.auto()
+    VMRG      = enum.auto()
