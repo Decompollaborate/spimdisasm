@@ -19,6 +19,7 @@ class GlobalConfig:
 
     TRUST_USER_FUNCTIONS: bool = True
     DISASSEMBLE_UNKNOWN_INSTRUCTIONS: bool = False
+    DISASSEMBLE_RSP: bool = False
 
     QUIET: bool = False
     VERBOSE: bool = False

@@ -378,3 +378,8 @@ class InstructionVectorId(enum.Enum):
     VCH       = enum.auto()
     VCR       = enum.auto()
     VMRG      = enum.auto()
+
+    MFC2      = enum.auto()
+    MTC2      = enum.auto()
+    CFC2      = enum.auto()
+    CTC2      = enum.auto()

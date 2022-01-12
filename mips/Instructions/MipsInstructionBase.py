@@ -156,7 +156,11 @@ class InstructionBase:
         self.uniqueId = self.opcodesDict.get(self.opcode, InstructionId.INVALID)
 
     def isImplemented(self) -> bool:
-        return self.uniqueId != InstructionId.INVALID
+        if self.uniqueId == InstructionId.INVALID:
+            return False
+        if self.uniqueId == InstructionVectorId.INVALID:
+            return False
+        return True
 
     def isFloatInstruction(self) -> bool:
         return False
@@ -180,9 +184,9 @@ class InstructionBase:
 
 
     def sameOpcode(self, other: InstructionBase) -> bool:
-        if self.uniqueId == InstructionId.INVALID:
+        if self.uniqueId in (InstructionId.INVALID, InstructionVectorId.INVALID):
             return False
-        if other.uniqueId == InstructionId.INVALID:
+        if other.uniqueId in (InstructionId.INVALID, InstructionVectorId.INVALID):
             return False
         return self.uniqueId == other.uniqueId
 
@@ -212,7 +216,7 @@ class InstructionBase:
 
 
     def getOpcodeName(self) -> str:
-        if self.uniqueId != InstructionId.INVALID:
+        if self.uniqueId != InstructionId.INVALID and self.uniqueId != InstructionVectorId.INVALID:
             return self.uniqueId.name
         opcode = toHex(self.opcode, 2)
         return f"({opcode})"
