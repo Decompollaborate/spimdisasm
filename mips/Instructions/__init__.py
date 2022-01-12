@@ -11,4 +11,8 @@ from .MipsInstructionCoprocessor0 import InstructionCoprocessor0
 from .MipsInstructionCoprocessor1 import InstructionCoprocessor1
 from .MipsInstructionCoprocessor2 import InstructionCoprocessor2
 
-from .MipsInstructions import wordToInstruction
+from .MipsInstructionNormalRsp import InstructionNormalRsp
+from .MipsInstructionSpecialRsp import InstructionSpecialRsp
+from .MipsInstructionRegimmRsp import InstructionRegimmRsp
+
+from .MipsInstructions import wordToInstruction, wordToInstructionRsp

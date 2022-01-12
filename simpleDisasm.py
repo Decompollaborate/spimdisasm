@@ -189,6 +189,7 @@ def disassemblerMain():
     parser.add_argument("--add-filename", help="Adds the filename of the file to the generated function/variable name")
 
     parser.add_argument("--disasm-unknown", help="Force disassembly of functions with unknown instructions",  action="store_true")
+    parser.add_argument("--disasm-rsp", help="Experimental. Enables the detection and disassembly of rsp instructions",  action="store_true")
 
     parser.add_argument("-v", "--verbose", help="Enable verbose mode",  action="store_true")
     parser.add_argument("-q", "--quiet", help="Silence most output",  action="store_true")
@@ -215,7 +216,7 @@ def disassemblerMain():
     GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET = True
     GlobalConfig.TRUST_USER_FUNCTIONS = True
     GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS = args.disasm_unknown
-    GlobalConfig.DISASSEMBLE_RSP = args.disasm_unknown # TODO
+    GlobalConfig.DISASSEMBLE_RSP = args.disasm_rsp
     GlobalConfig.VERBOSE = args.verbose
     GlobalConfig.QUIET = args.quiet
 
