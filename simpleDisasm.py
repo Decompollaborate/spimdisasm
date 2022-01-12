@@ -215,6 +215,7 @@ def disassemblerMain():
     GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET = True
     GlobalConfig.TRUST_USER_FUNCTIONS = True
     GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS = args.disasm_unknown
+    GlobalConfig.DISASSEMBLE_RSP = args.disasm_unknown # TODO
     GlobalConfig.VERBOSE = args.verbose
     GlobalConfig.QUIET = args.quiet
 

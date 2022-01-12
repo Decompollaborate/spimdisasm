@@ -7,6 +7,7 @@ from .MipsConstants import InstructionId, InstructionVectorId
 from ..Utils import *
 
 from .MipsInstructionBase import InstructionBase
+from ..GlobalConfig import GlobalConfig
 from ..MipsContext import Context
 
 
@@ -43,6 +44,12 @@ class InstructionCoprocessor2(InstructionBase):
         0x26: InstructionVectorId.VCR,
         0x27: InstructionVectorId.VMRG,
     }
+    Cop2MoveOpcodes: Dict[int, InstructionVectorId] = {
+        0b00_000: InstructionVectorId.MFC2,
+        0b00_100: InstructionVectorId.MTC2,
+        0b00_010: InstructionVectorId.CFC2,
+        0b00_110: InstructionVectorId.CTC2,
+    }
 
     def __init__(self, instr: int):
         super().__init__(instr)
@@ -55,6 +62,19 @@ class InstructionCoprocessor2(InstructionBase):
         super().processUniqueId()
 
         self.uniqueId = self.opcodesDict.get(self.function, InstructionVectorId.INVALID)
+        if self[25] == 0:
+            self.uniqueId = InstructionCoprocessor2.Cop2MoveOpcodes.get(self.e, InstructionVectorId.INVALID)
+
+
+    def isImplemented(self) -> bool:
+        if not GlobalConfig.DISASSEMBLE_RSP:
+            return False
+        return super().isImplemented()
+
+    def modifiesRt(self) -> bool:
+        if self.uniqueId in (InstructionVectorId.CFC2, InstructionVectorId.MFC2):
+            return True
+        return super().modifiesRt()
 
     def getOpcodeName(self) -> str:
         if self.uniqueId == InstructionVectorId.INVALID or self.uniqueId == InstructionId.INVALID:
@@ -71,14 +91,30 @@ class InstructionCoprocessor2(InstructionBase):
         vs = f"${self.vs}"
         vd = f"${self.vd}"
 
-        if e_upper == 1:
+        result = ""
+
+        if e_upper == 0:
+            rt = f"${self.rt}"
+            rd = f"${self.rd}"
+            result = f"{formated_opcode} {rt},"
+            result = result.ljust(14, ' ')
+            if self.uniqueId in (InstructionVectorId.CFC2, InstructionVectorId.CTC2):
+                result += f" {rd}"
+            else:
+                # TODO: improve
+                index = self.sa>>1
+                # TODO: use vector register instead of rd
+                result += f" {rd}[{index}]"
+        else:
             result = f"{formated_opcode} {vd},"
             result = result.ljust(14, ' ')
             result += f" {vs},"
             result = result.ljust(19, ' ')
             result += f" {vt}"
             if self.e != 0:
+                # TODO: do this properly
                 result += f"[{e}]"
-            return result
 
-        return super().disassemble(context)
+        if self.isImplemented():
+            result = "ERROR # " + result
+        return result
