@@ -268,7 +268,7 @@ def disassemblerMain():
         outputPath = args.output
         i = 0
         for row in splits:
-            offset, vram, fileName, section, nextOffset, isHandwritten = row
+            offset, vram, fileName, section, nextOffset, isHandwritten, isRsp = row
 
             if section == FileSectionType.Text:
                 modeCallback = simpleDisasmFile
@@ -290,7 +290,7 @@ def disassemblerMain():
                 eprint("Error! Section not set!")
                 exit(1)
             printVerbose(f"Reading '{fileName}'")
-            f = modeCallback(array_of_bytes, f"{outputPath}/{fileName}", offset, nextOffset, vram, context, isHandwritten, False, newStuffSuffix)
+            f = modeCallback(array_of_bytes, f"{outputPath}/{fileName}", offset, nextOffset, vram, context, isHandwritten, isRsp, newStuffSuffix)
             processedFiles.append((f"{outputPath}/{fileName}", f))
 
             printQuietless(lenLastLine*" " + "\r", end="")

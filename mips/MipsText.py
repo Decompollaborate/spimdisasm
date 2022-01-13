@@ -43,6 +43,7 @@ class Text(Section):
         instructionOffset = 0
 
         isLikelyHandwritten = self.isHandwritten
+        newFunctions = list()
 
         isInstrImplemented = True
         index = 0
@@ -54,6 +55,16 @@ class Text(Section):
 
             if functionEnded:
                 functionEnded = False
+
+                if not isLikelyHandwritten or self.isRsp:
+                    for isFake, targetVram, targetFuncName in newFunctions:
+                        if isFake:
+                            self.context.addFakeFunction(targetVram, targetFuncName)
+                        else:
+                            self.context.addFunction(None, targetVram, targetFuncName)
+
+                newFunctions.clear()
+
                 isLikelyHandwritten = self.isHandwritten
                 index += 1
                 instructionOffset += 4
@@ -78,7 +89,7 @@ class Text(Section):
                 instr = instructions[index]
                 isInstrImplemented = instr.isImplemented()
 
-            if not isLikelyHandwritten:
+            if not self.isRsp and not isLikelyHandwritten:
                 if isinstance(instr, InstructionCoprocessor2):
                     isLikelyHandwritten = True
                 elif isinstance(instr, InstructionCoprocessor0):
@@ -126,6 +137,15 @@ class Text(Section):
                         lowerHalf = from2Complement(instr.immediate, 16)
                         registersValues[instr.rt] = upperHalf + lowerHalf
 
+            elif instr.isJType():
+                target = instr.instr_index << 2
+                if not self.isRsp:
+                    target |= 0x80000000
+                if instr.uniqueId == InstructionId.J and not self.isRsp:
+                    newFunctions.append((True, target, f"fakefunc_{target:08X}"))
+                else:
+                    newFunctions.append((False, target, f"func_{target:08X}"))
+
             if not (farthestBranch > 0):
                 if instr.uniqueId == InstructionId.JR:
                     if instr.getRegisterName(instr.rs) == "$ra":
@@ -133,7 +153,7 @@ class Text(Section):
                     else:
                         if instr.rs in registersValues:
                             functionEnded = True
-                elif instr.uniqueId == InstructionId.J and isLikelyHandwritten:
+                elif instr.uniqueId == InstructionId.J and (isLikelyHandwritten or (GlobalConfig.DISASSEMBLE_RSP and self.isRsp)):
                     functionEnded = True
 
             if self.vRamStart > 0:
@@ -141,7 +161,7 @@ class Text(Section):
                     vram = self.getVramOffset(instructionOffset) + 8
                     funcContext = self.context.getFunction(vram)
                     if funcContext is not None:
-                        if funcContext.isUserDefined:
+                        if funcContext.isUserDefined or (GlobalConfig.DISASSEMBLE_RSP and self.isRsp):
                             functionEnded = True
 
             index += 1

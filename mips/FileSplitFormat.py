@@ -33,9 +33,13 @@ class FileSplitFormat:
             offset, vram, fileName = row
 
             isHandwritten = False
+            isRsp = False
             offset = offset.upper()
             if offset[-1] == "H":
                 isHandwritten = True
+                offset = offset[:-1]
+            elif offset[-1] == "R":
+                isRsp = True
                 offset = offset[:-1]
 
             if fileName == ".text":
@@ -67,4 +71,4 @@ class FileSplitFormat:
                     nextOffsetStr = nextOffsetStr[:-1]
                 nextOffset = int(nextOffsetStr, 16)
 
-            yield (offset, vram, fileName, section, nextOffset, isHandwritten)
+            yield (offset, vram, fileName, section, nextOffset, isHandwritten, isRsp)
