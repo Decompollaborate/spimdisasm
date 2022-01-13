@@ -32,6 +32,12 @@ class ContextSymbol:
         self.isDefined = False
         self.isUserDefined = False
         self.isBss = False
+        self.referenceCounter: int = 0
+
+    def getSymbolPlusOffset(self, vramAddress: int):
+        if self.vram == vramAddress:
+            return self.name
+        return f"{self.name} + 0x{vramAddress - self.vram:X}"
 
 class Context:
     def __init__(self):
@@ -43,19 +49,19 @@ class Context:
 
         self.funcAddresses: Dict[int, ContextSymbol] = dict()
 
-        self.labels: Dict[int, str] = dict()
+        self.labels: Dict[int, ContextSymbol] = dict()
         # self.symbols: SortedDict[int, ContextSymbol]
         self.symbols = SortedDict()
 
         # Where the jump table is
-        self.jumpTables: Dict[int, str] = dict()
+        self.jumpTables: Dict[int, ContextSymbol] = dict()
         # The addresses each jump table has
-        self.jumpTablesLabels: Dict[int, str] = dict()
+        self.jumpTablesLabels: Dict[int, ContextSymbol] = dict()
 
         # Functions jumped into Using J instead of JAL
-        self.fakeFunctions: Dict[int, str] = dict()
+        self.fakeFunctions: Dict[int, ContextSymbol] = dict()
 
-        self.constants: Dict[int, str] = dict()
+        self.constants: Dict[int, ContextSymbol] = dict()
 
         self.newPointersInData: Set[int] = set()
 
@@ -63,9 +69,9 @@ class Context:
         self.bannedSymbols: Set[int] = set()
 
 
-    def getAnySymbol(self, vramAddress: int) -> str|None:
+    def getAnySymbol(self, vramAddress: int) -> ContextSymbol|None:
         if vramAddress in self.funcAddresses:
-            return self.funcAddresses[vramAddress].name
+            return self.funcAddresses[vramAddress]
 
         if vramAddress in self.jumpTablesLabels:
             return self.jumpTablesLabels[vramAddress]
@@ -77,7 +83,7 @@ class Context:
             return self.jumpTables[vramAddress]
 
         if vramAddress in self.symbols:
-            return self.symbols[vramAddress].name
+            return self.symbols[vramAddress]
 
         if vramAddress in self.fakeFunctions:
             return self.fakeFunctions[vramAddress]
@@ -85,9 +91,9 @@ class Context:
         return None
 
     # Like getAnySymbol, but it doesn't search in self.symbols
-    def getAnyNonSymbol(self, vramAddress: int) -> str|None:
+    def getAnyNonSymbol(self, vramAddress: int) -> ContextSymbol|None:
         if vramAddress in self.funcAddresses:
-            return self.funcAddresses[vramAddress].name
+            return self.funcAddresses[vramAddress]
 
         if vramAddress in self.jumpTablesLabels:
             return self.jumpTablesLabels[vramAddress]
@@ -103,25 +109,23 @@ class Context:
 
         return None
 
-    def getGenericSymbol(self, vramAddress: int, tryPlusOffset: bool = True) -> str|None:
+    def getGenericSymbol(self, vramAddress: int, tryPlusOffset: bool = True) -> ContextSymbol|None:
         if vramAddress in self.funcAddresses:
-            return self.funcAddresses[vramAddress].name
+            return self.funcAddresses[vramAddress]
 
         if vramAddress in self.jumpTables:
             return self.jumpTables[vramAddress]
 
         if vramAddress in self.symbols:
-            return self.symbols[vramAddress].name
+            return self.symbols[vramAddress]
 
         if GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET and tryPlusOffset:
             rangeObj = self.symbols.irange(maximum=vramAddress, reverse=True)
             for vram in rangeObj:
                 contextSym: ContextSymbol = self.symbols[vram]
 
-                symbolName = contextSym.name
-                symbolSize = contextSym.size
-                if vramAddress > vram and vramAddress < vram + symbolSize:
-                    return f"{symbolName} + {toHex(vramAddress - vram, 1)}"
+                if vramAddress > vram and vramAddress < vram + contextSym.size:
+                    return contextSym
 
                 # Only one iteration
                 break
@@ -148,9 +152,9 @@ class Context:
                 break
         return None
 
-    def getGenericLabel(self, vramAddress: int) -> str|None:
+    def getGenericLabel(self, vramAddress: int) -> ContextSymbol|None:
         if vramAddress in self.funcAddresses:
-            return self.funcAddresses[vramAddress].name
+            return self.funcAddresses[vramAddress]
 
         if vramAddress in self.jumpTablesLabels:
             return self.jumpTablesLabels[vramAddress]
@@ -166,7 +170,7 @@ class Context:
 
         return None
 
-    def getConstant(self, constantValue: int) -> str|None:
+    def getConstant(self, constantValue: int) -> ContextSymbol|None:
         if constantValue in self.constants:
             return self.constants[constantValue]
 
@@ -189,15 +193,27 @@ class Context:
 
     def addBranchLabel(self, vramAddress: int, name: str):
         if vramAddress not in self.labels:
-            self.labels[vramAddress] = name
+            contextSymbol = ContextSymbol(vramAddress, name)
+            contextSymbol.type = "@branchlabel"
+            self.labels[vramAddress] = contextSymbol
 
     def addJumpTable(self, vramAddress: int, name: str):
         if vramAddress not in self.jumpTables:
-            self.jumpTables[vramAddress] = name
+            contextSymbol = ContextSymbol(vramAddress, name)
+            contextSymbol.type = "@jumptable"
+            self.jumpTables[vramAddress] = contextSymbol
+
+    def addJumpTableLabel(self, vramAddress: int, name: str):
+        if vramAddress not in self.jumpTables:
+            contextSymbol = ContextSymbol(vramAddress, name)
+            contextSymbol.type = "@jumptablelabel"
+            self.jumpTablesLabels[vramAddress] = contextSymbol
 
     def addFakeFunction(self, vramAddress: int, name: str):
         if vramAddress not in self.fakeFunctions:
-            self.fakeFunctions[vramAddress] = name
+            contextSymbol = ContextSymbol(vramAddress, name)
+            contextSymbol.type = "@fakefunction"
+            self.fakeFunctions[vramAddress] = contextSymbol
 
 
     def fillDefaultBannedSymbols(self):
@@ -428,7 +444,7 @@ class Context:
             constantValueStr, constantName = row
 
             constantValue = int(constantValueStr, 16)
-            self.constants[constantValue] = constantName
+            self.constants[constantValue] = ContextSymbol(constantValue, constantName)
 
 
     def saveContextToFile(self, filepath: str):
@@ -439,17 +455,17 @@ class Context:
                 jal = 0x0C000000 | jal
                 f.write(f"function,{file},{toHex(address, 8)},{symbol.name},{toHex(jal, 8)},{symbol.isDefined}\n")
 
-            for address, name in self.jumpTables.items():
+            for address, symbol in self.jumpTables.items():
                 file = self.symbolToFile.get(address, "")
-                f.write(f"jump_table,{file},{toHex(address, 8)},{name},\n")
+                f.write(f"jump_table,{file},{toHex(address, 8)},{symbol.name},\n")
 
-            for address, name in self.jumpTablesLabels.items():
+            for address, symbol in self.jumpTablesLabels.items():
                 file = self.symbolToFile.get(address, "")
-                f.write(f"jump_table_label,{file},{toHex(address, 8)},{name},\n")
+                f.write(f"jump_table_label,{file},{toHex(address, 8)},{symbol.name},\n")
 
-            for address, name in self.labels.items():
+            for address, symbol in self.labels.items():
                 file = self.symbolToFile.get(address, "")
-                f.write(f"label,{file},{toHex(address, 8)},{name},\n")
+                f.write(f"label,{file},{toHex(address, 8)},{symbol.name},\n")
 
             for address, symbol in self.symbols.items():
                 if self.getAnyNonSymbol(address) is not None:
@@ -458,13 +474,13 @@ class Context:
                 file = self.symbolToFile.get(address, "")
                 f.write(f"symbol,{file},{toHex(address, 8)},{symbol.name},{symbol.type},{symbol.size},{symbol.isDefined or symbol.isUserDefined}\n")
 
-            for address, name in self.fakeFunctions.items():
+            for address, symbol in self.fakeFunctions.items():
                 file = self.symbolToFile.get(address, "")
-                f.write(f"fake_function,{file},{toHex(address, 8)},{name},\n")
+                f.write(f"fake_function,{file},{toHex(address, 8)},{symbol.name},\n")
 
-            for address, name in self.constants.items():
+            for address, constant in self.constants.items():
                 file = self.symbolToFile.get(address, "")
-                f.write(f"constants,{file},{toHex(address, 8)},{name},\n")
+                f.write(f"constants,{file},{toHex(address, 8)},{constant.name},\n")
 
             for address in self.newPointersInData:
                 file = self.symbolToFile.get(address, "")

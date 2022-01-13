@@ -48,7 +48,8 @@ class Function:
             return None
 
         self.referencedVRams.add(address)
-        if self.context.getGenericSymbol(address) is None:
+        contextSym = self.context.getGenericSymbol(address)
+        if contextSym is None:
             if GlobalConfig.ADD_NEW_SYMBOLS:
                 contextSym = ContextSymbol(address, "D_" + toHex(address, 8)[2:])
                 if lowerInstr.isFloatInstruction():
@@ -59,7 +60,10 @@ class Function:
                 if self.parent.newStuffSuffix:
                     if address >= self.vram:
                         contextSym.name += f"_{self.parent.newStuffSuffix}"
+                contextSym.referenceCounter = 1
                 self.context.symbols[address] = contextSym
+        else:
+            contextSym.referenceCounter += 1
 
         if lowerOffset not in self.pointersPerInstruction:
             self.pointersPerInstruction[lowerOffset] = address
@@ -101,7 +105,8 @@ class Function:
                     self.referencedVRams.add(self.vram + branch)
                     auxLabel = self.context.getGenericLabel(self.vram + branch)
                     if auxLabel is not None:
-                        label = auxLabel
+                        auxLabel.referenceCounter += 1
+                        label = auxLabel.name
                     else:
                         label = ".L" + toHex(self.vram + branch, 5)[2:]
                 else:
@@ -338,7 +343,8 @@ class Function:
                     branch = instructionOffset + diff*4 + 1*4
                     label = self.context.getGenericLabel(self.vram + branch)
                     if self.vram >= 0 and label is not None:
-                        immOverride = label
+                        immOverride = label.name
+                        label.referenceCounter += 1
                     elif self.inFileOffset + branch in self.localLabels:
                         immOverride = self.localLabels[self.inFileOffset + branch]
 
@@ -346,21 +352,23 @@ class Function:
                 if not self.pointersRemoved and instructionOffset in self.pointersPerInstruction:
                     address = self.pointersPerInstruction[instructionOffset]
 
-                    symbol = self.context.getGenericSymbol(address)
+                    symbol = self.context.getGenericSymbol(address, True)
                     if symbol is not None:
+                        symbolName = symbol.getSymbolPlusOffset(address)
                         if instr.uniqueId == InstructionId.LUI:
-                            immOverride = f"%hi({symbol})"
+                            immOverride = f"%hi({symbolName})"
                         else:
-                            immOverride= f"%lo({symbol})"
+                            immOverride= f"%lo({symbolName})"
                 elif instructionOffset in self.constantsPerInstruction:
                     constant = self.constantsPerInstruction[instructionOffset]
 
                     symbol = self.context.getConstant(constant)
                     if symbol is not None:
+                        constantName = symbol.name
                         if instr.uniqueId == InstructionId.LUI:
-                            immOverride = f"%hi({symbol})"
+                            immOverride = f"%hi({constantName})"
                         else:
-                            immOverride= f"%lo({symbol})"
+                            immOverride= f"%lo({constantName})"
                     else:
                         if instr.uniqueId == InstructionId.LUI:
                             immOverride = f"(0x{constant:X} >> 16)"
@@ -392,13 +400,13 @@ class Function:
                         # Skip over this function to avoid duplication
                         pass
                     elif currentVram in self.context.jumpTablesLabels:
-                        label = "glabel " + labelAux + "\n"
+                        label = "glabel " + labelAux.name + "\n"
                     else:
-                        label = labelAux + ":\n"
+                        label = labelAux.name + ":\n"
                 elif auxOffset in self.localLabels:
                     label = self.localLabels[auxOffset] + ":\n"
                 elif currentVram in self.context.fakeFunctions:
-                    label = self.context.fakeFunctions[currentVram] + ":\n"
+                    label = self.context.fakeFunctions[currentVram].name + ":\n"
 
             output += label + line + "\n"
 
@@ -422,7 +430,8 @@ class Function:
                 vramHex = toHex(self.vram + instructionOffset, 8)[2:]
                 auxLabel = self.context.getGenericLabel(self.vram + instructionOffset) or self.context.getGenericSymbol(self.vram + instructionOffset, tryPlusOffset=False)
                 if auxLabel is not None:
-                    label = f"\nglabel {auxLabel}\n"
+                    label = f"\nglabel {auxLabel.name}\n"
+                    auxLabel.referenceCounter += 1
 
                 contextVar = self.context.getSymbol(self.vram + instructionOffset, False)
                 if contextVar is not None:
