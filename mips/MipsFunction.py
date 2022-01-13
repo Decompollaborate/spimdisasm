@@ -183,7 +183,8 @@ class Function:
                     if rs in registersValues:
                         address = registersValues[rs]
                         self.referencedVRams.add(address)
-                        self.context.addJumpTable(address, "jtbl_" + toHex(address, 8)[2:])
+                        jumpTableSymbol = self.context.addJumpTable(address, "jtbl_" + toHex(address, 8)[2:])
+                        jumpTableSymbol.referenceCounter += 1
 
             if not instr.isFloatInstruction():
                 if not isLui and instr.modifiesRt():

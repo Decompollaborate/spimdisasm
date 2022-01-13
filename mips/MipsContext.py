@@ -202,6 +202,8 @@ class Context:
             contextSymbol = ContextSymbol(vramAddress, name)
             contextSymbol.type = "@jumptable"
             self.jumpTables[vramAddress] = contextSymbol
+            return contextSymbol
+        return self.jumpTables[vramAddress]
 
     def addJumpTableLabel(self, vramAddress: int, name: str):
         if vramAddress not in self.jumpTables:
