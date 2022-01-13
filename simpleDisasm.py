@@ -7,10 +7,12 @@ import argparse
 from mips.Utils import *
 from mips.GlobalConfig import GlobalConfig, printQuietless, printVerbose
 from mips.FileSplitFormat import FileSplitFormat, FileSectionType
+from mips.MipsSection import Section
 from mips.MipsText import Text
 from mips.MipsData import Data
 from mips.MipsRodata import Rodata
 from mips.MipsBss import Bss
+from mips.MipsFunction import Function
 from mips.MipsContext import Context
 
 
@@ -169,6 +171,76 @@ def writeSection(x):
 
     return path
 
+def writeSplitedFunction(path: str, func: Function, rodataFileList: List[Tuple[str, Rodata]], context: Context):
+    # FOR TESTING PURPOSES
+    # TODO: REMOVE
+    path = path.replace("/text/", "/functions/")
+
+    print(os.path.join(path, func.name) + ".s")
+    os.makedirs(path, exist_ok=True)
+    with open(os.path.join(path, func.name) + ".s", "w") as f:
+
+        rodata_stuff = []
+        rodataLen = 0
+        firstRodata = None
+        for _, rodata in rodataFileList:
+            if len(rodata_stuff) > 0:
+                break
+            intersection = func.referencedVRams & rodata.symbolsVRams
+            if len(intersection) == 0:
+                continue
+
+            sortedSymbolVRams = sorted(rodata.symbolsVRams)
+
+            for vram in sorted(intersection):
+                nextVramIndex = sortedSymbolVRams.index(vram) + 1
+                nextVram = float("inf") if nextVramIndex >= len(sortedSymbolVRams) else sortedSymbolVRams[nextVramIndex]
+
+                rodataSymbol = context.getGenericSymbol(vram, False)
+                assert rodataSymbol is not None
+                if rodataSymbol.vram == 0x801D9AD0:
+                    print(rodataSymbol.referenceCounter)
+                if rodataSymbol.referenceCounter != 1:
+                    break
+
+                j = 0
+                while j < len(rodata.words):
+                    rodataVram = rodata.getVramOffset(j*4)
+                    if rodataVram < vram:
+                        j += 1
+                        continue
+                    if rodataVram >= nextVram:
+                        break
+                    if rodataVram == 0x801D9B30:
+                        print("FIRST")
+
+                    if firstRodata is None:
+                        firstRodata = rodata.vRamStart
+
+                    nthRodata, skip = rodata.getNthWord(j)
+                    rodata_stuff.append(nthRodata)
+                    rodata_stuff.append("\n")
+                    j += skip
+                    j += 1
+                    rodataLen += 1
+
+                rodata_stuff.append("\n")
+
+        if len(rodata_stuff) > 0:
+            f.write(".late_rodata\n")
+            if rodataLen / len(func.instructions) > 1/3:
+                align = 4
+                if firstRodata is not None:
+                    if firstRodata % 8 == 0:
+                        align = 8
+                f.write(f".late_rodata_alignment {align}\n")
+            for x in rodata_stuff:
+                f.write(x)
+
+            f.write("\n.text\n")
+
+        f.write(func.disassemble())
+
 
 def disassemblerMain():
     description = "General purpose N64-mips disassembler"
@@ -182,6 +254,8 @@ def disassemblerMain():
     parser.add_argument("--start", help="", default="0")
     parser.add_argument("--end", help="",  default="0xFFFFFF")
     parser.add_argument("--vram", help="Set the VRAM address", default="-1")
+
+    # parser.add_argument("--split-functions", help="Enables the function and rodata spliter. Expects a path to place the splited functions", metavar="PATH")
 
     parser.add_argument("--save-context", help="Saves the context to a file. The provided filename will be suffixed with the corresponding version.", metavar="FILENAME")
 
@@ -338,6 +412,11 @@ def disassemblerMain():
             i += 1
 
     printVerbose("Spliting functions")
+    if False:
+        for path, f in processedFiles[FileSectionType.Text]:
+            file: Text = f
+            for func in file.functions:
+                writeSplitedFunction(path, func, processedFiles[FileSectionType.Rodata], context)
 
 
     if args.save_context is not None:
