@@ -69,7 +69,7 @@ class Data(Section):
 
                 auxLabel = self.context.getGenericLabel(currentVram) or self.context.getGenericSymbol(currentVram, tryPlusOffset=False)
                 if auxLabel is not None:
-                    label = "\nglabel " + auxLabel + "\n"
+                    label = "\nglabel " + auxLabel.getSymbolPlusOffset(currentVram) + "\n"
 
                 contVariable = self.context.getSymbol(currentVram, False)
                 if contVariable is not None:
@@ -79,7 +79,7 @@ class Data(Section):
             value = toHex(w, 8)
             symbol = self.context.getAnySymbol(w)
             if symbol is not None:
-                value = symbol
+                value = symbol.name
 
             #comment = " "symbol
             comment = ""

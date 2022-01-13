@@ -38,7 +38,7 @@ class Rodata(Section):
 
                 if partOfJumpTable:
                     if w not in self.context.jumpTablesLabels:
-                        self.context.jumpTablesLabels[w] = f"L{toHex(w, 8)[2:]}"
+                        self.context.addJumpTableLabel(w, f"L{w:08X}")
                 elif currentVram in self.context.newPointersInData:
                     if self.context.getAnySymbol(currentVram) is None:
                         contextSym = ContextSymbol(currentVram, "D_" + toHex(currentVram, 8)[2:])
@@ -104,7 +104,7 @@ class Rodata(Section):
             if auxLabel is None:
                 auxLabel = self.context.getGenericSymbol(currentVram, tryPlusOffset=False)
             if auxLabel is not None:
-                label = "\nglabel " + auxLabel + "\n"
+                label = "\nglabel " + auxLabel.name + "\n"
 
             contextVar = self.context.getSymbol(currentVram, True, False)
             if contextVar is not None:
@@ -147,7 +147,7 @@ class Rodata(Section):
                 isAsciz = False
                 pass
         elif w in self.context.jumpTablesLabels:
-            value = self.context.jumpTablesLabels[w]
+            value = self.context.jumpTablesLabels[w].name
 
         comment = ""
         if GlobalConfig.ASM_COMMENT:

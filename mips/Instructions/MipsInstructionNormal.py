@@ -229,8 +229,7 @@ class InstructionNormal(InstructionBase):
             if context is not None:
                 symbol = context.getAnySymbol(vram)
                 if symbol is not None:
-                    #label = f"{symbol} # func_{instrIndexHex}"
-                    label = f"{symbol}"
+                    label = symbol.name
             return f"{result}{label}"
 
         if self.isBranch():
