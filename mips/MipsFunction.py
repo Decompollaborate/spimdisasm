@@ -112,6 +112,10 @@ class Function:
 
             elif instr.isJType():
                 target = 0x80000000 | instr.instr_index << 2
+                # For testing purposes
+                # TODO: remove
+                if GlobalConfig.DISASSEMBLE_RSP:
+                    target = (instr.instr_index<<2) # + 0x04001000
                 if instr.uniqueId == InstructionId.J:
                     self.context.addFakeFunction(target, "fakefunc_" + toHex(target, 8)[2:])
                 else:
@@ -384,8 +388,8 @@ class Function:
                 currentVram = self.vram + instructionOffset
                 labelAux = self.context.getGenericLabel(currentVram)
                 if self.vram >= 0 and labelAux is not None:
-                    if self.context.getFunction(currentVram) is not None:
-                        # Skip over functions to avoid duplication
+                    if instructionOffset == 0:
+                        # Skip over this function to avoid duplication
                         pass
                     elif currentVram in self.context.jumpTablesLabels:
                         label = "glabel " + labelAux + "\n"

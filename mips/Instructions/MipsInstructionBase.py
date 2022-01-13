@@ -110,7 +110,7 @@ class InstructionBase:
         28: "$f28",
         29: "$f29",
         30: "$f30",
-        31: "$FpcCsr",
+        31: "FpcCsr",
     }
 
     Cop2RegisterNames = {

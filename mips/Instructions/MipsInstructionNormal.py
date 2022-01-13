@@ -7,6 +7,7 @@ from .MipsConstants import InstructionId
 from ..Utils import *
 
 from .MipsInstructionBase import InstructionBase
+from ..GlobalConfig import GlobalConfig
 from ..MipsContext import Context
 
 
@@ -221,6 +222,10 @@ class InstructionNormal(InstructionBase):
             # instr_index = toHex(self.instr_index, 7)
             # return f"{opcode} {instr_index}"
             vram = (self.instr_index<<2) | 0x80000000
+            # For testing purposes
+            # TODO: remove
+            if GlobalConfig.DISASSEMBLE_RSP:
+                vram = (self.instr_index<<2) # + 0x04001000
             instrIndexHex = toHex(vram, 6)[2:]
             label = f"func_{instrIndexHex}"
             if context is not None:

@@ -51,8 +51,8 @@ class InstructionNormalRsp(InstructionNormal):
         0b00_010: InstructionVectorId.SLV,
         0b00_011: InstructionVectorId.SDV,
 
-        # 0b00_100: InstructionVectorId.SQV,
-        0b00_100: InstructionVectorId.SRV,
+        0b00_100: InstructionVectorId.SQV,
+        0b00_101: InstructionVectorId.SRV,
 
         0b00_110: InstructionVectorId.SPV,
 
@@ -70,8 +70,8 @@ class InstructionNormalRsp(InstructionNormal):
         0b00_010: InstructionVectorId.LLV,
         0b00_011: InstructionVectorId.LDV,
 
-        # 0b00_100: InstructionVectorId.LQV,
-        0b00_100: InstructionVectorId.LRV,
+        0b00_100: InstructionVectorId.LQV,
+        0b00_101: InstructionVectorId.LRV,
 
         0b00_110: InstructionVectorId.LPV,
 
@@ -101,17 +101,12 @@ class InstructionNormalRsp(InstructionNormal):
             if self.rd in self.Opcodes_BySWC2:
                 self.uniqueId = self.Opcodes_BySWC2[self.rd]
                 if self.elementLow == 0:
-                    if self.uniqueId == InstructionVectorId.SRV:
-                        self.uniqueId = InstructionVectorId.SQV
-                    elif self.uniqueId == InstructionVectorId.SWV:
+                    if self.uniqueId == InstructionVectorId.SWV:
                         self.uniqueId = InstructionVectorId.SUV
         # LWC2
         elif self.opcode == 0b110_010:
             if self.rd in self.Opcodes_ByLWC2:
                 self.uniqueId = self.Opcodes_ByLWC2[self.rd]
-                if self.elementLow == 0:
-                    if self.uniqueId == InstructionVectorId.LRV:
-                        self.uniqueId = InstructionVectorId.LQV
 
 
     def getRegisterName(self, register: int) -> str:
