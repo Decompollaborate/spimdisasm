@@ -399,3 +399,38 @@ class InstructionVectorId(enum.Enum):
     MTC2      = enum.auto()
     CFC2      = enum.auto()
     CTC2      = enum.auto()
+
+    SBV       = enum.auto()
+    SSV       = enum.auto()
+    SLV       = enum.auto()
+    SDV       = enum.auto()
+
+    SQV       = enum.auto()
+    SRV       = enum.auto()
+
+    SPV       = enum.auto()
+
+    SUV       = enum.auto()
+    SWV       = enum.auto()
+
+    SHV       = enum.auto()
+
+    SFV       = enum.auto()
+    STV       = enum.auto()
+
+    LBV       = enum.auto()
+    LSV       = enum.auto()
+    LLV       = enum.auto()
+    LDV       = enum.auto()
+
+    LQV       = enum.auto()
+    LRV       = enum.auto()
+
+    LPV       = enum.auto()
+
+    LUV       = enum.auto()
+
+    LHV       = enum.auto()
+
+    LFV       = enum.auto()
+    LTV       = enum.auto()
