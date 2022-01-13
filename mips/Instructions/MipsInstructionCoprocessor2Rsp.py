@@ -103,9 +103,9 @@ class InstructionCoprocessor2Rsp(InstructionCoprocessor2):
         formated_opcode = opcode.lower().ljust(self.ljustWidthOpcode, ' ')
         e_upper = self[25]
         e = f"{self.e}"
-        vt = f"${self.vt}"
-        vs = f"${self.vs}"
-        vd = f"${self.vd}"
+        vt = self.getVectorRspRegisterName(self.vt)
+        vs = self.getVectorRspRegisterName(self.vs)
+        vd = self.getVectorRspRegisterName(self.vd)
 
         result = formated_opcode
 
