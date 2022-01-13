@@ -172,20 +172,17 @@ def writeSection(x):
     return path
 
 def writeSplitedFunction(path: str, func: Function, rodataFileList: List[Tuple[str, Rodata]], context: Context):
-    # FOR TESTING PURPOSES
-    # TODO: REMOVE
-    path = path.replace("/text/", "/functions/")
-
-    print(os.path.join(path, func.name) + ".s")
     os.makedirs(path, exist_ok=True)
     with open(os.path.join(path, func.name) + ".s", "w") as f:
-
         rodata_stuff = []
         rodataLen = 0
         firstRodata = None
         for _, rodata in rodataFileList:
             if len(rodata_stuff) > 0:
+                # We already have the rodata for this function. Stop searching
                 break
+
+            # Skip the file if there's nothing in this file refenced by the current function
             intersection = func.referencedVRams & rodata.symbolsVRams
             if len(intersection) == 0:
                 continue
@@ -198,8 +195,7 @@ def writeSplitedFunction(path: str, func: Function, rodataFileList: List[Tuple[s
 
                 rodataSymbol = context.getGenericSymbol(vram, False)
                 assert rodataSymbol is not None
-                if rodataSymbol.vram == 0x801D9AD0:
-                    print(rodataSymbol.referenceCounter)
+                # We only care for rodata that's used once
                 if rodataSymbol.referenceCounter != 1:
                     break
 
@@ -211,8 +207,6 @@ def writeSplitedFunction(path: str, func: Function, rodataFileList: List[Tuple[s
                         continue
                     if rodataVram >= nextVram:
                         break
-                    if rodataVram == 0x801D9B30:
-                        print("FIRST")
 
                     if firstRodata is None:
                         firstRodata = rodata.vRamStart
@@ -227,6 +221,7 @@ def writeSplitedFunction(path: str, func: Function, rodataFileList: List[Tuple[s
                 rodata_stuff.append("\n")
 
         if len(rodata_stuff) > 0:
+            # Write the rodata
             f.write(".late_rodata\n")
             if rodataLen / len(func.instructions) > 1/3:
                 align = 4
@@ -239,7 +234,43 @@ def writeSplitedFunction(path: str, func: Function, rodataFileList: List[Tuple[s
 
             f.write("\n.text\n")
 
+        # Write the function
         f.write(func.disassemble())
+
+def writeOtherRodata(path: str, rodataFileList: List[Tuple[str, Rodata]], context: Context):
+    for _, rodata in rodataFileList:
+        rodataPath = os.path.join(path, rodata.filename)
+        os.makedirs(rodataPath, exist_ok=True)
+        sortedSymbolVRams = sorted(rodata.symbolsVRams)
+
+        for vram in sortedSymbolVRams:
+            nextVramIndex = sortedSymbolVRams.index(vram) + 1
+            nextVram = float("inf") if nextVramIndex >= len(sortedSymbolVRams) else sortedSymbolVRams[nextVramIndex]
+
+            rodataSymbol = context.getGenericSymbol(vram, False)
+            assert rodataSymbol is not None
+            if rodataSymbol.referenceCounter == 1:
+                continue
+
+            rodataSymbolPath = os.path.join(rodataPath, rodataSymbol.name) + ".s"
+            # print(rodataSymbolPath, rodataSymbol.referenceCounter)
+
+            with open(rodataSymbolPath, "w") as f:
+                f.write(".rdata\n")
+                j = 0
+                while j < len(rodata.words):
+                    rodataVram = rodata.getVramOffset(j*4)
+                    if rodataVram < vram:
+                        j += 1
+                        continue
+                    if rodataVram >= nextVram:
+                        break
+
+                    nthRodata, skip = rodata.getNthWord(j)
+                    f.write(nthRodata)
+                    f.write("\n")
+                    j += skip
+                    j += 1
 
 
 def disassemblerMain():
@@ -255,7 +286,7 @@ def disassemblerMain():
     parser.add_argument("--end", help="",  default="0xFFFFFF")
     parser.add_argument("--vram", help="Set the VRAM address", default="-1")
 
-    # parser.add_argument("--split-functions", help="Enables the function and rodata spliter. Expects a path to place the splited functions", metavar="PATH")
+    parser.add_argument("--split-functions", help="Enables the function and rodata splitter. Expects a path to place the splited functions", metavar="PATH")
 
     parser.add_argument("--save-context", help="Saves the context to a file. The provided filename will be suffixed with the corresponding version.", metavar="FILENAME")
 
@@ -412,12 +443,12 @@ def disassemblerMain():
             i += 1
 
     printVerbose("Spliting functions")
-    if False:
+    if args.split_functions is not None:
         for path, f in processedFiles[FileSectionType.Text]:
             file: Text = f
             for func in file.functions:
-                writeSplitedFunction(path, func, processedFiles[FileSectionType.Rodata], context)
-
+                writeSplitedFunction(os.path.join(args.split_functions, file.filename), func, processedFiles[FileSectionType.Rodata], context)
+        writeOtherRodata(args.split_functions, processedFiles[FileSectionType.Rodata], context)
 
     if args.save_context is not None:
         head, tail = os.path.split(args.save_context)
