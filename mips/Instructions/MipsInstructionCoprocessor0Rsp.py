@@ -20,6 +20,8 @@ class InstructionCoprocessor0Rsp(InstructionCoprocessor0):
     def __init__(self, instr: int):
         super().__init__(instr)
 
+        self.isRsp = True
+
         # self.opcodesDict = 
         self.processUniqueId()
 

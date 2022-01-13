@@ -55,6 +55,8 @@ class InstructionSpecialRsp(InstructionSpecial):
     def __init__(self, instr: int):
         super().__init__(instr)
 
+        self.isRsp = True
+
         for opcode in InstructionSpecialRsp.RemovedOpcodes:
             if opcode in self.opcodesDict:
                 del self.opcodesDict[opcode]

@@ -22,6 +22,7 @@ class FileBase:
         self.pointersOffsets: List[int] = list()
 
         self.isHandwritten: bool = False
+        self.isRsp: bool = False
         self.newStuffSuffix = ""
 
     @property

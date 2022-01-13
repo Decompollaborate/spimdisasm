@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from ..Utils import *
 
-from ..GlobalConfig import GlobalConfig
-
 from .MipsConstants import InstructionId
 
 from .MipsInstructionBase import InstructionBase
@@ -26,10 +24,6 @@ from .MipsInstructionCoprocessor2Rsp import InstructionCoprocessor2Rsp
 
 
 def wordToInstruction(word: int) -> InstructionBase:
-    # For testing only
-    # TODO: REMOVE
-    if GlobalConfig.DISASSEMBLE_RSP:
-        return wordToInstructionRsp(word)
     if ((word >> 26) & 0x3F) == 0x00:
         return InstructionSpecial(word)
     if ((word >> 26) & 0x3F) == 0x01:

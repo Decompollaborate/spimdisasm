@@ -33,6 +33,8 @@ class Function:
 
         self.parent: Any = None
 
+        self.isRsp: bool = False
+
     @property
     def nInstr(self) -> int:
         return len(self.instructions)
@@ -111,11 +113,9 @@ class Function:
                 self.branchInstructions.append(instructionOffset)
 
             elif instr.isJType():
-                target = 0x80000000 | instr.instr_index << 2
-                # For testing purposes
-                # TODO: remove
-                if GlobalConfig.DISASSEMBLE_RSP:
-                    target = (instr.instr_index<<2) # + 0x04001000
+                target = instr.instr_index << 2
+                if not self.isRsp:
+                    target |= 0x80000000
                 if instr.uniqueId == InstructionId.J:
                     self.context.addFakeFunction(target, "fakefunc_" + toHex(target, 8)[2:])
                 else:

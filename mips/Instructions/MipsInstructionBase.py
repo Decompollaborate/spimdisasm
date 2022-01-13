@@ -250,6 +250,8 @@ class InstructionBase:
 
         self.ljustWidthOpcode = 7+4
 
+        self.isRsp: bool = False
+
     @property
     def instr(self) -> int:
         return (self.opcode << 26) | (self.rs << 21) | (self.rt << 16) | (self.immediate)

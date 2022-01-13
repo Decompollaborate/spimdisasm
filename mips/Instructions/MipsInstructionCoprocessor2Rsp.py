@@ -7,7 +7,6 @@ from .MipsConstants import InstructionId, InstructionVectorId
 from ..Utils import *
 
 from .MipsInstructionCoprocessor2 import InstructionCoprocessor2
-from ..GlobalConfig import GlobalConfig
 from ..MipsContext import Context
 
 
@@ -70,6 +69,8 @@ class InstructionCoprocessor2Rsp(InstructionCoprocessor2):
     def __init__(self, instr: int):
         super().__init__(instr)
 
+        self.isRsp = True
+
         self.opcodesDict = dict(self.Cop2Opcodes)
         self.processUniqueId()
 
@@ -83,8 +84,6 @@ class InstructionCoprocessor2Rsp(InstructionCoprocessor2):
 
 
     def isImplemented(self) -> bool:
-        if not GlobalConfig.DISASSEMBLE_RSP:
-            return False
         return super().isImplemented()
 
     def modifiesRt(self) -> bool:
