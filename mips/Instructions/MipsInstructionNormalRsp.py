@@ -124,6 +124,7 @@ class InstructionNormalRsp(InstructionNormal):
         vt = self.getVectorRspRegisterName(self.vt)
         base = self.getGprRspRegisterName(self.baseRegister)
         offset = hex(self.offsetVector)
+        element = self.processVectorElement(self.elementLow)
 
         if self.uniqueId in (InstructionVectorId.LSV, InstructionVectorId.SSV, ):
             offset = hex(self.offsetVector << 1)
@@ -143,7 +144,7 @@ class InstructionNormalRsp(InstructionNormal):
         result = f"{formated_opcode} "
         # SWC2, LWC2
         if self.opcode in (0b111_010, 0b110_010, ):
-            result += f"{vt}[{self.elementLow}],"
+            result += f"{vt}[{element}],"
             result = result.ljust(14, ' ')
             result += f" {offset}({base})"
 
