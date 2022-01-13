@@ -102,7 +102,7 @@ class InstructionCoprocessor2Rsp(InstructionCoprocessor2):
         opcode = self.getOpcodeName()
         formated_opcode = opcode.lower().ljust(self.ljustWidthOpcode, ' ')
         e_upper = self[25]
-        e = f"{self.elementHigh}"
+        e = self.processVectorElement(self.elementHigh)
         vt = self.getVectorRspRegisterName(self.vt)
         vs = self.getVectorRspRegisterName(self.vs)
         vd = self.getVectorRspRegisterName(self.vd)

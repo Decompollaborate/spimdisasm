@@ -413,6 +413,16 @@ class InstructionBase:
         return self.VectorRspRegisterNames.get(register, f"${register:02X}")
 
 
+    def processVectorElement(self, element: int) -> int:
+        if (element & 0x8) == 0x8:
+            return element & 7
+        if (element & 0xC) == 0x4:
+            return element & 4
+        if (element & 0xE) == 0x2:
+            return element & 2
+        return element
+
+
     def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName().lower().ljust(self.ljustWidthOpcode, ' ')
         rs = self.getRegisterName(self.rs)
