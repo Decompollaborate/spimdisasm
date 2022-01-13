@@ -302,8 +302,14 @@ class InstructionBase:
     def vt(self) -> int:
         return self.rt
     @property
-    def e(self) -> int:
+    def elementHigh(self) -> int:
         return self.rs & 0xF
+    @property
+    def elementLow(self) -> int:
+        return (self.sa >> 1) & 0xF
+    @property
+    def offsetVector(self) -> int:
+        return self.immediate & 0x7F
 
 
     def __getitem__(self, key):

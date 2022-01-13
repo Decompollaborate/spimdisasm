@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .MipsConstants import InstructionId
+from .MipsConstants import InstructionId, InstructionVectorId
 
 from ..Utils import *
 
@@ -32,16 +32,37 @@ class InstructionNormalRsp(InstructionNormal):
         0b101_110: InstructionId.SWR,
 
         0b110_000: InstructionId.LL,
+        # 0b110_010: InstructionId.LWC2,
         0b110_100: InstructionId.LLD,
         0b110_101: InstructionId.LDC1,
         0b110_110: InstructionId.LDC2,
         0b110_111: InstructionId.LD,
 
         0b111_000: InstructionId.SC,
+        0b111_010: InstructionId.SWC2,
         0b111_100: InstructionId.SCD,
         0b111_101: InstructionId.SDC1,
         0b111_110: InstructionId.SDC2,
         0b111_111: InstructionId.SD,
+    }
+    Opcodes_BySWC2: Dict[int, InstructionVectorId] = {
+        0b00_000: InstructionVectorId.SBV,
+        0b00_001: InstructionVectorId.SSV,
+        0b00_010: InstructionVectorId.SLV,
+        0b00_011: InstructionVectorId.SDV,
+
+        # 0b00_100: InstructionVectorId.SQV,
+        0b00_100: InstructionVectorId.SRV,
+
+        0b00_110: InstructionVectorId.SPV,
+
+        # 0b00_111: InstructionVectorId.SUV,
+        0b00_111: InstructionVectorId.SWV,
+
+        0b01_000: InstructionVectorId.SHV,
+        0b01_001: InstructionVectorId.SFV,
+
+        0b01_011: InstructionVectorId.STV,
     }
 
     def __init__(self, instr: int):
@@ -53,5 +74,54 @@ class InstructionNormalRsp(InstructionNormal):
 
         self.processUniqueId()
 
+
+    def processUniqueId(self):
+        super().processUniqueId()
+
+        # SWC2
+        if self.opcode == 0b111_010:
+            if self.rd in self.Opcodes_BySWC2:
+                self.uniqueId = self.Opcodes_BySWC2[self.rd]
+                if self.elementLow == 0:
+                    if self.uniqueId == InstructionVectorId.SRV:
+                        self.uniqueId = InstructionVectorId.SQV
+                    elif self.uniqueId == InstructionVectorId.SWV:
+                        self.uniqueId = InstructionVectorId.SUV
+
+
     def getRegisterName(self, register: int) -> str:
         return self.getGprRspRegisterName(register)
+
+
+    def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
+        opcode = self.getOpcodeName()
+        formated_opcode = opcode.lower().ljust(self.ljustWidthOpcode, ' ')
+        vt = self.getVectorRspRegisterName(self.vt)
+        base = self.getGprRspRegisterName(self.baseRegister)
+        offset = hex(self.offsetVector)
+
+        if self.uniqueId in (InstructionVectorId.LSV, InstructionVectorId.SSV, ):
+            offset = hex(self.offsetVector << 1)
+        elif self.uniqueId in (InstructionVectorId.LLV, InstructionVectorId.SLV, ):
+            offset = hex(self.offsetVector << 2)
+        elif self.uniqueId in (InstructionVectorId.LDV, InstructionVectorId.SDV,
+                               InstructionVectorId.LPV, InstructionVectorId.SPV,
+                               InstructionVectorId.LUV, InstructionVectorId.SUV, ):
+            offset = hex(self.offsetVector << 3)
+        elif self.uniqueId in (InstructionVectorId.LQV, InstructionVectorId.SQV,
+                               InstructionVectorId.LRV, InstructionVectorId.SRV,
+                               InstructionVectorId.LHV, InstructionVectorId.SHV,
+                               InstructionVectorId.LFV, InstructionVectorId.SFV,
+                               InstructionVectorId.LTV, InstructionVectorId.STV, InstructionVectorId.SWV, ):
+            offset = hex(self.offsetVector << 4)
+
+        result = f"{formated_opcode} "
+        # SWC2
+        if self.opcode == 0b111_010:
+            result += f"{vt}[{self.elementLow}],"
+            result = result.ljust(14, ' ')
+            result += f" {offset}({base})"
+
+            return result
+
+        return super().disassemble(context, immOverride)

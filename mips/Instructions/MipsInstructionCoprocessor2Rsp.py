@@ -79,7 +79,7 @@ class InstructionCoprocessor2Rsp(InstructionCoprocessor2):
 
         self.uniqueId = self.opcodesDict.get(self.function, InstructionVectorId.INVALID)
         if self[25] == 0:
-            self.uniqueId = self.Cop2MoveOpcodes.get(self.e, InstructionVectorId.INVALID)
+            self.uniqueId = self.Cop2MoveOpcodes.get(self.elementHigh, InstructionVectorId.INVALID)
 
 
     def isImplemented(self) -> bool:
@@ -102,7 +102,7 @@ class InstructionCoprocessor2Rsp(InstructionCoprocessor2):
         opcode = self.getOpcodeName()
         formated_opcode = opcode.lower().ljust(self.ljustWidthOpcode, ' ')
         e_upper = self[25]
-        e = f"{self.e}"
+        e = f"{self.elementHigh}"
         vt = self.getVectorRspRegisterName(self.vt)
         vs = self.getVectorRspRegisterName(self.vs)
         vd = self.getVectorRspRegisterName(self.vd)
@@ -136,7 +136,7 @@ class InstructionCoprocessor2Rsp(InstructionCoprocessor2):
             result += f" {vs},"
             result = result.ljust(19, ' ')
             result += f" {vt}"
-            if self.e != 0:
+            if self.elementHigh != 0:
                 # TODO: do this properly
                 result += f"[{e}]"
 
