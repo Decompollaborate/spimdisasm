@@ -248,12 +248,17 @@ def disassemblerMain():
     array_of_bytes = readFileAsBytearray(args.binary)
     input_name = os.path.splitext(os.path.split(args.binary)[1])[0]
 
-    processedFiles = []
+    processedFiles = {
+        FileSectionType.Text: [],
+        FileSectionType.Data: [],
+        FileSectionType.Rodata: [],
+        FileSectionType.Bss: [],
+    }
     lenLastLine = 80
 
     if args.file_splits is None:
         f =  simpleDisasmFile(array_of_bytes, args.output, int(args.start, 16), int(args.end, 16), int(args.vram, 16), context, False, GlobalConfig.DISASSEMBLE_RSP, newStuffSuffix)
-        processedFiles.append((args.output, f))
+        processedFiles[FileSectionType.Text].append((args.output, f))
     else:
         splits = FileSplitFormat(args.file_splits)
 
@@ -291,7 +296,7 @@ def disassemblerMain():
                 exit(1)
             printVerbose(f"Reading '{fileName}'")
             f = modeCallback(array_of_bytes, f"{outputPath}/{fileName}", offset, nextOffset, vram, context, isHandwritten, isRsp, newStuffSuffix)
-            processedFiles.append((f"{outputPath}/{fileName}", f))
+            processedFiles[section].append((f"{outputPath}/{fileName}", f))
 
             printQuietless(lenLastLine*" " + "\r", end="")
             progressStr = f" Analyzing: {i/splitsCount:%}. File: {fileName}\r"
@@ -304,27 +309,36 @@ def disassemblerMain():
     processedFilesCount = len(processedFiles)
     if args.nuke_pointers:
         printVerbose("Nuking pointers...")
-        for i, (path, f) in enumerate(processedFiles):
-            printVerbose(f"Nuking pointers of {path}")
+        i = 0
+        for section, filesInSection in processedFiles.items():
+            for path, f in filesInSection:
+                printVerbose(f"Nuking pointers of {path}")
+                printQuietless(lenLastLine*" " + "\r", end="")
+                progressStr = f" Nuking pointers: {i/processedFilesCount:%}. File: {path}\r"
+                lenLastLine = max(len(progressStr), lenLastLine)
+                printQuietless(progressStr, end="")
+
+                f.removePointers()
+                i += 1
+
+    printVerbose("Writing files...")
+    i = 0
+    for section, filesInSection in processedFiles.items():
+        for path, f in filesInSection:
+            printVerbose(f"Writing {path}")
             printQuietless(lenLastLine*" " + "\r", end="")
-            progressStr = f" Nuking pointers: {i/processedFilesCount:%}. File: {path}\r"
+            progressStr = f" Writing: {i/processedFilesCount:%}. File: {path}\r"
             lenLastLine = max(len(progressStr), lenLastLine)
             printQuietless(progressStr, end="")
 
-            f.removePointers()
+            if path == "-":
+                printQuietless()
 
-    printVerbose("Writing files...")
-    for i, (path, f) in enumerate(processedFiles):
-        printVerbose(f"Writing {path}")
-        printQuietless(lenLastLine*" " + "\r", end="")
-        progressStr = f" Writing: {i/processedFilesCount:%}. File: {path}\r"
-        lenLastLine = max(len(progressStr), lenLastLine)
-        printQuietless(progressStr, end="")
+            writeSection((path, f))
+            i += 1
 
-        if path == "-":
-            printQuietless()
+    printVerbose("Spliting functions")
 
-        writeSection((path, f))
 
     if args.save_context is not None:
         head, tail = os.path.split(args.save_context)
