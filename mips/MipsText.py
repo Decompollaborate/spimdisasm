@@ -6,7 +6,7 @@ from .Utils import *
 from .GlobalConfig import GlobalConfig
 from .MipsFileBase import FileBase
 from .MipsSection import Section
-from .Instructions import InstructionBase, wordToInstruction, InstructionId, InstructionCoprocessor0, InstructionCoprocessor2
+from .Instructions import InstructionBase, wordToInstruction, wordToInstructionRsp, InstructionId, InstructionCoprocessor0, InstructionCoprocessor2
 from .MipsFunction import Function
 from .MipsContext import Context, ContextSymbol
 
@@ -32,7 +32,11 @@ class Text(Section):
 
         instructions: List[InstructionBase] = list()
         for word in self.words:
-            instructions.append(wordToInstruction(word))
+            if self.isRsp:
+                instr = wordToInstructionRsp(word)
+            else:
+                instr = wordToInstruction(word)
+            instructions.append(instr)
 
         trackedRegisters: Dict[int, int] = dict()
         registersValues: Dict[int, int] = dict()
@@ -77,7 +81,6 @@ class Text(Section):
             if not isLikelyHandwritten:
                 if isinstance(instr, InstructionCoprocessor2):
                     isLikelyHandwritten = True
-                    isInstrImplemented = False
                 elif isinstance(instr, InstructionCoprocessor0):
                     isLikelyHandwritten = True
                 elif instr.getRegisterName(instr.rs) in ("$k0", "$k1"):
@@ -99,7 +102,7 @@ class Text(Section):
                         j = len(funcsStartsList) - 1
                         while j >= 0:
                             if index + branch < funcsStartsList[j]:
-                                if GlobalConfig.TRUST_USER_FUNCTIONS:
+                                if GlobalConfig.TRUST_USER_FUNCTIONS or (GlobalConfig.DISASSEMBLE_RSP and self.isRsp):
                                     vram = self.getVramOffset(funcsStartsList[j]*4)
                                     if self.context.getFunction(vram) is not None:
                                         j -= 1
@@ -134,7 +137,7 @@ class Text(Section):
                     functionEnded = True
 
             if self.vRamStart > 0:
-                if GlobalConfig.TRUST_USER_FUNCTIONS:
+                if GlobalConfig.TRUST_USER_FUNCTIONS or (GlobalConfig.DISASSEMBLE_RSP and self.isRsp):
                     vram = self.getVramOffset(instructionOffset) + 8
                     funcContext = self.context.getFunction(vram)
                     if funcContext is not None:
@@ -193,6 +196,7 @@ class Text(Section):
             func.pointersOffsets += self.pointersOffsets
             func.hasUnimplementedIntrs = hasUnimplementedIntrs
             func.parent = self
+            func.isRsp = self.isRsp
             func.analyze()
             self.functions.append(func)
             i += 1

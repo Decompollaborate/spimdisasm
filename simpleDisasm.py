@@ -14,7 +14,7 @@ from mips.MipsBss import Bss
 from mips.MipsContext import Context
 
 
-def simpleDisasmFile(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context, isHandwritten: bool=False, newStuffSuffix: str=""):
+def simpleDisasmFile(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context, isHandwritten: bool=False, isRsp: bool=False, newStuffSuffix: str=""):
     head, tail = os.path.split(outputPath)
 
     if offsetEnd >= 0:
@@ -26,6 +26,7 @@ def simpleDisasmFile(array_of_bytes: bytearray, outputPath: str, offsetStart: in
 
     f = Text(array_of_bytes, tail, "ver", context)
     f.isHandwritten = isHandwritten
+    f.isRsp = isRsp
     f.newStuffSuffix = newStuffSuffix
 
     if vram >= 0:
@@ -75,7 +76,7 @@ def simpleDisasmFile(array_of_bytes: bytearray, outputPath: str, offsetStart: in
     return f
 
 
-def simpleDisasmData(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context, isHandwritten: bool=False, newStuffSuffix: str=""):
+def simpleDisasmData(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context, isHandwritten: bool=False, isRsp: bool=False, newStuffSuffix: str=""):
     head, tail = os.path.split(outputPath)
 
     if offsetEnd >= 0:
@@ -87,6 +88,7 @@ def simpleDisasmData(array_of_bytes: bytearray, outputPath: str, offsetStart: in
 
     f = Data(array_of_bytes, tail, "ver", context)
     f.isHandwritten = isHandwritten
+    f.isRsp = isRsp
     f.newStuffSuffix = newStuffSuffix
 
     if vram >= 0:
@@ -102,7 +104,7 @@ def simpleDisasmData(array_of_bytes: bytearray, outputPath: str, offsetStart: in
     return f
 
 
-def simpleDisasmRodata(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context, isHandwritten: bool=False, newStuffSuffix: str=""):
+def simpleDisasmRodata(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context, isHandwritten: bool=False, isRsp: bool=False, newStuffSuffix: str=""):
     head, tail = os.path.split(outputPath)
 
     if offsetEnd >= 0:
@@ -114,6 +116,7 @@ def simpleDisasmRodata(array_of_bytes: bytearray, outputPath: str, offsetStart: 
 
     f = Rodata(array_of_bytes, tail, "ver", context)
     f.isHandwritten = isHandwritten
+    f.isRsp = isRsp
     f.newStuffSuffix = newStuffSuffix
 
     if vram >= 0:
@@ -129,7 +132,7 @@ def simpleDisasmRodata(array_of_bytes: bytearray, outputPath: str, offsetStart: 
     return f
 
 
-def simpleDisasmBss(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context, isHandwritten: bool=False, newStuffSuffix: str=""):
+def simpleDisasmBss(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context, isHandwritten: bool=False, isRsp: bool=False, newStuffSuffix: str=""):
     head, tail = os.path.split(outputPath)
 
     if vram < 0:
@@ -137,6 +140,7 @@ def simpleDisasmBss(array_of_bytes: bytearray, outputPath: str, offsetStart: int
 
     f = Bss(vram, vram + offsetEnd - offsetStart, tail, "ver", context)
     f.isHandwritten = isHandwritten
+    f.isRsp = isRsp
     f.newStuffSuffix = newStuffSuffix
 
     if vram >= 0:
@@ -189,7 +193,7 @@ def disassemblerMain():
     parser.add_argument("--add-filename", help="Adds the filename of the file to the generated function/variable name")
 
     parser.add_argument("--disasm-unknown", help="Force disassembly of functions with unknown instructions",  action="store_true")
-    parser.add_argument("--disasm-rsp", help="Experimental. Enables the detection and disassembly of rsp abi instructions. Warning: In its current state the generated asm may not be assemblable to a matching binary",  action="store_true")
+    parser.add_argument("--disasm-rsp", help="Experimental. Enables the disassembly of rsp abi instructions. Warning: In its current state the generated asm may not be assemblable to a matching binary",  action="store_true")
 
     parser.add_argument("-v", "--verbose", help="Enable verbose mode",  action="store_true")
     parser.add_argument("-q", "--quiet", help="Silence most output",  action="store_true")
@@ -248,7 +252,7 @@ def disassemblerMain():
     lenLastLine = 80
 
     if args.file_splits is None:
-        f =  simpleDisasmFile(array_of_bytes, args.output, int(args.start, 16), int(args.end, 16), int(args.vram, 16), context, False, newStuffSuffix)
+        f =  simpleDisasmFile(array_of_bytes, args.output, int(args.start, 16), int(args.end, 16), int(args.vram, 16), context, False, GlobalConfig.DISASSEMBLE_RSP, newStuffSuffix)
         processedFiles.append((args.output, f))
     else:
         splits = FileSplitFormat(args.file_splits)
@@ -286,7 +290,7 @@ def disassemblerMain():
                 eprint("Error! Section not set!")
                 exit(1)
             printVerbose(f"Reading '{fileName}'")
-            f = modeCallback(array_of_bytes, f"{outputPath}/{fileName}", offset, nextOffset, vram, context, isHandwritten, newStuffSuffix)
+            f = modeCallback(array_of_bytes, f"{outputPath}/{fileName}", offset, nextOffset, vram, context, isHandwritten, False, newStuffSuffix)
             processedFiles.append((f"{outputPath}/{fileName}", f))
 
             printQuietless(lenLastLine*" " + "\r", end="")

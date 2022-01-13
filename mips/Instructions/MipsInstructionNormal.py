@@ -221,11 +221,9 @@ class InstructionNormal(InstructionBase):
         if self.isJType():
             # instr_index = toHex(self.instr_index, 7)
             # return f"{opcode} {instr_index}"
-            vram = (self.instr_index<<2) | 0x80000000
-            # For testing purposes
-            # TODO: remove
-            if GlobalConfig.DISASSEMBLE_RSP:
-                vram = (self.instr_index<<2) # + 0x04001000
+            vram = self.instr_index<<2
+            if not self.isRsp:
+                vram |= 0x80000000
             instrIndexHex = toHex(vram, 6)[2:]
             label = f"func_{instrIndexHex}"
             if context is not None:
