@@ -59,3 +59,7 @@ class InstructionSpecialRsp(InstructionSpecial):
             if opcode in self.opcodesDict:
                 del self.opcodesDict[opcode]
         self.processUniqueId()
+
+
+    def getRegisterName(self, register: int) -> str:
+        return self.getGprRspRegisterName(register)
