@@ -32,7 +32,7 @@ class InstructionNormalRsp(InstructionNormal):
         0b101_110: InstructionId.SWR,
 
         0b110_000: InstructionId.LL,
-        # 0b110_010: InstructionId.LWC2,
+        0b110_010: InstructionId.LWC2,
         0b110_100: InstructionId.LLD,
         0b110_101: InstructionId.LDC1,
         0b110_110: InstructionId.LDC2,
@@ -64,6 +64,24 @@ class InstructionNormalRsp(InstructionNormal):
 
         0b01_011: InstructionVectorId.STV,
     }
+    Opcodes_ByLWC2: Dict[int, InstructionVectorId] = {
+        0b00_000: InstructionVectorId.LBV,
+        0b00_001: InstructionVectorId.LSV,
+        0b00_010: InstructionVectorId.LLV,
+        0b00_011: InstructionVectorId.LDV,
+
+        # 0b00_100: InstructionVectorId.LQV,
+        0b00_100: InstructionVectorId.LRV,
+
+        0b00_110: InstructionVectorId.LPV,
+
+        0b00_111: InstructionVectorId.LUV,
+
+        0b01_000: InstructionVectorId.LHV,
+        0b01_001: InstructionVectorId.LFV,
+
+        0b01_011: InstructionVectorId.LTV,
+    }
 
     def __init__(self, instr: int):
         super().__init__(instr)
@@ -87,6 +105,13 @@ class InstructionNormalRsp(InstructionNormal):
                         self.uniqueId = InstructionVectorId.SQV
                     elif self.uniqueId == InstructionVectorId.SWV:
                         self.uniqueId = InstructionVectorId.SUV
+        # LWC2
+        elif self.opcode == 0b110_010:
+            if self.rd in self.Opcodes_ByLWC2:
+                self.uniqueId = self.Opcodes_ByLWC2[self.rd]
+                if self.elementLow == 0:
+                    if self.uniqueId == InstructionVectorId.LRV:
+                        self.uniqueId = InstructionVectorId.LQV
 
 
     def getRegisterName(self, register: int) -> str:
@@ -116,8 +141,8 @@ class InstructionNormalRsp(InstructionNormal):
             offset = hex(self.offsetVector << 4)
 
         result = f"{formated_opcode} "
-        # SWC2
-        if self.opcode == 0b111_010:
+        # SWC2, LWC2
+        if self.opcode in (0b111_010, 0b110_010, ):
             result += f"{vt}[{self.elementLow}],"
             result = result.ljust(14, ' ')
             result += f" {offset}({base})"
