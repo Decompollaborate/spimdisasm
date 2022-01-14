@@ -33,6 +33,7 @@ class ContextSymbol:
         self.isUserDefined = False
         self.isBss = False
         self.referenceCounter: int = 0
+        self.isLateRodata: bool = False
 
     def getSymbolPlusOffset(self, vramAddress: int):
         if self.vram == vramAddress:
@@ -201,6 +202,7 @@ class Context:
         if vramAddress not in self.jumpTables:
             contextSymbol = ContextSymbol(vramAddress, name)
             contextSymbol.type = "@jumptable"
+            contextSymbol.isLateRodata = True
             self.jumpTables[vramAddress] = contextSymbol
             return contextSymbol
         return self.jumpTables[vramAddress]

@@ -174,11 +174,12 @@ def writeSection(x):
 def writeSplitedFunction(path: str, func: Function, rodataFileList: List[Tuple[str, Rodata]], context: Context):
     os.makedirs(path, exist_ok=True)
     with open(os.path.join(path, func.name) + ".s", "w") as f:
-        rodata_stuff = []
-        rodataLen = 0
+        rdataList = []
+        lateRodataList = []
+        lateRodataLen = 0
         firstRodata = None
         for _, rodata in rodataFileList:
-            if len(rodata_stuff) > 0:
+            if len(rdataList) > 0 or len(lateRodataList) > 0:
                 # We already have the rodata for this function. Stop searching
                 break
 
@@ -212,24 +213,39 @@ def writeSplitedFunction(path: str, func: Function, rodataFileList: List[Tuple[s
                         firstRodata = rodata.vRamStart
 
                     nthRodata, skip = rodata.getNthWord(j)
-                    rodata_stuff.append(nthRodata)
-                    rodata_stuff.append("\n")
                     j += skip
                     j += 1
-                    rodataLen += 1
+                    if rodataSymbol.isLateRodata:
+                        lateRodataList.append(nthRodata)
+                        lateRodataList.append("\n")
+                        lateRodataLen += 1
+                    else:
+                        rdataList.append(nthRodata)
+                        rdataList.append("\n")
 
-                rodata_stuff.append("\n")
+                if rodataSymbol.isLateRodata:
+                    lateRodataList.append("\n")
+                else:
+                    rdataList.append("\n")
 
-        if len(rodata_stuff) > 0:
-            # Write the rodata
+        if len(rdataList) > 0:
+            # Write the rdata
+            f.write(".rdata\n")
+            for x in rdataList:
+                f.write(x)
+
+            f.write("\n.text\n")
+
+        if len(lateRodataList) > 0:
+            # Write the late_rodata
             f.write(".late_rodata\n")
-            if rodataLen / len(func.instructions) > 1/3:
+            if lateRodataLen / len(func.instructions) > 1/3:
                 align = 4
                 if firstRodata is not None:
                     if firstRodata % 8 == 0:
                         align = 8
                 f.write(f".late_rodata_alignment {align}\n")
-            for x in rodata_stuff:
+            for x in lateRodataList:
                 f.write(x)
 
             f.write("\n.text\n")
