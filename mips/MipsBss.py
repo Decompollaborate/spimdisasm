@@ -17,7 +17,7 @@ class Bss(Section):
         self.bssVramEnd: int = bssVramEnd
 
     def analyze(self):
-        # Check if the very start of the file has a bss variable and create it if it doesn't exists yet
+        # Check if the very start of the file has a bss variable and create it if it doesn't exist yet
         if self.context.getSymbol(self.bssVramStart, False) is None:
             contextSym = ContextSymbol(self.bssVramStart, "D_" + toHex(self.bssVramStart, 8)[2:])
             contextSym.isDefined = True
