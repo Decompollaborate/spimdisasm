@@ -434,3 +434,15 @@ class InstructionVectorId(enum.Enum):
 
     LFV       = enum.auto()
     LTV       = enum.auto()
+
+InstructionsNotEmitedByIDO = {
+    InstructionId.ADD,
+    InstructionId.ADDI,
+    InstructionId.MTC0,
+    InstructionId.MFC0,
+    InstructionId.ERET,
+    InstructionId.TLBP,
+    InstructionId.TLBR,
+    InstructionId.TLBWI,
+    InstructionId.CACHE,
+}

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from .Utils import *
 from .GlobalConfig import GlobalConfig
-from .Instructions import InstructionBase, InstructionId
+from .Instructions import InstructionBase, InstructionId, InstructionsNotEmitedByIDO, InstructionCoprocessor0, InstructionCoprocessor2
 from .MipsContext import Context, ContextSymbol
 
 class Function:
@@ -34,6 +34,8 @@ class Function:
         self.parent: Any = None
 
         self.isRsp: bool = False
+
+        self.isLikelyHandwritten: bool = False
 
     @property
     def nInstr(self) -> int:
@@ -92,6 +94,12 @@ class Function:
         instructionOffset = 0
         for instr in self.instructions:
             isLui = False
+            self.isLikelyHandwritten |= instr.uniqueId in InstructionsNotEmitedByIDO
+            if not self.isLikelyHandwritten:
+                if isinstance(instr, InstructionCoprocessor2):
+                    self.isLikelyHandwritten = True
+                elif isinstance(instr, InstructionCoprocessor0):
+                    self.isLikelyHandwritten = True
 
             if not GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS and not instr.isImplemented():
                 # Abort analysis
@@ -319,6 +327,9 @@ class Function:
         if not GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS:
             if self.hasUnimplementedIntrs:
                 return self.disassembleAsData()
+
+        if self.isLikelyHandwritten:
+            output += "/* Possibly handwritten function */\n"
 
         output += f"glabel {self.name}"
         if GlobalConfig.FUNCTION_ASM_COUNT:
