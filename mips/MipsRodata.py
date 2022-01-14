@@ -19,6 +19,15 @@ class Rodata(Section):
 
     def analyze(self):
         if self.vRamStart > -1:
+            # Check if the very start of the file has a rodata variable and create it if it doesn't exist yet
+            startVram = self.getVramOffset(0)
+            if self.context.getSymbol(startVram, False) is None and startVram not in self.context.newPointersInData:
+                contextSym = ContextSymbol(startVram, f"D_{startVram:08X}")
+                contextSym.isDefined = True
+                if self.newStuffSuffix:
+                    contextSym.name += f"_{self.newStuffSuffix}"
+                self.context.symbols[startVram] = contextSym
+
             offset = 0
             partOfJumpTable = False
             for w in self.words:
