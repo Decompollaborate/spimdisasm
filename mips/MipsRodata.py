@@ -115,12 +115,14 @@ class Rodata(Section):
                     # Filter out NaN and infinity
                     if (w & 0x7F800000) != 0x7F800000:
                         isFloat = True
+                    contextVar.isLateRodata = True
                 elif type == "f64":
                     # Filter out NaN and infinity
                     if (((w << 32) | self.words[i+1]) & 0x7FF0000000000000) != 0x7FF0000000000000:
                         # Prevent accidentally losing symbols
                         if self.context.getGenericSymbol(currentVram+4, False) is None:
                             isDouble = True
+                    contextVar.isLateRodata = True
                 elif type == "char":
                     isAsciz = True
 
