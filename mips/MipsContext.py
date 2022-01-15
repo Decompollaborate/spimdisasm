@@ -241,6 +241,7 @@ class Context:
             contextSym = ContextSymbol(vram, name)
             contextSym.type = type
             contextSym.size = size
+            contextSym.isDefined = True
             contextSym.isUserDefined = True
             self.symbols[vram] = contextSym
 
@@ -347,6 +348,7 @@ class Context:
             contextSym = ContextSymbol(vram, name)
             contextSym.type = "@hardwarereg"
             contextSym.size = 4
+            contextSym.isDefined = True
             contextSym.isUserDefined = True
             self.symbols[vram] = contextSym
 
@@ -457,7 +459,7 @@ class Context:
                 file = self.symbolToFile.get(address, "")
                 jal = (address & 0x00FFFFFF) >> 2
                 jal = 0x0C000000 | jal
-                f.write(f"function,{file},{toHex(address, 8)},{symbol.name},{toHex(jal, 8)},{symbol.isDefined}\n")
+                f.write(f"function,{file},{toHex(address, 8)},{symbol.name},{toHex(jal, 8)},{symbol.isUserDefined},{symbol.isDefined}\n")
 
             for address, symbol in self.jumpTables.items():
                 file = self.symbolToFile.get(address, "")
@@ -476,7 +478,7 @@ class Context:
                     # Filter out symbols defined in other categories
                     continue
                 file = self.symbolToFile.get(address, "")
-                f.write(f"symbol,{file},{toHex(address, 8)},{symbol.name},{symbol.type},{symbol.size},{symbol.isDefined or symbol.isUserDefined}\n")
+                f.write(f"symbol,{file},{toHex(address, 8)},{symbol.name},{symbol.type},{symbol.size},{symbol.isUserDefined},{symbol.isDefined}\n")
 
             for address, symbol in self.fakeFunctions.items():
                 file = self.symbolToFile.get(address, "")
