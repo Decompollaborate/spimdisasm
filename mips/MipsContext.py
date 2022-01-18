@@ -35,6 +35,12 @@ class ContextSymbol:
         self.referenceCounter: int = 0
         self.isLateRodata: bool = False
 
+    def setTypeIfUnset(self, varType: str) -> bool:
+        if self.type == "":
+            self.type = varType
+            return True
+        return False
+
     def getSymbolPlusOffset(self, vramAddress: int):
         if self.vram == vramAddress:
             return self.name

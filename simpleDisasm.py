@@ -342,6 +342,8 @@ def disassemblerMain():
     GlobalConfig.TRUST_USER_FUNCTIONS = True
     GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS = args.disasm_unknown
     GlobalConfig.DISASSEMBLE_RSP = args.disasm_rsp
+    # TODO: remove? add flag?
+    GlobalConfig.STRING_GUESSER = False
     GlobalConfig.VERBOSE = args.verbose
     GlobalConfig.QUIET = args.quiet
 

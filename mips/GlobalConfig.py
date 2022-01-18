@@ -21,6 +21,8 @@ class GlobalConfig:
     DISASSEMBLE_UNKNOWN_INSTRUCTIONS: bool = False
     DISASSEMBLE_RSP: bool = False
 
+    STRING_GUESSER: bool = False
+
     QUIET: bool = False
     VERBOSE: bool = False
 
