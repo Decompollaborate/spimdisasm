@@ -32,6 +32,8 @@ class Rodata(Section):
             partOfJumpTable = False
             for w in self.words:
                 currentVram = self.getVramOffset(offset)
+                contextSym = self.context.getAnySymbol(currentVram)
+
                 if currentVram in self.context.jumpTables:
                     partOfJumpTable = True
 
@@ -56,10 +58,23 @@ class Rodata(Section):
                             if self.bytes[offset] != 0:
                                 # Filter out empty strings
                                 contextSym.type = "char"
-                        except UnicodeDecodeError:
+                        except (UnicodeDecodeError, RuntimeError):
                             pass
                         self.context.symbols[currentVram] = contextSym
                         self.context.newPointersInData.remove(currentVram)
+                elif contextSym is not None:
+                    # String guesser
+                    if contextSym.type == "" and contextSym.referenceCounter <= 1:
+                        contextSym.isMaybeString = True
+                        # This would mean the string is an empty string, which is not very likely
+                        if self.bytes[offset] == 0:
+                            contextSym.isMaybeString = False
+                        if contextSym.isMaybeString:
+                            try:
+                                decodeString(self.bytes, offset)
+                            except (UnicodeDecodeError, RuntimeError):
+                                # String can't be decoded
+                                contextSym.isMaybeString = False
 
                 auxLabel = self.context.getGenericLabel(currentVram)
                 if auxLabel is not None:
@@ -134,7 +149,7 @@ class Rodata(Section):
                     contextVar.isLateRodata = True
                 elif type == "char":
                     isAsciz = True
-                elif GlobalConfig.STRING_GUESSER and (contextVar.type == "" and contextVar.referenceCounter == 1):
+                elif GlobalConfig.STRING_GUESSER and contextVar.isMaybeString:
                     isAsciz = True
 
                 if contextVar.vram == currentVram:
