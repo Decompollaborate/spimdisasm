@@ -32,8 +32,9 @@ class ContextSymbol:
         self.isDefined = False
         self.isUserDefined = False
         self.isBss = False
-        self.referenceCounter: int = 0
+        self.referenceCounter: int = 0 # Only considers .text references
         self.isLateRodata: bool = False
+        self.isMaybeString: bool = False
 
     def setTypeIfUnset(self, varType: str) -> bool:
         if self.type == "":

@@ -343,9 +343,11 @@ def disassemblerMain():
     GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS = args.disasm_unknown
     GlobalConfig.DISASSEMBLE_RSP = args.disasm_rsp
     # TODO: remove? add flag?
-    GlobalConfig.STRING_GUESSER = False
+    GlobalConfig.STRING_GUESSER = True
     GlobalConfig.VERBOSE = args.verbose
     GlobalConfig.QUIET = args.quiet
+    GlobalConfig.PRINT_FUNCTION_ANALYSIS_DEBUG_INFO = False
+    GlobalConfig.PRINT_SYMBOL_FINDER_DEBUG_INFO = False
 
     newStuffSuffix = args.add_filename
     if newStuffSuffix is None:
