@@ -327,6 +327,11 @@ def disassemblerMain():
     parser.add_argument("--non-libultra", help="Don't use built-in libultra symbols", action="store_true")
     parser.add_argument("--non-hardware-regs", help="Don't use built-in hardware registers symbols", action="store_true")
 
+    parser.add_argument("--disable-string-guesser", help="Disables the string guesser feature (does nto affect the strings referenced by .data)", action="store_true")
+
+    parser.add_argument("--debug-func-analysis", help="Enables some debug info printing related to the function analysis)", action="store_true")
+    parser.add_argument("--debug-symbol-finder", help="Enables some debug info printing related to the symbol finder system)", action="store_true")
+
     args = parser.parse_args()
 
     GlobalConfig.REMOVE_POINTERS = args.nuke_pointers
@@ -343,11 +348,11 @@ def disassemblerMain():
     GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS = args.disasm_unknown
     GlobalConfig.DISASSEMBLE_RSP = args.disasm_rsp
     # TODO: remove? add flag?
-    GlobalConfig.STRING_GUESSER = True
+    GlobalConfig.STRING_GUESSER = not args.disable_string_guesser
     GlobalConfig.VERBOSE = args.verbose
     GlobalConfig.QUIET = args.quiet
-    GlobalConfig.PRINT_FUNCTION_ANALYSIS_DEBUG_INFO = False
-    GlobalConfig.PRINT_SYMBOL_FINDER_DEBUG_INFO = False
+    GlobalConfig.PRINT_FUNCTION_ANALYSIS_DEBUG_INFO = args.debug_func_analysis
+    GlobalConfig.PRINT_SYMBOL_FINDER_DEBUG_INFO = args.debug_symbol_finder
 
     newStuffSuffix = args.add_filename
     if newStuffSuffix is None:
@@ -431,7 +436,11 @@ def disassemblerMain():
             printVerbose("\n")
             i += 1
 
-    processedFilesCount = len(processedFiles)
+    processedFilesCount = 0
+    processedFiles
+    for sect in processedFiles.values():
+        processedFilesCount += len(sect)
+
     if args.nuke_pointers:
         printVerbose("Nuking pointers...")
         i = 0

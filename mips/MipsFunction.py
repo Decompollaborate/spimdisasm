@@ -123,6 +123,9 @@ class Function:
             currentVram = self.vram + instructionOffset
             isLui = False
             self.isLikelyHandwritten |= instr.uniqueId in InstructionsNotEmitedByIDO
+
+            self._printAnalisisDebugInfo_IterInfo(instr, instr.rs, instr.rt, instr.rd, currentVram, trackedRegisters, registersValues)
+
             if not self.isLikelyHandwritten:
                 if isinstance(instr, InstructionCoprocessor2):
                     self.isLikelyHandwritten = True
