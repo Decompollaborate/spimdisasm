@@ -437,6 +437,31 @@ class InstructionBase:
         return f"ERROR # {opcode} {rs} {rt} {immediate}"
 
 
+    def mapInstrToType(self) -> str|None:
+        if self.isFloatInstruction():
+            if self.isDoubleFloatInstruction():
+                return "f64"
+            else:
+                return "f32"
+        if self.uniqueId in (InstructionId.LW, InstructionId.SW):
+            return "s32"
+        if self.uniqueId in (InstructionId.LWU, ):
+            return "u32"
+        if self.uniqueId in (InstructionId.LH, InstructionId.SH):
+            return "s16"
+        if self.uniqueId in (InstructionId.LHU, ):
+            return "u16"
+        if self.uniqueId in (InstructionId.LB, InstructionId.SB):
+            return "s8"
+        if self.uniqueId in (InstructionId.LBU, ):
+            return "u8"
+        if self.uniqueId in (InstructionId.LD, InstructionId.SD):
+            return "s64"
+        # if self.uniqueId in (InstructionId.LDU, InstructionId.SDU):
+        #     return "u64"
+        return None
+
+
     def __str__(self) -> str:
         return self.disassemble(None)
 

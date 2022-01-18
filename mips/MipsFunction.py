@@ -54,11 +54,9 @@ class Function:
         if contextSym is None:
             if GlobalConfig.ADD_NEW_SYMBOLS:
                 contextSym = ContextSymbol(address, "D_" + toHex(address, 8)[2:])
-                if lowerInstr.isFloatInstruction():
-                    if lowerInstr.isDoubleFloatInstruction():
-                        contextSym.type = "f64"
-                    else:
-                        contextSym.type = "f32"
+                instrType = lowerInstr.mapInstrToType()
+                if instrType is not None:
+                    contextSym.setTypeIfUnset(instrType)
                 if self.parent.newStuffSuffix:
                     if address >= self.vram:
                         contextSym.name += f"_{self.parent.newStuffSuffix}"

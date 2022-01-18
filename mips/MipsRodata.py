@@ -134,6 +134,8 @@ class Rodata(Section):
                     contextVar.isLateRodata = True
                 elif type == "char":
                     isAsciz = True
+                elif GlobalConfig.STRING_GUESSER and (contextVar.type == "" and contextVar.referenceCounter == 1):
+                    isAsciz = True
 
                 if contextVar.vram == currentVram:
                     contextVar.isDefined = True
