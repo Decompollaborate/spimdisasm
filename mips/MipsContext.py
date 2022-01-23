@@ -423,6 +423,9 @@ class Context:
 
             vramStr, varName, varType, varSizeStr = row
 
+            if vramStr == "-":
+                continue
+
             vram = int(vramStr, 16)
             varSize = int(varSizeStr, 16)
             contVar = ContextSymbol(vram, varName)
@@ -442,6 +445,9 @@ class Context:
 
             vramStr, funcName = row
 
+            if vramStr == "-":
+                continue
+
             vram = int(vramStr, 16)
             self.addFunction(None, vram, funcName)
             self.funcAddresses[vram].isUserDefined = True
@@ -456,6 +462,9 @@ class Context:
                 continue
 
             constantValueStr, constantName = row
+
+            if constantValueStr == "-":
+                continue
 
             constantValue = int(constantValueStr, 16)
             self.constants[constantValue] = ContextSymbol(constantValue, constantName)
