@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+import argparse
 
 class GlobalConfig:
     REMOVE_POINTERS: bool = False
@@ -27,6 +28,54 @@ class GlobalConfig:
     VERBOSE: bool = False
     PRINT_FUNCTION_ANALYSIS_DEBUG_INFO: bool = False
     PRINT_SYMBOL_FINDER_DEBUG_INFO: bool = False
+
+
+    @classmethod
+    def addDisasmConfigToArgParse(cls, parser: argparse.ArgumentParser):
+        backendConfig = parser.add_argument_group("Disassembler backend configuration")
+
+        backendConfig.add_argument("--disasm-unknown", help="Force disassembly of functions with unknown instructions",  action="store_true")
+        backendConfig.add_argument("--disasm-rsp", help="Experimental. Enables the disassembly of rsp abi instructions. Warning: In its current state the generated asm may not be assemblable to a matching binary",  action="store_true")
+
+        backendConfig.add_argument("--ignore-words", help="A space separated list of hex numbers. Word differences will be ignored that starts in any of the provided arguments. Max value: FF. Only works when --nuke-pointers is passed", action="extend", nargs="+")
+
+        backendConfig.add_argument("--disable-string-guesser", help="Disables the string guesser feature (does nto affect the strings referenced by .data)", action="store_true")
+
+
+        miscConfig = parser.add_argument_group("Disassembler misc options")
+
+        miscConfig.add_argument("--disable-asm-comments", help="Disables the comments in assembly code", action="store_true")
+        miscConfig.add_argument("--write-binary", help="Produce a binary of the processed file", action="store_true")
+
+
+        verbosityConfig = parser.add_argument_group("Verbosity options")
+
+        verbosityConfig.add_argument("-v", "--verbose", help="Enable verbose mode",  action="store_true")
+        verbosityConfig.add_argument("-q", "--quiet", help="Silence most output",  action="store_true")
+
+
+        debugging = parser.add_argument_group("Disassembler debugging options")
+
+        debugging.add_argument("--debug-func-analysis", help="Enables some debug info printing related to the function analysis)", action="store_true")
+        debugging.add_argument("--debug-symbol-finder", help="Enables some debug info printing related to the symbol finder system)", action="store_true")
+
+
+    @classmethod
+    def parseArgs(cls, args: argparse.Namespace):
+        if args.ignore_words:
+            for upperByte in args.ignore_words:
+                GlobalConfig.IGNORE_WORD_LIST.add(int(upperByte, 16))
+
+        GlobalConfig.WRITE_BINARY = args.write_binary
+        GlobalConfig.ASM_COMMENT = not args.disable_asm_comments
+        GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS = args.disasm_unknown
+        GlobalConfig.DISASSEMBLE_RSP = args.disasm_rsp
+        GlobalConfig.STRING_GUESSER = not args.disable_string_guesser
+        GlobalConfig.VERBOSE = args.verbose
+        GlobalConfig.QUIET = args.quiet
+        GlobalConfig.PRINT_FUNCTION_ANALYSIS_DEBUG_INFO = args.debug_func_analysis
+        GlobalConfig.PRINT_SYMBOL_FINDER_DEBUG_INFO = args.debug_symbol_finder
+
 
 def printQuietless(*args, **kwargs):
     if not GlobalConfig.QUIET:
