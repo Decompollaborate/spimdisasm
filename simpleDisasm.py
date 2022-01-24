@@ -16,79 +16,31 @@ from mips.MipsFunction import Function
 from mips.MipsContext import Context
 
 
-def simpleDisasmFile(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context, isHandwritten: bool=False, isRsp: bool=False, newStuffSuffix: str=""):
+def simpleDisasmSection(sectionType: FileSectionType, array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context, isHandwritten: bool=False, isRsp: bool=False, newStuffSuffix: str=""):
     head, tail = os.path.split(outputPath)
 
-    if offsetEnd >= 0:
+    if offsetStart >= 0 and offsetEnd >= 0:
+        printVerbose(f"Parsing offset range [{offsetStart:02X}, {offsetEnd:02X}]")
+        array_of_bytes = array_of_bytes[offsetStart:offsetEnd]
+    elif offsetEnd >= 0:
         printVerbose(f"Parsing until offset {toHex(offsetEnd, 2)}")
         array_of_bytes = array_of_bytes[:offsetEnd]
-    if offsetStart >= 0:
+    elif offsetStart >= 0:
         printVerbose(f"Parsing since offset {toHex(offsetStart, 2)}")
         array_of_bytes = array_of_bytes[offsetStart:]
 
-    f = Text(array_of_bytes, tail, "ver", context)
-    f.isHandwritten = isHandwritten
-    f.isRsp = isRsp
-    f.newStuffSuffix = newStuffSuffix
+    if sectionType == FileSectionType.Text:
+        f = Text(array_of_bytes, tail, "ver", context)
+    elif sectionType == FileSectionType.Data:
+        f = Data(array_of_bytes, tail, "ver", context)
+    elif sectionType == FileSectionType.Rodata:
+        f = Rodata(array_of_bytes, tail, "ver", context)
+    elif sectionType == FileSectionType.Bss:
+        f = Bss(vram, vram + offsetEnd - offsetStart, tail, "ver", context)
+    else:
+        eprint("Error! Section not set!")
+        exit(-1)
 
-    if vram >= 0:
-        printVerbose(f"Using VRAM {toHex(vram, 2)}")
-        f.setVRamStart(vram)
-
-    printVerbose("Analyzing")
-    f.analyze()
-    f.setCommentOffset(offsetStart)
-
-    printVerbose()
-    printVerbose(f"Found {f.nFuncs} functions.")
-
-    nBoundaries = len(f.fileBoundaries)
-    if nBoundaries > 0:
-        printVerbose(f"Found {nBoundaries} file boundaries.")
-
-        for i in range(len(f.fileBoundaries)-1):
-            start = f.fileBoundaries[i]
-            end = f.fileBoundaries[i+1]
-
-            functionsInBoundary = 0
-            for func in f.functions:
-                funcOffset = func.vram - vram
-                if start <= funcOffset < end:
-                    functionsInBoundary += 1
-            fileVram = 0
-            if vram > -1:
-                fileVram = start + vram
-            printVerbose("\t", toHex(start+offsetStart, 6)[2:], toHex(end-start, 4)[2:], toHex(fileVram, 8)[2:], "\t functions:", functionsInBoundary)
-
-        start = f.fileBoundaries[-1]
-        end = f.size + f.offset
-
-        functionsInBoundary = 0
-        for func in f.functions:
-            funcOffset = func.vram - vram
-            if start <= funcOffset < end:
-                functionsInBoundary += 1
-        fileVram = 0
-        if vram > -1:
-            fileVram = start + vram
-        printVerbose("\t", toHex(start+offsetStart, 6)[2:], toHex(end-start, 4)[2:], toHex(fileVram, 8)[2:], "\t functions:", functionsInBoundary)
-
-        printVerbose()
-
-    return f
-
-
-def simpleDisasmData(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context, isHandwritten: bool=False, isRsp: bool=False, newStuffSuffix: str=""):
-    head, tail = os.path.split(outputPath)
-
-    if offsetEnd >= 0:
-        printVerbose(f"Parsing until offset {toHex(offsetEnd, 2)}")
-        array_of_bytes = array_of_bytes[:offsetEnd]
-    if offsetStart >= 0:
-        printVerbose(f"Parsing since offset {toHex(offsetStart, 2)}")
-        array_of_bytes = array_of_bytes[offsetStart:]
-
-    f = Data(array_of_bytes, tail, "ver", context)
     f.isHandwritten = isHandwritten
     f.isRsp = isRsp
     f.newStuffSuffix = newStuffSuffix
@@ -103,59 +55,10 @@ def simpleDisasmData(array_of_bytes: bytearray, outputPath: str, offsetStart: in
 
     printVerbose()
 
-    return f
-
-
-def simpleDisasmRodata(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context, isHandwritten: bool=False, isRsp: bool=False, newStuffSuffix: str=""):
-    head, tail = os.path.split(outputPath)
-
-    if offsetEnd >= 0:
-        printVerbose(f"Parsing until offset {toHex(offsetEnd, 2)}")
-        array_of_bytes = array_of_bytes[:offsetEnd]
-    if offsetStart >= 0:
-        printVerbose(f"Parsing since offset {toHex(offsetStart, 2)}")
-        array_of_bytes = array_of_bytes[offsetStart:]
-
-    f = Rodata(array_of_bytes, tail, "ver", context)
-    f.isHandwritten = isHandwritten
-    f.isRsp = isRsp
-    f.newStuffSuffix = newStuffSuffix
-
-    if vram >= 0:
-        printVerbose(f"Using VRAM {toHex(vram, 2)}")
-        f.setVRamStart(vram)
-
-    printVerbose("Analyzing")
-    f.analyze()
-    f.setCommentOffset(offsetStart)
-
-    printVerbose()
+    f.printAnalyzisResults()
 
     return f
 
-
-def simpleDisasmBss(array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context, isHandwritten: bool=False, isRsp: bool=False, newStuffSuffix: str=""):
-    head, tail = os.path.split(outputPath)
-
-    if vram < 0:
-        return
-
-    f = Bss(vram, vram + offsetEnd - offsetStart, tail, "ver", context)
-    f.isHandwritten = isHandwritten
-    f.isRsp = isRsp
-    f.newStuffSuffix = newStuffSuffix
-
-    if vram >= 0:
-        printVerbose(f"Using VRAM {toHex(vram, 2)}")
-        f.setVRamStart(vram)
-
-    printVerbose("Analyzing")
-    f.analyze()
-    f.setCommentOffset(offsetStart)
-
-    printVerbose()
-
-    return f
 
 
 def writeSection(x):
@@ -346,7 +249,7 @@ def disassemblerMain():
     lenLastLine = 80
 
     if args.file_splits is None:
-        f =  simpleDisasmFile(array_of_bytes, args.output, int(args.start, 16), int(args.end, 16), int(args.vram, 16), context, False, GlobalConfig.DISASSEMBLE_RSP, newStuffSuffix)
+        f =  simpleDisasmSection(FileSectionType.Text, array_of_bytes, args.output, int(args.start, 16), int(args.end, 16), int(args.vram, 16), context, False, GlobalConfig.DISASSEMBLE_RSP, newStuffSuffix)
         processedFiles[FileSectionType.Text].append((args.output, f))
     else:
         splits = FileSplitFormat(args.file_splits)
@@ -358,33 +261,28 @@ def disassemblerMain():
         if dataOutput is None:
             dataOutput = textOutput
 
-        modeCallback = None
         outputPath = args.output
         i = 0
         for row in splits:
             offset, vram, fileName, section, nextOffset, isHandwritten, isRsp = row
 
             if section == FileSectionType.Text:
-                modeCallback = simpleDisasmFile
                 outputPath = textOutput
             elif section == FileSectionType.Data:
-                modeCallback = simpleDisasmData
                 outputPath = dataOutput
             elif section == FileSectionType.Rodata:
-                modeCallback = simpleDisasmRodata
                 outputPath = dataOutput
             elif section == FileSectionType.Bss:
-                modeCallback = simpleDisasmBss
                 outputPath = dataOutput
+            else:
+                eprint("Error! Section not set!")
+                exit(1)
 
             if fileName == "":
                 fileName = f"{input_name}_{vram:08X}"
 
-            if modeCallback is None:
-                eprint("Error! Section not set!")
-                exit(1)
             printVerbose(f"Reading '{fileName}'")
-            f = modeCallback(array_of_bytes, f"{outputPath}/{fileName}", offset, nextOffset, vram, context, isHandwritten, isRsp, newStuffSuffix)
+            f = simpleDisasmSection(section, array_of_bytes, f"{outputPath}/{fileName}", offset, nextOffset, vram, context, isHandwritten, isRsp, newStuffSuffix)
             processedFiles[section].append((f"{outputPath}/{fileName}", f))
 
             printQuietless(lenLastLine*" " + "\r", end="")

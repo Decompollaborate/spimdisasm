@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from .Utils import *
-from .GlobalConfig import GlobalConfig
+from .GlobalConfig import GlobalConfig, printVerbose
 from .MipsFileBase import FileBase
 from .MipsSection import Section
 from .Instructions import InstructionBase, wordToInstruction, wordToInstructionRsp, InstructionId, InstructionCoprocessor0, InstructionCoprocessor2
@@ -220,6 +220,49 @@ class Text(Section):
             func.analyze()
             self.functions.append(func)
             i += 1
+
+    def printAnalyzisResults(self):
+        super().printAnalyzisResults()
+        if not GlobalConfig.VERBOSE:
+            return
+
+
+        printVerbose(f"Found {self.nFuncs} functions.")
+
+        nBoundaries = len(self.fileBoundaries)
+        if nBoundaries > 0:
+            printVerbose(f"Found {nBoundaries} file boundaries.")
+
+            for i in range(len(self.fileBoundaries)-1):
+                start = self.fileBoundaries[i]
+                end = self.fileBoundaries[i+1]
+
+                functionsInBoundary = 0
+                for func in self.functions:
+                    funcOffset = func.vram - self.vRamStart
+                    if start <= funcOffset < end:
+                        functionsInBoundary += 1
+                fileVram = 0
+                if self.vRamStart > -1:
+                    fileVram = start + self.vRamStart
+                printVerbose("\t", toHex(start+self.commentOffset, 6)[2:], toHex(end-start, 4)[2:], toHex(fileVram, 8)[2:], "\t functions:", functionsInBoundary)
+
+            start = self.fileBoundaries[-1]
+            end = self.size + self.offset
+
+            functionsInBoundary = 0
+            for func in self.functions:
+                funcOffset = func.vram - self.vRamStart
+                if start <= funcOffset < end:
+                    functionsInBoundary += 1
+            fileVram = 0
+            if self.vRamStart > -1:
+                fileVram = start + self.vRamStart
+            printVerbose("\t", toHex(start+self.commentOffset, 6)[2:], toHex(end-start, 4)[2:], toHex(fileVram, 8)[2:], "\t functions:", functionsInBoundary)
+
+            printVerbose()
+        return
+
 
     def compareToFile(self, other: FileBase):
         result = super().compareToFile(other)
