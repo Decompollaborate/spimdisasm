@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import argparse
 from sortedcontainers import SortedDict
 
 from .GlobalConfig import GlobalConfig
@@ -512,3 +513,43 @@ class Context:
             for address in self.bannedSymbols:
                 file = self.symbolToFile.get(address, "")
                 f.write(f"banned_symbol,{file},{toHex(address, 8)},,\n")
+
+
+    @staticmethod
+    def addParametersToArgParse(parser: argparse.ArgumentParser):
+        contextParser = parser.add_argument_group("Context configuration")
+
+        contextParser.add_argument("--save-context", help="Saves the context to a file. The provided filename will be suffixed with the corresponding version.", metavar="FILENAME")
+
+
+        csvConfig = parser.add_argument_group("Context .csv input files")
+
+        csvConfig.add_argument("--functions", help="Path to a functions csv", action="append")
+        csvConfig.add_argument("--variables", help="Path to a variables csv", action="append")
+        csvConfig.add_argument("--constants", help="Path to a constants csv", action="append")
+
+
+        symbolsConfig = parser.add_argument_group("Context default symbols configuration")
+
+        symbolsConfig.add_argument("--non-libultra", help="Don't use built-in libultra symbols", action="store_true")
+        symbolsConfig.add_argument("--non-hardware-regs", help="Don't use built-in hardware registers symbols", action="store_true")
+        symbolsConfig.add_argument("--non-default-banned", help="Don't fill the list of default banned symbols", action="store_true")
+
+    def parseArgs(self, args: argparse.Namespace):
+        if not args.non_default_banned:
+            self.fillDefaultBannedSymbols()
+        if not args.non_libultra:
+            self.fillLibultraSymbols()
+        if not args.non_hardware_regs:
+            self.fillHardwareRegs()
+
+        if args.functions is not None:
+            for funcsPath in args.functions:
+                self.readFunctionsCsv(funcsPath)
+        if args.variables is not None:
+            for varsPath in args.variables:
+                self.readVariablesCsv(varsPath)
+        if args.constants is not None:
+            for constantsPath in args.constants:
+                self.readConstantsCsv(constantsPath)
+

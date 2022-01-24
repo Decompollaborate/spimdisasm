@@ -302,23 +302,17 @@ def disassemblerMain():
     parser.add_argument("--end", help="",  default="0xFFFFFF")
     parser.add_argument("--vram", help="Set the VRAM address", default="-1")
 
-    parser.add_argument("--split-functions", help="Enables the function and rodata splitter. Expects a path to place the splited functions", metavar="PATH")
-
-    parser.add_argument("--save-context", help="Saves the context to a file. The provided filename will be suffixed with the corresponding version.", metavar="FILENAME")
-
-    parser.add_argument("--functions", help="Path to a functions csv", action="append")
-    parser.add_argument("--variables", help="Path to a variables csv", action="append")
-    parser.add_argument("--constants", help="Path to a constants csv", action="append")
     parser.add_argument("--file-splits", help="Path to a file splits csv")
+
+    parser.add_argument("--split-functions", help="Enables the function and rodata splitter. Expects a path to place the splited functions", metavar="PATH")
 
     parser.add_argument("--add-filename", help="Adds the filename of the file to the generated function/variable name")
 
     parser.add_argument("--nuke-pointers", help="Use every technique available to remove pointers", action="store_true")
 
-    parser.add_argument("--non-libultra", help="Don't use built-in libultra symbols", action="store_true")
-    parser.add_argument("--non-hardware-regs", help="Don't use built-in hardware registers symbols", action="store_true")
+    Context.addParametersToArgParse(parser)
 
-    GlobalConfig.addDisasmConfigToArgParse(parser)
+    GlobalConfig.addParametersToArgParse(parser)
 
     args = parser.parse_args()
 
@@ -338,21 +332,7 @@ def disassemblerMain():
         newStuffSuffix = ""
 
     context = Context()
-    context.fillDefaultBannedSymbols()
-    if not args.non_libultra:
-        context.fillLibultraSymbols()
-    if not args.non_hardware_regs:
-        context.fillHardwareRegs()
-
-    if args.functions is not None:
-        for funcsPath in args.functions:
-            context.readFunctionsCsv(funcsPath)
-    if args.variables is not None:
-        for varsPath in args.variables:
-            context.readVariablesCsv(varsPath)
-    if args.constants is not None:
-        for constantsPath in args.constants:
-            context.readConstantsCsv(constantsPath)
+    context.parseArgs(args)
 
     array_of_bytes = readFileAsBytearray(args.binary)
     input_name = os.path.splitext(os.path.split(args.binary)[1])[0]
@@ -450,8 +430,8 @@ def disassemblerMain():
             writeSection((path, f))
             i += 1
 
-    printVerbose("Spliting functions")
     if args.split_functions is not None:
+        printVerbose("Spliting functions")
         for path, f in processedFiles[FileSectionType.Text]:
             file: Text = f
             for func in file.functions:
