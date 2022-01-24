@@ -30,8 +30,8 @@ class GlobalConfig:
     PRINT_SYMBOL_FINDER_DEBUG_INFO: bool = False
 
 
-    @classmethod
-    def addDisasmConfigToArgParse(cls, parser: argparse.ArgumentParser):
+    @staticmethod
+    def addParametersToArgParse(parser: argparse.ArgumentParser):
         backendConfig = parser.add_argument_group("Disassembler backend configuration")
 
         backendConfig.add_argument("--disasm-unknown", help="Force disassembly of functions with unknown instructions",  action="store_true")
