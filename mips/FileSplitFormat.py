@@ -18,6 +18,17 @@ class FileSectionType(enum.Enum):
     Reloc   = enum.auto()
 
 
+class FileSplitEntry:
+    def __init__(self, offset: int, vram: int, fileName: str, section: FileSectionType, nextOffset: int, isHandwritten: bool, isRsp: bool):
+        self.offset: int = offset
+        self.vram: int = vram
+        self.fileName: str = fileName
+        self.section: FileSectionType = section
+        self.nextOffset: int = nextOffset
+        self.isHandwritten: bool = isHandwritten
+        self.isRsp: bool = isRsp
+
+
 class FileSplitFormat:
     def __init__(self, csvPath: str):
         self.splits = readCsv(csvPath)
@@ -71,4 +82,4 @@ class FileSplitFormat:
                     nextOffsetStr = nextOffsetStr[:-1]
                 nextOffset = int(nextOffsetStr, 16)
 
-            yield (offset, vram, fileName, section, nextOffset, isHandwritten, isRsp)
+            yield FileSplitEntry(offset, vram, fileName, section, nextOffset, isHandwritten, isRsp)
