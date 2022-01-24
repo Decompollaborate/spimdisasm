@@ -46,6 +46,9 @@ class FileBase:
     def analyze(self):
         pass
 
+    def printAnalyzisResults(self):
+        pass
+
     def compareToFile(self, other_file: FileBase) -> dict:
         hash_one = self.getHash()
         hash_two = other_file.getHash()
