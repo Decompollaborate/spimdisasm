@@ -21,21 +21,23 @@ def disassemblerMain():
 
     parser.add_argument("--data-output", help="Path to output the data and rodata disassembly")
 
-    parser.add_argument("--start", help="", default="0")
-    parser.add_argument("--end", help="",  default="0xFFFFFF")
-    parser.add_argument("--vram", help="Set the VRAM address", default="-1")
+    parser_singleFile = parser.add_argument_group("Single file disassembly options")
+
+    parser_singleFile.add_argument("--start", help="", default="0")
+    parser_singleFile.add_argument("--end", help="",  default="0xFFFFFF")
+    parser_singleFile.add_argument("--vram", help="Set the VRAM address", default="-1")
 
     parser.add_argument("--file-splits", help="Path to a file splits csv")
 
     parser.add_argument("--split-functions", help="Enables the function and rodata splitter. Expects a path to place the splited functions", metavar="PATH")
-
-    parser.add_argument("--add-filename", help="Adds the filename of the file to the generated function/variable name")
 
     parser.add_argument("--nuke-pointers", help="Use every technique available to remove pointers", action="store_true")
 
     Context.addParametersToArgParse(parser)
 
     GlobalConfig.addParametersToArgParse(parser)
+
+    parser.add_argument("--add-filename", help="Adds the filename of the file to the generated function/variable name")
 
     args = parser.parse_args()
 
