@@ -6,7 +6,7 @@ import argparse
 
 from mips.Utils import *
 from mips.GlobalConfig import GlobalConfig, printQuietless, printVerbose
-from mips.FileSplitFormat import FileSplitFormat, FileSectionType
+from mips.FileSplitFormat import FileSplitFormat, FileSectionType, FileSplitEntry
 from mips.MipsSection import Section
 from mips.MipsText import Text
 from mips.MipsData import Data
@@ -16,8 +16,11 @@ from mips.MipsFunction import Function
 from mips.MipsContext import Context
 
 
-def simpleDisasmSection(sectionType: FileSectionType, array_of_bytes: bytearray, outputPath: str, offsetStart: int, offsetEnd: int, vram: int, context: Context, isHandwritten: bool=False, isRsp: bool=False, newStuffSuffix: str=""):
+def simpleDisasm_CreateSection(splitEntry: FileSplitEntry, array_of_bytes: bytearray, outputPath: str, context: Context) -> Section:
     head, tail = os.path.split(outputPath)
+
+    offsetStart = splitEntry.offset
+    offsetEnd = splitEntry.nextOffset
 
     if offsetStart >= 0 and offsetEnd >= 0:
         printVerbose(f"Parsing offset range [{offsetStart:02X}, {offsetEnd:02X}]")
@@ -29,35 +32,39 @@ def simpleDisasmSection(sectionType: FileSectionType, array_of_bytes: bytearray,
         printVerbose(f"Parsing since offset {toHex(offsetStart, 2)}")
         array_of_bytes = array_of_bytes[offsetStart:]
 
-    if sectionType == FileSectionType.Text:
+    if splitEntry.section == FileSectionType.Text:
         f = Text(array_of_bytes, tail, "ver", context)
-    elif sectionType == FileSectionType.Data:
+    elif splitEntry.section == FileSectionType.Data:
         f = Data(array_of_bytes, tail, "ver", context)
-    elif sectionType == FileSectionType.Rodata:
+    elif splitEntry.section == FileSectionType.Rodata:
         f = Rodata(array_of_bytes, tail, "ver", context)
-    elif sectionType == FileSectionType.Bss:
-        f = Bss(vram, vram + offsetEnd - offsetStart, tail, "ver", context)
+    elif splitEntry.section == FileSectionType.Bss:
+        f = Bss(splitEntry.vram, splitEntry.vram + offsetEnd - offsetStart, tail, "ver", context)
     else:
         eprint("Error! Section not set!")
         exit(-1)
 
-    f.isHandwritten = isHandwritten
-    f.isRsp = isRsp
-    f.newStuffSuffix = newStuffSuffix
+    f.isHandwritten = splitEntry.isHandwritten
+    f.isRsp = splitEntry.isRsp
 
-    if vram >= 0:
-        printVerbose(f"Using VRAM {toHex(vram, 2)}")
-        f.setVRamStart(vram)
+    if splitEntry.vram >= 0:
+        printVerbose(f"Using VRAM {splitEntry.vram:08X}")
+        f.setVRamStart(splitEntry.vram)
+
+    return f
+
+def simpleDisasm_AnalyzeSection(fileSection: Section, splitEntry: FileSplitEntry):
+    offsetStart = splitEntry.offset
 
     printVerbose("Analyzing")
-    f.analyze()
-    f.setCommentOffset(offsetStart)
+    fileSection.analyze()
+    fileSection.setCommentOffset(offsetStart)
 
     printVerbose()
 
-    f.printAnalyzisResults()
+    fileSection.printAnalyzisResults()
 
-    return f
+    return fileSection
 
 
 
@@ -249,7 +256,10 @@ def disassemblerMain():
     lenLastLine = 80
 
     if args.file_splits is None:
-        f =  simpleDisasmSection(FileSectionType.Text, array_of_bytes, args.output, int(args.start, 16), int(args.end, 16), int(args.vram, 16), context, False, GlobalConfig.DISASSEMBLE_RSP, newStuffSuffix)
+        splitEntry = FileSplitEntry(int(args.start, 16), int(args.vram, 16), "", FileSectionType.Text, int(args.end, 16), False, GlobalConfig.DISASSEMBLE_RSP)
+        f = simpleDisasm_CreateSection(splitEntry, array_of_bytes, args.output, context)
+        f.newStuffSuffix = newStuffSuffix
+        simpleDisasm_AnalyzeSection(f, splitEntry)
         processedFiles[FileSectionType.Text].append((args.output, f))
     else:
         splits = FileSplitFormat(args.file_splits)
@@ -264,29 +274,32 @@ def disassemblerMain():
         outputPath = args.output
         i = 0
         for row in splits:
-            offset, vram, fileName, section, nextOffset, isHandwritten, isRsp = row
-
-            if section == FileSectionType.Text:
+            if row.section == FileSectionType.Text:
                 outputPath = textOutput
-            elif section == FileSectionType.Data:
+            elif row.section == FileSectionType.Data:
                 outputPath = dataOutput
-            elif section == FileSectionType.Rodata:
+            elif row.section == FileSectionType.Rodata:
                 outputPath = dataOutput
-            elif section == FileSectionType.Bss:
+            elif row.section == FileSectionType.Bss:
                 outputPath = dataOutput
             else:
                 eprint("Error! Section not set!")
                 exit(1)
 
-            if fileName == "":
-                fileName = f"{input_name}_{vram:08X}"
+            fileName = row.fileName
+            if row.fileName == "":
+                fileName = f"{input_name}_{row.vram:08X}"
 
-            printVerbose(f"Reading '{fileName}'")
-            f = simpleDisasmSection(section, array_of_bytes, f"{outputPath}/{fileName}", offset, nextOffset, vram, context, isHandwritten, isRsp, newStuffSuffix)
-            processedFiles[section].append((f"{outputPath}/{fileName}", f))
+            outputPath = f"{outputPath}/{fileName}"
+
+            printVerbose(f"Reading '{row.fileName}'")
+            f = simpleDisasm_CreateSection(row, array_of_bytes, outputPath, context)
+            f.newStuffSuffix = newStuffSuffix
+            simpleDisasm_AnalyzeSection(f, row)
+            processedFiles[row.section].append((outputPath, f))
 
             printQuietless(lenLastLine*" " + "\r", end="")
-            progressStr = f" Analyzing: {i/splitsCount:%}. File: {fileName}\r"
+            progressStr = f" Analyzing: {i/splitsCount:%}. File: {row.fileName}\r"
             lenLastLine = max(len(progressStr), lenLastLine)
             printQuietless(progressStr, end="", flush=True)
 
