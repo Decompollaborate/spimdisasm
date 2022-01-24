@@ -313,46 +313,25 @@ def disassemblerMain():
 
     parser.add_argument("--add-filename", help="Adds the filename of the file to the generated function/variable name")
 
-    parser.add_argument("--disasm-unknown", help="Force disassembly of functions with unknown instructions",  action="store_true")
-    parser.add_argument("--disasm-rsp", help="Experimental. Enables the disassembly of rsp abi instructions. Warning: In its current state the generated asm may not be assemblable to a matching binary",  action="store_true")
-
-    parser.add_argument("-v", "--verbose", help="Enable verbose mode",  action="store_true")
-    parser.add_argument("-q", "--quiet", help="Silence most output",  action="store_true")
-
-    parser.add_argument("--disable-asm-comments", help="Disables the comments in assembly code", action="store_true")
-    parser.add_argument("--write-binary", help="Produce a binary of the processed file", action="store_true")
     parser.add_argument("--nuke-pointers", help="Use every technique available to remove pointers", action="store_true")
-    parser.add_argument("--ignore-words", help="A space separated list of hex numbers. Word differences will be ignored that starts in any of the provided arguments. Max value: FF. Only works when --nuke-pointers is passed", action="extend", nargs="+")
 
     parser.add_argument("--non-libultra", help="Don't use built-in libultra symbols", action="store_true")
     parser.add_argument("--non-hardware-regs", help="Don't use built-in hardware registers symbols", action="store_true")
 
-    parser.add_argument("--disable-string-guesser", help="Disables the string guesser feature (does nto affect the strings referenced by .data)", action="store_true")
-
-    parser.add_argument("--debug-func-analysis", help="Enables some debug info printing related to the function analysis)", action="store_true")
-    parser.add_argument("--debug-symbol-finder", help="Enables some debug info printing related to the symbol finder system)", action="store_true")
+    GlobalConfig.addDisasmConfigToArgParse(parser)
 
     args = parser.parse_args()
+
+    GlobalConfig.parseArgs(args)
 
     GlobalConfig.REMOVE_POINTERS = args.nuke_pointers
     GlobalConfig.IGNORE_BRANCHES = args.nuke_pointers
     if args.nuke_pointers:
         GlobalConfig.IGNORE_WORD_LIST.add(0x80)
-    if args.ignore_words:
-        for upperByte in args.ignore_words:
-            GlobalConfig.IGNORE_WORD_LIST.add(int(upperByte, 16))
-    GlobalConfig.WRITE_BINARY = args.write_binary
-    GlobalConfig.ASM_COMMENT = not args.disable_asm_comments
+
     GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET = True
     GlobalConfig.TRUST_USER_FUNCTIONS = True
-    GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS = args.disasm_unknown
-    GlobalConfig.DISASSEMBLE_RSP = args.disasm_rsp
-    # TODO: remove? add flag?
-    GlobalConfig.STRING_GUESSER = not args.disable_string_guesser
-    GlobalConfig.VERBOSE = args.verbose
-    GlobalConfig.QUIET = args.quiet
-    GlobalConfig.PRINT_FUNCTION_ANALYSIS_DEBUG_INFO = args.debug_func_analysis
-    GlobalConfig.PRINT_SYMBOL_FINDER_DEBUG_INFO = args.debug_symbol_finder
+
 
     newStuffSuffix = args.add_filename
     if newStuffSuffix is None:
