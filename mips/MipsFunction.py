@@ -242,24 +242,27 @@ class Function:
                         del trackedRegisters[rt]
                     if rt in trackedRegistersAll:
                         del trackedRegistersAll[rt]
+                    if rt in registersValues:
+                        del registersValues[rt]
 
                 if instr.modifiesRd():
+                    shouldRemove = True
                     # Usually array offsets use an ADDU to add the index of the array
                     if instr.uniqueId == InstructionId.ADDU:
                         if instr.rd != instr.rs and instr.rd != instr.rt:
-                            rd = instr.rd
-                            if rd in trackedRegisters:
-                                self._printSymbolFinderDebugInfo_DelTrackedRegister(instr, rd, currentVram, trackedRegisters)
-                                del trackedRegisters[rd]
-                            if rd in trackedRegistersAll:
-                                del trackedRegistersAll[rd]
-                    else:
+                            shouldRemove = True
+                        else:
+                            shouldRemove = False
+
+                    if shouldRemove:
                         rd = instr.rd
                         if rd in trackedRegisters:
                             self._printSymbolFinderDebugInfo_DelTrackedRegister(instr, rd, currentVram, trackedRegisters)
                             del trackedRegisters[rd]
                         if rd in trackedRegistersAll:
                             del trackedRegistersAll[rd]
+                        if rd in registersValues:
+                            del registersValues[rd]
 
             else:
                 if instr.uniqueId in (InstructionId.MTC1, InstructionId.DMTC1, InstructionId.CTC1):
@@ -272,6 +275,8 @@ class Function:
                         del trackedRegisters[rt]
                     if rt in trackedRegistersAll:
                         del trackedRegistersAll[rt]
+                    if rt in registersValues:
+                        del registersValues[rt]
 
             # look-ahead symbol finder
             lastInstr = self.instructions[instructionOffset//4 - 1]
