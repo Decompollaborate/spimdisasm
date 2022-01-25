@@ -32,13 +32,13 @@ def createSectionFromSplitEntry(splitEntry: FileSplitEntry, array_of_bytes: byte
         array_of_bytes = array_of_bytes[offsetStart:]
 
     if splitEntry.section == FileSectionType.Text:
-        f = Text(array_of_bytes, tail, "ver", context)
+        f = Text(array_of_bytes, tail, context)
     elif splitEntry.section == FileSectionType.Data:
-        f = Data(array_of_bytes, tail, "ver", context)
+        f = Data(array_of_bytes, tail, context)
     elif splitEntry.section == FileSectionType.Rodata:
-        f = Rodata(array_of_bytes, tail, "ver", context)
+        f = Rodata(array_of_bytes, tail, context)
     elif splitEntry.section == FileSectionType.Bss:
-        f = Bss(splitEntry.vram, splitEntry.vram + offsetEnd - offsetStart, tail, "ver", context)
+        f = Bss(splitEntry.vram, splitEntry.vram + offsetEnd - offsetStart, tail, context)
     else:
         eprint("Error! Section not set!")
         exit(-1)
