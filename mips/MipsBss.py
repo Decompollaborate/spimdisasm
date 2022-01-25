@@ -16,6 +16,14 @@ class Bss(Section):
         self.bssVramStart: int = bssVramStart
         self.bssVramEnd: int = bssVramEnd
 
+
+    def setVRamStart(self, vRamStart: int):
+        super().setVRamStart(vRamStart)
+
+        diff = self.bssVramEnd - self.bssVramStart
+        self.bssVramStart = vRamStart
+        self.bssVramEnd = vRamStart + diff
+
     def analyze(self):
         # Check if the very start of the file has a bss variable and create it if it doesn't exist yet
         if self.context.getSymbol(self.bssVramStart, False) is None:
