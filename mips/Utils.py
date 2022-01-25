@@ -121,7 +121,7 @@ def decodeString(buf: bytearray, offset: int) -> Tuple[str, int]:
         0x18,
         0x19,
         0x1A,
-        0x1B,
+        # 0x1B, # VT escape sequences
         0x1C,
         0x1D,
         0x1E,
@@ -140,5 +140,5 @@ def decodeString(buf: bytearray, offset: int) -> Tuple[str, int]:
         if bannedChar in dst:
             raise RuntimeError()
 
-    result = dst.decode("EUC-JP").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t").replace('"', '\\"').replace("\f", "\\f").replace("\a", "\\a")
+    result = dst.decode("EUC-JP").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t").replace('"', '\\"').replace("\f", "\\f").replace("\a", "\\a").replace("\x1B", "\\x1B")
     return result, i
