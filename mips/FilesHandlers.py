@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 from .Utils import *
-from mips.GlobalConfig import GlobalConfig, printQuietless, printVerbose
-from mips.FileSplitFormat import FileSplitFormat, FileSectionType, FileSplitEntry
-from mips.MipsSection import Section
-from mips.MipsText import Text
-from mips.MipsData import Data
-from mips.MipsRodata import Rodata
-from mips.MipsBss import Bss
-from mips.MipsFunction import Function
-from mips.MipsContext import Context
+from .GlobalConfig import GlobalConfig, printQuietless, printVerbose
+from .FileSplitFormat import FileSectionType, FileSplitEntry
+from .MipsSection import Section
+from .MipsText import Text
+from .MipsData import Data
+from .MipsRodata import Rodata
+from .MipsBss import Bss
+from .MipsFunction import Function
+from .MipsContext import Context
 
 
 
