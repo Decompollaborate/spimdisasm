@@ -77,8 +77,8 @@ def from2Complement(number: int, bits: int) -> int:
         return -((~number + 1) & ((1 << bits) - 1))
     return number
 
-def readVersionedFileAsBytearrray(file: str, version: str) -> bytearray:
-    filename = f"baserom_{version}/{file}"
+def readVersionedFileAsBytearrray(file: str, game: str, version: str) -> bytearray:
+    filename = os.path.join(game, version, "baserom", file)
     return readFileAsBytearray(filename)
 
 def readCsv(filepath: str) -> List[List[str]]:

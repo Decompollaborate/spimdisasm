@@ -7,11 +7,10 @@ from .GlobalConfig import GlobalConfig
 from .MipsContext import Context
 
 class FileBase:
-    def __init__(self, array_of_bytes: bytearray, filename: str, version: str, context: Context):
+    def __init__(self, array_of_bytes: bytearray, filename: str, context: Context):
         self.bytes: bytearray = array_of_bytes
         self.words: List[int] = bytesToBEWords(self.bytes)
         self.filename: str = filename
-        self.version: str = version
         self.context: Context = context
 
         self.parent: FileBase|None = None
@@ -110,4 +109,4 @@ class FileBase:
         self.commentOffset = commentOffset
 
 def createEmptyFile() -> FileBase:
-    return FileBase(bytearray(0), "", "", Context())
+    return FileBase(bytearray(0), "", Context())

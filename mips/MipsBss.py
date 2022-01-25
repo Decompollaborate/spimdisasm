@@ -10,8 +10,8 @@ from .MipsContext import Context, ContextSymbol
 
 
 class Bss(Section):
-    def __init__(self, bssVramStart: int, bssVramEnd: int, filename: str, version: str, context: Context):
-        super().__init__(bytearray(), filename, version, context)
+    def __init__(self, bssVramStart: int, bssVramEnd: int, filename: str, context: Context):
+        super().__init__(bytearray(), filename, context)
 
         self.bssVramStart: int = bssVramStart
         self.bssVramEnd: int = bssVramEnd

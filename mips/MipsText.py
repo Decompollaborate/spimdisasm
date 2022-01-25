@@ -12,8 +12,8 @@ from .MipsContext import Context, ContextSymbol
 
 
 class Text(Section):
-    def __init__(self, array_of_bytes: bytearray, filename: str, version: str, context: Context):
-        super().__init__(array_of_bytes, filename, version, context)
+    def __init__(self, array_of_bytes: bytearray, filename: str, context: Context):
+        super().__init__(array_of_bytes, filename, context)
 
         self.functions: List[Function] = list()
 
@@ -360,7 +360,3 @@ class Text(Section):
         super().setCommentOffset(commentOffset)
         for func in self.functions:
             func.commentOffset = commentOffset
-
-def readMipsText(file: str, version: str) -> Text:
-    filename = f"baserom_{version}/{file}"
-    return Text(readFileAsBytearray(filename), filename, version, Context())

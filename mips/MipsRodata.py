@@ -10,8 +10,8 @@ from .MipsContext import Context, ContextSymbol
 
 
 class Rodata(Section):
-    def __init__(self, array_of_bytes: bytearray, filename: str, version: str, context: Context):
-        super().__init__(array_of_bytes, filename, version, context)
+    def __init__(self, array_of_bytes: bytearray, filename: str, context: Context):
+        super().__init__(array_of_bytes, filename, context)
 
         # addresses of symbols in this rodata section
         self.symbolsVRams: Set[int] = set()
