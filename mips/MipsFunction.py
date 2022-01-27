@@ -386,11 +386,12 @@ class Function:
         if self.isLikelyHandwritten:
             output += "/* Possibly handwritten function */\n"
 
-        output += f"glabel {self.name}"
-        if GlobalConfig.FUNCTION_ASM_COUNT:
-            if self.index >= 0:
-                output += f" # {self.index}"
-        output += "\n"
+        if self.name != "":
+            output += f"glabel {self.name}"
+            if GlobalConfig.FUNCTION_ASM_COUNT:
+                if self.index >= 0:
+                    output += f" # {self.index}"
+            output += "\n"
 
         wasLastInstABranch = False
 
