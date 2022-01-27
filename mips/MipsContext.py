@@ -535,6 +535,7 @@ class Context:
         symbolsConfig.add_argument("--non-hardware-regs", help="Don't use built-in hardware registers symbols", action="store_true")
         symbolsConfig.add_argument("--non-default-banned", help="Don't fill the list of default banned symbols", action="store_true")
 
+
     def parseArgs(self, args: argparse.Namespace):
         if not args.non_default_banned:
             self.fillDefaultBannedSymbols()
@@ -552,4 +553,3 @@ class Context:
         if args.constants is not None:
             for constantsPath in args.constants:
                 self.readConstantsCsv(constantsPath)
-
