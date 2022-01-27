@@ -70,56 +70,71 @@ def disassemblerMain():
     }
     lenLastLine = 80
 
-    if args.file_splits is None:
-        splitEntry = FileSplitEntry(int(args.start, 16), int(args.vram, 16), "", FileSectionType.Text, int(args.end, 16), False, GlobalConfig.DISASSEMBLE_RSP)
-        f = createSectionFromSplitEntry(splitEntry, array_of_bytes, args.output, context)
-        f.newStuffSuffix = newStuffSuffix
-        analyzeSectionFromSplitEntry(f, splitEntry)
-        processedFiles[FileSectionType.Text].append((args.output, f))
-    else:
-        splits = FileSplitFormat(args.file_splits)
+    splits = FileSplitFormat()
+    if args.file_splits is not None:
+        splits.readCsvFile(args.file_splits)
 
-        splitsCount = len(splits)
+    if len(splits) == 0:
+        if args.file_splits is not None:
+            eprint("Warning: Tried to use file split mode, but passed csv splits file was empty")
+            eprint("\t Using single-file mode instead")
 
-        textOutput = args.output
-        dataOutput = args.data_output
-        if dataOutput is None:
-            dataOutput = textOutput
+        start = int(args.start, 16)
+        end = int(args.end, 16)
 
-        outputPath = args.output
-        i = 0
-        for row in splits:
-            if row.section == FileSectionType.Text:
-                outputPath = textOutput
-            elif row.section == FileSectionType.Data:
-                outputPath = dataOutput
-            elif row.section == FileSectionType.Rodata:
-                outputPath = dataOutput
-            elif row.section == FileSectionType.Bss:
-                outputPath = dataOutput
-            else:
-                eprint("Error! Section not set!")
-                exit(1)
+        fileVram = int(args.vram, 16)
 
+        endVram = fileVram
+        if endVram >= 0:
+            endVram += end - start
+
+        splitEntry = FileSplitEntry(start, fileVram, "", FileSectionType.Text, end, False, GlobalConfig.DISASSEMBLE_RSP)
+        splits.append(splitEntry)
+
+        splits.appendEndSection(end, endVram)
+
+    splitsCount = len(splits)
+
+    textOutput = args.output
+    dataOutput = args.data_output
+    if dataOutput is None:
+        dataOutput = textOutput
+
+    i = 0
+    for row in splits:
+        if row.section == FileSectionType.Text:
+            outputPath = textOutput
+        elif row.section == FileSectionType.Data:
+            outputPath = dataOutput
+        elif row.section == FileSectionType.Rodata:
+            outputPath = dataOutput
+        elif row.section == FileSectionType.Bss:
+            outputPath = dataOutput
+        else:
+            eprint("Error! Section not set!")
+            exit(1)
+
+        outputFilePath = outputPath
+        if outputPath != "-":
             fileName = row.fileName
             if row.fileName == "":
                 fileName = f"{input_name}_{row.vram:08X}"
 
-            outputPath = f"{outputPath}/{fileName}"
+            outputFilePath = os.path.join(outputPath, fileName)
 
-            printVerbose(f"Reading '{row.fileName}'")
-            f = createSectionFromSplitEntry(row, array_of_bytes, outputPath, context)
-            f.newStuffSuffix = newStuffSuffix
-            analyzeSectionFromSplitEntry(f, row)
-            processedFiles[row.section].append((outputPath, f))
+        printVerbose(f"Reading '{row.fileName}'")
+        f = createSectionFromSplitEntry(row, array_of_bytes, outputFilePath, context)
+        f.newStuffSuffix = newStuffSuffix
+        analyzeSectionFromSplitEntry(f, row)
+        processedFiles[row.section].append((outputFilePath, f))
 
-            printQuietless(lenLastLine*" " + "\r", end="")
-            progressStr = f" Analyzing: {i/splitsCount:%}. File: {row.fileName}\r"
-            lenLastLine = max(len(progressStr), lenLastLine)
-            printQuietless(progressStr, end="", flush=True)
+        printQuietless(lenLastLine*" " + "\r", end="")
+        progressStr = f" Analyzing: {i/splitsCount:%}. File: {row.fileName}\r"
+        lenLastLine = max(len(progressStr), lenLastLine)
+        printQuietless(progressStr, end="", flush=True)
 
-            printVerbose("\n")
-            i += 1
+        printVerbose("\n")
+        i += 1
 
     processedFilesCount = 0
     processedFiles
