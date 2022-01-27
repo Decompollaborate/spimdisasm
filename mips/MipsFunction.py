@@ -123,6 +123,7 @@ class Function:
         for instr in self.instructions:
             currentVram = self.vram + instructionOffset
             isLui = False
+            wasRegisterValuesUpdated = False
             self.isLikelyHandwritten |= instr.uniqueId in InstructionsNotEmitedByIDO
 
             self._printAnalisisDebugInfo_IterInfo(instr, instr.rs, instr.rt, instr.rd, currentVram, trackedRegisters, registersValues)
@@ -209,6 +210,7 @@ class Function:
                             self.constantsPerInstruction[instructionOffset] = constant
                             self.constantsPerInstruction[trackedRegistersAll[rs]*4] = constant
                             registersValues[instr.rt] = constant
+                            wasRegisterValuesUpdated = True
                     elif instr.uniqueId not in (InstructionId.ANDI, InstructionId.XORI, InstructionId.CACHE):
                         rs = instr.rs
                         if rs in trackedRegisters:
@@ -216,6 +218,7 @@ class Function:
                             address = self._processSymbol(luiInstr, trackedRegisters[rs]*4, instr, instructionOffset)
                             if address is not None:
                                 registersValues[instr.rt] = address
+                                wasRegisterValuesUpdated = True
 
                         instrType = instr.mapInstrToType()
                         if instrType is not None:
@@ -242,8 +245,9 @@ class Function:
                         del trackedRegisters[rt]
                     if rt in trackedRegistersAll:
                         del trackedRegistersAll[rt]
-                    if rt in registersValues:
-                        del registersValues[rt]
+                    if not wasRegisterValuesUpdated:
+                        if rt in registersValues:
+                            del registersValues[rt]
 
                 if instr.modifiesRd():
                     shouldRemove = True
@@ -261,8 +265,9 @@ class Function:
                             del trackedRegisters[rd]
                         if rd in trackedRegistersAll:
                             del trackedRegistersAll[rd]
-                        if rd in registersValues:
-                            del registersValues[rd]
+                        if not wasRegisterValuesUpdated:
+                            if rd in registersValues:
+                                del registersValues[rd]
 
             else:
                 if instr.uniqueId in (InstructionId.MTC1, InstructionId.DMTC1, InstructionId.CTC1):
@@ -275,8 +280,9 @@ class Function:
                         del trackedRegisters[rt]
                     if rt in trackedRegistersAll:
                         del trackedRegistersAll[rt]
-                    if rt in registersValues:
-                        del registersValues[rt]
+                    if not wasRegisterValuesUpdated:
+                        if rt in registersValues:
+                            del registersValues[rt]
 
             # look-ahead symbol finder
             lastInstr = self.instructions[instructionOffset//4 - 1]
