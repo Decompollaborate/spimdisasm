@@ -111,6 +111,7 @@ class Rodata(Section):
 
     def getNthWord(self, i: int) -> Tuple[str, int]:
         offset = i * 4
+        inFileOffset = self.offset + offset
         w = self.words[i]
 
         offsetHex = toHex(offset + self.commentOffset, 6)[2:]
@@ -118,6 +119,22 @@ class Rodata(Section):
         label = ""
         rodataHex = toHex(w, 8)[2:]
         value: Any = toHex(w, 8)
+
+        # try to get the symbol name from the offset of the file (possibly from a .o elf file)
+        if inFileOffset in self.symbolNameOffsets:
+            possibleSymbolName = self.symbolNameOffsets[inFileOffset]
+            if possibleSymbolName is not None:
+                if possibleSymbolName.startswith("."):
+                    label = f"\n/* static variable */\n{possibleSymbolName}\n"
+                else:
+                    label = f"\nglabel {possibleSymbolName}\n"
+
+        if inFileOffset in self.pointersOffsets:
+            possibleReference = self.pointersOffsets[inFileOffset]
+            if possibleReference is not None:
+                value = possibleReference
+                if w != 0:
+                    value = f"({possibleReference} + 0x{w:X})"
 
         isFloat = False
         isDouble = False

@@ -16,6 +16,8 @@ class Bss(Section):
         self.bssVramStart: int = bssVramStart
         self.bssVramEnd: int = bssVramEnd
 
+        self.vRamStart = bssVramStart
+
 
     def setVRamStart(self, vRamStart: int):
         super().setVRamStart(vRamStart)
@@ -76,7 +78,6 @@ class Bss(Section):
         f.write("\n")
         f.write(".balign 16\n")
 
-        offset = 0
         # Needs to move this to a list because the algorithm requires to check the size of a bss variable based on the next bss variable' vram
         # TODO: sorted() may not be required here anymore because of SortedDict. Test if removing it doesn't break anything
         sortedSymbols = sorted(self.context.symbols.irange(minimum=self.bssVramStart, maximum=self.bssVramEnd, inclusive=(True, False)))
@@ -87,7 +88,10 @@ class Bss(Section):
 
             self.context.symbols[symbolVram].isDefined = True
 
-            offsetHex = toHex(self.offset + (symbolVram - self.bssVramStart) + self.commentOffset, 6)[2:]
+            offset = symbolVram - self.bssVramStart
+            inFileOffset = self.offset + offset
+
+            offsetHex = toHex(inFileOffset + self.commentOffset, 6)[2:]
             vramHex = toHex(symbolVram, 8)[2:]
 
             # Calculate the space of the bss variable
@@ -97,8 +101,17 @@ class Bss(Section):
                     space = sortedSymbols[i+1] - symbolVram
 
             label = f"\nglabel {symbol.name}\n"
+
+            # try to get the symbol name from the offset of the file (possibly from a .o elf file)
+            if inFileOffset in self.symbolNameOffsets:
+                possibleSymbolName = self.symbolNameOffsets[inFileOffset]
+                if possibleSymbolName is not None:
+                    if possibleSymbolName.startswith("."):
+                        label = f"\n/* static variable */\n{possibleSymbolName}\n"
+                    else:
+                        label = f"\nglabel {possibleSymbolName}\n"
+
             f.write(f"{label}/* {offsetHex} {vramHex} */  .space  {toHex(space, 2)}\n")
-            offset += 4
             i += 1
 
     def saveToFile(self, filepath: str):
