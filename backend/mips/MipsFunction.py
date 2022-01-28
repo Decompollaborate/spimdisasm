@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from .Utils import *
-from .GlobalConfig import GlobalConfig
+from ..common.Utils import *
+from ..common.GlobalConfig import GlobalConfig
 from .Instructions import InstructionBase, InstructionId, InstructionsNotEmitedByIDO, InstructionCoprocessor0, InstructionCoprocessor2
 from .MipsContext import Context, ContextSymbol
 

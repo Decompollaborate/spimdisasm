@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from .Utils import *
-from .GlobalConfig import GlobalConfig
+from ..common.Utils import *
+from ..common.GlobalConfig import GlobalConfig
 from .MipsFileBase import FileBase
 from .MipsSection import Section
 

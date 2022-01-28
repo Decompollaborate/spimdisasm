@@ -6,9 +6,9 @@ import ast
 import argparse
 from sortedcontainers import SortedDict
 
-from .GlobalConfig import GlobalConfig
+from ..common.GlobalConfig import GlobalConfig
 
-from .Utils import *
+from ..common.Utils import *
 
 class ContextFile:
     def __init__(self, name: str, vram: int):

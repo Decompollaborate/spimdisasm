@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import argparse
 
-from mips.Utils import *
+from backend.common.Utils import *
 
-from elf32.Elf32File import Elf32File
+from backend.elf32.Elf32File import Elf32File
 
 
 def elfObjDisasmMain():

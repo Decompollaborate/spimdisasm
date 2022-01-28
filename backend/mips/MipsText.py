@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from .Utils import *
-from .GlobalConfig import GlobalConfig, printVerbose
+from ..common.Utils import *
+from ..common.GlobalConfig import GlobalConfig, printVerbose
 from .MipsFileBase import FileBase
 from .MipsSection import Section
 from .Instructions import InstructionBase, wordToInstruction, wordToInstructionRsp, InstructionId, InstructionCoprocessor0, InstructionCoprocessor2

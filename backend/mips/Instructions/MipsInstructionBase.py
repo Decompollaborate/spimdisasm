@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ..Utils import *
+from ...common.Utils import *
 from ..MipsContext import Context
 from .MipsConstants import InstructionId, InstructionVectorId
 
