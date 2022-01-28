@@ -7,11 +7,11 @@ import pathlib
 
 from backend.common.Utils import *
 from backend.common.GlobalConfig import GlobalConfig
+from backend.common.Context import Context
 from backend.common.FileSectionType import FileSectionType
 
 from backend.elf32.Elf32File import Elf32File
 
-from backend.common.MipsContext import Context
 from backend.mips import MipsSection
 from backend.mips import MipsText
 from backend.mips import MipsData

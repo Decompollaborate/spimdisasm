@@ -6,7 +6,7 @@ import argparse
 
 from backend.common.Utils import *
 from backend.common.GlobalConfig import GlobalConfig
-from backend.common.MipsContext import Context
+from backend.common.Context import Context
 
 from backend.mips.Instructions import wordToInstruction, wordToInstructionRsp, InstructionBase
 from backend.mips.MipsFunction import Function

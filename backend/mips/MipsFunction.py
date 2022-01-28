@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from ..common.Utils import *
 from ..common.GlobalConfig import GlobalConfig
-from ..common.MipsContext import Context, ContextSymbol
+from ..common.Context import Context, ContextSymbol
 
 from .Instructions import InstructionBase, InstructionId, InstructionsNotEmitedByIDO, InstructionCoprocessor0, InstructionCoprocessor2
 
