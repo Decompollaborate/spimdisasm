@@ -1,0 +1,35 @@
+#!/usr/bin/python3
+
+from __future__ import annotations
+
+import dataclasses
+import struct
+
+# a.k.a. Sym (symbol)
+@dataclasses.dataclass
+class Elf32SymEntry:
+    name:   int  # word     # 0x00
+    value:  int  # address  # 0x04
+    size:   int  # word     # 0x08
+    info:   int  # uchar    # 0x0C
+    other:  int  # uchar    # 0x0D
+    shndx:  int  # section  # 0x0E
+                            # 0x10
+
+    @staticmethod
+    def fromBytearray(array_of_bytes: bytearray, offset: int = 0) -> Elf32SymEntry:
+        entryFormat = ">IIIBBH"
+        unpacked = struct.unpack_from(entryFormat, array_of_bytes, offset)
+
+        return Elf32SymEntry(*unpacked)
+
+
+class Elf32Syms:
+    def __init__(self, array_of_bytes: bytearray, offset: int, rawSize: int):
+        self.symbols: list[Elf32SymEntry] = list()
+        self.offset: int = offset
+        self.rawSize: int = rawSize
+
+        for i in range(rawSize // 0x10):
+            entry = Elf32SymEntry.fromBytearray(array_of_bytes, offset + i*0x10)
+            self.symbols.append(entry)
