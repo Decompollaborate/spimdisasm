@@ -19,6 +19,7 @@ class Elf32SectionHeaderType(enum.Enum):
     NOBITS       =  8
     REL          =  9
 
+    MIPS_GPTAB   = 0x70000003
     MIPS_DEBUG   = 0x70000005
     MIPS_REGINFO = 0x70000006
     MIPS_OPTIONS = 0x7000000D

@@ -6,6 +6,7 @@ from .Utils import *
 
 from .FileSectionType import FileSectionType
 
+
 class FileSplitEntry:
     def __init__(self, offset: int, vram: int, fileName: str, section: FileSectionType, nextOffset: int, isHandwritten: bool, isRsp: bool):
         self.offset: int = offset

@@ -97,6 +97,9 @@ class Elf32File:
                         eprint("Unknown REL subsection found: ", sectionEntryName, entry)
                 else:
                     eprint("Unknown REL found: ", sectionEntryName, entry)
+            elif entry.type == Elf32SectionHeaderType.MIPS_GPTAB.value:
+                # ?
+                pass
             elif entry.type == Elf32SectionHeaderType.MIPS_DEBUG.value:
                 # ?
                 pass
@@ -107,4 +110,4 @@ class Elf32File:
                 # ?
                 pass
             else:
-                eprint("Unknown section header type found: ", entry)
+                eprint("Unknown section header type found:", sectionEntryName, entry)

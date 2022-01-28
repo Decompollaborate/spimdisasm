@@ -36,7 +36,7 @@ def elfObjDisasmMain():
     GlobalConfig.REMOVE_POINTERS = False
     GlobalConfig.IGNORE_BRANCHES = False
 
-    GlobalConfig.VERBOSE = False
+    # GlobalConfig.VERBOSE = True
 
     inputPath = pathlib.Path(args.binary)
 
