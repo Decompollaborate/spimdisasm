@@ -11,6 +11,7 @@ from backend.common.Context import Context
 from backend.common.FileSectionType import FileSectionType
 
 from backend.elf32.Elf32File import Elf32File
+from backend.elf32.Elf32Constants import Elf32SymbolTableType
 
 from backend.mips import MipsSection
 from backend.mips import MipsText
