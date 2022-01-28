@@ -6,9 +6,10 @@ import argparse
 
 from backend.common.Utils import *
 from backend.common.GlobalConfig import GlobalConfig, printQuietless, printVerbose
+from backend.common.Context import Context
 from backend.common.FileSplitFormat import FileSplitFormat, FileSectionType, FileSplitEntry
+
 from backend.mips.MipsText import Text
-from backend.common.MipsContext import Context
 from backend.mips.FilesHandlers import createSectionFromSplitEntry, analyzeSectionFromSplitEntry, writeSection, writeSplitedFunction, writeOtherRodata
 
 

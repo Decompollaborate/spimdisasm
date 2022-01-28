@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from ..common.Utils import *
 from ..common.GlobalConfig import GlobalConfig
-from ..common.MipsContext import Context
+from ..common.Context import Context
 
 class FileBase:
     def __init__(self, array_of_bytes: bytearray, filename: str, context: Context):

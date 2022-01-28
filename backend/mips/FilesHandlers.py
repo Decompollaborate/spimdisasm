@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from ..common.Utils import *
 from ..common.GlobalConfig import GlobalConfig, printQuietless, printVerbose
-from ..common.MipsContext import Context
+from ..common.Context import Context
 from ..common.FileSplitFormat import FileSectionType, FileSplitEntry
 
 from .MipsSection import Section
