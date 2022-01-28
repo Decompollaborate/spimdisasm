@@ -95,6 +95,18 @@ def elfObjDisasmMain():
                 subSection.pointersOffsets[rel.offset] = processedSymName
                 # print(rel.offset, rel.rSym, rel.rType, symbolEntry, symbolName)
 
+        for symEntry in elfFile.symtab:
+            if symEntry.shndx == 0:
+                continue
+
+            sectHeaderEntry = elfFile.sectionHeaders[symEntry.shndx]
+            sectName = elfFile.shstrtab[sectHeaderEntry.name]
+            sectType = FileSectionType.fromStr(sectName)
+            if sectType != FileSectionType.Invalid:
+                subSection = processedFiles[sectType][1]
+                subSection.symbolNameOffsets[symEntry.value] = elfFile.strtab[symEntry.name]
+
+
     for outputFilePath, subFile in processedFiles.values():
         subFile.analyze()
 

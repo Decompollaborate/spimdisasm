@@ -16,6 +16,14 @@ class Elf32SymEntry:
     shndx:  int  # section  # 0x0E
                             # 0x10
 
+    @property
+    def stBind(self):
+        return self.info >> 4
+
+    @property
+    def stType(self):
+        return self.info & 0xF
+
     @staticmethod
     def fromBytearray(array_of_bytes: bytearray, offset: int = 0) -> Elf32SymEntry:
         entryFormat = ">IIIBBH"

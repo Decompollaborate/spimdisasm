@@ -22,3 +22,16 @@ class Elf32SectionHeaderType(enum.Enum):
     MIPS_DEBUG   = 0x70000005
     MIPS_REGINFO = 0x70000006
     MIPS_OPTIONS = 0x7000000D
+
+
+# a.k.a. STT (symbol table type)
+@enum.unique
+class Elf32SymbolTableType(enum.Enum):
+    NOTYPE       =  0
+    OBJECT       =  1
+    FUNC         =  2
+    SECTION      =  3
+    FILE         =  4
+    COMMON       =  5
+    TLS          =  6
+    NUM          =  7

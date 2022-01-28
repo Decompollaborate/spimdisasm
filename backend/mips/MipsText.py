@@ -183,6 +183,11 @@ class Text(Section):
                 break
 
             funcName = f"func_{i}"
+            print(start*4, self.symbolNameOffsets)
+            if start*4 in self.symbolNameOffsets:
+                possibleFuncName = self.symbolNameOffsets[start*4]
+                if possibleFuncName is not None:
+                    funcName = possibleFuncName
             vram = -1
             if self.vRamStart > 0:
                 vram = self.getVramOffset(start*4)
