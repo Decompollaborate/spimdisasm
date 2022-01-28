@@ -37,6 +37,8 @@ def elfObjDisasmMain():
     GlobalConfig.REMOVE_POINTERS = False
     GlobalConfig.IGNORE_BRANCHES = False
 
+    GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES = False
+
     # GlobalConfig.VERBOSE = True
 
     inputPath = pathlib.Path(args.binary)
@@ -87,14 +89,7 @@ def elfObjDisasmMain():
                 symbolEntry = elfFile.symtab[rel.rSym]
                 symbolName = elfFile.strtab[symbolEntry.name]
 
-                relocType = MipsRelocTypes.RelocTypes.fromValue(rel.rType)
-                processedSymName = symbolName
-                if relocType == MipsRelocTypes.RelocTypes.R_MIPS_HI16:
-                    processedSymName = f"%hi({symbolName})"
-                elif relocType == MipsRelocTypes.RelocTypes.R_MIPS_LO16:
-                    processedSymName = f"%lo({symbolName})"
-
-                subSection.pointersOffsets[rel.offset] = processedSymName
+                subSection.pointersOffsets[rel.offset] = symbolName
                 # print(rel.offset, rel.rSym, rel.rType, symbolEntry, symbolName)
 
         # Use the symtab to replace symbol names present in disassembled sections

@@ -176,7 +176,7 @@ class Function:
                 isLui = instr.uniqueId == InstructionId.LUI
                 lastInstr = self.instructions[instructionOffset//4 - 1]
                 if isLui:
-                    if instr.immediate >= 0x4000: # filter out stuff that may not be a real symbol
+                    if not GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES or instr.immediate >= 0x4000: # filter out stuff that may not be a real symbol
                         if lastInstr.isBranch():
                             # If the previous instructions is a branch, do a
                             # look-ahead and check the branch target for possible pointers
@@ -407,8 +407,6 @@ class Function:
             instrHex = toHex(instr.instr, 8)[2:]
 
             immOverride = None
-            if auxOffset in self.pointersOffsets:
-                immOverride = self.pointersOffsets[auxOffset]
 
             if instr.isBranch():
                 if not GlobalConfig.IGNORE_BRANCHES:
@@ -452,6 +450,22 @@ class Function:
                 possibleOverride = self.context.getAnySymbol(instr.getInstrIndexAsVram())
                 if immOverride is None and possibleOverride is not None:
                     immOverride = possibleOverride.name
+
+            # Check possible symbols using reloc information (probably from a .o elf file)
+            if auxOffset in self.pointersOffsets:
+                possibleImmOverride = self.pointersOffsets[auxOffset]
+                if possibleImmOverride is not None:
+                    immOverride = possibleImmOverride
+                    if instr.isIType():
+
+                        if instructionOffset in self.pointersPerInstruction:
+                            addressOffset = self.pointersPerInstruction[instructionOffset]
+                            if addressOffset != 0:
+                                possibleImmOverride = f"{possibleImmOverride} + 0x{addressOffset:X}"
+                        if instr.uniqueId == InstructionId.LUI:
+                            immOverride = f"%hi({possibleImmOverride})"
+                        else:
+                            immOverride= f"%lo({possibleImmOverride})"
 
             if wasLastInstABranch:
                 instr.ljustWidthOpcode -= 1
