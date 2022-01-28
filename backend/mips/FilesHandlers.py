@@ -4,14 +4,15 @@ from __future__ import annotations
 
 from ..common.Utils import *
 from ..common.GlobalConfig import GlobalConfig, printQuietless, printVerbose
+from ..common.MipsContext import Context
 from ..common.FileSplitFormat import FileSectionType, FileSplitEntry
+
 from .MipsSection import Section
 from .MipsText import Text
 from .MipsData import Data
 from .MipsRodata import Rodata
 from .MipsBss import Bss
 from .MipsFunction import Function
-from .MipsContext import Context
 
 
 def createSectionFromSplitEntry(splitEntry: FileSplitEntry, array_of_bytes: bytearray, outputPath: str, context: Context) -> Section:

@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from .MipsConstants import InstructionId
-
 from ...common.Utils import *
 
+from .MipsConstants import InstructionId
 from .MipsInstructionBase import InstructionBase
-from ..MipsContext import Context
 
 
 class InstructionCoprocessor1(InstructionBase):
@@ -175,7 +173,7 @@ class InstructionCoprocessor1(InstructionBase):
         return super().getOpcodeName().replace("_", ".")
 
 
-    def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
+    def disassemble(self, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName().lower().ljust(self.ljustWidthOpcode, ' ')
         rt = self.getRegisterName(self.rt)
         ft = self.getFloatRegisterName(self.ft)

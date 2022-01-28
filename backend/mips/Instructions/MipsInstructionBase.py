@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ...common.Utils import *
-from ..MipsContext import Context
+
 from .MipsConstants import InstructionId, InstructionVectorId
 
 class InstructionBase:
@@ -431,7 +431,7 @@ class InstructionBase:
         return element
 
 
-    def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
+    def disassemble(self, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName().lower().ljust(self.ljustWidthOpcode, ' ')
         rs = self.getRegisterName(self.rs)
         rt = self.getRegisterName(self.rt)
@@ -469,7 +469,7 @@ class InstructionBase:
 
 
     def __str__(self) -> str:
-        return self.disassemble(None)
+        return self.disassemble()
 
     def __repr__(self) -> str:
         return self.__str__()

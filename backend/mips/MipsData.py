@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from ..common.Utils import *
 from ..common.GlobalConfig import GlobalConfig
-from .MipsFileBase import FileBase
+
 from .MipsSection import Section
 
 

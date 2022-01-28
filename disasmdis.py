@@ -6,7 +6,8 @@ import argparse
 
 from backend.common.Utils import *
 from backend.common.GlobalConfig import GlobalConfig
-from backend.mips.MipsContext import Context
+from backend.common.MipsContext import Context
+
 from backend.mips.Instructions import wordToInstruction, wordToInstructionRsp, InstructionBase
 from backend.mips.MipsFunction import Function
 
@@ -39,7 +40,7 @@ def disasmdisMain():
 
     if args.raw_instr:
         for instr in instructionList:
-            print(instr.disassemble(context))
+            print(instr.disassemble())
     else:
         func = Function("", instructionList, context, 0)
         func.analyze()

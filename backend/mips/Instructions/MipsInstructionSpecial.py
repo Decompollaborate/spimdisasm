@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from .MipsConstants import InstructionId
-
 from ...common.Utils import *
 
+from .MipsConstants import InstructionId
 from .MipsInstructionBase import InstructionBase
-from ..MipsContext import Context
 
 
 class InstructionSpecial(InstructionBase):
@@ -164,7 +162,7 @@ class InstructionSpecial(InstructionBase):
         return super().getOpcodeName()
 
 
-    def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
+    def disassemble(self, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName()
         formated_opcode = opcode.lower().ljust(self.ljustWidthOpcode, ' ')
         rs = self.getRegisterName(self.rs)
@@ -224,5 +222,4 @@ class InstructionSpecial(InstructionBase):
             result = result.ljust(19, ' ')
             return f"{result} {self.sa}"
 
-        return super().disassemble(context)
-
+        return super().disassemble(immOverride)

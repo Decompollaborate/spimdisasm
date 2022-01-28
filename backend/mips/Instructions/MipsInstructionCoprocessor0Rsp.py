@@ -7,8 +7,6 @@ from .MipsConstants import InstructionId, InstructionVectorId
 from ...common.Utils import *
 
 from .MipsInstructionCoprocessor0 import InstructionCoprocessor0
-from ...common.GlobalConfig import GlobalConfig
-from ..MipsContext import Context
 
 
 class InstructionCoprocessor0Rsp(InstructionCoprocessor0):
@@ -32,7 +30,7 @@ class InstructionCoprocessor0Rsp(InstructionCoprocessor0):
         self.uniqueId = self.Cop0Opcodes_ByFormat.get(self.fmt, InstructionId.INVALID)
 
 
-    def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
+    def disassemble(self, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName()
         formated_opcode = opcode.lower().ljust(self.ljustWidthOpcode, ' ')
         # rt = self.getRegisterName(self.rt)
@@ -41,7 +39,7 @@ class InstructionCoprocessor0Rsp(InstructionCoprocessor0):
         rd = self.getCop0RspRegisterName(self.rd)
 
         if not self.isImplemented():
-            return super().disassemble(context, immOverride)
+            return super().disassemble(immOverride)
 
         result = f"{formated_opcode} {rt},"
         result = result.ljust(14, ' ')

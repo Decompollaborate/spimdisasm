@@ -11,7 +11,7 @@ from backend.common.FileSectionType import FileSectionType
 
 from backend.elf32.Elf32File import Elf32File
 
-from backend.mips.MipsContext import Context
+from backend.common.MipsContext import Context
 from backend.mips import MipsSection
 from backend.mips import MipsText
 from backend.mips import MipsData
@@ -79,6 +79,7 @@ def elfObjDisasmMain():
         processedFiles[FileSectionType.Bss] = (outputFilePath, MipsBss.Bss(0, elfFile.nobits, inputPath.stem, context))
 
     if elfFile.symtab is not None and elfFile.strtab is not None:
+        # Inject symbols from the reloc table referenced in each section
         for sectType, relocs in elfFile.rel.items():
             subSection = processedFiles[sectType][1]
             for rel in relocs:
@@ -95,6 +96,7 @@ def elfObjDisasmMain():
                 subSection.pointersOffsets[rel.offset] = processedSymName
                 # print(rel.offset, rel.rSym, rel.rType, symbolEntry, symbolName)
 
+        # Use the symtab to replace symbol names present in disassembled sections
         for symEntry in elfFile.symtab:
             if symEntry.shndx == 0:
                 continue

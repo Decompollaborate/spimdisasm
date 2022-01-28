@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from .MipsConstants import InstructionId, InstructionVectorId
-
 from ...common.Utils import *
 
+from .MipsConstants import InstructionId, InstructionVectorId
 from .MipsInstructionCoprocessor2 import InstructionCoprocessor2
-from ..MipsContext import Context
 
 
 class InstructionCoprocessor2Rsp(InstructionCoprocessor2):
@@ -97,7 +95,7 @@ class InstructionCoprocessor2Rsp(InstructionCoprocessor2):
             return f"COP2({opcode})"
         return super().getOpcodeName()
 
-    def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
+    def disassemble(self, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName()
         formated_opcode = opcode.lower().ljust(self.ljustWidthOpcode, ' ')
         e_upper = self[25]
