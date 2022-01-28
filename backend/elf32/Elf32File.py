@@ -2,25 +2,30 @@
 
 from __future__ import annotations
 
+from ..common.Utils import *
+from ..common.GlobalConfig import printVerbose
+from ..common.FileSectionType import FileSectionType
 
 from .Elf32Constants import Elf32SectionHeaderType
 from .Elf32Header import Elf32Header
 from .Elf32SectionHeaders import Elf32SectionHeaders
 from .Elf32StringTable import Elf32StringTable
 from .Elf32Syms import Elf32Syms
+from .Elf32Rels import Elf32Rels
 
 
 class Elf32File:
     def __init__(self, array_of_bytes: bytearray):
         self.header = Elf32Header.fromBytearray(array_of_bytes)
-        print(self.header)
+        # print(self.header)
 
         self.strtab: Elf32StringTable | None = None
         self.symtab: Elf32Syms | None = None
 
-        # for i in range(header.shnum):
-        #     sectionHeaderEntry = Elf32SectionHeaderEntry.fromBytearray(array_of_bytes, header.shoff + i * 0x28)
-        #     print(sectionHeaderEntry)
+        self.progbits: dict[FileSectionType, bytearray] = dict()
+        self.nobits: int | None = None
+
+        self.rel: dict[FileSectionType, Elf32Rels] = dict()
 
         self.sectionHeaders = Elf32SectionHeaders(array_of_bytes, self.header.shoff, self.header.shnum)
 
@@ -29,47 +34,40 @@ class Elf32File:
 
         for entry in self.sectionHeaders.sections:
             sectionEntryName = self.shstrtab[entry.name]
-            print(sectionEntryName, end="\t ")
-            print(entry)
+            # print(sectionEntryName, end="\t ")
+            # print(entry)
             if entry.type == Elf32SectionHeaderType.NULL.value:
                 continue
             elif entry.type == Elf32SectionHeaderType.PROGBITS.value:
-                if sectionEntryName == ".text":
-                    # TODO
-                    pass
-                elif sectionEntryName == ".data":
-                    # TODO
-                    pass
-                elif sectionEntryName == ".rodata":
-                    # TODO
-                    pass
+                fileSecType = FileSectionType.fromStr(sectionEntryName)
+                if fileSecType != FileSectionType.Invalid:
+                    self.progbits[fileSecType] = array_of_bytes[entry.offset:entry.offset+entry.size]
+                    printVerbose(sectionEntryName, "size: ", len(self.progbits[fileSecType]))
+                    printVerbose()
                 else:
-                    # TODO: eprint
-                    print("Unknown PROGBITS found: ", sectionEntryName, entry)
+                    eprint("Unknown PROGBITS found: ", sectionEntryName, entry)
             elif entry.type == Elf32SectionHeaderType.SYMTAB.value:
                 if sectionEntryName == ".symtab":
                     self.symtab = Elf32Syms(array_of_bytes, entry.offset, entry.size)
-                    print()
-                    print("SYMTAB:")
+                    printVerbose()
+                    printVerbose("SYMTAB:")
                     for i, x in enumerate(self.symtab.symbols):
-                        print(i, x)
-                    print()
+                        printVerbose(i, x)
+                    printVerbose()
                 else:
-                    # TODO: eprint
-                    print("Unknown SYMTAB found: ", sectionEntryName, entry)
+                    eprint("Unknown SYMTAB found: ", sectionEntryName, entry)
             elif entry.type == Elf32SectionHeaderType.STRTAB.value:
                 if sectionEntryName == ".strtab":
                     self.strtab = Elf32StringTable(array_of_bytes, entry.offset, entry.size)
-                    print()
-                    print("STRTAB:")
+                    printVerbose()
+                    printVerbose("STRTAB:")
                     for i, x in enumerate(self.strtab):
-                        print(i, x)
-                    print()
+                        printVerbose(i, x)
+                    printVerbose()
                 elif sectionEntryName == ".shstrtab":
                     pass
                 else:
-                    # TODO: eprint
-                    print("Unknown STRTAB found: ", sectionEntryName, entry)
+                    eprint("Unknown STRTAB found: ", sectionEntryName, entry)
             # elif entry.type == Elf32SectionHeaderType.RELA.value:
             #     pass
             # elif entry.type == Elf32SectionHeaderType.HASH.value:
@@ -80,14 +78,25 @@ class Elf32File:
             #     pass
             elif entry.type == Elf32SectionHeaderType.NOBITS.value:
                 if sectionEntryName == ".bss":
-                    # TODO
-                    pass
+                    self.nobits = entry.size
+                    printVerbose(sectionEntryName, "size: ", self.nobits)
+                    printVerbose()
                 else:
-                    # TODO: eprint
-                    print("Unknown NOBITS found: ", sectionEntryName, entry)
+                    eprint("Unknown NOBITS found: ", sectionEntryName, entry)
             elif entry.type == Elf32SectionHeaderType.REL.value:
-                # TODO
-                pass
+                if sectionEntryName.startswith(".rel."):
+                    fileSecType = FileSectionType.fromStr(sectionEntryName[4:])
+                    if fileSecType != FileSectionType.Invalid:
+                        self.rel[fileSecType] = Elf32Rels(array_of_bytes, entry.offset, entry.size)
+                        printVerbose()
+                        printVerbose(f"REL: ({sectionEntryName})")
+                        for i, x in enumerate(self.rel[fileSecType]):
+                            printVerbose(i, x, x.rType, x.rSym)
+                        printVerbose()
+                    else:
+                        eprint("Unknown REL subsection found: ", sectionEntryName, entry)
+                else:
+                    eprint("Unknown REL found: ", sectionEntryName, entry)
             elif entry.type == Elf32SectionHeaderType.MIPS_DEBUG.value:
                 # ?
                 pass
@@ -98,5 +107,4 @@ class Elf32File:
                 # ?
                 pass
             else:
-                # TODO: eprint
-                print("Unknown section header type found: ", entry)
+                eprint("Unknown section header type found: ", entry)

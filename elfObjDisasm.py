@@ -15,6 +15,7 @@ def elfObjDisasmMain():
     parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument("binary", help="Path to input elf binary file")
+    # parser.add_argument("output", help="Path to output. Use '-' to print to stdout instead")
 
     args = parser.parse_args()
 
