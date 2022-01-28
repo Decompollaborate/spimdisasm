@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from .MipsConstants import InstructionId
 
-from ..Utils import *
+from ...common.Utils import *
 
 from .MipsInstructionSpecial import InstructionSpecial
 from ..MipsContext import Context

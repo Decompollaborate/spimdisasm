@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from .MipsConstants import InstructionId, InstructionVectorId
 
-from ..Utils import *
+from ...common.Utils import *
 
 from .MipsInstructionCoprocessor0 import InstructionCoprocessor0
-from ..GlobalConfig import GlobalConfig
+from ...common.GlobalConfig import GlobalConfig
 from ..MipsContext import Context
 
 

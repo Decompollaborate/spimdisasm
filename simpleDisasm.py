@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import argparse
 
-from mips.Utils import *
-from mips.GlobalConfig import GlobalConfig, printQuietless, printVerbose
-from mips.FileSplitFormat import FileSplitFormat, FileSectionType, FileSplitEntry
-from mips.MipsText import Text
-from mips.MipsContext import Context
-from mips.FilesHandlers import createSectionFromSplitEntry, analyzeSectionFromSplitEntry, writeSection, writeSplitedFunction, writeOtherRodata
+from backend.common.Utils import *
+from backend.common.GlobalConfig import GlobalConfig, printQuietless, printVerbose
+from backend.common.FileSplitFormat import FileSplitFormat, FileSectionType, FileSplitEntry
+from backend.mips.MipsText import Text
+from backend.mips.MipsContext import Context
+from backend.mips.FilesHandlers import createSectionFromSplitEntry, analyzeSectionFromSplitEntry, writeSection, writeSplitedFunction, writeOtherRodata
 
 
 def disassemblerMain():

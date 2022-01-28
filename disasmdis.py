@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import argparse
 
-from mips.Utils import *
-from mips.GlobalConfig import GlobalConfig
-from mips.MipsContext import Context
-from mips.Instructions import wordToInstruction, wordToInstructionRsp, InstructionBase
-from mips.MipsFunction import Function
+from backend.common.Utils import *
+from backend.common.GlobalConfig import GlobalConfig
+from backend.mips.MipsContext import Context
+from backend.mips.Instructions import wordToInstruction, wordToInstructionRsp, InstructionBase
+from backend.mips.MipsFunction import Function
 
 
 def disasmdisMain():
