@@ -209,7 +209,6 @@ class InstructionNormal(InstructionBase):
         formated_opcode = opcode.lower().ljust(self.ljustWidthOpcode, ' ')
         rs = self.getRegisterName(self.rs)
         rt = self.getRegisterName(self.rt)
-        #immediate = toHex(self.immediate, 4)
         immediate = hex(self.immediate)
         if not self.isUnsigned():
             immediate = hex(from2Complement(self.immediate, 16))
@@ -219,17 +218,10 @@ class InstructionNormal(InstructionBase):
         result = f"{formated_opcode} "
 
         if self.isJType():
-            # instr_index = toHex(self.instr_index, 7)
-            # return f"{opcode} {instr_index}"
-            vram = self.instr_index<<2
-            if not self.isRsp:
-                vram |= 0x80000000
-            instrIndexHex = toHex(vram, 6)[2:]
-            label = f"func_{instrIndexHex}"
-            if context is not None:
-                symbol = context.getAnySymbol(vram)
-                if symbol is not None:
-                    label = symbol.name
+            vram = self.getInstrIndexAsVram()
+            label = f"func_{vram:06X}"
+            if immOverride is not None:
+                label = immOverride
             return f"{result}{label}"
 
         if self.isBranch():

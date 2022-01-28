@@ -446,6 +446,11 @@ class Function:
                         else:
                             immOverride = f"(0x{constant:X} & 0xFFFF)"
 
+            elif instr.isJType():
+                possibleOverride = self.context.getAnySymbol(instr.getInstrIndexAsVram())
+                if immOverride is None and possibleOverride is not None:
+                    immOverride = possibleOverride.name
+
             if wasLastInstABranch:
                 instr.ljustWidthOpcode -= 1
 

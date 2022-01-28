@@ -313,6 +313,12 @@ class InstructionBase:
     def offsetVector(self) -> int:
         return self.immediate & 0x7F
 
+    def getInstrIndexAsVram(self) -> int:
+        vram = self.instr_index<<2
+        if not self.isRsp:
+            vram |= 0x80000000
+        return vram
+
 
     def __getitem__(self, key):
         if key < 0 or key > 31:
