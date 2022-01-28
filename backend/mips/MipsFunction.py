@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from ..common.Utils import *
 from ..common.GlobalConfig import GlobalConfig
+from ..common.MipsContext import Context, ContextSymbol
+
 from .Instructions import InstructionBase, InstructionId, InstructionsNotEmitedByIDO, InstructionCoprocessor0, InstructionCoprocessor2
-from .MipsContext import Context, ContextSymbol
+
 
 class Function:
     def __init__(self, name: str, instructions: List[InstructionBase], context: Context, inFileOffset: int, vram: int = -1):
@@ -454,7 +456,7 @@ class Function:
             if wasLastInstABranch:
                 instr.ljustWidthOpcode -= 1
 
-            line = instr.disassemble(self.context, immOverride)
+            line = instr.disassemble(immOverride)
 
             if wasLastInstABranch:
                 instr.ljustWidthOpcode += 1

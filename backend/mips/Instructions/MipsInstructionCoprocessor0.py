@@ -7,7 +7,6 @@ from .MipsConstants import InstructionId
 from ...common.Utils import *
 
 from .MipsInstructionBase import InstructionBase
-from ..MipsContext import Context
 
 
 class InstructionCoprocessor0(InstructionBase):
@@ -102,7 +101,7 @@ class InstructionCoprocessor0(InstructionBase):
         return super().getOpcodeName()
 
 
-    def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
+    def disassemble(self, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName()
         formated_opcode = opcode.lower().ljust(self.ljustWidthOpcode, ' ')
         rt = self.getRegisterName(self.rt)

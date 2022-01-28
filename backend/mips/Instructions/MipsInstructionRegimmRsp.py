@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from .MipsConstants import InstructionId
-
 from ...common.Utils import *
 
+from .MipsConstants import InstructionId
 from .MipsInstructionRegimm import InstructionRegimm
-from ..MipsContext import Context
 
 
 class InstructionRegimmRsp(InstructionRegimm):

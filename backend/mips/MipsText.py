@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from ..common.Utils import *
 from ..common.GlobalConfig import GlobalConfig, printVerbose
+from ..common.MipsContext import Context, ContextSymbol
+
 from .MipsFileBase import FileBase
 from .MipsSection import Section
 from .Instructions import InstructionBase, wordToInstruction, wordToInstructionRsp, InstructionId, InstructionCoprocessor0, InstructionCoprocessor2
 from .MipsFunction import Function
-from .MipsContext import Context, ContextSymbol
 
 
 class Text(Section):

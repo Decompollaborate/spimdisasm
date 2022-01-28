@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from .MipsConstants import InstructionId
-
 from ...common.Utils import *
 
+from .MipsConstants import InstructionId
 from .MipsInstructionBase import InstructionBase
-from ..MipsContext import Context
 
 
 class InstructionRegimm(InstructionBase):
@@ -81,7 +79,7 @@ class InstructionRegimm(InstructionBase):
 
 
     # OP  rs, IMM
-    def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
+    def disassemble(self, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName().lower().ljust(self.ljustWidthOpcode, ' ')
         rs = self.getRegisterName(self.rs)
         #immediate = toHex(self.immediate, 4)

@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from .MipsConstants import InstructionId, InstructionVectorId
-
 from ...common.Utils import *
 
+from .MipsConstants import InstructionId, InstructionVectorId
 from .MipsInstructionNormal import InstructionNormal
-from ..MipsContext import Context
 
 
 class InstructionNormalRsp(InstructionNormal):
@@ -115,7 +113,7 @@ class InstructionNormalRsp(InstructionNormal):
         return self.getGprRspRegisterName(register)
 
 
-    def disassemble(self, context: Context|None, immOverride: str|None=None) -> str:
+    def disassemble(self, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName()
         formated_opcode = opcode.lower().ljust(self.ljustWidthOpcode, ' ')
         vt = self.getVectorRspRegisterName(self.vt)
@@ -147,4 +145,4 @@ class InstructionNormalRsp(InstructionNormal):
 
             return result
 
-        return super().disassemble(context, immOverride)
+        return super().disassemble(immOverride)
