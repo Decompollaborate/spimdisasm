@@ -33,3 +33,6 @@ class Elf32Syms:
         for i in range(rawSize // 0x10):
             entry = Elf32SymEntry.fromBytearray(array_of_bytes, offset + i*0x10)
             self.symbols.append(entry)
+
+    def __getitem__(self, key: int) -> Elf32SymEntry:
+        return self.symbols[key]

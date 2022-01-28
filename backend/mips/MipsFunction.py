@@ -24,7 +24,7 @@ class Function:
         self.constantsPerInstruction: Dict[int, int] = dict()
         self.branchInstructions: List[int] = list()
 
-        self.pointersOffsets: List[int] = list()
+        self.pointersOffsets: dict[int, str|None] = dict()
 
         self.referencedVRams: Set[int] = set()
         self.referencedConstants: Set[int] = set()
@@ -405,6 +405,9 @@ class Function:
             instrHex = toHex(instr.instr, 8)[2:]
 
             immOverride = None
+            if auxOffset in self.pointersOffsets:
+                immOverride = self.pointersOffsets[auxOffset]
+
             if instr.isBranch():
                 if not GlobalConfig.IGNORE_BRANCHES:
                     diff = from2Complement(instr.immediate, 16)
