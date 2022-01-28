@@ -17,6 +17,7 @@ class GlobalConfig:
 
     ADD_NEW_SYMBOLS: bool = True
     PRODUCE_SYMBOLS_PLUS_OFFSET: bool = False
+    SYMBOL_FINDER_FILTER_LOW_ADDRESSES: bool = True
 
     TRUST_USER_FUNCTIONS: bool = True
     DISASSEMBLE_UNKNOWN_INSTRUCTIONS: bool = False
@@ -41,6 +42,8 @@ class GlobalConfig:
 
         backendConfig.add_argument("--disable-string-guesser", help="Disables the string guesser feature (does nto affect the strings referenced by .data)", action="store_true")
 
+        backendConfig.add_argument("--not-filter-low-addressses", help="Treat low addresses (lower than 0x40000000) as real pointers.", action="store_true")
+
 
         miscConfig = parser.add_argument_group("Disassembler misc options")
 
@@ -62,17 +65,22 @@ class GlobalConfig:
 
     @classmethod
     def parseArgs(cls, args: argparse.Namespace):
+        GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS = args.disasm_unknown
+        GlobalConfig.DISASSEMBLE_RSP = args.disasm_rsp
+
         if args.ignore_words:
             for upperByte in args.ignore_words:
                 GlobalConfig.IGNORE_WORD_LIST.add(int(upperByte, 16))
 
+        GlobalConfig.STRING_GUESSER = not args.disable_string_guesser
+        GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES = not args.not_filter_low_addressses
+
         GlobalConfig.WRITE_BINARY = args.write_binary
         GlobalConfig.ASM_COMMENT = not args.disable_asm_comments
-        GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS = args.disasm_unknown
-        GlobalConfig.DISASSEMBLE_RSP = args.disasm_rsp
-        GlobalConfig.STRING_GUESSER = not args.disable_string_guesser
+
         GlobalConfig.VERBOSE = args.verbose
         GlobalConfig.QUIET = args.quiet
+
         GlobalConfig.PRINT_FUNCTION_ANALYSIS_DEBUG_INFO = args.debug_func_analysis
         GlobalConfig.PRINT_SYMBOL_FINDER_DEBUG_INFO = args.debug_symbol_finder
 
