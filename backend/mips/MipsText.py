@@ -213,7 +213,7 @@ class Text(Section):
 
             func = Function(funcName, instructions[start:end], self.context, self.offset + start*4, vram=vram)
             func.index = i
-            func.pointersOffsets += self.pointersOffsets
+            func.pointersOffsets |= self.pointersOffsets
             func.hasUnimplementedIntrs = hasUnimplementedIntrs
             func.parent = self
             func.isRsp = self.isRsp

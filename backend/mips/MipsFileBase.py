@@ -18,7 +18,7 @@ class FileBase:
         self.commentOffset: int = 0
         self.vRamStart: int = -1
 
-        self.pointersOffsets: List[int] = list()
+        self.pointersOffsets: dict[int, str|None] = dict()
 
         self.isHandwritten: bool = False
         self.isRsp: bool = False

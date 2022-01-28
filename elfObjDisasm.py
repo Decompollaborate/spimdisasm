@@ -18,6 +18,7 @@ from backend.mips import MipsData
 from backend.mips import MipsRodata
 from backend.mips import MipsBss
 from backend.mips import FilesHandlers
+from backend.mips import MipsRelocTypes
 
 
 def elfObjDisasmMain():
@@ -31,6 +32,9 @@ def elfObjDisasmMain():
     parser.add_argument("--data-output", help="Path to output the data and rodata disassembly")
 
     args = parser.parse_args()
+
+    GlobalConfig.REMOVE_POINTERS = False
+    GlobalConfig.IGNORE_BRANCHES = False
 
     GlobalConfig.VERBOSE = False
 
@@ -74,7 +78,22 @@ def elfObjDisasmMain():
 
         processedFiles[FileSectionType.Bss] = (outputFilePath, MipsBss.Bss(0, elfFile.nobits, inputPath.stem, context))
 
-    # TODO: use the elfFile.rel stuff
+    if elfFile.symtab is not None and elfFile.strtab is not None:
+        for sectType, relocs in elfFile.rel.items():
+            subSection = processedFiles[sectType][1]
+            for rel in relocs:
+                symbolEntry = elfFile.symtab[rel.rSym]
+                symbolName = elfFile.strtab[symbolEntry.name]
+
+                relocType = MipsRelocTypes.RelocTypes.fromValue(rel.rType)
+                processedSymName = symbolName
+                if relocType == MipsRelocTypes.RelocTypes.R_MIPS_HI16:
+                    processedSymName = f"%hi({symbolName})"
+                elif relocType == MipsRelocTypes.RelocTypes.R_MIPS_LO16:
+                    processedSymName = f"%lo({symbolName})"
+
+                subSection.pointersOffsets[rel.offset] = processedSymName
+                # print(rel.offset, rel.rSym, rel.rType, symbolEntry, symbolName)
 
     for outputFilePath, subFile in processedFiles.values():
         subFile.analyze()
