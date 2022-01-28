@@ -2,48 +2,9 @@
 
 from __future__ import annotations
 
-import enum
-
 from .Utils import *
 
-
-@enum.unique
-class FileSectionType(enum.Enum):
-    Invalid = -1
-
-    Text    = enum.auto()
-    Data    = enum.auto()
-    Rodata  = enum.auto()
-    Bss     = enum.auto()
-    Reloc   = enum.auto()
-
-    def toCsvFormat(self) -> str:
-        if self == FileSectionType.Text:
-            return ".text"
-        if self == FileSectionType.Data:
-            return ".data"
-        if self == FileSectionType.Rodata:
-            return ".rodata"
-        if self == FileSectionType.Bss:
-            return ".bss"
-        if self == FileSectionType.Reloc:
-            return ".reloc"
-        return ""
-
-    @staticmethod
-    def fromCsvFormat(x: str) -> FileSectionType:
-        if x == ".text":
-            return FileSectionType.Text
-        if x == ".data":
-            return FileSectionType.Data
-        if x == ".rodata":
-            return FileSectionType.Rodata
-        if x == ".bss":
-            return FileSectionType.Bss
-        if x == ".reloc":
-            return FileSectionType.Reloc
-        return FileSectionType.Invalid
-
+from .FileSectionType import FileSectionType
 
 class FileSplitEntry:
     def __init__(self, offset: int, vram: int, fileName: str, section: FileSectionType, nextOffset: int, isHandwritten: bool, isRsp: bool):
@@ -129,7 +90,7 @@ class FileSplitFormat:
             fileName = element.fileName
 
             if element.section != FileSectionType.Invalid:
-                section = element.section.toCsvFormat()
+                section = element.section.toStr()
                 self.splits.append(["offset", "vram", section])
 
             self.splits.append([offset, vram, fileName])
