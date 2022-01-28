@@ -80,6 +80,9 @@ class Context:
 
 
     def getAnySymbol(self, vramAddress: int) -> ContextSymbol|None:
+        if vramAddress == 0:
+            return None
+
         if vramAddress in self.funcAddresses:
             return self.funcAddresses[vramAddress]
 
@@ -102,6 +105,9 @@ class Context:
 
     # Like getAnySymbol, but it doesn't search in self.symbols
     def getAnyNonSymbol(self, vramAddress: int) -> ContextSymbol|None:
+        if vramAddress == 0:
+            return None
+
         if vramAddress in self.funcAddresses:
             return self.funcAddresses[vramAddress]
 
@@ -120,6 +126,9 @@ class Context:
         return None
 
     def getGenericSymbol(self, vramAddress: int, tryPlusOffset: bool = True) -> ContextSymbol|None:
+        if vramAddress == 0:
+            return None
+
         if vramAddress in self.funcAddresses:
             return self.funcAddresses[vramAddress]
 
@@ -143,6 +152,9 @@ class Context:
         return None
 
     def getSymbol(self, vramAddress: int, tryPlusOffset: bool = True, checkUpperLimit: bool = True) -> ContextSymbol|None:
+        if vramAddress == 0:
+            return None
+
         if vramAddress in self.symbols:
             return self.symbols[vramAddress]
 
@@ -163,6 +175,9 @@ class Context:
         return None
 
     def getGenericLabel(self, vramAddress: int) -> ContextSymbol|None:
+        if vramAddress == 0:
+            return None
+
         if vramAddress in self.funcAddresses:
             return self.funcAddresses[vramAddress]
 
@@ -175,6 +190,9 @@ class Context:
         return None
 
     def getFunction(self, vramAddress: int) -> ContextSymbol|None:
+        if vramAddress == 0:
+            return None
+
         if vramAddress in self.funcAddresses:
             return self.funcAddresses[vramAddress]
 

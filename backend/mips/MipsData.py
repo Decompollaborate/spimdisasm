@@ -63,6 +63,17 @@ class Data(Section):
             offsetHex = toHex(inFileOffset + self.commentOffset, 6)[2:]
             vramHex = ""
             label = ""
+
+            # try to get the symbol name from the offset of the file (possibly from a .o elf file)
+            if inFileOffset in self.symbolNameOffsets:
+                possibleSymbolName = self.symbolNameOffsets[inFileOffset]
+                if possibleSymbolName is not None:
+                    if possibleSymbolName.startswith("."):
+                        label = f"\n/* static variable */\n{possibleSymbolName}\n"
+                    else:
+                        label = f"\nglabel {possibleSymbolName}\n"
+
+            # if we have vram available, try to get the symbol name from the Context
             if self.vRamStart > -1:
                 currentVram = self.getVramOffset(offset)
                 vramHex = toHex(currentVram, 8)[2:]
@@ -77,6 +88,11 @@ class Data(Section):
 
             dataHex = toHex(w, 8)[2:]
             value = toHex(w, 8)
+            if inFileOffset in self.pointersOffsets:
+                possibleReference = self.pointersOffsets[inFileOffset]
+                if possibleReference is not None:
+                    value = possibleReference
+
             symbol = self.context.getAnySymbol(w)
             if symbol is not None:
                 value = symbol.name
