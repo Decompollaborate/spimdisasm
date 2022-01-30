@@ -7,6 +7,7 @@ import enum
 
 @enum.unique
 class FileSectionType(enum.Enum):
+    Unknown = -2
     Invalid = -1
 
     Text    = enum.auto()

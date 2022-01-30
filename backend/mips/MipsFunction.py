@@ -100,6 +100,44 @@ class Function:
 
         return address
 
+    def _removeRegisterFromTrackers(self, instr: InstructionBase, currentVram: int, trackedRegisters: dict, trackedRegistersAll: dict, registersValues: dict, wasRegisterValuesUpdated: bool):
+        shouldRemove = False
+        register = 0
+
+        if not instr.isFloatInstruction():
+            if instr.uniqueId != InstructionId.LUI and instr.modifiesRt():
+                shouldRemove = True
+                register = instr.rt
+
+            if instr.modifiesRd():
+                shouldRemove = True
+                register = instr.rd
+
+                # Usually array offsets use an ADDU to add the index of the array
+                if instr.uniqueId == InstructionId.ADDU:
+                    if instr.rd != instr.rs and instr.rd != instr.rt:
+                        shouldRemove = True
+                    else:
+                        shouldRemove = False
+
+        else:
+            if instr.uniqueId in (InstructionId.MTC1, InstructionId.DMTC1, InstructionId.CTC1):
+                # IDO usually use a register as a temp when loading a constant value
+                # into the float coprocessor, after that IDO never re-uses the value
+                # in that register for anything else
+                shouldRemove = True
+                register = instr.rt
+
+        if shouldRemove:
+            if register in trackedRegisters:
+                self._printSymbolFinderDebugInfo_DelTrackedRegister(instr, register, currentVram, trackedRegisters)
+                del trackedRegisters[register]
+            if register in trackedRegistersAll:
+                del trackedRegistersAll[register]
+            if not wasRegisterValuesUpdated:
+                if register in registersValues:
+                    del registersValues[register]
+
     def analyze(self):
         if not GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS and self.hasUnimplementedIntrs:
             if self.vram > -1:
@@ -120,7 +158,6 @@ class Function:
         instructionOffset = 0
         for instr in self.instructions:
             currentVram = self.vram + instructionOffset
-            isLui = False
             wasRegisterValuesUpdated = False
             self.isLikelyHandwritten |= instr.uniqueId in InstructionsNotEmitedByIDO
 
@@ -169,9 +206,8 @@ class Function:
             # symbol finder
             elif instr.isIType():
                 # TODO: Consider following branches
-                isLui = instr.uniqueId == InstructionId.LUI
                 lastInstr = self.instructions[instructionOffset//4 - 1]
-                if isLui:
+                if instr.uniqueId == InstructionId.LUI:
                     if not GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES or instr.immediate >= 0x4000: # filter out stuff that may not be a real symbol
                         if lastInstr.isBranch():
                             # If the previous instructions is a branch, do a
@@ -235,52 +271,7 @@ class Function:
                         jumpTableSymbol = self.context.addJumpTable(address, "jtbl_" + toHex(address, 8)[2:])
                         jumpTableSymbol.referenceCounter += 1
 
-            if not instr.isFloatInstruction():
-                if not isLui and instr.modifiesRt():
-                    rt = instr.rt
-                    if rt in trackedRegisters:
-                        self._printSymbolFinderDebugInfo_DelTrackedRegister(instr, rt, currentVram, trackedRegisters)
-                        del trackedRegisters[rt]
-                    if rt in trackedRegistersAll:
-                        del trackedRegistersAll[rt]
-                    if not wasRegisterValuesUpdated:
-                        if rt in registersValues:
-                            del registersValues[rt]
-
-                if instr.modifiesRd():
-                    shouldRemove = True
-                    # Usually array offsets use an ADDU to add the index of the array
-                    if instr.uniqueId == InstructionId.ADDU:
-                        if instr.rd != instr.rs and instr.rd != instr.rt:
-                            shouldRemove = True
-                        else:
-                            shouldRemove = False
-
-                    if shouldRemove:
-                        rd = instr.rd
-                        if rd in trackedRegisters:
-                            self._printSymbolFinderDebugInfo_DelTrackedRegister(instr, rd, currentVram, trackedRegisters)
-                            del trackedRegisters[rd]
-                        if rd in trackedRegistersAll:
-                            del trackedRegistersAll[rd]
-                        if not wasRegisterValuesUpdated:
-                            if rd in registersValues:
-                                del registersValues[rd]
-
-            else:
-                if instr.uniqueId in (InstructionId.MTC1, InstructionId.DMTC1, InstructionId.CTC1):
-                    # IDO usually use a register as a temp when loading a constant value
-                    # into the float coprocessor, after that IDO never re-uses the value
-                    # in that register for anything else
-                    rt = instr.rt
-                    if rt in trackedRegisters:
-                        self._printSymbolFinderDebugInfo_DelTrackedRegister(instr, rt, currentVram, trackedRegisters)
-                        del trackedRegisters[rt]
-                    if rt in trackedRegistersAll:
-                        del trackedRegistersAll[rt]
-                    if not wasRegisterValuesUpdated:
-                        if rt in registersValues:
-                            del registersValues[rt]
+            self._removeRegisterFromTrackers(instr, currentVram, trackedRegisters, trackedRegistersAll, registersValues, wasRegisterValuesUpdated)
 
             # look-ahead symbol finder
             lastInstr = self.instructions[instructionOffset//4 - 1]

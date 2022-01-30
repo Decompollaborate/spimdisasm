@@ -9,6 +9,7 @@ from sortedcontainers import SortedDict
 
 from .Utils import *
 from .GlobalConfig import GlobalConfig
+from .FileSectionType import FileSectionType
 
 
 class ContextFile:
@@ -28,12 +29,12 @@ class ContextSegment:
 class ContextSymbolBase:
     name: str
     size: int = 4
-    type: str = "" # TODO: change to str|None
+    type: str|None = None
 
     isDefined: bool = False
     isUserDefined: bool = False
 
-    isBss = False # TODO: change type to FileSectionType
+    sectionType: FileSectionType = FileSectionType.Unknown
 
     referenceCounter: int = 0
     isLateRodata: bool = False
@@ -42,7 +43,7 @@ class ContextSymbolBase:
     arrayInfo: str | None = None
 
     def setTypeIfUnset(self, varType: str) -> bool:
-        if self.type == "":
+        if self.type is None or self.type == "":
             self.type = varType
             return True
         return False
@@ -441,6 +442,9 @@ class Context:
 
         for vram, varData in variables_ast.items():
             varName, varType, varArrayInfo, varSize = varData
+            if varType == "":
+                varType = None
+
             contextSym = self.addSymbol(vram, varName)
             contextSym.type = varType
             contextSym.arrayInfo = varArrayInfo
@@ -463,6 +467,9 @@ class Context:
 
             vram = int(vramStr, 16)
             varSize = int(varSizeStr, 16)
+            if varType == "":
+                varType = None
+
             contextSym = self.addSymbol(vram, varName)
             contextSym.type = varType
             contextSym.size = varSize
@@ -529,7 +536,10 @@ class Context:
                     # Filter out symbols defined in other categories
                     continue
                 file = self.symbolToFile.get(address, "")
-                f.write(f"symbol,{file},{toHex(address, 8)},{symbol.name},{symbol.type},{symbol.size},{symbol.isUserDefined},{symbol.isDefined}\n")
+                symType = symbol.type
+                if symType is None:
+                    symType = ""
+                f.write(f"symbol,{file},{toHex(address, 8)},{symbol.name},{symType},{symbol.size},{symbol.isUserDefined},{symbol.isDefined}\n")
 
             for address, symbol in self.fakeFunctions.items():
                 file = self.symbolToFile.get(address, "")
