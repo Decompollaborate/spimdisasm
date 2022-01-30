@@ -23,7 +23,6 @@ class FileBase:
 
         self.isHandwritten: bool = False
         self.isRsp: bool = False
-        self.newStuffSuffix = ""
 
     @property
     def size(self) -> int:
