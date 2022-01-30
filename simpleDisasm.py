@@ -38,8 +38,6 @@ def disassemblerMain():
 
     GlobalConfig.addParametersToArgParse(parser)
 
-    parser.add_argument("--add-filename", help="Adds the filename of the file to the generated function/variable name")
-
     args = parser.parse_args()
 
     GlobalConfig.parseArgs(args)
@@ -52,10 +50,6 @@ def disassemblerMain():
     GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET = True
     GlobalConfig.TRUST_USER_FUNCTIONS = True
 
-
-    newStuffSuffix = args.add_filename
-    if newStuffSuffix is None:
-        newStuffSuffix = ""
 
     context = Context()
     context.parseArgs(args)
@@ -125,7 +119,6 @@ def disassemblerMain():
 
         printVerbose(f"Reading '{row.fileName}'")
         f = createSectionFromSplitEntry(row, array_of_bytes, outputFilePath, context)
-        f.newStuffSuffix = newStuffSuffix
         analyzeSectionFromSplitEntry(f, row)
         processedFiles[row.section].append((outputFilePath, f))
 
