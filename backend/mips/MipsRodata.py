@@ -130,12 +130,9 @@ class Rodata(Section):
             else:
                 label = f"\nglabel {possibleSymbolName}\n"
 
-        if inFileOffset in self.pointersOffsets:
-            possibleReference = self.pointersOffsets[inFileOffset]
-            if possibleReference is not None:
-                value = possibleReference
-                if w != 0:
-                    value = f"({possibleReference} + 0x{w:X})"
+        possibleReference = self.context.getRelocSymbol(inFileOffset, FileSectionType.Rodata)
+        if possibleReference is not None:
+            value = possibleReference.getNamePlusOffset(w)
 
         isFloat = False
         isDouble = False

@@ -5,6 +5,7 @@ from __future__ import annotations
 from ..common.Utils import *
 from ..common.GlobalConfig import GlobalConfig
 from ..common.Context import Context, ContextSymbol
+from ..common.FileSectionType import FileSectionType
 
 from .Instructions import InstructionBase, InstructionId, InstructionsNotEmitedByIDO, InstructionCoprocessor0, InstructionCoprocessor2
 
@@ -439,20 +440,18 @@ class Function:
                     immOverride = possibleOverride.name
 
             # Check possible symbols using reloc information (probably from a .o elf file)
-            if auxOffset in self.pointersOffsets:
-                possibleImmOverride = self.pointersOffsets[auxOffset]
-                if possibleImmOverride is not None:
-                    immOverride = possibleImmOverride
-                    if instr.isIType():
-
-                        if instructionOffset in self.pointersPerInstruction:
-                            addressOffset = self.pointersPerInstruction[instructionOffset]
-                            if addressOffset != 0:
-                                possibleImmOverride = f"{possibleImmOverride} + 0x{addressOffset:X}"
-                        if instr.uniqueId == InstructionId.LUI:
-                            immOverride = f"%hi({possibleImmOverride})"
-                        else:
-                            immOverride= f"%lo({possibleImmOverride})"
+            possibleImmOverride = self.context.getRelocSymbol(auxOffset, FileSectionType.Text)
+            if possibleImmOverride is not None:
+                auxOverride = possibleImmOverride.name
+                if instr.isIType():
+                    if instructionOffset in self.pointersPerInstruction:
+                        addressOffset = self.pointersPerInstruction[instructionOffset]
+                        auxOverride = possibleImmOverride.getNamePlusOffset(addressOffset)
+                    if instr.uniqueId == InstructionId.LUI:
+                        auxOverride = f"%hi({auxOverride})"
+                    else:
+                        auxOverride= f"%lo({auxOverride})"
+                immOverride = auxOverride
 
             if wasLastInstABranch:
                 instr.ljustWidthOpcode -= 1
