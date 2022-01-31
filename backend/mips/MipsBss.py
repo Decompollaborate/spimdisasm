@@ -17,15 +17,16 @@ class Bss(Section):
         self.bssVramStart: int = bssVramStart
         self.bssVramEnd: int = bssVramEnd
 
+        self.bssTotalSize: int = bssVramEnd - bssVramStart
+
         self.vRamStart = bssVramStart
 
 
     def setVRamStart(self, vRamStart: int):
         super().setVRamStart(vRamStart)
 
-        diff = self.bssVramEnd - self.bssVramStart
         self.bssVramStart = vRamStart
-        self.bssVramEnd = vRamStart + diff
+        self.bssVramEnd = vRamStart + self.bssTotalSize
 
     def analyze(self):
         # Check if the very start of the file has a bss variable and create it if it doesn't exist yet
@@ -74,38 +75,39 @@ class Bss(Section):
         f.write("\n")
         f.write(".balign 16\n")
 
+        offsetSymbolsInSection = self.context.offsetSymbols[FileSectionType.Bss]
+        bssSymbolOffsets = {offset: sym.name for offset, sym in offsetSymbolsInSection.items()}
+
         # Needs to move this to a list because the algorithm requires to check the size of a bss variable based on the next bss variable' vram
-        # TODO: sorted() may not be required here anymore because of SortedDict. Test if removing it doesn't break anything
-        sortedSymbols = sorted(self.context.symbols.irange(minimum=self.bssVramStart, maximum=self.bssVramEnd, inclusive=(True, False)))
+        if self.bssVramStart > 0:
+            for symbolVram in self.context.symbols.irange(minimum=self.bssVramStart, maximum=self.bssVramEnd, inclusive=(True, False)):
+                bssSymbolOffsets[symbolVram-self.bssVramStart] = self.context.symbols[symbolVram].name
+
+        sortedOffsets = sorted(bssSymbolOffsets.items())
+
         i = 0
-        while i < len(sortedSymbols):
-            symbolVram = sortedSymbols[i]
-            symbol = self.context.symbols[symbolVram]
+        while i < len(sortedOffsets):
+            symbolOffset, symbolName = sortedOffsets[i]
+            symbolVram = self.bssVramStart + symbolOffset
 
-            self.context.symbols[symbolVram].isDefined = True
+            if symbolVram in self.context.symbols:
+                self.context.symbols[symbolVram].isDefined = True
 
-            offset = symbolVram - self.bssVramStart
-            inFileOffset = self.offset + offset
+            inFileOffset = self.offset + symbolOffset
 
-            offsetHex = toHex(inFileOffset + self.commentOffset, 6)[2:]
-            vramHex = toHex(symbolVram, 8)[2:]
+            offsetHex = f"{inFileOffset + self.commentOffset:06X}"
+            vramHex = f"{symbolVram:08X}"
 
             # Calculate the space of the bss variable
-            space = self.bssVramEnd - symbolVram
-            if i + 1 < len(sortedSymbols):
-                if sortedSymbols[i+1] <= self.bssVramEnd:
-                    space = sortedSymbols[i+1] - symbolVram
+            space = self.bssTotalSize - symbolOffset
+            if i + 1 < len(sortedOffsets):
+                nextSymbolOffset, _ = sortedOffsets[i+1]
+                if nextSymbolOffset <= self.bssTotalSize:
+                    space = nextSymbolOffset - symbolOffset
 
-            label = f"\nglabel {symbol.name}\n"
-
-            # try to get the symbol name from the offset of the file (possibly from a .o elf file)
-            possibleSymbolName = self.context.getOffsetSymbol(inFileOffset, FileSectionType.Bss)
-            if possibleSymbolName is not None:
-                possibleSymbolName = possibleSymbolName.name
-                if possibleSymbolName.startswith("."):
-                    label = f"\n/* static variable */\n{possibleSymbolName}\n"
-                else:
-                    label = f"\nglabel {possibleSymbolName}\n"
+            label = f"\nglabel {symbolName}\n"
+            if symbolName.startswith("."):
+                label = f"\n/* static variable */\n{symbolName}\n"
 
             f.write(f"{label}/* {offsetHex} {vramHex} */  .space  {toHex(space, 2)}\n")
             i += 1
