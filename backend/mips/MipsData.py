@@ -97,7 +97,7 @@ class Data(Section):
             if symbol is not None:
                 value = symbol.name
 
-            #comment = " "symbol
+            #comment = " "
             comment = ""
             if GlobalConfig.ASM_COMMENT:
                 #comment = f"/* {offsetHex} {vramHex} {dataHex} */"
