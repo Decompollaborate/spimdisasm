@@ -107,9 +107,22 @@ def writeSplitedFunction(path: str, func: Function, rodataFileList: List[Tuple[s
                 if rodataSymbol.referenceCounter != 1:
                     break
 
+                isConstVariable = True
+                if rodataSymbol.type in ("f32", "f64", "Vec3f"):
+                    isConstVariable = False
+                elif vram in context.jumpTables:
+                    isConstVariable = False
+                elif type == "char" or (GlobalConfig.STRING_GUESSER and rodataSymbol.isMaybeString):
+                    isConstVariable = False
+
+                # A const variable should not be placed with a function
+                if isConstVariable:
+                    break
+
                 j = 0
                 while j < len(rodata.words):
                     rodataVram = rodata.getVramOffset(j*4)
+                    # TODO: this can be improved a bit
                     if rodataVram < vram:
                         j += 1
                         continue
@@ -172,8 +185,19 @@ def writeOtherRodata(path: str, rodataFileList: List[Tuple[str, Rodata]], contex
 
             rodataSymbol = context.getGenericSymbol(vram, False)
             assert rodataSymbol is not None
-            if rodataSymbol.referenceCounter == 1:
-                continue
+
+            isConstVariable = True
+            if rodataSymbol.type in ("f32", "f64", "Vec3f"):
+                isConstVariable = False
+            elif vram in context.jumpTables:
+                isConstVariable = False
+            elif type == "char" or (GlobalConfig.STRING_GUESSER and rodataSymbol.isMaybeString):
+                isConstVariable = False
+
+            # A const variable should not be placed with a function
+            if not isConstVariable:
+                if rodataSymbol.referenceCounter == 1:
+                    continue
 
             rodataSymbolPath = os.path.join(rodataPath, rodataSymbol.name) + ".s"
             # print(rodataSymbolPath, rodataSymbol.referenceCounter)
