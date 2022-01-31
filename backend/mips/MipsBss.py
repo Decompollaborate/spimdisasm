@@ -109,7 +109,12 @@ class Bss(Section):
             if symbolName.startswith("."):
                 label = f"\n/* static variable */\n{symbolName}\n"
 
-            f.write(f"{label}/* {offsetHex} {vramHex} */  .space  {toHex(space, 2)}\n")
+            comment = ""
+            if GlobalConfig.ASM_COMMENT:
+                comment = f"/* {offsetHex} {vramHex} */"
+
+            line = f"{label}{comment}  .space  0x{space:02X}"
+            f.write(line + "\n")
             i += 1
 
     def saveToFile(self, filepath: str):
