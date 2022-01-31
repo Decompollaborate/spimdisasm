@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from ..common.Utils import *
 from ..common.GlobalConfig import GlobalConfig
+from ..common.FileSectionType import FileSectionType
 
 from .MipsSection import Section
 
@@ -65,13 +66,13 @@ class Data(Section):
             label = ""
 
             # try to get the symbol name from the offset of the file (possibly from a .o elf file)
-            if inFileOffset in self.symbolNameOffsets:
-                possibleSymbolName = self.symbolNameOffsets[inFileOffset]
-                if possibleSymbolName is not None:
-                    if possibleSymbolName.startswith("."):
-                        label = f"\n/* static variable */\n{possibleSymbolName}\n"
-                    else:
-                        label = f"\nglabel {possibleSymbolName}\n"
+            possibleSymbolName = self.context.getOffsetSymbol(inFileOffset, FileSectionType.Data)
+            if possibleSymbolName is not None:
+                possibleSymbolName = possibleSymbolName.name
+                if possibleSymbolName.startswith("."):
+                    label = f"\n/* static variable */\n{possibleSymbolName}\n"
+                else:
+                    label = f"\nglabel {possibleSymbolName}\n"
 
             # if we have vram available, try to get the symbol name from the Context
             if self.vRamStart > -1:

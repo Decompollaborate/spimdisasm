@@ -54,12 +54,19 @@ class ContextSymbol(ContextSymbolBase):
 
     def __init__(self, vram: int, name: str, *args, **kwargs):
         super().__init__(name, *args, **kwargs)
-        self.vram: int = vram
+        self.vram = vram
 
     def getSymbolPlusOffset(self, vramAddress: int):
         if self.vram == vramAddress:
             return self.name
         return f"{self.name} + 0x{vramAddress - self.vram:X}"
+
+class ContextOffsetSymbol(ContextSymbolBase):
+    offset: int # Relative to the start of the section
+
+    def __init__(self, offset: int, name: str, sectionType: FileSectionType, *args, **kwargs):
+        super().__init__(name, *args, sectionType=sectionType, **kwargs)
+        self.offset = offset
 
 
 class Context:
@@ -90,6 +97,14 @@ class Context:
 
         # Stuff that looks like pointers, but the disassembler shouldn't count it as a pointer
         self.bannedSymbols: Set[int] = set()
+
+        # First key is the section type, sub key is offset relative to the start of that section
+        self.offsetSymbols: dict[FileSectionType, dict[int, ContextOffsetSymbol]] = {
+            FileSectionType.Text: dict(),
+            FileSectionType.Data: dict(),
+            FileSectionType.Rodata: dict(),
+            FileSectionType.Bss: dict(),
+        }
 
 
     def getAnySymbol(self, vramAddress: int) -> ContextSymbol|None:
@@ -215,6 +230,13 @@ class Context:
         if constantValue in self.constants:
             return self.constants[constantValue]
 
+        return None
+
+    def getOffsetSymbol(self, offset: int, sectionType: FileSectionType) -> ContextOffsetSymbol|None:
+        if sectionType in self.offsetSymbols:
+            symbolsInSection = self.offsetSymbols[sectionType]
+            if offset in symbolsInSection:
+                return symbolsInSection[offset]
         return None
 
 
