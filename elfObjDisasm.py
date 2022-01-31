@@ -108,7 +108,7 @@ def elfObjDisasmMain():
 
                 contextOffsetSym = ContextOffsetSymbol(symEntry.value, symName, sectType)
                 contextOffsetSym.isDefined = True
-                contextOffsetSym.size = symEntry.size
+                # contextOffsetSym.size = symEntry.size
                 context.offsetSymbols[sectType][symEntry.value] = contextOffsetSym
 
 
