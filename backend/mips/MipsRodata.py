@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from ..common.Utils import *
 from ..common.GlobalConfig import GlobalConfig
-from ..common.Context import Context, ContextSymbol
+from ..common.Context import Context, ContextSymbol, ContextOffsetSymbol
 from ..common.FileSectionType import FileSectionType
 
 from .MipsSection import Section
@@ -93,6 +93,32 @@ class Rodata(Section):
 
                 offset += 4
 
+        if len(self.context.relocSymbols[FileSectionType.Rodata]) > 0:
+            # Process reloc symbols (probably from a .elf file)
+            inFileOffset = self.offset
+            for w in self.words:
+                relocSymbol = self.context.getRelocSymbol(inFileOffset, FileSectionType.Rodata)
+                if relocSymbol is not None:
+                    if relocSymbol.name.startswith("."):
+                        sectType = FileSectionType.fromStr(relocSymbol.name)
+                        relocSymbol.sectionType = sectType
+
+                        relocName = f"{relocSymbol.name}_{w:06X}"
+                        contextOffsetSym = ContextOffsetSymbol(w, relocName, sectType)
+                        if sectType == FileSectionType.Text:
+                            # jumptable
+                            relocName = f".L{w:06X}"
+                            contextOffsetSym = self.context.addOffsetJumpTableLabel(w, relocName, FileSectionType.Text)
+                            relocSymbol.type = contextOffsetSym.type
+                            offsetSym = self.context.getOffsetSymbol(inFileOffset, FileSectionType.Rodata)
+                            if offsetSym is not None:
+                                offsetSym.isLateRodata = True
+                                offsetSym.type = "@jumptable"
+                        self.context.offsetSymbols[sectType][w] = contextOffsetSym
+                        relocSymbol.name = relocName
+                        # print(relocSymbol.name, f"{w:X}")
+                inFileOffset += 4
+
 
     def removePointers(self) -> bool:
         if not GlobalConfig.REMOVE_POINTERS:
@@ -133,6 +159,9 @@ class Rodata(Section):
         possibleReference = self.context.getRelocSymbol(inFileOffset, FileSectionType.Rodata)
         if possibleReference is not None:
             value = possibleReference.getNamePlusOffset(w)
+            if possibleReference.type == "@jumptablelabel":
+                if w in self.context.offsetJumpTablesLabels:
+                    value = self.context.offsetJumpTablesLabels[w].name
 
         isFloat = False
         isDouble = False

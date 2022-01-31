@@ -185,9 +185,9 @@ class Function:
                         auxLabel.referenceCounter += 1
                         label = auxLabel.name
                     else:
-                        label = ".L" + toHex(self.vram + branch, 5)[2:]
+                        label = ".L" + toHex(self.vram + branch, 6)[2:]
                 else:
-                    label = ".L" + toHex(self.inFileOffset + branch, 5)[2:]
+                    label = ".L" + toHex(self.inFileOffset + branch, 6)[2:]
 
                 self.localLabels[self.inFileOffset + branch] = label
                 if self.vram >= 0:
@@ -290,24 +290,26 @@ class Function:
 
             instructionOffset += 4
 
-        instructionOffset = 0
-        inFileOffset = self.inFileOffset
-        for instr in self.instructions:
-            relocSymbol = self.context.getRelocSymbol(inFileOffset, FileSectionType.Text)
-            if relocSymbol is not None:
-                if relocSymbol.name.startswith("."):
-                    sectType = FileSectionType.fromStr(relocSymbol.name)
+        if len(self.context.relocSymbols[FileSectionType.Text]) > 0:
+            # Process reloc symbols (probably from a .elf file)
+            instructionOffset = 0
+            inFileOffset = self.inFileOffset
+            for instr in self.instructions:
+                relocSymbol = self.context.getRelocSymbol(inFileOffset, FileSectionType.Text)
+                if relocSymbol is not None:
+                    if relocSymbol.name.startswith("."):
+                        sectType = FileSectionType.fromStr(relocSymbol.name)
 
-                    if instructionOffset in self.pointersPerInstruction:
-                        addressOffset = self.pointersPerInstruction[instructionOffset]
-                        relocName = f"{relocSymbol.name}_{addressOffset:06X}"
-                        # print(relocName, addressOffset)
-                        contextOffsetSym = ContextOffsetSymbol(addressOffset, relocName, sectType)
-                        self.context.offsetSymbols[sectType][addressOffset] = contextOffsetSym
-                        relocSymbol.name = relocName
-                        self.pointersPerInstruction[instructionOffset] = 0
-            inFileOffset += 4
-            instructionOffset += 4
+                        if instructionOffset in self.pointersPerInstruction:
+                            addressOffset = self.pointersPerInstruction[instructionOffset]
+                            relocName = f"{relocSymbol.name}_{addressOffset:06X}"
+                            # print(relocName, addressOffset)
+                            contextOffsetSym = ContextOffsetSymbol(addressOffset, relocName, sectType)
+                            self.context.offsetSymbols[sectType][addressOffset] = contextOffsetSym
+                            relocSymbol.name = relocName
+                            self.pointersPerInstruction[instructionOffset] = 0
+                inFileOffset += 4
+                instructionOffset += 4
 
     def countDiffOpcodes(self, other: Function) -> int:
         result = 0
@@ -492,6 +494,8 @@ class Function:
             if not GlobalConfig.IGNORE_BRANCHES:
                 currentVram = self.vram + instructionOffset
                 labelAux = self.context.getGenericLabel(currentVram)
+                label_offsetBranch = self.context.getOffsetGenericLabel(auxOffset, FileSectionType.Text)
+                label_offsetSymbol = self.context.getOffsetSymbol(auxOffset, FileSectionType.Text)
                 if self.vram >= 0 and labelAux is not None:
                     if instructionOffset == 0:
                         # Skip over this function to avoid duplication
@@ -500,10 +504,24 @@ class Function:
                         label = "glabel " + labelAux.name + "\n"
                     else:
                         label = labelAux.name + ":\n"
+                elif label_offsetBranch is not None:
+                    if instructionOffset == 0:
+                        # Skip over this function to avoid duplication
+                        pass
+                    elif auxOffset in self.context.offsetJumpTablesLabels:
+                        label = "glabel " + label_offsetBranch.name + "\n"
+                    else:
+                        label = label_offsetBranch.name + ":\n"
                 elif auxOffset in self.localLabels:
                     label = self.localLabels[auxOffset] + ":\n"
                 elif currentVram in self.context.fakeFunctions:
                     label = self.context.fakeFunctions[currentVram].name + ":\n"
+                elif label_offsetSymbol is not None:
+                    if instructionOffset == 0:
+                        # Skip over this function to avoid duplication
+                        pass
+                    else:
+                        label = f"{label_offsetSymbol.name}:\n"
 
             output += label + line + "\n"
 

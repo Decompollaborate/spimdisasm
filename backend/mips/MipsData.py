@@ -91,7 +91,7 @@ class Data(Section):
             value = toHex(w, 8)
             possibleReference = self.context.getRelocSymbol(inFileOffset, FileSectionType.Data)
             if possibleReference is not None:
-                value = possibleReference.name
+                value = possibleReference.getNamePlusOffset(w)
 
             symbol = self.context.getAnySymbol(w)
             if symbol is not None:
