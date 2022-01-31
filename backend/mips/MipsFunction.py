@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from ..common.Utils import *
 from ..common.GlobalConfig import GlobalConfig
-from ..common.Context import Context, ContextSymbol
+from ..common.Context import Context, ContextSymbol, ContextOffsetSymbol
 from ..common.FileSectionType import FileSectionType
 
 from .Instructions import InstructionBase, InstructionId, InstructionsNotEmitedByIDO, InstructionCoprocessor0, InstructionCoprocessor2
@@ -288,6 +288,25 @@ class Function:
                                 luiInstr = self.instructions[trackedRegisters[rs]]
                                 self._processSymbol(luiInstr, trackedRegisters[rs]*4, targetInstr, branch)
 
+            instructionOffset += 4
+
+        instructionOffset = 0
+        inFileOffset = self.inFileOffset
+        for instr in self.instructions:
+            relocSymbol = self.context.getRelocSymbol(inFileOffset, FileSectionType.Text)
+            if relocSymbol is not None:
+                if relocSymbol.name.startswith("."):
+                    sectType = FileSectionType.fromStr(relocSymbol.name)
+
+                    if instructionOffset in self.pointersPerInstruction:
+                        addressOffset = self.pointersPerInstruction[instructionOffset]
+                        relocName = f"{relocSymbol.name}_{addressOffset:06X}"
+                        # print(relocName, addressOffset)
+                        contextOffsetSym = ContextOffsetSymbol(addressOffset, relocName, sectType)
+                        self.context.offsetSymbols[sectType][addressOffset] = contextOffsetSym
+                        relocSymbol.name = relocName
+                        self.pointersPerInstruction[instructionOffset] = 0
+            inFileOffset += 4
             instructionOffset += 4
 
     def countDiffOpcodes(self, other: Function) -> int:
