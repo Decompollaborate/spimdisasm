@@ -89,10 +89,9 @@ class Data(Section):
 
             dataHex = toHex(w, 8)[2:]
             value = toHex(w, 8)
-            if inFileOffset in self.pointersOffsets:
-                possibleReference = self.pointersOffsets[inFileOffset]
-                if possibleReference is not None:
-                    value = possibleReference
+            possibleReference = self.context.getRelocSymbol(inFileOffset, FileSectionType.Data)
+            if possibleReference is not None:
+                value = possibleReference.name
 
             symbol = self.context.getAnySymbol(w)
             if symbol is not None:

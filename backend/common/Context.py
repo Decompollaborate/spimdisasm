@@ -68,6 +68,23 @@ class ContextOffsetSymbol(ContextSymbolBase):
         super().__init__(name, *args, sectionType=sectionType, **kwargs)
         self.offset = offset
 
+class ContextRelocSymbol(ContextSymbolBase):
+    offset: int # Relative to the start of the section
+    relocSection: FileSectionType
+    relocType: int = -1 # Same number as the .elf specification
+
+    def __init__(self, offset: int, name: str, relocSection: FileSectionType, *args, **kwargs):
+        super().__init__(name, *args, **kwargs)
+        self.offset = offset
+        self.relocSection = relocSection
+
+    def getNamePlusOffset(self, offset: int) -> str:
+        if offset == 0:
+            return self.name
+        if offset < 0:
+            return f"{self.name} - 0x{-offset:X}"
+        return f"{self.name} + 0x{offset:X}"
+
 
 class Context:
     def __init__(self):
@@ -100,6 +117,13 @@ class Context:
 
         # First key is the section type, sub key is offset relative to the start of that section
         self.offsetSymbols: dict[FileSectionType, dict[int, ContextOffsetSymbol]] = {
+            FileSectionType.Text: dict(),
+            FileSectionType.Data: dict(),
+            FileSectionType.Rodata: dict(),
+            FileSectionType.Bss: dict(),
+        }
+
+        self.relocSymbols: dict[FileSectionType, dict[int, ContextRelocSymbol]] = {
             FileSectionType.Text: dict(),
             FileSectionType.Data: dict(),
             FileSectionType.Rodata: dict(),
@@ -237,6 +261,13 @@ class Context:
             symbolsInSection = self.offsetSymbols[sectionType]
             if offset in symbolsInSection:
                 return symbolsInSection[offset]
+        return None
+
+    def getRelocSymbol(self, offset: int, sectionType: FileSectionType) -> ContextRelocSymbol|None:
+        if sectionType in self.relocSymbols:
+            relocsInSection = self.relocSymbols[sectionType]
+            if offset in relocsInSection:
+                return relocsInSection[offset]
         return None
 
 

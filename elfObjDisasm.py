@@ -7,7 +7,7 @@ import pathlib
 
 from backend.common.Utils import *
 from backend.common.GlobalConfig import GlobalConfig
-from backend.common.Context import Context, ContextOffsetSymbol
+from backend.common.Context import Context, ContextOffsetSymbol, ContextRelocSymbol
 from backend.common.FileSectionType import FileSectionType
 
 from backend.elf32.Elf32File import Elf32File
@@ -89,8 +89,10 @@ def elfObjDisasmMain():
                 symbolEntry = elfFile.symtab[rel.rSym]
                 symbolName = elfFile.strtab[symbolEntry.name]
 
-                subSection.pointersOffsets[rel.offset] = symbolName
-                # print(rel.offset, rel.rSym, rel.rType, symbolEntry, symbolName)
+                contextRelocSym = ContextRelocSymbol(rel.offset, symbolName, sectType)
+                contextRelocSym.isDefined = True
+                contextRelocSym.relocType = rel.rType
+                context.relocSymbols[sectType][rel.offset] = contextRelocSym
 
         # Use the symtab to replace symbol names present in disassembled sections
         for symEntry in elfFile.symtab:
