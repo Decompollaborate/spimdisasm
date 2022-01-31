@@ -5,6 +5,7 @@ from __future__ import annotations
 from ..common.Utils import *
 from ..common.GlobalConfig import GlobalConfig
 from ..common.Context import Context, ContextSymbol
+from ..common.FileSectionType import FileSectionType
 
 from .MipsSection import Section
 
@@ -121,13 +122,13 @@ class Rodata(Section):
         value: Any = toHex(w, 8)
 
         # try to get the symbol name from the offset of the file (possibly from a .o elf file)
-        if inFileOffset in self.symbolNameOffsets:
-            possibleSymbolName = self.symbolNameOffsets[inFileOffset]
-            if possibleSymbolName is not None:
-                if possibleSymbolName.startswith("."):
-                    label = f"\n/* static variable */\n{possibleSymbolName}\n"
-                else:
-                    label = f"\nglabel {possibleSymbolName}\n"
+        possibleSymbolName = self.context.getOffsetSymbol(inFileOffset, FileSectionType.Rodata)
+        if possibleSymbolName is not None:
+            possibleSymbolName = possibleSymbolName.name
+            if possibleSymbolName.startswith("."):
+                label = f"\n/* static variable */\n{possibleSymbolName}\n"
+            else:
+                label = f"\nglabel {possibleSymbolName}\n"
 
         if inFileOffset in self.pointersOffsets:
             possibleReference = self.pointersOffsets[inFileOffset]

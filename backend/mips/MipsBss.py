@@ -99,13 +99,13 @@ class Bss(Section):
             label = f"\nglabel {symbol.name}\n"
 
             # try to get the symbol name from the offset of the file (possibly from a .o elf file)
-            if inFileOffset in self.symbolNameOffsets:
-                possibleSymbolName = self.symbolNameOffsets[inFileOffset]
-                if possibleSymbolName is not None:
-                    if possibleSymbolName.startswith("."):
-                        label = f"\n/* static variable */\n{possibleSymbolName}\n"
-                    else:
-                        label = f"\nglabel {possibleSymbolName}\n"
+            possibleSymbolName = self.context.getOffsetSymbol(inFileOffset, FileSectionType.Bss)
+            if possibleSymbolName is not None:
+                possibleSymbolName = possibleSymbolName.name
+                if possibleSymbolName.startswith("."):
+                    label = f"\n/* static variable */\n{possibleSymbolName}\n"
+                else:
+                    label = f"\nglabel {possibleSymbolName}\n"
 
             f.write(f"{label}/* {offsetHex} {vramHex} */  .space  {toHex(space, 2)}\n")
             i += 1

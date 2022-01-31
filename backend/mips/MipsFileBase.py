@@ -19,7 +19,6 @@ class FileBase:
         self.vRamStart: int = -1
 
         self.pointersOffsets: dict[int, str|None] = dict()
-        self.symbolNameOffsets: dict[int, str|None] = dict()
 
         self.isHandwritten: bool = False
         self.isRsp: bool = False

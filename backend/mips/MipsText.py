@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from ..common.Utils import *
 from ..common.GlobalConfig import GlobalConfig, printVerbose
-from ..common.Context import Context, ContextSymbol
+from ..common.Context import Context
+from ..common.FileSectionType import FileSectionType
 
 from .MipsFileBase import FileBase
 from .MipsSection import Section
@@ -184,11 +185,10 @@ class Text(Section):
                 break
 
             funcName = f"func_{i}"
-            # print(start*4, self.symbolNameOffsets)
-            if start*4 in self.symbolNameOffsets:
-                possibleFuncName = self.symbolNameOffsets[start*4]
-                if possibleFuncName is not None:
-                    funcName = possibleFuncName
+            possibleFuncName = self.context.getOffsetSymbol(start*4, FileSectionType.Text)
+            if possibleFuncName is not None:
+                funcName = possibleFuncName.name
+
             vram = -1
             if self.vRamStart > 0:
                 vram = self.getVramOffset(start*4)

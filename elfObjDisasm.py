@@ -7,7 +7,7 @@ import pathlib
 
 from backend.common.Utils import *
 from backend.common.GlobalConfig import GlobalConfig
-from backend.common.Context import Context
+from backend.common.Context import Context, ContextOffsetSymbol
 from backend.common.FileSectionType import FileSectionType
 
 from backend.elf32.Elf32File import Elf32File
@@ -102,7 +102,12 @@ def elfObjDisasmMain():
             sectType = FileSectionType.fromStr(sectName)
             if sectType != FileSectionType.Invalid:
                 subSection = processedFiles[sectType][1]
-                subSection.symbolNameOffsets[symEntry.value] = elfFile.strtab[symEntry.name]
+                symName = elfFile.strtab[symEntry.name]
+
+                contextOffsetSym = ContextOffsetSymbol(symEntry.value, symName, sectType)
+                contextOffsetSym.isDefined = True
+                contextOffsetSym.size = symEntry.size
+                context.offsetSymbols[sectType][symEntry.value] = contextOffsetSym
 
 
     for outputFilePath, subFile in processedFiles.values():
