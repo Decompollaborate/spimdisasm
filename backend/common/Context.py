@@ -102,7 +102,7 @@ class Context:
 
         # Where the jump table is
         self.jumpTables: Dict[int, ContextSymbol] = dict()
-        # The addresses each jump table has
+        # The addresses every jump table has
         self.jumpTablesLabels: Dict[int, ContextSymbol] = dict()
 
         # Functions jumped into Using J instead of JAL
@@ -129,6 +129,9 @@ class Context:
             FileSectionType.Rodata: dict(),
             FileSectionType.Bss: dict(),
         }
+
+        # The addresses every jump table has
+        self.offsetJumpTablesLabels: Dict[int, ContextOffsetSymbol] = dict()
 
 
     def getAnySymbol(self, vramAddress: int) -> ContextSymbol|None:
@@ -270,6 +273,11 @@ class Context:
                 return relocsInSection[offset]
         return None
 
+    def getOffsetGenericLabel(self, offset: int, sectionType: FileSectionType) -> ContextOffsetSymbol|None:
+        if offset in self.offsetJumpTablesLabels:
+            return self.offsetJumpTablesLabels[offset]
+        return None
+
 
     def addSymbol(self, vramAddress: int, name: str|None) -> ContextSymbol:
         if name is None:
@@ -318,6 +326,14 @@ class Context:
             contextSymbol = ContextSymbol(vramAddress, name)
             contextSymbol.type = "@fakefunction"
             self.fakeFunctions[vramAddress] = contextSymbol
+
+    def addOffsetJumpTableLabel(self, offset: int, name: str, sectionType: FileSectionType) -> ContextOffsetSymbol:
+        if offset not in self.offsetJumpTablesLabels:
+            contextOffsetSym = ContextOffsetSymbol(offset, name, sectionType)
+            contextOffsetSym.type = "@jumptablelabel"
+            self.offsetJumpTablesLabels[offset] = contextOffsetSym
+            return contextOffsetSym
+        return self.offsetJumpTablesLabels[offset]
 
 
     def fillDefaultBannedSymbols(self):
