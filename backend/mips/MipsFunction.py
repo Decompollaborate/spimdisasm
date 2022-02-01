@@ -199,7 +199,8 @@ class Function:
                 if not self.isRsp:
                     target |= 0x80000000
                 if instr.uniqueId == InstructionId.J and not self.isRsp:
-                    self.context.addFakeFunction(target, "fakefunc_" + toHex(target, 8)[2:])
+                    # self.context.addFakeFunction(target, "fakefunc_" + toHex(target, 8)[2:])
+                    self.context.addFakeFunction(target, ".L" + toHex(target, 8)[2:])
                 else:
                     self.context.addFunction(None, target, "func_" + toHex(target, 8)[2:])
                 self.pointersPerInstruction[instructionOffset] = target

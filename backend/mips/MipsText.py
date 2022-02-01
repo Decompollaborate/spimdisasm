@@ -144,7 +144,8 @@ class Text(Section):
                 if not self.isRsp:
                     target |= 0x80000000
                 if instr.uniqueId == InstructionId.J and not self.isRsp:
-                    newFunctions.append((True, target, f"fakefunc_{target:08X}"))
+                    # newFunctions.append((True, target, f"fakefunc_{target:08X}"))
+                    newFunctions.append((True, target, f".L{target:08X}"))
                 else:
                     newFunctions.append((False, target, f"func_{target:08X}"))
 
