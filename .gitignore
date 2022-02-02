@@ -54,5 +54,6 @@ graphs/
 .python-version
 
 asm/
+*.s
 splits/
 data/
