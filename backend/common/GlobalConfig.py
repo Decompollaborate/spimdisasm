@@ -30,6 +30,7 @@ class GlobalConfig:
     VERBOSE: bool = False
     PRINT_FUNCTION_ANALYSIS_DEBUG_INFO: bool = False
     PRINT_SYMBOL_FINDER_DEBUG_INFO: bool = False
+    PRINT_UNPAIRED_LUIS_DEBUG_INFO: bool = False
 
 
     @staticmethod
@@ -63,6 +64,7 @@ class GlobalConfig:
 
         debugging.add_argument("--debug-func-analysis", help="Enables some debug info printing related to the function analysis)", action="store_true")
         debugging.add_argument("--debug-symbol-finder", help="Enables some debug info printing related to the symbol finder system)", action="store_true")
+        debugging.add_argument("--debug-unpaired-luis", help="Enables some debug info printing related to the unpaired LUI instructions)", action="store_true")
 
 
     @classmethod
@@ -86,6 +88,7 @@ class GlobalConfig:
 
         GlobalConfig.PRINT_FUNCTION_ANALYSIS_DEBUG_INFO = args.debug_func_analysis
         GlobalConfig.PRINT_SYMBOL_FINDER_DEBUG_INFO = args.debug_symbol_finder
+        GlobalConfig.PRINT_SYMBOL_FINDER_DEBUG_INFO = args.debug_unpaired_luis
 
 
 def printQuietless(*args, **kwargs):

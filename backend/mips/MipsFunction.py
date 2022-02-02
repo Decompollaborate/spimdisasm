@@ -7,7 +7,7 @@ from ..common.GlobalConfig import GlobalConfig
 from ..common.Context import Context, ContextSymbol, ContextOffsetSymbol
 from ..common.FileSectionType import FileSectionType
 
-from .Instructions import InstructionBase, InstructionId, InstructionsNotEmitedByIDO, InstructionCoprocessor0, InstructionCoprocessor2
+from .Instructions import InstructionBase, InstructionId, InstructionsNotEmitedByIDO, InstructionNormal, InstructionCoprocessor0, InstructionCoprocessor2
 
 
 class Function:
@@ -67,7 +67,7 @@ class Function:
         print()
 
     def _printSymbolFinderDebugInfo_DelTrackedRegister(self, instr: InstructionBase, register: int, currentVram: int, trackedRegisters: dict):
-        if not GlobalConfig.PRINT_SYMBOL_FINDER_DEBUG_INFO:
+        if not GlobalConfig.PRINT_UNPAIRED_LUIS_DEBUG_INFO:
             return
 
         print()
@@ -76,6 +76,27 @@ class Function:
         print(trackedRegisters)
         print(f"deleting {register} / {instr.getRegisterName(register)}")
         print()
+
+    def _printSymbolFinderDebugInfo_UnpairedLuis(self):
+        for instructionOffset, luiInstr in self.luiInstructions.items():
+            # inFileOffset = self.inFileOffset + instructionOffset
+            currentVram = self.vram + instructionOffset
+            if instructionOffset in self.nonPointerLuiSet:
+                continue
+            if instructionOffset in self.constantsPerInstruction:
+                print(f"{currentVram:06X} ", end="")
+                print(f"C  {self.constantsPerInstruction[instructionOffset]:8X}", luiInstr)
+            else:
+                if GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES and luiInstr.immediate < 0x4000: # filter out stuff that may not be a real symbol
+                    continue
+                if GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES and luiInstr.immediate >= 0xC000: # filter out stuff that may not be a real symbol
+                    continue
+                print(f"{currentVram:06X} ", end="")
+                if instructionOffset in self.pointersPerInstruction:
+                    print(f"P  {self.pointersPerInstruction[instructionOffset]:8X}", luiInstr)
+                else:
+                    print("NO         ", luiInstr)
+
 
     def _processSymbol(self, luiInstr: InstructionBase, luiOffset: int, lowerInstr: InstructionBase, lowerOffset: int) -> int|None:
         upperHalf = luiInstr.immediate << 16
@@ -125,7 +146,7 @@ class Function:
         register = 0
 
         if not instr.isFloatInstruction():
-            if instr.isRType():
+            if instr.isRType() or (instr.isBranch() and isinstance(instr, InstructionNormal)):
                 # $at is a one-use register
                 at = -1
                 if instr.getRegisterName(instr.rs) == "$at":
@@ -202,6 +223,8 @@ class Function:
         trackedRegistersAll: Dict[int, int] = dict()
         registersValues: Dict[int, int] = dict()
 
+        isABranchInBetweenLastLui: bool|None = None
+
         instructionOffset = 0
         for instr in self.instructions:
             currentVram = self.vram + instructionOffset
@@ -222,6 +245,7 @@ class Function:
                 return
 
             if instr.isBranch():
+                isABranchInBetweenLastLui = True
                 diff = from2Complement(instr.immediate, 16)
                 branch = instructionOffset + diff*4 + 1*4
                 if self.vram >= 0:
@@ -259,6 +283,7 @@ class Function:
                 # TODO: Consider following branches
                 lastInstr = self.instructions[instructionOffset//4 - 1]
                 if instr.uniqueId == InstructionId.LUI:
+                    isABranchInBetweenLastLui = False
                     if lastInstr.isBranch():
                         # If the previous instructions is a branch, do a
                         # look-ahead and check the branch target for possible pointers
@@ -325,34 +350,27 @@ class Function:
                 diff = from2Complement(lastInstr.immediate, 16)
                 branch = instructionOffset + diff*4
                 if branch > 0 and branch//4 < len(self.instructions):
-                    targetInstr = self.instructions[branch//4]
-                    if targetInstr.isIType():
-                        if targetInstr.uniqueId not in (InstructionId.LUI, InstructionId.ANDI, InstructionId.ORI, InstructionId.XORI, InstructionId.CACHE):
-                            rs = targetInstr.rs
-                            if rs in trackedRegisters:
-                                luiInstr = self.instructions[trackedRegisters[rs]]
-                                self._processSymbol(luiInstr, trackedRegisters[rs]*4, targetInstr, branch)
+                    # Check the 5 next instructions in the target branch
+                    for i in range(5):
+                        if branch//4 >= len(self.instructions):
+                            break
+                        targetInstr = self.instructions[branch//4]
+                        if targetInstr.isBranch():
+                            break
+                        if targetInstr.isJType():
+                            break
+                        if targetInstr.isIType():
+                            if targetInstr.uniqueId not in (InstructionId.LUI, InstructionId.ANDI, InstructionId.ORI, InstructionId.XORI, InstructionId.CACHE):
+                                rs = targetInstr.rs
+                                if rs in trackedRegisters:
+                                    luiInstr = self.instructions[trackedRegisters[rs]]
+                                    self._processSymbol(luiInstr, trackedRegisters[rs]*4, targetInstr, branch)
+                            break
+                        branch += 4
 
             instructionOffset += 4
 
-        # for instructionOffset, luiInstr in self.luiInstructions.items():
-        #     # inFileOffset = self.inFileOffset + instructionOffset
-        #     currentVram = self.vram + instructionOffset
-        #     if instructionOffset in self.nonPointerLuiSet:
-        #         continue
-        #     if instructionOffset in self.constantsPerInstruction:
-        #         print(f"{currentVram:06X} ", end="")
-        #         print(f"C  {self.constantsPerInstruction[instructionOffset]:8X}", luiInstr)
-        #     else:
-        #         if GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES and luiInstr.immediate < 0x4000: # filter out stuff that may not be a real symbol
-        #             continue
-        #         if GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES and luiInstr.immediate >= 0xC000: # filter out stuff that may not be a real symbol
-        #             continue
-        #         print(f"{currentVram:06X} ", end="")
-        #         if instructionOffset in self.pointersPerInstruction:
-        #             print(f"P  {self.pointersPerInstruction[instructionOffset]:8X}", luiInstr)
-        #         else:
-        #             print("NO         ", luiInstr)
+        self._printSymbolFinderDebugInfo_UnpairedLuis()
 
         if len(self.context.relocSymbols[FileSectionType.Text]) > 0:
             # Process reloc symbols (probably from a .elf file)
