@@ -356,6 +356,9 @@ class InstructionBase:
     def isIType(self) -> bool:
         return False
 
+    def isRType(self) -> bool:
+        return False
+
 
     def sameOpcode(self, other: InstructionBase) -> bool:
         if self.uniqueId in (InstructionId.INVALID, InstructionVectorId.INVALID):

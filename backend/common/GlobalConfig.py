@@ -18,6 +18,7 @@ class GlobalConfig:
     ADD_NEW_SYMBOLS: bool = True
     PRODUCE_SYMBOLS_PLUS_OFFSET: bool = False
     SYMBOL_FINDER_FILTER_LOW_ADDRESSES: bool = True
+    SYMBOL_FINDER_FILTER_HIGH_ADDRESSES: bool = True
 
     TRUST_USER_FUNCTIONS: bool = True
     DISASSEMBLE_UNKNOWN_INSTRUCTIONS: bool = False
@@ -43,6 +44,7 @@ class GlobalConfig:
         backendConfig.add_argument("--disable-string-guesser", help="Disables the string guesser feature (does nto affect the strings referenced by .data)", action="store_true")
 
         backendConfig.add_argument("--not-filter-low-addressses", help="Treat low addresses (lower than 0x40000000) as real pointers.", action="store_true")
+        backendConfig.add_argument("--not-filter-high-addressses", help="Treat high addresses (higher than 0xC0000000) as real pointers.", action="store_true")
 
 
         miscConfig = parser.add_argument_group("Disassembler misc options")
@@ -74,6 +76,7 @@ class GlobalConfig:
 
         GlobalConfig.STRING_GUESSER = not args.disable_string_guesser
         GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES = not args.not_filter_low_addressses
+        GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES = not args.not_filter_high_addressses
 
         GlobalConfig.WRITE_BINARY = args.write_binary
         GlobalConfig.ASM_COMMENT = not args.disable_asm_comments
