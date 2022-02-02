@@ -27,7 +27,7 @@ class Function:
         self.constantsPerInstruction: Dict[int, int] = dict()
         self.branchInstructions: List[int] = list()
 
-        self.pointersOffsets: dict[int, str|None] = dict()
+        self.pointersOffsets: set[int] = set()
 
         self.referencedVRams: Set[int] = set()
         self.referencedConstants: Set[int] = set()
