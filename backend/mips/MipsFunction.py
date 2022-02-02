@@ -81,6 +81,9 @@ class Function:
         if address in self.context.bannedSymbols:
             return None
 
+        if GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES and luiInstr.immediate < 0x4000: # filter out stuff that may not be a real symbol
+            return None
+
         self.referencedVRams.add(address)
         contextSym = self.context.getGenericSymbol(address)
         if contextSym is None:
@@ -100,6 +103,17 @@ class Function:
             self.pointersPerInstruction[luiOffset] = address
 
         return address
+
+    def _processConstant(self, luiInstr: InstructionBase, luiOffset: int, lowerInstr: InstructionBase, lowerOffset: int) -> int|None:
+        luiInstr = self.instructions[luiOffset//4]
+        upperHalf = luiInstr.immediate << 16
+        lowerHalf = lowerInstr.immediate
+        constant = upperHalf | lowerHalf
+        self.referencedConstants.add(constant)
+        self.constantsPerInstruction[lowerOffset] = constant
+        self.constantsPerInstruction[luiOffset] = constant
+
+        return constant
 
     def _removeRegisterFromTrackers(self, instr: InstructionBase, currentVram: int, trackedRegisters: dict, trackedRegistersAll: dict, registersValues: dict, wasRegisterValuesUpdated: bool):
         shouldRemove = False
@@ -198,6 +212,9 @@ class Function:
                 target = instr.instr_index << 2
                 if not self.isRsp:
                     target |= 0x80000000
+                    if target >= 0x84000000:
+                        # RSP address space?
+                        self.isLikelyHandwritten = True
                 if instr.uniqueId == InstructionId.J and not self.isRsp:
                     # self.context.addFakeFunction(target, "fakefunc_" + toHex(target, 8)[2:])
                     self.context.addFakeFunction(target, ".L" + toHex(target, 8)[2:])
@@ -210,43 +227,38 @@ class Function:
                 # TODO: Consider following branches
                 lastInstr = self.instructions[instructionOffset//4 - 1]
                 if instr.uniqueId == InstructionId.LUI:
-                    if not GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES or instr.immediate >= 0x4000: # filter out stuff that may not be a real symbol
-                        if lastInstr.isBranch():
-                            # If the previous instructions is a branch, do a
-                            # look-ahead and check the branch target for possible pointers
-                            diff = from2Complement(lastInstr.immediate, 16)
-                            branch = instructionOffset + diff*4
-                            if branch > 0:
+                    if lastInstr.isBranch():
+                        # If the previous instructions is a branch, do a
+                        # look-ahead and check the branch target for possible pointers
+                        diff = from2Complement(lastInstr.immediate, 16)
+                        branch = instructionOffset + diff*4
+                        if branch > 0:
+                            targetInstr = self.instructions[branch//4]
+                            if targetInstr.uniqueId == InstructionId.JR and targetInstr.getRegisterName(targetInstr.rs) == "$ra":
+                                # If the target instruction is a JR $ra, then look up its delay slot instead
+                                branch += 4
                                 targetInstr = self.instructions[branch//4]
-                                if targetInstr.uniqueId == InstructionId.JR and targetInstr.getRegisterName(targetInstr.rs) == "$ra":
-                                    # If the target instruction is a JR $ra, then look up its delay slot instead
-                                    branch += 4
-                                    targetInstr = self.instructions[branch//4]
-                                if targetInstr.isIType() and targetInstr.rs == instr.rt:
-                                    if targetInstr.uniqueId not in (InstructionId.LUI, InstructionId.ANDI, InstructionId.ORI, InstructionId.XORI, InstructionId.CACHE):
-                                        self._processSymbol(instr, instructionOffset, targetInstr, branch)
+                            if targetInstr.isIType() and targetInstr.rs == instr.rt:
+                                if targetInstr.uniqueId not in (InstructionId.LUI, InstructionId.ANDI, InstructionId.ORI, InstructionId.XORI, InstructionId.CACHE):
+                                    self._processSymbol(instr, instructionOffset, targetInstr, branch)
 
-                                if not (lastInstr.isBranchLikely() or lastInstr.uniqueId == InstructionId.B):
-                                    # If the previous instructions is a branch likely, then nulify 
-                                    # the effects of this instruction for future analysis
-                                    trackedRegisters[instr.rt] = instructionOffset//4
-                        else:
-                            trackedRegisters[instr.rt] = instructionOffset//4
+                            if not (lastInstr.isBranchLikely() or lastInstr.uniqueId == InstructionId.B):
+                                # If the previous instructions is a branch likely, then nulify
+                                # the effects of this instruction for future analysis
+                                trackedRegisters[instr.rt] = instructionOffset//4
+                    else:
+                        trackedRegisters[instr.rt] = instructionOffset//4
                     trackedRegistersAll[instr.rt] = instructionOffset//4
                 else:
                     if instr.uniqueId == InstructionId.ORI:
                         # Constants
                         rs = instr.rs
                         if rs in trackedRegistersAll:
-                            luiInstr = self.instructions[trackedRegistersAll[rs]]
-                            upperHalf = luiInstr.immediate << 16
-                            lowerHalf = instr.immediate
-                            constant = upperHalf | lowerHalf
-                            self.referencedConstants.add(constant)
-                            self.constantsPerInstruction[instructionOffset] = constant
-                            self.constantsPerInstruction[trackedRegistersAll[rs]*4] = constant
-                            registersValues[instr.rt] = constant
-                            wasRegisterValuesUpdated = True
+                            luiOffset = trackedRegistersAll[rs] * 4
+                            luiInstr = self.instructions[luiOffset//4]
+                            constant = self._processConstant(luiInstr, luiOffset, instr, instructionOffset)
+                            if constant is not None:
+                                registersValues[instr.rt] = constant
                     elif instr.uniqueId not in (InstructionId.ANDI, InstructionId.XORI, InstructionId.CACHE):
                         rs = instr.rs
                         if rs in trackedRegisters:
