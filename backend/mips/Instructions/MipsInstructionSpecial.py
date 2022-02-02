@@ -114,8 +114,10 @@ class InstructionSpecial(InstructionBase):
             return True
         return False
 
+    def isRType(self) -> bool:
+        return True
 
-    def isRType(self) -> bool: # OP rd, rs, rt
+    def isRType1(self) -> bool: # OP rd, rs, rt
         if self.isRType2():
             return False
         elif self.isSaType():
@@ -203,7 +205,7 @@ class InstructionSpecial(InstructionBase):
             result = result.ljust(14, ' ')
             return f"{result} {rt}"
 
-        elif self.isRType(): # OP rd, rs, rt
+        elif self.isRType1(): # OP rd, rs, rt
             result = f"{formated_opcode} {rd},"
             result = result.ljust(14, ' ')
             result += f" {rs},"

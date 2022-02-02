@@ -27,6 +27,9 @@ class Function:
         self.constantsPerInstruction: Dict[int, int] = dict()
         self.branchInstructions: List[int] = list()
 
+        self.luiInstructions: dict[int, InstructionBase] = dict()
+        self.nonPointerLuiSet: set[int] = set()
+
         self.pointersOffsets: set[int] = set()
 
         self.referencedVRams: Set[int] = set()
@@ -83,6 +86,8 @@ class Function:
 
         if GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES and luiInstr.immediate < 0x4000: # filter out stuff that may not be a real symbol
             return None
+        if GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES and luiInstr.immediate >= 0xC000: # filter out stuff that may not be a real symbol
+            return None
 
         self.referencedVRams.add(address)
         contextSym = self.context.getGenericSymbol(address)
@@ -120,6 +125,22 @@ class Function:
         register = 0
 
         if not instr.isFloatInstruction():
+            if instr.isRType():
+                # $at is a one-use register
+                at = -1
+                if instr.getRegisterName(instr.rs) == "$at":
+                    at = instr.rs
+                elif instr.getRegisterName(instr.rt) == "$at":
+                    at = instr.rt
+
+                if at in trackedRegistersAll:
+                    otherInstrIndex = trackedRegistersAll[at]
+                    otherInstr = self.instructions[otherInstrIndex]
+                    if otherInstr.uniqueId == InstructionId.LUI:
+                        self.nonPointerLuiSet.add(otherInstrIndex*4)
+                    shouldRemove = True
+                    register = at
+
             if instr.uniqueId != InstructionId.LUI and instr.modifiesRt():
                 shouldRemove = True
                 register = instr.rt
@@ -165,6 +186,17 @@ class Function:
 
                     offset += 4
             return
+
+        # Search for LUI instructions first
+        instructionOffset = 0
+        for instr in self.instructions:
+            if instr.uniqueId == InstructionId.LUI:
+                self.luiInstructions[instructionOffset] = instr
+            if instructionOffset > 0:
+                prevInstr = self.instructions[instructionOffset//4 - 1]
+                if prevInstr.isJType():
+                    self.nonPointerLuiSet.add(instructionOffset)
+            instructionOffset += 4
 
         trackedRegisters: Dict[int, int] = dict()
         trackedRegistersAll: Dict[int, int] = dict()
@@ -302,6 +334,25 @@ class Function:
                                 self._processSymbol(luiInstr, trackedRegisters[rs]*4, targetInstr, branch)
 
             instructionOffset += 4
+
+        # for instructionOffset, luiInstr in self.luiInstructions.items():
+        #     # inFileOffset = self.inFileOffset + instructionOffset
+        #     currentVram = self.vram + instructionOffset
+        #     if instructionOffset in self.nonPointerLuiSet:
+        #         continue
+        #     if instructionOffset in self.constantsPerInstruction:
+        #         print(f"{currentVram:06X} ", end="")
+        #         print(f"C  {self.constantsPerInstruction[instructionOffset]:8X}", luiInstr)
+        #     else:
+        #         if GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES and luiInstr.immediate < 0x4000: # filter out stuff that may not be a real symbol
+        #             continue
+        #         if GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES and luiInstr.immediate >= 0xC000: # filter out stuff that may not be a real symbol
+        #             continue
+        #         print(f"{currentVram:06X} ", end="")
+        #         if instructionOffset in self.pointersPerInstruction:
+        #             print(f"P  {self.pointersPerInstruction[instructionOffset]:8X}", luiInstr)
+        #         else:
+        #             print("NO         ", luiInstr)
 
         if len(self.context.relocSymbols[FileSectionType.Text]) > 0:
             # Process reloc symbols (probably from a .elf file)
