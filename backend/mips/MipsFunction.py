@@ -67,7 +67,7 @@ class Function:
         print()
 
     def _printSymbolFinderDebugInfo_DelTrackedRegister(self, instr: InstructionBase, register: int, currentVram: int, trackedRegisters: dict):
-        if not GlobalConfig.PRINT_UNPAIRED_LUIS_DEBUG_INFO:
+        if not GlobalConfig.PRINT_SYMBOL_FINDER_DEBUG_INFO:
             return
 
         print()
@@ -78,6 +78,9 @@ class Function:
         print()
 
     def _printSymbolFinderDebugInfo_UnpairedLuis(self):
+        if not GlobalConfig.PRINT_UNPAIRED_LUIS_DEBUG_INFO:
+            return
+
         for instructionOffset, luiInstr in self.luiInstructions.items():
             # inFileOffset = self.inFileOffset + instructionOffset
             currentVram = self.vram + instructionOffset
