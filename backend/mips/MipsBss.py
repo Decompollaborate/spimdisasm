@@ -76,18 +76,18 @@ class Bss(Section):
         f.write(".balign 16\n")
 
         offsetSymbolsInSection = self.context.offsetSymbols[FileSectionType.Bss]
-        bssSymbolOffsets = {offset: sym.name for offset, sym in offsetSymbolsInSection.items()}
+        bssSymbolOffsets = {offset: sym for offset, sym in offsetSymbolsInSection.items()}
 
         # Needs to move this to a list because the algorithm requires to check the size of a bss variable based on the next bss variable' vram
         if self.bssVramStart > 0:
             for symbolVram in self.context.symbols.irange(minimum=self.bssVramStart, maximum=self.bssVramEnd, inclusive=(True, False)):
-                bssSymbolOffsets[symbolVram-self.bssVramStart] = self.context.symbols[symbolVram].name
+                bssSymbolOffsets[symbolVram-self.bssVramStart] = self.context.symbols[symbolVram]
 
         sortedOffsets = sorted(bssSymbolOffsets.items())
 
         i = 0
         while i < len(sortedOffsets):
-            symbolOffset, symbolName = sortedOffsets[i]
+            symbolOffset, contextSym = sortedOffsets[i]
             symbolVram = self.bssVramStart + symbolOffset
 
             if symbolVram in self.context.symbols:
@@ -105,9 +105,13 @@ class Bss(Section):
                 if nextSymbolOffset <= self.bssTotalSize:
                     space = nextSymbolOffset - symbolOffset
 
-            label = f"\nglabel {symbolName}\n"
-            if symbolName.startswith("."):
-                label = f"\n/* static variable */\n{symbolName}\n"
+            # label = f"\nglabel {symbolName}\n"
+            # if symbolName.startswith("."):
+            #     label = f"\n/* static variable */\n{symbolName}\n"
+            label = ""
+            if contextSym.isStatic:
+                label = "\n/* static variable */"
+            label += f"\nglabel {contextSym.name}\n"
 
             comment = ""
             if GlobalConfig.ASM_COMMENT:

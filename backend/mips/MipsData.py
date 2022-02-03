@@ -68,11 +68,9 @@ class Data(Section):
             # try to get the symbol name from the offset of the file (possibly from a .o elf file)
             possibleSymbolName = self.context.getOffsetSymbol(inFileOffset, FileSectionType.Data)
             if possibleSymbolName is not None:
-                possibleSymbolName = possibleSymbolName.name
-                if possibleSymbolName.startswith("."):
-                    label = f"\n/* static variable */\n{possibleSymbolName}\n"
-                else:
-                    label = f"\nglabel {possibleSymbolName}\n"
+                if possibleSymbolName.isStatic:
+                    label = "\n/* static variable */"
+                label += f"\nglabel {possibleSymbolName.name}\n"
 
             # if we have vram available, try to get the symbol name from the Context
             if self.vRamStart > -1:

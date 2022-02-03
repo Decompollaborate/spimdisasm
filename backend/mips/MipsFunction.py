@@ -388,8 +388,13 @@ class Function:
                         if instructionOffset in self.pointersPerInstruction:
                             addressOffset = self.pointersPerInstruction[instructionOffset]
                             relocName = f"{relocSymbol.name}_{addressOffset:06X}"
-                            # print(relocName, addressOffset)
+                            isStatic = False
+                            if relocName.startswith("."):
+                                isStatic = True
+                                relocName = relocName[1:]
+                            print(relocName, addressOffset)
                             contextOffsetSym = ContextOffsetSymbol(addressOffset, relocName, sectType)
+                            contextOffsetSym.isStatic = isStatic
                             self.context.offsetSymbols[sectType][addressOffset] = contextOffsetSym
                             relocSymbol.name = relocName
                             self.pointersPerInstruction[instructionOffset] = 0
