@@ -107,7 +107,7 @@ class Rodata(Section):
                         contextOffsetSym = ContextOffsetSymbol(w, relocName, sectType)
                         if sectType == FileSectionType.Text:
                             # jumptable
-                            relocName = f".L{w:06X}"
+                            relocName = f"L{w:06X}"
                             contextOffsetSym = self.context.addOffsetJumpTableLabel(w, relocName, FileSectionType.Text)
                             relocSymbol.type = contextOffsetSym.type
                             offsetSym = self.context.getOffsetSymbol(inFileOffset, FileSectionType.Rodata)
@@ -148,7 +148,7 @@ class Rodata(Section):
         value: Any = toHex(w, 8)
 
         # try to get the symbol name from the offset of the file (possibly from a .o elf file)
-        possibleSymbolName = self.context.getOffsetSymbol(inFileOffset, FileSectionType.Rodata)
+        possibleSymbolName = self.context.getOffsetGenericSymbol(inFileOffset, FileSectionType.Rodata)
         if possibleSymbolName is not None:
             if possibleSymbolName.isStatic:
                 label = "\n/* static variable */"
