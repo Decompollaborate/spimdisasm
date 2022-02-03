@@ -131,6 +131,8 @@ class Context:
             FileSectionType.Bss: dict(),
         }
 
+        # Where the jump table is
+        self.offsetJumpTables: Dict[int, ContextOffsetSymbol] = dict()
         # The addresses every jump table has
         self.offsetJumpTablesLabels: Dict[int, ContextOffsetSymbol] = dict()
 
@@ -267,6 +269,17 @@ class Context:
                 return symbolsInSection[offset]
         return None
 
+    def getOffsetGenericSymbol(self, offset: int, sectionType: FileSectionType) -> ContextOffsetSymbol|None:
+        if offset in self.offsetJumpTables:
+            return self.offsetJumpTables[offset]
+
+        if sectionType in self.offsetSymbols:
+            symbolsInSection = self.offsetSymbols[sectionType]
+            if offset in symbolsInSection:
+                return symbolsInSection[offset]
+
+        return None
+
     def getRelocSymbol(self, offset: int, sectionType: FileSectionType) -> ContextRelocSymbol|None:
         if sectionType in self.relocSymbols:
             relocsInSection = self.relocSymbols[sectionType]
@@ -307,9 +320,9 @@ class Context:
             contextSymbol.type = "@branchlabel"
             self.labels[vramAddress] = contextSymbol
 
-    def addJumpTable(self, vramAddress: int, name: str):
+    def addJumpTable(self, vramAddress: int):
         if vramAddress not in self.jumpTables:
-            contextSymbol = ContextSymbol(vramAddress, name)
+            contextSymbol = ContextSymbol(vramAddress, f"jtbl_{vramAddress:08X}")
             contextSymbol.type = "@jumptable"
             contextSymbol.isLateRodata = True
             self.jumpTables[vramAddress] = contextSymbol
@@ -327,6 +340,15 @@ class Context:
             contextSymbol = ContextSymbol(vramAddress, name)
             contextSymbol.type = "@fakefunction"
             self.fakeFunctions[vramAddress] = contextSymbol
+
+    def addOffsetJumpTable(self, offset: int, sectionType: FileSectionType) -> ContextOffsetSymbol:
+        if offset not in self.offsetJumpTables:
+            contextOffsetSym = ContextOffsetSymbol(offset, f"jtbl_{offset:06X}", sectionType)
+            contextOffsetSym.type = "@jumptable"
+            contextOffsetSym.isLateRodata = True
+            self.offsetJumpTables[offset] = contextOffsetSym
+            return contextOffsetSym
+        return self.offsetJumpTables[offset]
 
     def addOffsetJumpTableLabel(self, offset: int, name: str, sectionType: FileSectionType) -> ContextOffsetSymbol:
         if offset not in self.offsetJumpTablesLabels:

@@ -27,10 +27,16 @@ class Function:
         self.constantsPerInstruction: Dict[int, int] = dict()
         self.branchInstructions: List[int] = list()
 
+        # key: %hi (lui) instruction offset, value: %lo instruction offset
+        self.hiToLowDict: dict[int, int] = dict()
+        # key: %lo instruction offset, value: %hi (lui) instruction offset
+        self.lowToHiDict: dict[int, int] = dict()
+
         self.luiInstructions: dict[int, InstructionBase] = dict()
         self.nonPointerLuiSet: set[int] = set()
 
         self.pointersOffsets: set[int] = set()
+        self.referencedJumpTableOffsets: set[int] = set()
 
         self.referencedVRams: Set[int] = set()
         self.referencedConstants: Set[int] = set()
@@ -63,7 +69,8 @@ class Function:
             print(register3, instr.getRegisterName(register3))
         print(trackedRegisters)
         print({instr.getRegisterName(x): y for x, y in trackedRegisters.items()})
-        print({instr.getRegisterName(x): f"{y:X}" for x, y in registersValues.items()})
+        # _t is shorthand of temp
+        print({instr.getRegisterName(register_t): f"{vram_t:X},{offset_t:X}" for register_t, (vram_t, offset_t) in registersValues.items()})
         print()
 
     def _printSymbolFinderDebugInfo_DelTrackedRegister(self, instr: InstructionBase, register: int, currentVram: int, trackedRegisters: dict):
@@ -131,6 +138,9 @@ class Function:
         if luiOffset not in self.pointersPerInstruction:
             self.pointersPerInstruction[luiOffset] = address
 
+        self.hiToLowDict[luiOffset] = lowerOffset
+        self.lowToHiDict[lowerOffset] = luiOffset
+
         return address
 
     def _processConstant(self, luiInstr: InstructionBase, luiOffset: int, lowerInstr: InstructionBase, lowerOffset: int) -> int|None:
@@ -138,9 +148,14 @@ class Function:
         upperHalf = luiInstr.immediate << 16
         lowerHalf = lowerInstr.immediate
         constant = upperHalf | lowerHalf
+
         self.referencedConstants.add(constant)
+
         self.constantsPerInstruction[lowerOffset] = constant
         self.constantsPerInstruction[luiOffset] = constant
+
+        self.hiToLowDict[luiOffset] = lowerOffset
+        self.lowToHiDict[lowerOffset] = luiOffset
 
         return constant
 
@@ -224,7 +239,8 @@ class Function:
 
         trackedRegisters: Dict[int, int] = dict()
         trackedRegistersAll: Dict[int, int] = dict()
-        registersValues: Dict[int, int] = dict()
+        # key: register, value: (vram, offset of instruction which set this value)
+        registersValues: Dict[int, tuple[int, int]] = dict()
 
         isABranchInBetweenLastLui: bool|None = None
 
@@ -318,20 +334,20 @@ class Function:
                             luiInstr = self.instructions[luiOffset//4]
                             constant = self._processConstant(luiInstr, luiOffset, instr, instructionOffset)
                             if constant is not None:
-                                registersValues[instr.rt] = constant
+                                registersValues[instr.rt] = (constant, instructionOffset)
                     elif instr.uniqueId not in (InstructionId.ANDI, InstructionId.XORI, InstructionId.CACHE):
                         rs = instr.rs
                         if rs in trackedRegisters:
                             luiInstr = self.instructions[trackedRegisters[rs]]
                             address = self._processSymbol(luiInstr, trackedRegisters[rs]*4, instr, instructionOffset)
                             if address is not None:
-                                registersValues[instr.rt] = address
+                                registersValues[instr.rt] = (address, instructionOffset)
                                 wasRegisterValuesUpdated = True
 
                         instrType = instr.mapInstrToType()
                         if instrType is not None:
                             if rs in registersValues:
-                                address = registersValues[rs]
+                                address, _ = registersValues[rs]
                                 contextSym = self.context.getSymbol(address, tryPlusOffset=False)
                                 if contextSym is not None:
                                     contextSym.setTypeIfUnset(instrType)
@@ -340,9 +356,11 @@ class Function:
                 rs = instr.rs
                 if instr.getRegisterName(rs) != "$ra":
                     if rs in registersValues:
-                        address = registersValues[rs]
+                        # print(instructionOffset, rs, trackedRegisters, trackedRegistersAll, registersValues, self.pointersPerInstruction)
+                        address, jmptblSeterOffset = registersValues[rs]
+                        self.referencedJumpTableOffsets.add(jmptblSeterOffset)
                         self.referencedVRams.add(address)
-                        jumpTableSymbol = self.context.addJumpTable(address, "jtbl_" + toHex(address, 8)[2:])
+                        jumpTableSymbol = self.context.addJumpTable(address)
                         jumpTableSymbol.referenceCounter += 1
 
             self._removeRegisterFromTrackers(instr, currentVram, trackedRegisters, trackedRegistersAll, registersValues, wasRegisterValuesUpdated)
@@ -386,18 +404,34 @@ class Function:
                         sectType = FileSectionType.fromStr(relocSymbol.name)
 
                         if instructionOffset in self.pointersPerInstruction:
-                            addressOffset = self.pointersPerInstruction[instructionOffset]
-                            relocName = f"{relocSymbol.name}_{addressOffset:06X}"
-                            isStatic = False
-                            if relocName.startswith("."):
-                                isStatic = True
-                                relocName = relocName[1:]
-                            print(relocName, addressOffset)
-                            contextOffsetSym = ContextOffsetSymbol(addressOffset, relocName, sectType)
-                            contextOffsetSym.isStatic = isStatic
-                            self.context.offsetSymbols[sectType][addressOffset] = contextOffsetSym
-                            relocSymbol.name = relocName
-                            self.pointersPerInstruction[instructionOffset] = 0
+                            if instructionOffset in self.referencedJumpTableOffsets:
+                                # Jump tables
+                                addressOffset = self.pointersPerInstruction[instructionOffset]
+                                if relocSymbol.name != ".rodata":
+                                    eprint(f"Warning. Jumptable referenced in reloc does not have '.rodata' as its name")
+                                contextOffsetSym = self.context.addOffsetJumpTable(addressOffset, sectType)
+                                contextOffsetSym.referenceCounter += 1
+                                relocSymbol.name = contextOffsetSym.name
+                                self.pointersPerInstruction[instructionOffset] = 0
+                                if instructionOffset in self.lowToHiDict:
+                                    luiOffset = self.lowToHiDict[instructionOffset]
+                                    otherReloc = self.context.getRelocSymbol(self.inFileOffset+luiOffset, FileSectionType.Text)
+                                    if otherReloc is not None:
+                                        otherReloc.name = relocSymbol.name
+                                        self.pointersPerInstruction[luiOffset] = 0
+                            else:
+                                addressOffset = self.pointersPerInstruction[instructionOffset]
+                                relocName = f"{relocSymbol.name}_{addressOffset:06X}"
+                                isStatic = False
+                                if relocName.startswith("."):
+                                    isStatic = True
+                                    relocName = relocName[1:]
+                                # print(relocName, addressOffset, instr)
+                                contextOffsetSym = ContextOffsetSymbol(addressOffset, relocName, sectType)
+                                contextOffsetSym.isStatic = isStatic
+                                self.context.offsetSymbols[sectType][addressOffset] = contextOffsetSym
+                                relocSymbol.name = relocName
+                                self.pointersPerInstruction[instructionOffset] = 0
                 inFileOffset += 4
                 instructionOffset += 4
 
