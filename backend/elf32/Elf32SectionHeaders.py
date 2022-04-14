@@ -40,7 +40,9 @@ class Elf32SectionHeaders:
             self.sections.append(sectionHeaderEntry)
             # print(sectionHeaderEntry)
 
-    def __getitem__(self, key: int) -> Elf32SectionHeaderEntry:
+    def __getitem__(self, key: int) -> Elf32SectionHeaderEntry | None:
+        if key > len(self.sections):
+            return None
         return self.sections[key]
 
     def __iter__(self):
