@@ -109,5 +109,8 @@ class Elf32File:
             elif entry.type == Elf32SectionHeaderType.MIPS_OPTIONS.value:
                 # ?
                 pass
+            elif entry.type == Elf32SectionHeaderType.MIPS_ABIFLAGS.value:
+                # ?
+                pass
             else:
                 eprint("Unknown section header type found:", sectionEntryName, entry)
