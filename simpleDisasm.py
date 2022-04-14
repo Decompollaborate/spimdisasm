@@ -131,7 +131,6 @@ def disassemblerMain():
         i += 1
 
     processedFilesCount = 0
-    processedFiles
     for sect in processedFiles.values():
         processedFilesCount += len(sect)
 
