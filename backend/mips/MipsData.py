@@ -85,7 +85,6 @@ class Data(Section):
                 if contVariable is not None:
                     contVariable.isDefined = True
 
-            dataHex = toHex(w, 8)[2:]
             value = toHex(w, 8)
             possibleReference = self.context.getRelocSymbol(inFileOffset, FileSectionType.Data)
             if possibleReference is not None:
@@ -98,6 +97,7 @@ class Data(Section):
             #comment = " "
             comment = ""
             if GlobalConfig.ASM_COMMENT:
+                #dataHex = toHex(w, 8)[2:]
                 #comment = f"/* {offsetHex} {vramHex} {dataHex} */"
                 comment = f"/* {offsetHex} {vramHex} */"
 
