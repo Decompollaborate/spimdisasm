@@ -519,7 +519,7 @@ class Function:
                 return self.disassembleAsData()
 
         if self.isLikelyHandwritten:
-            output += "/* Possibly handwritten function */\n"
+            output += "/* Handwritten function */\n"
 
         if self.name != "":
             output += f"glabel {self.name}"
