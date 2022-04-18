@@ -16,19 +16,6 @@ class FileSectionType(enum.Enum):
     Bss     = enum.auto()
     Reloc   = enum.auto()
 
-    def toStr(self) -> str:
-        if self == FileSectionType.Text:
-            return ".text"
-        if self == FileSectionType.Data:
-            return ".data"
-        if self == FileSectionType.Rodata:
-            return ".rodata"
-        if self == FileSectionType.Bss:
-            return ".bss"
-        if self == FileSectionType.Reloc:
-            return ".reloc"
-        return ""
-
     @staticmethod
     def fromStr(x: str) -> FileSectionType:
         if x == ".text":
@@ -42,3 +29,31 @@ class FileSectionType(enum.Enum):
         if x == ".reloc":
             return FileSectionType.Reloc
         return FileSectionType.Invalid
+
+    def toStr(self) -> str:
+        if self == FileSectionType.Text:
+            return ".text"
+        if self == FileSectionType.Data:
+            return ".data"
+        if self == FileSectionType.Rodata:
+            return ".rodata"
+        if self == FileSectionType.Bss:
+            return ".bss"
+        if self == FileSectionType.Reloc:
+            return ".reloc"
+        return ""
+
+    def toCapitalizedStr(self) -> str:
+        if self == FileSectionType.Text:
+            return "Text"
+        if self == FileSectionType.Data:
+            return "Data"
+        if self == FileSectionType.Rodata:
+            return "RoData"
+        if self == FileSectionType.Bss:
+            return "Bss"
+        if self == FileSectionType.Reloc:
+            return "Reloc"
+        return ""
+
+FileSections_ListBasic = [FileSectionType.Text, FileSectionType.Data, FileSectionType.Rodata, FileSectionType.Bss]
