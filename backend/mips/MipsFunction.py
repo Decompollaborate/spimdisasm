@@ -670,6 +670,7 @@ class Function:
                 auxLabel = self.context.getGenericLabel(self.vram + instructionOffset) or self.context.getGenericSymbol(self.vram + instructionOffset, tryPlusOffset=False)
                 if auxLabel is not None:
                     label = f"\nglabel {auxLabel.name}\n"
+                    # TODO: required?
                     auxLabel.referenceCounter += 1
 
                 contextVar = self.context.getSymbol(self.vram + instructionOffset, False)

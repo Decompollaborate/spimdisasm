@@ -137,14 +137,7 @@ class RelocZ64(Section):
         inFileOffset = self.offset
         currentVram = self.getVramOffset(offset)
 
-        label = f"\nglabel {self.filename}OverlayInfo\n"
-        # if we have vram available, try to get the symbol name from the Context
-        if self.vRamStart > -1:
-            auxLabel = self.context.getAnySymbol(currentVram)
-            if auxLabel is not None:
-                label = "\nglabel " + auxLabel.getSymbolPlusOffset(currentVram) + "\n"
-
-        result += label
+        result += self.getSymbolLabelAtVram(currentVram, f"\nglabel {self.filename}_OverlayInfo\n")
 
         for fileSect in FileSections_ListBasic:
             offsetHex = f"{inFileOffset + self.commentOffset:06X}"
@@ -191,14 +184,7 @@ class RelocZ64(Section):
         currentVram += 4
 
 
-        label = f"\nglabel {self.filename}OverlayRelocations\n"
-
-        if self.vRamStart > -1:
-            auxLabel = self.context.getAnySymbol(currentVram)
-            if auxLabel is not None:
-                label = "\nglabel " + auxLabel.getSymbolPlusOffset(currentVram) + "\n"
-
-        result += label
+        result += self.getSymbolLabelAtVram(currentVram, f"\nglabel {self.filename}_OverlayRelocations\n")
 
         for r in self.entries:
             offsetHex = f"{inFileOffset + self.commentOffset:06X}"
@@ -239,14 +225,7 @@ class RelocZ64(Section):
             inFileOffset += 4
             currentVram += 4
 
-        label = f"\nglabel {self.filename}OverlayInfoOffset\n"
-
-        if self.vRamStart > -1:
-            auxLabel = self.context.getAnySymbol(currentVram)
-            if auxLabel is not None:
-                label = "\nglabel " + auxLabel.getSymbolPlusOffset(currentVram) + "\n"
-
-        result += label
+        result += self.getSymbolLabelAtVram(currentVram, f"\nglabel {self.filename}_OverlayInfoOffset\n")
 
         offsetHex = f"{inFileOffset + self.commentOffset:06X}"
 

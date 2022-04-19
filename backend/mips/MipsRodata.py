@@ -171,11 +171,7 @@ class Rodata(Section):
             currentVram = self.getVramOffset(offset)
             vramHex = toHex(currentVram, 8)[2:]
 
-            auxLabel = self.context.getGenericLabel(currentVram)
-            if auxLabel is None:
-                auxLabel = self.context.getGenericSymbol(currentVram, tryPlusOffset=False)
-            if auxLabel is not None:
-                label = "\nglabel " + auxLabel.name + "\n"
+            label += self.getSymbolLabelAtVram(currentVram, label)
 
             contextVar = self.context.getSymbol(currentVram, True, False)
             if contextVar is not None:
