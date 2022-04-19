@@ -380,6 +380,13 @@ class Function:
                             break
                         if targetInstr.isJType():
                             break
+                        if targetInstr.modifiesRd():
+                            rd = targetInstr.rd
+                            # Check if the register is overwritten before finding the low instruction
+                            if rd in trackedRegisters:
+                                luiInstr = self.instructions[trackedRegisters[rd]]
+                                if rd == luiInstr.rt:
+                                    break
                         if targetInstr.isIType():
                             if targetInstr.uniqueId not in (InstructionId.LUI, InstructionId.ANDI, InstructionId.ORI, InstructionId.XORI, InstructionId.CACHE):
                                 rs = targetInstr.rs
