@@ -105,9 +105,6 @@ class Bss(Section):
                 if nextSymbolOffset <= self.bssTotalSize:
                     space = nextSymbolOffset - symbolOffset
 
-            # label = f"\nglabel {symbolName}\n"
-            # if symbolName.startswith("."):
-            #     label = f"\n/* static variable */\n{symbolName}\n"
             label = ""
             if contextSym.isStatic:
                 label = "\n/* static variable */"

@@ -38,6 +38,18 @@ class FileBase:
             return self.offset + localOffset
         return self.vRamStart + self.offset + localOffset
 
+    def getSymbolLabelAtVram(self, vram: int, fallback="") -> str:
+        # if we have vram available, try to get the symbol name from the Context
+        if self.vRamStart > -1:
+            sym = self.context.getAnySymbol(vram)
+            if sym is not None:
+                label = ""
+                if sym.isStatic:
+                    label += "\n/* static variable */"
+                label += "\nglabel " + sym.getSymbolPlusOffset(vram) + "\n"
+                return label
+        return fallback
+
     def getHash(self) -> str:
         return getStrHash(self.bytes)
 

@@ -77,9 +77,7 @@ class Data(Section):
                 currentVram = self.getVramOffset(offset)
                 vramHex = toHex(currentVram, 8)[2:]
 
-                auxLabel = self.context.getGenericLabel(currentVram) or self.context.getGenericSymbol(currentVram, tryPlusOffset=False)
-                if auxLabel is not None:
-                    label = "\nglabel " + auxLabel.getSymbolPlusOffset(currentVram) + "\n"
+                label = self.getSymbolLabelAtVram(currentVram, label)
 
                 contVariable = self.context.getSymbol(currentVram, False)
                 if contVariable is not None:
