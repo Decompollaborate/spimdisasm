@@ -134,114 +134,47 @@ class RelocZ64(Section):
         result = ""
 
         offset = 0
-        inFileOffset = self.offset
-        currentVram = self.getVramOffset(offset)
 
-        result += self.getSymbolLabelAtVram(currentVram, f"\nglabel {self.filename}_OverlayInfo\n")
+        result += self.getSymbolLabelAtVram(self.getVramOffset(offset), f"\nglabel {self.filename}_OverlayInfo\n")
 
         for fileSect in FileSections_ListBasic:
-            offsetHex = f"{inFileOffset + self.commentOffset:06X}"
-
-            vramHex = ""
-            if self.vRamStart > -1:
-                vramHex = f"{currentVram:08X}"
-
             sectName = fileSect.toCapitalizedStr()
-            value = f"_{self.filename}Segment{sectName}Size"
 
-            comment = ""
-            if GlobalConfig.ASM_COMMENT:
-                dataHex = f"{self.sectionSizes[fileSect]:08X}"
-                comment = f"/* {offsetHex} {vramHex} {dataHex} */"
-
-            line = f"{comment} .word {value}\n"
-            result += line
+            comment = self.generateAsmLineComment(offset, self.sectionSizes[fileSect])
+            result += f"{comment} .word _{self.filename}Segment{sectName}Size\n"
 
             offset += 4
-            inFileOffset += 4
-            currentVram += 4
 
         result += f"\n"
 
-        offsetHex = f"{inFileOffset + self.commentOffset:06X}"
-
-        vramHex = ""
-        if self.vRamStart > -1:
-            vramHex = f"{currentVram:08X}"
-
-        value = f"{self.relocCount} # reloc_count"
-
-        comment = ""
-        if GlobalConfig.ASM_COMMENT:
-            dataHex = f"{self.relocCount:08X}"
-            comment = f"/* {offsetHex} {vramHex} {dataHex} */"
-
-        line = f"{comment} .word {value}\n"
-        result += line
+        comment = self.generateAsmLineComment(offset, self.relocCount)
+        result += f"{comment} .word {self.relocCount} # reloc_count\n"
 
         offset += 4
-        inFileOffset += 4
-        currentVram += 4
 
-
-        result += self.getSymbolLabelAtVram(currentVram, f"\nglabel {self.filename}_OverlayRelocations\n")
+        result += self.getSymbolLabelAtVram(self.getVramOffset(offset), f"\nglabel {self.filename}_OverlayRelocations\n")
 
         for r in self.entries:
-            offsetHex = f"{inFileOffset + self.commentOffset:06X}"
-            vramHex = ""
-            if self.vRamStart > -1:
-                vramHex = f"{currentVram:08X}"
-
             relocHex = f"{r.reloc:08X}"
 
-            comment = ""
-            if GlobalConfig.ASM_COMMENT:
-                comment = f"/* {offsetHex} {vramHex} {relocHex} */"
-
-            line = f"{comment} .word 0x{relocHex} # {str(r)}\n"
-            result += line
+            comment = self.generateAsmLineComment(offset, r.reloc)
+            result += f"{comment} .word 0x{relocHex} # {str(r)}\n"
 
             offset += 4
-            inFileOffset += 4
-            currentVram += 4
 
         result += "\n"
         for pad in self.tail:
-            offsetHex = f"{inFileOffset + self.commentOffset:06X}"
-            vramHex = ""
-            if self.vRamStart > -1:
-                vramHex = f"{currentVram:08X}"
-
             padcHex = f"{pad:08X}"
 
-            comment = ""
-            if GlobalConfig.ASM_COMMENT:
-                comment = f"/* {offsetHex} {vramHex} {padcHex} */"
-
-            line = f"{comment} .word 0x{padcHex}\n"
-            result += line
+            comment = self.generateAsmLineComment(offset, pad)
+            result += f"{comment} .word 0x{padcHex}\n"
 
             offset += 4
-            inFileOffset += 4
-            currentVram += 4
 
-        result += self.getSymbolLabelAtVram(currentVram, f"\nglabel {self.filename}_OverlayInfoOffset\n")
+        result += self.getSymbolLabelAtVram(self.getVramOffset(offset), f"\nglabel {self.filename}_OverlayInfoOffset\n")
 
-        offsetHex = f"{inFileOffset + self.commentOffset:06X}"
-
-        vramHex = ""
-        if self.vRamStart > -1:
-            vramHex = f"{currentVram:08X}"
-
-        value = f"0x{self.seekup:02X}"
-
-        comment = ""
-        if GlobalConfig.ASM_COMMENT:
-            dataHex = f"{self.seekup:08X}"
-            comment = f"/* {offsetHex} {vramHex} {dataHex} */"
-
-        line = f"{comment} .word {value}\n"
-        result += line
+        comment = self.generateAsmLineComment(offset, self.seekup)
+        result += f"{comment} .word 0x{self.seekup:02X}\n"
 
         return result
 
