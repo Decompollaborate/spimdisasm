@@ -59,6 +59,14 @@ class RelocZ64(Section):
     def __init__(self, array_of_bytes: bytearray, filename: str, context: Context):
         super().__init__(array_of_bytes, filename, context)
 
+        self.seekup = self.words[-1]
+
+        self.setCommentOffset(self.size - self.seekup)
+
+        # Remove non reloc stuff
+        self.bytes = self.bytes[-self.seekup:]
+        self.words = self.words[-self.seekup // 4:]
+
         self.sectionSizes = {
             FileSectionType.Text: self.words[0],
             FileSectionType.Data: self.words[1],
@@ -69,11 +77,11 @@ class RelocZ64(Section):
 
         self.tail = self.words[self.relocCount+5:-1]
 
-        self.seekup = self.words[-1]
-
         self.entries: List[RelocEntry] = list()
         for word in self.words[5:self.relocCount+5]:
             self.entries.append(RelocEntry(word))
+
+        self.differentSegment: bool = False
 
     @property
     def nRelocs(self) -> int:
