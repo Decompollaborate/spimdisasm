@@ -93,11 +93,6 @@ class Bss(Section):
             if symbolVram in self.context.symbols:
                 self.context.symbols[symbolVram].isDefined = True
 
-            inFileOffset = self.offset + symbolOffset
-
-            offsetHex = f"{inFileOffset + self.commentOffset:06X}"
-            vramHex = f"{symbolVram:08X}"
-
             # Calculate the space of the bss variable
             space = self.bssTotalSize - symbolOffset
             if i + 1 < len(sortedOffsets):
@@ -110,10 +105,7 @@ class Bss(Section):
                 label = "\n/* static variable */"
             label += f"\nglabel {contextSym.name}\n"
 
-            comment = ""
-            if GlobalConfig.ASM_COMMENT:
-                comment = f"/* {offsetHex} {vramHex} */"
-
+            comment = self.generateAsmLineComment(symbolOffset)
             line = f"{label}{comment}  .space  0x{space:02X}"
             f.write(line + "\n")
             i += 1

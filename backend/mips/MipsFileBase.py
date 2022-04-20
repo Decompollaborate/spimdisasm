@@ -50,6 +50,22 @@ class FileBase:
                 return label
         return fallback
 
+    def generateAsmLineComment(self, localOffset: int, wordValue: int|None = None) -> str:
+        if not GlobalConfig.ASM_COMMENT:
+            return ""
+        offsetHex = f"{localOffset + self.offset + self.commentOffset:06X}"
+
+        vramHex = ""
+        if self.vRamStart > -1:
+            currentVram = self.getVramOffset(localOffset)
+            vramHex = f"{currentVram:08X} "
+
+        wordValueHex = ""
+        if wordValue is not None:
+            wordValueHex = f"{wordValue:08X} "
+
+        return f"/* {offsetHex} {vramHex}{wordValueHex}*/"
+
     def getHash(self) -> str:
         return getStrHash(self.bytes)
 

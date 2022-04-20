@@ -122,7 +122,7 @@ class Rodata(Section):
 
     def removePointers(self) -> bool:
         if not GlobalConfig.REMOVE_POINTERS:
-             False
+            return False
 
         was_updated = super().removePointers()
         for i in range(self.sizew):
@@ -141,10 +141,8 @@ class Rodata(Section):
         inFileOffset = self.offset + offset
         w = self.words[i]
 
-        offsetHex = toHex(offset + self.commentOffset, 6)[2:]
-        vramHex = ""
         label = ""
-        rodataHex = toHex(w, 8)[2:]
+        rodataWord = w
         value: Any = toHex(w, 8)
 
         # try to get the symbol name from the offset of the file (possibly from a .o elf file)
@@ -169,7 +167,6 @@ class Rodata(Section):
 
         if self.vRamStart > -1:
             currentVram = self.getVramOffset(offset)
-            vramHex = toHex(currentVram, 8)[2:]
 
             label += self.getSymbolLabelAtVram(currentVram, label)
 
@@ -205,7 +202,7 @@ class Rodata(Section):
             dotType = ".double"
             otherHalf = self.words[i+1]
             value = qwordToDouble((w << 32) | otherHalf)
-            rodataHex += toHex(otherHalf, 8)[2:]
+            rodataWord = (w << 32) | otherHalf
             skip = 1
         elif w in self.context.jumpTablesLabels:
             value = self.context.jumpTablesLabels[w].name
@@ -214,19 +211,16 @@ class Rodata(Section):
                 decodedValue, rawStringSize = decodeString(self.bytes, 4*i)
                 dotType = ".asciz"
                 value = f'"{decodedValue}"'
-                value += "\n" + (24 * " ") + ".balign 4"
-                rodataHex = ""
+                value += "\n" + (22 * " ") + ".balign 4"
+                rodataWord = None
                 skip = rawStringSize // 4
             except (UnicodeDecodeError, RuntimeError):
                 # Not a string
                 isAsciz = False
                 pass
 
-        comment = ""
-        if GlobalConfig.ASM_COMMENT:
-            comment = f"/* {offsetHex} {vramHex} {rodataHex} */ "
-
-        return f"{label}{comment} {dotType}  {value}", skip
+        comment = self.generateAsmLineComment(offset, rodataWord)
+        return f"{label}{comment} {dotType} {value}", skip
 
 
     def disassembleToFile(self, f: TextIO):

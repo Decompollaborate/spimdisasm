@@ -61,8 +61,6 @@ class Data(Section):
         i = 0
         while i < self.sizew:
             w = self.words[i]
-            offsetHex = toHex(inFileOffset + self.commentOffset, 6)[2:]
-            vramHex = ""
             label = ""
 
             # try to get the symbol name from the offset of the file (possibly from a .o elf file)
@@ -75,7 +73,6 @@ class Data(Section):
             # if we have vram available, try to get the symbol name from the Context
             if self.vRamStart > -1:
                 currentVram = self.getVramOffset(offset)
-                vramHex = toHex(currentVram, 8)[2:]
 
                 label = self.getSymbolLabelAtVram(currentVram, label)
 
@@ -92,13 +89,7 @@ class Data(Section):
             if symbol is not None:
                 value = symbol.name
 
-            #comment = " "
-            comment = ""
-            if GlobalConfig.ASM_COMMENT:
-                #dataHex = toHex(w, 8)[2:]
-                #comment = f"/* {offsetHex} {vramHex} {dataHex} */"
-                comment = f"/* {offsetHex} {vramHex} */"
-
+            comment = self.generateAsmLineComment(offset)
             line = f"{label}{comment} .word {value}"
             f.write(line + "\n")
             i += 1
