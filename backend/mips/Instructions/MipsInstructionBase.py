@@ -452,8 +452,9 @@ class InstructionBase:
                 return "f64"
             else:
                 return "f32"
-        if self.uniqueId in (InstructionId.LW, InstructionId.SW):
-            return "s32"
+        # Way too general register to ensure the type
+        # if self.uniqueId in (InstructionId.LW, InstructionId.SW):
+        #     return "s32"
         if self.uniqueId in (InstructionId.LWU, ):
             return "u32"
         if self.uniqueId in (InstructionId.LH, InstructionId.SH):
