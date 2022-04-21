@@ -10,11 +10,25 @@ class FileSectionType(enum.Enum):
     Unknown = -2
     Invalid = -1
 
-    Text    = enum.auto()
-    Data    = enum.auto()
-    Rodata  = enum.auto()
-    Bss     = enum.auto()
-    Reloc   = enum.auto()
+    Text    = 1
+    Data    = 2
+    Rodata  = 3
+    Bss     = 4
+    Reloc   = 5
+
+    @staticmethod
+    def fromId(sectionId: int) -> FileSectionType:
+        if sectionId == 1:
+            return FileSectionType.Text
+        if sectionId == 2:
+            return FileSectionType.Data
+        if sectionId == 3:
+            return FileSectionType.Rodata
+        if sectionId == 4:
+            return FileSectionType.Bss
+        if sectionId == 5:
+            return FileSectionType.Reloc
+        return FileSectionType.Invalid
 
     @staticmethod
     def fromStr(x: str) -> FileSectionType:
