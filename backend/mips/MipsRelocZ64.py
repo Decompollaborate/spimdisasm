@@ -18,20 +18,6 @@ from .MipsRelocTypes import RelocTypes
 
 
 class RelocEntry:
-    sectionNames = {
-        #0: ".bss",
-        1: ".text",
-        2: ".data",
-        3: ".rodata",
-        4: ".bss", # ?
-    }
-    relocationsNames = {
-        2: "R_MIPS_32",
-        4: "R_MIPS_26",
-        5: "R_MIPS_HI16",
-        6: "R_MIPS_LO16",
-    }
-
     def __init__(self, entry: int):
         self.sectionId = entry >> 30
         self.relocType = (entry >> 24) & 0x3F
@@ -41,15 +27,15 @@ class RelocEntry:
     def reloc(self):
         return (self.sectionId << 30) | (self.relocType << 24) | (self.offset)
 
-    def getSectionName(self) -> str:
-        return RelocEntry.sectionNames.get(self.sectionId, str(self.sectionId))
+    def getSectionType(self) -> FileSectionType:
+        return FileSectionType.fromId(self.sectionId)
 
-    def getTypeName(self) -> str:
-        return RelocEntry.relocationsNames.get(self.relocType, str(self.relocType))
+    def getRelocType(self) -> RelocTypes:
+        return RelocTypes.fromValue(self.relocType)
 
     def __str__(self) -> str:
-        section = self.getSectionName()
-        reloc = self.getTypeName()
+        section = self.getSectionType().toStr()
+        reloc = self.getRelocType().name
         return f"{section} {reloc} 0x{self.offset:X}"
     def __repr__(self) -> str:
         return self.__str__()
