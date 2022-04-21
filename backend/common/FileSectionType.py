@@ -71,3 +71,4 @@ class FileSectionType(enum.Enum):
         return ""
 
 FileSections_ListBasic = [FileSectionType.Text, FileSectionType.Data, FileSectionType.Rodata, FileSectionType.Bss]
+FileSections_ListAll = [FileSectionType.Text, FileSectionType.Data, FileSectionType.Rodata, FileSectionType.Bss, FileSectionType.Reloc]
