@@ -8,11 +8,14 @@ from ..common.Context import Context
 from ..common.FileSectionType import FileSectionType
 
 from .MipsSection import Section
+from .Symbols import SymbolBss
 
 
 class Bss(Section):
     def __init__(self, bssVramStart: int, bssVramEnd: int, filename: str, context: Context):
         super().__init__(bytearray(), filename, context)
+
+        self.symbolList: list[SymbolBss] = []
 
         self.bssVramStart: int = bssVramStart
         self.bssVramEnd: int = bssVramEnd
@@ -63,18 +66,6 @@ class Bss(Section):
                 contextSym.name = f"B_{vram:08X}"
 
 
-    def disassembleToFile(self, f: TextIO):
-        f.write(".include \"macro.inc\"\n")
-        f.write("\n")
-        f.write("# assembler directives\n")
-        f.write(".set noat      # allow manual use of $at\n")
-        f.write(".set noreorder # don't insert nops after branches\n")
-        f.write(".set gp=64     # allow use of 64-bit general purpose registers\n")
-        f.write("\n")
-        f.write(".section .bss\n")
-        f.write("\n")
-        f.write(".balign 16\n")
-
         offsetSymbolsInSection = self.context.offsetSymbols[FileSectionType.Bss]
         bssSymbolOffsets = {offset: sym for offset, sym in offsetSymbolsInSection.items()}
 
@@ -90,9 +81,6 @@ class Bss(Section):
             symbolOffset, contextSym = sortedOffsets[i]
             symbolVram = self.bssVramStart + symbolOffset
 
-            if symbolVram in self.context.symbols:
-                self.context.symbols[symbolVram].isDefined = True
-
             # Calculate the space of the bss variable
             space = self.bssTotalSize - symbolOffset
             if i + 1 < len(sortedOffsets):
@@ -100,15 +88,27 @@ class Bss(Section):
                 if nextSymbolOffset <= self.bssTotalSize:
                     space = nextSymbolOffset - symbolOffset
 
-            label = ""
-            if contextSym.isStatic:
-                label = "\n/* static variable */"
-            label += f"\nglabel {contextSym.name}\n"
+            sym = SymbolBss(self.context, contextSym.name, symbolOffset + self.inFileOffset, symbolVram, space)
+            sym.setCommentOffset(self.commentOffset)
+            sym.analyze()
+            self.symbolList.append(sym)
 
-            comment = self.generateAsmLineComment(symbolOffset)
-            line = f"{label}{comment}  .space  0x{space:02X}"
-            f.write(line + "\n")
             i += 1
+
+    def disassembleToFile(self, f: TextIO):
+        f.write(".include \"macro.inc\"\n")
+        f.write("\n")
+        f.write("# assembler directives\n")
+        f.write(".set noat      # allow manual use of $at\n")
+        f.write(".set noreorder # don't insert nops after branches\n")
+        f.write(".set gp=64     # allow use of 64-bit general purpose registers\n")
+        f.write("\n")
+        f.write(".section .bss\n")
+        f.write("\n")
+        f.write(".balign 16\n")
+
+        for sym in self.symbolList:
+            f.write(sym.disassemble())
 
     def saveToFile(self, filepath: str):
         super().saveToFile(filepath + ".bss")
@@ -118,3 +118,9 @@ class Bss(Section):
         else:
             with open(filepath + ".bss.s", "w") as f:
                 self.disassembleToFile(f)
+
+
+    def setCommentOffset(self, commentOffset: int):
+        self.commentOffset = commentOffset
+        for sym in self.symbolList:
+            sym.setCommentOffset(self.commentOffset)
