@@ -83,17 +83,17 @@ def getRdataAndLateRodataForFunction(func: Function, rodataFileList: List[Tuple[
     lateRodataList = []
     lateRodataLen = 0
     firstRodata = None
-    for _, rodata in rodataFileList:
+    for _, rodataSection in rodataFileList:
         if len(rdataList) > 0 or len(lateRodataList) > 0:
             # We already have the rodata for this function. Stop searching
             break
 
         # Skip the file if there's nothing in this file refenced by the current function
-        intersection = func.referencedVRams & rodata.symbolsVRams
+        intersection = func.referencedVRams & rodataSection.symbolsVRams
         if len(intersection) == 0:
             continue
 
-        sortedSymbolVRams = sorted(rodata.symbolsVRams)
+        sortedSymbolVRams = sorted(rodataSection.symbolsVRams)
 
         for vram in sorted(intersection):
             nextVramIndex = sortedSymbolVRams.index(vram) + 1
@@ -117,29 +117,24 @@ def getRdataAndLateRodataForFunction(func: Function, rodataFileList: List[Tuple[
             if isConstVariable:
                 break
 
-            j = 0
-            while j < len(rodata.words):
-                rodataVram = rodata.getVramOffset(j*4)
+            for rodataSym in rodataSection.symbolList:
                 # TODO: this can be improved a bit
-                if rodataVram < vram:
-                    j += 1
+                assert rodataSym.vram is not None
+                if rodataSym.vram < vram:
                     continue
-                if rodataVram >= nextVram:
+                if rodataSym.vram >= nextVram:
                     break
 
                 if firstRodata is None:
-                    firstRodata = rodata.vRamStart
+                    firstRodata = rodataSection.vRamStart
 
-                nthRodata, skip = rodata.getNthWord(j)
-                j += skip
-                j += 1
+                dis = rodataSym.disassemble()
                 if rodataSymbol.isLateRodata:
-                    lateRodataList.append(nthRodata)
-                    lateRodataList.append("\n")
-                    lateRodataLen += 1
+                    lateRodataList.append(dis)
+                    lateRodataLen += rodataSym.sizew
                 else:
-                    rdataList.append(nthRodata)
-                    rdataList.append("\n")
+                    rdataList.append(dis)
+
 
             if rodataSymbol.isLateRodata:
                 lateRodataList.append("\n")
@@ -204,20 +199,16 @@ def getOtherRodata(vram: int, nextVram: int, rodataSection: Rodata, context: Con
 
     # print(rodataSymbol.name, rodataSymbol.referenceCounter)
 
-    j = 0
-    while j < len(rodataSection.words):
-        rodataVram = rodataSection.getVramOffset(j*4)
-        if rodataVram < vram:
-            # TODO: this could probably be optimized a bit
-            j += 1
+    for rodataSym in rodataSection.symbolList:
+        # TODO: this can be improved a bit
+        assert rodataSym.vram is not None
+        if rodataSym.vram < vram:
             continue
-        if rodataVram >= nextVram:
+        if rodataSym.vram >= nextVram:
             break
 
-        nthRodata, skip = rodataSection.getNthWord(j)
-        rdataList.append(nthRodata)
-        j += skip
-        j += 1
+        dis = rodataSym.disassemble()
+        rdataList.append(dis)
 
     return rodataSymbol.name, rdataList
 
@@ -240,4 +231,4 @@ def writeOtherRodata(path: str, rodataFileList: List[Tuple[str, Rodata]], contex
             with open(rodataSymbolPath, "w") as f:
                 f.write(".rdata\n")
                 for rdata in rdataList:
-                    f.write(rdata + "\n")
+                    f.write(rdata)
