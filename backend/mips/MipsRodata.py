@@ -95,7 +95,7 @@ class Rodata(Section):
 
         if len(self.context.relocSymbols[FileSectionType.Rodata]) > 0:
             # Process reloc symbols (probably from a .elf file)
-            inFileOffset = self.offset
+            inFileOffset = self.inFileOffset
             for w in self.words:
                 relocSymbol = self.context.getRelocSymbol(inFileOffset, FileSectionType.Rodata)
                 if relocSymbol is not None:
@@ -138,7 +138,7 @@ class Rodata(Section):
 
     def getNthWord(self, i: int) -> Tuple[str, int]:
         offset = i * 4
-        inFileOffset = self.offset + offset
+        inFileOffset = self.inFileOffset + offset
         w = self.words[i]
 
         label = ""

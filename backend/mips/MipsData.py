@@ -4,28 +4,62 @@ from __future__ import annotations
 
 from ..common.Utils import *
 from ..common.GlobalConfig import GlobalConfig
+from ..common.Context import Context
 from ..common.FileSectionType import FileSectionType
 
 from .MipsSection import Section
+from .Symbols import SymbolData
 
 
 class Data(Section):
+    def __init__(self, array_of_bytes: bytearray, filename: str, context: Context):
+        super().__init__(array_of_bytes, filename, context)
+
+        self.symbolList: list[SymbolData] = []
+
     def analyze(self):
-        if self.vRamStart > -1:
-            offset = 0
-            for w in self.words:
-                currentVram = self.getVramOffset(offset)
+        symbolList = []
 
-                contextSymbol = self.context.getSymbol(currentVram, tryPlusOffset=False)
-                if contextSymbol is not None:
-                    contextSymbol.isDefined = True
+        localOffset = 0
+        currentVram = self.getVramOffset(localOffset)
 
+        # Make sure the start of the data section is a symbol
+        contextSym = self.context.getSymbol(currentVram, tryPlusOffset=False)
+        if contextSym is None:
+            contextSym = self.context.addSymbol(currentVram, None)
+        contextSym.isDefined = True
+        symbolList.append((contextSym.name, localOffset, currentVram))
+
+        for w in self.words:
+            currentVram = self.getVramOffset(localOffset)
+
+            contextSym = self.context.getSymbol(currentVram, tryPlusOffset=False)
+            if contextSym is not None:
+                contextSym.isDefined = True
+                if localOffset != 0:
+                    symbolList.append((contextSym.name, localOffset, currentVram))
+
+            if self.vRamStart > -1:
                 if w >= self.vRamStart and w < 0x84000000:
                     if self.context.getAnySymbol(w) is None:
                         self.context.newPointersInData.add(w)
 
-                offset += 4
+            localOffset += 4
 
+        for i, (symName, offset, vram) in enumerate(symbolList):
+            if i + 1 == len(symbolList):
+                words = self.words[offset//4:]
+            else:
+                words = self.words[offset//4:symbolList[i+1][1]//4]
+
+            symVram = None
+            if self.vRamStart > -1:
+                symVram = vram
+
+            sym = SymbolData(self.context, symName, offset + self.inFileOffset, symVram, words)
+            sym.setCommentOffset(self.commentOffset)
+            sym.analyze()
+            self.symbolList.append(sym)
 
     def removePointers(self) -> bool:
         if not GlobalConfig.REMOVE_POINTERS:
@@ -56,45 +90,9 @@ class Data(Section):
         f.write("\n")
         f.write(".balign 16\n")
 
-        offset = 0
-        inFileOffset = self.offset
-        i = 0
-        while i < self.sizew:
-            w = self.words[i]
-            label = ""
-
-            # try to get the symbol name from the offset of the file (possibly from a .o elf file)
-            possibleSymbolName = self.context.getOffsetSymbol(inFileOffset, FileSectionType.Data)
-            if possibleSymbolName is not None:
-                if possibleSymbolName.isStatic:
-                    label = "\n/* static variable */"
-                label += f"\nglabel {possibleSymbolName.name}\n"
-
-            # if we have vram available, try to get the symbol name from the Context
-            if self.vRamStart > -1:
-                currentVram = self.getVramOffset(offset)
-
-                label = self.getSymbolLabelAtVram(currentVram, label)
-
-                contVariable = self.context.getSymbol(currentVram, False)
-                if contVariable is not None:
-                    contVariable.isDefined = True
-
-            value = toHex(w, 8)
-            possibleReference = self.context.getRelocSymbol(inFileOffset, FileSectionType.Data)
-            if possibleReference is not None:
-                value = possibleReference.getNamePlusOffset(w)
-
-            symbol = self.context.getAnySymbol(w)
-            if symbol is not None:
-                value = symbol.name
-
-            comment = self.generateAsmLineComment(offset)
-            line = f"{label}{comment} .word {value}"
-            f.write(line + "\n")
-            i += 1
-            offset += 4
-            inFileOffset += 4
+        for sym in self.symbolList:
+            f.write("\n")
+            f.write(sym.disassemble())
 
     def saveToFile(self, filepath: str):
         super().saveToFile(filepath + ".data")
@@ -107,3 +105,9 @@ class Data(Section):
         else:
             with open(filepath + ".data.s", "w") as f:
                 self.disassembleToFile(f)
+
+
+    def setCommentOffset(self, commentOffset: int):
+        self.commentOffset = commentOffset
+        for sym in self.symbolList:
+            sym.setCommentOffset(self.commentOffset)

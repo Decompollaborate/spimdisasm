@@ -14,7 +14,7 @@ class FileBase:
         self.context: Context = context
 
         self.parent: FileBase|None = None
-        self.offset: int = 0 # in-file offset
+        self.inFileOffset: int = 0 # in-file offset
         self.commentOffset: int = 0
         self.vRamStart: int = -1
 
@@ -35,8 +35,8 @@ class FileBase:
 
     def getVramOffset(self, localOffset: int) -> int:
         if self.vRamStart < 0:
-            return self.offset + localOffset
-        return self.vRamStart + self.offset + localOffset
+            return self.inFileOffset + localOffset
+        return self.vRamStart + self.inFileOffset + localOffset
 
     def getSymbolLabelAtVram(self, vram: int, fallback="") -> str:
         # if we have vram available, try to get the symbol name from the Context
@@ -53,7 +53,7 @@ class FileBase:
     def generateAsmLineComment(self, localOffset: int, wordValue: int|None = None) -> str:
         if not GlobalConfig.ASM_COMMENT:
             return ""
-        offsetHex = f"{localOffset + self.offset + self.commentOffset:06X}"
+        offsetHex = f"{localOffset + self.inFileOffset + self.commentOffset:06X}"
 
         vramHex = ""
         if self.vRamStart > -1:
