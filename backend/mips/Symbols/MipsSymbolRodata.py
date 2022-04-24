@@ -123,6 +123,5 @@ class SymbolRodata(SymbolBase):
             i += 1
         return output
 
-
     def disassemble(self) -> str:
         return self.disassembleAsRodata()
