@@ -81,7 +81,7 @@ class SymbolBase:
 
 
     def disassembleAsData(self) -> str:
-        output = f"glabel {self.name}\n"
+        output = f"\nglabel {self.name}\n"
 
         localOffset = 0
         inFileOffset = self.inFileOffset
