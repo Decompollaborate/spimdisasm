@@ -12,8 +12,10 @@ from .Symbols import SymbolBss
 
 
 class Bss(Section):
-    def __init__(self, bssVramStart: int, bssVramEnd: int, filename: str, context: Context):
-        super().__init__(bytearray(), filename, context)
+    def __init__(self, context: Context, bssVramStart: int, bssVramEnd: int, filename: str):
+        super().__init__(context, bssVramStart, filename, bytearray())
+
+        self.sectionType = FileSectionType.Bss
 
         self.symbolList: list[SymbolBss] = []
 
@@ -22,14 +24,14 @@ class Bss(Section):
 
         self.bssTotalSize: int = bssVramEnd - bssVramStart
 
-        self.vRamStart = bssVramStart
+        self.vram = bssVramStart
 
 
-    def setVRamStart(self, vRamStart: int):
-        super().setVRamStart(vRamStart)
+    def setVram(self, vram: int):
+        super().setVram(vram)
 
-        self.bssVramStart = vRamStart
-        self.bssVramEnd = vRamStart + self.bssTotalSize
+        self.bssVramStart = vram
+        self.bssVramEnd = vram + self.bssTotalSize
 
     def analyze(self):
         # Check if the very start of the file has a bss variable and create it if it doesn't exist yet
@@ -88,33 +90,9 @@ class Bss(Section):
                 if nextSymbolOffset <= self.bssTotalSize:
                     space = nextSymbolOffset - symbolOffset
 
-            sym = SymbolBss(self.context, contextSym.name, symbolOffset + self.inFileOffset, symbolVram, space)
+            sym = SymbolBss(self.context, symbolOffset + self.inFileOffset, symbolVram, contextSym.name, space)
             sym.setCommentOffset(self.commentOffset)
             sym.analyze()
             self.symbolList.append(sym)
 
             i += 1
-
-    def disassembleToFile(self, f: TextIO):
-        f.write(".include \"macro.inc\"\n")
-        f.write("\n")
-        f.write("# assembler directives\n")
-        f.write(".set noat      # allow manual use of $at\n")
-        f.write(".set noreorder # don't insert nops after branches\n")
-        f.write(".set gp=64     # allow use of 64-bit general purpose registers\n")
-        f.write("\n")
-        f.write(".section .bss\n")
-        f.write("\n")
-        f.write(".balign 16\n")
-
-        for sym in self.symbolList:
-            f.write(sym.disassemble())
-
-    def saveToFile(self, filepath: str):
-        super().saveToFile(filepath + ".bss")
-
-        if filepath == "-":
-            self.disassembleToFile(sys.stdout)
-        else:
-            with open(filepath + ".bss.s", "w") as f:
-                self.disassembleToFile(f)

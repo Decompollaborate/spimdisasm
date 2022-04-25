@@ -7,58 +7,10 @@ from ...common.GlobalConfig import GlobalConfig
 from ...common.Context import Context, ContextSymbol, ContextOffsetSymbol
 from ...common.FileSectionType import FileSectionType
 
+from ..MipsElementBase import ElementBase
 
-class SymbolBase:
-    def __init__(self, context: Context, name: str, inFileOffset: int, vram: int|None, words: list[int]=[]):
-        self.context: Context = context
-        self.name: str = name
-        self.inFileOffset: int = inFileOffset
-        self.vram: int|None = vram
-        self.words: list[int] = words
 
-        self.commentOffset: int = 0
-        self.index: int|None = None
-
-        self.parent: Any = None
-
-        self.sectionType: FileSectionType = FileSectionType.Unknown
-
-    @property
-    def sizew(self) -> int:
-        return len(self.words)
-
-    def setCommentOffset(self, commentOffset: int):
-        self.commentOffset = commentOffset
-
-    # TODO: avoid duplicated code here and in MipsFileBase
-    def getVramOffset(self, localOffset: int) -> int:
-        if self.vram is None:
-            return self.inFileOffset + localOffset
-        return self.vram + localOffset
-
-    def getSymbolLabelAtVram(self, vram: int, fallback="") -> str:
-        # if we have vram available, try to get the symbol name from the Context
-        if self.vram is not None:
-            sym = self.context.getAnySymbol(vram)
-            if sym is not None:
-                label = ""
-                if sym.isStatic:
-                    label += "\n/* static variable */"
-                label += "\nglabel " + sym.getSymbolPlusOffset(vram) + "\n"
-                return label
-        return fallback
-
-    def getSymbolLabelAtOffset(self, inFileOffset: int, fallback="") -> str:
-        # try to get the symbol name from the offset of the file (possibly from a .o elf file)
-        possibleSymbolName = self.context.getOffsetSymbol(inFileOffset, self.sectionType)
-        if possibleSymbolName is not None:
-            label = ""
-            if possibleSymbolName.isStatic:
-                label = "\n/* static variable */"
-            label += f"\nglabel {possibleSymbolName.name}\n"
-            return label
-        return fallback
-
+class SymbolBase(ElementBase):
     def generateAsmLineComment(self, localOffset: int, wordValue: int|None = None) -> str:
         if not GlobalConfig.ASM_COMMENT:
             return ""
@@ -74,10 +26,6 @@ class SymbolBase:
             wordValueHex = f"{wordValue:08X} "
 
         return f"/* {offsetHex} {vramHex}{wordValueHex}*/"
-
-
-    def analyze(self):
-        pass
 
 
     def disassembleAsData(self) -> str:

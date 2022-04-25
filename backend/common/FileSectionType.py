@@ -70,5 +70,18 @@ class FileSectionType(enum.Enum):
             return "Reloc"
         return ""
 
+    def toSectionName(self) -> str:
+        if self == FileSectionType.Text:
+            return ".text"
+        if self == FileSectionType.Data:
+            return ".data"
+        if self == FileSectionType.Rodata:
+            return ".rodata"
+        if self == FileSectionType.Bss:
+            return ".bss"
+        if self == FileSectionType.Reloc:
+            return ".ovl"
+        return ""
+
 FileSections_ListBasic = [FileSectionType.Text, FileSectionType.Data, FileSectionType.Rodata, FileSectionType.Bss]
 FileSections_ListAll = [FileSectionType.Text, FileSectionType.Data, FileSectionType.Rodata, FileSectionType.Bss, FileSectionType.Reloc]

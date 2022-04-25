@@ -31,24 +31,25 @@ def createSectionFromSplitEntry(splitEntry: FileSplitEntry, array_of_bytes: byte
         printVerbose(f"Parsing since offset {toHex(offsetStart, 2)}")
         array_of_bytes = array_of_bytes[offsetStart:]
 
+    vram = None
+    if splitEntry.vram >= 0:
+        printVerbose(f"Using VRAM {splitEntry.vram:08X}")
+        vram = splitEntry.vram
+
     if splitEntry.section == FileSectionType.Text:
-        f = Text(array_of_bytes, tail, context)
+        f = Text(context, vram, tail, array_of_bytes)
     elif splitEntry.section == FileSectionType.Data:
-        f = Data(array_of_bytes, tail, context)
+        f = Data(context, vram, tail, array_of_bytes)
     elif splitEntry.section == FileSectionType.Rodata:
-        f = Rodata(array_of_bytes, tail, context)
+        f = Rodata(context, vram, tail, array_of_bytes)
     elif splitEntry.section == FileSectionType.Bss:
-        f = Bss(splitEntry.vram, splitEntry.vram + offsetEnd - offsetStart, tail, context)
+        f = Bss(context, splitEntry.vram, splitEntry.vram + offsetEnd - offsetStart, tail)
     else:
         eprint("Error! Section not set!")
         exit(-1)
 
     f.isHandwritten = splitEntry.isHandwritten
     f.isRsp = splitEntry.isRsp
-
-    if splitEntry.vram >= 0:
-        printVerbose(f"Using VRAM {splitEntry.vram:08X}")
-        f.setVRamStart(splitEntry.vram)
 
     return f
 
@@ -126,7 +127,7 @@ def getRdataAndLateRodataForFunction(func: Function, rodataFileList: List[Tuple[
                     break
 
                 if firstRodata is None:
-                    firstRodata = rodataSection.vRamStart
+                    firstRodata = rodataSection.vram
 
                 dis = rodataSym.disassemble()
                 if rodataSymbol.isLateRodata:
@@ -214,7 +215,7 @@ def getOtherRodata(vram: int, nextVram: int, rodataSection: Rodata, context: Con
 
 def writeOtherRodata(path: str, rodataFileList: List[Tuple[str, Rodata]], context: Context):
     for _, rodata in rodataFileList:
-        rodataPath = os.path.join(path, rodata.filename)
+        rodataPath = os.path.join(path, rodata.name)
         os.makedirs(rodataPath, exist_ok=True)
         sortedSymbolVRams = sorted(rodata.symbolsVRams)
 
