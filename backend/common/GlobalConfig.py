@@ -13,7 +13,7 @@ class GlobalConfig:
     WRITE_BINARY: bool = False # write to files splitted binaries
 
     ASM_COMMENT: bool = True
-    FUNCTION_ASM_COUNT: bool = True
+    GLABEL_ASM_COUNT: bool = True
 
     ADD_NEW_SYMBOLS: bool = True
     PRODUCE_SYMBOLS_PLUS_OFFSET: bool = False
@@ -52,6 +52,7 @@ class GlobalConfig:
 
         miscConfig.add_argument("--disable-asm-comments", help="Disables the comments in assembly code", action="store_true")
         miscConfig.add_argument("--write-binary", help="Produce a binary of the processed file", action="store_true")
+        miscConfig.add_argument("--no-glabel-count", help="Disable glabel count comment", action="store_true")
 
 
         verbosityConfig = parser.add_argument_group("Verbosity options")
@@ -82,6 +83,7 @@ class GlobalConfig:
 
         GlobalConfig.WRITE_BINARY = args.write_binary
         GlobalConfig.ASM_COMMENT = not args.disable_asm_comments
+        GlobalConfig.GLABEL_ASM_COUNT = not args.no_glabel_count
 
         GlobalConfig.VERBOSE = args.verbose
         GlobalConfig.QUIET = args.quiet

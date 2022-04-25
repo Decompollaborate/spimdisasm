@@ -106,9 +106,3 @@ class Data(Section):
         else:
             with open(filepath + ".data.s", "w") as f:
                 self.disassembleToFile(f)
-
-
-    def setCommentOffset(self, commentOffset: int):
-        self.commentOffset = commentOffset
-        for sym in self.symbolList:
-            sym.setCommentOffset(self.commentOffset)

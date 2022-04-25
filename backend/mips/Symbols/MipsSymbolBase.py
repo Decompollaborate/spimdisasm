@@ -17,7 +17,7 @@ class SymbolBase:
         self.words: list[int] = words
 
         self.commentOffset: int = 0
-        self.index: int = -1
+        self.index: int|None = None
 
         self.parent: Any = None
 
@@ -81,7 +81,7 @@ class SymbolBase:
 
 
     def disassembleAsData(self) -> str:
-        output = f"\nglabel {self.name}\n"
+        output = ""
 
         localOffset = 0
         inFileOffset = self.inFileOffset
@@ -89,19 +89,17 @@ class SymbolBase:
         while i < self.sizew:
             w = self.words[i]
 
-            label = ""
-            if i != 0 or self.name == "":
-                label = self.getSymbolLabelAtOffset(inFileOffset, "")
+            label = self.getSymbolLabelAtOffset(inFileOffset, "")
 
-                # if we have vram available, try to get the symbol name from the Context
-                if self.vram is not None:
-                    currentVram = self.getVramOffset(localOffset)
+            # if we have vram available, try to get the symbol name from the Context
+            if self.vram is not None:
+                currentVram = self.getVramOffset(localOffset)
 
-                    label = self.getSymbolLabelAtVram(currentVram, label)
+                label = self.getSymbolLabelAtVram(currentVram, label)
 
-                    contVariable = self.context.getSymbol(currentVram, False)
-                    if contVariable is not None:
-                        contVariable.isDefined = True
+                contVariable = self.context.getSymbol(currentVram, False)
+                if contVariable is not None:
+                    contVariable.isDefined = True
 
             value = f"0x{w:08X}"
             possibleReference = self.context.getRelocSymbol(inFileOffset, self.sectionType)

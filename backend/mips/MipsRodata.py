@@ -187,9 +187,3 @@ class Rodata(Section):
         else:
             with open(filepath + ".rodata.s", "w") as f:
                 self.disassembleToFile(f)
-
-
-    def setCommentOffset(self, commentOffset: int):
-        self.commentOffset = commentOffset
-        for sym in self.symbolList:
-            sym.setCommentOffset(self.commentOffset)

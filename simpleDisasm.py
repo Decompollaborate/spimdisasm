@@ -10,6 +10,7 @@ from backend.common.Context import Context
 from backend.common.FileSplitFormat import FileSplitFormat, FileSectionType, FileSplitEntry
 
 from backend.mips.MipsText import Text
+from backend.mips.MipsFunction import Function
 from backend.mips.FilesHandlers import createSectionFromSplitEntry, analyzeSectionFromSplitEntry, writeSection, writeSplitedFunction, writeOtherRodata
 
 
@@ -168,7 +169,8 @@ def disassemblerMain():
         printVerbose("Spliting functions")
         for path, f in processedFiles[FileSectionType.Text]:
             file: Text = f
-            for func in file.functions:
+            for func in file.symbolList:
+                assert isinstance(func, Function)
                 writeSplitedFunction(os.path.join(args.split_functions, file.filename), func, processedFiles[FileSectionType.Rodata], context)
         writeOtherRodata(args.split_functions, processedFiles[FileSectionType.Rodata], context)
 

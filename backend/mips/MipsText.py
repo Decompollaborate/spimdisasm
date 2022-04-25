@@ -17,14 +17,12 @@ class Text(Section):
     def __init__(self, array_of_bytes: bytearray, filename: str, context: Context):
         super().__init__(array_of_bytes, filename, context)
 
-        self.functions: List[Function] = list()
-
         # TODO: do something with this information
         self.fileBoundaries: List[int] = list()
 
     @property
     def nFuncs(self) -> int:
-        return len(self.functions)
+        return len(self.symbolList)
 
     def analyze(self):
         functionEnded = False
@@ -219,7 +217,7 @@ class Text(Section):
             func.parent = self
             func.isRsp = self.isRsp
             func.analyze()
-            self.functions.append(func)
+            self.symbolList.append(func)
             i += 1
 
     def printAnalyzisResults(self):
@@ -239,10 +237,11 @@ class Text(Section):
                 end = self.fileBoundaries[i+1]
 
                 functionsInBoundary = 0
-                for func in self.functions:
-                    funcOffset = func.vram - self.vRamStart
-                    if start <= funcOffset < end:
-                        functionsInBoundary += 1
+                for func in self.symbolList:
+                    if func.vram is not None:
+                        funcOffset = func.vram - self.vRamStart
+                        if start <= funcOffset < end:
+                            functionsInBoundary += 1
                 fileVram = 0
                 if self.vRamStart > -1:
                     fileVram = start + self.vRamStart
@@ -252,10 +251,11 @@ class Text(Section):
             end = self.size + self.inFileOffset
 
             functionsInBoundary = 0
-            for func in self.functions:
-                funcOffset = func.vram - self.vRamStart
-                if start <= funcOffset < end:
-                    functionsInBoundary += 1
+            for func in self.symbolList:
+                if func.vram is not None:
+                    funcOffset = func.vram - self.vRamStart
+                    if start <= funcOffset < end:
+                        functionsInBoundary += 1
             fileVram = 0
             if self.vRamStart > -1:
                 fileVram = start + self.vRamStart
@@ -279,16 +279,20 @@ class Text(Section):
     def countDiffOpcodes(self, other: Text) -> int:
         result = 0
         for i in range(min(self.nFuncs, other.nFuncs)):
-            func = self.functions[i]
-            other_func = other.functions[i]
+            func = self.symbolList[i]
+            other_func = other.symbolList[i]
+            assert isinstance(func, Function)
+            assert isinstance(other_func, Function)
             result += func.countDiffOpcodes(other_func)
         return result
 
     def countSameOpcodeButDifferentArguments(self, other: Text) -> int:
         result = 0
         for i in range(min(self.nFuncs, other.nFuncs)):
-            func = self.functions[i]
-            other_func = other.functions[i]
+            func = self.symbolList[i]
+            other_func = other.symbolList[i]
+            assert isinstance(func, Function)
+            assert isinstance(other_func, Function)
             result += func.countSameOpcodeButDifferentArguments(other_func)
         return result
 
@@ -301,8 +305,10 @@ class Text(Section):
 
         was_updated = False
         for i in range(min(self.nFuncs, other_file.nFuncs)):
-            func = self.functions[i]
-            other_func = other_file.functions[i]
+            func = self.symbolList[i]
+            other_func = other_file.symbolList[i]
+            assert isinstance(func, Function)
+            assert isinstance(other_func, Function)
             was_updated = func.blankOutDifferences(other_func) or was_updated
 
         return was_updated
@@ -312,7 +318,8 @@ class Text(Section):
             return False
 
         was_updated = False
-        for func in self.functions:
+        for func in self.symbolList:
+            assert isinstance(func, Function)
             was_updated = func.removePointers() or was_updated
 
         return was_updated
@@ -321,14 +328,17 @@ class Text(Section):
         was_updated = False
 
         if self.nFuncs > 0:
-            self.functions[-1].removeTrailingNops()
+            func = self.symbolList[-1]
+            assert isinstance(func, Function)
+            func.removeTrailingNops()
             was_updated = True
 
         return was_updated
 
     def updateBytes(self):
         self.words = []
-        for func in self.functions:
+        for func in self.symbolList:
+            assert isinstance(func, Function)
             for instr in func.instructions:
                 self.words.append(instr.instr)
         super().updateBytes()
@@ -344,7 +354,7 @@ class Text(Section):
         f.write(".section .text\n")
         f.write("\n")
         f.write(".balign 16\n")
-        for func in self.functions:
+        for func in self.symbolList:
             f.write("\n")
             f.write(func.disassemble())
 
@@ -356,8 +366,3 @@ class Text(Section):
         else:
             with open(filepath + ".text.s", "w") as f:
                 self.disassembleToFile(f)
-
-    def setCommentOffset(self, commentOffset: int):
-        super().setCommentOffset(commentOffset)
-        for func in self.functions:
-            func.commentOffset = commentOffset
