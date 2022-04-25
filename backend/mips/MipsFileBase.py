@@ -6,6 +6,9 @@ from ..common.Utils import *
 from ..common.GlobalConfig import GlobalConfig
 from ..common.Context import Context
 
+from .Symbols import SymbolBase
+
+
 class FileBase:
     def __init__(self, array_of_bytes: bytearray, filename: str, context: Context):
         self.bytes: bytearray = array_of_bytes
@@ -17,6 +20,8 @@ class FileBase:
         self.inFileOffset: int = 0 # in-file offset
         self.commentOffset: int = 0
         self.vRamStart: int = -1
+
+        self.symbolList: list[SymbolBase] = []
 
         self.pointersOffsets: set[int] = set()
 
@@ -134,6 +139,9 @@ class FileBase:
 
     def setCommentOffset(self, commentOffset: int):
         self.commentOffset = commentOffset
+        for sym in self.symbolList:
+            sym.setCommentOffset(self.commentOffset)
+
 
 def createEmptyFile() -> FileBase:
     return FileBase(bytearray(0), "", Context())

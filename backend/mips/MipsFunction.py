@@ -8,17 +8,13 @@ from ..common.Context import Context, ContextSymbol, ContextOffsetSymbol
 from ..common.FileSectionType import FileSectionType
 
 from .Instructions import InstructionBase, InstructionId, InstructionsNotEmitedByIDO, InstructionNormal, InstructionCoprocessor0, InstructionCoprocessor2
+from .Symbols import SymbolText
 
-
-class Function:
-    def __init__(self, name: str, instructions: List[InstructionBase], context: Context, inFileOffset: int, vram: int = -1):
-        self.name: str = name
+class Function(SymbolText):
+    def __init__(self, name: str, instructions: List[InstructionBase], context: Context, inFileOffset: int, vram: int|None = None):
+        super().__init__(context, name, inFileOffset, vram)
         self.instructions: List[InstructionBase] = list(instructions)
-        self.context: Context = context
-        self.inFileOffset: int = inFileOffset
-        self.commentOffset: int = 0
-        self.vram: int = vram
-        self.index: int = -1
+
         self.pointersRemoved: bool = False
 
         self.localLabels: Dict[int, str] = dict()
@@ -42,8 +38,6 @@ class Function:
         self.referencedConstants: Set[int] = set()
 
         self.hasUnimplementedIntrs: bool = False
-
-        self.parent: Any = None
 
         self.isRsp: bool = False
 
@@ -90,7 +84,7 @@ class Function:
 
         for instructionOffset, luiInstr in self.luiInstructions.items():
             # inFileOffset = self.inFileOffset + instructionOffset
-            currentVram = self.vram + instructionOffset
+            currentVram = self.getVramOffset(instructionOffset)
             if instructionOffset in self.nonPointerLuiSet:
                 continue
             if instructionOffset in self.constantsPerInstruction:
@@ -215,10 +209,11 @@ class Function:
 
     def analyze(self):
         if not GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS and self.hasUnimplementedIntrs:
-            if self.vram > -1:
+            if self.vram is not None:
                 offset = 0
                 for instr in self.instructions:
-                    currentVram = self.vram + offset
+                    # currentVram = self.vram + offset
+                    currentVram = self.getVramOffset(offset)
                     contextSym = self.context.getSymbol(currentVram, False)
                     if contextSym is not None:
                         contextSym.isDefined = True
@@ -246,7 +241,7 @@ class Function:
 
         instructionOffset = 0
         for instr in self.instructions:
-            currentVram = self.vram + instructionOffset
+            currentVram = self.getVramOffset(instructionOffset)
             wasRegisterValuesUpdated = False
             self.isLikelyHandwritten |= instr.uniqueId in InstructionsNotEmitedByIDO
 
@@ -267,7 +262,7 @@ class Function:
                 isABranchInBetweenLastLui = True
                 diff = from2Complement(instr.immediate, 16)
                 branch = instructionOffset + diff*4 + 1*4
-                if self.vram >= 0:
+                if self.vram is not None:
                     self.referencedVRams.add(self.vram + branch)
                     auxLabel = self.context.getGenericLabel(self.vram + branch)
                     if auxLabel is not None:
@@ -279,7 +274,7 @@ class Function:
                     label = ".L" + toHex(self.inFileOffset + branch, 6)[2:]
 
                 self.localLabels[self.inFileOffset + branch] = label
-                if self.vram >= 0:
+                if self.vram is not None:
                     self.context.addBranchLabel(self.vram + branch, label)
                 self.branchInstructions.append(instructionOffset)
 
@@ -530,8 +525,8 @@ class Function:
 
         if self.name != "":
             output += f"glabel {self.name}"
-            if GlobalConfig.FUNCTION_ASM_COUNT:
-                if self.index >= 0:
+            if GlobalConfig.GLABEL_ASM_COUNT:
+                if self.index is not None:
                     output += f" # {self.index}"
             output += "\n"
 
@@ -540,24 +535,20 @@ class Function:
         instructionOffset = 0
         auxOffset = self.inFileOffset
         for instr in self.instructions:
-            offsetHex = toHex(auxOffset + self.commentOffset, 6)[2:]
-            vramHex = ""
-            if self.vram >= 0:
-                vramHex = toHex(self.vram + instructionOffset, 8)[2:]
-            instrHex = toHex(instr.instr, 8)[2:]
-
             immOverride = None
 
             if instr.isBranch():
                 if not GlobalConfig.IGNORE_BRANCHES:
                     diff = from2Complement(instr.immediate, 16)
                     branch = instructionOffset + diff*4 + 1*4
-                    label = self.context.getGenericLabel(self.vram + branch)
-                    if self.vram >= 0 and label is not None:
-                        immOverride = label.name
-                        label.referenceCounter += 1
-                    elif self.inFileOffset + branch in self.localLabels:
-                        immOverride = self.localLabels[self.inFileOffset + branch]
+                    if self.vram is not None:
+                        label = self.context.getGenericLabel(self.vram + branch)
+                        if label is not None:
+                            immOverride = label.name
+                            label.referenceCounter += 1
+                    if immOverride is None:
+                        if self.inFileOffset + branch in self.localLabels:
+                            immOverride = self.localLabels[self.inFileOffset + branch]
 
             elif instr.isIType():
                 if not self.pointersRemoved and instructionOffset in self.pointersPerInstruction:
@@ -613,21 +604,18 @@ class Function:
             if wasLastInstABranch:
                 instr.ljustWidthOpcode += 1
 
-            #comment = " "
-            comment = ""
-            if GlobalConfig.ASM_COMMENT:
-                comment = f"/* {offsetHex} {vramHex} {instrHex} */  "
+            comment = self.generateAsmLineComment(instructionOffset, instr.instr)
             if wasLastInstABranch:
                 comment += " "
-            line = comment + line
+            line = comment + "  " + line
 
             label = ""
             if not GlobalConfig.IGNORE_BRANCHES:
-                currentVram = self.vram + instructionOffset
+                currentVram = self.getVramOffset(instructionOffset)
                 labelAux = self.context.getGenericLabel(currentVram)
                 label_offsetBranch = self.context.getOffsetGenericLabel(auxOffset, FileSectionType.Text)
                 label_offsetSymbol = self.context.getOffsetSymbol(auxOffset, FileSectionType.Text)
-                if self.vram >= 0 and labelAux is not None:
+                if self.vram is not None and labelAux is not None:
                     if instructionOffset == 0:
                         # Skip over this function to avoid duplication
                         pass
@@ -664,39 +652,5 @@ class Function:
         return output
 
     def disassembleAsData(self) -> str:
-        output = ""
-
-        instructionOffset = 0
-        auxOffset = self.inFileOffset
-        for instr in self.instructions:
-            offsetHex = toHex(auxOffset + self.commentOffset, 6)[2:]
-            vramHex = ""
-            label = ""
-            if self.vram >= 0:
-                vramHex = toHex(self.vram + instructionOffset, 8)[2:]
-                auxLabel = self.context.getGenericLabel(self.vram + instructionOffset) or self.context.getGenericSymbol(self.vram + instructionOffset, tryPlusOffset=False)
-                if auxLabel is not None:
-                    label = f"\nglabel {auxLabel.name}\n"
-                    # TODO: required?
-                    auxLabel.referenceCounter += 1
-
-                contextVar = self.context.getSymbol(self.vram + instructionOffset, False)
-                if contextVar is not None:
-                    contextVar.isDefined = True
-
-            instrHex = toHex(instr.instr, 8)[2:]
-
-            line = f".word  0x{instrHex}"
-
-            #comment = " "
-            comment = ""
-            if GlobalConfig.ASM_COMMENT:
-                comment = f"/* {offsetHex} {vramHex} {instrHex} */  "
-            line = comment + line
-
-            output += label + line + "\n"
-
-            instructionOffset += 4
-            auxOffset += 4
-
-        return output
+        self.words = [instr.instr for instr in self.instructions]
+        return super().disassembleAsData()
