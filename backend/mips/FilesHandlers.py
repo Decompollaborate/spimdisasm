@@ -32,7 +32,7 @@ def createSectionFromSplitEntry(splitEntry: FileSplitEntry, array_of_bytes: byte
         array_of_bytes = array_of_bytes[offsetStart:]
 
     vram = None
-    if splitEntry.vram >= 0:
+    if splitEntry.vram is not None:
         printVerbose(f"Using VRAM {splitEntry.vram:08X}")
         vram = splitEntry.vram
 
@@ -43,6 +43,7 @@ def createSectionFromSplitEntry(splitEntry: FileSplitEntry, array_of_bytes: byte
     elif splitEntry.section == FileSectionType.Rodata:
         f = Rodata(context, vram, tail, array_of_bytes)
     elif splitEntry.section == FileSectionType.Bss:
+        assert isinstance(splitEntry.vram, int)
         f = Bss(context, splitEntry.vram, splitEntry.vram + offsetEnd - offsetStart, tail)
     else:
         eprint("Error! Section not set!")
