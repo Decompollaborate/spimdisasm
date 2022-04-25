@@ -8,9 +8,9 @@ from .FileSectionType import FileSectionType
 
 
 class FileSplitEntry:
-    def __init__(self, offset: int, vram: int, fileName: str, section: FileSectionType, nextOffset: int, isHandwritten: bool, isRsp: bool):
+    def __init__(self, offset: int, vram: int|None, fileName: str, section: FileSectionType, nextOffset: int, isHandwritten: bool, isRsp: bool):
         self.offset: int = offset
-        self.vram: int = vram
+        self.vram: int|None = vram
         self.fileName: str = fileName
         self.section: FileSectionType = section
         self.nextOffset: int = nextOffset
