@@ -11,8 +11,8 @@ from .Instructions import InstructionBase, InstructionId, InstructionsNotEmitedB
 from .Symbols import SymbolText
 
 class Function(SymbolText):
-    def __init__(self, name: str, instructions: List[InstructionBase], context: Context, inFileOffset: int, vram: int|None = None):
-        super().__init__(context, name, inFileOffset, vram)
+    def __init__(self, context: Context, inFileOffset: int, vram: int|None, name: str, instructions: List[InstructionBase]):
+        super().__init__(context, inFileOffset, vram, name)
         self.instructions: List[InstructionBase] = list(instructions)
 
         self.pointersRemoved: bool = False
@@ -514,7 +514,7 @@ class Function(SymbolText):
         return was_updated
 
     def disassemble(self) -> str:
-        output = ""
+        output = "\n"
 
         if not GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS:
             if self.hasUnimplementedIntrs:

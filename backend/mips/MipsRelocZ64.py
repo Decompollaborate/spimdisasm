@@ -42,8 +42,10 @@ class RelocEntry:
 
 
 class RelocZ64(Section):
-    def __init__(self, array_of_bytes: bytearray, filename: str, context: Context):
-        super().__init__(array_of_bytes, filename, context)
+    def __init__(self, context: Context, vram: int|None, filename: str, array_of_bytes: bytearray):
+        super().__init__(context, vram, filename, array_of_bytes)
+
+        self.sectionType = FileSectionType.Reloc
 
         self.seekup = self.words[-1]
 
@@ -88,18 +90,18 @@ class RelocZ64(Section):
 
 
     def analyze(self):
-        if self.vRamStart > -1:
+        if self.vram is not None:
             currentVram = self.getVramOffset(0)
             if self.context.getSymbol(currentVram, False) is None:
-                self.context.addSymbol(currentVram, f"{self.filename}_OverlayInfo")
+                self.context.addSymbol(currentVram, f"{self.name}_OverlayInfo")
 
             currentVram += 0x14
             if self.context.getSymbol(currentVram, False) is None:
-                self.context.addSymbol(currentVram, f"{self.filename}_OverlayRelocations")
+                self.context.addSymbol(currentVram, f"{self.name}_OverlayRelocations")
 
             currentVram = self.getVramOffset(self.size - 4)
             if self.context.getSymbol(currentVram, False) is None:
-                self.context.addSymbol(currentVram, f"{self.filename}_OverlayInfoOffset")
+                self.context.addSymbol(currentVram, f"{self.name}_OverlayInfoOffset")
 
 
     def compareToFile(self, other_file: FileBase):
@@ -129,13 +131,13 @@ class RelocZ64(Section):
 
         offset = 0
 
-        result += self.getSymbolLabelAtVram(self.getVramOffset(offset), f"\nglabel {self.filename}_OverlayInfo\n")
+        result += self.getSymbolLabelAtVram(self.getVramOffset(offset), f"\nglabel {self.name}_OverlayInfo\n")
 
         for fileSect in FileSections_ListBasic:
             sectName = fileSect.toCapitalizedStr()
 
             comment = self.generateAsmLineComment(offset, self.sectionSizes[fileSect])
-            result += f"{comment} .word _{self.filename}Segment{sectName}Size\n"
+            result += f"{comment} .word _{self.name}Segment{sectName}Size\n"
 
             offset += 4
 
@@ -146,7 +148,7 @@ class RelocZ64(Section):
 
         offset += 4
 
-        result += self.getSymbolLabelAtVram(self.getVramOffset(offset), f"\nglabel {self.filename}_OverlayRelocations\n")
+        result += self.getSymbolLabelAtVram(self.getVramOffset(offset), f"\nglabel {self.name}_OverlayRelocations\n")
 
         for r in self.entries:
             relocHex = f"{r.reloc:08X}"
@@ -165,29 +167,16 @@ class RelocZ64(Section):
 
             offset += 4
 
-        result += self.getSymbolLabelAtVram(self.getVramOffset(offset), f"\nglabel {self.filename}_OverlayInfoOffset\n")
+        result += self.getSymbolLabelAtVram(self.getVramOffset(offset), f"\nglabel {self.name}_OverlayInfoOffset\n")
 
         comment = self.generateAsmLineComment(offset, self.seekup)
         result += f"{comment} .word 0x{self.seekup:02X}\n"
 
         return result
 
-    def disassembleToFile(self, f: TextIO):
-        f.write(".include \"macro.inc\"\n")
-        f.write("\n")
-        f.write("# assembler directives\n")
-        f.write(".set noat      # allow manual use of $at\n")
-        f.write(".set noreorder # don't insert nops after branches\n")
-        f.write(".set gp=64     # allow use of 64-bit general purpose registers\n")
-        f.write("\n")
-        f.write(".section .ovl\n")
-        f.write("\n")
-        f.write(".balign 16\n")
-
-        f.write(self.disassemble())
 
     def saveToFile(self, filepath: str):
-        super().saveToFile(filepath + ".reloc")
+        #super().saveToFile(filepath + ".reloc")
 
         if self.size == 0:
             return

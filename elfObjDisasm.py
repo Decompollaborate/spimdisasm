@@ -66,11 +66,11 @@ def elfObjDisasmMain():
             outputFilePath /= inputPath.stem
 
         if sectionType == FileSectionType.Text:
-            processedFiles[sectionType] = (outputFilePath, MipsText.Text(sectionBytes, inputPath.stem, context))
+            processedFiles[sectionType] = (outputFilePath, MipsText.Text(context, None, inputPath.stem, sectionBytes))
         if sectionType == FileSectionType.Data:
-            processedFiles[sectionType] = (outputFilePath, MipsData.Data(sectionBytes, inputPath.stem, context))
+            processedFiles[sectionType] = (outputFilePath, MipsData.Data(context, None, inputPath.stem, sectionBytes))
         if sectionType == FileSectionType.Rodata:
-            processedFiles[sectionType] = (outputFilePath, MipsRodata.Rodata(sectionBytes, inputPath.stem, context))
+            processedFiles[sectionType] = (outputFilePath, MipsRodata.Rodata(context, None, inputPath.stem, sectionBytes))
 
     if elfFile.nobits is not None:
         outputPath = dataOutput
@@ -79,7 +79,7 @@ def elfObjDisasmMain():
         if outputPath != "-":
             outputFilePath /= inputPath.stem
 
-        processedFiles[FileSectionType.Bss] = (outputFilePath, MipsBss.Bss(0, elfFile.nobits, inputPath.stem, context))
+        processedFiles[FileSectionType.Bss] = (outputFilePath, MipsBss.Bss(context, 0, elfFile.nobits, inputPath.stem))
 
     if elfFile.symtab is not None and elfFile.strtab is not None:
         # Inject symbols from the reloc table referenced in each section

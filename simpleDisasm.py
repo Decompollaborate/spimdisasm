@@ -171,7 +171,7 @@ def disassemblerMain():
             file: Text = f
             for func in file.symbolList:
                 assert isinstance(func, Function)
-                writeSplitedFunction(os.path.join(args.split_functions, file.filename), func, processedFiles[FileSectionType.Rodata], context)
+                writeSplitedFunction(os.path.join(args.split_functions, file.name), func, processedFiles[FileSectionType.Rodata], context)
         writeOtherRodata(args.split_functions, processedFiles[FileSectionType.Rodata], context)
 
     if args.save_context is not None:

@@ -6,20 +6,14 @@ from ..common.Utils import *
 from ..common.GlobalConfig import GlobalConfig
 from ..common.Context import Context
 
+from .MipsElementBase import ElementBase
 from .Symbols import SymbolBase
 
 
-class FileBase:
-    def __init__(self, array_of_bytes: bytearray, filename: str, context: Context):
-        self.bytes: bytearray = array_of_bytes
-        self.words: List[int] = bytesToBEWords(self.bytes)
-        self.filename: str = filename
-        self.context: Context = context
-
-        self.parent: FileBase|None = None
-        self.inFileOffset: int = 0 # in-file offset
-        self.commentOffset: int = 0
-        self.vRamStart: int = -1
+class FileBase(ElementBase):
+    def __init__(self, context: Context, vram: int|None, filename: str, array_of_bytes: bytearray):
+        super().__init__(context, 0, vram, filename, bytesToBEWords(array_of_bytes))
+        self.bytes: bytearray = array_of_bytes # TODO: Necessary?
 
         self.symbolList: list[SymbolBase] = []
 
@@ -31,29 +25,17 @@ class FileBase:
     @property
     def size(self) -> int:
         return len(self.bytes)
-    @property
-    def sizew(self) -> int:
-        return len(self.words)
 
-    def setVRamStart(self, vRamStart: int):
-        self.vRamStart = vRamStart
+    def setCommentOffset(self, commentOffset: int):
+        self.commentOffset = commentOffset
+        for sym in self.symbolList:
+            sym.setCommentOffset(self.commentOffset)
 
     def getVramOffset(self, localOffset: int) -> int:
-        if self.vRamStart < 0:
+        if self.vram is None:
             return self.inFileOffset + localOffset
-        return self.vRamStart + self.inFileOffset + localOffset
-
-    def getSymbolLabelAtVram(self, vram: int, fallback="") -> str:
-        # if we have vram available, try to get the symbol name from the Context
-        if self.vRamStart > -1:
-            sym = self.context.getAnySymbol(vram)
-            if sym is not None:
-                label = ""
-                if sym.isStatic:
-                    label += "\n/* static variable */"
-                label += "\nglabel " + sym.getSymbolPlusOffset(vram) + "\n"
-                return label
-        return fallback
+        # return self.vram + localOffset
+        return self.vram + self.inFileOffset + localOffset
 
     def generateAsmLineComment(self, localOffset: int, wordValue: int|None = None) -> str:
         if not GlobalConfig.ASM_COMMENT:
@@ -61,7 +43,7 @@ class FileBase:
         offsetHex = f"{localOffset + self.inFileOffset + self.commentOffset:06X}"
 
         vramHex = ""
-        if self.vRamStart > -1:
+        if self.vram is not None:
             currentVram = self.getVramOffset(localOffset)
             vramHex = f"{currentVram:08X} "
 
@@ -71,11 +53,24 @@ class FileBase:
 
         return f"/* {offsetHex} {vramHex}{wordValueHex}*/"
 
+    def getAsmPrelude(self) -> str:
+        output = ""
+
+        output += ".include \"macro.inc\"\n"
+        output += "\n"
+        output += "# assembler directives\n"
+        output += ".set noat      # allow manual use of $at\n"
+        output += ".set noreorder # don't insert nops after branches\n"
+        output += ".set gp=64     # allow use of 64-bit general purpose registers\n"
+        output += "\n"
+        output += f".section {self.sectionType.toSectionName()}\n"
+        output += "\n"
+        output += ".balign 16\n"
+
+        return output
+
     def getHash(self) -> str:
         return getStrHash(self.bytes)
-
-    def analyze(self):
-        pass
 
     def printAnalyzisResults(self):
         pass
@@ -130,18 +125,31 @@ class FileBase:
         # Truncate extra data
         self.bytes = self.bytes[:self.sizew*4]
 
-    def saveToFile(self, filepath: str):
-        if self.size == 0 or not GlobalConfig.WRITE_BINARY:
-            return
-        if filepath == "-":
-            return
-        writeBytearrayToFile(filepath, self.bytes)
 
-    def setCommentOffset(self, commentOffset: int):
-        self.commentOffset = commentOffset
+    def disassemble(self) -> str:
+        output = ""
         for sym in self.symbolList:
-            sym.setCommentOffset(self.commentOffset)
+            output += sym.disassemble()
+        return output
+
+    def disassembleToFile(self, f: TextIO):
+        f.write(self.getAsmPrelude())
+        f.write(self.disassemble())
+
+
+    def saveToFile(self, filepath: str):
+        if len(self.symbolList) == 0:
+            return
+
+        if filepath == "-":
+            self.disassembleToFile(sys.stdout)
+        else:
+            if GlobalConfig.WRITE_BINARY:
+                if self.size > 0:
+                    writeBytearrayToFile(filepath + self.sectionType.toStr(), self.bytes)
+            with open(filepath + self.sectionType.toStr() + ".s", "w") as f:
+                self.disassembleToFile(f)
 
 
 def createEmptyFile() -> FileBase:
-    return FileBase(bytearray(0), "", Context())
+    return FileBase(Context(), None, "", bytearray())

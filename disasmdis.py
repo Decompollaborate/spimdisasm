@@ -42,7 +42,7 @@ def disasmdisMain():
         for instr in instructionList:
             print(instr.disassemble())
     else:
-        func = Function("", instructionList, context, 0)
+        func = Function(context, 0, None, "", instructionList)
         func.analyze()
         print(func.disassemble(), end="")
 

@@ -11,10 +11,10 @@ from .MipsSymbolBase import SymbolBase
 
 
 class SymbolBss(SymbolBase):
-    def __init__(self, context: Context, name: str, inFileOffset: int, vram: int|None, size: int):
-        super().__init__(context, name, inFileOffset, vram)
+    def __init__(self, context: Context, inFileOffset: int, vram: int|None, name: str, spaceSize: int):
+        super().__init__(context, inFileOffset, vram, name)
 
-        self.size: int = size
+        self.spaceSize: int = spaceSize
 
         self.sectionType = FileSectionType.Bss
 
@@ -38,7 +38,7 @@ class SymbolBss(SymbolBase):
                 contVariable.isDefined = True
 
         comment = self.generateAsmLineComment(localOffset)
-        line = f"{label}{comment}  .space  0x{self.size:02X}"
+        line = f"{label}{comment}  .space  0x{self.spaceSize:02X}"
         output += line + "\n"
         localOffset += 4
         inFileOffset += 4
