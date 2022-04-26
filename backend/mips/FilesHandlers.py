@@ -154,8 +154,6 @@ def writeSplittedFunctionToFile(f: TextIO, func: Function, rodataFileList: List[
         for x in rdataList:
             f.write(x)
 
-        f.write("\n.text\n")
-
     if len(lateRodataList) > 0:
         # Write the late_rodata
         f.write(".late_rodata\n")
@@ -168,7 +166,7 @@ def writeSplittedFunctionToFile(f: TextIO, func: Function, rodataFileList: List[
         for x in lateRodataList:
             f.write(x)
 
-        f.write("\n.text\n")
+    f.write("\n.text\n")
 
     # Write the function
     f.write(func.disassemble())
