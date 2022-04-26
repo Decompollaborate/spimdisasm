@@ -11,6 +11,11 @@ from ..MipsElementBase import ElementBase
 
 
 class SymbolBase(ElementBase):
+    def __init__(self, context: Context, inFileOffset: int, vram: int|None, name: str, words: list[int]=[]):
+        super().__init__(context, inFileOffset, vram, name, words)
+
+        self.endOfLineComment = ""
+
     def generateAsmLineComment(self, localOffset: int, wordValue: int|None = None) -> str:
         if not GlobalConfig.ASM_COMMENT:
             return ""
@@ -60,7 +65,7 @@ class SymbolBase(ElementBase):
 
             comment = self.generateAsmLineComment(localOffset)
             line = f"{label}{comment} .word {value}"
-            output += line + "\n"
+            output += line + self.endOfLineComment + "\n"
             i += 1
             localOffset += 4
             inFileOffset += 4

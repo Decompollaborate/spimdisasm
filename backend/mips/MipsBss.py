@@ -17,8 +17,6 @@ class Bss(Section):
 
         self.sectionType = FileSectionType.Bss
 
-        self.symbolList: list[SymbolBss] = []
-
         self.bssVramStart: int = bssVramStart
         self.bssVramEnd: int = bssVramEnd
 
