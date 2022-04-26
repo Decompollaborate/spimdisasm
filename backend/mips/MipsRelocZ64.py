@@ -12,9 +12,9 @@ from ..common.GlobalConfig import GlobalConfig
 from ..common.Context import Context
 from ..common.FileSectionType import FileSectionType, FileSections_ListBasic
 
-from .MipsFileBase import FileBase
 from .MipsSection import Section
 from .MipsRelocTypes import RelocTypes
+from .Symbols import SymbolData
 
 
 class RelocEntry:
@@ -103,86 +103,45 @@ class RelocZ64(Section):
             if self.context.getSymbol(currentVram, False) is None:
                 self.context.addSymbol(currentVram, f"{self.name}_OverlayInfoOffset")
 
-
-    def compareToFile(self, other_file: FileBase):
-        result = super().compareToFile(other_file)
-        # TODO
-        return result
-
-    def blankOutDifferences(self, other_file: FileBase) -> bool:
-        if not GlobalConfig.REMOVE_POINTERS:
-            return False
-
-        # TODO ?
-        # super().blankOutDifferences(File)
-        return False
-
-    def removePointers(self) -> bool:
-        if not GlobalConfig.REMOVE_POINTERS:
-            return False
-
-        # TODO ?
-        # super().removePointers()
-        return False
-
-
-    def disassemble(self) -> str:
-        result = ""
-
-        offset = 0
-
-        result += self.getSymbolLabelAtVram(self.getVramOffset(offset), f"\nglabel {self.name}_OverlayInfo\n")
-
+        localOffset = 0
         for fileSect in FileSections_ListBasic:
             sectName = fileSect.toCapitalizedStr()
 
-            comment = self.generateAsmLineComment(offset, self.sectionSizes[fileSect])
-            result += f"{comment} .word _{self.name}Segment{sectName}Size\n"
+            currentVram = self.getVramOffset(localOffset)
+            sym = SymbolData(self.context, localOffset + self.inFileOffset, currentVram, "", [self.sectionSizes[fileSect]])
+            sym.setCommentOffset(self.commentOffset)
+            sym.endOfLineComment = f" # _{self.name}Segment{sectName}Size"
+            sym.analyze()
+            self.symbolList.append(sym)
+            localOffset += 4
 
-            offset += 4
-
-        result += f"\n"
-
-        comment = self.generateAsmLineComment(offset, self.relocCount)
-        result += f"{comment} .word {self.relocCount} # reloc_count\n"
-
-        offset += 4
-
-        result += self.getSymbolLabelAtVram(self.getVramOffset(offset), f"\nglabel {self.name}_OverlayRelocations\n")
+        currentVram = self.getVramOffset(localOffset)
+        sym = SymbolData(self.context, localOffset + self.inFileOffset, currentVram, "", [self.relocCount])
+        sym.setCommentOffset(self.commentOffset)
+        sym.endOfLineComment = f" # reloc_count"
+        sym.analyze()
+        self.symbolList.append(sym)
+        localOffset += 4
 
         for r in self.entries:
-            relocHex = f"{r.reloc:08X}"
+            currentVram = self.getVramOffset(localOffset)
+            sym = SymbolData(self.context, localOffset + self.inFileOffset, currentVram, "", [r.reloc])
+            sym.setCommentOffset(self.commentOffset)
+            sym.endOfLineComment = f" # {str(r)}"
+            sym.analyze()
+            self.symbolList.append(sym)
+            localOffset += 4
 
-            comment = self.generateAsmLineComment(offset, r.reloc)
-            result += f"{comment} .word 0x{relocHex} # {str(r)}\n"
-
-            offset += 4
-
-        result += "\n"
         for pad in self.tail:
-            padcHex = f"{pad:08X}"
+            currentVram = self.getVramOffset(localOffset)
+            sym = SymbolData(self.context, localOffset + self.inFileOffset, currentVram, "", [pad])
+            sym.setCommentOffset(self.commentOffset)
+            sym.analyze()
+            self.symbolList.append(sym)
+            localOffset += 4
 
-            comment = self.generateAsmLineComment(offset, pad)
-            result += f"{comment} .word 0x{padcHex}\n"
-
-            offset += 4
-
-        result += self.getSymbolLabelAtVram(self.getVramOffset(offset), f"\nglabel {self.name}_OverlayInfoOffset\n")
-
-        comment = self.generateAsmLineComment(offset, self.seekup)
-        result += f"{comment} .word 0x{self.seekup:02X}\n"
-
-        return result
-
-
-    def saveToFile(self, filepath: str):
-        #super().saveToFile(filepath + ".reloc")
-
-        if self.size == 0:
-            return
-
-        if filepath == "-":
-            self.disassembleToFile(sys.stdout)
-        else:
-            with open(filepath + ".reloc.s", "w") as f:
-                self.disassembleToFile(f)
+        currentVram = self.getVramOffset(localOffset)
+        sym = SymbolData(self.context, localOffset + self.inFileOffset, currentVram, "", [self.seekup])
+        sym.setCommentOffset(self.commentOffset)
+        sym.analyze()
+        self.symbolList.append(sym)

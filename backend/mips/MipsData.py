@@ -17,8 +17,6 @@ class Data(Section):
 
         self.sectionType = FileSectionType.Data
 
-        self.symbolList: list[SymbolData] = []
-
     def analyze(self):
         symbolList: list[tuple[int, int, str]] = []
 

@@ -17,8 +17,6 @@ class Rodata(Section):
 
         self.sectionType = FileSectionType.Rodata
 
-        self.symbolList: list[SymbolRodata] = []
-
         # addresses of symbols in this rodata section
         self.symbolsVRams: Set[int] = set()
 
