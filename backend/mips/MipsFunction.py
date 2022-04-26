@@ -622,7 +622,10 @@ class Function(SymbolText):
                     elif currentVram in self.context.jumpTablesLabels:
                         label = "glabel " + labelAux.name + "\n"
                     else:
-                        label = labelAux.name + ":\n"
+                        if labelAux.name.startswith("."):
+                            label = labelAux.name + ":\n"
+                        else:
+                            label = "glabel " + labelAux.name + "\n"
                 elif label_offsetBranch is not None:
                     if instructionOffset == 0:
                         # Skip over this function to avoid duplication
