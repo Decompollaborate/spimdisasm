@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+# SPDX-FileCopyrightText: © 2022 Anghelo Carvajal <angheloalf95@gmail.com>
+# SPDX-License-Identifier: MIT
+
 # Relocation format used by overlays of Zelda64, Yoshi Story and Doubutsu no Mori (Animal Forest)
 
 from __future__ import annotations
