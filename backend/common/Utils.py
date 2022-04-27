@@ -48,7 +48,7 @@ def removeExtraWhitespace(line: str) -> str:
 
 def bytesToBEWords(array_of_bytes: bytearray) -> List[int]:
     words = len(array_of_bytes)//4
-    endian_format = f">{words}I" if GlobalConfig.BIG_ENDIAN else f">{words}I"
+    endian_format = f">{words}I" if GlobalConfig.BIG_ENDIAN else f"<{words}I"
     return list(struct.unpack_from(endian_format, array_of_bytes, 0))
 
 def beWordsToBytes(words_list: List[int], buffer: bytearray) -> bytearray:
