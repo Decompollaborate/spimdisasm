@@ -12,6 +12,8 @@ import subprocess
 import sys
 import shutil
 
+from backend.common.GlobalConfig import GlobalConfig
+
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
@@ -46,8 +48,8 @@ def removeExtraWhitespace(line: str) -> str:
 
 def bytesToBEWords(array_of_bytes: bytearray) -> List[int]:
     words = len(array_of_bytes)//4
-    big_endian_format = f">{words}I"
-    return list(struct.unpack_from(big_endian_format, array_of_bytes, 0))
+    endian_format = f">{words}I" if GlobalConfig.BIG_ENDIAN else f">{words}I"
+    return list(struct.unpack_from(endian_format, array_of_bytes, 0))
 
 def beWordsToBytes(words_list: List[int], buffer: bytearray) -> bytearray:
     words = len(words_list)

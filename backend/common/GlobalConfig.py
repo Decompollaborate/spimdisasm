@@ -11,6 +11,7 @@ class GlobalConfig:
     IGNORE_WORD_LIST: set = set() # Ignores words that starts in 0xXX
 
     WRITE_BINARY: bool = False # write to files splitted binaries
+    BIG_ENDIAN: bool = True
 
     ASM_COMMENT: bool = True
     GLABEL_ASM_COUNT: bool = True
