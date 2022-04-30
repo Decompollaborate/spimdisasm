@@ -66,7 +66,7 @@ class Text(Section):
                         if isFake:
                             self.context.addFakeFunction(targetVram, targetFuncName)
                         else:
-                            self.context.addFunction(None, targetVram, targetFuncName)
+                            self.context.addFunction(targetVram, targetFuncName)
 
                 newFunctions.clear()
 
@@ -203,7 +203,7 @@ class Text(Section):
                     funcName = "func_" + toHex(vram, 6)[2:]
 
                 if GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS or not hasUnimplementedIntrs:
-                    self.context.addFunction(self.name, vram, funcName)
+                    self.context.addFunction(vram, funcName)
                     funcSymbol = self.context.getFunction(vram)
                     if funcSymbol is not None:
                         funcSymbol.isDefined = True
