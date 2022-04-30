@@ -83,12 +83,12 @@ def writeSection(path: str, fileSection: Section):
     return path
 
 
-def getRdataAndLateRodataForFunction(func: Function, rodataFileList: List[Tuple[str, Rodata]], context: Context):
+def getRdataAndLateRodataForFunction(func: Function, rodataFileList: List[Rodata], context: Context):
     rdataList = []
     lateRodataList = []
     lateRodataLen = 0
     firstRodata = None
-    for _, rodataSection in rodataFileList:
+    for rodataSection in rodataFileList:
         if len(rdataList) > 0 or len(lateRodataList) > 0:
             # We already have the rodata for this function. Stop searching
             break
@@ -98,13 +98,13 @@ def getRdataAndLateRodataForFunction(func: Function, rodataFileList: List[Tuple[
         if len(intersection) == 0:
             continue
 
-        sortedSymbolVRams = sorted(rodataSection.symbolsVRams)
+        for rodataSym in rodataSection.symbolList:
+            assert rodataSym.vram is not None
 
-        for vram in sorted(intersection):
-            nextVramIndex = sortedSymbolVRams.index(vram) + 1
-            nextVram = float("inf") if nextVramIndex >= len(sortedSymbolVRams) else sortedSymbolVRams[nextVramIndex]
+            if rodataSym.vram not in intersection:
+                continue
 
-            rodataSymbol = context.getGenericSymbol(vram, False)
+            rodataSymbol = context.getGenericSymbol(rodataSym.vram, False)
             assert rodataSymbol is not None
             # We only care for rodata that's used once
             if rodataSymbol.referenceCounter != 1:
@@ -113,7 +113,7 @@ def getRdataAndLateRodataForFunction(func: Function, rodataFileList: List[Tuple[
             isConstVariable = True
             if rodataSymbol.type in ("f32", "f64", "Vec3f"):
                 isConstVariable = False
-            elif vram in context.jumpTables:
+            elif rodataSym.vram in context.jumpTables:
                 isConstVariable = False
             elif type == "char" or (GlobalConfig.STRING_GUESSER and rodataSymbol.isMaybeString):
                 isConstVariable = False
@@ -122,23 +122,15 @@ def getRdataAndLateRodataForFunction(func: Function, rodataFileList: List[Tuple[
             if isConstVariable:
                 break
 
-            for rodataSym in rodataSection.symbolList:
-                # TODO: this can be improved a bit
-                assert rodataSym.vram is not None
-                if rodataSym.vram < vram:
-                    continue
-                if rodataSym.vram >= nextVram:
-                    break
+            if firstRodata is None:
+                firstRodata = rodataSection.vram
 
-                if firstRodata is None:
-                    firstRodata = rodataSection.vram
-
-                dis = rodataSym.disassemble()
-                if rodataSymbol.isLateRodata:
-                    lateRodataList.append(dis)
-                    lateRodataLen += rodataSym.sizew
-                else:
-                    rdataList.append(dis)
+            dis = rodataSym.disassemble()
+            if rodataSymbol.isLateRodata:
+                lateRodataList.append(dis)
+                lateRodataLen += rodataSym.sizew
+            else:
+                rdataList.append(dis)
 
 
             if rodataSymbol.isLateRodata:
@@ -148,7 +140,7 @@ def getRdataAndLateRodataForFunction(func: Function, rodataFileList: List[Tuple[
 
     return rdataList, lateRodataList, lateRodataLen, firstRodata
 
-def writeSplittedFunctionToFile(f: TextIO, func: Function, rodataFileList: List[Tuple[str, Rodata]], context: Context):
+def writeSplittedFunctionToFile(f: TextIO, func: Function, rodataFileList: List[Rodata], context: Context):
     rdataList, lateRodataList, lateRodataLen, firstRodata = getRdataAndLateRodataForFunction(func, rodataFileList, context)
 
     if len(rdataList) > 0:
@@ -169,12 +161,14 @@ def writeSplittedFunctionToFile(f: TextIO, func: Function, rodataFileList: List[
         for x in lateRodataList:
             f.write(x)
 
-    f.write("\n.text\n")
+    if len(rdataList) > 0 or len(lateRodataList) > 0:
+        f.write("\n")
+        f.write(".text\n")
 
     # Write the function
     f.write(func.disassemble())
 
-def writeSplitedFunction(path: str, func: Function, rodataFileList: List[Tuple[str, Rodata]], context: Context):
+def writeSplitedFunction(path: str, func: Function, rodataFileList: List[Rodata], context: Context):
     os.makedirs(path, exist_ok=True)
     with open(os.path.join(path, func.name) + ".s", "w") as f:
         writeSplittedFunctionToFile(f, func, rodataFileList, context)
@@ -215,17 +209,17 @@ def getOtherRodata(vram: int, nextVram: int, rodataSection: Rodata, context: Con
 
     return rodataSymbol.name, rdataList
 
-def writeOtherRodata(path: str, rodataFileList: List[Tuple[str, Rodata]], context: Context):
-    for _, rodata in rodataFileList:
-        rodataPath = os.path.join(path, rodata.name)
+def writeOtherRodata(path: str, rodataFileList: List[Rodata], context: Context):
+    for rodataSection in rodataFileList:
+        rodataPath = os.path.join(path, rodataSection.name)
         os.makedirs(rodataPath, exist_ok=True)
-        sortedSymbolVRams = sorted(rodata.symbolsVRams)
+        sortedSymbolVRams = sorted(rodataSection.symbolsVRams)
 
         for vram in sortedSymbolVRams:
             nextVramIndex = sortedSymbolVRams.index(vram) + 1
             nextVram = 0xFFFFFFFF if nextVramIndex >= len(sortedSymbolVRams) else sortedSymbolVRams[nextVramIndex]
 
-            rodataSymbolName, rdataList = getOtherRodata(vram, nextVram, rodata, context)
+            rodataSymbolName, rdataList = getOtherRodata(vram, nextVram, rodataSection, context)
             if rodataSymbolName is None:
                 continue
 
