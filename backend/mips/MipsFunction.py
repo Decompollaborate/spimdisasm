@@ -517,7 +517,7 @@ class Function(SymbolText):
         return was_updated
 
     def disassemble(self) -> str:
-        output = "\n"
+        output = ""
 
         if not GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS:
             if self.hasUnimplementedIntrs:

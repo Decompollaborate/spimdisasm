@@ -94,9 +94,7 @@ class SymbolRodata(SymbolBase):
         # try to get the symbol name from the offset of the file (possibly from a .o elf file)
         possibleSymbolName = self.context.getOffsetGenericSymbol(inFileOffset, FileSectionType.Rodata)
         if possibleSymbolName is not None:
-            if possibleSymbolName.isStatic:
-                label = "\n/* static variable */"
-            label += f"\nglabel {possibleSymbolName.name}\n"
+            label = possibleSymbolName.getSymbolLabel() + "\n"
 
         possibleReference = self.context.getRelocSymbol(inFileOffset, FileSectionType.Rodata)
         if possibleReference is not None:
@@ -111,8 +109,6 @@ class SymbolRodata(SymbolBase):
 
         if self.vram is not None:
             currentVram = self.getVramOffset(localOffset)
-
-            label += self.getSymbolLabelAtVram(currentVram, label)
 
             contextSym = self.context.getSymbol(currentVram, True, False)
             if contextSym is not None:
@@ -150,11 +146,7 @@ class SymbolRodata(SymbolBase):
 
 
     def disassembleAsRodata(self) -> str:
-        if not self.words:
-            return ""
-
-        # output = f"glabel {self.name}\n"
-        output = ""
+        output = self.getLabel()
 
         i = 0
         while i < len(self.words):
@@ -162,7 +154,6 @@ class SymbolRodata(SymbolBase):
             output += data + "\n"
 
             i += skip
-
             i += 1
         return output
 

@@ -131,12 +131,15 @@ class FileBase(ElementBase):
 
     def disassemble(self) -> str:
         output = ""
-        for sym in self.symbolList:
+        for i, sym in enumerate(self.symbolList):
             output += sym.disassemble()
+            if i + 1 < len(self.symbolList):
+                output += "\n"
         return output
 
     def disassembleToFile(self, f: TextIO):
         f.write(self.getAsmPrelude())
+        f.write("\n")
         f.write(self.disassemble())
 
 
