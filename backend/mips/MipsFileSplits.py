@@ -32,11 +32,6 @@ class FileSplits(FileBase):
             FileSectionType.Reloc: dict(),
         }
 
-        for subfileVram, subfileData in context.files.items():
-            if filename == subfileData.name:
-                self.vram = subfileVram
-                break
-
         self.splitsDataList: List[FileSplitEntry] = []
 
         if relocSection is not None:
