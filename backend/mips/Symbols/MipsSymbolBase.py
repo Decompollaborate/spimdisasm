@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from ...common.Utils import *
 from ...common.GlobalConfig import GlobalConfig
-from ...common.Context import Context, ContextSymbol, ContextOffsetSymbol
+from ...common.Context import Context, ContextSymbolBase, ContextSymbol, ContextOffsetSymbol
 from ...common.FileSectionType import FileSectionType
 
 from ..MipsElementBase import ElementBase
@@ -38,6 +38,12 @@ class SymbolBase(ElementBase):
             wordValueHex = f"{wordValue:08X} "
 
         return f"/* {offsetHex} {vramHex}{wordValueHex}*/"
+
+    def getSymbolAtVramOrOffset(self, localOffset: int) -> ContextSymbolBase | None:
+        if self.vram is not None:
+            currentVram = self.getVramOffset(localOffset)
+            return self.context.getAnySymbol(currentVram)
+        return self.context.getOffsetSymbol(self.inFileOffset + localOffset, self.sectionType)
 
     def getLabel(self) -> str:
         if self.contextSym is not None:
@@ -85,18 +91,27 @@ class SymbolBase(ElementBase):
         localOffset = 0
 
         for w in self.words:
+            label = ""
+            if localOffset != 0:
+                # Possible symbols in the middle
+                contextSym = self.getSymbolAtVramOrOffset(localOffset)
+                if contextSym is not None:
+                    label = "\n" + contextSym.getSymbolLabel() + "\n"
+
             value = f"0x{w:08X}"
+
+            # .elf relocated symbol
             possibleReference = self.context.getRelocSymbol(self.inFileOffset + localOffset, self.sectionType)
             if possibleReference is not None:
                 value = possibleReference.getNamePlusOffset(w)
 
+            # This word could be a reference to a symbol
             symbol = self.context.getAnySymbol(w)
             if symbol is not None:
                 value = symbol.name
 
             comment = self.generateAsmLineComment(localOffset)
-            line = f"{comment} .word {value}"
-            output += line + self.endOfLineComment + "\n"
+            output += f"{label}{comment} .word {value}" + self.endOfLineComment + "\n"
             localOffset += 4
 
         return output
