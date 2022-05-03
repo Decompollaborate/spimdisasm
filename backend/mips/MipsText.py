@@ -18,9 +18,7 @@ from .MipsFunction import Function
 
 class Text(Section):
     def __init__(self, context: Context, vram: int|None, filename: str, array_of_bytes: bytearray):
-        super().__init__(context, vram, filename, array_of_bytes)
-
-        self.sectionType = FileSectionType.Text
+        super().__init__(context, vram, filename, array_of_bytes, FileSectionType.Text)
 
         # TODO: do something with this information
         self.fileBoundaries: List[int] = list()

@@ -15,7 +15,7 @@ from .Symbols import SymbolText
 
 class Function(SymbolText):
     def __init__(self, context: Context, inFileOffset: int, vram: int|None, name: str, instructions: List[InstructionBase]):
-        super().__init__(context, inFileOffset, vram, name)
+        super().__init__(context, inFileOffset, vram, name, list())
         self.instructions: List[InstructionBase] = list(instructions)
 
         self.pointersRemoved: bool = False

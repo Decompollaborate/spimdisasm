@@ -46,9 +46,7 @@ class RelocEntry:
 
 class RelocZ64(Section):
     def __init__(self, context: Context, vram: int|None, filename: str, array_of_bytes: bytearray):
-        super().__init__(context, vram, filename, array_of_bytes)
-
-        self.sectionType = FileSectionType.Reloc
+        super().__init__(context, vram, filename, array_of_bytes, FileSectionType.Reloc)
 
         self.seekup = self.words[-1]
 

@@ -8,14 +8,15 @@ from __future__ import annotations
 from ..common.Utils import *
 from ..common.GlobalConfig import GlobalConfig
 from ..common.Context import Context
+from ..common.FileSectionType import FileSectionType
 
 from .MipsElementBase import ElementBase
 from .Symbols import SymbolBase
 
 
 class FileBase(ElementBase):
-    def __init__(self, context: Context, vram: int|None, filename: str, array_of_bytes: bytearray):
-        super().__init__(context, 0, vram, filename, bytesToBEWords(array_of_bytes))
+    def __init__(self, context: Context, vram: int|None, filename: str, array_of_bytes: bytearray, sectionType: FileSectionType):
+        super().__init__(context, 0, vram, filename, bytesToBEWords(array_of_bytes), sectionType)
         self.bytes: bytearray = array_of_bytes # TODO: Necessary?
 
         self.symbolList: list[SymbolBase] = []
@@ -158,4 +159,4 @@ class FileBase(ElementBase):
 
 
 def createEmptyFile() -> FileBase:
-    return FileBase(Context(), None, "", bytearray())
+    return FileBase(Context(), None, "", bytearray(), FileSectionType.Unknown)
