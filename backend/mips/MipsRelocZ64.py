@@ -91,58 +91,41 @@ class RelocZ64(Section):
 
 
     def analyze(self):
-        if self.vram is not None:
-            currentVram = self.getVramOffset(0)
-            if self.context.getSymbol(currentVram, False) is None:
-                self.context.addSymbol(currentVram, f"{self.name}_OverlayInfo")
-
-            currentVram += 0x14
-            if self.context.getSymbol(currentVram, False) is None:
-                self.context.addSymbol(currentVram, f"{self.name}_OverlayRelocations")
-
-            currentVram = self.getVramOffset(self.size - 4)
-            if self.context.getSymbol(currentVram, False) is None:
-                self.context.addSymbol(currentVram, f"{self.name}_OverlayInfoOffset")
-
         localOffset = 0
-        for fileSect in FileSections_ListBasic:
-            sectName = fileSect.toCapitalizedStr()
-
-            currentVram = self.getVramOffset(localOffset)
-            sym = SymbolData(self.context, localOffset + self.inFileOffset, currentVram, "", [self.sectionSizes[fileSect]])
-            sym.setCommentOffset(self.commentOffset)
-            sym.endOfLineComment = f" # _{self.name}Segment{sectName}Size"
-            sym.analyze()
-            self.symbolList.append(sym)
-            localOffset += 4
 
         currentVram = self.getVramOffset(localOffset)
-        sym = SymbolData(self.context, localOffset + self.inFileOffset, currentVram, "", [self.relocCount])
+        sym = SymbolData(self.context, localOffset + self.inFileOffset, currentVram, f"{self.name}_OverlayInfo", self.words[0:4])
         sym.setCommentOffset(self.commentOffset)
-        sym.endOfLineComment = f" # reloc_count"
+        sym.endOfLineComment = [f" # _{self.name}Segment{sectName.toCapitalizedStr()}Size" for sectName in FileSections_ListBasic]
+        sym.analyze()
+        self.symbolList.append(sym)
+        localOffset += 4 * 4
+
+        currentVram = self.getVramOffset(localOffset)
+        sym = SymbolData(self.context, localOffset + self.inFileOffset, currentVram, f"{self.name}_RelocCount", [self.relocCount])
+        sym.setCommentOffset(self.commentOffset)
         sym.analyze()
         self.symbolList.append(sym)
         localOffset += 4
 
-        for r in self.entries:
-            currentVram = self.getVramOffset(localOffset)
-            sym = SymbolData(self.context, localOffset + self.inFileOffset, currentVram, "", [r.reloc])
-            sym.setCommentOffset(self.commentOffset)
-            sym.endOfLineComment = f" # {str(r)}"
-            sym.analyze()
-            self.symbolList.append(sym)
-            localOffset += 4
+        currentVram = self.getVramOffset(localOffset)
+        sym = SymbolData(self.context, localOffset + self.inFileOffset, currentVram, f"{self.name}_OverlayRelocations", [r.reloc for r in self.entries])
+        sym.setCommentOffset(self.commentOffset)
+        sym.endOfLineComment = [f" # {str(r)}" for r in self.entries]
+        sym.analyze()
+        self.symbolList.append(sym)
+        localOffset += 4 * len(self.entries)
 
-        for pad in self.tail:
+        if len(self.tail) > 0:
             currentVram = self.getVramOffset(localOffset)
-            sym = SymbolData(self.context, localOffset + self.inFileOffset, currentVram, "", [pad])
+            sym = SymbolData(self.context, localOffset + self.inFileOffset, currentVram, f"{self.name}_Padding", self.tail)
             sym.setCommentOffset(self.commentOffset)
             sym.analyze()
             self.symbolList.append(sym)
-            localOffset += 4
+            localOffset += 4 * len(self.tail)
 
         currentVram = self.getVramOffset(localOffset)
-        sym = SymbolData(self.context, localOffset + self.inFileOffset, currentVram, "", [self.seekup])
+        sym = SymbolData(self.context, localOffset + self.inFileOffset, currentVram, f"{self.name}_OverlayInfoOffset", [self.seekup])
         sym.setCommentOffset(self.commentOffset)
         sym.analyze()
         self.symbolList.append(sym)

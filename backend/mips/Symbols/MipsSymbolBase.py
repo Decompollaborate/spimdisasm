@@ -17,7 +17,7 @@ class SymbolBase(ElementBase):
     def __init__(self, context: Context, inFileOffset: int, vram: int|None, name: str, words: list[int], sectionType: FileSectionType):
         super().__init__(context, inFileOffset, vram, name, words, sectionType)
 
-        self.endOfLineComment = ""
+        self.endOfLineComment = []
 
         self.contextSym: ContextSymbol|None = None
         if self.vram is not None:
@@ -97,6 +97,7 @@ class SymbolBase(ElementBase):
         output = self.getLabel()
 
         localOffset = 0
+        i = 0
 
         for w in self.words:
             label = ""
@@ -119,8 +120,12 @@ class SymbolBase(ElementBase):
                 value = symbol.name
 
             comment = self.generateAsmLineComment(localOffset)
-            output += f"{label}{comment} .word {value}" + self.endOfLineComment + "\n"
+            output += f"{label}{comment} .word {value}"
+            if i < len(self.endOfLineComment):
+                output += self.endOfLineComment[i]
+            output += "\n"
             localOffset += 4
+            i += 1
 
         return output
 
