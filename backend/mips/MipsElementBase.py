@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from ..common.Utils import *
 from ..common.GlobalConfig import GlobalConfig
-from ..common.Context import Context, ContextSymbol, ContextOffsetSymbol
+from ..common.Context import Context, ContextSymbolBase
 from ..common.FileSectionType import FileSectionType
 
 
@@ -41,6 +41,16 @@ class ElementBase:
             return self.inFileOffset + localOffset
         return self.vram + localOffset
         # return self.vram + self.inFileOffset + localOffset
+
+    def getLabelFromSymbol(self, sym: ContextSymbolBase|None) -> str:
+        if sym is not None:
+            label = sym.getSymbolLabel()
+            if GlobalConfig.GLABEL_ASM_COUNT:
+                if self.index is not None:
+                    label += f" # {self.index}"
+            label += "\n"
+            return label
+        return ""
 
 
     def analyze(self):
