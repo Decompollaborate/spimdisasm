@@ -526,12 +526,7 @@ class Function(SymbolText):
         if self.isLikelyHandwritten:
             output += "/* Handwritten function */\n"
 
-        if self.name != "":
-            output += f"glabel {self.name}"
-            if GlobalConfig.GLABEL_ASM_COUNT:
-                if self.index is not None:
-                    output += f" # {self.index}"
-            output += "\n"
+        output += self.getLabel()
 
         wasLastInstABranch = False
 

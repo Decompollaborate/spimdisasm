@@ -47,12 +47,10 @@ class SymbolBase(ElementBase):
 
     def getLabel(self) -> str:
         if self.contextSym is not None:
-            return self.contextSym.getSymbolLabel() + "\n"
-        else:
-            offsetSym = self.context.getOffsetSymbol(self.inFileOffset, self.sectionType)
-            if offsetSym is not None:
-                return offsetSym.getSymbolLabel() + "\n"
-        return ""
+            return self.getLabelFromSymbol(self.contextSym)
+
+        offsetSym = self.context.getOffsetSymbol(self.inFileOffset, self.sectionType)
+        return self.getLabelFromSymbol(offsetSym)
 
 
     def renameBasedOnSection(self):
