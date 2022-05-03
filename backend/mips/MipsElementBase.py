@@ -12,19 +12,19 @@ from ..common.FileSectionType import FileSectionType
 
 
 class ElementBase:
-    def __init__(self, context: Context, inFileOffset: int, vram: int|None, name: str, words: list[int]=[]):
+    def __init__(self, context: Context, inFileOffset: int, vram: int|None, name: str, words: list[int], sectionType: FileSectionType):
         self.context: Context = context
         self.inFileOffset: int = inFileOffset
         self.vram: int|None = vram
         self.name: str = name
         self.words: list[int] = words
+        self.sectionType: FileSectionType = sectionType
 
         self.commentOffset: int = 0
         self.index: int|None = None
 
         self.parent: ElementBase|None = None
 
-        self.sectionType: FileSectionType = FileSectionType.Unknown
 
     @property
     def sizew(self) -> int:

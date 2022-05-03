@@ -15,8 +15,7 @@ from .MipsSymbolBase import SymbolBase
 
 class SymbolBss(SymbolBase):
     def __init__(self, context: Context, inFileOffset: int, vram: int|None, name: str, spaceSize: int):
-        super().__init__(context, inFileOffset, vram, name)
-        self.sectionType = FileSectionType.Bss
+        super().__init__(context, inFileOffset, vram, name, list(), FileSectionType.Bss)
 
         self.spaceSize: int = spaceSize
 

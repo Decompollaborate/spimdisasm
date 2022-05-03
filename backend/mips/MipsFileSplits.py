@@ -22,7 +22,7 @@ from .FilesHandlers import createSectionFromSplitEntry
 
 class FileSplits(FileBase):
     def __init__(self, context: Context, vram: int|None, filename: str, array_of_bytes: bytearray, splitsData: FileSplitFormat | None = None, relocSection: RelocZ64|None = None):
-        super().__init__(context, vram, filename, array_of_bytes)
+        super().__init__(context, vram, filename, array_of_bytes, FileSectionType.Unknown)
 
         self.sectionsDict: dict[FileSectionType, dict[str, Section]] = {
             FileSectionType.Text: dict(),
