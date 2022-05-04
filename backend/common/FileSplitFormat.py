@@ -61,7 +61,10 @@ class FileSplitFormat:
             elif fileName == ".end":
                 break
 
-            vram = int(vram, 16)
+            if vram.lower() == "none":
+                vram = None
+            else:
+                vram = int(vram, 16)
             offset = int(offset, 16)
             nextOffset = 0xFFFFFF
             if i + 1 < len(self.splits):
@@ -90,7 +93,9 @@ class FileSplitFormat:
             elif element.isHandwritten:
                 offset += "H"
 
-            vram = f"{element.vram:X}"
+            vram = "None"
+            if element.vram is not None:
+                vram = f"{element.vram:X}"
             fileName = element.fileName
 
             if element.section != FileSectionType.Invalid:
@@ -113,5 +118,8 @@ class FileSplitFormat:
             # TODO: error message
             raise TypeError()
 
-    def appendEndSection(self, offset: int, vram: int):
-        self.splits.append([f"{offset:X}", f"{vram:X}", ".end"])
+    def appendEndSection(self, offset: int, vram: int|None):
+        vramStr = "None"
+        if vram is not None:
+            vramStr = f"{vram:X}"
+        self.splits.append([f"{offset:X}", vramStr, ".end"])
