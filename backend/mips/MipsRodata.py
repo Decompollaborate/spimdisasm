@@ -18,7 +18,8 @@ class Rodata(Section):
     def __init__(self, context: Context, vram: int|None, filename: str, array_of_bytes: bytearray):
         super().__init__(context, vram, filename, array_of_bytes, FileSectionType.Rodata)
 
-        self.bytes: bytearray = array_of_bytes
+        self.bytes: bytearray = bytearray(self.sizew*4)
+        beWordsToBytes(self.words, self.bytes)
 
         # addresses of symbols in this rodata section
         self.symbolsVRams: Set[int] = set()
