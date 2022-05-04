@@ -50,10 +50,9 @@ class RelocZ64(Section):
 
         self.seekup = self.words[-1]
 
-        self.setCommentOffset(self.size - self.seekup)
+        self.setCommentOffset(self.sizew*4 - self.seekup)
 
         # Remove non reloc stuff
-        self.bytes = self.bytes[-self.seekup:]
         self.words = self.words[-self.seekup // 4:]
 
         self.sectionSizes = {
