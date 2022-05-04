@@ -30,7 +30,7 @@ def disassemblerMain():
 
     parser_singleFile.add_argument("--start", help="", default="0")
     parser_singleFile.add_argument("--end", help="",  default="0xFFFFFF")
-    parser_singleFile.add_argument("--vram", help="Set the VRAM address", default="-1")
+    parser_singleFile.add_argument("--vram", help="Set the VRAM address")
 
     parser.add_argument("--file-splits", help="Path to a file splits csv")
 
@@ -82,10 +82,12 @@ def disassemblerMain():
         start = int(args.start, 16)
         end = int(args.end, 16)
 
-        fileVram = int(args.vram, 16)
+        fileVram = None
+        if args.vram is not None:
+            fileVram = int(args.vram, 16)
 
         endVram = fileVram
-        if endVram >= 0:
+        if endVram is not None:
             endVram += end - start
 
         splitEntry = FileSplitEntry(start, fileVram, "", FileSectionType.Text, end, False, GlobalConfig.DISASSEMBLE_RSP)
