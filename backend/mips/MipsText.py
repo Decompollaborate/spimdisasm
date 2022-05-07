@@ -141,9 +141,7 @@ class Text(Section):
                         registersValues[instr.rt] = upperHalf + lowerHalf
 
             elif instr.isJType():
-                target = instr.instr_index << 2
-                if not self.isRsp:
-                    target |= 0x80000000
+                target = instr.getInstrIndexAsVram()
                 if instr.uniqueId == InstructionId.J and not self.isRsp:
                     # newFunctions.append((True, target, f"fakefunc_{target:08X}"))
                     newFunctions.append((True, target, f".L{target:08X}"))
@@ -251,7 +249,7 @@ class Text(Section):
                 printVerbose("\t", toHex(start+self.commentOffset, 6)[2:], toHex(end-start, 4)[2:], toHex(fileVram, 8)[2:], "\t functions:", functionsInBoundary)
 
             start = self.fileBoundaries[-1]
-            end = self.size + self.inFileOffset
+            end = self.sizew*4 + self.inFileOffset
 
             functionsInBoundary = 0
             for func in self.symbolList:
@@ -337,11 +335,3 @@ class Text(Section):
             was_updated = True
 
         return was_updated
-
-    def updateBytes(self):
-        self.words = []
-        for func in self.symbolList:
-            assert isinstance(func, Function)
-            for instr in func.instructions:
-                self.words.append(instr.instr)
-        super().updateBytes()

@@ -46,7 +46,7 @@ class FileSplits(FileBase):
             self.sectionsDict[FileSectionType.Reloc][filename] = relocSection
 
         if splitsData is None and relocSection is None:
-            self.sectionsDict[FileSectionType.Text][filename] = Text(context, vram, filename, self.bytes)
+            self.sectionsDict[FileSectionType.Text][filename] = Text(context, vram, filename, array_of_bytes)
         elif splitsData is not None and len(splitsData) > 0:
             for splitEntry in splitsData:
                 self.splitsDataList.append(splitEntry)
@@ -66,8 +66,8 @@ class FileSplits(FileBase):
                 if sectionType == FileSectionType.Bss:
                     # bss is after reloc when the relocation is on the same segment
                     if not relocSection.differentSegment:
-                        start += relocSection.size
-                        end += relocSection.size
+                        start += relocSection.sizew * 4
+                        end += relocSection.sizew * 4
 
                 if sectionSize == 0:
                     # There's no need to disassemble empty sections
@@ -83,7 +83,7 @@ class FileSplits(FileBase):
             if self.vram is None:
                 self.vram = splitEntry.vram
 
-            f = createSectionFromSplitEntry(splitEntry, self.bytes, splitEntry.fileName, context)
+            f = createSectionFromSplitEntry(splitEntry, array_of_bytes, splitEntry.fileName, context)
             f.parent = self
             f.setCommentOffset(splitEntry.offset)
 
@@ -105,11 +105,13 @@ class FileSplits(FileBase):
                 section.setVram(vram)
 
     def getHash(self) -> str:
-        bytes = bytearray(0)
+        words = list()
         for sectDict in self.sectionsDict.values():
             for section in sectDict.values():
-                bytes += section.bytes
-        return getStrHash(bytes)
+                words += section.words
+        buffer = bytearray(4*len(words))
+        beWordsToBytes(words, buffer)
+        return getStrHash(buffer)
 
     def analyze(self):
         for filename, relocSection in self.sectionsDict[FileSectionType.Reloc].items():
@@ -185,11 +187,6 @@ class FileSplits(FileBase):
                 was_updated = section.removePointers() or was_updated
 
         return was_updated
-
-    def updateBytes(self):
-        for sectDict in self.sectionsDict.values():
-            for section in sectDict.values():
-                section.updateBytes()
 
     def saveToFile(self, filepath: str):
         for sectDict in self.sectionsDict.values():

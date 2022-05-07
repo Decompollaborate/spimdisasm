@@ -13,7 +13,8 @@ import struct
 from typing import List, Dict, Tuple, Set, Any, TextIO
 import subprocess
 import sys
-import shutil
+
+from .GlobalConfig import GlobalConfig, InputEndian
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
@@ -48,9 +49,19 @@ def removeExtraWhitespace(line: str) -> str:
     return" ".join(line.split())
 
 def bytesToBEWords(array_of_bytes: bytearray) -> List[int]:
+    if GlobalConfig.ENDIAN == InputEndian.MIDDLE:
+        # Convert middle endian to big endian
+        halfwords = str(int(len(array_of_bytes)//2))
+        little_byte_format = f"<{halfwords}H"
+        big_byte_format = f">{halfwords}H"
+        tmp = struct.unpack_from(little_byte_format, array_of_bytes, 0)
+        struct.pack_into(big_byte_format, array_of_bytes, 0, *tmp)
+
     words = len(array_of_bytes)//4
-    big_endian_format = f">{words}I"
-    return list(struct.unpack_from(big_endian_format, array_of_bytes, 0))
+    endian_format = f">{words}I"
+    if GlobalConfig.ENDIAN == InputEndian.LITTLE:
+        endian_format = f"<{words}I"
+    return list(struct.unpack_from(endian_format, array_of_bytes, 0))
 
 def beWordsToBytes(words_list: List[int], buffer: bytearray) -> bytearray:
     words = len(words_list)
