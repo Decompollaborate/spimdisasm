@@ -17,7 +17,6 @@ from .Symbols import SymbolBase
 class FileBase(ElementBase):
     def __init__(self, context: Context, vram: int|None, filename: str, array_of_bytes: bytearray, sectionType: FileSectionType):
         super().__init__(context, 0, vram, filename, bytesToBEWords(array_of_bytes), sectionType)
-        self.bytes: bytearray = array_of_bytes # TODO: Necessary?
 
         self.symbolList: list[SymbolBase] = []
 
@@ -26,9 +25,6 @@ class FileBase(ElementBase):
         self.isHandwritten: bool = False
         self.isRsp: bool = False
 
-    @property
-    def size(self) -> int:
-        return len(self.bytes)
 
     def setCommentOffset(self, commentOffset: int):
         self.commentOffset = commentOffset
@@ -74,7 +70,9 @@ class FileBase(ElementBase):
         return output
 
     def getHash(self) -> str:
-        return getStrHash(self.bytes)
+        buffer = bytearray(4*len(self.words))
+        beWordsToBytes(self.words, buffer)
+        return getStrHash(buffer)
 
     def printAnalyzisResults(self):
         pass
@@ -87,8 +85,8 @@ class FileBase(ElementBase):
             "equal": hash_one == hash_two,
             "hash_one": hash_one,
             "hash_two": hash_two,
-            "size_one": self.size,
-            "size_two": other_file.size,
+            "size_one": self.sizew * 4,
+            "size_two": other_file.sizew * 4,
             "diff_bytes": 0,
             "diff_words": 0,
         }
@@ -97,10 +95,11 @@ class FileBase(ElementBase):
         diff_words = 0
 
         if not result["equal"]:
-            min_len = min(self.size, other_file.size)
+            min_len = min(self.sizew, other_file.sizew)
             for i in range(min_len):
-                if self.bytes[i] != other_file.bytes[i]:
-                    diff_bytes += 1
+                for j in range(4):
+                    if (self.words[i] & (0xFF << (j * 8))) != (other_file.words[i] & (0xFF << (j * 8))):
+                        diff_bytes += 1
 
             min_len = min(self.sizew, other_file.sizew)
             for i in range(min_len):
@@ -123,11 +122,6 @@ class FileBase(ElementBase):
             return False
 
         return False
-
-    def updateBytes(self):
-        beWordsToBytes(self.words, self.bytes)
-        # Truncate extra data
-        self.bytes = self.bytes[:self.sizew*4]
 
 
     def disassemble(self) -> str:
@@ -152,8 +146,10 @@ class FileBase(ElementBase):
             self.disassembleToFile(sys.stdout)
         else:
             if GlobalConfig.WRITE_BINARY:
-                if self.size > 0:
-                    writeBytearrayToFile(filepath + self.sectionType.toStr(), self.bytes)
+                if self.sizew > 0:
+                    buffer = bytearray(4*len(self.words))
+                    beWordsToBytes(self.words, buffer)
+                    writeBytearrayToFile(filepath + self.sectionType.toStr(), buffer)
             with open(filepath + self.sectionType.toStr() + ".s", "w") as f:
                 self.disassembleToFile(f)
 
