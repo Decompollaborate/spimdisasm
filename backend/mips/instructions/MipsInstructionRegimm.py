@@ -83,7 +83,6 @@ class InstructionRegimm(InstructionBase):
     def disassemble(self, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName().lower().ljust(self.ljustWidthOpcode, ' ')
         rs = self.getRegisterName(self.rs)
-        #immediate = toHex(self.immediate, 4)
         immediate = hex(self.immediate)
         if immOverride is not None:
             immediate = immOverride

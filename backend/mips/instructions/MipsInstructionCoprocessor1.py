@@ -178,7 +178,6 @@ class InstructionCoprocessor1(InstructionBase):
         ft = self.getFloatRegisterName(self.ft)
         fs = self.getFloatRegisterName(self.fs)
         fd = self.getFloatRegisterName(self.fd)
-        #immediate = toHex(self.immediate, 4)
         immediate = hex(self.immediate)
         if immOverride is not None:
             immediate = immOverride

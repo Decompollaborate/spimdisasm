@@ -245,7 +245,7 @@ class SectionText(SectionBase):
                 fileVram = 0
                 if self.vram is not None:
                     fileVram = start + self.vram
-                common.Utils.printVerbose("\t", common.Utils.toHex(start+self.commentOffset, 6)[2:], common.Utils.toHex(end-start, 4)[2:], common.Utils.toHex(fileVram, 8)[2:], "\t functions:", functionsInBoundary)
+                common.Utils.printVerbose("\t", f"{start+self.commentOffset:06X}", f"{end-start:04X}", f"{fileVram:08X}", "\t functions:", functionsInBoundary)
 
             start = self.fileBoundaries[-1]
             end = self.sizew*4 + self.inFileOffset
@@ -259,7 +259,7 @@ class SectionText(SectionBase):
             fileVram = 0
             if self.vram is not None:
                 fileVram = start + self.vram
-            common.Utils.printVerbose("\t", common.Utils.toHex(start+self.commentOffset, 6)[2:], common.Utils.toHex(end-start, 4)[2:], common.Utils.toHex(fileVram, 8)[2:], "\t functions:", functionsInBoundary)
+            common.Utils.printVerbose("\t", f"{start+self.commentOffset:06X}", f"{end-start:04X}", f"{fileVram:08X}", "\t functions:", functionsInBoundary)
 
             common.Utils.printVerbose()
         return
