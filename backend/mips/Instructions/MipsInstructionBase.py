@@ -10,6 +10,41 @@ from ...common.Utils import *
 from .MipsConstants import InstructionId, InstructionVectorId
 
 class InstructionBase:
+    DefaultNumericRegisterNames = {
+        0:  "$0",
+        1:  "$1",
+        2:  "$2",
+        3:  "$3",
+        4:  "$4",
+        5:  "$5",
+        6:  "$6",
+        7:  "$7",
+        8:  "$8",
+        9:  "$9",
+        10: "$10",
+        11: "$11",
+        12: "$12",
+        13: "$13",
+        14: "$14",
+        15: "$15",
+        16: "$16",
+        17: "$17",
+        18: "$18",
+        19: "$19",
+        20: "$20",
+        21: "$21",
+        22: "$22",
+        23: "$23",
+        24: "$24",
+        25: "$25",
+        26: "$26",
+        27: "$27",
+        28: "$28",
+        29: "$29",
+        30: "$30",
+        31: "$31",
+    }
+
     GprRegisterNames = {
         0:  "$zero",
         1:  "$at",
@@ -116,40 +151,7 @@ class InstructionBase:
         31: "FpcCsr",
     }
 
-    Cop2RegisterNames = {
-        0:  "$0",
-        1:  "$1",
-        2:  "$2",
-        3:  "$3",
-        4:  "$4",
-        5:  "$5",
-        6:  "$6",
-        7:  "$7",
-        8:  "$8",
-        9:  "$9",
-        10: "$10",
-        11: "$11",
-        12: "$12",
-        13: "$13",
-        14: "$14",
-        15: "$15",
-        16: "$16",
-        17: "$17",
-        18: "$18",
-        19: "$19",
-        20: "$20",
-        21: "$21",
-        22: "$22",
-        23: "$23",
-        24: "$24",
-        25: "$25",
-        26: "$26",
-        27: "$27",
-        28: "$28",
-        29: "$29",
-        30: "$30",
-        31: "$31",
-    }
+    Cop2RegisterNames = dict(DefaultNumericRegisterNames)
 
     GprRspRegisterNames = {
         0:  "$zero",
@@ -398,8 +400,7 @@ class InstructionBase:
     def getOpcodeName(self) -> str:
         if self.uniqueId != InstructionId.INVALID and self.uniqueId != InstructionVectorId.INVALID:
             return self.uniqueId.name
-        opcode = toHex(self.opcode, 2)
-        return f"({opcode})"
+        return f"(0x{self.opcode:02X})"
 
     def getRegisterName(self, register: int) -> str:
         return self.GprRegisterNames.get(register, f"${register:02X}")
@@ -408,20 +409,20 @@ class InstructionBase:
         return self.Cop1RegisterNames.get(register, f"${register:02X}")
 
     def getCop0RegisterName(self, register: int) -> str:
-        if register in InstructionBase.Cop0RegisterNames:
-            return InstructionBase.Cop0RegisterNames[register]
-        return f"${register:02X}"
+        if GlobalConfig.VR4300_COP0_NAMED_REGISTERS:
+            return InstructionBase.Cop0RegisterNames.get(register, f"${register:02X}")
+        return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
 
     def getCop2RegisterName(self, register: int) -> str:
-        if register in InstructionBase.Cop2RegisterNames:
-            return InstructionBase.Cop2RegisterNames[register]
-        return f"${register:02X}"
+        return InstructionBase.Cop2RegisterNames.get(register, f"${register:02X}")
 
     def getGprRspRegisterName(self, register: int) -> str:
         return self.GprRspRegisterNames.get(register, f"${register:02X}")
 
     def getCop0RspRegisterName(self, register: int) -> str:
-        return self.Cop0RspRegisterNames.get(register, f"${register:02X}")
+        if GlobalConfig.VR4300_RSP_COP0_NAMED_REGISTERS:
+            return InstructionBase.Cop0RspRegisterNames.get(register, f"${register:02X}")
+        return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
 
     def getVectorRspRegisterName(self, register: int) -> str:
         return self.VectorRspRegisterNames.get(register, f"${register:02X}")
