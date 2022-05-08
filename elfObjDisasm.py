@@ -8,21 +8,7 @@ from __future__ import annotations
 import argparse
 import pathlib
 
-from backend.common.Utils import *
-from backend.common.GlobalConfig import GlobalConfig
-from backend.common.Context import Context, ContextOffsetSymbol, ContextRelocSymbol
-from backend.common.FileSectionType import FileSectionType
-
-from backend.elf32.Elf32File import Elf32File
-from backend.elf32.Elf32Constants import Elf32SymbolTableType
-
-from backend.mips import MipsSection
-from backend.mips import MipsText
-from backend.mips import MipsData
-from backend.mips import MipsRodata
-from backend.mips import MipsBss
-from backend.mips import FilesHandlers
-from backend.mips import MipsRelocTypes
+import backend as disasmBack
 
 
 def elfObjDisasmMain():
@@ -35,28 +21,27 @@ def elfObjDisasmMain():
 
     parser.add_argument("--data-output", help="Path to output the data and rodata disassembly")
 
-    GlobalConfig.addParametersToArgParse(parser)
+    disasmBack.GlobalConfig.addParametersToArgParse(parser)
 
     args = parser.parse_args()
 
-    GlobalConfig.parseArgs(args)
+    disasmBack.GlobalConfig.parseArgs(args)
 
-    GlobalConfig.REMOVE_POINTERS = False
-    GlobalConfig.IGNORE_BRANCHES = False
-
-    GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES = False
+    disasmBack.GlobalConfig.REMOVE_POINTERS = False
+    disasmBack.GlobalConfig.IGNORE_BRANCHES = False
+    disasmBack.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES = False
 
     # GlobalConfig.VERBOSE = True
 
     inputPath = pathlib.Path(args.binary)
 
-    context = Context()
+    context = disasmBack.Context()
 
-    array_of_bytes = readFileAsBytearray(args.binary)
+    array_of_bytes = disasmBack.Utils.readFileAsBytearray(args.binary)
 
-    elfFile = Elf32File(array_of_bytes)
+    elfFile = disasmBack.elf32.Elf32File(array_of_bytes)
 
-    processedFiles: dict[FileSectionType, tuple[pathlib.Path, MipsSection.Section]] = dict()
+    processedFiles: dict[disasmBack.FileSectionType, tuple[pathlib.Path, disasmBack.mips.Section]] = dict()
 
     textOutput = args.output
     dataOutput = args.data_output
@@ -65,19 +50,19 @@ def elfObjDisasmMain():
 
     for sectionType, sectionBytes in elfFile.progbits.items():
         outputPath = dataOutput
-        if sectionType == FileSectionType.Text:
+        if sectionType == disasmBack.FileSectionType.Text:
             outputPath = textOutput
 
         outputFilePath = pathlib.Path(outputPath)
         if outputPath != "-":
             outputFilePath /= inputPath.stem
 
-        if sectionType == FileSectionType.Text:
-            processedFiles[sectionType] = (outputFilePath, MipsText.Text(context, None, inputPath.stem, sectionBytes))
-        if sectionType == FileSectionType.Data:
-            processedFiles[sectionType] = (outputFilePath, MipsData.Data(context, None, inputPath.stem, sectionBytes))
-        if sectionType == FileSectionType.Rodata:
-            processedFiles[sectionType] = (outputFilePath, MipsRodata.Rodata(context, None, inputPath.stem, sectionBytes))
+        if sectionType == disasmBack.FileSectionType.Text:
+            processedFiles[sectionType] = (outputFilePath, disasmBack.mips.MipsText.Text(context, None, inputPath.stem, sectionBytes))
+        if sectionType == disasmBack.FileSectionType.Data:
+            processedFiles[sectionType] = (outputFilePath, disasmBack.mips.MipsData.Data(context, None, inputPath.stem, sectionBytes))
+        if sectionType == disasmBack.FileSectionType.Rodata:
+            processedFiles[sectionType] = (outputFilePath, disasmBack.mips.MipsRodata.Rodata(context, None, inputPath.stem, sectionBytes))
 
     if elfFile.nobits is not None:
         outputPath = dataOutput
@@ -86,7 +71,7 @@ def elfObjDisasmMain():
         if outputPath != "-":
             outputFilePath /= inputPath.stem
 
-        processedFiles[FileSectionType.Bss] = (outputFilePath, MipsBss.Bss(context, 0, elfFile.nobits, inputPath.stem))
+        processedFiles[disasmBack.FileSectionType.Bss] = (outputFilePath, disasmBack.mips.MipsBss.Bss(context, 0, elfFile.nobits, inputPath.stem))
 
     if elfFile.symtab is not None and elfFile.strtab is not None:
         # Inject symbols from the reloc table referenced in each section
@@ -96,7 +81,7 @@ def elfObjDisasmMain():
                 symbolEntry = elfFile.symtab[rel.rSym]
                 symbolName = elfFile.strtab[symbolEntry.name]
 
-                contextRelocSym = ContextRelocSymbol(rel.offset, symbolName, sectType)
+                contextRelocSym = disasmBack.ContextRelocSymbol(rel.offset, symbolName, sectType)
                 contextRelocSym.isDefined = True
                 contextRelocSym.relocType = rel.rType
                 context.relocSymbols[sectType][rel.offset] = contextRelocSym
@@ -110,12 +95,12 @@ def elfObjDisasmMain():
             if sectHeaderEntry is None:
                 continue
             sectName = elfFile.shstrtab[sectHeaderEntry.name]
-            sectType = FileSectionType.fromStr(sectName)
-            if sectType != FileSectionType.Invalid:
+            sectType = disasmBack.FileSectionType.fromStr(sectName)
+            if sectType != disasmBack.FileSectionType.Invalid:
                 subSection = processedFiles[sectType][1]
                 symName = elfFile.strtab[symEntry.name]
 
-                contextOffsetSym = ContextOffsetSymbol(symEntry.value, symName, sectType)
+                contextOffsetSym = disasmBack.ContextOffsetSymbol(symEntry.value, symName, sectType)
                 contextOffsetSym.isDefined = True
                 # contextOffsetSym.size = symEntry.size
                 context.offsetSymbols[sectType][symEntry.value] = contextOffsetSym
@@ -125,7 +110,7 @@ def elfObjDisasmMain():
         subFile.analyze()
 
     for outputFilePath, subFile in processedFiles.values():
-        FilesHandlers.writeSection(str(outputFilePath), subFile)
+        disasmBack.mips.FilesHandlers.writeSection(str(outputFilePath), subFile)
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from ..common.Utils import *
-from ..common.GlobalConfig import GlobalConfig, printVerbose
+from ..common.GlobalConfig import GlobalConfig
 from ..common.Context import Context
 from ..common.FileSectionType import FileSectionType
 

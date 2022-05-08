@@ -6,15 +6,9 @@
 from __future__ import annotations
 
 import argparse
+import os
 
-from backend.common.Utils import *
-from backend.common.GlobalConfig import GlobalConfig, printQuietless, printVerbose
-from backend.common.Context import Context
-from backend.common.FileSplitFormat import FileSplitFormat, FileSectionType, FileSplitEntry
-
-from backend.mips.MipsText import Text
-from backend.mips.MipsFunction import Function
-from backend.mips.FilesHandlers import createSectionFromSplitEntry, analyzeSectionFromSplitEntry, writeSection, writeSplitedFunction, writeOtherRodata
+import backend as disasmBack
 
 
 def disassemblerMain():
@@ -38,46 +32,46 @@ def disassemblerMain():
 
     parser.add_argument("--nuke-pointers", help="Use every technique available to remove pointers", action="store_true")
 
-    Context.addParametersToArgParse(parser)
+    disasmBack.Context.addParametersToArgParse(parser)
 
-    GlobalConfig.addParametersToArgParse(parser)
+    disasmBack.GlobalConfig.addParametersToArgParse(parser)
 
     args = parser.parse_args()
 
-    GlobalConfig.parseArgs(args)
+    disasmBack.GlobalConfig.parseArgs(args)
 
-    GlobalConfig.REMOVE_POINTERS = args.nuke_pointers
-    GlobalConfig.IGNORE_BRANCHES = args.nuke_pointers
+    disasmBack.GlobalConfig.REMOVE_POINTERS = args.nuke_pointers
+    disasmBack.GlobalConfig.IGNORE_BRANCHES = args.nuke_pointers
     if args.nuke_pointers:
-        GlobalConfig.IGNORE_WORD_LIST.add(0x80)
+        disasmBack.GlobalConfig.IGNORE_WORD_LIST.add(0x80)
 
-    GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET = True
-    GlobalConfig.TRUST_USER_FUNCTIONS = True
+    disasmBack.GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET = True
+    disasmBack.GlobalConfig.TRUST_USER_FUNCTIONS = True
 
 
-    context = Context()
+    context = disasmBack.Context()
     context.parseArgs(args)
 
-    array_of_bytes = readFileAsBytearray(args.binary)
+    array_of_bytes = disasmBack.Utils.readFileAsBytearray(args.binary)
     input_name = os.path.splitext(os.path.split(args.binary)[1])[0]
 
     processedFiles = {
-        FileSectionType.Text: [],
-        FileSectionType.Data: [],
-        FileSectionType.Rodata: [],
-        FileSectionType.Bss: [],
+        disasmBack.FileSectionType.Text: [],
+        disasmBack.FileSectionType.Data: [],
+        disasmBack.FileSectionType.Rodata: [],
+        disasmBack.FileSectionType.Bss: [],
     }
     processedFilesOutputPaths = {k: [] for k in processedFiles}
     lenLastLine = 80
 
-    splits = FileSplitFormat()
+    splits = disasmBack.FileSplitFormat()
     if args.file_splits is not None:
         splits.readCsvFile(args.file_splits)
 
     if len(splits) == 0:
         if args.file_splits is not None:
-            eprint("Warning: Tried to use file split mode, but passed csv splits file was empty")
-            eprint("\t Using single-file mode instead")
+            disasmBack.Utils.eprint("Warning: Tried to use file split mode, but passed csv splits file was empty")
+            disasmBack.Utils.eprint("\t Using single-file mode instead")
 
         start = int(args.start, 16)
         end = int(args.end, 16)
@@ -90,7 +84,7 @@ def disassemblerMain():
         if endVram is not None:
             endVram += end - start
 
-        splitEntry = FileSplitEntry(start, fileVram, "", FileSectionType.Text, end, False, GlobalConfig.DISASSEMBLE_RSP)
+        splitEntry = disasmBack.FileSplitEntry(start, fileVram, "", disasmBack.FileSectionType.Text, end, False, disasmBack.GlobalConfig.DISASSEMBLE_RSP)
         splits.append(splitEntry)
 
         splits.appendEndSection(end, endVram)
@@ -104,16 +98,16 @@ def disassemblerMain():
 
     i = 0
     for row in splits:
-        if row.section == FileSectionType.Text:
+        if row.section == disasmBack.FileSectionType.Text:
             outputPath = textOutput
-        elif row.section == FileSectionType.Data:
+        elif row.section == disasmBack.FileSectionType.Data:
             outputPath = dataOutput
-        elif row.section == FileSectionType.Rodata:
+        elif row.section == disasmBack.FileSectionType.Rodata:
             outputPath = dataOutput
-        elif row.section == FileSectionType.Bss:
+        elif row.section == disasmBack.FileSectionType.Bss:
             outputPath = dataOutput
         else:
-            eprint("Error! Section not set!")
+            disasmBack.Utils.eprint("Error! Section not set!")
             exit(1)
 
         outputFilePath = outputPath
@@ -124,18 +118,18 @@ def disassemblerMain():
 
             outputFilePath = os.path.join(outputPath, fileName)
 
-        printVerbose(f"Reading '{row.fileName}'")
-        f = createSectionFromSplitEntry(row, array_of_bytes, outputFilePath, context)
-        analyzeSectionFromSplitEntry(f, row)
+        disasmBack.Utils.printVerbose(f"Reading '{row.fileName}'")
+        f = disasmBack.mips.FilesHandlers.createSectionFromSplitEntry(row, array_of_bytes, outputFilePath, context)
+        disasmBack.mips.FilesHandlers.analyzeSectionFromSplitEntry(f, row)
         processedFiles[row.section].append(f)
         processedFilesOutputPaths[row.section].append(outputFilePath)
 
-        printQuietless(lenLastLine*" " + "\r", end="")
+        disasmBack.Utils.printQuietless(lenLastLine*" " + "\r", end="")
         progressStr = f" Analyzing: {i/splitsCount:%}. File: {row.fileName}\r"
         lenLastLine = max(len(progressStr), lenLastLine)
-        printQuietless(progressStr, end="", flush=True)
+        disasmBack.Utils.printQuietless(progressStr, end="", flush=True)
 
-        printVerbose("\n")
+        disasmBack.Utils.printVerbose("\n")
         i += 1
 
     processedFilesCount = 0
@@ -143,45 +137,45 @@ def disassemblerMain():
         processedFilesCount += len(sect)
 
     if args.nuke_pointers:
-        printVerbose("Nuking pointers...")
+        disasmBack.Utils.printVerbose("Nuking pointers...")
         i = 0
         for section, filesInSection in processedFiles.items():
             for path, f in filesInSection:
-                printVerbose(f"Nuking pointers of {path}")
-                printQuietless(lenLastLine*" " + "\r", end="")
+                disasmBack.Utils.printVerbose(f"Nuking pointers of {path}")
+                disasmBack.Utils.printQuietless(lenLastLine*" " + "\r", end="")
                 progressStr = f" Nuking pointers: {i/processedFilesCount:%}. File: {path}\r"
                 lenLastLine = max(len(progressStr), lenLastLine)
-                printQuietless(progressStr, end="")
+                disasmBack.Utils.printQuietless(progressStr, end="")
 
                 f.removePointers()
                 i += 1
 
-    printVerbose("Writing files...")
+    disasmBack.Utils.printVerbose("Writing files...")
     i = 0
     for section, filesInSection in processedFiles.items():
         pathLists = processedFilesOutputPaths[section]
         for fileIndex, f in enumerate(filesInSection):
             path = pathLists[fileIndex]
-            printVerbose(f"Writing {path}")
-            printQuietless(lenLastLine*" " + "\r", end="")
+            disasmBack.Utils.printVerbose(f"Writing {path}")
+            disasmBack.Utils.printQuietless(lenLastLine*" " + "\r", end="")
             progressStr = f" Writing: {i/processedFilesCount:%}. File: {path}\r"
             lenLastLine = max(len(progressStr), lenLastLine)
-            printQuietless(progressStr, end="")
+            disasmBack.Utils.printQuietless(progressStr, end="")
 
             if path == "-":
-                printQuietless()
+                disasmBack.Utils.printQuietless()
 
-            writeSection(path, f)
+            disasmBack.mips.FilesHandlers.writeSection(path, f)
             i += 1
 
     if args.split_functions is not None:
-        printVerbose("Spliting functions")
-        for f in processedFiles[FileSectionType.Text]:
-            file: Text = f
+        disasmBack.Utils.printVerbose("Spliting functions")
+        for f in processedFiles[disasmBack.FileSectionType.Text]:
+            file: disasmBack.mips.Text = f
             for func in file.symbolList:
-                assert isinstance(func, Function)
-                writeSplitedFunction(os.path.join(args.split_functions, file.name), func, processedFiles[FileSectionType.Rodata], context)
-        writeOtherRodata(args.split_functions, processedFiles[FileSectionType.Rodata], context)
+                assert isinstance(func, disasmBack.mips.Function)
+                disasmBack.mips.FilesHandlers.writeSplitedFunction(os.path.join(args.split_functions, file.name), func, processedFiles[disasmBack.FileSectionType.Rodata], context)
+        disasmBack.mips.FilesHandlers.writeOtherRodata(args.split_functions, processedFiles[disasmBack.FileSectionType.Rodata], context)
 
     if args.save_context is not None:
         head, tail = os.path.split(args.save_context)
@@ -189,12 +183,12 @@ def disassemblerMain():
             os.makedirs(head, exist_ok=True)
         context.saveContextToFile(args.save_context)
 
-    printQuietless(lenLastLine*" " + "\r", end="")
-    printQuietless(f"Done: {args.binary}")
+    disasmBack.Utils.printQuietless(lenLastLine*" " + "\r", end="")
+    disasmBack.Utils.printQuietless(f"Done: {args.binary}")
 
-    printVerbose()
-    printVerbose("Disassembling complete!")
-    printVerbose("Goodbye.")
+    disasmBack.Utils.printVerbose()
+    disasmBack.Utils.printVerbose("Disassembling complete!")
+    disasmBack.Utils.printVerbose("Goodbye.")
 
 
 if __name__ == "__main__":

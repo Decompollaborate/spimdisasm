@@ -15,12 +15,6 @@ from .GlobalConfig import GlobalConfig
 from .FileSectionType import FileSectionType
 
 
-class ContextFile:
-    def __init__(self, name: str, vram: int):
-        self.name: str = name
-        self.vram: int = vram
-        #self.references: List[int] = list()
-
 class ContextSegment:
     def __init__(self, segmentName: str, segmentInputPath: str, segmentType: str, subsections):
         self.name: str = segmentName

@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 from ..common.Utils import *
-from ..common.GlobalConfig import printVerbose
 from ..common.FileSectionType import FileSectionType
 
 from .Elf32Constants import Elf32SectionHeaderType

@@ -7,12 +7,7 @@ from __future__ import annotations
 
 import argparse
 
-from backend.common.Utils import *
-from backend.common.GlobalConfig import GlobalConfig
-from backend.common.Context import Context
-
-from backend.mips.Instructions import wordToInstruction, wordToInstructionRsp, InstructionBase
-from backend.mips.MipsFunction import Function
+import backend as disasmBack
 
 
 def disasmdisMain():
@@ -26,26 +21,26 @@ def disasmdisMain():
 
     args = parser.parse_args()
 
-    GlobalConfig.ASM_COMMENT = False
-    GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS = True
+    disasmBack.GlobalConfig.ASM_COMMENT = False
+    disasmBack.GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS = True
 
     # Count the amount of words and round up to a word boundary
     wordsCount = (len(args.input) - 1) // 8 + 1
 
-    context = Context()
+    context = disasmBack.Context()
 
-    instructionList: list[InstructionBase] = list()
+    instructionList: list[disasmBack.mips.Instructions.InstructionBase] = list()
 
     for i in range(wordsCount):
         # print(i)
         word = int(args.input[i*8:(i+1)*8], 16)
-        instructionList.append(wordToInstruction(word))
+        instructionList.append(disasmBack.mips.Instructions.wordToInstruction(word))
 
     if args.raw_instr:
         for instr in instructionList:
             print(instr.disassemble())
     else:
-        func = Function(context, 0, None, "", instructionList)
+        func = disasmBack.mips.Function(context, 0, None, "", instructionList)
         func.analyze()
         print(func.disassemble(), end="")
 

@@ -131,21 +131,3 @@ class GlobalConfig:
         GlobalConfig.PRINT_FUNCTION_ANALYSIS_DEBUG_INFO = args.debug_func_analysis
         GlobalConfig.PRINT_SYMBOL_FINDER_DEBUG_INFO = args.debug_symbol_finder
         GlobalConfig.PRINT_SYMBOL_FINDER_DEBUG_INFO = args.debug_unpaired_luis
-
-
-def printQuietless(*args, **kwargs):
-    if not GlobalConfig.QUIET:
-        print(*args, **kwargs)
-
-def epprintQuietless(*args, **kwargs):
-    if not GlobalConfig.QUIET:
-        print(*args, file=sys.stderr, **kwargs)
-
-
-def printVerbose(*args, **kwargs):
-    if not GlobalConfig.QUIET and GlobalConfig.VERBOSE:
-        print(*args, **kwargs)
-
-def eprintVerbose(*args, **kwargs):
-    if not GlobalConfig.QUIET and GlobalConfig.VERBOSE:
-        print(*args, file=sys.stderr, **kwargs)

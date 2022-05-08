@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from ..common.Utils import *
-from ..common.GlobalConfig import GlobalConfig, printQuietless, printVerbose
+from ..common.GlobalConfig import GlobalConfig
 from ..common.Context import Context
 from ..common.FileSplitFormat import FileSectionType, FileSplitEntry
 
@@ -39,6 +39,7 @@ def createSectionFromSplitEntry(splitEntry: FileSplitEntry, array_of_bytes: byte
         printVerbose(f"Using VRAM {splitEntry.vram:08X}")
         vram = splitEntry.vram
 
+    f: Section
     if splitEntry.section == FileSectionType.Text:
         f = Text(context, vram, tail, array_of_bytes)
     elif splitEntry.section == FileSectionType.Data:

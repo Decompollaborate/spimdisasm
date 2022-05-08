@@ -19,6 +19,23 @@ from .GlobalConfig import GlobalConfig, InputEndian
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
+def printQuietless(*args, **kwargs):
+    if not GlobalConfig.QUIET:
+        print(*args, **kwargs)
+
+def epprintQuietless(*args, **kwargs):
+    if not GlobalConfig.QUIET:
+        print(*args, file=sys.stderr, **kwargs)
+
+
+def printVerbose(*args, **kwargs):
+    if not GlobalConfig.QUIET and GlobalConfig.VERBOSE:
+        print(*args, **kwargs)
+
+def eprintVerbose(*args, **kwargs):
+    if not GlobalConfig.QUIET and GlobalConfig.VERBOSE:
+        print(*args, file=sys.stderr, **kwargs)
+
 # https://stackoverflow.com/questions/1512457/determining-if-stdout-for-a-python-process-is-redirected
 def isStdoutRedirected() -> bool:
     return not sys.stdout.isatty()
@@ -46,7 +63,7 @@ def readJson(filepath):
         return json.load(f)
 
 def removeExtraWhitespace(line: str) -> str:
-    return" ".join(line.split())
+    return " ".join(line.split())
 
 def bytesToBEWords(array_of_bytes: bytearray) -> List[int]:
     if GlobalConfig.ENDIAN == InputEndian.MIDDLE:
@@ -90,10 +107,6 @@ def from2Complement(number: int, bits: int) -> int:
     if isNegative:
         return -((~number + 1) & ((1 << bits) - 1))
     return number
-
-def readVersionedFileAsBytearrray(file: str, game: str, version: str) -> bytearray:
-    filename = os.path.join(game, version, "baserom", file)
-    return readFileAsBytearray(filename)
 
 def readCsv(filepath: str) -> List[List[str]]:
     data: List[List[str]] = []
