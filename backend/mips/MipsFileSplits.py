@@ -7,11 +7,7 @@ from __future__ import annotations
 
 from typing import List
 
-from ..common.Utils import *
-from ..common.GlobalConfig import GlobalConfig
-from ..common.Context import Context
-from ..common.FileSectionType import FileSectionType, FileSections_ListBasic, FileSections_ListAll
-from ..common.FileSplitFormat import FileSplitFormat, FileSplitEntry
+from .. import common
 
 from .MipsFileBase import FileBase, createEmptyFile
 from .MipsSection import Section
@@ -21,18 +17,18 @@ from .FilesHandlers import createSectionFromSplitEntry
 
 
 class FileSplits(FileBase):
-    def __init__(self, context: Context, vram: int|None, filename: str, array_of_bytes: bytearray, splitsData: FileSplitFormat | None = None, relocSection: RelocZ64|None = None):
-        super().__init__(context, vram, filename, array_of_bytes, FileSectionType.Unknown)
+    def __init__(self, context: common.Context, vram: int|None, filename: str, array_of_bytes: bytearray, splitsData: common.FileSplitFormat | None = None, relocSection: RelocZ64|None = None):
+        super().__init__(context, vram, filename, array_of_bytes, common.FileSectionType.Unknown)
 
-        self.sectionsDict: dict[FileSectionType, dict[str, Section]] = {
-            FileSectionType.Text: dict(),
-            FileSectionType.Data: dict(),
-            FileSectionType.Rodata: dict(),
-            FileSectionType.Bss: dict(),
-            FileSectionType.Reloc: dict(),
+        self.sectionsDict: dict[common.FileSectionType, dict[str, Section]] = {
+            common.FileSectionType.Text: dict(),
+            common.FileSectionType.Data: dict(),
+            common.FileSectionType.Rodata: dict(),
+            common.FileSectionType.Bss: dict(),
+            common.FileSectionType.Reloc: dict(),
         }
 
-        self.splitsDataList: List[FileSplitEntry] = []
+        self.splitsDataList: List[common.FileSplitEntry] = []
 
         if relocSection is not None:
             relocSection.parent = self
@@ -43,10 +39,10 @@ class FileSplits(FileBase):
                     if relocSection.differentSegment:
                         relocStart += relocSection.bssSize
                     relocSection.vram = self.vram + relocStart
-            self.sectionsDict[FileSectionType.Reloc][filename] = relocSection
+            self.sectionsDict[common.FileSectionType.Reloc][filename] = relocSection
 
         if splitsData is None and relocSection is None:
-            self.sectionsDict[FileSectionType.Text][filename] = Text(context, vram, filename, array_of_bytes)
+            self.sectionsDict[common.FileSectionType.Text][filename] = Text(context, vram, filename, array_of_bytes)
         elif splitsData is not None and len(splitsData) > 0:
             for splitEntry in splitsData:
                 self.splitsDataList.append(splitEntry)
@@ -55,15 +51,15 @@ class FileSplits(FileBase):
 
             start = 0
             end = 0
-            for i in range(len(FileSections_ListBasic)):
-                sectionType = FileSections_ListBasic[i]
+            for i in range(len(common.FileSections_ListBasic)):
+                sectionType = common.FileSections_ListBasic[i]
                 sectionSize = relocSection.sectionSizes[sectionType]
 
                 if i != 0:
-                    start += relocSection.sectionSizes[FileSections_ListBasic[i-1]]
+                    start += relocSection.sectionSizes[common.FileSections_ListBasic[i-1]]
                 end += relocSection.sectionSizes[sectionType]
 
-                if sectionType == FileSectionType.Bss:
+                if sectionType == common.FileSectionType.Bss:
                     # bss is after reloc when the relocation is on the same segment
                     if not relocSection.differentSegment:
                         start += relocSection.sizew * 4
@@ -75,7 +71,7 @@ class FileSplits(FileBase):
 
                 if self.vram is not None:
                     vram = self.vram + start
-                splitEntry = FileSplitEntry(start, vram, filename, sectionType, end, False, False)
+                splitEntry = common.FileSplitEntry(start, vram, filename, sectionType, end, False, False)
                 self.splitsDataList.append(splitEntry)
 
 
@@ -92,7 +88,7 @@ class FileSplits(FileBase):
     @property
     def nFuncs(self) -> int:
         nFuncs = 0
-        for f in self.sectionsDict[FileSectionType.Text].values():
+        for f in self.sectionsDict[common.FileSectionType.Text].values():
             assert(isinstance(f, Text))
             text: Text = f
             nFuncs += text.nFuncs
@@ -110,11 +106,11 @@ class FileSplits(FileBase):
             for section in sectDict.values():
                 words += section.words
         buffer = bytearray(4*len(words))
-        beWordsToBytes(words, buffer)
-        return getStrHash(buffer)
+        common.Utils.beWordsToBytes(words, buffer)
+        return common.Utils.getStrHash(buffer)
 
     def analyze(self):
-        for filename, relocSection in self.sectionsDict[FileSectionType.Reloc].items():
+        for filename, relocSection in self.sectionsDict[common.FileSectionType.Reloc].items():
             assert isinstance(relocSection, RelocZ64)
             for entry in relocSection.entries:
                 sectionType = entry.getSectionType()
@@ -131,14 +127,14 @@ class FileSplits(FileBase):
     def compareToFile(self, other_file: FileBase):
         if isinstance(other_file, FileSplits):
             filesections = {
-                FileSectionType.Text: dict(),
-                FileSectionType.Data: dict(),
-                FileSectionType.Rodata: dict(),
-                FileSectionType.Bss: dict(),
-                FileSectionType.Reloc: dict(),
+                common.FileSectionType.Text: dict(),
+                common.FileSectionType.Data: dict(),
+                common.FileSectionType.Rodata: dict(),
+                common.FileSectionType.Bss: dict(),
+                common.FileSectionType.Reloc: dict(),
             }
 
-            for sectionType in FileSections_ListAll:
+            for sectionType in common.FileSections_ListAll:
                 for section_name, section in self.sectionsDict[sectionType].items():
                     if section_name in other_file.sectionsDict[sectionType]:
                         other_section = other_file.sectionsDict[sectionType][section_name]
@@ -158,14 +154,14 @@ class FileSplits(FileBase):
         return super().compareToFile(other_file)
 
     def blankOutDifferences(self, other_file: FileBase) -> bool:
-        if not GlobalConfig.REMOVE_POINTERS:
+        if not common.GlobalConfig.REMOVE_POINTERS:
             return False
 
         if not isinstance(other_file, FileSplits):
             return False
 
         was_updated = False
-        for sectionType in FileSections_ListAll:
+        for sectionType in common.FileSections_ListAll:
             for section_name, section in self.sectionsDict[sectionType].items():
                 if section_name in other_file.sectionsDict[sectionType]:
                     other_section = other_file.sectionsDict[sectionType][section_name]
@@ -178,7 +174,7 @@ class FileSplits(FileBase):
         return was_updated
 
     def removePointers(self) -> bool:
-        if not GlobalConfig.REMOVE_POINTERS:
+        if not common.GlobalConfig.REMOVE_POINTERS:
             return False
 
         was_updated = False

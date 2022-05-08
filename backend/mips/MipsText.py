@@ -5,23 +5,20 @@
 
 from __future__ import annotations
 
-from ..common.Utils import *
-from ..common.GlobalConfig import GlobalConfig
-from ..common.Context import Context
-from ..common.FileSectionType import FileSectionType
+from .. import common
 
 from .MipsFileBase import FileBase
 from .MipsSection import Section
 from .Instructions import InstructionBase, wordToInstruction, wordToInstructionRsp, InstructionId, InstructionCoprocessor0, InstructionCoprocessor2
-from .MipsFunction import Function
+from .Symbols import SymbolFunction
 
 
 class Text(Section):
-    def __init__(self, context: Context, vram: int|None, filename: str, array_of_bytes: bytearray):
-        super().__init__(context, vram, filename, array_of_bytes, FileSectionType.Text)
+    def __init__(self, context: common.Context, vram: int|None, filename: str, array_of_bytes: bytearray):
+        super().__init__(context, vram, filename, array_of_bytes, common.FileSectionType.Text)
 
         # TODO: do something with this information
-        self.fileBoundaries: List[int] = list()
+        self.fileBoundaries: list[int] = list()
 
     @property
     def nFuncs(self) -> int:
@@ -33,7 +30,7 @@ class Text(Section):
         funcsStartsList = [0]
         unimplementedInstructionsFuncList = []
 
-        instructions: List[InstructionBase] = list()
+        instructions: list[InstructionBase] = list()
         for word in self.words:
             if self.isRsp:
                 instr = wordToInstructionRsp(word)
@@ -41,8 +38,8 @@ class Text(Section):
                 instr = wordToInstruction(word)
             instructions.append(instr)
 
-        trackedRegisters: Dict[int, int] = dict()
-        registersValues: Dict[int, int] = dict()
+        trackedRegisters: dict[int, int] = dict()
+        registersValues: dict[int, int] = dict()
         instructionOffset = 0
 
         isLikelyHandwritten = self.isHandwritten
@@ -103,7 +100,7 @@ class Text(Section):
                     isLikelyHandwritten = True
 
             if instr.isBranch():
-                branch = from2Complement(instr.immediate, 16) + 1
+                branch = common.Utils.from2Complement(instr.immediate, 16) + 1
                 if branch > farthestBranch:
                     # keep track of the farthest branch target
                     farthestBranch = branch
@@ -116,7 +113,7 @@ class Text(Section):
                         j = len(funcsStartsList) - 1
                         while j >= 0:
                             if index + branch < funcsStartsList[j]:
-                                if GlobalConfig.TRUST_USER_FUNCTIONS or (GlobalConfig.DISASSEMBLE_RSP and self.isRsp):
+                                if common.GlobalConfig.TRUST_USER_FUNCTIONS or (common.GlobalConfig.DISASSEMBLE_RSP and self.isRsp):
                                     vram = self.getVramOffset(funcsStartsList[j]*4)
                                     if self.context.getFunction(vram) is not None:
                                         j -= 1
@@ -137,7 +134,7 @@ class Text(Section):
                     if rs in trackedRegisters:
                         luiInstr = instructions[trackedRegisters[rs]]
                         upperHalf = luiInstr.immediate << 16
-                        lowerHalf = from2Complement(instr.immediate, 16)
+                        lowerHalf = common.Utils.from2Complement(instr.immediate, 16)
                         registersValues[instr.rt] = upperHalf + lowerHalf
 
             elif instr.isJType():
@@ -155,15 +152,15 @@ class Text(Section):
                     else:
                         if instr.rs in registersValues:
                             functionEnded = True
-                elif instr.uniqueId == InstructionId.J and (isLikelyHandwritten or (GlobalConfig.DISASSEMBLE_RSP and self.isRsp)):
+                elif instr.uniqueId == InstructionId.J and (isLikelyHandwritten or (common.GlobalConfig.DISASSEMBLE_RSP and self.isRsp)):
                     functionEnded = True
 
             if self.vram is not None:
-                if GlobalConfig.TRUST_USER_FUNCTIONS or (GlobalConfig.DISASSEMBLE_RSP and self.isRsp):
+                if common.GlobalConfig.TRUST_USER_FUNCTIONS or (common.GlobalConfig.DISASSEMBLE_RSP and self.isRsp):
                     vram = self.getVramOffset(instructionOffset) + 8
                     funcContext = self.context.getFunction(vram)
                     if funcContext is not None:
-                        if funcContext.isUserDefined or (GlobalConfig.DISASSEMBLE_RSP and self.isRsp):
+                        if funcContext.isUserDefined or (common.GlobalConfig.DISASSEMBLE_RSP and self.isRsp):
                             functionEnded = True
 
             index += 1
@@ -185,7 +182,7 @@ class Text(Section):
                 break
 
             funcName = f"func_{i}"
-            possibleFuncName = self.context.getOffsetSymbol(start*4, FileSectionType.Text)
+            possibleFuncName = self.context.getOffsetSymbol(start*4, common.FileSectionType.Text)
             if possibleFuncName is not None:
                 funcName = possibleFuncName.name
 
@@ -196,9 +193,9 @@ class Text(Section):
                 if funcSymbol is not None:
                     funcName = funcSymbol.name
                 else:
-                    funcName = "func_" + toHex(vram, 6)[2:]
+                    funcName = "func_{vram:06X}"
 
-                if GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS or not hasUnimplementedIntrs:
+                if common.GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS or not hasUnimplementedIntrs:
                     self.context.addFunction(vram, funcName)
                     funcSymbol = self.context.getFunction(vram)
                     if funcSymbol is not None:
@@ -206,12 +203,12 @@ class Text(Section):
                 else:
                     if vram in self.context.symbols:
                         self.context.symbols[vram].isDefined = True
-                    elif GlobalConfig.ADD_NEW_SYMBOLS:
+                    elif common.GlobalConfig.ADD_NEW_SYMBOLS:
                         contextSym = self.context.addSymbol(vram, None)
                         contextSym.isAutogenerated = True
                         contextSym.isDefined = True
 
-            func = Function(self.context, self.inFileOffset + start*4, vram, funcName, instructions[start:end])
+            func = SymbolFunction(self.context, self.inFileOffset + start*4, vram, funcName, instructions[start:end])
             func.index = i
             func.pointersOffsets |= self.pointersOffsets
             func.hasUnimplementedIntrs = hasUnimplementedIntrs
@@ -223,15 +220,15 @@ class Text(Section):
 
     def printAnalyzisResults(self):
         super().printAnalyzisResults()
-        if not GlobalConfig.VERBOSE:
+        if not common.GlobalConfig.VERBOSE:
             return
 
 
-        printVerbose(f"Found {self.nFuncs} functions.")
+        common.Utils.printVerbose(f"Found {self.nFuncs} functions.")
 
         nBoundaries = len(self.fileBoundaries)
         if nBoundaries > 0:
-            printVerbose(f"Found {nBoundaries} file boundaries.")
+            common.Utils.printVerbose(f"Found {nBoundaries} file boundaries.")
 
             for i in range(len(self.fileBoundaries)-1):
                 start = self.fileBoundaries[i]
@@ -246,7 +243,7 @@ class Text(Section):
                 fileVram = 0
                 if self.vram is not None:
                     fileVram = start + self.vram
-                printVerbose("\t", toHex(start+self.commentOffset, 6)[2:], toHex(end-start, 4)[2:], toHex(fileVram, 8)[2:], "\t functions:", functionsInBoundary)
+                common.Utils.printVerbose("\t", common.Utils.toHex(start+self.commentOffset, 6)[2:], common.Utils.toHex(end-start, 4)[2:], common.Utils.toHex(fileVram, 8)[2:], "\t functions:", functionsInBoundary)
 
             start = self.fileBoundaries[-1]
             end = self.sizew*4 + self.inFileOffset
@@ -260,9 +257,9 @@ class Text(Section):
             fileVram = 0
             if self.vram is not None:
                 fileVram = start + self.vram
-            printVerbose("\t", toHex(start+self.commentOffset, 6)[2:], toHex(end-start, 4)[2:], toHex(fileVram, 8)[2:], "\t functions:", functionsInBoundary)
+            common.Utils.printVerbose("\t", common.Utils.toHex(start+self.commentOffset, 6)[2:], common.Utils.toHex(end-start, 4)[2:], common.Utils.toHex(fileVram, 8)[2:], "\t functions:", functionsInBoundary)
 
-            printVerbose()
+            common.Utils.printVerbose()
         return
 
 
@@ -282,8 +279,8 @@ class Text(Section):
         for i in range(min(self.nFuncs, other.nFuncs)):
             func = self.symbolList[i]
             other_func = other.symbolList[i]
-            assert isinstance(func, Function)
-            assert isinstance(other_func, Function)
+            assert isinstance(func, SymbolFunction)
+            assert isinstance(other_func, SymbolFunction)
             result += func.countDiffOpcodes(other_func)
         return result
 
@@ -292,13 +289,13 @@ class Text(Section):
         for i in range(min(self.nFuncs, other.nFuncs)):
             func = self.symbolList[i]
             other_func = other.symbolList[i]
-            assert isinstance(func, Function)
-            assert isinstance(other_func, Function)
+            assert isinstance(func, SymbolFunction)
+            assert isinstance(other_func, SymbolFunction)
             result += func.countSameOpcodeButDifferentArguments(other_func)
         return result
 
     def blankOutDifferences(self, other_file: FileBase) -> bool:
-        if not GlobalConfig.REMOVE_POINTERS:
+        if not common.GlobalConfig.REMOVE_POINTERS:
             return False
 
         if not isinstance(other_file, Text):
@@ -308,19 +305,19 @@ class Text(Section):
         for i in range(min(self.nFuncs, other_file.nFuncs)):
             func = self.symbolList[i]
             other_func = other_file.symbolList[i]
-            assert isinstance(func, Function)
-            assert isinstance(other_func, Function)
+            assert isinstance(func, SymbolFunction)
+            assert isinstance(other_func, SymbolFunction)
             was_updated = func.blankOutDifferences(other_func) or was_updated
 
         return was_updated
 
     def removePointers(self) -> bool:
-        if not GlobalConfig.REMOVE_POINTERS:
+        if not common.GlobalConfig.REMOVE_POINTERS:
             return False
 
         was_updated = False
         for func in self.symbolList:
-            assert isinstance(func, Function)
+            assert isinstance(func, SymbolFunction)
             was_updated = func.removePointers() or was_updated
 
         return was_updated
@@ -330,7 +327,7 @@ class Text(Section):
 
         if self.nFuncs > 0:
             func = self.symbolList[-1]
-            assert isinstance(func, Function)
+            assert isinstance(func, SymbolFunction)
             func.removeTrailingNops()
             was_updated = True
 

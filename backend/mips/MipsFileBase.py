@@ -5,18 +5,18 @@
 
 from __future__ import annotations
 
-from ..common.Utils import *
-from ..common.GlobalConfig import GlobalConfig
-from ..common.Context import Context
-from ..common.FileSectionType import FileSectionType
+import sys
+from typing import TextIO
+
+from .. import common
 
 from .MipsElementBase import ElementBase
 from .Symbols import SymbolBase
 
 
 class FileBase(ElementBase):
-    def __init__(self, context: Context, vram: int|None, filename: str, array_of_bytes: bytearray, sectionType: FileSectionType):
-        super().__init__(context, 0, vram, filename, bytesToBEWords(array_of_bytes), sectionType)
+    def __init__(self, context: common.Context, vram: int|None, filename: str, array_of_bytes: bytearray, sectionType: common.FileSectionType):
+        super().__init__(context, 0, vram, filename, common.Utils.bytesToBEWords(array_of_bytes), sectionType)
 
         self.symbolList: list[SymbolBase] = []
 
@@ -38,7 +38,7 @@ class FileBase(ElementBase):
         return self.vram + self.inFileOffset + localOffset
 
     def generateAsmLineComment(self, localOffset: int, wordValue: int|None = None) -> str:
-        if not GlobalConfig.ASM_COMMENT:
+        if not common.GlobalConfig.ASM_COMMENT:
             return ""
         offsetHex = f"{localOffset + self.inFileOffset + self.commentOffset:06X}"
 
@@ -71,8 +71,8 @@ class FileBase(ElementBase):
 
     def getHash(self) -> str:
         buffer = bytearray(4*len(self.words))
-        beWordsToBytes(self.words, buffer)
-        return getStrHash(buffer)
+        common.Utils.beWordsToBytes(self.words, buffer)
+        return common.Utils.getStrHash(buffer)
 
     def printAnalyzisResults(self):
         pass
@@ -112,13 +112,13 @@ class FileBase(ElementBase):
         return result
 
     def blankOutDifferences(self, other: FileBase) -> bool:
-        if not GlobalConfig.REMOVE_POINTERS:
+        if not common.GlobalConfig.REMOVE_POINTERS:
             return False
 
         return False
 
     def removePointers(self) -> bool:
-        if not GlobalConfig.REMOVE_POINTERS:
+        if not common.GlobalConfig.REMOVE_POINTERS:
             return False
 
         return False
@@ -145,14 +145,14 @@ class FileBase(ElementBase):
         if filepath == "-":
             self.disassembleToFile(sys.stdout)
         else:
-            if GlobalConfig.WRITE_BINARY:
+            if common.GlobalConfig.WRITE_BINARY:
                 if self.sizew > 0:
                     buffer = bytearray(4*len(self.words))
-                    beWordsToBytes(self.words, buffer)
-                    writeBytearrayToFile(filepath + self.sectionType.toStr(), buffer)
+                    common.Utils.beWordsToBytes(self.words, buffer)
+                    common.Utils.writeBytearrayToFile(filepath + self.sectionType.toStr(), buffer)
             with open(filepath + self.sectionType.toStr() + ".s", "w") as f:
                 self.disassembleToFile(f)
 
 
 def createEmptyFile() -> FileBase:
-    return FileBase(Context(), None, "", bytearray(), FileSectionType.Unknown)
+    return FileBase(common.Context(), None, "", bytearray(), common.FileSectionType.Unknown)

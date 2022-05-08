@@ -173,7 +173,7 @@ def disassemblerMain():
         for f in processedFiles[disasmBack.FileSectionType.Text]:
             file: disasmBack.mips.Text = f
             for func in file.symbolList:
-                assert isinstance(func, disasmBack.mips.Function)
+                assert isinstance(func, disasmBack.mips.Symbols.SymbolFunction)
                 disasmBack.mips.FilesHandlers.writeSplitedFunction(os.path.join(args.split_functions, file.name), func, processedFiles[disasmBack.FileSectionType.Rodata], context)
         disasmBack.mips.FilesHandlers.writeOtherRodata(args.split_functions, processedFiles[disasmBack.FileSectionType.Rodata], context)
 

@@ -5,20 +5,17 @@
 
 from __future__ import annotations
 
-from ..common.Utils import *
-from ..common.GlobalConfig import GlobalConfig
-from ..common.Context import Context, ContextSymbolBase
-from ..common.FileSectionType import FileSectionType
+from .. import common
 
 
 class ElementBase:
-    def __init__(self, context: Context, inFileOffset: int, vram: int|None, name: str, words: list[int], sectionType: FileSectionType):
-        self.context: Context = context
+    def __init__(self, context: common.Context, inFileOffset: int, vram: int|None, name: str, words: list[int], sectionType: common.FileSectionType):
+        self.context: common.Context = context
         self.inFileOffset: int = inFileOffset
         self.vram: int|None = vram
         self.name: str = name
         self.words: list[int] = words
-        self.sectionType: FileSectionType = sectionType
+        self.sectionType: common.FileSectionType = sectionType
 
         self.commentOffset: int = 0
         self.index: int|None = None
@@ -42,10 +39,10 @@ class ElementBase:
         return self.vram + localOffset
         # return self.vram + self.inFileOffset + localOffset
 
-    def getLabelFromSymbol(self, sym: ContextSymbolBase|None) -> str:
+    def getLabelFromSymbol(self, sym: common.ContextSymbolBase|None) -> str:
         if sym is not None:
             label = sym.getSymbolLabel()
-            if GlobalConfig.GLABEL_ASM_COUNT:
+            if common.GlobalConfig.GLABEL_ASM_COUNT:
                 if self.index is not None:
                     label += f" # {self.index}"
             label += "\n"
