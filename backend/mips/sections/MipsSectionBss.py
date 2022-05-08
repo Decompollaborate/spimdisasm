@@ -5,14 +5,14 @@
 
 from __future__ import annotations
 
-from .. import common
+from ... import common
 
-from . import symbols
+from .. import symbols
 
-from .MipsSection import Section
+from . import SectionBase
 
 
-class Bss(Section):
+class SectionBss(SectionBase):
     def __init__(self, context: common.Context, bssVramStart: int, bssVramEnd: int, filename: str):
         super().__init__(context, bssVramStart, filename, bytearray(), common.FileSectionType.Bss)
 

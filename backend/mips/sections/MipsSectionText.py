@@ -5,16 +5,17 @@
 
 from __future__ import annotations
 
-from .. import common
+from ... import common
 
-from . import symbols
+from .. import symbols
+from .. import FileBase
 
-from .MipsFileBase import FileBase
-from .MipsSection import Section
-from .instructions import InstructionBase, wordToInstruction, wordToInstructionRsp, InstructionId, InstructionCoprocessor0, InstructionCoprocessor2
+from . import SectionBase
+
+from ..instructions import InstructionBase, wordToInstruction, wordToInstructionRsp, InstructionId, InstructionCoprocessor0, InstructionCoprocessor2
 
 
-class Text(Section):
+class SectionText(SectionBase):
     def __init__(self, context: common.Context, vram: int|None, filename: str, array_of_bytes: bytearray):
         super().__init__(context, vram, filename, array_of_bytes, common.FileSectionType.Text)
 
@@ -267,7 +268,7 @@ class Text(Section):
     def compareToFile(self, other: FileBase):
         result = super().compareToFile(other)
 
-        if isinstance(other, Text):
+        if isinstance(other, SectionText):
             result["text"] = {
                 "diff_opcode": self.countDiffOpcodes(other),
                 "same_opcode_same_args": self.countSameOpcodeButDifferentArguments(other),
@@ -275,7 +276,7 @@ class Text(Section):
 
         return result
 
-    def countDiffOpcodes(self, other: Text) -> int:
+    def countDiffOpcodes(self, other: SectionText) -> int:
         result = 0
         for i in range(min(self.nFuncs, other.nFuncs)):
             func = self.symbolList[i]
@@ -285,7 +286,7 @@ class Text(Section):
             result += func.countDiffOpcodes(other_func)
         return result
 
-    def countSameOpcodeButDifferentArguments(self, other: Text) -> int:
+    def countSameOpcodeButDifferentArguments(self, other: SectionText) -> int:
         result = 0
         for i in range(min(self.nFuncs, other.nFuncs)):
             func = self.symbolList[i]
@@ -299,7 +300,7 @@ class Text(Section):
         if not common.GlobalConfig.REMOVE_POINTERS:
             return False
 
-        if not isinstance(other_file, Text):
+        if not isinstance(other_file, SectionText):
             return False
 
         was_updated = False

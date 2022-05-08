@@ -9,18 +9,17 @@ from typing import List
 
 from .. import common
 
+from . import sections
+
 from .MipsFileBase import FileBase, createEmptyFile
-from .MipsSection import Section
-from .MipsText import Text
-from .MipsRelocZ64 import RelocZ64
 from .FilesHandlers import createSectionFromSplitEntry
 
 
 class FileSplits(FileBase):
-    def __init__(self, context: common.Context, vram: int|None, filename: str, array_of_bytes: bytearray, splitsData: common.FileSplitFormat | None = None, relocSection: RelocZ64|None = None):
+    def __init__(self, context: common.Context, vram: int|None, filename: str, array_of_bytes: bytearray, splitsData: common.FileSplitFormat | None = None, relocSection: sections.SectionRelocZ64|None = None):
         super().__init__(context, vram, filename, array_of_bytes, common.FileSectionType.Unknown)
 
-        self.sectionsDict: dict[common.FileSectionType, dict[str, Section]] = {
+        self.sectionsDict: dict[common.FileSectionType, dict[str, sections.SectionBase]] = {
             common.FileSectionType.Text: dict(),
             common.FileSectionType.Data: dict(),
             common.FileSectionType.Rodata: dict(),
@@ -42,7 +41,7 @@ class FileSplits(FileBase):
             self.sectionsDict[common.FileSectionType.Reloc][filename] = relocSection
 
         if splitsData is None and relocSection is None:
-            self.sectionsDict[common.FileSectionType.Text][filename] = Text(context, vram, filename, array_of_bytes)
+            self.sectionsDict[common.FileSectionType.Text][filename] = sections.SectionText(context, vram, filename, array_of_bytes)
         elif splitsData is not None and len(splitsData) > 0:
             for splitEntry in splitsData:
                 self.splitsDataList.append(splitEntry)
@@ -89,8 +88,8 @@ class FileSplits(FileBase):
     def nFuncs(self) -> int:
         nFuncs = 0
         for f in self.sectionsDict[common.FileSectionType.Text].values():
-            assert(isinstance(f, Text))
-            text: Text = f
+            assert(isinstance(f, sections.SectionText))
+            text: sections.SectionText = f
             nFuncs += text.nFuncs
         return nFuncs
 
@@ -111,7 +110,7 @@ class FileSplits(FileBase):
 
     def analyze(self):
         for filename, relocSection in self.sectionsDict[common.FileSectionType.Reloc].items():
-            assert isinstance(relocSection, RelocZ64)
+            assert isinstance(relocSection, sections.SectionRelocZ64)
             for entry in relocSection.entries:
                 sectionType = entry.getSectionType()
                 if entry.reloc == 0:

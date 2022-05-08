@@ -7,12 +7,12 @@
 
 from __future__ import annotations
 
-from .. import common
+from ... import common
 
-from . import symbols
+from .. import symbols
+from .. import RelocTypes
 
-from .MipsSection import Section
-from .MipsRelocTypes import RelocTypes
+from . import SectionBase
 
 
 class RelocEntry:
@@ -39,7 +39,7 @@ class RelocEntry:
         return self.__str__()
 
 
-class RelocZ64(Section):
+class SectionRelocZ64(SectionBase):
     def __init__(self, context: common.Context, vram: int|None, filename: str, array_of_bytes: bytearray):
         super().__init__(context, vram, filename, array_of_bytes, common.FileSectionType.Reloc)
 

@@ -10,16 +10,11 @@ from typing import TextIO
 
 from .. import common
 
+from . import sections
 from . import symbols
 
-from .MipsSection import Section
-from .MipsText import Text
-from .MipsData import Data
-from .MipsRodata import Rodata
-from .MipsBss import Bss
 
-
-def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_bytes: bytearray, outputPath: str, context: common.Context) -> Section:
+def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_bytes: bytearray, outputPath: str, context: common.Context) -> sections.SectionBase:
     head, tail = os.path.split(outputPath)
 
     offsetStart = splitEntry.offset
@@ -40,16 +35,16 @@ def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_byte
         common.Utils.printVerbose(f"Using VRAM {splitEntry.vram:08X}")
         vram = splitEntry.vram
 
-    f: Section
+    f: sections.SectionBase
     if splitEntry.section == common.FileSectionType.Text:
-        f = Text(context, vram, tail, array_of_bytes)
+        f = sections.SectionText(context, vram, tail, array_of_bytes)
     elif splitEntry.section == common.FileSectionType.Data:
-        f = Data(context, vram, tail, array_of_bytes)
+        f = sections.SectionData(context, vram, tail, array_of_bytes)
     elif splitEntry.section == common.FileSectionType.Rodata:
-        f = Rodata(context, vram, tail, array_of_bytes)
+        f = sections.SectionRodata(context, vram, tail, array_of_bytes)
     elif splitEntry.section == common.FileSectionType.Bss:
         assert isinstance(splitEntry.vram, int)
-        f = Bss(context, splitEntry.vram, splitEntry.vram + offsetEnd - offsetStart, tail)
+        f = sections.SectionBss(context, splitEntry.vram, splitEntry.vram + offsetEnd - offsetStart, tail)
     else:
         common.Utils.eprint("Error! Section not set!")
         exit(-1)
@@ -59,7 +54,7 @@ def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_byte
 
     return f
 
-def analyzeSectionFromSplitEntry(fileSection: Section, splitEntry: common.FileSplitEntry):
+def analyzeSectionFromSplitEntry(fileSection: sections.SectionBase, splitEntry: common.FileSplitEntry):
     offsetStart = splitEntry.offset
 
     common.Utils.printVerbose("Analyzing")
@@ -73,7 +68,7 @@ def analyzeSectionFromSplitEntry(fileSection: Section, splitEntry: common.FileSp
     return fileSection
 
 
-def writeSection(path: str, fileSection: Section):
+def writeSection(path: str, fileSection: sections.SectionBase):
     head, tail = os.path.split(path)
 
     # Create directories
@@ -85,7 +80,7 @@ def writeSection(path: str, fileSection: Section):
     return path
 
 
-def getRdataAndLateRodataForFunction(func: symbols.SymbolFunction, rodataFileList: list[Rodata], context: common.Context):
+def getRdataAndLateRodataForFunction(func: symbols.SymbolFunction, rodataFileList: list[sections.SectionRodata], context: common.Context):
     rdataList = []
     lateRodataList = []
     lateRodataLen = 0
@@ -142,7 +137,7 @@ def getRdataAndLateRodataForFunction(func: symbols.SymbolFunction, rodataFileLis
 
     return rdataList, lateRodataList, lateRodataLen, firstRodata
 
-def writeSplittedFunctionToFile(f: TextIO, func: symbols.SymbolFunction, rodataFileList: list[Rodata], context: common.Context):
+def writeSplittedFunctionToFile(f: TextIO, func: symbols.SymbolFunction, rodataFileList: list[sections.SectionRodata], context: common.Context):
     rdataList, lateRodataList, lateRodataLen, firstRodata = getRdataAndLateRodataForFunction(func, rodataFileList, context)
 
     if len(rdataList) > 0:
@@ -170,13 +165,13 @@ def writeSplittedFunctionToFile(f: TextIO, func: symbols.SymbolFunction, rodataF
     # Write the function
     f.write(func.disassemble())
 
-def writeSplitedFunction(path: str, func: symbols.SymbolFunction, rodataFileList: list[Rodata], context: common.Context):
+def writeSplitedFunction(path: str, func: symbols.SymbolFunction, rodataFileList: list[sections.SectionRodata], context: common.Context):
     os.makedirs(path, exist_ok=True)
     with open(os.path.join(path, func.name) + ".s", "w") as f:
         writeSplittedFunctionToFile(f, func, rodataFileList, context)
 
 
-def getOtherRodata(vram: int, nextVram: int, rodataSection: Rodata, context: common.Context) -> tuple[str|None, list[str]]:
+def getOtherRodata(vram: int, nextVram: int, rodataSection: sections.SectionRodata, context: common.Context) -> tuple[str|None, list[str]]:
     rdataList: list[str] = []
 
     rodataSymbol = context.getGenericSymbol(vram, False)
@@ -211,7 +206,7 @@ def getOtherRodata(vram: int, nextVram: int, rodataSection: Rodata, context: com
 
     return rodataSymbol.name, rdataList
 
-def writeOtherRodata(path: str, rodataFileList: list[Rodata], context: common.Context):
+def writeOtherRodata(path: str, rodataFileList: list[sections.SectionRodata], context: common.Context):
     for rodataSection in rodataFileList:
         rodataPath = os.path.join(path, rodataSection.name)
         os.makedirs(rodataPath, exist_ok=True)

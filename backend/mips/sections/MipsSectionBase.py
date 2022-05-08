@@ -5,11 +5,11 @@
 
 from __future__ import annotations
 
-from .. import common
+from ... import common
 
-from .MipsFileBase import FileBase
+from .. import FileBase
 
-class Section(FileBase):
+class SectionBase(FileBase):
     def blankOutDifferences(self, other: FileBase) -> bool:
         if not common.GlobalConfig.REMOVE_POINTERS:
             return False
