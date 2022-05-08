@@ -8,9 +8,10 @@ from __future__ import annotations
 import ast
 import argparse
 import dataclasses
-from sortedcontainers import SortedDict
+import os
+import sortedcontainers
 
-from .Utils import *
+from . import Utils
 from .GlobalConfig import GlobalConfig
 from .FileSectionType import FileSectionType
 
@@ -115,30 +116,30 @@ class ContextRelocSymbol(ContextSymbolBase):
 
 class Context:
     def __init__(self):
-        self.segments: Dict[str, ContextSegment] = dict()
+        self.segments: dict[str, ContextSegment] = dict()
 
-        self.funcsInFiles: Dict[str, List[int]] = dict()
+        self.funcsInFiles: dict[str, list[int]] = dict()
 
-        self.funcAddresses: Dict[int, ContextSymbol] = dict()
+        self.funcAddresses: dict[int, ContextSymbol] = dict()
 
-        self.labels: Dict[int, ContextSymbol] = dict()
+        self.labels: dict[int, ContextSymbol] = dict()
         # self.symbols: SortedDict[int, ContextSymbol]
-        self.symbols = SortedDict()
+        self.symbols = sortedcontainers.SortedDict()
 
         # Where the jump table is
-        self.jumpTables: Dict[int, ContextSymbol] = dict()
+        self.jumpTables: dict[int, ContextSymbol] = dict()
         # The addresses every jump table has
-        self.jumpTablesLabels: Dict[int, ContextSymbol] = dict()
+        self.jumpTablesLabels: dict[int, ContextSymbol] = dict()
 
         # Functions jumped into Using J instead of JAL
-        self.fakeFunctions: Dict[int, ContextSymbol] = dict()
+        self.fakeFunctions: dict[int, ContextSymbol] = dict()
 
-        self.constants: Dict[int, ContextSymbol] = dict()
+        self.constants: dict[int, ContextSymbol] = dict()
 
-        self.newPointersInData: Set[int] = set()
+        self.newPointersInData: set[int] = set()
 
         # Stuff that looks like pointers, but the disassembler shouldn't count it as a pointer
-        self.bannedSymbols: Set[int] = set()
+        self.bannedSymbols: set[int] = set()
 
         # First key is the section type, sub key is offset relative to the start of that section
         self.offsetSymbols: dict[FileSectionType, dict[int, ContextOffsetSymbol]] = {
@@ -156,9 +157,9 @@ class Context:
         }
 
         # Where the jump table is
-        self.offsetJumpTables: Dict[int, ContextOffsetSymbol] = dict()
+        self.offsetJumpTables: dict[int, ContextOffsetSymbol] = dict()
         # The addresses every jump table has
-        self.offsetJumpTablesLabels: Dict[int, ContextOffsetSymbol] = dict()
+        self.offsetJumpTablesLabels: dict[int, ContextOffsetSymbol] = dict()
 
 
     def getAnySymbol(self, vramAddress: int) -> ContextSymbol|None:
@@ -528,7 +529,7 @@ class Context:
             self.segments[segmentName] = ContextSegment(segmentName, segmentInputPath, segmentType, subsections)
             for vram, subname in subfiles.items():
                 if subname == "":
-                    subname = f"{segmentName}_{toHex(vram, 8)[2:]}"
+                    subname = f"{segmentName}_{vram:08X}"
 
         with open(functionsPath) as infile:
             functions_ast = ast.literal_eval(infile.read())
@@ -555,11 +556,12 @@ class Context:
         if not os.path.exists(filepath):
             return
 
-        variables_file = readCsv(filepath)
+        variables_file = Utils.readCsv(filepath)
         for row in variables_file:
             if len(row) == 0:
                 continue
 
+            varType: str|None
             vramStr, varName, varType, varSizeStr = row
 
             if vramStr == "-":
@@ -579,7 +581,7 @@ class Context:
         if not os.path.exists(filepath):
             return
 
-        functions_file = readCsv(filepath)
+        functions_file = Utils.readCsv(filepath)
         for row in functions_file:
             if len(row) == 0:
                 continue
@@ -597,7 +599,7 @@ class Context:
         if not os.path.exists(filepath):
             return
 
-        constants_file = readCsv(filepath)
+        constants_file = Utils.readCsv(filepath)
         for row in constants_file:
             if len(row) == 0:
                 continue
@@ -638,10 +640,10 @@ class Context:
                 f.write(f"constants,{constant.toCsv()}\n")
 
             for address in self.newPointersInData:
-                f.write(f"new_pointer_in_data,{toHex(address, 8)}\n")
+                f.write(f"new_pointer_in_data,0x{address:08X}\n")
 
             for address in self.bannedSymbols:
-                f.write(f"banned_symbol,{toHex(address, 8)}\n")
+                f.write(f"banned_symbol,0x{address:08X}\n")
 
 
     @staticmethod

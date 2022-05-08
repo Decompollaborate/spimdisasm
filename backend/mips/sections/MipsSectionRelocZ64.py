@@ -10,7 +10,8 @@ from __future__ import annotations
 from ... import common
 
 from .. import symbols
-from .. import RelocTypes
+
+from ..MipsRelocTypes import RelocTypes
 
 from . import SectionBase
 

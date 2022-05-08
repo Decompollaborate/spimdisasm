@@ -5,11 +5,7 @@
 
 from __future__ import annotations
 
-from .MipsConstants import InstructionId, InstructionVectorId
-
-from ...common.Utils import *
-
-from .MipsInstructionCoprocessor0 import InstructionCoprocessor0
+from . import InstructionId, InstructionCoprocessor0
 
 
 class InstructionCoprocessor0Rsp(InstructionCoprocessor0):

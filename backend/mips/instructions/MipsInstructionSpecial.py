@@ -5,14 +5,11 @@
 
 from __future__ import annotations
 
-from ...common.Utils import *
-
-from .MipsConstants import InstructionId
-from .MipsInstructionBase import InstructionBase
+from . import InstructionId, InstructionBase
 
 
 class InstructionSpecial(InstructionBase):
-    SpecialOpcodes: Dict[int, InstructionId] = {
+    SpecialOpcodes: dict[int, InstructionId] = {
         0b000_000: InstructionId.SLL,
         # 0b000_001: "MOVCI", # TODO
         0b000_010: InstructionId.SRL,
@@ -162,8 +159,7 @@ class InstructionSpecial(InstructionBase):
 
     def getOpcodeName(self) -> str:
         if self.uniqueId == InstructionId.INVALID:
-            opcode = toHex(self.function, 2)
-            return f"Special({opcode})"
+            return f"Special(0x{self.function:02X})"
         return super().getOpcodeName()
 
 

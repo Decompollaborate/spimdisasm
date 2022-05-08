@@ -81,8 +81,8 @@ def writeSection(path: str, fileSection: sections.SectionBase):
 
 
 def getRdataAndLateRodataForFunction(func: symbols.SymbolFunction, rodataFileList: list[sections.SectionRodata], context: common.Context):
-    rdataList = []
-    lateRodataList = []
+    rdataList: list[str] = []
+    lateRodataList: list[str] = []
     lateRodataLen = 0
     firstRodata = None
     for rodataSection in rodataFileList:

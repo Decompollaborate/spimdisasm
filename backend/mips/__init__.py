@@ -12,9 +12,6 @@ from . import symbols
 from . import FilesHandlers
 
 from .MipsElementBase import ElementBase
-
 from .MipsFileBase import FileBase, createEmptyFile
-
 from .MipsFileSplits import FileSplits
-
 from .MipsRelocTypes import RelocTypes

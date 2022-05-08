@@ -41,7 +41,7 @@ def elfObjDisasmMain():
 
     elfFile = disasmBack.elf32.Elf32File(array_of_bytes)
 
-    processedFiles: dict[disasmBack.FileSectionType, tuple[pathlib.Path, disasmBack.mips.Section]] = dict()
+    processedFiles: dict[disasmBack.FileSectionType, tuple[pathlib.Path, disasmBack.mips.sections.SectionBase]] = dict()
 
     textOutput = args.output
     dataOutput = args.data_output
@@ -58,11 +58,11 @@ def elfObjDisasmMain():
             outputFilePath /= inputPath.stem
 
         if sectionType == disasmBack.FileSectionType.Text:
-            processedFiles[sectionType] = (outputFilePath, disasmBack.mips.MipsText.Text(context, None, inputPath.stem, sectionBytes))
+            processedFiles[sectionType] = (outputFilePath, disasmBack.mips.sections.SectionText(context, None, inputPath.stem, sectionBytes))
         if sectionType == disasmBack.FileSectionType.Data:
-            processedFiles[sectionType] = (outputFilePath, disasmBack.mips.MipsData.Data(context, None, inputPath.stem, sectionBytes))
+            processedFiles[sectionType] = (outputFilePath, disasmBack.mips.sections.SectionData(context, None, inputPath.stem, sectionBytes))
         if sectionType == disasmBack.FileSectionType.Rodata:
-            processedFiles[sectionType] = (outputFilePath, disasmBack.mips.MipsRodata.Rodata(context, None, inputPath.stem, sectionBytes))
+            processedFiles[sectionType] = (outputFilePath, disasmBack.mips.sections.SectionRodata(context, None, inputPath.stem, sectionBytes))
 
     if elfFile.nobits is not None:
         outputPath = dataOutput
@@ -71,7 +71,7 @@ def elfObjDisasmMain():
         if outputPath != "-":
             outputFilePath /= inputPath.stem
 
-        processedFiles[disasmBack.FileSectionType.Bss] = (outputFilePath, disasmBack.mips.MipsBss.Bss(context, 0, elfFile.nobits, inputPath.stem))
+        processedFiles[disasmBack.FileSectionType.Bss] = (outputFilePath, disasmBack.mips.sections.SectionBss(context, 0, elfFile.nobits, inputPath.stem))
 
     if elfFile.symtab is not None and elfFile.strtab is not None:
         # Inject symbols from the reloc table referenced in each section

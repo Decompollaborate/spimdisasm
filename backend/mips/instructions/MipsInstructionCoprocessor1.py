@@ -5,10 +5,7 @@
 
 from __future__ import annotations
 
-from ...common.Utils import *
-
-from .MipsConstants import InstructionId
-from .MipsInstructionBase import InstructionBase
+from . import InstructionId, InstructionBase
 
 
 class InstructionCoprocessor1(InstructionBase):
@@ -171,13 +168,12 @@ class InstructionCoprocessor1(InstructionBase):
 
     def getOpcodeName(self) -> str:
         if self.uniqueId == InstructionId.INVALID:
-            opcode = toHex(self.function, 2)
-            return f"COP1({opcode})"
+            return f"COP1(0x{self.function:02X})"
         return super().getOpcodeName().replace("_", ".")
 
 
     def disassemble(self, immOverride: str|None=None) -> str:
-        opcode = self.getOpcodeName().lower().ljust(self.ljustWidthOpcode, ' ')
+        formated_opcode = self.getOpcodeName().lower().ljust(self.ljustWidthOpcode, ' ')
         rt = self.getRegisterName(self.rt)
         ft = self.getFloatRegisterName(self.ft)
         fs = self.getFloatRegisterName(self.fs)
@@ -188,17 +184,17 @@ class InstructionCoprocessor1(InstructionBase):
             immediate = immOverride
 
         if self.fmt in InstructionCoprocessor1.Cop1Opcodes_ByFormat:
-            result = f"{opcode} {rt},"
+            result = f"{formated_opcode} {rt},"
             result = result.ljust(14, ' ')
             result += f" {fs}"
             return result
 
         if self.isBranch():
-            result = opcode
+            result = formated_opcode
             return f"{result} {immediate}"
 
         if self.function in InstructionCoprocessor1.Cop1Opcodes_ByFunction:
-            result = f"{opcode} {fd},"
+            result = f"{formated_opcode} {fd},"
             result = result.ljust(14, ' ')
             result += f" {fs}"
             if self.isBinaryOperation():
@@ -208,17 +204,16 @@ class InstructionCoprocessor1(InstructionBase):
             return result
 
         if self.fc == 0b11:
-            result = f"{opcode} {fs},"
+            result = f"{formated_opcode} {fs},"
             result = result.ljust(14, ' ')
             result += f" {ft}"
             return result
 
         if self.fc == 0b10:
-            result = f"{opcode} {fd},"
+            result = f"{formated_opcode} {fd},"
             result = result.ljust(14, ' ')
             result += f" {fs}"
             return result
 
-        opcode = "COP1".lower().ljust(self.ljustWidthOpcode, ' ')
-        instr_index = toHex(self.instr_index, 7)
-        return f"{opcode} {instr_index}"
+        formated_opcode = "COP1".lower().ljust(self.ljustWidthOpcode, ' ')
+        return f"{formated_opcode} 0x{self.instr_index:07X}"

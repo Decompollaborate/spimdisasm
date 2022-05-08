@@ -5,15 +5,11 @@
 
 from __future__ import annotations
 
-from ...common.Utils import *
-
-from .MipsConstants import InstructionId
-from .MipsInstructionBase import InstructionBase
+from . import InstructionId, InstructionBase
 
 
 class InstructionCoprocessor2(InstructionBase):
     def getOpcodeName(self) -> str:
         if self.uniqueId == InstructionId.INVALID:
-            opcode = toHex(self.function, 2)
-            return f"COP2({opcode})"
+            return f"COP2(0x{self.function:02X})"
         return super().getOpcodeName()

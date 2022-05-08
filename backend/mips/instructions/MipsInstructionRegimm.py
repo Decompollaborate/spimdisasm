@@ -5,14 +5,13 @@
 
 from __future__ import annotations
 
-from ...common.Utils import *
+from ... import common
 
-from .MipsConstants import InstructionId
-from .MipsInstructionBase import InstructionBase
+from . import InstructionId, InstructionBase
 
 
 class InstructionRegimm(InstructionBase):
-    RegimmOpcodes: Dict[int, InstructionId] = {
+    RegimmOpcodes: dict[int, InstructionId] = {
         0b00_000: InstructionId.BLTZ,
         0b00_001: InstructionId.BGEZ,
         0b00_010: InstructionId.BLTZL,
@@ -76,8 +75,7 @@ class InstructionRegimm(InstructionBase):
 
     def getOpcodeName(self) -> str:
         if self.uniqueId == InstructionId.INVALID:
-            opcode = toHex(self.rt, 2)
-            return f"Regimm({opcode})"
+            return f"Regimm(0x{self.rt:02X})"
         return super().getOpcodeName()
 
 

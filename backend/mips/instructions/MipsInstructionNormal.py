@@ -5,14 +5,13 @@
 
 from __future__ import annotations
 
-from ...common.Utils import *
+from ... import common
 
-from .MipsConstants import InstructionId
-from .MipsInstructionBase import InstructionBase
+from . import InstructionId, InstructionBase
 
 
 class InstructionNormal(InstructionBase):
-    NormalOpcodes: Dict[int, InstructionId] = {
+    NormalOpcodes: dict[int, InstructionId] = {
         # 0b000_000: "SPECIAL",
         # 0b000_001: "REGIMM",
         0b000_010: InstructionId.J,
@@ -199,8 +198,7 @@ class InstructionNormal(InstructionBase):
 
     def getOpcodeName(self) -> str:
         if self.uniqueId == InstructionId.INVALID:
-            opcode = toHex(self.opcode, 2)
-            return f"Unknown({opcode})"
+            return f"Unknown(0x{self.opcode:02X})"
         return super().getOpcodeName()
 
 
@@ -209,9 +207,13 @@ class InstructionNormal(InstructionBase):
         formated_opcode = opcode.lower().ljust(self.ljustWidthOpcode, ' ')
         rs = self.getRegisterName(self.rs)
         rt = self.getRegisterName(self.rt)
-        immediate = hex(self.immediate)
+        immediate = f"0x{self.immediate:X}"
         if not self.isUnsigned():
-            immediate = hex(from2Complement(self.immediate, 16))
+            number = common.Utils.from2Complement(self.immediate, 16)
+            if number < 0:
+                immediate = f"-0x{-number:X}"
+            else:
+                immediate = f"0x{number:X}"
         if immOverride is not None:
             immediate = immOverride
 
@@ -255,7 +257,7 @@ class InstructionNormal(InstructionBase):
         if self.isFloatInstruction():
             result += self.getFloatRegisterName(self.rt)
         elif self.uniqueId == InstructionId.CACHE:
-            result += toHex(self.rt, 2)
+            result += f"0x{self.rt:02X}"
         elif self.uniqueId in (InstructionId.LWC2, InstructionId.SWC2, InstructionId.LDC2, InstructionId.SDC2):
             result += self.getCop2RegisterName(self.rt)
         else:

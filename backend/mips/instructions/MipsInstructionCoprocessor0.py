@@ -5,11 +5,9 @@
 
 from __future__ import annotations
 
-from .MipsConstants import InstructionId
+from ... import common
 
-from ...common.Utils import *
-
-from .MipsInstructionBase import InstructionBase
+from . import InstructionId, InstructionBase
 
 
 class InstructionCoprocessor0(InstructionBase):
@@ -99,8 +97,7 @@ class InstructionCoprocessor0(InstructionBase):
 
     def getOpcodeName(self) -> str:
         if self.uniqueId == InstructionId.INVALID:
-            opcode = toHex(self.function, 2)
-            return f"COP0({opcode})"
+            return f"COP0(0x{self.function:02X})"
         return super().getOpcodeName()
 
 
@@ -128,5 +125,4 @@ class InstructionCoprocessor0(InstructionBase):
             result = f"{opcode.lower()}"
             return result
 
-        instr_index = toHex(self.instr_index, 7)
-        return f"{formated_opcode} {instr_index}"
+        return f"{formated_opcode} 0x{self.instr_index:07X}"

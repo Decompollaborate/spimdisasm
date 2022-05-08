@@ -5,14 +5,11 @@
 
 from __future__ import annotations
 
-from ...common.Utils import *
-
-from .MipsConstants import InstructionId
-from .MipsInstructionRegimm import InstructionRegimm
+from . import InstructionId, InstructionRegimm
 
 
 class InstructionRegimmRsp(InstructionRegimm):
-    RemovedOpcodes: Dict[int, InstructionId] = {
+    RemovedOpcodes: dict[int, InstructionId] = {
         0b00_010: InstructionId.BLTZL,
         0b00_011: InstructionId.BGEZL,
 

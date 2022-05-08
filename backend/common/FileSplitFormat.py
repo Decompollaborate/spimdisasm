@@ -5,8 +5,7 @@
 
 from __future__ import annotations
 
-from .Utils import *
-
+from . import Utils
 from .FileSectionType import FileSectionType
 
 
@@ -81,7 +80,7 @@ class FileSplitFormat:
             yield FileSplitEntry(offset, vram, fileName, section, nextOffset, isHandwritten, isRsp)
 
     def readCsvFile(self, csvPath: str):
-        self.splits = readCsv(csvPath)
+        self.splits = Utils.readCsv(csvPath)
         self.splits = [x for x in self.splits if len(x) > 0]
 
     def append(self, element: FileSplitEntry | list[str]):

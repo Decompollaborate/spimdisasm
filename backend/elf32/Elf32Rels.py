@@ -8,6 +8,7 @@ from __future__ import annotations
 import dataclasses
 import struct
 
+
 @dataclasses.dataclass
 class Elf32RelEntry:
     offset: int  # address  # 0x00

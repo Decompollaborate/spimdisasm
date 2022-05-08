@@ -7,12 +7,12 @@ from __future__ import annotations
 
 from ... import common
 
+from .. import instructions
 from .. import symbols
-from .. import FileBase
+
+from ..MipsFileBase import FileBase
 
 from . import SectionBase
-
-from ..instructions import InstructionBase, wordToInstruction, wordToInstructionRsp, InstructionId, InstructionCoprocessor0, InstructionCoprocessor2
 
 
 class SectionText(SectionBase):
@@ -32,13 +32,13 @@ class SectionText(SectionBase):
         funcsStartsList = [0]
         unimplementedInstructionsFuncList = []
 
-        instructions: list[InstructionBase] = list()
+        instrsList: list[instructions.InstructionBase] = list()
         for word in self.words:
             if self.isRsp:
-                instr = wordToInstructionRsp(word)
+                instr = instructions.wordToInstructionRsp(word)
             else:
-                instr = wordToInstruction(word)
-            instructions.append(instr)
+                instr = instructions.wordToInstruction(word)
+            instrsList.append(instr)
 
         trackedRegisters: dict[int, int] = dict()
         registersValues: dict[int, int] = dict()
@@ -49,9 +49,9 @@ class SectionText(SectionBase):
 
         isInstrImplemented = True
         index = 0
-        nInstr = len(instructions)
+        nInstr = len(instrsList)
         while index < nInstr:
-            instr = instructions[index]
+            instr = instrsList[index]
             if not instr.isImplemented():
                 isInstrImplemented = False
 
@@ -72,8 +72,8 @@ class SectionText(SectionBase):
                 instructionOffset += 4
                 isboundary = False
                 while index < nInstr:
-                    instr = instructions[index]
-                    if instr.uniqueId != InstructionId.NOP:
+                    instr = instrsList[index]
+                    if instr.uniqueId != instructions.InstructionId.NOP:
                         if isboundary:
                             self.fileBoundaries.append(self.inFileOffset + index*4)
                         break
@@ -86,15 +86,15 @@ class SectionText(SectionBase):
 
                 funcsStartsList.append(index)
                 unimplementedInstructionsFuncList.append(not isInstrImplemented)
-                if index >= len(instructions):
+                if index >= len(instrsList):
                     break
-                instr = instructions[index]
+                instr = instrsList[index]
                 isInstrImplemented = instr.isImplemented()
 
             if not self.isRsp and not isLikelyHandwritten:
-                if isinstance(instr, InstructionCoprocessor2):
+                if isinstance(instr, instructions.InstructionCoprocessor2):
                     isLikelyHandwritten = True
-                elif isinstance(instr, InstructionCoprocessor0):
+                elif isinstance(instr, instructions.InstructionCoprocessor0):
                     isLikelyHandwritten = True
                 elif instr.getRegisterName(instr.rs) in ("$k0", "$k1"):
                     isLikelyHandwritten = True
@@ -127,34 +127,34 @@ class SectionText(SectionBase):
                             j -= 1
 
             elif instr.isIType():
-                isLui = instr.uniqueId == InstructionId.LUI
+                isLui = instr.uniqueId == instructions.InstructionId.LUI
                 if isLui:
                     if instr.immediate >= 0x4000: # filter out stuff that may not be a real symbol
                         trackedRegisters[instr.rt] = instructionOffset//4
-                elif instr.isIType() and instr.uniqueId not in (InstructionId.ANDI, InstructionId.ORI, InstructionId.XORI, InstructionId.CACHE):
+                elif instr.isIType() and instr.uniqueId not in (instructions.InstructionId.ANDI, instructions.InstructionId.ORI, instructions.InstructionId.XORI, instructions.InstructionId.CACHE):
                     rs = instr.rs
                     if rs in trackedRegisters:
-                        luiInstr = instructions[trackedRegisters[rs]]
+                        luiInstr = instrsList[trackedRegisters[rs]]
                         upperHalf = luiInstr.immediate << 16
                         lowerHalf = common.Utils.from2Complement(instr.immediate, 16)
                         registersValues[instr.rt] = upperHalf + lowerHalf
 
             elif instr.isJType():
                 target = instr.getInstrIndexAsVram()
-                if instr.uniqueId == InstructionId.J and not self.isRsp:
+                if instr.uniqueId == instructions.InstructionId.J and not self.isRsp:
                     # newFunctions.append((True, target, f"fakefunc_{target:08X}"))
                     newFunctions.append((True, target, f".L{target:08X}"))
                 else:
                     newFunctions.append((False, target, f"func_{target:08X}"))
 
             if not (farthestBranch > 0):
-                if instr.uniqueId == InstructionId.JR:
+                if instr.uniqueId == instructions.InstructionId.JR:
                     if instr.getRegisterName(instr.rs) == "$ra":
                         functionEnded = True
                     else:
                         if instr.rs in registersValues:
                             functionEnded = True
-                elif instr.uniqueId == InstructionId.J and (isLikelyHandwritten or (common.GlobalConfig.DISASSEMBLE_RSP and self.isRsp)):
+                elif instr.uniqueId == instructions.InstructionId.J and (isLikelyHandwritten or (common.GlobalConfig.DISASSEMBLE_RSP and self.isRsp)):
                     functionEnded = True
 
             if self.vram is not None:
@@ -195,7 +195,7 @@ class SectionText(SectionBase):
                 if funcSymbol is not None:
                     funcName = funcSymbol.name
                 else:
-                    funcName = "func_{vram:06X}"
+                    funcName = f"func_{vram:06X}"
 
                 if common.GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS or not hasUnimplementedIntrs:
                     self.context.addFunction(vram, funcName)
@@ -210,7 +210,7 @@ class SectionText(SectionBase):
                         contextSym.isAutogenerated = True
                         contextSym.isDefined = True
 
-            func = symbols.SymbolFunction(self.context, self.inFileOffset + start*4, vram, funcName, instructions[start:end])
+            func = symbols.SymbolFunction(self.context, self.inFileOffset + start*4, vram, funcName, instrsList[start:end])
             func.index = i
             func.pointersOffsets |= self.pointersOffsets
             func.hasUnimplementedIntrs = hasUnimplementedIntrs

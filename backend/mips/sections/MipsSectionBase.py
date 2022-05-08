@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from ... import common
 
-from .. import FileBase
+from ..MipsFileBase import FileBase
 
 class SectionBase(FileBase):
     def blankOutDifferences(self, other: FileBase) -> bool:
