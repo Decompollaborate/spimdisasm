@@ -5,14 +5,11 @@
 
 from __future__ import annotations
 
-from ...common.Utils import *
-
-from .MipsConstants import InstructionId, InstructionVectorId
-from .MipsInstructionCoprocessor2 import InstructionCoprocessor2
+from . import InstructionId, InstructionVectorId, InstructionCoprocessor2
 
 
 class InstructionCoprocessor2Rsp(InstructionCoprocessor2):
-    Cop2Opcodes: Dict[int, InstructionVectorId] = {
+    Cop2Opcodes: dict[int, InstructionVectorId] = {
         0x00: InstructionVectorId.VMULF,
         0x01: InstructionVectorId.VMULU,
         0b000_010: InstructionVectorId.VRNDP,
@@ -60,7 +57,7 @@ class InstructionCoprocessor2Rsp(InstructionCoprocessor2):
         0b110_110: InstructionVectorId.VRSQH,
         0b110_111: InstructionVectorId.VNOP,
     }
-    Cop2MoveOpcodes: Dict[int, InstructionVectorId] = {
+    Cop2MoveOpcodes: dict[int, InstructionVectorId] = {
         0b00_000: InstructionVectorId.MFC2,
         0b00_100: InstructionVectorId.MTC2,
         0b00_010: InstructionVectorId.CFC2,
@@ -94,8 +91,7 @@ class InstructionCoprocessor2Rsp(InstructionCoprocessor2):
 
     def getOpcodeName(self) -> str:
         if self.uniqueId == InstructionVectorId.INVALID or self.uniqueId == InstructionId.INVALID:
-            opcode = toHex(self.function, 2)
-            return f"COP2({opcode})"
+            return f"COP2(0x{self.function:02X})"
         return super().getOpcodeName()
 
     def disassemble(self, immOverride: str|None=None) -> str:

@@ -10,9 +10,9 @@ from typing import List
 from .. import common
 
 from . import sections
+from . import FilesHandlers
 
-from .MipsFileBase import FileBase, createEmptyFile
-from .FilesHandlers import createSectionFromSplitEntry
+from . import FileBase, createEmptyFile
 
 
 class FileSplits(FileBase):
@@ -78,7 +78,7 @@ class FileSplits(FileBase):
             if self.vram is None:
                 self.vram = splitEntry.vram
 
-            f = createSectionFromSplitEntry(splitEntry, array_of_bytes, splitEntry.fileName, context)
+            f = FilesHandlers.createSectionFromSplitEntry(splitEntry, array_of_bytes, splitEntry.fileName, context)
             f.parent = self
             f.setCommentOffset(splitEntry.offset)
 
@@ -125,7 +125,7 @@ class FileSplits(FileBase):
 
     def compareToFile(self, other_file: FileBase):
         if isinstance(other_file, FileSplits):
-            filesections = {
+            filesections: dict[common.FileSectionType, dict] = {
                 common.FileSectionType.Text: dict(),
                 common.FileSectionType.Data: dict(),
                 common.FileSectionType.Rodata: dict(),

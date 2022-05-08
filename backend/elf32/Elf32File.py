@@ -5,8 +5,7 @@
 
 from __future__ import annotations
 
-from ..common.Utils import *
-from ..common.FileSectionType import FileSectionType
+from .. import common
 
 from .Elf32Constants import Elf32SectionHeaderType
 from .Elf32Header import Elf32Header
@@ -24,10 +23,10 @@ class Elf32File:
         self.strtab: Elf32StringTable | None = None
         self.symtab: Elf32Syms | None = None
 
-        self.progbits: dict[FileSectionType, bytearray] = dict()
+        self.progbits: dict[common.FileSectionType, bytearray] = dict()
         self.nobits: int | None = None
 
-        self.rel: dict[FileSectionType, Elf32Rels] = dict()
+        self.rel: dict[common.FileSectionType, Elf32Rels] = dict()
 
         self.sectionHeaders = Elf32SectionHeaders(array_of_bytes, self.header.shoff, self.header.shnum)
 
@@ -41,35 +40,35 @@ class Elf32File:
             if entry.type == Elf32SectionHeaderType.NULL.value:
                 continue
             elif entry.type == Elf32SectionHeaderType.PROGBITS.value:
-                fileSecType = FileSectionType.fromStr(sectionEntryName)
-                if fileSecType != FileSectionType.Invalid:
+                fileSecType = common.FileSectionType.fromStr(sectionEntryName)
+                if fileSecType != common.FileSectionType.Invalid:
                     self.progbits[fileSecType] = array_of_bytes[entry.offset:entry.offset+entry.size]
-                    printVerbose(sectionEntryName, "size: ", len(self.progbits[fileSecType]))
-                    printVerbose()
+                    common.Utils.printVerbose(sectionEntryName, "size: ", len(self.progbits[fileSecType]))
+                    common.Utils.printVerbose()
                 else:
-                    eprint("Unknown PROGBITS found: ", sectionEntryName, entry)
+                    common.Utils.eprint("Unknown PROGBITS found: ", sectionEntryName, entry)
             elif entry.type == Elf32SectionHeaderType.SYMTAB.value:
                 if sectionEntryName == ".symtab":
                     self.symtab = Elf32Syms(array_of_bytes, entry.offset, entry.size)
-                    printVerbose()
-                    printVerbose("SYMTAB:")
-                    for i, x in enumerate(self.symtab.symbols):
-                        printVerbose(i, x)
-                    printVerbose()
+                    common.Utils.printVerbose()
+                    common.Utils.printVerbose("SYMTAB:")
+                    for i, sym in enumerate(self.symtab.symbols):
+                        common.Utils.printVerbose(i, sym)
+                    common.Utils.printVerbose()
                 else:
-                    eprint("Unknown SYMTAB found: ", sectionEntryName, entry)
+                    common.Utils.eprint("Unknown SYMTAB found: ", sectionEntryName, entry)
             elif entry.type == Elf32SectionHeaderType.STRTAB.value:
                 if sectionEntryName == ".strtab":
                     self.strtab = Elf32StringTable(array_of_bytes, entry.offset, entry.size)
-                    printVerbose()
-                    printVerbose("STRTAB:")
-                    for i, x in enumerate(self.strtab):
-                        printVerbose(i, x)
-                    printVerbose()
+                    common.Utils.printVerbose()
+                    common.Utils.printVerbose("STRTAB:")
+                    for i, string in enumerate(self.strtab):
+                        common.Utils.printVerbose(i, string)
+                    common.Utils.printVerbose()
                 elif sectionEntryName == ".shstrtab":
                     pass
                 else:
-                    eprint("Unknown STRTAB found: ", sectionEntryName, entry)
+                    common.Utils.eprint("Unknown STRTAB found: ", sectionEntryName, entry)
             # elif entry.type == Elf32SectionHeaderType.RELA.value:
             #     pass
             # elif entry.type == Elf32SectionHeaderType.HASH.value:
@@ -81,24 +80,24 @@ class Elf32File:
             elif entry.type == Elf32SectionHeaderType.NOBITS.value:
                 if sectionEntryName == ".bss":
                     self.nobits = entry.size
-                    printVerbose(sectionEntryName, "size: ", self.nobits)
-                    printVerbose()
+                    common.Utils.printVerbose(sectionEntryName, "size: ", self.nobits)
+                    common.Utils.printVerbose()
                 else:
-                    eprint("Unknown NOBITS found: ", sectionEntryName, entry)
+                    common.Utils.eprint("Unknown NOBITS found: ", sectionEntryName, entry)
             elif entry.type == Elf32SectionHeaderType.REL.value:
                 if sectionEntryName.startswith(".rel."):
-                    fileSecType = FileSectionType.fromStr(sectionEntryName[4:])
-                    if fileSecType != FileSectionType.Invalid:
+                    fileSecType = common.FileSectionType.fromStr(sectionEntryName[4:])
+                    if fileSecType != common.FileSectionType.Invalid:
                         self.rel[fileSecType] = Elf32Rels(array_of_bytes, entry.offset, entry.size)
-                        printVerbose()
-                        printVerbose(f"REL: ({sectionEntryName})")
-                        for i, x in enumerate(self.rel[fileSecType]):
-                            printVerbose(i, x, x.rType, x.rSym)
-                        printVerbose()
+                        common.Utils.printVerbose()
+                        common.Utils.printVerbose(f"REL: ({sectionEntryName})")
+                        for i, rel in enumerate(self.rel[fileSecType]):
+                            common.Utils.printVerbose(i, rel, rel.rType, rel.rSym)
+                        common.Utils.printVerbose()
                     else:
-                        eprint("Unknown REL subsection found: ", sectionEntryName, entry)
+                        common.Utils.eprint("Unknown REL subsection found: ", sectionEntryName, entry)
                 else:
-                    eprint("Unknown REL found: ", sectionEntryName, entry)
+                    common.Utils.eprint("Unknown REL found: ", sectionEntryName, entry)
             elif entry.type == Elf32SectionHeaderType.MIPS_GPTAB.value:
                 # ?
                 pass
@@ -115,4 +114,4 @@ class Elf32File:
                 # ?
                 pass
             else:
-                eprint("Unknown section header type found:", sectionEntryName, entry)
+                common.Utils.eprint("Unknown section header type found:", sectionEntryName, entry)

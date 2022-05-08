@@ -5,14 +5,11 @@
 
 from __future__ import annotations
 
-from ...common.Utils import *
-
-from .MipsConstants import InstructionId
-from .MipsInstructionSpecial import InstructionSpecial
+from . import InstructionId, InstructionSpecial
 
 
 class InstructionSpecialRsp(InstructionSpecial):
-    RemovedOpcodes: Dict[int, InstructionId] = {
+    RemovedOpcodes: dict[int, InstructionId] = {
         0b001_100: InstructionId.SYSCALL,
         0b001_111: InstructionId.SYNC,
 

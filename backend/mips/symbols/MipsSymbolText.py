@@ -5,14 +5,11 @@
 
 from __future__ import annotations
 
-from ...common.Utils import *
-from ...common.GlobalConfig import GlobalConfig
-from ...common.Context import Context, ContextSymbol, ContextOffsetSymbol
-from ...common.FileSectionType import FileSectionType
+from ... import common
 
-from .MipsSymbolBase import SymbolBase
+from . import SymbolBase
 
 
 class SymbolText(SymbolBase):
-    def __init__(self, context: Context, inFileOffset: int, vram: int|None, name: str, words: list[int]):
-        super().__init__(context, inFileOffset, vram, name, words, FileSectionType.Text)
+    def __init__(self, context: common.Context, inFileOffset: int, vram: int|None, name: str, words: list[int]):
+        super().__init__(context, inFileOffset, vram, name, words, common.FileSectionType.Text)

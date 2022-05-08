@@ -8,6 +8,7 @@ from __future__ import annotations
 import dataclasses
 import struct
 
+
 # a.k.a. Sym (symbol)
 @dataclasses.dataclass
 class Elf32SymEntry:

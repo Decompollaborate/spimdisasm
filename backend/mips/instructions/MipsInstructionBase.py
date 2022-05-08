@@ -5,9 +5,10 @@
 
 from __future__ import annotations
 
-from ...common.Utils import *
+from ... import common
 
-from .MipsConstants import InstructionId, InstructionVectorId
+from . import InstructionId, InstructionVectorId
+
 
 class InstructionBase:
     DefaultNumericRegisterNames = {
@@ -250,7 +251,7 @@ class InstructionBase:
         self.sa = (instr >>  6) & 0x1F
         self.function = (instr >> 0) & 0x3F
 
-        self.opcodesDict: Dict[int, InstructionId | InstructionVectorId] = dict()
+        self.opcodesDict: dict[int, InstructionId | InstructionVectorId] = dict()
         self.uniqueId: InstructionId|InstructionVectorId = InstructionId.INVALID
 
         self.ljustWidthOpcode = 7+4
@@ -409,7 +410,7 @@ class InstructionBase:
         return self.Cop1RegisterNames.get(register, f"${register:02X}")
 
     def getCop0RegisterName(self, register: int) -> str:
-        if GlobalConfig.VR4300_COP0_NAMED_REGISTERS:
+        if common.GlobalConfig.VR4300_COP0_NAMED_REGISTERS:
             return InstructionBase.Cop0RegisterNames.get(register, f"${register:02X}")
         return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
 
@@ -420,7 +421,7 @@ class InstructionBase:
         return self.GprRspRegisterNames.get(register, f"${register:02X}")
 
     def getCop0RspRegisterName(self, register: int) -> str:
-        if GlobalConfig.VR4300_RSP_COP0_NAMED_REGISTERS:
+        if common.GlobalConfig.VR4300_RSP_COP0_NAMED_REGISTERS:
             return InstructionBase.Cop0RspRegisterNames.get(register, f"${register:02X}")
         return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
 

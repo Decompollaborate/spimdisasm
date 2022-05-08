@@ -8,6 +8,7 @@ from __future__ import annotations
 import dataclasses
 import struct
 
+
 # a.k.a. Ehdr (elf header)
 @dataclasses.dataclass
 class Elf32Header:

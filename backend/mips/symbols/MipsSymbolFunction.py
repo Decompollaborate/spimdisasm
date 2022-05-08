@@ -7,14 +7,15 @@ from __future__ import annotations
 
 from ... import common
 
-from ..instructions import InstructionBase, InstructionId, InstructionsNotEmitedByIDO, InstructionNormal, InstructionCoprocessor0, InstructionCoprocessor2
+from .. import instructions
+
 from . import SymbolText
 
 
 class SymbolFunction(SymbolText):
-    def __init__(self, context: common.Context, inFileOffset: int, vram: int|None, name: str, instructions: list[InstructionBase]):
+    def __init__(self, context: common.Context, inFileOffset: int, vram: int|None, name: str, instrsList: list[instructions.InstructionBase]):
         super().__init__(context, inFileOffset, vram, name, list())
-        self.instructions: list[InstructionBase] = list(instructions)
+        self.instructions: list[instructions.InstructionBase] = list(instrsList)
 
         self.pointersRemoved: bool = False
 
@@ -29,7 +30,7 @@ class SymbolFunction(SymbolText):
         # key: %lo instruction offset, value: %hi (lui) instruction offset
         self.lowToHiDict: dict[int, int] = dict()
 
-        self.luiInstructions: dict[int, InstructionBase] = dict()
+        self.luiInstructions: dict[int, instructions.InstructionBase] = dict()
         self.nonPointerLuiSet: set[int] = set()
 
         self.pointersOffsets: set[int] = set()
@@ -49,7 +50,7 @@ class SymbolFunction(SymbolText):
         return len(self.instructions)
 
 
-    def _printAnalisisDebugInfo_IterInfo(self, instr: InstructionBase, register1: int|None, register2: int|None, register3: int|None, currentVram: int, trackedRegisters: dict, registersValues: dict):
+    def _printAnalisisDebugInfo_IterInfo(self, instr: instructions.InstructionBase, register1: int|None, register2: int|None, register3: int|None, currentVram: int, trackedRegisters: dict, registersValues: dict):
         if not common.GlobalConfig.PRINT_FUNCTION_ANALYSIS_DEBUG_INFO:
             return
 
@@ -68,7 +69,7 @@ class SymbolFunction(SymbolText):
         print({instr.getRegisterName(register_t): f"{vram_t:X},{offset_t:X}" for register_t, (vram_t, offset_t) in registersValues.items()})
         print()
 
-    def _printSymbolFinderDebugInfo_DelTrackedRegister(self, instr: InstructionBase, register: int, currentVram: int, trackedRegisters: dict):
+    def _printSymbolFinderDebugInfo_DelTrackedRegister(self, instr: instructions.InstructionBase, register: int, currentVram: int, trackedRegisters: dict):
         if not common.GlobalConfig.PRINT_SYMBOL_FINDER_DEBUG_INFO:
             return
 
@@ -103,7 +104,7 @@ class SymbolFunction(SymbolText):
                     print("NO         ", luiInstr)
 
 
-    def _processSymbol(self, luiInstr: InstructionBase, luiOffset: int, lowerInstr: InstructionBase, lowerOffset: int) -> int|None:
+    def _processSymbol(self, luiInstr: instructions.InstructionBase, luiOffset: int, lowerInstr: instructions.InstructionBase, lowerOffset: int) -> int|None:
         upperHalf = luiInstr.immediate << 16
         lowerHalf = common.Utils.from2Complement(lowerInstr.immediate, 16)
         address = upperHalf + lowerHalf
@@ -138,7 +139,7 @@ class SymbolFunction(SymbolText):
 
         return address
 
-    def _processConstant(self, luiInstr: InstructionBase, luiOffset: int, lowerInstr: InstructionBase, lowerOffset: int) -> int|None:
+    def _processConstant(self, luiInstr: instructions.InstructionBase, luiOffset: int, lowerInstr: instructions.InstructionBase, lowerOffset: int) -> int|None:
         luiInstr = self.instructions[luiOffset//4]
         upperHalf = luiInstr.immediate << 16
         lowerHalf = lowerInstr.immediate
@@ -154,12 +155,12 @@ class SymbolFunction(SymbolText):
 
         return constant
 
-    def _removeRegisterFromTrackers(self, instr: InstructionBase, currentVram: int, trackedRegisters: dict, trackedRegistersAll: dict, registersValues: dict, wasRegisterValuesUpdated: bool):
+    def _removeRegisterFromTrackers(self, instr: instructions.InstructionBase, currentVram: int, trackedRegisters: dict, trackedRegistersAll: dict, registersValues: dict, wasRegisterValuesUpdated: bool):
         shouldRemove = False
         register = 0
 
         if not instr.isFloatInstruction():
-            if instr.isRType() or (instr.isBranch() and isinstance(instr, InstructionNormal)):
+            if instr.isRType() or (instr.isBranch() and isinstance(instr, instructions.InstructionNormal)):
                 # $at is a one-use register
                 at = -1
                 if instr.getRegisterName(instr.rs) == "$at":
@@ -170,12 +171,12 @@ class SymbolFunction(SymbolText):
                 if at in trackedRegistersAll:
                     otherInstrIndex = trackedRegistersAll[at]
                     otherInstr = self.instructions[otherInstrIndex]
-                    if otherInstr.uniqueId == InstructionId.LUI:
+                    if otherInstr.uniqueId == instructions.InstructionId.LUI:
                         self.nonPointerLuiSet.add(otherInstrIndex*4)
                     shouldRemove = True
                     register = at
 
-            if instr.uniqueId != InstructionId.LUI and instr.modifiesRt():
+            if instr.uniqueId != instructions.InstructionId.LUI and instr.modifiesRt():
                 shouldRemove = True
                 register = instr.rt
 
@@ -184,14 +185,14 @@ class SymbolFunction(SymbolText):
                 register = instr.rd
 
                 # Usually array offsets use an ADDU to add the index of the array
-                if instr.uniqueId == InstructionId.ADDU:
+                if instr.uniqueId == instructions.InstructionId.ADDU:
                     if instr.rd != instr.rs and instr.rd != instr.rt:
                         shouldRemove = True
                     else:
                         shouldRemove = False
 
         else:
-            if instr.uniqueId in (InstructionId.MTC1, InstructionId.DMTC1, InstructionId.CTC1):
+            if instr.uniqueId in (instructions.InstructionId.MTC1, instructions.InstructionId.DMTC1, instructions.InstructionId.CTC1):
                 # IDO usually use a register as a temp when loading a constant value
                 # into the float coprocessor, after that IDO never re-uses the value
                 # in that register for anything else
@@ -225,7 +226,7 @@ class SymbolFunction(SymbolText):
         # Search for LUI instructions first
         instructionOffset = 0
         for instr in self.instructions:
-            if instr.uniqueId == InstructionId.LUI:
+            if instr.uniqueId == instructions.InstructionId.LUI:
                 self.luiInstructions[instructionOffset] = instr
             if instructionOffset > 0:
                 prevInstr = self.instructions[instructionOffset//4 - 1]
@@ -244,14 +245,14 @@ class SymbolFunction(SymbolText):
         for instr in self.instructions:
             currentVram = self.getVramOffset(instructionOffset)
             wasRegisterValuesUpdated = False
-            self.isLikelyHandwritten |= instr.uniqueId in InstructionsNotEmitedByIDO
+            self.isLikelyHandwritten |= instr.uniqueId in instructions.InstructionsNotEmitedByIDO
 
             self._printAnalisisDebugInfo_IterInfo(instr, instr.rs, instr.rt, instr.rd, currentVram, trackedRegisters, registersValues)
 
             if not self.isLikelyHandwritten:
-                if isinstance(instr, InstructionCoprocessor2):
+                if isinstance(instr, instructions.InstructionCoprocessor2):
                     self.isLikelyHandwritten = True
-                elif isinstance(instr, InstructionCoprocessor0):
+                elif isinstance(instr, instructions.InstructionCoprocessor0):
                     self.isLikelyHandwritten = True
 
             if not common.GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS and not instr.isImplemented():
@@ -286,7 +287,7 @@ class SymbolFunction(SymbolText):
                     if target >= 0x84000000:
                         # RSP address space?
                         self.isLikelyHandwritten = True
-                if instr.uniqueId == InstructionId.J and not self.isRsp:
+                if instr.uniqueId == instructions.InstructionId.J and not self.isRsp:
                     # self.context.addFakeFunction(target, "fakefunc_" + toHex(target, 8)[2:])
                     self.context.addFakeFunction(target, ".L" + common.Utils.toHex(target, 8)[2:])
                 else:
@@ -297,7 +298,7 @@ class SymbolFunction(SymbolText):
             elif instr.isIType():
                 # TODO: Consider following branches
                 lastInstr = self.instructions[instructionOffset//4 - 1]
-                if instr.uniqueId == InstructionId.LUI:
+                if instr.uniqueId == instructions.InstructionId.LUI:
                     isABranchInBetweenLastLui = False
                     if lastInstr.isBranch():
                         # If the previous instructions is a branch, do a
@@ -306,15 +307,15 @@ class SymbolFunction(SymbolText):
                         branch = instructionOffset + diff*4
                         if branch > 0:
                             targetInstr = self.instructions[branch//4]
-                            if targetInstr.uniqueId == InstructionId.JR and targetInstr.getRegisterName(targetInstr.rs) == "$ra":
+                            if targetInstr.uniqueId == instructions.InstructionId.JR and targetInstr.getRegisterName(targetInstr.rs) == "$ra":
                                 # If the target instruction is a JR $ra, then look up its delay slot instead
                                 branch += 4
                                 targetInstr = self.instructions[branch//4]
                             if targetInstr.isIType() and targetInstr.rs == instr.rt:
-                                if targetInstr.uniqueId not in (InstructionId.LUI, InstructionId.ANDI, InstructionId.ORI, InstructionId.XORI, InstructionId.CACHE):
+                                if targetInstr.uniqueId not in (instructions.InstructionId.LUI, instructions.InstructionId.ANDI, instructions.InstructionId.ORI, instructions.InstructionId.XORI, instructions.InstructionId.CACHE):
                                     self._processSymbol(instr, instructionOffset, targetInstr, branch)
 
-                            if not (lastInstr.isBranchLikely() or lastInstr.uniqueId == InstructionId.B):
+                            if not (lastInstr.isBranchLikely() or lastInstr.uniqueId == instructions.InstructionId.B):
                                 # If the previous instructions is a branch likely, then nulify
                                 # the effects of this instruction for future analysis
                                 trackedRegisters[instr.rt] = instructionOffset//4
@@ -322,7 +323,7 @@ class SymbolFunction(SymbolText):
                         trackedRegisters[instr.rt] = instructionOffset//4
                     trackedRegistersAll[instr.rt] = instructionOffset//4
                 else:
-                    if instr.uniqueId == InstructionId.ORI:
+                    if instr.uniqueId == instructions.InstructionId.ORI:
                         # Constants
                         rs = instr.rs
                         if rs in trackedRegistersAll:
@@ -331,7 +332,7 @@ class SymbolFunction(SymbolText):
                             constant = self._processConstant(luiInstr, luiOffset, instr, instructionOffset)
                             if constant is not None:
                                 registersValues[instr.rt] = (constant, instructionOffset)
-                    elif instr.uniqueId not in (InstructionId.ANDI, InstructionId.XORI, InstructionId.CACHE):
+                    elif instr.uniqueId not in (instructions.InstructionId.ANDI, instructions.InstructionId.XORI, instructions.InstructionId.CACHE):
                         rs = instr.rs
                         if rs in trackedRegisters:
                             luiInstr = self.instructions[trackedRegisters[rs]]
@@ -348,7 +349,7 @@ class SymbolFunction(SymbolText):
                                 if contextSym is not None:
                                     contextSym.setTypeIfUnset(instrType)
 
-            elif instr.uniqueId == InstructionId.JR:
+            elif instr.uniqueId == instructions.InstructionId.JR:
                 rs = instr.rs
                 if instr.getRegisterName(rs) != "$ra":
                     if rs in registersValues:
@@ -384,7 +385,7 @@ class SymbolFunction(SymbolText):
                                 if rd == luiInstr.rt:
                                     break
                         if targetInstr.isIType():
-                            if targetInstr.uniqueId not in (InstructionId.LUI, InstructionId.ANDI, InstructionId.ORI, InstructionId.XORI, InstructionId.CACHE):
+                            if targetInstr.uniqueId not in (instructions.InstructionId.LUI, instructions.InstructionId.ANDI, instructions.InstructionId.ORI, instructions.InstructionId.XORI, instructions.InstructionId.CACHE):
                                 rs = targetInstr.rs
                                 if rs in trackedRegisters:
                                     luiInstr = self.instructions[trackedRegisters[rs]]
@@ -503,8 +504,8 @@ class SymbolFunction(SymbolText):
 
         for i in range(self.nInstr-1, 0-1, -1):
             instr = self.instructions[i]
-            if instr.uniqueId != InstructionId.NOP:
-                if instr.uniqueId == InstructionId.JR and instr.getRegisterName(instr.rs) == "$ra":
+            if instr.uniqueId != instructions.InstructionId.NOP:
+                if instr.uniqueId == instructions.InstructionId.JR and instr.getRegisterName(instr.rs) == "$ra":
                     first_nop += 1
                 break
             first_nop = i
@@ -553,7 +554,7 @@ class SymbolFunction(SymbolText):
                     symbol = self.context.getGenericSymbol(address, True)
                     if symbol is not None:
                         symbolName = symbol.getSymbolPlusOffset(address)
-                        if instr.uniqueId == InstructionId.LUI:
+                        if instr.uniqueId == instructions.InstructionId.LUI:
                             immOverride = f"%hi({symbolName})"
                         else:
                             immOverride= f"%lo({symbolName})"
@@ -563,12 +564,12 @@ class SymbolFunction(SymbolText):
                     symbol = self.context.getConstant(constant)
                     if symbol is not None:
                         constantName = symbol.name
-                        if instr.uniqueId == InstructionId.LUI:
+                        if instr.uniqueId == instructions.InstructionId.LUI:
                             immOverride = f"%hi({constantName})"
                         else:
                             immOverride= f"%lo({constantName})"
                     else:
-                        if instr.uniqueId == InstructionId.LUI:
+                        if instr.uniqueId == instructions.InstructionId.LUI:
                             immOverride = f"(0x{constant:X} >> 16)"
                         else:
                             immOverride = f"(0x{constant:X} & 0xFFFF)"
@@ -586,7 +587,7 @@ class SymbolFunction(SymbolText):
                     if instructionOffset in self.pointersPerInstruction:
                         addressOffset = self.pointersPerInstruction[instructionOffset]
                         auxOverride = possibleImmOverride.getNamePlusOffset(addressOffset)
-                    if instr.uniqueId == InstructionId.LUI:
+                    if instr.uniqueId == instructions.InstructionId.LUI:
                         auxOverride = f"%hi({auxOverride})"
                     else:
                         auxOverride= f"%lo({auxOverride})"
@@ -643,7 +644,7 @@ class SymbolFunction(SymbolText):
 
             output += label + line + "\n"
 
-            wasLastInstABranch = instr.isBranch() or instr.isJType() or instr.uniqueId in (InstructionId.JR, InstructionId.JALR)
+            wasLastInstABranch = instr.isBranch() or instr.isJType() or instr.uniqueId in (instructions.InstructionId.JR, instructions.InstructionId.JALR)
 
             instructionOffset += 4
             auxOffset += 4

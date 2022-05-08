@@ -5,14 +5,13 @@
 
 from __future__ import annotations
 
-from ...common.Utils import *
+from ... import common
 
-from .MipsConstants import InstructionId, InstructionVectorId
-from .MipsInstructionNormal import InstructionNormal
+from . import InstructionId, InstructionVectorId, InstructionNormal
 
 
 class InstructionNormalRsp(InstructionNormal):
-    RemovedOpcodes: Dict[int, InstructionId] = {
+    RemovedOpcodes: dict[int, InstructionId] = {
         0b010_100: InstructionId.BEQL,
         0b010_101: InstructionId.BNEL,
         0b010_110: InstructionId.BLEZL,
@@ -46,7 +45,7 @@ class InstructionNormalRsp(InstructionNormal):
         0b111_110: InstructionId.SDC2,
         0b111_111: InstructionId.SD,
     }
-    Opcodes_BySWC2: Dict[int, InstructionVectorId] = {
+    Opcodes_BySWC2: dict[int, InstructionVectorId] = {
         0b00_000: InstructionVectorId.SBV,
         0b00_001: InstructionVectorId.SSV,
         0b00_010: InstructionVectorId.SLV,
@@ -65,7 +64,7 @@ class InstructionNormalRsp(InstructionNormal):
 
         0b01_011: InstructionVectorId.STV,
     }
-    Opcodes_ByLWC2: Dict[int, InstructionVectorId] = {
+    Opcodes_ByLWC2: dict[int, InstructionVectorId] = {
         0b00_000: InstructionVectorId.LBV,
         0b00_001: InstructionVectorId.LSV,
         0b00_010: InstructionVectorId.LLV,
