@@ -5,14 +5,14 @@
 
 from __future__ import annotations
 
-from . import Instructions
-from . import Symbols
+from . import instructions
+from . import symbols
 
 from . import FilesHandlers
 
 from .MipsElementBase import ElementBase
 
-from .MipsFileBase import FileBase
+from .MipsFileBase import FileBase, createEmptyFile
 from .MipsSection import Section
 
 from .MipsText import Text

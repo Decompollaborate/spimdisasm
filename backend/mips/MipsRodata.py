@@ -7,8 +7,9 @@ from __future__ import annotations
 
 from .. import common
 
+from . import symbols
+
 from .MipsSection import Section
-from .Symbols import SymbolRodata
 
 
 class Rodata(Section):
@@ -112,7 +113,7 @@ class Rodata(Section):
             if self.vram is not None:
                 symVram = vram
 
-            sym = SymbolRodata(self.context, offset + self.inFileOffset, symVram, symName, words)
+            sym = symbols.SymbolRodata(self.context, offset + self.inFileOffset, symVram, symName, words)
             sym.setCommentOffset(self.commentOffset)
             sym.analyze()
             self.symbolList.append(sym)

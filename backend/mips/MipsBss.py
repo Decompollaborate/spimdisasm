@@ -7,8 +7,9 @@ from __future__ import annotations
 
 from .. import common
 
+from . import symbols
+
 from .MipsSection import Section
-from .Symbols import SymbolBss
 
 
 class Bss(Section):
@@ -79,7 +80,7 @@ class Bss(Section):
                 if nextSymbolOffset <= self.bssTotalSize:
                     space = nextSymbolOffset - symbolOffset
 
-            sym = SymbolBss(self.context, symbolOffset + self.inFileOffset, symbolVram, contextSym.name, space)
+            sym = symbols.SymbolBss(self.context, symbolOffset + self.inFileOffset, symbolVram, contextSym.name, space)
             sym.setCommentOffset(self.commentOffset)
             sym.analyze()
             self.symbolList.append(sym)

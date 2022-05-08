@@ -10,15 +10,16 @@ from typing import TextIO
 
 from .. import common
 
+from . import symbols
+
 from .MipsElementBase import ElementBase
-from .Symbols import SymbolBase
 
 
 class FileBase(ElementBase):
     def __init__(self, context: common.Context, vram: int|None, filename: str, array_of_bytes: bytearray, sectionType: common.FileSectionType):
         super().__init__(context, 0, vram, filename, common.Utils.bytesToBEWords(array_of_bytes), sectionType)
 
-        self.symbolList: list[SymbolBase] = []
+        self.symbolList: list[symbols.SymbolBase] = []
 
         self.pointersOffsets: set[int] = set()
 
