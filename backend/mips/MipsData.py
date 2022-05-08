@@ -5,18 +5,15 @@
 
 from __future__ import annotations
 
-from ..common.Utils import *
-from ..common.GlobalConfig import GlobalConfig
-from ..common.Context import Context
-from ..common.FileSectionType import FileSectionType
+from .. import common
 
 from .MipsSection import Section
 from .Symbols import SymbolData
 
 
 class Data(Section):
-    def __init__(self, context: Context, vram: int|None, filename: str, array_of_bytes: bytearray):
-        super().__init__(context, vram, filename, array_of_bytes, FileSectionType.Data)
+    def __init__(self, context: common.Context, vram: int|None, filename: str, array_of_bytes: bytearray):
+        super().__init__(context, vram, filename, array_of_bytes, common.FileSectionType.Data)
 
 
     def analyze(self):
@@ -62,7 +59,7 @@ class Data(Section):
 
 
     def removePointers(self) -> bool:
-        if not GlobalConfig.REMOVE_POINTERS:
+        if not common.GlobalConfig.REMOVE_POINTERS:
             return False
 
         was_updated = False

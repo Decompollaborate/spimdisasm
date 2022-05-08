@@ -15,8 +15,6 @@ from .MipsElementBase import ElementBase
 from .MipsFileBase import FileBase
 from .MipsSection import Section
 
-from .MipsFunction import Function
-
 from .MipsText import Text
 from .MipsData import Data
 from .MipsRodata import Rodata

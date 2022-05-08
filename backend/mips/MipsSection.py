@@ -5,21 +5,20 @@
 
 from __future__ import annotations
 
-from ..common.Utils import *
-from ..common.GlobalConfig import GlobalConfig
+from .. import common
 
 from .MipsFileBase import FileBase
 
 class Section(FileBase):
     def blankOutDifferences(self, other: FileBase) -> bool:
-        if not GlobalConfig.REMOVE_POINTERS:
+        if not common.GlobalConfig.REMOVE_POINTERS:
             return False
 
         was_updated = False
-        if len(GlobalConfig.IGNORE_WORD_LIST) > 0:
+        if len(common.GlobalConfig.IGNORE_WORD_LIST) > 0:
             min_len = min(self.sizew, other.sizew)
             for i in range(min_len):
-                for upperByte in GlobalConfig.IGNORE_WORD_LIST:
+                for upperByte in common.GlobalConfig.IGNORE_WORD_LIST:
                     word = upperByte << 24
                     if ((self.words[i] >> 24) & 0xFF) == upperByte and ((other.words[i] >> 24) & 0xFF) == upperByte:
                         self.words[i] = word

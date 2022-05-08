@@ -9,11 +9,7 @@ from __future__ import annotations
 
 from typing import List
 
-from ..common.Utils import *
-
-from ..common.GlobalConfig import GlobalConfig
-from ..common.Context import Context
-from ..common.FileSectionType import FileSectionType, FileSections_ListBasic
+from .. import common
 
 from .MipsSection import Section
 from .MipsRelocTypes import RelocTypes
@@ -30,8 +26,8 @@ class RelocEntry:
     def reloc(self):
         return (self.sectionId << 30) | (self.relocType << 24) | (self.offset)
 
-    def getSectionType(self) -> FileSectionType:
-        return FileSectionType.fromId(self.sectionId)
+    def getSectionType(self) -> common.FileSectionType:
+        return common.FileSectionType.fromId(self.sectionId)
 
     def getRelocType(self) -> RelocTypes:
         return RelocTypes.fromValue(self.relocType)
@@ -45,8 +41,8 @@ class RelocEntry:
 
 
 class RelocZ64(Section):
-    def __init__(self, context: Context, vram: int|None, filename: str, array_of_bytes: bytearray):
-        super().__init__(context, vram, filename, array_of_bytes, FileSectionType.Reloc)
+    def __init__(self, context: common.Context, vram: int|None, filename: str, array_of_bytes: bytearray):
+        super().__init__(context, vram, filename, array_of_bytes, common.FileSectionType.Reloc)
 
         self.seekup = self.words[-1]
 
@@ -56,10 +52,10 @@ class RelocZ64(Section):
         self.words = self.words[-self.seekup // 4:]
 
         self.sectionSizes = {
-            FileSectionType.Text: self.words[0],
-            FileSectionType.Data: self.words[1],
-            FileSectionType.Rodata: self.words[2],
-            FileSectionType.Bss: self.words[3],
+            common.FileSectionType.Text: self.words[0],
+            common.FileSectionType.Data: self.words[1],
+            common.FileSectionType.Rodata: self.words[2],
+            common.FileSectionType.Bss: self.words[3],
         }
         self.relocCount = self.words[4]
 
@@ -77,16 +73,16 @@ class RelocZ64(Section):
 
     @property
     def textSize(self) -> int:
-        return self.sectionSizes[FileSectionType.Text]
+        return self.sectionSizes[common.FileSectionType.Text]
     @property
     def dataSize(self) -> int:
-        return self.sectionSizes[FileSectionType.Data]
+        return self.sectionSizes[common.FileSectionType.Data]
     @property
     def rodataSize(self) -> int:
-        return self.sectionSizes[FileSectionType.Rodata]
+        return self.sectionSizes[common.FileSectionType.Rodata]
     @property
     def bssSize(self) -> int:
-        return self.sectionSizes[FileSectionType.Bss]
+        return self.sectionSizes[common.FileSectionType.Bss]
 
 
     def analyze(self):
@@ -95,7 +91,7 @@ class RelocZ64(Section):
         currentVram = self.getVramOffset(localOffset)
         sym = SymbolData(self.context, localOffset + self.inFileOffset, currentVram, f"{self.name}_OverlayInfo", self.words[0:4])
         sym.setCommentOffset(self.commentOffset)
-        sym.endOfLineComment = [f" # _{self.name}Segment{sectName.toCapitalizedStr()}Size" for sectName in FileSections_ListBasic]
+        sym.endOfLineComment = [f" # _{self.name}Segment{sectName.toCapitalizedStr()}Size" for sectName in common.FileSections_ListBasic]
         sym.analyze()
         self.symbolList.append(sym)
         localOffset += 4 * 4

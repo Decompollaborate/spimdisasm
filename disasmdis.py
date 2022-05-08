@@ -40,7 +40,7 @@ def disasmdisMain():
         for instr in instructionList:
             print(instr.disassemble())
     else:
-        func = disasmBack.mips.Function(context, 0, None, "", instructionList)
+        func = disasmBack.mips.Symbols.SymbolFunction(context, 0, None, "", instructionList)
         func.analyze()
         print(func.disassemble(), end="")
 
