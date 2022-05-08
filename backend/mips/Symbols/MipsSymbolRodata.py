@@ -83,7 +83,7 @@ class SymbolRodata(SymbolBase):
         w = self.words[i]
 
         label = ""
-        rodataWord = w
+        rodataWord: int|None = w
         value: Any = toHex(w, 8)
 
         # try to get the symbol name from the offset of the file (possibly from a .o elf file)

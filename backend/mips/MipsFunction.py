@@ -540,10 +540,10 @@ class Function(SymbolText):
                     diff = from2Complement(instr.immediate, 16)
                     branch = instructionOffset + diff*4 + 1*4
                     if self.vram is not None:
-                        label = self.context.getGenericLabel(self.vram + branch)
-                        if label is not None:
-                            immOverride = label.name
-                            label.referenceCounter += 1
+                        labelSymbol = self.context.getGenericLabel(self.vram + branch)
+                        if labelSymbol is not None:
+                            immOverride = labelSymbol.name
+                            labelSymbol.referenceCounter += 1
                     if immOverride is None:
                         if self.inFileOffset + branch in self.localLabels:
                             immOverride = self.localLabels[self.inFileOffset + branch]
