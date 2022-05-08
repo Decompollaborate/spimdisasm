@@ -29,18 +29,18 @@ def disasmdisMain():
 
     context = disasmBack.Context()
 
-    instructionList: list[disasmBack.mips.Instructions.InstructionBase] = list()
+    instructionList: list[disasmBack.mips.instructions.InstructionBase] = list()
 
     for i in range(wordsCount):
         # print(i)
         word = int(args.input[i*8:(i+1)*8], 16)
-        instructionList.append(disasmBack.mips.Instructions.wordToInstruction(word))
+        instructionList.append(disasmBack.mips.instructions.wordToInstruction(word))
 
     if args.raw_instr:
         for instr in instructionList:
             print(instr.disassemble())
     else:
-        func = disasmBack.mips.Symbols.SymbolFunction(context, 0, None, "", instructionList)
+        func = disasmBack.mips.symbols.SymbolFunction(context, 0, None, "", instructionList)
         func.analyze()
         print(func.disassemble(), end="")
 

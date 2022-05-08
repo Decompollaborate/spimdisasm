@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from ... import common
 
-from ..Instructions import InstructionBase, InstructionId, InstructionsNotEmitedByIDO, InstructionNormal, InstructionCoprocessor0, InstructionCoprocessor2
+from ..instructions import InstructionBase, InstructionId, InstructionsNotEmitedByIDO, InstructionNormal, InstructionCoprocessor0, InstructionCoprocessor2
 from . import SymbolText
 
 

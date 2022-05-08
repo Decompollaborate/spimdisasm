@@ -10,12 +10,13 @@ from typing import TextIO
 
 from .. import common
 
+from . import symbols
+
 from .MipsSection import Section
 from .MipsText import Text
 from .MipsData import Data
 from .MipsRodata import Rodata
 from .MipsBss import Bss
-from .Symbols import SymbolFunction
 
 
 def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_bytes: bytearray, outputPath: str, context: common.Context) -> Section:
@@ -84,7 +85,7 @@ def writeSection(path: str, fileSection: Section):
     return path
 
 
-def getRdataAndLateRodataForFunction(func: SymbolFunction, rodataFileList: list[Rodata], context: common.Context):
+def getRdataAndLateRodataForFunction(func: symbols.SymbolFunction, rodataFileList: list[Rodata], context: common.Context):
     rdataList = []
     lateRodataList = []
     lateRodataLen = 0
@@ -141,7 +142,7 @@ def getRdataAndLateRodataForFunction(func: SymbolFunction, rodataFileList: list[
 
     return rdataList, lateRodataList, lateRodataLen, firstRodata
 
-def writeSplittedFunctionToFile(f: TextIO, func: SymbolFunction, rodataFileList: list[Rodata], context: common.Context):
+def writeSplittedFunctionToFile(f: TextIO, func: symbols.SymbolFunction, rodataFileList: list[Rodata], context: common.Context):
     rdataList, lateRodataList, lateRodataLen, firstRodata = getRdataAndLateRodataForFunction(func, rodataFileList, context)
 
     if len(rdataList) > 0:
@@ -169,7 +170,7 @@ def writeSplittedFunctionToFile(f: TextIO, func: SymbolFunction, rodataFileList:
     # Write the function
     f.write(func.disassemble())
 
-def writeSplitedFunction(path: str, func: SymbolFunction, rodataFileList: list[Rodata], context: common.Context):
+def writeSplitedFunction(path: str, func: symbols.SymbolFunction, rodataFileList: list[Rodata], context: common.Context):
     os.makedirs(path, exist_ok=True)
     with open(os.path.join(path, func.name) + ".s", "w") as f:
         writeSplittedFunctionToFile(f, func, rodataFileList, context)

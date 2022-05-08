@@ -7,8 +7,9 @@ from __future__ import annotations
 
 from .. import common
 
+from . import symbols
+
 from .MipsSection import Section
-from .Symbols import SymbolData
 
 
 class Data(Section):
@@ -52,7 +53,7 @@ class Data(Section):
                 nextOffset = symbolList[i+1][0]
                 words = self.words[offset//4:nextOffset//4]
 
-            sym = SymbolData(self.context, offset + self.inFileOffset, vram, symName, words)
+            sym = symbols.SymbolData(self.context, offset + self.inFileOffset, vram, symName, words)
             sym.setCommentOffset(self.commentOffset)
             sym.analyze()
             self.symbolList.append(sym)
