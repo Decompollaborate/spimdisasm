@@ -5,14 +5,14 @@
 
 from __future__ import annotations
 
-from .. import common
+from ... import common
 
-from . import symbols
+from .. import symbols
 
-from .MipsSection import Section
+from . import SectionBase
 
 
-class Rodata(Section):
+class SectionRodata(SectionBase):
     def __init__(self, context: common.Context, vram: int|None, filename: str, array_of_bytes: bytearray):
         super().__init__(context, vram, filename, array_of_bytes, common.FileSectionType.Rodata)
 
