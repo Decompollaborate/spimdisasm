@@ -271,9 +271,9 @@ class SymbolFunction(SymbolText):
                         auxLabel.referenceCounter += 1
                         label = auxLabel.name
                     else:
-                        label = ".L" + common.Utils.toHex(self.vram + branch, 6)[2:]
+                        label = f".L{self.vram + branch:06X}"
                 else:
-                    label = ".L" + common.Utils.toHex(self.inFileOffset + branch, 6)[2:]
+                    label = f".L{self.inFileOffset + branch:06X}"
 
                 self.localLabels[self.inFileOffset + branch] = label
                 if self.vram is not None:
@@ -288,10 +288,10 @@ class SymbolFunction(SymbolText):
                         # RSP address space?
                         self.isLikelyHandwritten = True
                 if instr.uniqueId == instructions.InstructionId.J and not self.isRsp:
-                    # self.context.addFakeFunction(target, "fakefunc_" + toHex(target, 8)[2:])
-                    self.context.addFakeFunction(target, ".L" + common.Utils.toHex(target, 8)[2:])
+                    # self.context.addFakeFunction(target, f"fakefunc_{target:08X}")
+                    self.context.addFakeFunction(target, f".L{target:08X}")
                 else:
-                    self.context.addFunction(target, "func_" + common.Utils.toHex(target, 8)[2:])
+                    self.context.addFunction(target, f"func_{target:08X}")
                 self.pointersPerInstruction[instructionOffset] = target
 
             # symbol finder

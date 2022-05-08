@@ -106,7 +106,6 @@ class InstructionCoprocessor0(InstructionBase):
         formated_opcode = opcode.lower().ljust(self.ljustWidthOpcode, ' ')
         rt = self.getRegisterName(self.rt)
         rd = self.getCop0RegisterName(self.rd)
-        #immediate = toHex(self.immediate, 4)
         immediate = hex(self.immediate)
         if immOverride is not None:
             immediate = immOverride

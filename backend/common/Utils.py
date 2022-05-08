@@ -99,9 +99,6 @@ def runCommandGetOutput(command: str, args: list[str]) -> list[str] | None:
     except:
         return None
 
-def toHex(number: int, digits: int) -> str:
-    return "0x" + hex(number)[2:].zfill(digits).upper()
-
 def from2Complement(number: int, bits: int) -> int:
     isNegative = number & (1 << (bits - 1))
     if isNegative:
