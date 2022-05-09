@@ -6,14 +6,6 @@ Currently supports all the CPU instructions for MIPS I, II, III and IV.
 
 Mainly focused on supporting Nintendo 64 binaries, but it should work with other MIPS platforms too.
 
-## Dependencies
-
-To install the dependencies:
-
-```bash
-python3 -m pip install -r requirements.txt
-```
-
 ## Features
 
 - Produces matching assembly.
