@@ -7,9 +7,9 @@ from __future__ import annotations
 
 import ast
 import argparse
+import bisect
 import dataclasses
 import os
-import sortedcontainers
 
 from . import Utils
 from .GlobalConfig import GlobalConfig
@@ -123,8 +123,9 @@ class Context:
         self.funcAddresses: dict[int, ContextSymbol] = dict()
 
         self.labels: dict[int, ContextSymbol] = dict()
-        # self.symbols: SortedDict[int, ContextSymbol]
-        self.symbols = sortedcontainers.SortedDict()
+
+        self.symbols: dict[int, ContextSymbol] = dict()
+        self.symbolsVramSorted: list[int] = list()
 
         # Where the jump table is
         self.jumpTables: dict[int, ContextSymbol] = dict()
@@ -222,15 +223,13 @@ class Context:
             return self.symbols[vramAddress]
 
         if GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET and tryPlusOffset:
-            rangeObj = self.symbols.irange(maximum=vramAddress, reverse=True)
-            for vram in rangeObj:
-                contextSym: ContextSymbol = self.symbols[vram]
+            vramIndex = bisect.bisect(self.symbolsVramSorted, vramAddress)
+            if vramIndex != len(self.symbolsVramSorted):
+                symVram = self.symbolsVramSorted[vramIndex-1]
+                contextSym = self.symbols[symVram]
 
-                if vramAddress > vram and vramAddress < vram + contextSym.size:
+                if vramAddress > symVram and vramAddress < symVram + contextSym.size:
                     return contextSym
-
-                # Only one iteration
-                break
 
         return None
 
@@ -242,19 +241,17 @@ class Context:
             return self.symbols[vramAddress]
 
         if GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET and tryPlusOffset:
-            rangeObj = self.symbols.irange(maximum=vramAddress, reverse=True)
-            for vram in rangeObj:
-                contextSym: ContextSymbol = self.symbols[vram]
+            vramIndex = bisect.bisect(self.symbolsVramSorted, vramAddress)
+            if vramIndex != len(self.symbolsVramSorted):
+                symVram = self.symbolsVramSorted[vramIndex-1]
+                contextSym = self.symbols[symVram]
 
                 symbolSize = contextSym.size
-                if vramAddress > vram:
+                if vramAddress > symVram:
                     if checkUpperLimit:
-                        if vramAddress >= vram + symbolSize:
-                            break
+                        if vramAddress >= symVram + symbolSize:
+                            return None
                     return contextSym
-
-                # Only one iteration
-                break
         return None
 
     def getGenericLabel(self, vramAddress: int) -> ContextSymbol|None:
@@ -328,6 +325,7 @@ class Context:
                     name = f"B_{vramAddress:06X}"
         contextSym = ContextSymbol(vramAddress, name)
         self.symbols[vramAddress] = contextSym
+        bisect.insort(self.symbolsVramSorted, vramAddress)
         contextSym.sectionType = sectionType
         return contextSym
 
