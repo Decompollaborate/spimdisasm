@@ -9,6 +9,8 @@ import argparse
 
 
 class InstructionConfig:
+    NAMED_REGISTERS: bool = True
+
     VR4300_COP0_NAMED_REGISTERS: bool = True
     VR4300_RSP_COP0_NAMED_REGISTERS: bool = True
 
@@ -27,6 +29,8 @@ class InstructionConfig:
     def addParametersToArgParse(parser: argparse.ArgumentParser):
         mipsInstr = parser.add_argument_group("MIPS instructions configuration")
 
+        mipsInstr.add_argument("--no-named-registers", help="Disables named registers for every instruction. This flag takes precedence over other similar flags", action="store_true")
+
         mipsInstr.add_argument("--no-cop0-named-registers", help="Disables using the built-in names for registers of the VR4300's Coprocessor 0", action="store_true")
         mipsInstr.add_argument("--no-rsp-cop0-named-registers", help="Disables using the built-in names for registers of the RSP's Coprocessor 0", action="store_true")
 
@@ -35,6 +39,8 @@ class InstructionConfig:
 
     @classmethod
     def parseArgs(cls, args: argparse.Namespace):
+        InstructionConfig.NAMED_REGISTERS = not args.no_named_registers
+
         InstructionConfig.VR4300_COP0_NAMED_REGISTERS = not args.no_cop0_named_registers
         InstructionConfig.VR4300_RSP_COP0_NAMED_REGISTERS = not args.no_rsp_cop0_named_registers
 

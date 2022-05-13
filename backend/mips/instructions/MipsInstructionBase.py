@@ -402,29 +402,44 @@ class InstructionBase:
             return self.uniqueId.name
         return f"(0x{self.opcode:02X})"
 
+
     def getRegisterName(self, register: int) -> str:
+        if not InstructionConfig.NAMED_REGISTERS:
+            return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
         return self.GprRegisterNames.get(register, f"${register:02X}")
 
     def getFloatRegisterName(self, register: int) -> str:
+        if not InstructionConfig.NAMED_REGISTERS:
+            return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
         return self.Cop1RegisterNames.get(register, f"${register:02X}")
 
     def getCop0RegisterName(self, register: int) -> str:
+        if not InstructionConfig.NAMED_REGISTERS:
+            return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
         if InstructionConfig.VR4300_COP0_NAMED_REGISTERS:
             return InstructionBase.Cop0RegisterNames.get(register, f"${register:02X}")
         return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
 
     def getCop2RegisterName(self, register: int) -> str:
+        if not InstructionConfig.NAMED_REGISTERS:
+            return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
         return InstructionBase.Cop2RegisterNames.get(register, f"${register:02X}")
 
     def getGprRspRegisterName(self, register: int) -> str:
+        if not InstructionConfig.NAMED_REGISTERS:
+            return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
         return self.GprRspRegisterNames.get(register, f"${register:02X}")
 
     def getCop0RspRegisterName(self, register: int) -> str:
+        if not InstructionConfig.NAMED_REGISTERS:
+            return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
         if InstructionConfig.VR4300_RSP_COP0_NAMED_REGISTERS:
             return InstructionBase.Cop0RspRegisterNames.get(register, f"${register:02X}")
         return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
 
     def getVectorRspRegisterName(self, register: int) -> str:
+        if not InstructionConfig.NAMED_REGISTERS:
+            return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
         return self.VectorRspRegisterNames.get(register, f"${register:02X}")
 
 
