@@ -14,6 +14,7 @@ Mainly focused on supporting Nintendo 64 binaries, but it should work with other
 - Generates separated files for each section of a file (`.text`, `.data`, `.rodata` and `.bss`).
 - Supports multiple files spliting from a single input binary.
 - Automatic function detection.
+  - Can detect if a function is handwritten too.
 - `hi`/`lo` pairing with high success rate.
 - Automatic pointer and symbol detection.
 - Function spliting with rodata migration.
