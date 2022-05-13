@@ -36,7 +36,11 @@ def disassemblerMain():
 
     disasmBack.GlobalConfig.addParametersToArgParse(parser)
 
+    disasmBack.mips.instructions.InstructionConfig.addParametersToArgParse(parser)
+
     args = parser.parse_args()
+
+    disasmBack.mips.instructions.InstructionConfig.parseArgs(args)
 
     disasmBack.GlobalConfig.parseArgs(args)
 

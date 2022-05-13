@@ -5,9 +5,8 @@
 
 from __future__ import annotations
 
-from ... import common
-
-from . import InstructionId, InstructionVectorId
+from .MipsInstructionConfig import InstructionConfig
+from .MipsConstants import InstructionId, InstructionVectorId
 
 
 class InstructionBase:
@@ -410,7 +409,7 @@ class InstructionBase:
         return self.Cop1RegisterNames.get(register, f"${register:02X}")
 
     def getCop0RegisterName(self, register: int) -> str:
-        if common.GlobalConfig.VR4300_COP0_NAMED_REGISTERS:
+        if InstructionConfig.VR4300_COP0_NAMED_REGISTERS:
             return InstructionBase.Cop0RegisterNames.get(register, f"${register:02X}")
         return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
 
@@ -421,7 +420,7 @@ class InstructionBase:
         return self.GprRspRegisterNames.get(register, f"${register:02X}")
 
     def getCop0RspRegisterName(self, register: int) -> str:
-        if common.GlobalConfig.VR4300_RSP_COP0_NAMED_REGISTERS:
+        if InstructionConfig.VR4300_RSP_COP0_NAMED_REGISTERS:
             return InstructionBase.Cop0RspRegisterNames.get(register, f"${register:02X}")
         return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
 

@@ -5,8 +5,6 @@
 
 from __future__ import annotations
 
-from ... import common
-
 from . import InstructionId, InstructionVectorId, InstructionNormal
 
 
