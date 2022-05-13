@@ -197,12 +197,13 @@ class InstructionSpecial(InstructionBase):
             result = f"{formated_opcode} {rs},".ljust(14, ' ')
             return f"{result} {rt}"
         elif self.uniqueId in (InstructionId.SYSCALL, InstructionId.BREAK, InstructionId.SYNC):
-            if InstructionConfig.SN64_DIV_FIX and self.uniqueId == InstructionId.BREAK:
-                result = ".word".ljust(self.ljustWidthOpcode, ' ')
-                result += f" 0x{self.instr:08X}"
-                return result
             code = (self.instr_index) >> 16
             result = f"{formated_opcode} {code}"
+            if InstructionConfig.SN64_DIV_FIX and self.uniqueId == InstructionId.BREAK:
+                patchedResult = ".word".ljust(self.ljustWidthOpcode, ' ')
+                patchedResult += f" 0x{self.instr:08X}"
+                patchedResult += f" # {result}"
+                return patchedResult
             return result
 
         elif self.uniqueId in (InstructionId.NEGU,):
@@ -213,6 +214,7 @@ class InstructionSpecial(InstructionBase):
         elif self.isRType1(): # OP rd, rs, rt
             leftSpace = 14
             if InstructionConfig.SN64_DIV_FIX and self.uniqueId in (InstructionId.DIV, InstructionId.DIVU):
+                # OP rs, rt
                 result = formated_opcode
             else:
                 result = f"{formated_opcode} {rd},"
