@@ -5,7 +5,9 @@
 
 from __future__ import annotations
 
-from . import InstructionId, InstructionBase
+from .MipsInstructionConfig import InstructionConfig
+from .MipsConstants import InstructionId
+from .MipsInstructionBase import InstructionBase
 
 
 class InstructionSpecial(InstructionBase):
@@ -195,6 +197,10 @@ class InstructionSpecial(InstructionBase):
             result = f"{formated_opcode} {rs},".ljust(14, ' ')
             return f"{result} {rt}"
         elif self.uniqueId in (InstructionId.SYSCALL, InstructionId.BREAK, InstructionId.SYNC):
+            if InstructionConfig.SN64_DIV_FIX and self.uniqueId == InstructionId.BREAK:
+                result = ".word".ljust(self.ljustWidthOpcode, ' ')
+                result += f" 0x{self.instr:08X}"
+                return result
             code = (self.instr_index) >> 16
             result = f"{formated_opcode} {code}"
             return result
@@ -205,10 +211,15 @@ class InstructionSpecial(InstructionBase):
             return f"{result} {rt}"
 
         elif self.isRType1(): # OP rd, rs, rt
-            result = f"{formated_opcode} {rd},"
-            result = result.ljust(14, ' ')
+            leftSpace = 14
+            if InstructionConfig.SN64_DIV_FIX and self.uniqueId in (InstructionId.DIV, InstructionId.DIVU):
+                result = formated_opcode
+            else:
+                result = f"{formated_opcode} {rd},"
+                result = result.ljust(leftSpace, ' ')
+                leftSpace += 5
             result += f" {rs},"
-            result = result.ljust(19, ' ')
+            result = result.ljust(leftSpace, ' ')
             return f"{result} {rt}"
         elif self.isRType2(): # OP rd, rt, rs
             result = f"{formated_opcode} {rd},"
