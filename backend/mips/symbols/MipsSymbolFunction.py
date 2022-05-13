@@ -49,6 +49,12 @@ class SymbolFunction(SymbolText):
     def nInstr(self) -> int:
         return len(self.instructions)
 
+    @property
+    def vramEnd(self) -> int|None:
+        if self.vram is None:
+            return None
+        return self.vram + self.nInstr * 4
+
 
     def _printAnalisisDebugInfo_IterInfo(self, instr: instructions.InstructionBase, register1: int|None, register2: int|None, register3: int|None, currentVram: int, trackedRegisters: dict, registersValues: dict):
         if not common.GlobalConfig.PRINT_FUNCTION_ANALYSIS_DEBUG_INFO:
