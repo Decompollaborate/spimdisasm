@@ -43,6 +43,8 @@ class SectionText(SectionBase):
         trackedRegisters: dict[int, int] = dict()
         registersValues: dict[int, int] = dict()
         instructionOffset = 0
+        currentInstructionStart = 0
+        currentFunctionSym = self.context.getFunction(self.getVramOffset(instructionOffset))
 
         isLikelyHandwritten = self.isHandwritten
         newFunctions = list()
@@ -83,6 +85,9 @@ class SectionText(SectionBase):
 
                 trackedRegisters.clear()
                 registersValues.clear()
+
+                currentInstructionStart = instructionOffset
+                currentFunctionSym = self.context.getFunction(self.getVramOffset(instructionOffset))
 
                 funcsStartsList.append(index)
                 unimplementedInstructionsFuncList.append(not isInstrImplemented)
@@ -163,6 +168,11 @@ class SectionText(SectionBase):
                     funcContext = self.context.getFunction(vram)
                     if funcContext is not None:
                         if funcContext.isUserDefined or (common.GlobalConfig.DISASSEMBLE_RSP and self.isRsp):
+                            functionEnded = True
+
+            if currentFunctionSym is not None:
+                if currentFunctionSym.size > 4:
+                    if instructionOffset + 8 == currentInstructionStart + currentFunctionSym.size:
                             functionEnded = True
 
             index += 1
