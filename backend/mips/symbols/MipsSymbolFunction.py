@@ -20,6 +20,13 @@ class SymbolFunction(SymbolText):
         self.pointersRemoved: bool = False
 
         self.localLabels: dict[int, str] = dict()
+        """Branch labels found on this function.
+
+        The key is the offset relative to the start of the function and the value is the name of the label
+
+        If VRAM is available, then it is preferred to use `context.getGenericLabel(self.vram + branch)` to get the name of a label instead.
+        """
+
         # TODO: this needs a better name
         self.pointersPerInstruction: dict[int, int] = dict()
         self.constantsPerInstruction: dict[int, int] = dict()
@@ -281,7 +288,7 @@ class SymbolFunction(SymbolText):
                 else:
                     label = f".L{self.inFileOffset + branch:06X}"
 
-                self.localLabels[self.inFileOffset + branch] = label
+                self.localLabels[branch] = label
                 if self.vram is not None:
                     self.context.addBranchLabel(self.vram + branch, label)
                 self.branchInstructions.append(instructionOffset)
@@ -550,8 +557,8 @@ class SymbolFunction(SymbolText):
                             immOverride = labelSymbol.name
                             labelSymbol.referenceCounter += 1
                     if immOverride is None:
-                        if self.inFileOffset + branch in self.localLabels:
-                            immOverride = self.localLabels[self.inFileOffset + branch]
+                        if branch in self.localLabels:
+                            immOverride = self.localLabels[branch]
 
             elif instr.isIType():
                 if not self.pointersRemoved and instructionOffset in self.pointersPerInstruction:
@@ -637,8 +644,8 @@ class SymbolFunction(SymbolText):
                         label = "glabel " + label_offsetBranch.name + "\n"
                     else:
                         label = label_offsetBranch.name + ":\n"
-                elif auxOffset in self.localLabels:
-                    label = self.localLabels[auxOffset] + ":\n"
+                elif instructionOffset in self.localLabels:
+                    label = self.localLabels[instructionOffset] + ":\n"
                 elif currentVram in self.context.fakeFunctions:
                     label = self.context.fakeFunctions[currentVram].name + ":\n"
                 elif label_offsetSymbol is not None:
