@@ -39,6 +39,7 @@ class SymbolFunction(SymbolText):
 
         self.luiInstructions: dict[int, instructions.InstructionBase] = dict()
         self.nonPointerLuiSet: set[int] = set()
+        self.gpInstructions: dict[int, instructions.InstructionBase] = dict()
 
         self.pointersOffsets: set[int] = set()
         self.referencedJumpTableOffsets: set[int] = set()
@@ -117,17 +118,28 @@ class SymbolFunction(SymbolText):
                     print("NO         ", luiInstr)
 
 
-    def _processSymbol(self, luiInstr: instructions.InstructionBase, luiOffset: int, lowerInstr: instructions.InstructionBase, lowerOffset: int) -> int|None:
-        upperHalf = luiInstr.immediate << 16
+    def _processSymbol(self, luiInstr: instructions.InstructionBase|None, luiOffset: int|None, lowerInstr: instructions.InstructionBase, lowerOffset: int) -> int|None:
+        # lui being None means it is a $gp access
+        assert ((luiInstr is None and luiOffset is None) or (luiInstr is not None and luiOffset is not None))
+
+        if luiInstr is None and common.GlobalConfig.GP_VALUE is None:
+            return None
+
+        if luiInstr is not None:
+            upperHalf = luiInstr.immediate << 16
+        else:
+            assert common.GlobalConfig.GP_VALUE is not None
+            upperHalf = common.GlobalConfig.GP_VALUE
         lowerHalf = common.Utils.from2Complement(lowerInstr.immediate, 16)
         address = upperHalf + lowerHalf
         if address in self.context.bannedSymbols:
             return None
 
-        if common.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES and luiInstr.immediate < 0x4000: # filter out stuff that may not be a real symbol
-            return None
-        if common.GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES and luiInstr.immediate >= 0xC000: # filter out stuff that may not be a real symbol
-            return None
+        if luiInstr is not None:
+            if common.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES and luiInstr.immediate < 0x4000: # filter out stuff that may not be a real symbol
+                return None
+            if common.GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES and luiInstr.immediate >= 0xC000: # filter out stuff that may not be a real symbol
+                return None
 
         self.referencedVRams.add(address)
         contextSym = self.context.getGenericSymbol(address)
@@ -144,11 +156,14 @@ class SymbolFunction(SymbolText):
 
         if lowerOffset not in self.pointersPerInstruction:
             self.pointersPerInstruction[lowerOffset] = address
-        if luiOffset not in self.pointersPerInstruction:
-            self.pointersPerInstruction[luiOffset] = address
+        if luiOffset is not None:
+            if luiOffset not in self.pointersPerInstruction:
+                self.pointersPerInstruction[luiOffset] = address
 
-        self.hiToLowDict[luiOffset] = lowerOffset
-        self.lowToHiDict[lowerOffset] = luiOffset
+            self.hiToLowDict[luiOffset] = lowerOffset
+            self.lowToHiDict[lowerOffset] = luiOffset
+        else:
+            self.gpInstructions[lowerOffset] = lowerInstr
 
         return address
 
@@ -350,6 +365,11 @@ class SymbolFunction(SymbolText):
                         if rs in trackedRegisters:
                             luiInstr = self.instructions[trackedRegisters[rs]]
                             address = self._processSymbol(luiInstr, trackedRegisters[rs]*4, instr, instructionOffset)
+                            if address is not None:
+                                registersValues[instr.rt] = (address, instructionOffset)
+                                wasRegisterValuesUpdated = True
+                        elif instr.getRegisterName(rs) == "$gp":
+                            address = self._processSymbol(None, None, instr, instructionOffset)
                             if address is not None:
                                 registersValues[instr.rt] = (address, instructionOffset)
                                 wasRegisterValuesUpdated = True
@@ -569,6 +589,8 @@ class SymbolFunction(SymbolText):
                         symbolName = symbol.getSymbolPlusOffset(address)
                         if instr.uniqueId == instructions.InstructionId.LUI:
                             immOverride = f"%hi({symbolName})"
+                        elif instr.getRegisterName(instr.rs) == "$gp":
+                            immOverride= f"%gp_rel({symbolName})"
                         else:
                             immOverride= f"%lo({symbolName})"
                 elif instructionOffset in self.constantsPerInstruction:
@@ -602,6 +624,8 @@ class SymbolFunction(SymbolText):
                         auxOverride = possibleImmOverride.getNamePlusOffset(addressOffset)
                     if instr.uniqueId == instructions.InstructionId.LUI:
                         auxOverride = f"%hi({auxOverride})"
+                    elif instr.getRegisterName(instr.rs) == "$gp":
+                        auxOverride= f"%gp_rel({auxOverride})"
                     else:
                         auxOverride= f"%lo({auxOverride})"
                 immOverride = auxOverride
