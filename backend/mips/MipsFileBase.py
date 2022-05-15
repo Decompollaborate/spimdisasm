@@ -38,22 +38,6 @@ class FileBase(ElementBase):
         # return self.vram + localOffset
         return self.vram + self.inFileOffset + localOffset
 
-    def generateAsmLineComment(self, localOffset: int, wordValue: int|None = None) -> str:
-        if not common.GlobalConfig.ASM_COMMENT:
-            return ""
-        offsetHex = f"{localOffset + self.inFileOffset + self.commentOffset:06X}"
-
-        vramHex = ""
-        if self.vram is not None:
-            currentVram = self.getVramOffset(localOffset)
-            vramHex = f"{currentVram:08X} "
-
-        wordValueHex = ""
-        if wordValue is not None:
-            wordValueHex = f"{wordValue:08X} "
-
-        return f"/* {offsetHex} {vramHex}{wordValueHex}*/"
-
     def getAsmPrelude(self) -> str:
         output = ""
 

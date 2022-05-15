@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from . import InstructionId, InstructionVectorId, InstructionCoprocessor2
+from .MipsInstructionConfig import InstructionConfig
 
 
 class InstructionCoprocessor2Rsp(InstructionCoprocessor2):
@@ -96,7 +97,7 @@ class InstructionCoprocessor2Rsp(InstructionCoprocessor2):
 
     def disassemble(self, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName()
-        formated_opcode = opcode.lower().ljust(self.ljustWidthOpcode, ' ')
+        formated_opcode = opcode.lower().ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
         e_upper = self[25]
         e = self.processVectorElement(self.elementHigh)
         vt = self.getVectorRspRegisterName(self.vt)

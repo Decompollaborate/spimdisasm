@@ -8,6 +8,7 @@ from __future__ import annotations
 from ... import common
 
 from . import InstructionId, InstructionBase
+from .MipsInstructionConfig import InstructionConfig
 
 
 class InstructionNormal(InstructionBase):
@@ -204,7 +205,7 @@ class InstructionNormal(InstructionBase):
 
     def disassemble(self, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName()
-        formated_opcode = opcode.lower().ljust(self.ljustWidthOpcode, ' ')
+        formated_opcode = opcode.lower().ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
         rs = self.getRegisterName(self.rs)
         rt = self.getRegisterName(self.rt)
         immediate = f"0x{self.immediate:X}"

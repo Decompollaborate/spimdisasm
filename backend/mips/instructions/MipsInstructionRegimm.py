@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from . import InstructionId, InstructionBase
+from .MipsInstructionConfig import InstructionConfig
 
 
 class InstructionRegimm(InstructionBase):
@@ -79,7 +80,7 @@ class InstructionRegimm(InstructionBase):
 
     # OP  rs, IMM
     def disassemble(self, immOverride: str|None=None) -> str:
-        opcode = self.getOpcodeName().lower().ljust(self.ljustWidthOpcode, ' ')
+        opcode = self.getOpcodeName().lower().ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
         rs = self.getRegisterName(self.rs)
         immediate = hex(self.immediate)
         if immOverride is not None:

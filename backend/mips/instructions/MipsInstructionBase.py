@@ -253,7 +253,7 @@ class InstructionBase:
         self.opcodesDict: dict[int, InstructionId | InstructionVectorId] = dict()
         self.uniqueId: InstructionId|InstructionVectorId = InstructionId.INVALID
 
-        self.ljustWidthOpcode = 7+4
+        self.extraLjustWidthOpcode = 0
 
         self.isRsp: bool = False
 
@@ -454,7 +454,7 @@ class InstructionBase:
 
 
     def disassemble(self, immOverride: str|None=None) -> str:
-        opcode = self.getOpcodeName().lower().ljust(self.ljustWidthOpcode, ' ')
+        opcode = self.getOpcodeName().lower().ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
         rs = self.getRegisterName(self.rs)
         rt = self.getRegisterName(self.rt)
         immediate = hex(self.immediate)
