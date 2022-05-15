@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from . import InstructionId, InstructionVectorId, InstructionNormal
+from .MipsInstructionConfig import InstructionConfig
 
 
 class InstructionNormalRsp(InstructionNormal):
@@ -115,7 +116,7 @@ class InstructionNormalRsp(InstructionNormal):
 
     def disassemble(self, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName()
-        formated_opcode = opcode.lower().ljust(self.ljustWidthOpcode, ' ')
+        formated_opcode = opcode.lower().ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
         vt = self.getVectorRspRegisterName(self.vt)
         base = self.getGprRspRegisterName(self.baseRegister)
         offset = hex(self.offsetVector)

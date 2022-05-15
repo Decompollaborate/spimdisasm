@@ -25,6 +25,9 @@ class InstructionConfig:
     So we replace break instrutions for SN64 with the exact word that the assembler generates when expanding div
     """
 
+    OPCODE_LJUST: int = 7+4
+    """The minimal number of characters to left-align the opcode name"""
+
     @staticmethod
     def addParametersToArgParse(parser: argparse.ArgumentParser):
         mipsInstr = parser.add_argument_group("MIPS instructions configuration")
@@ -37,6 +40,11 @@ class InstructionConfig:
         mipsInstr.add_argument("--sn64-div-fix", help="Enables a few fixes for SN64's assembler related to div/divu instructions", action="store_true")
 
 
+        miscOpts = mipsInstr.add_argument_group("Misc options")
+
+        miscOpts.add_argument("--opcode-ljust", help=f"Set the minimal number of characters to left-align the opcode name. Defaults to {InstructionConfig.OPCODE_LJUST}")
+
+
     @classmethod
     def parseArgs(cls, args: argparse.Namespace):
         InstructionConfig.NAMED_REGISTERS = not args.no_named_registers
@@ -45,3 +53,6 @@ class InstructionConfig:
         InstructionConfig.VR4300_RSP_COP0_NAMED_REGISTERS = not args.no_rsp_cop0_named_registers
 
         InstructionConfig.SN64_DIV_FIX = args.sn64_div_fix
+
+        if args.opcode_ljust is not None:
+            InstructionConfig.OPCODE_LJUST = int(args.opcode_ljust)

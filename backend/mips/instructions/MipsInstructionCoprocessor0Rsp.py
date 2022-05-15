@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from . import InstructionId, InstructionCoprocessor0
+from .MipsInstructionConfig import InstructionConfig
 
 
 class InstructionCoprocessor0Rsp(InstructionCoprocessor0):
@@ -31,7 +32,7 @@ class InstructionCoprocessor0Rsp(InstructionCoprocessor0):
 
     def disassemble(self, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName()
-        formated_opcode = opcode.lower().ljust(self.ljustWidthOpcode, ' ')
+        formated_opcode = opcode.lower().ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
         # rt = self.getRegisterName(self.rt)
         # rd = self.getCop0RegisterName(self.rd)
         rt = self.getGprRspRegisterName(self.rt)

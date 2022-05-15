@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from . import InstructionId, InstructionBase
+from .MipsInstructionConfig import InstructionConfig
 
 
 class InstructionCoprocessor1(InstructionBase):
@@ -173,7 +174,7 @@ class InstructionCoprocessor1(InstructionBase):
 
 
     def disassemble(self, immOverride: str|None=None) -> str:
-        formated_opcode = self.getOpcodeName().lower().ljust(self.ljustWidthOpcode, ' ')
+        formated_opcode = self.getOpcodeName().lower().ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
         rt = self.getRegisterName(self.rt)
         ft = self.getFloatRegisterName(self.ft)
         fs = self.getFloatRegisterName(self.fs)
@@ -214,5 +215,5 @@ class InstructionCoprocessor1(InstructionBase):
             result += f" {fs}"
             return result
 
-        formated_opcode = "COP1".lower().ljust(self.ljustWidthOpcode, ' ')
+        formated_opcode = "COP1".lower().ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
         return f"{formated_opcode} 0x{self.instr_index:07X}"

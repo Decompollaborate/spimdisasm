@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from . import InstructionId, InstructionBase
+from .MipsInstructionConfig import InstructionConfig
 
 
 class InstructionCoprocessor0(InstructionBase):
@@ -101,7 +102,7 @@ class InstructionCoprocessor0(InstructionBase):
 
     def disassemble(self, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName()
-        formated_opcode = opcode.lower().ljust(self.ljustWidthOpcode, ' ')
+        formated_opcode = opcode.lower().ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
         rt = self.getRegisterName(self.rt)
         rd = self.getCop0RegisterName(self.rd)
         immediate = hex(self.immediate)

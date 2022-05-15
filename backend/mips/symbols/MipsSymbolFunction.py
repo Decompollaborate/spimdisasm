@@ -631,12 +631,12 @@ class SymbolFunction(SymbolText):
                 immOverride = auxOverride
 
             if wasLastInstABranch:
-                instr.ljustWidthOpcode -= 1
+                instr.extraLjustWidthOpcode -= 1
 
             line = instr.disassemble(immOverride)
 
             if wasLastInstABranch:
-                instr.ljustWidthOpcode += 1
+                instr.extraLjustWidthOpcode += 1
 
             comment = self.generateAsmLineComment(instructionOffset, instr.instr)
             if wasLastInstABranch:
