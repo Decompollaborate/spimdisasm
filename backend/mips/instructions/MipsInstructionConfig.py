@@ -14,6 +14,9 @@ class InstructionConfig:
     VR4300_COP0_NAMED_REGISTERS: bool = True
     VR4300_RSP_COP0_NAMED_REGISTERS: bool = True
 
+    PSEUDO_INSTRUCTIONS: bool = True
+    """Produce pseudo instructions (like `move`, `nop` or `b`) whenever those should match the desired original instruction"""
+
     SN64_DIV_FIX: bool = False
     """Enables a few fixes for SN64's assembler related to div/divu instructions
 
@@ -39,6 +42,8 @@ class InstructionConfig:
         mipsInstr.add_argument("--no-cop0-named-registers", help="Disables using the built-in names for registers of the VR4300's Coprocessor 0", action="store_true")
         mipsInstr.add_argument("--no-rsp-cop0-named-registers", help="Disables using the built-in names for registers of the RSP's Coprocessor 0", action="store_true")
 
+        mipsInstr.add_argument("--no-pseudo-instr", help=f"Disables producing pseudo instructions. Defaults to {InstructionConfig.PSEUDO_INSTRUCTIONS}", action="store_true")
+
         mipsInstr.add_argument("--sn64-div-fix", help="Enables a few fixes for SN64's assembler related to div/divu instructions", action="store_true")
 
 
@@ -55,6 +60,8 @@ class InstructionConfig:
 
         InstructionConfig.VR4300_COP0_NAMED_REGISTERS = not args.no_cop0_named_registers
         InstructionConfig.VR4300_RSP_COP0_NAMED_REGISTERS = not args.no_rsp_cop0_named_registers
+
+        InstructionConfig.PSEUDO_INSTRUCTIONS = not args.no_pseudo_instr
 
         InstructionConfig.SN64_DIV_FIX = args.sn64_div_fix
 

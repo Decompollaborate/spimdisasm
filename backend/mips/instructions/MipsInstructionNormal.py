@@ -96,15 +96,15 @@ class InstructionNormal(InstructionBase):
     def processUniqueId(self):
         super().processUniqueId()
 
-        self.uniqueId = self.opcodesDict.get(self.opcode, InstructionId.INVALID)
-        if self.rt == 0:
-            if self.uniqueId == InstructionId.BEQ:
-                if self.rs == 0:
-                    self.uniqueId = InstructionId.B
-                else:
-                    self.uniqueId = InstructionId.BEQZ
-            elif self.uniqueId == InstructionId.BNE:
-                self.uniqueId = InstructionId.BNEZ
+        if InstructionConfig.PSEUDO_INSTRUCTIONS:
+            if self.rt == 0:
+                if self.uniqueId == InstructionId.BEQ:
+                    if self.rs == 0:
+                        self.uniqueId = InstructionId.B
+                    else:
+                        self.uniqueId = InstructionId.BEQZ
+                elif self.uniqueId == InstructionId.BNE:
+                    self.uniqueId = InstructionId.BNEZ
 
     def isFloatInstruction(self) -> bool:
         if self.isDoubleFloatInstruction():
