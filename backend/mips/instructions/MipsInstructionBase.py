@@ -366,9 +366,9 @@ class InstructionBase:
 
 
     def sameOpcode(self, other: InstructionBase) -> bool:
-        if self.uniqueId in (InstructionId.INVALID, InstructionVectorId.INVALID):
+        if not self.isImplemented():
             return False
-        if other.uniqueId in (InstructionId.INVALID, InstructionVectorId.INVALID):
+        if not other.isImplemented():
             return False
         return self.uniqueId == other.uniqueId
 
@@ -398,7 +398,7 @@ class InstructionBase:
 
 
     def getOpcodeName(self) -> str:
-        if self.uniqueId != InstructionId.INVALID and self.uniqueId != InstructionVectorId.INVALID:
+        if self.isImplemented():
             return self.uniqueId.name
         return f"(0x{self.opcode:02X})"
 
@@ -453,7 +453,7 @@ class InstructionBase:
         return element
 
 
-    def disassemble(self, immOverride: str|None=None) -> str:
+    def disassembleInstruction(self, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName().lower().ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
         rs = self.getRegisterName(self.rs)
         rt = self.getRegisterName(self.rt)
@@ -462,6 +462,22 @@ class InstructionBase:
             immediate = immOverride
 
         return f"ERROR # {opcode} {rs} {rt} {immediate}"
+
+    def disassembleAsData(self) -> str:
+        result = ".word".ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
+        result += f" 0x{self.instr:08X}"
+
+        return result
+
+    def disassemble(self, immOverride: str|None=None) -> str:
+        if not self.isImplemented():
+            result = self.disassembleAsData()
+            if InstructionConfig.UNKNOWN_INSTR_COMMENT:
+                result = result.ljust(40, ' ')
+                result += " # "
+                result += self.disassembleInstruction(immOverride)
+            return result
+        return self.disassembleInstruction(immOverride)
 
 
     def mapInstrToType(self) -> str|None:

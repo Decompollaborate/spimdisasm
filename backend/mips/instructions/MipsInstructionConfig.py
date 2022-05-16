@@ -28,6 +28,8 @@ class InstructionConfig:
     OPCODE_LJUST: int = 7+4
     """The minimal number of characters to left-align the opcode name"""
 
+    UNKNOWN_INSTR_COMMENT: bool = True
+
     @staticmethod
     def addParametersToArgParse(parser: argparse.ArgumentParser):
         mipsInstr = parser.add_argument_group("MIPS instructions configuration")
@@ -44,6 +46,8 @@ class InstructionConfig:
 
         miscOpts.add_argument("--opcode-ljust", help=f"Set the minimal number of characters to left-align the opcode name. Defaults to {InstructionConfig.OPCODE_LJUST}")
 
+        miscOpts.add_argument("--no-unk-instr-comment", help=f"Disables the extra comment produced after unknown instructions. Defaults to {InstructionConfig.UNKNOWN_INSTR_COMMENT}", action="store_true")
+
 
     @classmethod
     def parseArgs(cls, args: argparse.Namespace):
@@ -56,3 +60,5 @@ class InstructionConfig:
 
         if args.opcode_ljust is not None:
             InstructionConfig.OPCODE_LJUST = int(args.opcode_ljust)
+
+        InstructionConfig.UNKNOWN_INSTR_COMMENT = not args.no_unk_instr_comment

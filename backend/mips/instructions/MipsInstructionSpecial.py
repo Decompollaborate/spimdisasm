@@ -160,12 +160,12 @@ class InstructionSpecial(InstructionBase):
         self.sa = 0
 
     def getOpcodeName(self) -> str:
-        if self.uniqueId == InstructionId.INVALID:
+        if not self.isImplemented():
             return f"Special(0x{self.function:02X})"
         return super().getOpcodeName()
 
 
-    def disassemble(self, immOverride: str|None=None) -> str:
+    def disassembleInstruction(self, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName()
         formated_opcode = opcode.lower().ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
         rs = self.getRegisterName(self.rs)
@@ -200,8 +200,7 @@ class InstructionSpecial(InstructionBase):
             code = (self.instr_index) >> 16
             result = f"{formated_opcode} {code}"
             if InstructionConfig.SN64_DIV_FIX and self.uniqueId == InstructionId.BREAK:
-                patchedResult = ".word".ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
-                patchedResult += f" 0x{self.instr:08X}"
+                patchedResult = self.disassembleAsData()
                 patchedResult += f" # {result}"
                 return patchedResult
             return result
@@ -236,4 +235,4 @@ class InstructionSpecial(InstructionBase):
             result = result.ljust(19, ' ')
             return f"{result} {self.sa}"
 
-        return super().disassemble(immOverride)
+        return super().disassembleInstruction(immOverride)
