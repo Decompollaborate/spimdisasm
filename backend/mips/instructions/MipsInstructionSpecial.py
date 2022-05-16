@@ -96,16 +96,17 @@ class InstructionSpecial(InstructionBase):
         super().processUniqueId()
 
         self.uniqueId = self.opcodesDict.get(self.function, InstructionId.INVALID)
-        if self.instr == 0:
-            self.uniqueId = InstructionId.NOP
-        elif self.rt == 0:
-            if self.uniqueId == InstructionId.OR:
-                self.uniqueId = InstructionId.MOVE
-            elif self.uniqueId == InstructionId.NOR:
-                self.uniqueId = InstructionId.NOT
-        elif self.uniqueId == InstructionId.SUBU:
-            if self.rs == 0:
-                self.uniqueId = InstructionId.NEGU
+        if InstructionConfig.PSEUDO_INSTRUCTIONS:
+            if self.instr == 0:
+                self.uniqueId = InstructionId.NOP
+            elif self.rt == 0:
+                if self.uniqueId == InstructionId.OR:
+                    self.uniqueId = InstructionId.MOVE
+                elif self.uniqueId == InstructionId.NOR:
+                    self.uniqueId = InstructionId.NOT
+            elif self.uniqueId == InstructionId.SUBU:
+                if self.rs == 0:
+                    self.uniqueId = InstructionId.NEGU
 
 
     def isBranch(self) -> bool:
