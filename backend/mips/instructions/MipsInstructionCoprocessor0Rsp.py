@@ -30,7 +30,7 @@ class InstructionCoprocessor0Rsp(InstructionCoprocessor0):
         self.uniqueId = self.Cop0Opcodes_ByFormat.get(self.fmt, InstructionId.INVALID)
 
 
-    def disassemble(self, immOverride: str|None=None) -> str:
+    def disassembleInstruction(self, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName()
         formated_opcode = opcode.lower().ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
         # rt = self.getRegisterName(self.rt)
@@ -39,7 +39,7 @@ class InstructionCoprocessor0Rsp(InstructionCoprocessor0):
         rd = self.getCop0RspRegisterName(self.rd)
 
         if not self.isImplemented():
-            return super().disassemble(immOverride)
+            return super().disassembleInstruction(immOverride)
 
         result = f"{formated_opcode} {rt},"
         result = result.ljust(14, ' ')

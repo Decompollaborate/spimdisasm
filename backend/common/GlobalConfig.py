@@ -117,7 +117,8 @@ class GlobalConfig:
         else:
             GlobalConfig.ENDIAN = InputEndian.BIG
 
-        GlobalConfig.GP_VALUE = int(args.gp, 16)
+        if args.gp is not None:
+            GlobalConfig.GP_VALUE = int(args.gp, 16)
 
         GlobalConfig.WRITE_BINARY = args.write_binary
         GlobalConfig.ASM_COMMENT = not args.disable_asm_comments

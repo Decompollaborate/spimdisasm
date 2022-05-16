@@ -73,13 +73,13 @@ class InstructionRegimm(InstructionBase):
         self.function = 0
 
     def getOpcodeName(self) -> str:
-        if self.uniqueId == InstructionId.INVALID:
+        if not self.isImplemented():
             return f"Regimm(0x{self.rt:02X})"
         return super().getOpcodeName()
 
 
     # OP  rs, IMM
-    def disassemble(self, immOverride: str|None=None) -> str:
+    def disassembleInstruction(self, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName().lower().ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
         rs = self.getRegisterName(self.rs)
         immediate = hex(self.immediate)

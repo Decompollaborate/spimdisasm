@@ -198,12 +198,12 @@ class InstructionNormal(InstructionBase):
         return super().modifiesRt()
 
     def getOpcodeName(self) -> str:
-        if self.uniqueId == InstructionId.INVALID:
+        if not self.isImplemented():
             return f"Unknown(0x{self.opcode:02X})"
         return super().getOpcodeName()
 
 
-    def disassemble(self, immOverride: str|None=None) -> str:
+    def disassembleInstruction(self, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName()
         formated_opcode = opcode.lower().ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
         rs = self.getRegisterName(self.rs)

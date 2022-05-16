@@ -168,12 +168,12 @@ class InstructionCoprocessor1(InstructionBase):
             self.sa = 0
 
     def getOpcodeName(self) -> str:
-        if self.uniqueId == InstructionId.INVALID:
+        if not self.isImplemented():
             return f"COP1(0x{self.function:02X})"
         return super().getOpcodeName().replace("_", ".")
 
 
-    def disassemble(self, immOverride: str|None=None) -> str:
+    def disassembleInstruction(self, immOverride: str|None=None) -> str:
         formated_opcode = self.getOpcodeName().lower().ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
         rt = self.getRegisterName(self.rt)
         ft = self.getFloatRegisterName(self.ft)

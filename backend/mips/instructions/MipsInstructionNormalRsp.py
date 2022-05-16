@@ -114,7 +114,7 @@ class InstructionNormalRsp(InstructionNormal):
         return self.getGprRspRegisterName(register)
 
 
-    def disassemble(self, immOverride: str|None=None) -> str:
+    def disassembleInstruction(self, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName()
         formated_opcode = opcode.lower().ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
         vt = self.getVectorRspRegisterName(self.vt)
@@ -146,4 +146,4 @@ class InstructionNormalRsp(InstructionNormal):
 
             return result
 
-        return super().disassemble(immOverride)
+        return super().disassembleInstruction(immOverride)
