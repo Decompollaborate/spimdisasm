@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from ... import common
 
-from . import InstructionId, InstructionBase
+from . import InstructionId, InstructionBase, instructionDescriptorDict
 from .MipsInstructionConfig import InstructionConfig
 
 
@@ -199,11 +199,13 @@ class InstructionNormal(InstructionBase):
 
     def getOpcodeName(self) -> str:
         if not self.isImplemented():
-            return f"Unknown(0x{self.opcode:02X})"
+            return f"Unknown (opcode: 0x{self.opcode:02X})"
         return super().getOpcodeName()
 
 
     def disassembleInstruction(self, immOverride: str|None=None) -> str:
+        if self.uniqueId in instructionDescriptorDict:
+            return super().disassembleInstruction(immOverride)
         opcode = self.getOpcodeName()
         formated_opcode = opcode.lower().ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
         rs = self.getRegisterName(self.rs)

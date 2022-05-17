@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from .MipsInstructionConfig import InstructionConfig
-from .MipsConstants import InstructionId, InstructionVectorId
+from .MipsConstants import InstructionId, InstructionVectorId, instructionDescriptorDict
 
 
 class InstructionBase:
@@ -454,12 +454,29 @@ class InstructionBase:
 
 
     def disassembleInstruction(self, immOverride: str|None=None) -> str:
-        opcode = self.getOpcodeName().lower().ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
+        opcode = self.getOpcodeName()
+        formated_opcode = opcode.lower().ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
         rs = self.getRegisterName(self.rs)
         rt = self.getRegisterName(self.rt)
         immediate = hex(self.immediate)
         if immOverride is not None:
             immediate = immOverride
+
+        if self.uniqueId in instructionDescriptorDict:
+            instrArguments = {"rs": rs, "rt": rt, "IMM": immediate}
+            descriptor = instructionDescriptorDict[self.uniqueId]
+
+            result = f"{formated_opcode} "
+            if descriptor.operand1 is not None:
+                result += descriptor.operand1.format(**instrArguments)
+                result = result.ljust(14, ' ')
+            if descriptor.operand2 is not None:
+                result += descriptor.operand2.format(**instrArguments)
+                result = result.ljust(19, ' ')
+            if descriptor.operand3 is not None:
+                result += descriptor.operand3.format(**instrArguments)
+                # result = result.ljust(14, ' ')
+            return result
 
         return f"ERROR # {opcode} {rs} {rt} {immediate}"
 

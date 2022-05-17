@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import enum
 
 
@@ -437,6 +438,308 @@ class InstructionVectorId(enum.Enum):
 
     LFV       = enum.auto()
     LTV       = enum.auto()
+
+@enum.unique
+class InstrType(enum.Enum):
+    typeUnknown = -1
+
+    typeJ       = enum.auto()
+    typeI       = enum.auto()
+    typeR       = enum.auto()
+
+    typeRegimm  = enum.auto()
+
+@dataclasses.dataclass
+class InstrDescriptor:
+    operand1: str|None
+    operand2: str|None
+    operand3: str|None
+
+    instrType: InstrType
+
+    isBranch: bool
+    isBranchLikely: bool
+    isTrap: bool
+
+    isFloat: bool
+    isDouble: bool
+
+    isUnsigned: bool
+
+    modifiesRt: bool
+    modifiesRd: bool
+
+    mipsVersion: int|None = None
+    "Version in which this instruction was introduced. `None` means unknown"
+    isRsp: bool = False
+
+
+instructionDescriptorDict: dict[InstructionId|InstructionVectorId, InstrDescriptor] = {
+    # InstructionId.SLL       : InstrDescriptor(),
+
+    # InstructionId.SRL       : InstrDescriptor(),
+    # InstructionId.SRA       : InstrDescriptor(),
+    # InstructionId.SLLV      : InstrDescriptor(),
+
+    # InstructionId.SRLV      : InstrDescriptor(),
+    # InstructionId.SRAV      : InstrDescriptor(),
+
+    # InstructionId.JR        : InstrDescriptor(),
+    # InstructionId.JALR      : InstrDescriptor(),
+    # InstructionId.MOVZ      : InstrDescriptor(),
+    # InstructionId.MOVN      : InstrDescriptor(),
+    # InstructionId.SYSCALL   : InstrDescriptor(),
+    # InstructionId.BREAK     : InstrDescriptor(),
+
+    # InstructionId.SYNC      : InstrDescriptor(),
+
+    # InstructionId.MFHI      : InstrDescriptor(),
+    # InstructionId.MTHI      : InstrDescriptor(),
+    # InstructionId.MFLO      : InstrDescriptor(),
+    # InstructionId.MTLO      : InstrDescriptor(),
+    # InstructionId.DSLLV     : InstrDescriptor(),
+
+    # InstructionId.DSRLV     : InstrDescriptor(),
+    # InstructionId.DSRAV     : InstrDescriptor(),
+
+    # InstructionId.MULT      : InstrDescriptor(),
+    # InstructionId.MULTU     : InstrDescriptor(),
+    # InstructionId.DIV       : InstrDescriptor(),
+    # InstructionId.DIVU      : InstrDescriptor(),
+    # InstructionId.DMULT     : InstrDescriptor(),
+    # InstructionId.DMULTU    : InstrDescriptor(),
+    # InstructionId.DDIV      : InstrDescriptor(),
+    # InstructionId.DDIVU     : InstrDescriptor(),
+
+    # InstructionId.ADD       : InstrDescriptor(),
+    # InstructionId.ADDU      : InstrDescriptor(),
+    # InstructionId.SUB       : InstrDescriptor(),
+    # InstructionId.SUBU      : InstrDescriptor(),
+    # InstructionId.AND       : InstrDescriptor(),
+    # InstructionId.OR        : InstrDescriptor(),
+    # InstructionId.XOR       : InstrDescriptor(),
+    # InstructionId.NOR       : InstrDescriptor(),
+
+    # InstructionId.SLT       : InstrDescriptor(),
+    # InstructionId.SLTU      : InstrDescriptor(),
+    # InstructionId.DADD      : InstrDescriptor(),
+    # InstructionId.DADDU     : InstrDescriptor(),
+    # InstructionId.DSUB      : InstrDescriptor(),
+    # InstructionId.DSUBU     : InstrDescriptor(),
+
+    # InstructionId.TGE       : InstrDescriptor(),
+    # InstructionId.TGEU      : InstrDescriptor(),
+    # InstructionId.TLT       : InstrDescriptor(),
+    # InstructionId.TLTU      : InstrDescriptor(),
+    # InstructionId.TEQ       : InstrDescriptor(),
+
+    # InstructionId.TNE       : InstrDescriptor(),
+
+    # InstructionId.DSLL      : InstrDescriptor(),
+
+    # InstructionId.DSRL      : InstrDescriptor(),
+    # InstructionId.DSRA      : InstrDescriptor(),
+    # InstructionId.DSLL32    : InstrDescriptor(),
+
+    # InstructionId.DSRL32    : InstrDescriptor(),
+    # InstructionId.DSRA32    : InstrDescriptor(),
+
+    # OP  rs, IMM
+    InstructionId.BLTZ      : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=False, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+    InstructionId.BGEZ      : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=False, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+    InstructionId.BLTZL     : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=True, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+    InstructionId.BGEZL     : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=True, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+    InstructionId.TGEI      : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=False, isBranchLikely=False, isTrap=True, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+    InstructionId.TGEIU     : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=False, isBranchLikely=False, isTrap=True, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+    InstructionId.TLTI      : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=False, isBranchLikely=False, isTrap=True, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+    InstructionId.TLTIU     : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=False, isBranchLikely=False, isTrap=True, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+    InstructionId.BLTZAL    : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=False, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+    InstructionId.BGEZAL    : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=False, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+    InstructionId.BLTZALL   : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=True, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+    InstructionId.BGEZALL   : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=True, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+    InstructionId.TEQI      : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=False, isBranchLikely=False, isTrap=True, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+    InstructionId.TNEI      : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=False, isBranchLikely=False, isTrap=True, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+
+    # OP LABEL
+    # InstructionId.J         : InstrDescriptor(),
+    # InstructionId.JAL       : InstrDescriptor(),
+
+    InstructionId.BEQ       : InstrDescriptor("{rs}, ", "{rt}, ", "{IMM}", InstrType.typeRegimm, isBranch=True, isBranchLikely=False, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+    InstructionId.BNE       : InstrDescriptor("{rs}, ", "{rt}, ", "{IMM}", InstrType.typeRegimm, isBranch=True, isBranchLikely=False, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+    InstructionId.BLEZ      : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=False, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+    InstructionId.BGTZ      : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=False, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+    InstructionId.BEQL      : InstrDescriptor("{rs}, ", "{rt}, ", "{IMM}", InstrType.typeRegimm, isBranch=True, isBranchLikely=True, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+    InstructionId.BNEL      : InstrDescriptor("{rs}, ", "{rt}, ", "{IMM}", InstrType.typeRegimm, isBranch=True, isBranchLikely=True, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+    InstructionId.BLEZL     : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=True, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+    InstructionId.BGTZL     : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=True, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+
+    # InstructionId.ADDI      : InstrDescriptor(),
+    # InstructionId.ADDIU     : InstrDescriptor(),
+    # InstructionId.SLTI      : InstrDescriptor(),
+    # InstructionId.SLTIU     : InstrDescriptor(),
+    # InstructionId.ANDI      : InstrDescriptor(),
+    # InstructionId.ORI       : InstrDescriptor(),
+    # InstructionId.XORI      : InstrDescriptor(),
+    # InstructionId.LUI       : InstrDescriptor(),
+
+    # InstructionId.MFC0      : InstrDescriptor(),
+    # InstructionId.DMFC0     : InstrDescriptor(),
+    # InstructionId.CFC0      : InstrDescriptor(),
+
+    # InstructionId.MTC0      : InstrDescriptor(),
+    # InstructionId.DMTC0     : InstrDescriptor(),
+    # InstructionId.CTC0      : InstrDescriptor(),
+
+    # InstructionId.TLBR      : InstrDescriptor(),
+    # InstructionId.TLBWI     : InstrDescriptor(),
+    # InstructionId.TLBWR     : InstrDescriptor(),
+    # InstructionId.TLBP      : InstrDescriptor(),
+    # InstructionId.ERET      : InstrDescriptor(),
+
+    # InstructionId.BC0T      : InstrDescriptor(),
+    # InstructionId.BC0F      : InstrDescriptor(),
+    # InstructionId.BC0TL     : InstrDescriptor(),
+    # InstructionId.BC0FL     : InstrDescriptor(),
+
+    # InstructionId.MFC1      : InstrDescriptor(),
+    # InstructionId.DMFC1     : InstrDescriptor(),
+    # InstructionId.CFC1      : InstrDescriptor(),
+
+    # InstructionId.MTC1      : InstrDescriptor(),
+    # InstructionId.DMTC1     : InstrDescriptor(),
+    # InstructionId.CTC1      : InstrDescriptor(),
+
+    # InstructionId.BC1F      : InstrDescriptor(),
+    # InstructionId.BC1T      : InstrDescriptor(),
+    # InstructionId.BC1FL     : InstrDescriptor(),
+    # InstructionId.BC1TL     : InstrDescriptor(),
+    # InstructionId.ADD_S     : InstrDescriptor(),
+    # InstructionId.SUB_S     : InstrDescriptor(),
+    # InstructionId.MUL_S     : InstrDescriptor(),
+    # InstructionId.DIV_S     : InstrDescriptor(),
+    # InstructionId.SQRT_S    : InstrDescriptor(),
+    # InstructionId.ABS_S     : InstrDescriptor(),
+    # InstructionId.MOV_S     : InstrDescriptor(),
+    # InstructionId.NEG_S     : InstrDescriptor(),
+    # InstructionId.ROUND_L_S : InstrDescriptor(),
+    # InstructionId.TRUNC_L_S : InstrDescriptor(),
+    # InstructionId.CEIL_L_S  : InstrDescriptor(),
+    # InstructionId.FLOOR_L_S : InstrDescriptor(),
+    # InstructionId.ROUND_W_S : InstrDescriptor(),
+    # InstructionId.TRUNC_W_S : InstrDescriptor(),
+    # InstructionId.CEIL_W_S  : InstrDescriptor(),
+    # InstructionId.FLOOR_W_S : InstrDescriptor(),
+    # InstructionId.CVT_D_S   : InstrDescriptor(),
+    # InstructionId.CVT_W_S   : InstrDescriptor(),
+    # InstructionId.CVT_L_S   : InstrDescriptor(),
+    # InstructionId.C_F_S     : InstrDescriptor(),
+    # InstructionId.C_UN_S    : InstrDescriptor(),
+    # InstructionId.C_EQ_S    : InstrDescriptor(),
+    # InstructionId.C_UEQ_S   : InstrDescriptor(),
+    # InstructionId.C_OLT_S   : InstrDescriptor(),
+    # InstructionId.C_ULT_S   : InstrDescriptor(),
+    # InstructionId.C_OLE_S   : InstrDescriptor(),
+    # InstructionId.C_ULE_S   : InstrDescriptor(),
+    # InstructionId.C_SF_S    : InstrDescriptor(),
+    # InstructionId.C_NGLE_S  : InstrDescriptor(),
+    # InstructionId.C_SEQ_S   : InstrDescriptor(),
+    # InstructionId.C_NGL_S   : InstrDescriptor(),
+    # InstructionId.C_LT_S    : InstrDescriptor(),
+    # InstructionId.C_NGE_S   : InstrDescriptor(),
+    # InstructionId.C_LE_S    : InstrDescriptor(),
+    # InstructionId.C_NGT_S   : InstrDescriptor(),
+    # InstructionId.ADD_D     : InstrDescriptor(),
+    # InstructionId.SUB_D     : InstrDescriptor(),
+    # InstructionId.MUL_D     : InstrDescriptor(),
+    # InstructionId.DIV_D     : InstrDescriptor(),
+    # InstructionId.SQRT_D    : InstrDescriptor(),
+    # InstructionId.ABS_D     : InstrDescriptor(),
+    # InstructionId.MOV_D     : InstrDescriptor(),
+    # InstructionId.NEG_D     : InstrDescriptor(),
+    # InstructionId.ROUND_L_D : InstrDescriptor(),
+    # InstructionId.TRUNC_L_D : InstrDescriptor(),
+    # InstructionId.CEIL_L_D  : InstrDescriptor(),
+    # InstructionId.FLOOR_L_D : InstrDescriptor(),
+    # InstructionId.ROUND_W_D : InstrDescriptor(),
+    # InstructionId.TRUNC_W_D : InstrDescriptor(),
+    # InstructionId.CEIL_W_D  : InstrDescriptor(),
+    # InstructionId.FLOOR_W_D : InstrDescriptor(),
+    # InstructionId.CVT_S_D   : InstrDescriptor(),
+    # InstructionId.CVT_W_D   : InstrDescriptor(),
+    # InstructionId.CVT_L_D   : InstrDescriptor(),
+    # InstructionId.C_F_D     : InstrDescriptor(),
+    # InstructionId.C_UN_D    : InstrDescriptor(),
+    # InstructionId.C_EQ_D    : InstrDescriptor(),
+    # InstructionId.C_UEQ_D   : InstrDescriptor(),
+    # InstructionId.C_OLT_D   : InstrDescriptor(),
+    # InstructionId.C_ULT_D   : InstrDescriptor(),
+    # InstructionId.C_OLE_D   : InstrDescriptor(),
+    # InstructionId.C_ULE_D   : InstrDescriptor(),
+    # InstructionId.C_SF_D    : InstrDescriptor(),
+    # InstructionId.C_NGLE_D  : InstrDescriptor(),
+    # InstructionId.C_SEQ_D   : InstrDescriptor(),
+    # InstructionId.C_NGL_D   : InstrDescriptor(),
+    # InstructionId.C_LT_D    : InstrDescriptor(),
+    # InstructionId.C_NGE_D   : InstrDescriptor(),
+    # InstructionId.C_LE_D    : InstrDescriptor(),
+    # InstructionId.C_NGT_D   : InstrDescriptor(),
+    # InstructionId.CVT_S_W   : InstrDescriptor(),
+    # InstructionId.CVT_D_W   : InstrDescriptor(),
+    # InstructionId.CVT_S_L   : InstrDescriptor(),
+    # InstructionId.CVT_D_L   : InstrDescriptor(),
+
+    # InstructionId.DADDI     : InstrDescriptor(),
+    # InstructionId.DADDIU    : InstrDescriptor(),
+    # InstructionId.LDL       : InstrDescriptor(),
+    # InstructionId.LDR       : InstrDescriptor(),
+
+    # InstructionId.LB        : InstrDescriptor(),
+    # InstructionId.LH        : InstrDescriptor(),
+    # InstructionId.LWL       : InstrDescriptor(),
+    # InstructionId.LW        : InstrDescriptor(),
+    # InstructionId.LBU       : InstrDescriptor(),
+    # InstructionId.LHU       : InstrDescriptor(),
+    # InstructionId.LWR       : InstrDescriptor(),
+    # InstructionId.LWU       : InstrDescriptor(),
+
+    # InstructionId.SB        : InstrDescriptor(),
+    # InstructionId.SH        : InstrDescriptor(),
+    # InstructionId.SWL       : InstrDescriptor(),
+    # InstructionId.SW        : InstrDescriptor(),
+    # InstructionId.SDL       : InstrDescriptor(),
+    # InstructionId.SDR       : InstrDescriptor(),
+    # InstructionId.SWR       : InstrDescriptor(),
+    # InstructionId.CACHE     : InstrDescriptor(),
+
+    # InstructionId.LL        : InstrDescriptor(),
+    # InstructionId.LWC1      : InstrDescriptor(),
+    # InstructionId.LWC2      : InstrDescriptor(),
+    # InstructionId.PREF      : InstrDescriptor(),
+    # InstructionId.LLD       : InstrDescriptor(),
+    # InstructionId.LDC1      : InstrDescriptor(),
+    # InstructionId.LDC2      : InstrDescriptor(),
+    # InstructionId.LD        : InstrDescriptor(),
+
+    # InstructionId.SC        : InstrDescriptor(),
+    # InstructionId.SWC1      : InstrDescriptor(),
+    # InstructionId.SWC2      : InstrDescriptor(),
+    #
+    # InstructionId.SCD       : InstrDescriptor(),
+    # InstructionId.SDC1      : InstrDescriptor(),
+    # InstructionId.SDC2      : InstrDescriptor(),
+    # InstructionId.SD        : InstrDescriptor(),
+
+    # Pseudo-Instruction Unique IDs
+    InstructionId.BEQZ      : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=False, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+    InstructionId.BNEZ      : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=False, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+    InstructionId.B         : InstrDescriptor("{IMM}", None, None, InstrType.typeRegimm, isBranch=True, isBranchLikely=False, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+
+    # InstructionId.NOP       : InstrDescriptor(),
+    # InstructionId.MOVE      : InstrDescriptor(),
+    # InstructionId.NEGU      : InstrDescriptor(),
+    # InstructionId.NOT       : InstrDescriptor(),
+}
+
 
 InstructionsNotEmitedByIDO = {
     InstructionId.ADD,
