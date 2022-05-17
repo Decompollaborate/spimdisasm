@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from ... import common
+
 from .MipsInstructionConfig import InstructionConfig
 from .MipsConstants import InstructionId, InstructionVectorId, instructionDescriptorDict
 
@@ -463,19 +465,27 @@ class InstructionBase:
             immediate = immOverride
 
         if self.uniqueId in instructionDescriptorDict:
-            instrArguments = {"rs": rs, "rt": rt, "IMM": immediate}
             descriptor = instructionDescriptorDict[self.uniqueId]
 
+            immediate = f"0x{self.immediate:X}"
+            if not descriptor.isUnsigned:
+                number = common.Utils.from2Complement(self.immediate, 16)
+                if number < 0:
+                    immediate = f"-0x{-number:X}"
+                else:
+                    immediate = f"0x{number:X}"
+            if immOverride is not None:
+                immediate = immOverride
+
+            instrArguments = {"rs": rs, "rt": rt, "IMM": immediate}
+
+            ljustValue = 14
             result = f"{formated_opcode} "
-            if descriptor.operand1 is not None:
-                result += descriptor.operand1.format(**instrArguments)
-                result = result.ljust(14, ' ')
-            if descriptor.operand2 is not None:
-                result += descriptor.operand2.format(**instrArguments)
-                result = result.ljust(19, ' ')
-            if descriptor.operand3 is not None:
-                result += descriptor.operand3.format(**instrArguments)
-                # result = result.ljust(14, ' ')
+            for i, operand in enumerate(descriptor.operands):
+                if i != 0:
+                    result = result.ljust(ljustValue, ' ')
+                    ljustValue += 5
+                result += operand.format(**instrArguments)
             return result
 
         return f"ERROR # {opcode} {rs} {rt} {immediate}"

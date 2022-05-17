@@ -451,23 +451,21 @@ class InstrType(enum.Enum):
 
 @dataclasses.dataclass
 class InstrDescriptor:
-    operand1: str|None
-    operand2: str|None
-    operand3: str|None
+    operands: list[str]
 
     instrType: InstrType
 
-    isBranch: bool
-    isBranchLikely: bool
-    isTrap: bool
+    isBranch: bool = False
+    isBranchLikely: bool = False
+    isTrap: bool = False
 
-    isFloat: bool
-    isDouble: bool
+    isFloat: bool = False
+    isDouble: bool = False
 
-    isUnsigned: bool
+    isUnsigned: bool = False
 
-    modifiesRt: bool
-    modifiesRd: bool
+    modifiesRt: bool = False
+    modifiesRd: bool = False
 
     mipsVersion: int|None = None
     "Version in which this instruction was introduced. `None` means unknown"
@@ -545,42 +543,47 @@ instructionDescriptorDict: dict[InstructionId|InstructionVectorId, InstrDescript
     # InstructionId.DSRA32    : InstrDescriptor(),
 
     # OP  rs, IMM
-    InstructionId.BLTZ      : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=False, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
-    InstructionId.BGEZ      : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=False, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
-    InstructionId.BLTZL     : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=True, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
-    InstructionId.BGEZL     : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=True, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
-    InstructionId.TGEI      : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=False, isBranchLikely=False, isTrap=True, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
-    InstructionId.TGEIU     : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=False, isBranchLikely=False, isTrap=True, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
-    InstructionId.TLTI      : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=False, isBranchLikely=False, isTrap=True, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
-    InstructionId.TLTIU     : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=False, isBranchLikely=False, isTrap=True, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
-    InstructionId.BLTZAL    : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=False, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
-    InstructionId.BGEZAL    : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=False, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
-    InstructionId.BLTZALL   : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=True, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
-    InstructionId.BGEZALL   : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=True, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
-    InstructionId.TEQI      : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=False, isBranchLikely=False, isTrap=True, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
-    InstructionId.TNEI      : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=False, isBranchLikely=False, isTrap=True, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+    InstructionId.BLTZ      : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True),
+    InstructionId.BGEZ      : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True),
+    InstructionId.BLTZL     : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True, isBranchLikely=True),
+    InstructionId.BGEZL     : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True, isBranchLikely=True),
+    InstructionId.TGEI      : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isTrap=True),
+    InstructionId.TGEIU     : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isTrap=True),
+    InstructionId.TLTI      : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isTrap=True),
+    InstructionId.TLTIU     : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isTrap=True),
+    InstructionId.BLTZAL    : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True),
+    InstructionId.BGEZAL    : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True),
+    InstructionId.BLTZALL   : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True, isBranchLikely=True),
+    InstructionId.BGEZALL   : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True, isBranchLikely=True),
+    InstructionId.TEQI      : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isTrap=True),
+    InstructionId.TNEI      : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isTrap=True),
 
     # OP LABEL
     # InstructionId.J         : InstrDescriptor(),
     # InstructionId.JAL       : InstrDescriptor(),
 
-    InstructionId.BEQ       : InstrDescriptor("{rs}, ", "{rt}, ", "{IMM}", InstrType.typeRegimm, isBranch=True, isBranchLikely=False, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
-    InstructionId.BNE       : InstrDescriptor("{rs}, ", "{rt}, ", "{IMM}", InstrType.typeRegimm, isBranch=True, isBranchLikely=False, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
-    InstructionId.BLEZ      : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=False, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
-    InstructionId.BGTZ      : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=False, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
-    InstructionId.BEQL      : InstrDescriptor("{rs}, ", "{rt}, ", "{IMM}", InstrType.typeRegimm, isBranch=True, isBranchLikely=True, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
-    InstructionId.BNEL      : InstrDescriptor("{rs}, ", "{rt}, ", "{IMM}", InstrType.typeRegimm, isBranch=True, isBranchLikely=True, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
-    InstructionId.BLEZL     : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=True, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
-    InstructionId.BGTZL     : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=True, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+    InstructionId.BEQ       : InstrDescriptor(["{rs}, ", "{rt}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True),
+    InstructionId.BNE       : InstrDescriptor(["{rs}, ", "{rt}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True),
+    InstructionId.BLEZ      : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True),
+    InstructionId.BGTZ      : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True),
+    InstructionId.BEQL      : InstrDescriptor(["{rs}, ", "{rt}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True, isBranchLikely=True),
+    InstructionId.BNEL      : InstrDescriptor(["{rs}, ", "{rt}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True, isBranchLikely=True),
+    InstructionId.BLEZL     : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True, isBranchLikely=True),
+    InstructionId.BGTZL     : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True, isBranchLikely=True),
 
-    # InstructionId.ADDI      : InstrDescriptor(),
-    # InstructionId.ADDIU     : InstrDescriptor(),
-    # InstructionId.SLTI      : InstrDescriptor(),
-    # InstructionId.SLTIU     : InstrDescriptor(),
-    # InstructionId.ANDI      : InstrDescriptor(),
-    # InstructionId.ORI       : InstrDescriptor(),
-    # InstructionId.XORI      : InstrDescriptor(),
-    # InstructionId.LUI       : InstrDescriptor(),
+    # OP  rt, IMM
+    InstructionId.LUI       : InstrDescriptor(["{rt}, ", "{IMM}"], InstrType.typeI, isUnsigned=True, modifiesRt=True),
+
+    # OP  rt, rs, IMM
+    InstructionId.ANDI      : InstrDescriptor(["{rt}, ", "{rs}, ", "{IMM}"], InstrType.typeI, isUnsigned=True, modifiesRt=True),
+    InstructionId.ORI       : InstrDescriptor(["{rt}, ", "{rs}, ", "{IMM}"], InstrType.typeI, isUnsigned=True, modifiesRt=True),
+    InstructionId.XORI      : InstrDescriptor(["{rt}, ", "{rs}, ", "{IMM}"], InstrType.typeI, isUnsigned=True, modifiesRt=True),
+    InstructionId.ADDI      : InstrDescriptor(["{rt}, ", "{rs}, ", "{IMM}"], InstrType.typeI, modifiesRt=True),
+    InstructionId.ADDIU     : InstrDescriptor(["{rt}, ", "{rs}, ", "{IMM}"], InstrType.typeI, modifiesRt=True),
+    InstructionId.DADDI     : InstrDescriptor(["{rt}, ", "{rs}, ", "{IMM}"], InstrType.typeI, modifiesRt=True),
+    InstructionId.DADDIU    : InstrDescriptor(["{rt}, ", "{rs}, ", "{IMM}"], InstrType.typeI, modifiesRt=True),
+    InstructionId.SLTI      : InstrDescriptor(["{rt}, ", "{rs}, ", "{IMM}"], InstrType.typeI, modifiesRt=True),
+    InstructionId.SLTIU     : InstrDescriptor(["{rt}, ", "{rs}, ", "{IMM}"], InstrType.typeI, modifiesRt=True),
 
     # InstructionId.MFC0      : InstrDescriptor(),
     # InstructionId.DMFC0     : InstrDescriptor(),
@@ -688,8 +691,6 @@ instructionDescriptorDict: dict[InstructionId|InstructionVectorId, InstrDescript
     # InstructionId.CVT_S_L   : InstrDescriptor(),
     # InstructionId.CVT_D_L   : InstrDescriptor(),
 
-    # InstructionId.DADDI     : InstrDescriptor(),
-    # InstructionId.DADDIU    : InstrDescriptor(),
     # InstructionId.LDL       : InstrDescriptor(),
     # InstructionId.LDR       : InstrDescriptor(),
 
@@ -730,9 +731,9 @@ instructionDescriptorDict: dict[InstructionId|InstructionVectorId, InstrDescript
     # InstructionId.SD        : InstrDescriptor(),
 
     # Pseudo-Instruction Unique IDs
-    InstructionId.BEQZ      : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=False, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
-    InstructionId.BNEZ      : InstrDescriptor("{rs}, ", "{IMM}", None, InstrType.typeRegimm, isBranch=True, isBranchLikely=False, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
-    InstructionId.B         : InstrDescriptor("{IMM}", None, None, InstrType.typeRegimm, isBranch=True, isBranchLikely=False, isTrap=False, isFloat=False, isDouble=False, isUnsigned=False, modifiesRt=False, modifiesRd=False),
+    InstructionId.BEQZ      : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True),
+    InstructionId.BNEZ      : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True),
+    InstructionId.B         : InstrDescriptor(["{IMM}"], InstrType.typeRegimm, isBranch=True),
 
     # InstructionId.NOP       : InstrDescriptor(),
     # InstructionId.MOVE      : InstrDescriptor(),
