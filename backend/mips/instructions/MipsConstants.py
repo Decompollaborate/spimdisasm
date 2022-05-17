@@ -473,6 +473,8 @@ class InstrDescriptor:
 
 
 instructionDescriptorDict: dict[InstructionId|InstructionVectorId, InstrDescriptor] = {
+    InstructionId.INVALID   : InstrDescriptor(["{rs}, ", "{rt}, ", "{IMM}"], InstrType.typeUnknown),
+
     # InstructionId.SLL       : InstrDescriptor(),
 
     # InstructionId.SRL       : InstrDescriptor(),
@@ -559,15 +561,18 @@ instructionDescriptorDict: dict[InstructionId|InstructionVectorId, InstrDescript
     InstructionId.TNEI      : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isTrap=True),
 
     # OP LABEL
-    # InstructionId.J         : InstrDescriptor(),
-    # InstructionId.JAL       : InstrDescriptor(),
+    InstructionId.J         : InstrDescriptor(["{LABEL}"], InstrType.typeJ),
+    InstructionId.JAL       : InstrDescriptor(["{LABEL}"], InstrType.typeJ),
 
+    # OP  rs, rt, IMM
     InstructionId.BEQ       : InstrDescriptor(["{rs}, ", "{rt}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True),
     InstructionId.BNE       : InstrDescriptor(["{rs}, ", "{rt}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True),
-    InstructionId.BLEZ      : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True),
-    InstructionId.BGTZ      : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True),
     InstructionId.BEQL      : InstrDescriptor(["{rs}, ", "{rt}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True, isBranchLikely=True),
     InstructionId.BNEL      : InstrDescriptor(["{rs}, ", "{rt}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True, isBranchLikely=True),
+
+    # OP  rs, IMM
+    InstructionId.BLEZ      : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True),
+    InstructionId.BGTZ      : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True),
     InstructionId.BLEZL     : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True, isBranchLikely=True),
     InstructionId.BGTZL     : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True, isBranchLikely=True),
 
@@ -584,6 +589,46 @@ instructionDescriptorDict: dict[InstructionId|InstructionVectorId, InstrDescript
     InstructionId.DADDIU    : InstrDescriptor(["{rt}, ", "{rs}, ", "{IMM}"], InstrType.typeI, modifiesRt=True),
     InstructionId.SLTI      : InstrDescriptor(["{rt}, ", "{rs}, ", "{IMM}"], InstrType.typeI, modifiesRt=True),
     InstructionId.SLTIU     : InstrDescriptor(["{rt}, ", "{rs}, ", "{IMM}"], InstrType.typeI, modifiesRt=True),
+
+    # OP rt, IMM(rs)
+    InstructionId.LDL       : InstrDescriptor(["{rt}, ", "{IMM}", "({rs})"], InstrType.typeI, modifiesRt=True),
+    InstructionId.LDR       : InstrDescriptor(["{rt}, ", "{IMM}", "({rs})"], InstrType.typeI, modifiesRt=True),
+    InstructionId.LB        : InstrDescriptor(["{rt}, ", "{IMM}", "({rs})"], InstrType.typeI, modifiesRt=True),
+    InstructionId.LH        : InstrDescriptor(["{rt}, ", "{IMM}", "({rs})"], InstrType.typeI, modifiesRt=True),
+    InstructionId.LWL       : InstrDescriptor(["{rt}, ", "{IMM}", "({rs})"], InstrType.typeI, modifiesRt=True),
+    InstructionId.LW        : InstrDescriptor(["{rt}, ", "{IMM}", "({rs})"], InstrType.typeI, modifiesRt=True),
+    InstructionId.LBU       : InstrDescriptor(["{rt}, ", "{IMM}", "({rs})"], InstrType.typeI, modifiesRt=True),
+    InstructionId.LHU       : InstrDescriptor(["{rt}, ", "{IMM}", "({rs})"], InstrType.typeI, modifiesRt=True),
+    InstructionId.LWR       : InstrDescriptor(["{rt}, ", "{IMM}", "({rs})"], InstrType.typeI, modifiesRt=True),
+    InstructionId.LWU       : InstrDescriptor(["{rt}, ", "{IMM}", "({rs})"], InstrType.typeI, modifiesRt=True),
+    InstructionId.SB        : InstrDescriptor(["{rt}, ", "{IMM}", "({rs})"], InstrType.typeI),
+    InstructionId.SH        : InstrDescriptor(["{rt}, ", "{IMM}", "({rs})"], InstrType.typeI),
+    InstructionId.SWL       : InstrDescriptor(["{rt}, ", "{IMM}", "({rs})"], InstrType.typeI),
+    InstructionId.SW        : InstrDescriptor(["{rt}, ", "{IMM}", "({rs})"], InstrType.typeI),
+    InstructionId.SDL       : InstrDescriptor(["{rt}, ", "{IMM}", "({rs})"], InstrType.typeI),
+    InstructionId.SDR       : InstrDescriptor(["{rt}, ", "{IMM}", "({rs})"], InstrType.typeI),
+    InstructionId.SWR       : InstrDescriptor(["{rt}, ", "{IMM}", "({rs})"], InstrType.typeI),
+    InstructionId.LL        : InstrDescriptor(["{rt}, ", "{IMM}", "({rs})"], InstrType.typeI, modifiesRt=True),
+    InstructionId.PREF      : InstrDescriptor(["{rt}, ", "{IMM}", "({rs})"], InstrType.typeI, modifiesRt=True),
+    InstructionId.LLD       : InstrDescriptor(["{rt}, ", "{IMM}", "({rs})"], InstrType.typeI, modifiesRt=True),
+    InstructionId.LD        : InstrDescriptor(["{rt}, ", "{IMM}", "({rs})"], InstrType.typeI, modifiesRt=True),
+    InstructionId.SC        : InstrDescriptor(["{rt}, ", "{IMM}", "({rs})"], InstrType.typeI, modifiesRt=True),
+    InstructionId.SCD       : InstrDescriptor(["{rt}, ", "{IMM}", "({rs})"], InstrType.typeI, modifiesRt=True),
+    InstructionId.SD        : InstrDescriptor(["{rt}, ", "{IMM}", "({rs})"], InstrType.typeI, modifiesRt=True),
+
+    InstructionId.CACHE     : InstrDescriptor(["0x{self.rt:02X}, ", "{IMM}", "({rs})"], InstrType.typeI),
+
+    # OP ft, IMM(rs)
+    InstructionId.LWC1      : InstrDescriptor(["{ft}, ", "{IMM}", "({rs})"], InstrType.typeI, isFloat=True),
+    InstructionId.LDC1      : InstrDescriptor(["{ft}, ", "{IMM}", "({rs})"], InstrType.typeI, isFloat=True, isDouble=True),
+    InstructionId.SWC1      : InstrDescriptor(["{ft}, ", "{IMM}", "({rs})"], InstrType.typeI, isFloat=True),
+    InstructionId.SDC1      : InstrDescriptor(["{ft}, ", "{IMM}", "({rs})"], InstrType.typeI, isFloat=True, isDouble=True),
+
+    # OP cop2t, IMM(rs)
+    InstructionId.LWC2      : InstrDescriptor(["{cop2t}, ", "{IMM}", "({rs})"], InstrType.typeI),
+    InstructionId.LDC2      : InstrDescriptor(["{cop2t}, ", "{IMM}", "({rs})"], InstrType.typeI),
+    InstructionId.SWC2      : InstrDescriptor(["{cop2t}, ", "{IMM}", "({rs})"], InstrType.typeI),
+    InstructionId.SDC2      : InstrDescriptor(["{cop2t}, ", "{IMM}", "({rs})"], InstrType.typeI),
 
     # InstructionId.MFC0      : InstrDescriptor(),
     # InstructionId.DMFC0     : InstrDescriptor(),
@@ -690,45 +735,6 @@ instructionDescriptorDict: dict[InstructionId|InstructionVectorId, InstrDescript
     # InstructionId.CVT_D_W   : InstrDescriptor(),
     # InstructionId.CVT_S_L   : InstrDescriptor(),
     # InstructionId.CVT_D_L   : InstrDescriptor(),
-
-    # InstructionId.LDL       : InstrDescriptor(),
-    # InstructionId.LDR       : InstrDescriptor(),
-
-    # InstructionId.LB        : InstrDescriptor(),
-    # InstructionId.LH        : InstrDescriptor(),
-    # InstructionId.LWL       : InstrDescriptor(),
-    # InstructionId.LW        : InstrDescriptor(),
-    # InstructionId.LBU       : InstrDescriptor(),
-    # InstructionId.LHU       : InstrDescriptor(),
-    # InstructionId.LWR       : InstrDescriptor(),
-    # InstructionId.LWU       : InstrDescriptor(),
-
-    # InstructionId.SB        : InstrDescriptor(),
-    # InstructionId.SH        : InstrDescriptor(),
-    # InstructionId.SWL       : InstrDescriptor(),
-    # InstructionId.SW        : InstrDescriptor(),
-    # InstructionId.SDL       : InstrDescriptor(),
-    # InstructionId.SDR       : InstrDescriptor(),
-    # InstructionId.SWR       : InstrDescriptor(),
-    # InstructionId.CACHE     : InstrDescriptor(),
-
-    # InstructionId.LL        : InstrDescriptor(),
-    # InstructionId.LWC1      : InstrDescriptor(),
-    # InstructionId.LWC2      : InstrDescriptor(),
-    # InstructionId.PREF      : InstrDescriptor(),
-    # InstructionId.LLD       : InstrDescriptor(),
-    # InstructionId.LDC1      : InstrDescriptor(),
-    # InstructionId.LDC2      : InstrDescriptor(),
-    # InstructionId.LD        : InstrDescriptor(),
-
-    # InstructionId.SC        : InstrDescriptor(),
-    # InstructionId.SWC1      : InstrDescriptor(),
-    # InstructionId.SWC2      : InstrDescriptor(),
-    #
-    # InstructionId.SCD       : InstrDescriptor(),
-    # InstructionId.SDC1      : InstrDescriptor(),
-    # InstructionId.SDC2      : InstrDescriptor(),
-    # InstructionId.SD        : InstrDescriptor(),
 
     # Pseudo-Instruction Unique IDs
     InstructionId.BEQZ      : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True),

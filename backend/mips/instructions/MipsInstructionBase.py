@@ -8,7 +8,7 @@ from __future__ import annotations
 from ... import common
 
 from .MipsInstructionConfig import InstructionConfig
-from .MipsConstants import InstructionId, InstructionVectorId, instructionDescriptorDict
+from .MipsConstants import InstructionId, InstructionVectorId, InstrType, InstrDescriptor, instructionDescriptorDict
 
 
 class InstructionBase:
@@ -254,6 +254,7 @@ class InstructionBase:
 
         self.opcodesDict: dict[int, InstructionId | InstructionVectorId] = dict()
         self.uniqueId: InstructionId|InstructionVectorId = InstructionId.INVALID
+        self.descriptor: InstrDescriptor = instructionDescriptorDict[self.uniqueId]
 
         self.extraLjustWidthOpcode = 0
 
@@ -335,6 +336,8 @@ class InstructionBase:
 
     def processUniqueId(self):
         self.uniqueId = self.opcodesDict.get(self.opcode, InstructionId.INVALID)
+        if self.uniqueId in instructionDescriptorDict:
+            self.descriptor = instructionDescriptorDict[self.uniqueId]
 
     def isImplemented(self) -> bool:
         if self.uniqueId == InstructionId.INVALID:
@@ -344,27 +347,27 @@ class InstructionBase:
         return True
 
     def isFloatInstruction(self) -> bool:
-        return False
+        return self.descriptor.isFloat
 
     def isDoubleFloatInstruction(self) -> bool:
-        return False
+        return self.descriptor.isDouble
 
 
     def isBranch(self) -> bool:
-        return False
+        return self.descriptor.isBranch
     def isBranchLikely(self) -> bool:
-        return False
+        return self.descriptor.isBranchLikely
     def isTrap(self) -> bool:
-        return False
+        return self.descriptor.isTrap
 
     def isJType(self) -> bool:
-        return False
+        return self.descriptor.instrType == InstrType.typeJ
 
     def isIType(self) -> bool:
-        return False
+        return self.descriptor.instrType == InstrType.typeI
 
     def isRType(self) -> bool:
-        return False
+        return self.descriptor.instrType == InstrType.typeR
 
 
     def sameOpcode(self, other: InstructionBase) -> bool:
@@ -384,11 +387,14 @@ class InstructionBase:
 
 
     def modifiesRt(self) -> bool:
+        if self.uniqueId in instructionDescriptorDict:
+            descriptor = instructionDescriptorDict[self.uniqueId]
+            return descriptor.modifiesRt
         if self.isBranch():
             return False
         return True
     def modifiesRd(self) -> bool:
-        return False
+        return self.descriptor.modifiesRd
 
 
     def blankOut(self):
@@ -458,37 +464,34 @@ class InstructionBase:
     def disassembleInstruction(self, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName()
         formated_opcode = opcode.lower().ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
+
         rs = self.getRegisterName(self.rs)
         rt = self.getRegisterName(self.rt)
-        immediate = hex(self.immediate)
+        ft = self.getFloatRegisterName(self.rt)
+        cop2t = self.getCop2RegisterName(self.rt)
+
+        immediate = f"0x{self.immediate:X}"
+        vram = self.getInstrIndexAsVram()
+        label = f"func_{vram:06X}"
         if immOverride is not None:
             immediate = immOverride
+            label = immOverride
+        elif not self.descriptor.isUnsigned:
+            number = common.Utils.from2Complement(self.immediate, 16)
+            immediate = f"0x{number:X}"
+            if number < 0:
+                immediate = f"-0x{-number:X}"
 
-        if self.uniqueId in instructionDescriptorDict:
-            descriptor = instructionDescriptorDict[self.uniqueId]
+        instrArguments = {"self": self, "rs": rs, "rt": rt, "IMM": immediate, "LABEL": label, "ft": ft, "cop2t": cop2t}
 
-            immediate = f"0x{self.immediate:X}"
-            if not descriptor.isUnsigned:
-                number = common.Utils.from2Complement(self.immediate, 16)
-                if number < 0:
-                    immediate = f"-0x{-number:X}"
-                else:
-                    immediate = f"0x{number:X}"
-            if immOverride is not None:
-                immediate = immOverride
-
-            instrArguments = {"rs": rs, "rt": rt, "IMM": immediate}
-
-            ljustValue = 14
-            result = f"{formated_opcode} "
-            for i, operand in enumerate(descriptor.operands):
-                if i != 0:
-                    result = result.ljust(ljustValue, ' ')
-                    ljustValue += 5
-                result += operand.format(**instrArguments)
-            return result
-
-        return f"ERROR # {opcode} {rs} {rt} {immediate}"
+        ljustValue = 14
+        result = f"{formated_opcode} "
+        for i, operand in enumerate(self.descriptor.operands):
+            if i != 0:
+                result = result.ljust(ljustValue, ' ')
+                ljustValue += 5
+            result += operand.format(**instrArguments)
+        return result
 
     def disassembleAsData(self) -> str:
         result = ".word".ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
