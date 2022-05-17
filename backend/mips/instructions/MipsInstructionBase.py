@@ -271,6 +271,9 @@ class InstructionBase:
     def instr_index(self) -> int:
         return (self.rs << 21) | (self.rt << 16) | (self.immediate)
     @property
+    def instr_index_shifted(self) -> int:
+        return self.instr_index >> 16
+    @property
     def baseRegister(self) -> int:
         return self.rs
 
@@ -462,11 +465,15 @@ class InstructionBase:
 
 
     def disassembleInstruction(self, immOverride: str|None=None) -> str:
-        opcode = self.getOpcodeName()
-        formated_opcode = opcode.lower().ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
+        opcode = self.getOpcodeName().lower()
+        if len(self.descriptor.operands) == 0:
+            return opcode
+
+        formated_opcode = opcode.ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
 
         rs = self.getRegisterName(self.rs)
         rt = self.getRegisterName(self.rt)
+        rd = self.getRegisterName(self.rd)
         ft = self.getFloatRegisterName(self.rt)
         cop2t = self.getCop2RegisterName(self.rt)
 
@@ -482,7 +489,7 @@ class InstructionBase:
             if number < 0:
                 immediate = f"-0x{-number:X}"
 
-        instrArguments = {"self": self, "rs": rs, "rt": rt, "IMM": immediate, "LABEL": label, "ft": ft, "cop2t": cop2t}
+        instrArguments = {"self": self, "rs": rs, "rt": rt, "rd": rd, "IMM": immediate, "LABEL": label, "ft": ft, "cop2t": cop2t}
 
         ljustValue = 14
         result = f"{formated_opcode} "

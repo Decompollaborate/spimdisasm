@@ -94,6 +94,7 @@ class InstructionId(enum.Enum):
 
     JR        = enum.auto() # Jump Register
     JALR      = enum.auto() # Jump And Link Register
+    JALR_RD   = enum.auto() # Jump And Link Register # Special case for rd != 31
     MOVZ      = enum.auto() # MOVe conditional on Zero
     MOVN      = enum.auto() # MOVe conditional on Not zero
     SYSCALL   = enum.auto() # SYStem CALL
@@ -475,76 +476,82 @@ class InstrDescriptor:
 instructionDescriptorDict: dict[InstructionId|InstructionVectorId, InstrDescriptor] = {
     InstructionId.INVALID   : InstrDescriptor(["{rs}, ", "{rt}, ", "{IMM}"], InstrType.typeUnknown),
 
-    # InstructionId.SLL       : InstrDescriptor(),
+    # OP rs
+    InstructionId.JR        : InstrDescriptor(["{rs}"], InstrType.typeR),
+    InstructionId.MTHI      : InstrDescriptor(["{rs}"], InstrType.typeR),
+    InstructionId.MTLO      : InstrDescriptor(["{rs}"], InstrType.typeR),
+    InstructionId.JALR      : InstrDescriptor(["{rs}"], InstrType.typeR, modifiesRd=True),
 
-    # InstructionId.SRL       : InstrDescriptor(),
-    # InstructionId.SRA       : InstrDescriptor(),
-    # InstructionId.SLLV      : InstrDescriptor(),
+    # OP rd, rs
+    InstructionId.JALR_RD   : InstrDescriptor(["{rd}, ", "{rs}"], InstrType.typeR, modifiesRd=True),
 
-    # InstructionId.SRLV      : InstrDescriptor(),
-    # InstructionId.SRAV      : InstrDescriptor(),
+    # OP rd
+    InstructionId.MFHI      : InstrDescriptor(["{rd}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.MFLO      : InstrDescriptor(["{rd}"], InstrType.typeR, modifiesRd=True),
 
-    # InstructionId.JR        : InstrDescriptor(),
-    # InstructionId.JALR      : InstrDescriptor(),
-    # InstructionId.MOVZ      : InstrDescriptor(),
-    # InstructionId.MOVN      : InstrDescriptor(),
-    # InstructionId.SYSCALL   : InstrDescriptor(),
-    # InstructionId.BREAK     : InstrDescriptor(),
+    # OP rs, rt
+    InstructionId.MULT      : InstrDescriptor(["{rs}, ", "{rt}"], InstrType.typeR),
+    InstructionId.MULTU     : InstrDescriptor(["{rs}, ", "{rt}"], InstrType.typeR),
+    InstructionId.DMULT     : InstrDescriptor(["{rs}, ", "{rt}"], InstrType.typeR),
+    InstructionId.DMULTU    : InstrDescriptor(["{rs}, ", "{rt}"], InstrType.typeR),
+    InstructionId.TGE       : InstrDescriptor(["{rs}, ", "{rt}"], InstrType.typeR, isTrap=True),
+    InstructionId.TGEU      : InstrDescriptor(["{rs}, ", "{rt}"], InstrType.typeR, isTrap=True),
+    InstructionId.TLT       : InstrDescriptor(["{rs}, ", "{rt}"], InstrType.typeR, isTrap=True),
+    InstructionId.TLTU      : InstrDescriptor(["{rs}, ", "{rt}"], InstrType.typeR, isTrap=True),
+    InstructionId.TEQ       : InstrDescriptor(["{rs}, ", "{rt}"], InstrType.typeR, isTrap=True),
+    InstructionId.TNE       : InstrDescriptor(["{rs}, ", "{rt}"], InstrType.typeR, isTrap=True),
 
-    # InstructionId.SYNC      : InstrDescriptor(),
+    # OP rd, rs, rt
+    InstructionId.MOVZ      : InstrDescriptor(["{rd}, ", "{rs}, ", "{rt}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.MOVN      : InstrDescriptor(["{rd}, ", "{rs}, ", "{rt}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.DIV       : InstrDescriptor(["{rd}, ", "{rs}, ", "{rt}"], InstrType.typeR),
+    InstructionId.DIVU      : InstrDescriptor(["{rd}, ", "{rs}, ", "{rt}"], InstrType.typeR),
+    # InstructionId.DIV       : InstrDescriptor(["{rs}, ", "{rt}"], InstrType.typeR),
+    # InstructionId.DIVU      : InstrDescriptor(["{rs}, ", "{rt}"], InstrType.typeR),
+    InstructionId.DDIV      : InstrDescriptor(["{rd}, ", "{rs}, ", "{rt}"], InstrType.typeR),
+    InstructionId.DDIVU     : InstrDescriptor(["{rd}, ", "{rs}, ", "{rt}"], InstrType.typeR),
+    # InstructionId.DDIV      : InstrDescriptor(["{rs}, ", "{rt}"], InstrType.typeR),
+    # InstructionId.DDIVU     : InstrDescriptor(["{rs}, ", "{rt}"], InstrType.typeR),
+    InstructionId.ADD       : InstrDescriptor(["{rd}, ", "{rs}, ", "{rt}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.ADDU      : InstrDescriptor(["{rd}, ", "{rs}, ", "{rt}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.SUB       : InstrDescriptor(["{rd}, ", "{rs}, ", "{rt}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.SUBU      : InstrDescriptor(["{rd}, ", "{rs}, ", "{rt}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.AND       : InstrDescriptor(["{rd}, ", "{rs}, ", "{rt}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.OR        : InstrDescriptor(["{rd}, ", "{rs}, ", "{rt}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.XOR       : InstrDescriptor(["{rd}, ", "{rs}, ", "{rt}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.NOR       : InstrDescriptor(["{rd}, ", "{rs}, ", "{rt}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.SLT       : InstrDescriptor(["{rd}, ", "{rs}, ", "{rt}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.SLTU      : InstrDescriptor(["{rd}, ", "{rs}, ", "{rt}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.DADD      : InstrDescriptor(["{rd}, ", "{rs}, ", "{rt}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.DADDU     : InstrDescriptor(["{rd}, ", "{rs}, ", "{rt}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.DSUB      : InstrDescriptor(["{rd}, ", "{rs}, ", "{rt}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.DSUBU     : InstrDescriptor(["{rd}, ", "{rs}, ", "{rt}"], InstrType.typeR, modifiesRd=True),
 
-    # InstructionId.MFHI      : InstrDescriptor(),
-    # InstructionId.MTHI      : InstrDescriptor(),
-    # InstructionId.MFLO      : InstrDescriptor(),
-    # InstructionId.MTLO      : InstrDescriptor(),
-    # InstructionId.DSLLV     : InstrDescriptor(),
+    # OP code
+    InstructionId.SYSCALL   : InstrDescriptor(["{self.instr_index_shifted}"], InstrType.typeR),
+    InstructionId.BREAK     : InstrDescriptor(["{self.instr_index_shifted}"], InstrType.typeR),
+    InstructionId.SYNC      : InstrDescriptor(["{self.instr_index_shifted}"], InstrType.typeR),
 
-    # InstructionId.DSRLV     : InstrDescriptor(),
-    # InstructionId.DSRAV     : InstrDescriptor(),
+    # OP rd, rt, rs
+    InstructionId.DSLLV     : InstrDescriptor(["{rd}, ", "{rt}, ", "{rs}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.DSRLV     : InstrDescriptor(["{rd}, ", "{rt}, ", "{rs}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.DSRAV     : InstrDescriptor(["{rd}, ", "{rt}, ", "{rs}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.SLLV      : InstrDescriptor(["{rd}, ", "{rt}, ", "{rs}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.SRLV      : InstrDescriptor(["{rd}, ", "{rt}, ", "{rs}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.SRAV      : InstrDescriptor(["{rd}, ", "{rt}, ", "{rs}"], InstrType.typeR, modifiesRd=True),
 
-    # InstructionId.MULT      : InstrDescriptor(),
-    # InstructionId.MULTU     : InstrDescriptor(),
-    # InstructionId.DIV       : InstrDescriptor(),
-    # InstructionId.DIVU      : InstrDescriptor(),
-    # InstructionId.DMULT     : InstrDescriptor(),
-    # InstructionId.DMULTU    : InstrDescriptor(),
-    # InstructionId.DDIV      : InstrDescriptor(),
-    # InstructionId.DDIVU     : InstrDescriptor(),
+    # OP rd, rt, sa
+    InstructionId.SLL       : InstrDescriptor(["{rd}, ", "{rt}, ", "{self.sa}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.SRL       : InstrDescriptor(["{rd}, ", "{rt}, ", "{self.sa}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.SRA       : InstrDescriptor(["{rd}, ", "{rt}, ", "{self.sa}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.DSLL      : InstrDescriptor(["{rd}, ", "{rt}, ", "{self.sa}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.DSRL      : InstrDescriptor(["{rd}, ", "{rt}, ", "{self.sa}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.DSRA      : InstrDescriptor(["{rd}, ", "{rt}, ", "{self.sa}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.DSLL32    : InstrDescriptor(["{rd}, ", "{rt}, ", "{self.sa}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.DSRL32    : InstrDescriptor(["{rd}, ", "{rt}, ", "{self.sa}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.DSRA32    : InstrDescriptor(["{rd}, ", "{rt}, ", "{self.sa}"], InstrType.typeR, modifiesRd=True),
 
-    # InstructionId.ADD       : InstrDescriptor(),
-    # InstructionId.ADDU      : InstrDescriptor(),
-    # InstructionId.SUB       : InstrDescriptor(),
-    # InstructionId.SUBU      : InstrDescriptor(),
-    # InstructionId.AND       : InstrDescriptor(),
-    # InstructionId.OR        : InstrDescriptor(),
-    # InstructionId.XOR       : InstrDescriptor(),
-    # InstructionId.NOR       : InstrDescriptor(),
-
-    # InstructionId.SLT       : InstrDescriptor(),
-    # InstructionId.SLTU      : InstrDescriptor(),
-    # InstructionId.DADD      : InstrDescriptor(),
-    # InstructionId.DADDU     : InstrDescriptor(),
-    # InstructionId.DSUB      : InstrDescriptor(),
-    # InstructionId.DSUBU     : InstrDescriptor(),
-
-    # InstructionId.TGE       : InstrDescriptor(),
-    # InstructionId.TGEU      : InstrDescriptor(),
-    # InstructionId.TLT       : InstrDescriptor(),
-    # InstructionId.TLTU      : InstrDescriptor(),
-    # InstructionId.TEQ       : InstrDescriptor(),
-
-    # InstructionId.TNE       : InstrDescriptor(),
-
-    # InstructionId.DSLL      : InstrDescriptor(),
-
-    # InstructionId.DSRL      : InstrDescriptor(),
-    # InstructionId.DSRA      : InstrDescriptor(),
-    # InstructionId.DSLL32    : InstrDescriptor(),
-
-    # InstructionId.DSRL32    : InstrDescriptor(),
-    # InstructionId.DSRA32    : InstrDescriptor(),
-
-    # OP  rs, IMM
+    # OP rs, IMM
     InstructionId.BLTZ      : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True),
     InstructionId.BGEZ      : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True),
     InstructionId.BLTZL     : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True, isBranchLikely=True),
@@ -564,22 +571,22 @@ instructionDescriptorDict: dict[InstructionId|InstructionVectorId, InstrDescript
     InstructionId.J         : InstrDescriptor(["{LABEL}"], InstrType.typeJ),
     InstructionId.JAL       : InstrDescriptor(["{LABEL}"], InstrType.typeJ),
 
-    # OP  rs, rt, IMM
+    # OP rs, rt, IMM
     InstructionId.BEQ       : InstrDescriptor(["{rs}, ", "{rt}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True),
     InstructionId.BNE       : InstrDescriptor(["{rs}, ", "{rt}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True),
     InstructionId.BEQL      : InstrDescriptor(["{rs}, ", "{rt}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True, isBranchLikely=True),
     InstructionId.BNEL      : InstrDescriptor(["{rs}, ", "{rt}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True, isBranchLikely=True),
 
-    # OP  rs, IMM
+    # OP rs, IMM
     InstructionId.BLEZ      : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True),
     InstructionId.BGTZ      : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True),
     InstructionId.BLEZL     : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True, isBranchLikely=True),
     InstructionId.BGTZL     : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True, isBranchLikely=True),
 
-    # OP  rt, IMM
+    # OP rt, IMM
     InstructionId.LUI       : InstrDescriptor(["{rt}, ", "{IMM}"], InstrType.typeI, isUnsigned=True, modifiesRt=True),
 
-    # OP  rt, rs, IMM
+    # OP rt, rs, IMM
     InstructionId.ANDI      : InstrDescriptor(["{rt}, ", "{rs}, ", "{IMM}"], InstrType.typeI, isUnsigned=True, modifiesRt=True),
     InstructionId.ORI       : InstrDescriptor(["{rt}, ", "{rs}, ", "{IMM}"], InstrType.typeI, isUnsigned=True, modifiesRt=True),
     InstructionId.XORI      : InstrDescriptor(["{rt}, ", "{rs}, ", "{IMM}"], InstrType.typeI, isUnsigned=True, modifiesRt=True),
@@ -737,14 +744,22 @@ instructionDescriptorDict: dict[InstructionId|InstructionVectorId, InstrDescript
     # InstructionId.CVT_D_L   : InstrDescriptor(),
 
     # Pseudo-Instruction Unique IDs
+    # OP rs, IMM
     InstructionId.BEQZ      : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True),
     InstructionId.BNEZ      : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True),
+
+    # OP IMM
     InstructionId.B         : InstrDescriptor(["{IMM}"], InstrType.typeRegimm, isBranch=True),
 
-    # InstructionId.NOP       : InstrDescriptor(),
-    # InstructionId.MOVE      : InstrDescriptor(),
-    # InstructionId.NEGU      : InstrDescriptor(),
-    # InstructionId.NOT       : InstrDescriptor(),
+    # OP
+    InstructionId.NOP       : InstrDescriptor([], InstrType.typeR),
+
+    # OP rd, rs
+    InstructionId.MOVE      : InstrDescriptor(["{rd}, ", "{rs}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.NOT       : InstrDescriptor(["{rd}, ", "{rs}"], InstrType.typeR, modifiesRd=True),
+
+    # OP rd, rt
+    InstructionId.NEGU      : InstrDescriptor(["{rd}, ", "{rt}"], InstrType.typeR, modifiesRd=True),
 }
 
 
