@@ -458,6 +458,7 @@ class InstrDescriptor:
 
     isBranch: bool = False
     isBranchLikely: bool = False
+    isJump: bool = False
     isTrap: bool = False
 
     isFloat: bool = False
@@ -477,13 +478,13 @@ instructionDescriptorDict: dict[InstructionId|InstructionVectorId, InstrDescript
     InstructionId.INVALID   : InstrDescriptor(["{rs}, ", "{rt}, ", "{IMM}"], InstrType.typeUnknown),
 
     # OP rs
-    InstructionId.JR        : InstrDescriptor(["{rs}"], InstrType.typeR),
+    InstructionId.JR        : InstrDescriptor(["{rs}"], InstrType.typeR, isJump=True),
     InstructionId.MTHI      : InstrDescriptor(["{rs}"], InstrType.typeR),
     InstructionId.MTLO      : InstrDescriptor(["{rs}"], InstrType.typeR),
-    InstructionId.JALR      : InstrDescriptor(["{rs}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.JALR      : InstrDescriptor(["{rs}"], InstrType.typeR, isJump=True, modifiesRd=True),
 
     # OP rd, rs
-    InstructionId.JALR_RD   : InstrDescriptor(["{rd}, ", "{rs}"], InstrType.typeR, modifiesRd=True),
+    InstructionId.JALR_RD   : InstrDescriptor(["{rd}, ", "{rs}"], InstrType.typeR, isJump=True, modifiesRd=True),
 
     # OP rd
     InstructionId.MFHI      : InstrDescriptor(["{rd}"], InstrType.typeR, modifiesRd=True),
@@ -568,8 +569,8 @@ instructionDescriptorDict: dict[InstructionId|InstructionVectorId, InstrDescript
     InstructionId.TNEI      : InstrDescriptor(["{rs}, ", "{IMM}"], InstrType.typeRegimm, isTrap=True),
 
     # OP LABEL
-    InstructionId.J         : InstrDescriptor(["{LABEL}"], InstrType.typeJ),
-    InstructionId.JAL       : InstrDescriptor(["{LABEL}"], InstrType.typeJ),
+    InstructionId.J         : InstrDescriptor(["{LABEL}"], InstrType.typeJ, isJump=True),
+    InstructionId.JAL       : InstrDescriptor(["{LABEL}"], InstrType.typeJ, isJump=True),
 
     # OP rs, rt, IMM
     InstructionId.BEQ       : InstrDescriptor(["{rs}, ", "{rt}, ", "{IMM}"], InstrType.typeRegimm, isBranch=True),

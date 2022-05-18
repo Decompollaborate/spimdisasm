@@ -681,7 +681,7 @@ class SymbolFunction(SymbolText):
 
             output += label + line + "\n"
 
-            wasLastInstABranch = instr.isBranch() or instr.isJType() or instr.uniqueId in (instructions.InstructionId.JR, instructions.InstructionId.JALR)
+            wasLastInstABranch = instr.isBranch() or instr.isJump()
 
             instructionOffset += 4
             auxOffset += 4

@@ -360,6 +360,8 @@ class InstructionBase:
         return self.descriptor.isBranch
     def isBranchLikely(self) -> bool:
         return self.descriptor.isBranchLikely
+    def isJump(self) -> bool:
+        return self.descriptor.isJump
     def isTrap(self) -> bool:
         return self.descriptor.isTrap
 
