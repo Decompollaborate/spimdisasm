@@ -474,22 +474,25 @@ class InstructionBase:
         rs = self.getRegisterName(self.rs)
         rt = self.getRegisterName(self.rt)
         rd = self.getRegisterName(self.rd)
-        ft = self.getFloatRegisterName(self.rt)
+        ft = self.getFloatRegisterName(self.ft)
+        fs = self.getFloatRegisterName(self.fs)
+        fd = self.getFloatRegisterName(self.fd)
         cop2t = self.getCop2RegisterName(self.rt)
+        cop0d = self.getCop0RegisterName(self.rd)
 
-        immediate = f"0x{self.immediate:X}"
         vram = self.getInstrIndexAsVram()
         label = f"func_{vram:06X}"
+        immediate = f"0x{self.immediate:X}"
         if immOverride is not None:
-            immediate = immOverride
             label = immOverride
+            immediate = immOverride
         elif not self.descriptor.isUnsigned:
             number = common.Utils.from2Complement(self.immediate, 16)
             immediate = f"0x{number:X}"
             if number < 0:
                 immediate = f"-0x{-number:X}"
 
-        instrArguments = {"self": self, "rs": rs, "rt": rt, "rd": rd, "IMM": immediate, "LABEL": label, "ft": ft, "cop2t": cop2t}
+        instrArguments = {"self": self, "rs": rs, "rt": rt, "rd": rd, "IMM": immediate, "LABEL": label, "ft": ft, "fs": fs, "fd": fd, "cop2t": cop2t, "cop0d": cop0d}
 
         ljustValue = 14
         result = f"{formated_opcode} "
