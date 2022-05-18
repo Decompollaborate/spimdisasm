@@ -96,9 +96,6 @@ class InstructionSpecial(InstructionBase):
         super().processUniqueId()
 
         self.uniqueId = self.opcodesDict.get(self.function, InstructionId.INVALID)
-        if self.uniqueId == InstructionId.JALR:
-            if self.rd != 31:
-                self.uniqueId = InstructionId.JALR_RD
 
         if InstructionConfig.PSEUDO_INSTRUCTIONS:
             if self.instr == 0:
@@ -113,6 +110,10 @@ class InstructionSpecial(InstructionBase):
                     self.uniqueId = InstructionId.NEGU
 
         self.descriptor = instructionDescriptorDict[self.uniqueId]
+
+        if self.uniqueId == InstructionId.JALR:
+            if self.rd != 31:
+                self.descriptor = instructionDescriptorDict[InstructionId.JALR_RD]
 
         if InstructionConfig.SN64_DIV_FIX:
             if self.uniqueId in (InstructionId.DIV, InstructionId.DIVU):
