@@ -451,7 +451,7 @@ class InstructionBase:
 
     def getBranchOffset(self) -> int:
         diff = common.Utils.from2Complement(self.immediate, 16)
-        return diff*4 + 1*4
+        return diff*4 + 4
 
 
     def processImmediate(self, immOverride: str|None=None) -> str:

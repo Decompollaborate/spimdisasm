@@ -9,6 +9,7 @@ import ast
 import argparse
 import bisect
 import dataclasses
+import enum
 import os
 
 from . import Utils
@@ -23,11 +24,19 @@ class ContextSegment:
         self.type: str = segmentType
         self.subsections: list = subsections
 
+class SymbolSpecialType(enum.Enum):
+    function        = enum.auto()
+    branchlabel     = enum.auto()
+    jumptable       = enum.auto()
+    jumptablelabel  = enum.auto()
+    fakefunction    = enum.auto()
+    hardwarereg     = enum.auto()
+
 @dataclasses.dataclass
 class ContextSymbolBase:
     name: str
     size: int = 4
-    type: str|None = None
+    type: SymbolSpecialType|str|None = None
 
     isDefined: bool = False
     isUserDefined: bool = False
@@ -52,6 +61,8 @@ class ContextSymbolBase:
     def getType(self) -> str:
         if self.type is None:
             return ""
+        if isinstance(self.type, SymbolSpecialType):
+            return "@" + self.type.name
         return self.type
 
     def getSymbolPlusOffset(self, address: int) -> str:
@@ -267,6 +278,9 @@ class Context:
         if vramAddress in self.labels:
             return self.labels[vramAddress]
 
+        if vramAddress in self.fakeFunctions:
+            return self.fakeFunctions[vramAddress]
+
         return None
 
     def getFunction(self, vramAddress: int) -> ContextSymbol|None:
@@ -332,7 +346,7 @@ class Context:
     def addFunction(self, vramAddress: int, name: str) -> ContextSymbol:
         if vramAddress not in self.funcAddresses:
             contextSymbol = ContextSymbol(vramAddress, name)
-            contextSymbol.type = "@function"
+            contextSymbol.type = SymbolSpecialType.function
             self.funcAddresses[vramAddress] = contextSymbol
         else:
             contextSymbol = self.funcAddresses[vramAddress]
@@ -346,13 +360,13 @@ class Context:
     def addBranchLabel(self, vramAddress: int, name: str):
         if vramAddress not in self.labels:
             contextSymbol = ContextSymbol(vramAddress, name)
-            contextSymbol.type = "@branchlabel"
+            contextSymbol.type = SymbolSpecialType.branchlabel
             self.labels[vramAddress] = contextSymbol
 
     def addJumpTable(self, vramAddress: int):
         if vramAddress not in self.jumpTables:
             contextSymbol = ContextSymbol(vramAddress, f"jtbl_{vramAddress:08X}")
-            contextSymbol.type = "@jumptable"
+            contextSymbol.type = SymbolSpecialType.jumptable
             contextSymbol.isLateRodata = True
             self.jumpTables[vramAddress] = contextSymbol
             return contextSymbol
@@ -361,19 +375,19 @@ class Context:
     def addJumpTableLabel(self, vramAddress: int, name: str):
         if vramAddress not in self.jumpTables:
             contextSymbol = ContextSymbol(vramAddress, name)
-            contextSymbol.type = "@jumptablelabel"
+            contextSymbol.type = SymbolSpecialType.jumptablelabel
             self.jumpTablesLabels[vramAddress] = contextSymbol
 
     def addFakeFunction(self, vramAddress: int, name: str):
         if vramAddress not in self.fakeFunctions:
             contextSymbol = ContextSymbol(vramAddress, name)
-            contextSymbol.type = "@fakefunction"
+            contextSymbol.type = SymbolSpecialType.fakefunction
             self.fakeFunctions[vramAddress] = contextSymbol
 
     def addOffsetJumpTable(self, offset: int, sectionType: FileSectionType) -> ContextOffsetSymbol:
         if offset not in self.offsetJumpTables:
             contextOffsetSym = ContextOffsetSymbol(offset, f"jtbl_{offset:06X}", sectionType)
-            contextOffsetSym.type = "@jumptable"
+            contextOffsetSym.type = SymbolSpecialType.jumptable
             contextOffsetSym.isLateRodata = True
             self.offsetJumpTables[offset] = contextOffsetSym
             return contextOffsetSym
@@ -382,7 +396,7 @@ class Context:
     def addOffsetJumpTableLabel(self, offset: int, name: str, sectionType: FileSectionType) -> ContextOffsetSymbol:
         if offset not in self.offsetJumpTablesLabels:
             contextOffsetSym = ContextOffsetSymbol(offset, name, sectionType)
-            contextOffsetSym.type = "@jumptablelabel"
+            contextOffsetSym.type = SymbolSpecialType.jumptablelabel
             self.offsetJumpTablesLabels[offset] = contextOffsetSym
             return contextOffsetSym
         return self.offsetJumpTablesLabels[offset]
@@ -513,7 +527,7 @@ class Context:
 
         for vram, name in hardwareRegs.items():
             contextSym = self.addSymbol(vram, name)
-            contextSym.type = "@hardwarereg"
+            contextSym.type = SymbolSpecialType.hardwarereg
             contextSym.size = 4
             contextSym.isDefined = True
             contextSym.isUserDefined = True

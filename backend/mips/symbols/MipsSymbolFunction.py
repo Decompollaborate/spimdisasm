@@ -68,6 +68,7 @@ class SymbolFunction(SymbolText):
         if not common.GlobalConfig.PRINT_FUNCTION_ANALYSIS_DEBUG_INFO:
             return
 
+        print("_printAnalisisDebugInfo_IterInfo")
         print()
         print(f"vram: {currentVram:X}")
         print(instr)
@@ -83,12 +84,14 @@ class SymbolFunction(SymbolText):
         print({instr.getRegisterName(register_t): f"{vram_t:X},{offset_t:X}" for register_t, (vram_t, offset_t) in registersValues.items()})
         print()
 
-    def _printSymbolFinderDebugInfo_DelTrackedRegister(self, instr: instructions.InstructionBase, register: int, currentVram: int, trackedRegisters: dict):
+    def _printSymbolFinderDebugInfo_DelTrackedRegister(self, instr: instructions.InstructionBase, register: int, currentVram: int|None, trackedRegisters: dict):
         if not common.GlobalConfig.PRINT_SYMBOL_FINDER_DEBUG_INFO:
             return
 
+        print("_printSymbolFinderDebugInfo_DelTrackedRegister")
         print()
-        print(f"vram: {currentVram:X}")
+        if currentVram is not None:
+            print(f"vram: {currentVram:X}")
         print(instr)
         print(trackedRegisters)
         print(f"deleting {register} / {instr.getRegisterName(register)}")
@@ -98,6 +101,7 @@ class SymbolFunction(SymbolText):
         if not common.GlobalConfig.PRINT_UNPAIRED_LUIS_DEBUG_INFO:
             return
 
+        print("_printSymbolFinderDebugInfo_UnpairedLuis")
         for instructionOffset, luiInstr in self.luiInstructions.items():
             # inFileOffset = self.inFileOffset + instructionOffset
             currentVram = self.getVramOffset(instructionOffset)
@@ -119,14 +123,22 @@ class SymbolFunction(SymbolText):
 
 
     def _processSymbol(self, luiInstr: instructions.InstructionBase|None, luiOffset: int|None, lowerInstr: instructions.InstructionBase, lowerOffset: int) -> int|None:
-        # lui being None means it is a $gp access
+        # lui being None means this symbol is a $gp access
         assert ((luiInstr is None and luiOffset is None) or (luiInstr is not None and luiOffset is not None))
+
+        if lowerOffset in self.pointersPerInstruction:
+            # This %lo has been processed already
+            return self.pointersPerInstruction[lowerOffset]
 
         if luiInstr is None and common.GlobalConfig.GP_VALUE is None:
             return None
 
         if luiInstr is not None:
             upperHalf = luiInstr.immediate << 16
+            if common.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES and luiInstr.immediate < 0x4000: # filter out stuff that may not be a real symbol
+                return None
+            if common.GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES and luiInstr.immediate >= 0xC000: # filter out stuff that may not be a real symbol
+                return None
         else:
             assert common.GlobalConfig.GP_VALUE is not None
             upperHalf = common.GlobalConfig.GP_VALUE
@@ -134,12 +146,6 @@ class SymbolFunction(SymbolText):
         address = upperHalf + lowerHalf
         if address in self.context.bannedSymbols:
             return None
-
-        if luiInstr is not None:
-            if common.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES and luiInstr.immediate < 0x4000: # filter out stuff that may not be a real symbol
-                return None
-            if common.GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES and luiInstr.immediate >= 0xC000: # filter out stuff that may not be a real symbol
-                return None
 
         self.referencedVRams.add(address)
         contextSym = self.context.getGenericSymbol(address)
@@ -168,7 +174,6 @@ class SymbolFunction(SymbolText):
         return address
 
     def _processConstant(self, luiInstr: instructions.InstructionBase, luiOffset: int, lowerInstr: instructions.InstructionBase, lowerOffset: int) -> int|None:
-        luiInstr = self.instructions[luiOffset//4]
         upperHalf = luiInstr.immediate << 16
         lowerHalf = lowerInstr.immediate
         constant = upperHalf | lowerHalf
@@ -183,7 +188,7 @@ class SymbolFunction(SymbolText):
 
         return constant
 
-    def _removeRegisterFromTrackers(self, instr: instructions.InstructionBase, currentVram: int, trackedRegisters: dict, trackedRegistersAll: dict, registersValues: dict, wasRegisterValuesUpdated: bool):
+    def _removeRegisterFromTrackers(self, instr: instructions.InstructionBase, currentVram: int|None, trackedRegisters: dict, trackedRegistersAll: dict, registersValues: dict, wasRegisterValuesUpdated: bool):
         shouldRemove = False
         register = 0
 
@@ -237,6 +242,73 @@ class SymbolFunction(SymbolText):
                 if register in registersValues:
                     del registersValues[register]
 
+    def _lookAheadSymbolFinder(self, instr: instructions.InstructionBase, instructionOffset: int, trackedRegistersOriginal: dict[int, int], trackedRegistersAllOriginal: dict[int, int]):
+        trackedRegisters = dict(trackedRegistersOriginal)
+        trackedRegistersAll = dict(trackedRegistersAllOriginal)
+
+        lastInstr = self.instructions[instructionOffset//4 - 1]
+        if lastInstr.isBranch():
+            branchOffset = lastInstr.getBranchOffset() - 4
+            branch = instructionOffset + branchOffset
+            if branchOffset > 0 and branch//4 < len(self.instructions):
+                # Check the 5 next instructions in the target branch
+                for i in range(5):
+                    if branch//4 >= len(self.instructions):
+                        break
+                    targetInstr = self.instructions[branch//4]
+
+                    if targetInstr.modifiesRd():
+                        # Usually array offsets use an ADDU to add the index of the array
+                        if targetInstr.uniqueId == instructions.InstructionId.ADDU:
+                            branch += 4
+                            continue
+
+                        rd = targetInstr.rd
+                        # Check if the register is overwritten before finding the low instruction
+                        if rd in trackedRegistersAll:
+                            luiInstr = self.instructions[trackedRegistersAll[rd]]
+                            if rd == luiInstr.rt:
+                                del trackedRegistersAll[rd]
+                                if rd in trackedRegisters:
+                                    del trackedRegisters[rd]
+
+                    if targetInstr.isIType():
+                        if targetInstr.uniqueId == instructions.InstructionId.ORI:
+                            # Constants
+                            rs = targetInstr.rs
+                            if rs in trackedRegistersAll:
+                                luiOffset = trackedRegistersAll[rs] * 4
+                                luiInstr = self.instructions[luiOffset//4]
+                                self._processConstant(luiInstr, luiOffset, targetInstr, branch)
+                        elif targetInstr.uniqueId not in (instructions.InstructionId.LUI, instructions.InstructionId.ANDI, instructions.InstructionId.XORI, instructions.InstructionId.CACHE, instructions.InstructionId.SLTI, instructions.InstructionId.SLTIU):
+                            rs = targetInstr.rs
+                            if rs in trackedRegisters:
+                                luiInstr = self.instructions[trackedRegisters[rs]]
+                                self._processSymbol(luiInstr, trackedRegisters[rs]*4, targetInstr, branch)
+                                break
+
+                    if targetInstr.modifiesRt():
+                        rt = targetInstr.rt
+                        # Check if a register is overwritten before finding the low instruction
+                        if rt in trackedRegistersAll:
+                            luiInstr = self.instructions[trackedRegistersAll[rt]]
+                            if rt == luiInstr.rt:
+                                del trackedRegistersAll[rt]
+                                if rt in trackedRegisters:
+                                    del trackedRegisters[rt]
+
+                    prevTargetInstr = self.instructions[branch//4 - 1]
+
+                    if prevTargetInstr.isBranch():
+                        # TODO: Consider following branches
+                        break
+                    if prevTargetInstr.isJType():
+                        break
+                    if prevTargetInstr.isJump():
+                        break
+
+                    branch += 4
+
     def analyze(self):
         if not common.GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS and self.hasUnimplementedIntrs:
             if self.vram is not None:
@@ -287,8 +359,7 @@ class SymbolFunction(SymbolText):
                 return
 
             if instr.isBranch():
-                diff = common.Utils.from2Complement(instr.immediate, 16)
-                branch = instructionOffset + diff*4 + 1*4
+                branch = instructionOffset + instr.getBranchOffset()
                 if self.vram is not None:
                     self.referencedVRams.add(self.vram + branch)
                     auxLabel = self.context.getGenericLabel(self.vram + branch)
@@ -306,9 +377,8 @@ class SymbolFunction(SymbolText):
                 self.branchInstructions.append(instructionOffset)
 
             elif instr.isJType():
-                target = instr.instr_index << 2
+                target = instr.getInstrIndexAsVram()
                 if not self.isRsp:
-                    target |= 0x80000000
                     if target >= 0x84000000:
                         # RSP address space?
                         self.isLikelyHandwritten = True
@@ -321,29 +391,11 @@ class SymbolFunction(SymbolText):
 
             # symbol finder
             elif instr.isIType():
-                # TODO: Consider following branches
-                lastInstr = self.instructions[instructionOffset//4 - 1]
                 if instr.uniqueId == instructions.InstructionId.LUI:
-                    if lastInstr.isBranch():
-                        # If the previous instructions is a branch, do a
-                        # look-ahead and check the branch target for possible pointers
-                        diff = common.Utils.from2Complement(lastInstr.immediate, 16)
-                        branch = instructionOffset + diff*4
-                        if branch > 0:
-                            targetInstr = self.instructions[branch//4]
-                            if targetInstr.uniqueId == instructions.InstructionId.JR and targetInstr.getRegisterName(targetInstr.rs) == "$ra":
-                                # If the target instruction is a JR $ra, then look up its delay slot instead
-                                branch += 4
-                                targetInstr = self.instructions[branch//4]
-                            if targetInstr.isIType() and targetInstr.rs == instr.rt:
-                                if targetInstr.uniqueId not in (instructions.InstructionId.LUI, instructions.InstructionId.ANDI, instructions.InstructionId.ORI, instructions.InstructionId.XORI, instructions.InstructionId.CACHE):
-                                    self._processSymbol(instr, instructionOffset, targetInstr, branch)
-
-                            if not (lastInstr.isBranchLikely() or lastInstr.uniqueId == instructions.InstructionId.B):
-                                # If the previous instructions is a branch likely, then nulify
-                                # the effects of this instruction for future analysis
-                                trackedRegisters[instr.rt] = instructionOffset//4
-                    else:
+                    lastInstr = self.instructions[instructionOffset//4 - 1]
+                    if not lastInstr.isBranchLikely():
+                        # If the previous instructions is a branch likely, then nulify
+                        # the effects of this instruction for future analysis
                         trackedRegisters[instr.rt] = instructionOffset//4
                     trackedRegistersAll[instr.rt] = instructionOffset//4
                 else:
@@ -356,7 +408,7 @@ class SymbolFunction(SymbolText):
                             constant = self._processConstant(luiInstr, luiOffset, instr, instructionOffset)
                             if constant is not None:
                                 registersValues[instr.rt] = (constant, instructionOffset)
-                    elif instr.uniqueId not in (instructions.InstructionId.ANDI, instructions.InstructionId.XORI, instructions.InstructionId.CACHE):
+                    elif instr.uniqueId not in (instructions.InstructionId.ANDI, instructions.InstructionId.XORI, instructions.InstructionId.CACHE, instructions.InstructionId.SLTI, instructions.InstructionId.SLTIU):
                         rs = instr.rs
                         if rs in trackedRegisters:
                             luiInstr = self.instructions[trackedRegisters[rs]]
@@ -392,35 +444,7 @@ class SymbolFunction(SymbolText):
             self._removeRegisterFromTrackers(instr, currentVram, trackedRegisters, trackedRegistersAll, registersValues, wasRegisterValuesUpdated)
 
             # look-ahead symbol finder
-            lastInstr = self.instructions[instructionOffset//4 - 1]
-            if lastInstr.isBranch():
-                diff = common.Utils.from2Complement(lastInstr.immediate, 16)
-                branch = instructionOffset + diff*4
-                if branch > 0 and branch//4 < len(self.instructions):
-                    # Check the 5 next instructions in the target branch
-                    for i in range(5):
-                        if branch//4 >= len(self.instructions):
-                            break
-                        targetInstr = self.instructions[branch//4]
-                        if targetInstr.isBranch():
-                            break
-                        if targetInstr.isJType():
-                            break
-                        if targetInstr.modifiesRd():
-                            rd = targetInstr.rd
-                            # Check if the register is overwritten before finding the low instruction
-                            if rd in trackedRegisters:
-                                luiInstr = self.instructions[trackedRegisters[rd]]
-                                if rd == luiInstr.rt:
-                                    break
-                        if targetInstr.isIType():
-                            if targetInstr.uniqueId not in (instructions.InstructionId.LUI, instructions.InstructionId.ANDI, instructions.InstructionId.ORI, instructions.InstructionId.XORI, instructions.InstructionId.CACHE):
-                                rs = targetInstr.rs
-                                if rs in trackedRegisters:
-                                    luiInstr = self.instructions[trackedRegisters[rs]]
-                                    self._processSymbol(luiInstr, trackedRegisters[rs]*4, targetInstr, branch)
-                            break
-                        branch += 4
+            self._lookAheadSymbolFinder(instr, instructionOffset, trackedRegisters, trackedRegistersAll)
 
             instructionOffset += 4
 
@@ -640,40 +664,24 @@ class SymbolFunction(SymbolText):
             line = comment + "  " + line
 
             label = ""
-            if not common.GlobalConfig.IGNORE_BRANCHES:
+            if not common.GlobalConfig.IGNORE_BRANCHES and instructionOffset != 0:
+                # Skip over this function to avoid duplication
+
                 currentVram = self.getVramOffset(instructionOffset)
-                labelAux = self.context.getGenericLabel(currentVram)
-                label_offsetBranch = self.context.getOffsetGenericLabel(auxOffset, common.FileSectionType.Text)
-                label_offsetSymbol = self.context.getOffsetSymbol(auxOffset, common.FileSectionType.Text)
-                if self.vram is not None and labelAux is not None:
-                    if instructionOffset == 0:
-                        # Skip over this function to avoid duplication
-                        pass
-                    elif currentVram in self.context.jumpTablesLabels:
-                        label = "glabel " + labelAux.name + "\n"
+                labelSym = self.context.getGenericLabel(currentVram)
+                if labelSym is None:
+                    labelSym = self.context.getOffsetGenericLabel(auxOffset, common.FileSectionType.Text)
+                if labelSym is None:
+                    labelSym = self.context.getOffsetSymbol(auxOffset, common.FileSectionType.Text)
+
+                if labelSym is not None:
+                    if labelSym.type == common.SymbolSpecialType.function or labelSym.type == common.SymbolSpecialType.jumptablelabel:
+                        label = labelSym.getSymbolLabel() + "\n"
                     else:
-                        if labelAux.name.startswith("."):
-                            label = labelAux.name + ":\n"
-                        else:
-                            label = "glabel " + labelAux.name + "\n"
-                elif label_offsetBranch is not None:
-                    if instructionOffset == 0:
-                        # Skip over this function to avoid duplication
-                        pass
-                    elif auxOffset in self.context.offsetJumpTablesLabels:
-                        label = "glabel " + label_offsetBranch.name + "\n"
-                    else:
-                        label = label_offsetBranch.name + ":\n"
+                        label = labelSym.name + ":\n"
+
                 elif instructionOffset in self.localLabels:
                     label = self.localLabels[instructionOffset] + ":\n"
-                elif currentVram in self.context.fakeFunctions:
-                    label = self.context.fakeFunctions[currentVram].name + ":\n"
-                elif label_offsetSymbol is not None:
-                    if instructionOffset == 0:
-                        # Skip over this function to avoid duplication
-                        pass
-                    else:
-                        label = f"{label_offsetSymbol.name}:\n"
 
             output += label + line + "\n"
 
