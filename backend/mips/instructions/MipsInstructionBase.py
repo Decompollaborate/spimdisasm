@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from typing import Callable
+
 from ... import common
 
 from .MipsInstructionConfig import InstructionConfig
@@ -244,6 +246,23 @@ class InstructionBase:
         31: "$v31",
     }
 
+    instrArgumentsCallbacks: dict[str, Callable[[InstructionBase, str|None], str]] = {
+        "rs":        lambda instr, immOverride: instr.getRegisterName(instr.rs),
+        "rt":        lambda instr, immOverride: instr.getRegisterName(instr.rt),
+        "rd":        lambda instr, immOverride: instr.getRegisterName(instr.rd),
+        "sa":        lambda instr, immOverride: str(instr.sa),
+        "ft":        lambda instr, immOverride: instr.getFloatRegisterName(instr.ft),
+        "fs":        lambda instr, immOverride: instr.getFloatRegisterName(instr.fs),
+        "fd":        lambda instr, immOverride: instr.getFloatRegisterName(instr.fd),
+        "IMM":       lambda instr, immOverride: instr.processImmediate(immOverride),
+        "LABEL":     lambda instr, immOverride: immOverride if immOverride is not None else f"func_{instr.getInstrIndexAsVram():06X}",
+        "cop2t":     lambda instr, immOverride: instr.getCop2RegisterName(instr.rt),
+        "cop0d":     lambda instr, immOverride: instr.getCop0RegisterName(instr.rd),
+        "code":      lambda instr, immOverride: str(instr.instr_index >> 16),
+        "op":        lambda instr, immOverride: f"0x{instr.rt:02X}",
+        "IMM(base)": lambda instr, immOverride: f"{instr.processImmediate(immOverride)}({instr.getRegisterName(instr.baseRegister)})",
+    }
+
     def __init__(self, instr: int):
         self.opcode = (instr >> 26) & 0x3F
         self.rs = (instr >> 21) & 0x1F # rs
@@ -270,9 +289,6 @@ class InstructionBase:
     @property
     def instr_index(self) -> int:
         return (self.rs << 21) | (self.rt << 16) | (self.immediate)
-    @property
-    def instr_index_shifted(self) -> int:
-        return self.instr_index >> 16
     @property
     def baseRegister(self) -> int:
         return self.rs
@@ -430,13 +446,13 @@ class InstructionBase:
         if not InstructionConfig.NAMED_REGISTERS:
             return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
         if InstructionConfig.VR4300_COP0_NAMED_REGISTERS:
-            return InstructionBase.Cop0RegisterNames.get(register, f"${register:02X}")
+            return self.Cop0RegisterNames.get(register, f"${register:02X}")
         return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
 
     def getCop2RegisterName(self, register: int) -> str:
         if not InstructionConfig.NAMED_REGISTERS:
             return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
-        return InstructionBase.Cop2RegisterNames.get(register, f"${register:02X}")
+        return self.Cop2RegisterNames.get(register, f"${register:02X}")
 
     def getGprRspRegisterName(self, register: int) -> str:
         if not InstructionConfig.NAMED_REGISTERS:
@@ -447,7 +463,7 @@ class InstructionBase:
         if not InstructionConfig.NAMED_REGISTERS:
             return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
         if InstructionConfig.VR4300_RSP_COP0_NAMED_REGISTERS:
-            return InstructionBase.Cop0RspRegisterNames.get(register, f"${register:02X}")
+            return self.Cop0RspRegisterNames.get(register, f"${register:02X}")
         return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
 
     def getVectorRspRegisterName(self, register: int) -> str:
@@ -466,43 +482,29 @@ class InstructionBase:
         return element
 
 
+    def processImmediate(self, immOverride: str|None=None) -> str:
+        if immOverride is not None:
+            return immOverride
+
+        if not self.descriptor.isUnsigned:
+            number = common.Utils.from2Complement(self.immediate, 16)
+            if number < 0:
+                return f"-0x{-number:X}"
+            return f"0x{number:X}"
+
+        return f"0x{self.immediate:X}"
+
     def disassembleInstruction(self, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName().lower()
         if len(self.descriptor.operands) == 0:
             return opcode
 
-        formated_opcode = opcode.ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
-
-        rs = self.getRegisterName(self.rs)
-        rt = self.getRegisterName(self.rt)
-        rd = self.getRegisterName(self.rd)
-        ft = self.getFloatRegisterName(self.ft)
-        fs = self.getFloatRegisterName(self.fs)
-        fd = self.getFloatRegisterName(self.fd)
-        cop2t = self.getCop2RegisterName(self.rt)
-        cop0d = self.getCop0RegisterName(self.rd)
-
-        vram = self.getInstrIndexAsVram()
-        label = f"func_{vram:06X}"
-        immediate = f"0x{self.immediate:X}"
-        if immOverride is not None:
-            label = immOverride
-            immediate = immOverride
-        elif not self.descriptor.isUnsigned:
-            number = common.Utils.from2Complement(self.immediate, 16)
-            immediate = f"0x{number:X}"
-            if number < 0:
-                immediate = f"-0x{-number:X}"
-
-        instrArguments = {"self": self, "rs": rs, "rt": rt, "rd": rd, "IMM": immediate, "LABEL": label, "ft": ft, "fs": fs, "fd": fd, "cop2t": cop2t, "cop0d": cop0d}
-
-        ljustValue = 14
-        result = f"{formated_opcode} "
+        result = opcode.ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ') + " "
         for i, operand in enumerate(self.descriptor.operands):
             if i != 0:
-                result = result.ljust(ljustValue, ' ')
-                ljustValue += 5
-            result += operand.format(**instrArguments)
+                result += ", "
+            result += self.instrArgumentsCallbacks[operand](self, immOverride)
+
         return result
 
     def disassembleAsData(self) -> str:

@@ -267,8 +267,6 @@ class SymbolFunction(SymbolText):
         # key: register, value: (vram, offset of instruction which set this value)
         registersValues: dict[int, tuple[int, int]] = dict()
 
-        isABranchInBetweenLastLui: bool|None = None
-
         instructionOffset = 0
         for instr in self.instructions:
             currentVram = self.getVramOffset(instructionOffset)
@@ -289,7 +287,6 @@ class SymbolFunction(SymbolText):
                 return
 
             if instr.isBranch():
-                isABranchInBetweenLastLui = True
                 diff = common.Utils.from2Complement(instr.immediate, 16)
                 branch = instructionOffset + diff*4 + 1*4
                 if self.vram is not None:
@@ -327,7 +324,6 @@ class SymbolFunction(SymbolText):
                 # TODO: Consider following branches
                 lastInstr = self.instructions[instructionOffset//4 - 1]
                 if instr.uniqueId == instructions.InstructionId.LUI:
-                    isABranchInBetweenLastLui = False
                     if lastInstr.isBranch():
                         # If the previous instructions is a branch, do a
                         # look-ahead and check the branch target for possible pointers
