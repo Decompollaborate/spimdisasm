@@ -14,41 +14,6 @@ from .MipsConstants import InstructionId, InstructionVectorId, InstrType, InstrD
 
 
 class InstructionBase:
-    DefaultNumericRegisterNames = {
-        0:  "$0",
-        1:  "$1",
-        2:  "$2",
-        3:  "$3",
-        4:  "$4",
-        5:  "$5",
-        6:  "$6",
-        7:  "$7",
-        8:  "$8",
-        9:  "$9",
-        10: "$10",
-        11: "$11",
-        12: "$12",
-        13: "$13",
-        14: "$14",
-        15: "$15",
-        16: "$16",
-        17: "$17",
-        18: "$18",
-        19: "$19",
-        20: "$20",
-        21: "$21",
-        22: "$22",
-        23: "$23",
-        24: "$24",
-        25: "$25",
-        26: "$26",
-        27: "$27",
-        28: "$28",
-        29: "$29",
-        30: "$30",
-        31: "$31",
-    }
-
     GprRegisterNames = {
         0:  "$zero",
         1:  "$at",
@@ -154,8 +119,6 @@ class InstructionBase:
         30: "$f30",
         31: "FpcCsr",
     }
-
-    Cop2RegisterNames = dict(DefaultNumericRegisterNames)
 
     GprRspRegisterNames = {
         0:  "$zero",
@@ -434,42 +397,40 @@ class InstructionBase:
 
     def getRegisterName(self, register: int) -> str:
         if not InstructionConfig.NAMED_REGISTERS:
-            return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
-        return self.GprRegisterNames.get(register, f"${register:02X}")
+            return f"${register}"
+        return self.GprRegisterNames.get(register, f"${register}")
 
     def getFloatRegisterName(self, register: int) -> str:
         if not InstructionConfig.NAMED_REGISTERS:
-            return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
-        return self.Cop1RegisterNames.get(register, f"${register:02X}")
+            return f"${register}"
+        return self.Cop1RegisterNames.get(register, f"${register}")
 
     def getCop0RegisterName(self, register: int) -> str:
         if not InstructionConfig.NAMED_REGISTERS:
-            return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
+            return f"${register}"
         if InstructionConfig.VR4300_COP0_NAMED_REGISTERS:
-            return self.Cop0RegisterNames.get(register, f"${register:02X}")
-        return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
+            return self.Cop0RegisterNames.get(register, f"${register}")
+        return f"${register}"
 
     def getCop2RegisterName(self, register: int) -> str:
-        if not InstructionConfig.NAMED_REGISTERS:
-            return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
-        return self.Cop2RegisterNames.get(register, f"${register:02X}")
+        return f"${register}"
 
     def getGprRspRegisterName(self, register: int) -> str:
         if not InstructionConfig.NAMED_REGISTERS:
-            return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
-        return self.GprRspRegisterNames.get(register, f"${register:02X}")
+            return f"${register}"
+        return self.GprRspRegisterNames.get(register, f"${register}")
 
     def getCop0RspRegisterName(self, register: int) -> str:
         if not InstructionConfig.NAMED_REGISTERS:
-            return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
+            return f"${register}"
         if InstructionConfig.VR4300_RSP_COP0_NAMED_REGISTERS:
-            return self.Cop0RspRegisterNames.get(register, f"${register:02X}")
-        return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
+            return self.Cop0RspRegisterNames.get(register, f"${register}")
+        return f"${register}"
 
     def getVectorRspRegisterName(self, register: int) -> str:
         if not InstructionConfig.NAMED_REGISTERS:
-            return self.DefaultNumericRegisterNames.get(register, f"${register:02X}")
-        return self.VectorRspRegisterNames.get(register, f"${register:02X}")
+            return f"${register}"
+        return self.VectorRspRegisterNames.get(register, f"${register}")
 
 
     def processVectorElement(self, element: int) -> int:
@@ -480,6 +441,10 @@ class InstructionBase:
         if (element & 0xE) == 0x2:
             return element & 2
         return element
+
+    def getBranchOffset(self) -> int:
+        diff = common.Utils.from2Complement(self.immediate, 16)
+        return diff*4 + 1*4
 
 
     def processImmediate(self, immOverride: str|None=None) -> str:

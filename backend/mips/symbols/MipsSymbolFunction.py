@@ -544,6 +544,18 @@ class SymbolFunction(SymbolText):
             del self.instructions[first_nop:]
         return was_updated
 
+
+    def generateHiLoStr(self, instr: instructions.InstructionBase, symName: str) -> str:
+        if instr.uniqueId == instructions.InstructionId.LUI:
+            return f"%hi({symName})"
+
+        # $gp
+        if instr.rs == 28:
+            return f"%gp_rel({symName})"
+
+        return f"%lo({symName})"
+
+
     def disassemble(self) -> str:
         output = ""
 
@@ -565,13 +577,14 @@ class SymbolFunction(SymbolText):
 
             if instr.isBranch():
                 if not common.GlobalConfig.IGNORE_BRANCHES:
-                    diff = common.Utils.from2Complement(instr.immediate, 16)
-                    branch = instructionOffset + diff*4 + 1*4
+                    branch = instructionOffset + instr.getBranchOffset()
                     if self.vram is not None:
                         labelSymbol = self.context.getGenericLabel(self.vram + branch)
                         if labelSymbol is not None:
                             immOverride = labelSymbol.name
                             labelSymbol.referenceCounter += 1
+
+                    # in case we don't have access to vram or this label was not in context
                     if immOverride is None:
                         if branch in self.localLabels:
                             immOverride = self.localLabels[branch]
@@ -582,23 +595,14 @@ class SymbolFunction(SymbolText):
 
                     symbol = self.context.getGenericSymbol(address, True)
                     if symbol is not None:
-                        symbolName = symbol.getSymbolPlusOffset(address)
-                        if instr.uniqueId == instructions.InstructionId.LUI:
-                            immOverride = f"%hi({symbolName})"
-                        elif instr.getRegisterName(instr.rs) == "$gp":
-                            immOverride= f"%gp_rel({symbolName})"
-                        else:
-                            immOverride= f"%lo({symbolName})"
+                        immOverride = self.generateHiLoStr(instr, symbol.getSymbolPlusOffset(address))
+
                 elif instructionOffset in self.constantsPerInstruction:
                     constant = self.constantsPerInstruction[instructionOffset]
 
                     symbol = self.context.getConstant(constant)
                     if symbol is not None:
-                        constantName = symbol.name
-                        if instr.uniqueId == instructions.InstructionId.LUI:
-                            immOverride = f"%hi({constantName})"
-                        else:
-                            immOverride= f"%lo({constantName})"
+                        immOverride = self.generateHiLoStr(instr, symbol.name)
                     else:
                         if instr.uniqueId == instructions.InstructionId.LUI:
                             immOverride = f"(0x{constant:X} >> 16)"
@@ -607,7 +611,7 @@ class SymbolFunction(SymbolText):
 
             elif instr.isJType():
                 possibleOverride = self.context.getAnySymbol(instr.getInstrIndexAsVram())
-                if immOverride is None and possibleOverride is not None:
+                if possibleOverride is not None:
                     immOverride = possibleOverride.name
 
             # Check possible symbols using reloc information (probably from a .o elf file)
@@ -618,12 +622,8 @@ class SymbolFunction(SymbolText):
                     if instructionOffset in self.pointersPerInstruction:
                         addressOffset = self.pointersPerInstruction[instructionOffset]
                         auxOverride = possibleImmOverride.getNamePlusOffset(addressOffset)
-                    if instr.uniqueId == instructions.InstructionId.LUI:
-                        auxOverride = f"%hi({auxOverride})"
-                    elif instr.getRegisterName(instr.rs) == "$gp":
-                        auxOverride= f"%gp_rel({auxOverride})"
-                    else:
-                        auxOverride= f"%lo({auxOverride})"
+
+                    auxOverride = self.generateHiLoStr(instr, auxOverride)
                 immOverride = auxOverride
 
             if wasLastInstABranch:

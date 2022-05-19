@@ -33,6 +33,7 @@ class SymbolBase(ElementBase):
     def generateAsmLineComment(self, localOffset: int, wordValue: int|None = None) -> str:
         if not common.GlobalConfig.ASM_COMMENT:
             return ""
+
         offsetHex = f"{localOffset + self.inFileOffset + self.commentOffset:06X}"
 
         vramHex = ""
