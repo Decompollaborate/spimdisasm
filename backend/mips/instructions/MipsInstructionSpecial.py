@@ -112,6 +112,7 @@ class InstructionSpecial(InstructionBase):
         self.descriptor = instructionDescriptorDict[self.uniqueId]
 
         if self.uniqueId == InstructionId.JALR:
+            # $ra
             if self.rd != 31:
                 self.descriptor = instructionDescriptorDict[InstructionId.JALR_RD]
 

@@ -68,8 +68,6 @@ class InstructionCoprocessor2Rsp(InstructionCoprocessor2):
     def __init__(self, instr: int):
         super().__init__(instr)
 
-        self.isRsp = True
-
         self.opcodesDict = dict(self.Cop2Opcodes)
         self.processUniqueId()
 

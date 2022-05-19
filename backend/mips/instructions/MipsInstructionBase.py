@@ -225,6 +225,10 @@ class InstructionBase:
         "op":        lambda instr, immOverride: f"0x{instr.rt:02X}",
         "IMM(base)": lambda instr, immOverride: f"{instr.processImmediate(immOverride)}({instr.getRegisterName(instr.baseRegister)})",
     }
+    """Dictionary of callbacks to process the operands of an instruction.
+
+    The keys should match the ones used in InstrDescriptor#operands
+    """
 
     def __init__(self, instr: int):
         self.opcode = (instr >> 26) & 0x3F
@@ -240,7 +244,7 @@ class InstructionBase:
 
         self.extraLjustWidthOpcode = 0
 
-        self.isRsp: bool = False
+        self.vram: int|None = None
 
     @property
     def instr(self) -> int:
@@ -304,9 +308,12 @@ class InstructionBase:
         return self.immediate & 0x7F
 
     def getInstrIndexAsVram(self) -> int:
-        vram = self.instr_index<<2
-        if not self.isRsp:
+        vram = self.instr_index << 2
+        if self.vram is None:
             vram |= 0x80000000
+        else:
+            # Jumps are PC-region branches. The upper bits are filled with the address in the delay slot
+            vram |= (self.vram+4) & 0xFF000000
         return vram
 
 
