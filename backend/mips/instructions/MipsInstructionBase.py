@@ -378,12 +378,7 @@ class InstructionBase:
 
 
     def modifiesRt(self) -> bool:
-        if self.uniqueId in instructionDescriptorDict:
-            descriptor = instructionDescriptorDict[self.uniqueId]
-            return descriptor.modifiesRt
-        if self.isBranch():
-            return False
-        return True
+        return self.descriptor.modifiesRt
     def modifiesRd(self) -> bool:
         return self.descriptor.modifiesRd
 
