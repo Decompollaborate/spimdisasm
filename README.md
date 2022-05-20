@@ -29,6 +29,7 @@ Mainly focused on supporting Nintendo 64 binaries, but it should work with other
   - Named registers for MIPS VR4300's coprocessors.
   - Support for many pseudoinstructions.
   - Properly handle move to/from coprocessor instructions.
+  - Support for numeric, o32, n32 and n64 ABI register names.
 - Some workarounds for some specific compilers/assemblers:
   - `SN64`:
     - `div`/`divu` fix: tweaks a bit the produced `div`, `divu` and `break` instructions
