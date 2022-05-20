@@ -9,12 +9,12 @@ from typing import Callable
 
 from ... import common
 
-from .MipsInstructionConfig import InstructionConfig
+from .MipsInstructionConfig import InstructionConfig, AbiNames
 from .MipsConstants import InstructionId, InstructionVectorId, InstrType, InstrDescriptor, instructionDescriptorDict
 
 
 class InstructionBase:
-    GprRegisterNames = {
+    GprO32RegisterNames = {
         0:  "$zero",
         1:  "$at",
         2:  "$v0",
@@ -31,6 +31,41 @@ class InstructionBase:
         13: "$t5",
         14: "$t6",
         15: "$t7",
+        16: "$s0",
+        17: "$s1",
+        18: "$s2",
+        19: "$s3",
+        20: "$s4",
+        21: "$s5",
+        22: "$s6",
+        23: "$s7",
+        24: "$t8",
+        25: "$t9",
+        26: "$k0",
+        27: "$k1",
+        28: "$gp",
+        29: "$sp",
+        30: "$fp",
+        31: "$ra",
+    }
+
+    GprN32RegisterNames = {
+        0:  "$zero",
+        1:  "$at",
+        2:  "$v0",
+        3:  "$v1",
+        4:  "$a0",
+        5:  "$a1",
+        6:  "$a2",
+        7:  "$a3",
+        8:  "$a4",
+        9:  "$a5",
+        10: "$a6",
+        11: "$a7",
+        12: "$t0",
+        13: "$t1",
+        14: "$t2",
+        15: "$t3",
         16: "$s0",
         17: "$s1",
         18: "$s2",
@@ -85,7 +120,7 @@ class InstructionBase:
     }
 
     # Float registers
-    Cop1RegisterNames = {
+    Cop1NumericRegisterNames = {
         0:  "$f0",
         1:  "$f1",
         2:  "$f2",
@@ -118,6 +153,108 @@ class InstructionBase:
         29: "$f29",
         30: "$f30",
         31: "FpcCsr",
+    }
+    Cop1O32RegisterNames = {
+        0:  "$fv0",
+        1:  "$fv0f",
+        2:  "$fv1",
+        3:  "$fv1f",
+        4:  "$ft0",
+        5:  "$ft0f",
+        6:  "$ft1",
+        7:  "$ft1f",
+        8:  "$ft2",
+        9:  "$ft2f",
+        10: "$ft3",
+        11: "$ft3f",
+        12: "$fa0",
+        13: "$fa0f",
+        14: "$fa1",
+        15: "$fa1f",
+        16: "$ft4",
+        17: "$ft4f",
+        18: "$ft5",
+        19: "$ft5f",
+        20: "$fs0",
+        21: "$fs0f",
+        22: "$fs1",
+        23: "$fs1f",
+        24: "$fs2",
+        25: "$fs2f",
+        26: "$fs3",
+        27: "$fs3f",
+        28: "$fs4",
+        29: "$fs4f",
+        30: "$fs5",
+        31: "$fs5f",
+    }
+    Cop1N32RegisterNames = {
+        0:  "$fv0",
+        1:  "$ft14",
+        2:  "$fv1",
+        3:  "$ft15",
+        4:  "$ft0",
+        5:  "$ft1",
+        6:  "$ft2",
+        7:  "$ft3",
+        8:  "$ft4",
+        9:  "$ft5",
+        10: "$ft6",
+        11: "$ft7",
+        12: "$fa0",
+        13: "$fa1",
+        14: "$fa2",
+        15: "$fa3",
+        16: "$fa4",
+        17: "$fa5",
+        18: "$fa6",
+        19: "$fa7",
+        20: "$fs0",
+        21: "$ft8",
+        22: "$fs1",
+        23: "$ft9",
+        24: "$fs2",
+        25: "$ft10",
+        26: "$fs3",
+        27: "$ft11",
+        28: "$fs4",
+        29: "$ft12",
+        30: "$fs5",
+        31: "$ft13",
+    }
+    Cop1N64RegisterNames = {
+        0:  "$fv0",
+        1:  "$ft12",
+        2:  "$fv1",
+        3:  "$ft13",
+        4:  "$ft0",
+        5:  "$ft1",
+        6:  "$ft2",
+        7:  "$ft3",
+        8:  "$ft4",
+        9:  "$ft5",
+        10: "$ft6",
+        11: "$ft7",
+        12: "$fa0",
+        13: "$fa1",
+        14: "$fa2",
+        15: "$fa3",
+        16: "$fa4",
+        17: "$fa5",
+        18: "$fa6",
+        19: "$fa7",
+        20: "$ft8",
+        21: "$ft9",
+        22: "$ft10",
+        23: "$ft11",
+        24: "$fs0",
+        25: "$fs1",
+        26: "$fs2",
+        27: "$fs3",
+        28: "$fs4",
+        29: "$fs5",
+        30: "$fs6",
+        31: "$fs7",
     }
 
     GprRspRegisterNames = {
@@ -400,12 +537,24 @@ class InstructionBase:
     def getRegisterName(self, register: int) -> str:
         if not InstructionConfig.NAMED_REGISTERS:
             return f"${register}"
-        return self.GprRegisterNames.get(register, f"${register}")
+        if InstructionConfig.GPR_ABI_NAMES == AbiNames.o32:
+            return self.GprO32RegisterNames.get(register, f"${register}")
+        if InstructionConfig.GPR_ABI_NAMES == AbiNames.numeric:
+            return f"${register}"
+        # AbiNames.n32 or AbiNames.n64
+        return self.GprN32RegisterNames.get(register, f"${register}")
 
     def getFloatRegisterName(self, register: int) -> str:
         if not InstructionConfig.NAMED_REGISTERS:
             return f"${register}"
-        return self.Cop1RegisterNames.get(register, f"${register}")
+        if InstructionConfig.FPR_ABI_NAMES == AbiNames.numeric:
+            return self.Cop1NumericRegisterNames.get(register, f"${register}")
+        if InstructionConfig.FPR_ABI_NAMES == AbiNames.o32:
+            return self.Cop1O32RegisterNames.get(register, f"${register}")
+        if InstructionConfig.FPR_ABI_NAMES == AbiNames.n32:
+            return self.Cop1N32RegisterNames.get(register, f"${register}")
+        # AbiNames.n64
+        return self.Cop1N64RegisterNames.get(register, f"${register}")
 
     def getCop0RegisterName(self, register: int) -> str:
         if not InstructionConfig.NAMED_REGISTERS:
