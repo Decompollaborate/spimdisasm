@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from ... import common
 
-from . import InstructionId, InstructionBase
+from . import InstructionId, InstructionBase, instructionDescriptorDict
 from .MipsInstructionConfig import InstructionConfig
 
 
@@ -106,164 +106,10 @@ class InstructionNormal(InstructionBase):
                 elif self.uniqueId == InstructionId.BNE:
                     self.uniqueId = InstructionId.BNEZ
 
-    def isFloatInstruction(self) -> bool:
-        if self.isDoubleFloatInstruction():
-            return True
-        if self.uniqueId in (InstructionId.LWC1, InstructionId.SWC1):
-            return True
-        return False
+        self.descriptor = instructionDescriptorDict[self.uniqueId]
 
-    def isDoubleFloatInstruction(self) -> bool:
-        if self.uniqueId in (InstructionId.LDC1, InstructionId.SDC1):
-            return True
-        return False
-
-
-    def isBranch(self) -> bool:
-        if self.uniqueId in (InstructionId.BEQ, InstructionId.BEQL, InstructionId.BLEZ, InstructionId.BLEZL,
-                             InstructionId.BNE, InstructionId.BNEL, InstructionId.BGTZ, InstructionId.BGTZL,
-                             InstructionId.BEQZ, InstructionId.BNEZ, InstructionId.B):
-            return True
-        return super().isBranch()
-    def isBranchLikely(self) -> bool:
-        if self.uniqueId in (InstructionId.BEQL, InstructionId.BLEZL, InstructionId.BNEL, InstructionId.BGTZL):
-            return True
-        return False
-
-    # OP LABEL
-    def isJType(self) -> bool:
-        if self.uniqueId in (InstructionId.J, InstructionId.JAL):
-            return True
-        return super().isJType()
-
-    def isIType(self) -> bool:
-        if self.isBranch():
-            return False
-        if self.isJType():
-            return False
-        return True
-
-    # OP  rs, IMM
-    def isUnaryBranch(self) -> bool:
-        if self.uniqueId in (InstructionId.BLEZ, InstructionId.BGTZ, InstructionId.BLEZL, InstructionId.BGTZL,
-                             InstructionId.BEQZ, InstructionId.BNEZ):
-            return True
-        return False
-
-    # OP  rs, rt, IMM
-    def isBinaryBranch(self) -> bool:
-        if self.uniqueId in (InstructionId.BEQ, InstructionId.BEQL, InstructionId.BNE, InstructionId.BNEL):
-            return True
-        return False
-
-    # OP  rt, IMM
-    def isUnaryOperation(self) -> bool:
-        if self.uniqueId in (InstructionId.LUI, ):
-            return True
-        return False
-
-    # OP  rt, rs, IMM
-    def isBinaryOperation(self) -> bool:
-        if self.uniqueId in (InstructionId.ADDI, InstructionId.ADDIU, InstructionId.ANDI, InstructionId.DADDI,
-                             InstructionId.DADDIU, InstructionId.ORI, InstructionId.XORI, InstructionId.SLTI,
-                             InstructionId.SLTIU):
-            return True
-        return False
-
-    def isOperation(self) -> bool:
-        return self.isBinaryOperation() or self.isUnaryOperation()
-
-    def isUnsigned(self) -> bool:
-        if self.uniqueId in (InstructionId.LUI, InstructionId.ANDI, InstructionId.ORI, InstructionId.XORI):
-            return True
-        return False
-
-
-    def modifiesRt(self) -> bool:
-        if self.isBranch():
-            return False
-        if self.isJType():
-            return False
-
-        if self.uniqueId in (InstructionId.SB, InstructionId.SH, InstructionId.SWL, InstructionId.SW, 
-                             InstructionId.SDL, InstructionId.SDR, InstructionId.SWR):
-            return False
-
-        # Changes the value of the coprocessor's register
-        if self.uniqueId in (InstructionId.LWC1, InstructionId.LWC2, InstructionId.LDC1, InstructionId.LDC2):
-            return False
-
-        if self.uniqueId in (InstructionId.SWC1, InstructionId.SWC2, InstructionId.SDC1, InstructionId.SDC2):
-            return False
-        return super().modifiesRt()
 
     def getOpcodeName(self) -> str:
         if not self.isImplemented():
-            return f"Unknown(0x{self.opcode:02X})"
+            return f"Unknown (opcode: 0x{self.opcode:02X})"
         return super().getOpcodeName()
-
-
-    def disassembleInstruction(self, immOverride: str|None=None) -> str:
-        opcode = self.getOpcodeName()
-        formated_opcode = opcode.lower().ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
-        rs = self.getRegisterName(self.rs)
-        rt = self.getRegisterName(self.rt)
-        immediate = f"0x{self.immediate:X}"
-        if not self.isUnsigned():
-            number = common.Utils.from2Complement(self.immediate, 16)
-            if number < 0:
-                immediate = f"-0x{-number:X}"
-            else:
-                immediate = f"0x{number:X}"
-        if immOverride is not None:
-            immediate = immOverride
-
-        result = f"{formated_opcode} "
-
-        if self.isJType():
-            vram = self.getInstrIndexAsVram()
-            label = f"func_{vram:06X}"
-            if immOverride is not None:
-                label = immOverride
-            return f"{result}{label}"
-
-        if self.isBranch():
-            result += f"{rs},"
-            result = result.ljust(14, ' ')
-            # OP  rs, IMM
-            if self.isUnaryBranch():
-                pass
-            # OP  rs, rt, IMM
-            elif self.isBinaryBranch():
-                result += f" {rt},"
-                result = result.ljust(19, ' ')
-            # OP  IMM
-            else:
-                result = f"{formated_opcode}"
-            return f"{result} {immediate}"
-
-        if self.isOperation():
-            result += f"{rt},"
-            result = result.ljust(14, ' ')
-            # OP  rt, IMM
-            if self.isUnaryOperation():
-                pass
-            # OP  rt, rs, IMM
-            elif self.isBinaryOperation():
-                result += f" {rs},"
-                result = result.ljust(19, ' ')
-            return f"{result} {immediate}"
-
-        # OP rt, IMM(rs)
-        if self.isFloatInstruction():
-            result += self.getFloatRegisterName(self.rt)
-        elif self.uniqueId == InstructionId.CACHE:
-            result += f"0x{self.rt:02X}"
-        elif self.uniqueId in (InstructionId.LWC2, InstructionId.SWC2, InstructionId.LDC2, InstructionId.SDC2):
-            result += self.getCop2RegisterName(self.rt)
-        else:
-            result += rt
-
-        result += ","
-        result = result.ljust(14, ' ')
-        return f"{result} {immediate}({rs})"

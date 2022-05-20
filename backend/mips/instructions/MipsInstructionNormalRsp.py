@@ -85,8 +85,6 @@ class InstructionNormalRsp(InstructionNormal):
     def __init__(self, instr: int):
         super().__init__(instr)
 
-        self.isRsp = True
-
         for opcode in InstructionNormalRsp.RemovedOpcodes:
             if opcode in self.opcodesDict:
                 del self.opcodesDict[opcode]

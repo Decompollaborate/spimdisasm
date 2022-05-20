@@ -28,8 +28,6 @@ class InstructionRegimmRsp(InstructionRegimm):
     def __init__(self, instr: int):
         super().__init__(instr)
 
-        self.isRsp = True
-
         for opcode in self.RemovedOpcodes:
             if opcode in self.opcodesDict:
                 del self.opcodesDict[opcode]

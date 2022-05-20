@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from . import InstructionId, InstructionBase
+from . import InstructionId, InstructionBase, instructionDescriptorDict
 from .MipsInstructionConfig import InstructionConfig
 
 
@@ -114,39 +114,7 @@ class InstructionCoprocessor1(InstructionBase):
                 if fmt in perFmt:
                     self.uniqueId = perFmt[fmt]
 
-    def isFloatInstruction(self) -> bool:
-        return True
-
-    def isBranch(self) -> bool:
-        if self.uniqueId in (InstructionId.BC1T, InstructionId.BC1TL, InstructionId.BC1F, InstructionId.BC1FL):
-            return True
-        return False
-    def isBranchLikely(self) -> bool:
-        if self.uniqueId in (InstructionId.BC1TL, InstructionId.BC1FL):
-            return True
-        return False
-
-    def isBinaryOperation(self) -> bool:
-        if self.uniqueId in (InstructionId.ADD_S, InstructionId.ADD_D, InstructionId.SUB_S, InstructionId.SUB_D,
-                             InstructionId.MUL_S, InstructionId.MUL_D, InstructionId.DIV_S, InstructionId.DIV_D):
-            return True
-        return False
-
-
-    def modifiesRt(self) -> bool:
-        if self.isBranch():
-            return False
-        if self.uniqueId in (InstructionId.MFC1, InstructionId.DMFC1, InstructionId.CFC1):
-            return True
-        # TODO
-        return super().modifiesRt()
-    def modifiesRd(self) -> bool:
-        # modifying fs shouldn't be the same as modifying rd
-        #if self.uniqueId in (InstructionId.MTC1, InstructionId.DMTC1, InstructionId.CTC1):
-        #    return True
-        # TODO
-        return super().modifiesRd()
-
+        self.descriptor = instructionDescriptorDict[self.uniqueId]
 
     def blankOut(self):
         if self.fmt in InstructionCoprocessor1.Cop1Opcodes_ByFormat:
@@ -169,51 +137,5 @@ class InstructionCoprocessor1(InstructionBase):
 
     def getOpcodeName(self) -> str:
         if not self.isImplemented():
-            return f"COP1(0x{self.function:02X})"
+            return f"COP1 (function: 0x{self.function:02X})"
         return super().getOpcodeName().replace("_", ".")
-
-
-    def disassembleInstruction(self, immOverride: str|None=None) -> str:
-        formated_opcode = self.getOpcodeName().lower().ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
-        rt = self.getRegisterName(self.rt)
-        ft = self.getFloatRegisterName(self.ft)
-        fs = self.getFloatRegisterName(self.fs)
-        fd = self.getFloatRegisterName(self.fd)
-        immediate = hex(self.immediate)
-        if immOverride is not None:
-            immediate = immOverride
-
-        if self.fmt in InstructionCoprocessor1.Cop1Opcodes_ByFormat:
-            result = f"{formated_opcode} {rt},"
-            result = result.ljust(14, ' ')
-            result += f" {fs}"
-            return result
-
-        if self.isBranch():
-            result = formated_opcode
-            return f"{result} {immediate}"
-
-        if self.function in InstructionCoprocessor1.Cop1Opcodes_ByFunction:
-            result = f"{formated_opcode} {fd},"
-            result = result.ljust(14, ' ')
-            result += f" {fs}"
-            if self.isBinaryOperation():
-                result += ","
-                result.ljust(19, ' ')
-                result += f" {ft}"
-            return result
-
-        if self.fc == 0b11:
-            result = f"{formated_opcode} {fs},"
-            result = result.ljust(14, ' ')
-            result += f" {ft}"
-            return result
-
-        if self.fc == 0b10:
-            result = f"{formated_opcode} {fd},"
-            result = result.ljust(14, ' ')
-            result += f" {fs}"
-            return result
-
-        formated_opcode = "COP1".lower().ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
-        return f"{formated_opcode} 0x{self.instr_index:07X}"

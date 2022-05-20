@@ -5,8 +5,7 @@
 
 from __future__ import annotations
 
-from . import InstructionId, InstructionBase
-from .MipsInstructionConfig import InstructionConfig
+from . import InstructionId, InstructionBase, instructionDescriptorDict
 
 
 class InstructionRegimm(InstructionBase):
@@ -38,32 +37,9 @@ class InstructionRegimm(InstructionBase):
 
 
     def processUniqueId(self):
-        super().processUniqueId()
-
         self.uniqueId = self.opcodesDict.get(self.rt, InstructionId.INVALID)
 
-
-    def isBranch(self) -> bool:
-        if self.uniqueId in (InstructionId.BLTZ, InstructionId.BGEZ, InstructionId.BLTZL, InstructionId.BGEZL):
-            return True
-        if self.uniqueId in (InstructionId.BLTZAL, InstructionId.BGEZAL, InstructionId.BLTZALL, InstructionId.BGEZALL):
-            return True
-        return False
-    def isBranchLikely(self) -> bool:
-        if self.uniqueId in (InstructionId.BLTZL, InstructionId.BGEZL, InstructionId.BLTZALL, InstructionId.BGEZALL):
-            return True
-        return False
-    def isTrap(self) -> bool:
-        if self.uniqueId in (InstructionId.TGEI, InstructionId.TGEIU, InstructionId.TLTI, InstructionId.TLTIU,
-                             InstructionId.TEQI, InstructionId.TNEI):
-            return True
-        return False
-
-
-    def modifiesRt(self) -> bool:
-        return False
-    def modifiesRd(self) -> bool:
-        return False
+        self.descriptor = instructionDescriptorDict[self.uniqueId]
 
 
     def blankOut(self):
@@ -74,18 +50,5 @@ class InstructionRegimm(InstructionBase):
 
     def getOpcodeName(self) -> str:
         if not self.isImplemented():
-            return f"Regimm(0x{self.rt:02X})"
+            return f"Regimm (rt: 0x{self.rt:02X})"
         return super().getOpcodeName()
-
-
-    # OP  rs, IMM
-    def disassembleInstruction(self, immOverride: str|None=None) -> str:
-        opcode = self.getOpcodeName().lower().ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
-        rs = self.getRegisterName(self.rs)
-        immediate = hex(self.immediate)
-        if immOverride is not None:
-            immediate = immOverride
-
-        result = f"{opcode} {rs},"
-        result = result.ljust(14, ' ')
-        return f"{result} {immediate}"
