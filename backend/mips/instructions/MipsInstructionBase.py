@@ -537,10 +537,10 @@ class InstructionBase:
     def getRegisterName(self, register: int) -> str:
         if not InstructionConfig.NAMED_REGISTERS:
             return f"${register}"
-        if InstructionConfig.GPR_ABI_NAMES == AbiNames.numeric:
-            return f"${register}"
         if InstructionConfig.GPR_ABI_NAMES == AbiNames.o32:
             return self.GprO32RegisterNames.get(register, f"${register}")
+        if InstructionConfig.GPR_ABI_NAMES == AbiNames.numeric:
+            return f"${register}"
         # AbiNames.n32 or AbiNames.n64
         return self.GprN32RegisterNames.get(register, f"${register}")
 
