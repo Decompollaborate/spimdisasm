@@ -63,6 +63,7 @@ class InstructionConfig:
         abi_choices = ["numeric", "32", "o32", "n32", "n64"]
         mipsInstr.add_argument("--Mgpr-names", help=f"Use GPR names according to the specified ABI. Defaults to {InstructionConfig.GPR_ABI_NAMES.name}", choices=abi_choices)
         mipsInstr.add_argument("--Mfpr-names", help=f"Use FPR names according to the specified ABI. Defaults to {InstructionConfig.FPR_ABI_NAMES.name}", choices=abi_choices)
+        mipsInstr.add_argument("--Mreg-names", help=f"Use GPR and FPR names according to the specified ABI. This flag takes precedence over --Mgpr-names and --Mfpr-names", choices=abi_choices)
 
         mipsInstr.add_argument("--no-cop0-named-registers", help="Disables using the built-in names for registers of the VR4300's Coprocessor 0", action="store_true")
         mipsInstr.add_argument("--no-rsp-cop0-named-registers", help="Disables using the built-in names for registers of the RSP's Coprocessor 0", action="store_true")
@@ -87,6 +88,9 @@ class InstructionConfig:
             InstructionConfig.GPR_ABI_NAMES = AbiNames.fromStr(args.Mgpr_names)
         if args.Mfpr_names:
             InstructionConfig.FPR_ABI_NAMES = AbiNames.fromStr(args.Mfpr_names)
+        if args.Mreg_names:
+            InstructionConfig.GPR_ABI_NAMES = AbiNames.fromStr(args.Mreg_names)
+            InstructionConfig.FPR_ABI_NAMES = AbiNames.fromStr(args.Mreg_names)
 
         InstructionConfig.VR4300_COP0_NAMED_REGISTERS = not args.no_cop0_named_registers
         InstructionConfig.VR4300_RSP_COP0_NAMED_REGISTERS = not args.no_rsp_cop0_named_registers
