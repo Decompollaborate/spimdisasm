@@ -32,13 +32,19 @@ class SectionText(SectionBase):
         funcsStartsList = [0]
         unimplementedInstructionsFuncList = []
 
+        currentVram = self.getVramOffset(0)
         instrsList: list[instructions.InstructionBase] = list()
         for word in self.words:
             if self.isRsp:
                 instr = instructions.wordToInstructionRsp(word)
             else:
                 instr = instructions.wordToInstruction(word)
+
+            if self.vram is not None:
+                instr.vram = currentVram
+
             instrsList.append(instr)
+            currentVram += 4
 
         trackedRegisters: dict[int, int] = dict()
         registersValues: dict[int, int] = dict()

@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from .MipsInstructionConfig import InstructionConfig
-from .MipsConstants import InstructionId
+from .MipsConstants import InstructionId, instructionDescriptorDict
 from .MipsInstructionBase import InstructionBase
 
 
@@ -96,6 +96,7 @@ class InstructionSpecial(InstructionBase):
         super().processUniqueId()
 
         self.uniqueId = self.opcodesDict.get(self.function, InstructionId.INVALID)
+
         if InstructionConfig.PSEUDO_INSTRUCTIONS:
             if self.instr == 0:
                 self.uniqueId = InstructionId.NOP
@@ -108,50 +109,16 @@ class InstructionSpecial(InstructionBase):
                 if self.rs == 0:
                     self.uniqueId = InstructionId.NEGU
 
+        self.descriptor = instructionDescriptorDict[self.uniqueId]
 
-    def isBranch(self) -> bool:
-        return False
-    def isTrap(self) -> bool:
-        if self.uniqueId in (InstructionId.TGE, InstructionId.TGEU, InstructionId.TLT, InstructionId.TLTU,
-                             InstructionId.TEQ, InstructionId.TNE):
-            return True
-        return False
+        if self.uniqueId == InstructionId.JALR:
+            # $ra
+            if self.rd != 31:
+                self.descriptor = instructionDescriptorDict[InstructionId.JALR_RD]
 
-    def isRType(self) -> bool:
-        return True
-
-    def isRType1(self) -> bool: # OP rd, rs, rt
-        if self.isRType2():
-            return False
-        elif self.isSaType():
-            return False
-        elif self.instr == 0x0:
-            return False
-        return True # Not for all cases, but good enough
-    def isRType2(self) -> bool: # OP rd, rt, rs
-        if self.uniqueId in (InstructionId.DSLLV, InstructionId.DSRLV, InstructionId.DSRAV, InstructionId.SLLV, 
-                             InstructionId.SRLV, InstructionId.SRAV):
-            return True
-        return False
-    def isSaType(self) -> bool: # OP rd, rt, sa
-        if self.uniqueId in (InstructionId.SLL, InstructionId.SRL, InstructionId.SRA, InstructionId.DSLL,
-                             InstructionId.DSRL, InstructionId.DSRA, InstructionId.DSLL32, InstructionId.DSRL32,
-                             InstructionId.DSRA32):
-            return True
-        return False
-
-
-    def modifiesRt(self) -> bool:
-        return False
-    def modifiesRd(self) -> bool:
-        if self.uniqueId in (InstructionId.JR, InstructionId.JALR, InstructionId.MTHI, InstructionId.MTLO,
-                             InstructionId.MULT, InstructionId.MULTU, InstructionId.DIV, InstructionId.DIVU,
-                             InstructionId.DMULT, InstructionId.DMULTU, InstructionId.DDIV, InstructionId.DDIVU,
-                             InstructionId.SYSCALL, InstructionId.BREAK, InstructionId.SYNC): # TODO
-            return False
-        if self.isTrap():
-            return False
-        return True
+        if InstructionConfig.SN64_DIV_FIX:
+            if self.uniqueId in (InstructionId.DIV, InstructionId.DIVU):
+                self.descriptor.operands = ["{rs}, ", "{rt}"]
 
 
     def blankOut(self):
@@ -162,78 +129,16 @@ class InstructionSpecial(InstructionBase):
 
     def getOpcodeName(self) -> str:
         if not self.isImplemented():
-            return f"Special(0x{self.function:02X})"
+            return f"Special (function: 0x{self.function:02X})"
         return super().getOpcodeName()
 
 
     def disassembleInstruction(self, immOverride: str|None=None) -> str:
-        opcode = self.getOpcodeName()
-        formated_opcode = opcode.lower().ljust(InstructionConfig.OPCODE_LJUST + self.extraLjustWidthOpcode, ' ')
-        rs = self.getRegisterName(self.rs)
-        rt = self.getRegisterName(self.rt)
-        rd = self.getRegisterName(self.rd)
-
-        if self.uniqueId == InstructionId.NOP:
-            return "nop"
-
-        elif self.uniqueId in (InstructionId.MOVE, InstructionId.NOT): # OP rd, rs
-            result = f"{formated_opcode} {rd},"
-            result = result.ljust(14, ' ')
-            return f"{result} {rs}"
-
-        elif self.uniqueId in (InstructionId.JR, InstructionId.MTHI, InstructionId.MTLO):
-            result = f"{formated_opcode} {rs}"
-            return result
-        elif self.uniqueId == InstructionId.JALR:
-            if self.rd == 31:
-                rd = ""
-            else:
-                rd += ","
-                rd = rd.ljust(6, ' ')
-            result = f"{formated_opcode} {rd}{rs}"
-            return result
-        elif self.uniqueId in (InstructionId.MFHI, InstructionId.MFLO):
-            return f"{formated_opcode} {rd}"
-        elif self.uniqueId in (InstructionId.MULT, InstructionId.MULTU, InstructionId.DMULT, InstructionId.DMULTU) or self.isTrap(): # OP  rs, rt
-            result = f"{formated_opcode} {rs},".ljust(14, ' ')
-            return f"{result} {rt}"
-        elif self.uniqueId in (InstructionId.SYSCALL, InstructionId.BREAK, InstructionId.SYNC):
-            code = (self.instr_index) >> 16
-            result = f"{formated_opcode} {code}"
-            if InstructionConfig.SN64_DIV_FIX and self.uniqueId == InstructionId.BREAK:
+        if InstructionConfig.SN64_DIV_FIX:
+            if self.uniqueId == InstructionId.BREAK:
                 patchedResult = self.disassembleAsData()
-                patchedResult += f" # {result}"
+                patchedResult += " # "
+                patchedResult += super().disassembleInstruction(immOverride)
                 return patchedResult
-            return result
-
-        elif self.uniqueId in (InstructionId.NEGU,):
-            result = f"{formated_opcode} {rd},"
-            result = result.ljust(14, ' ')
-            return f"{result} {rt}"
-
-        elif self.isRType1(): # OP rd, rs, rt
-            leftSpace = 14
-            if InstructionConfig.SN64_DIV_FIX and self.uniqueId in (InstructionId.DIV, InstructionId.DIVU):
-                # OP rs, rt
-                result = formated_opcode
-            else:
-                result = f"{formated_opcode} {rd},"
-                result = result.ljust(leftSpace, ' ')
-                leftSpace += 5
-            result += f" {rs},"
-            result = result.ljust(leftSpace, ' ')
-            return f"{result} {rt}"
-        elif self.isRType2(): # OP rd, rt, rs
-            result = f"{formated_opcode} {rd},"
-            result = result.ljust(14, ' ')
-            result += f" {rt},"
-            result = result.ljust(19, ' ')
-            return f"{result} {rs}"
-        elif self.isSaType(): # OP rd, rt, sa
-            result = f"{formated_opcode} {rd},"
-            result = result.ljust(14, ' ')
-            result += f" {rt},"
-            result = result.ljust(19, ' ')
-            return f"{result} {self.sa}"
 
         return super().disassembleInstruction(immOverride)
