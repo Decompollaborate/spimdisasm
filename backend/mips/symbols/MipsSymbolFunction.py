@@ -690,8 +690,8 @@ class SymbolFunction(SymbolText):
             instructionOffset += 4
             auxOffset += 4
 
-        if common.GlobalConfig.ASM_END_LABEL:
-            output += f"{common.GlobalConfig.ASM_END_LABEL} {self.name}\n"
+        if common.GlobalConfig.ASM_TEXT_END_LABEL:
+            output += f"{common.GlobalConfig.ASM_TEXT_END_LABEL} {self.name}\n"
 
         return output
 

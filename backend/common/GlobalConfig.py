@@ -141,7 +141,7 @@ class GlobalConfig:
         if args.asm_data_label:
             GlobalConfig.ASM_DATA_LABEL = args.asm_data_label
         if args.asm_end_label:
-            GlobalConfig.ASM_END_LABEL = args.asm_end_label
+            GlobalConfig.ASM_TEXT_END_LABEL = args.asm_end_label
 
         GlobalConfig.VERBOSE = args.verbose
         GlobalConfig.QUIET = args.quiet

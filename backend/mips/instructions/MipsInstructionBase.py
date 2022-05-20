@@ -548,6 +548,8 @@ class InstructionBase:
         if not InstructionConfig.NAMED_REGISTERS:
             return f"${register}"
         if InstructionConfig.FPR_ABI_NAMES == AbiNames.numeric:
+            if register == 31 and not InstructionConfig.USE_FPCCSR:
+                return "$31"
             return self.Cop1NumericRegisterNames.get(register, f"${register}")
         if InstructionConfig.FPR_ABI_NAMES == AbiNames.o32:
             return self.Cop1O32RegisterNames.get(register, f"${register}")
