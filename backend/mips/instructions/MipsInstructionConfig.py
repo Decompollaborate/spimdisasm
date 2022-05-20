@@ -6,10 +6,31 @@
 from __future__ import annotations
 
 import argparse
+import enum
+
+
+class AbiNames(enum.Enum):
+    numeric = enum.auto()
+    o32 = enum.auto()
+    n32 = enum.auto()
+    n64 = enum.auto()
+
+    @staticmethod
+    def fromStr(x: str) -> AbiNames:
+        if x in ("32", "o32"):
+            return AbiNames.o32
+        if x in ("n32",):
+            return AbiNames.n32
+        if x in ("64", "n64"):
+            return AbiNames.n64
+        return AbiNames.numeric
 
 
 class InstructionConfig:
     NAMED_REGISTERS: bool = True
+
+    GPR_ABI_NAMES: AbiNames = AbiNames.o32
+    # FPR_ABI_NAMES: AbiNames = AbiNames.numeric
 
     VR4300_COP0_NAMED_REGISTERS: bool = True
     VR4300_RSP_COP0_NAMED_REGISTERS: bool = True
@@ -39,6 +60,9 @@ class InstructionConfig:
 
         mipsInstr.add_argument("--no-named-registers", help="Disables named registers for every instruction. This flag takes precedence over other similar flags", action="store_true")
 
+        abi_choices = ["numeric", "32", "o32", "n32", "n64"]
+        mipsInstr.add_argument("--Mgpr-names", help=f"Use GPR names according to the specified ABI. Defaults to {InstructionConfig.GPR_ABI_NAMES.name}", choices=abi_choices)
+
         mipsInstr.add_argument("--no-cop0-named-registers", help="Disables using the built-in names for registers of the VR4300's Coprocessor 0", action="store_true")
         mipsInstr.add_argument("--no-rsp-cop0-named-registers", help="Disables using the built-in names for registers of the RSP's Coprocessor 0", action="store_true")
 
@@ -57,6 +81,9 @@ class InstructionConfig:
     @classmethod
     def parseArgs(cls, args: argparse.Namespace):
         InstructionConfig.NAMED_REGISTERS = not args.no_named_registers
+
+        if args.Mgpr_names:
+            InstructionConfig.GPR_ABI_NAMES = AbiNames.fromStr(args.Mgpr_names)
 
         InstructionConfig.VR4300_COP0_NAMED_REGISTERS = not args.no_cop0_named_registers
         InstructionConfig.VR4300_RSP_COP0_NAMED_REGISTERS = not args.no_rsp_cop0_named_registers

@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from .MipsInstructionConfig import InstructionConfig
+from .MipsInstructionConfig import InstructionConfig, AbiNames
 from .MipsConstants import InstructionId, InstructionVectorId, InstrType, InstrDescriptor, instructionDescriptorDict, InstructionsNotEmitedByIDO
 from .MipsInstructionBase import InstructionBase
 
