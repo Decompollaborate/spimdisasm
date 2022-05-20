@@ -39,6 +39,8 @@ class GlobalConfig:
     """Value used for $gp relocation loads and stores
     """
 
+    PRINT_NEW_FILE_BOUNDARIES: bool = False
+
     TRUST_USER_FUNCTIONS: bool = True
     DISASSEMBLE_UNKNOWN_INSTRUCTIONS: bool = False
     DISASSEMBLE_RSP: bool = False
@@ -72,6 +74,8 @@ class GlobalConfig:
         backendConfig.add_argument("--endian", help="Set the endianness of input files. Defaults to 'big'", choices=["big", "little", "middle"])
 
         backendConfig.add_argument("--gp", help="Set the value used for loads and stores concering the $gp register. A hex value is expected")
+
+        backendConfig.add_argument("--print-new-file-boundaries", help="Print to stdout any new file boundary found", action="store_true")
 
 
         miscConfig = parser.add_argument_group("Disassembler misc options")
@@ -119,6 +123,8 @@ class GlobalConfig:
 
         if args.gp is not None:
             GlobalConfig.GP_VALUE = int(args.gp, 16)
+
+        GlobalConfig.PRINT_NEW_FILE_BOUNDARIES = args.print_new_file_boundaries
 
         GlobalConfig.WRITE_BINARY = args.write_binary
         GlobalConfig.ASM_COMMENT = not args.disable_asm_comments

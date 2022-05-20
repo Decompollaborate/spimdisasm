@@ -238,15 +238,16 @@ class SectionText(SectionBase):
 
     def printAnalyzisResults(self):
         super().printAnalyzisResults()
-        if not common.GlobalConfig.VERBOSE:
+        if not common.GlobalConfig.PRINT_NEW_FILE_BOUNDARIES:
             return
-
-
-        common.Utils.printVerbose(f"Found {self.nFuncs} functions.")
 
         nBoundaries = len(self.fileBoundaries)
         if nBoundaries > 0:
-            common.Utils.printVerbose(f"Found {nBoundaries} file boundaries.")
+            print(f"File {self.name}")
+            print(f"Found {self.nFuncs} functions.")
+            print(f"Found {nBoundaries} file boundaries.")
+
+            print("\t offset, size, vram\t functions")
 
             for i in range(len(self.fileBoundaries)-1):
                 start = self.fileBoundaries[i]
@@ -254,14 +255,13 @@ class SectionText(SectionBase):
 
                 functionsInBoundary = 0
                 for func in self.symbolList:
-                    if func.vram is not None and self.vram is not None:
-                        funcOffset = func.vram - self.vram
-                        if start <= funcOffset < end:
-                            functionsInBoundary += 1
+                    funcOffset = func.inFileOffset - self.inFileOffset
+                    if start <= funcOffset < end:
+                        functionsInBoundary += 1
                 fileVram = 0
                 if self.vram is not None:
                     fileVram = start + self.vram
-                common.Utils.printVerbose("\t", f"{start+self.commentOffset:06X}", f"{end-start:04X}", f"{fileVram:08X}", "\t functions:", functionsInBoundary)
+                print("\t", f"{start+self.commentOffset:06X}", f"{end-start:04X}", f"{fileVram:08X}", "\t functions:", functionsInBoundary)
 
             start = self.fileBoundaries[-1]
             end = self.sizew*4 + self.inFileOffset
@@ -275,9 +275,9 @@ class SectionText(SectionBase):
             fileVram = 0
             if self.vram is not None:
                 fileVram = start + self.vram
-            common.Utils.printVerbose("\t", f"{start+self.commentOffset:06X}", f"{end-start:04X}", f"{fileVram:08X}", "\t functions:", functionsInBoundary)
+            print("\t", f"{start+self.commentOffset:06X}", f"{end-start:04X}", f"{fileVram:08X}", "\t functions:", functionsInBoundary)
 
-            common.Utils.printVerbose()
+            print()
         return
 
 
