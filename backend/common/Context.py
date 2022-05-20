@@ -74,7 +74,11 @@ class ContextSymbolBase:
         label = ""
         if self.isStatic:
             label += "/* static variable */\n"
-        label += "glabel " + self.name
+        if self.sectionType == FileSectionType.Text:
+            label += GlobalConfig.ASM_TEXT_LABEL
+        else:
+            label += GlobalConfig.ASM_DATA_LABEL
+        label += " " + self.name
         return label
 
     def toCsv(self) -> str:
