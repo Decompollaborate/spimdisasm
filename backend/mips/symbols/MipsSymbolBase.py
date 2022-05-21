@@ -95,6 +95,7 @@ class SymbolBase(ElementBase):
         output = self.getLabel()
 
         canReferenceSymbolsWithAddends = self.vram in self.context.dataSymbolsWithReferencesWithAddends
+        canReferenceConstants = self.vram in self.context.dataReferencingConstants
 
         localOffset = 0
         i = 0
@@ -118,6 +119,10 @@ class SymbolBase(ElementBase):
             symbol = self.context.getGenericSymbol(w, tryPlusOffset=canReferenceSymbolsWithAddends)
             if symbol is not None:
                 value = symbol.getSymbolPlusOffset(w)
+            elif canReferenceConstants:
+                constant = self.context.getConstant(w)
+                if constant is not None:
+                    value = constant.name
 
             comment = self.generateAsmLineComment(localOffset)
             output += f"{label}{comment} .word {value}"

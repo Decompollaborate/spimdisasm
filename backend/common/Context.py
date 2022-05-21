@@ -296,7 +296,10 @@ class Context:
         "key: address of %lo, value: symbol's vram to use instead"
 
         self.dataSymbolsWithReferencesWithAddends: set[int] = set()
-        "Contains the address of data symbols that are allow to have references to other symbols with addends"
+        "Contains the address of data symbols which are allowed to have references to other symbols with addends"
+
+        self.dataReferencingConstants: set[int] = set()
+        "Set of addresses of data symbols which are allowed to reference named constants"
 
         # Stuff that looks like pointers, but the disassembler shouldn't count it as a pointer
         self.bannedSymbols: set[int] = set()
