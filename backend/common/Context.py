@@ -31,6 +31,30 @@ class SymbolSpecialType(enum.Enum):
     jumptablelabel  = enum.auto()
     fakefunction    = enum.auto()
     hardwarereg     = enum.auto()
+    constant        = enum.auto()
+
+
+    def toStr(self) -> str:
+        return "@" + self.name
+
+    @staticmethod
+    def fromStr(symTypeStr: str|None) -> SymbolSpecialType|None:
+        if symTypeStr == "@function":
+            return SymbolSpecialType.function
+        if symTypeStr == "@branchlabel":
+            return SymbolSpecialType.branchlabel
+        if symTypeStr == "@jumptable":
+            return SymbolSpecialType.jumptable
+        if symTypeStr == "@jumptablelabel":
+            return SymbolSpecialType.jumptablelabel
+        if symTypeStr == "@fakefunction":
+            return SymbolSpecialType.fakefunction
+        if symTypeStr == "@hardwarereg":
+            return SymbolSpecialType.hardwarereg
+        if symTypeStr == "@constant":
+            return SymbolSpecialType.constant
+        return None
+
 
 @dataclasses.dataclass
 class ContextSymbolBase:
@@ -492,32 +516,48 @@ class Context:
 
         return contextSymbol
 
-    def addBranchLabel(self, vramAddress: int, name: str):
+    def addBranchLabel(self, vramAddress: int, name: str) -> ContextSymbol:
         if vramAddress not in self.labels:
             contextSymbol = ContextSymbol(vramAddress, name)
             contextSymbol.type = SymbolSpecialType.branchlabel
             self.labels[vramAddress] = contextSymbol
+            return contextSymbol
+        return self.labels[vramAddress]
 
-    def addJumpTable(self, vramAddress: int):
+    def addJumpTable(self, vramAddress: int, name: str|None=None) -> ContextSymbol:
         if vramAddress not in self.jumpTables:
-            contextSymbol = ContextSymbol(vramAddress, f"jtbl_{vramAddress:08X}")
+            if name is None:
+                name = f"jtbl_{vramAddress:08X}"
+            contextSymbol = ContextSymbol(vramAddress, name)
             contextSymbol.type = SymbolSpecialType.jumptable
             contextSymbol.isLateRodata = True
             self.jumpTables[vramAddress] = contextSymbol
             return contextSymbol
         return self.jumpTables[vramAddress]
 
-    def addJumpTableLabel(self, vramAddress: int, name: str):
+    def addJumpTableLabel(self, vramAddress: int, name: str) -> ContextSymbol:
         if vramAddress not in self.jumpTables:
             contextSymbol = ContextSymbol(vramAddress, name)
             contextSymbol.type = SymbolSpecialType.jumptablelabel
             self.jumpTablesLabels[vramAddress] = contextSymbol
+            return contextSymbol
+        return self.jumpTables[vramAddress]
 
-    def addFakeFunction(self, vramAddress: int, name: str):
+    def addFakeFunction(self, vramAddress: int, name: str) -> ContextSymbol:
         if vramAddress not in self.fakeFunctions:
             contextSymbol = ContextSymbol(vramAddress, name)
             contextSymbol.type = SymbolSpecialType.fakefunction
             self.fakeFunctions[vramAddress] = contextSymbol
+            return contextSymbol
+        return self.fakeFunctions[vramAddress]
+
+    def addConstant(self, constantValue: int, name: str) -> ContextSymbol:
+        if constantValue not in self.constants:
+            contextSymbol = ContextSymbol(constantValue, name)
+            contextSymbol.type = SymbolSpecialType.constant
+            self.constants[constantValue] = contextSymbol
+            return contextSymbol
+        return self.constants[constantValue]
 
     def addOffsetJumpTable(self, offset: int, sectionType: FileSectionType) -> ContextOffsetSymbol:
         if offset not in self.offsetJumpTables:
@@ -600,7 +640,7 @@ class Context:
             if len(row) == 0:
                 continue
 
-            varType: str|None
+            varType: SymbolSpecialType|str|None
             vramStr, varName, varType, varSizeStr = row
 
             if vramStr == "-":
@@ -611,10 +651,30 @@ class Context:
             if varType == "":
                 varType = None
 
-            contextSym = self.addSymbol(vram, varName)
+            specialType = SymbolSpecialType.fromStr(varType)
+            if specialType is not None:
+                varType = specialType
+                if specialType == SymbolSpecialType.function:
+                    contextSym = self.addFunction(vram, varName)
+                elif specialType == SymbolSpecialType.branchlabel:
+                    contextSym = self.addBranchLabel(vram, varName)
+                elif specialType == SymbolSpecialType.jumptable:
+                    contextSym = self.addJumpTable(vram, varName)
+                elif specialType == SymbolSpecialType.jumptablelabel:
+                    contextSym = self.addJumpTableLabel(vram, varName)
+                elif specialType == SymbolSpecialType.fakefunction:
+                    contextSym = self.addFakeFunction(vram, varName)
+                elif specialType == SymbolSpecialType.hardwarereg:
+                    contextSym = self.addSymbol(vram, varName)
+                else:
+                    contextSym = self.addSymbol(vram, varName)
+            else:
+                contextSym = self.addSymbol(vram, varName)
+
             contextSym.type = varType
             contextSym.size = varSize
             contextSym.isUserDefined = True
+            contextSym.isStatic = varName.startswith(".")
 
     def readFunctionsCsv(self, filepath: str):
         if not os.path.exists(filepath):
@@ -649,7 +709,7 @@ class Context:
                 continue
 
             constantValue = int(constantValueStr, 16)
-            self.constants[constantValue] = ContextSymbol(constantValue, constantName)
+            self.addConstant(constantValue, constantName)
 
 
     def saveContextToFile(self, filepath: str):
