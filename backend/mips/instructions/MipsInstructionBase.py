@@ -384,7 +384,7 @@ class InstructionBase:
 
     @property
     def instr(self) -> int:
-        return (self.opcode << 26) | (self.rs << 21) | (self.rt << 16) | (self.immediate)
+        return (self.opcode << 26) | (self.rs << 21) | (self.rt << 16) | (self.rd << 11) | (self.sa << 6) | (self.function)
 
     @property
     def immediate(self) -> int:
@@ -647,22 +647,22 @@ class InstructionBase:
                 return "f64"
             else:
                 return "f32"
-        # Way too general register to ensure the type
-        # if self.uniqueId in (InstructionId.LW, InstructionId.SW):
+        # Way too general instruction to ensure the type
+        # if self.uniqueId == InstructionId.LW or self.uniqueId == InstructionId.SW:
         #     return "s32"
-        if self.uniqueId in (InstructionId.LWU, ):
+        if self.uniqueId == InstructionId.LWU:
             return "u32"
-        if self.uniqueId in (InstructionId.LH, InstructionId.SH):
+        if self.uniqueId == InstructionId.LH or self.uniqueId == InstructionId.SH:
             return "s16"
-        if self.uniqueId in (InstructionId.LHU, ):
+        if self.uniqueId == InstructionId.LHU:
             return "u16"
-        if self.uniqueId in (InstructionId.LB, InstructionId.SB):
+        if self.uniqueId == InstructionId.LB or self.uniqueId == InstructionId.SB:
             return "s8"
-        if self.uniqueId in (InstructionId.LBU, ):
+        if self.uniqueId == InstructionId.LBU:
             return "u8"
-        if self.uniqueId in (InstructionId.LD, InstructionId.SD):
+        if self.uniqueId == InstructionId.LD or self.uniqueId == InstructionId.SD:
             return "s64"
-        # if self.uniqueId in (InstructionId.LDU, InstructionId.SDU):
+        # if self.uniqueId == InstructionId.LDU or self.uniqueId == InstructionId.SDU:
         #     return "u64"
         return None
 

@@ -88,12 +88,13 @@ class SymbolRodata(SymbolBase):
         if possibleSymbolName is not None:
             label = possibleSymbolName.getSymbolLabel() + "\n"
 
-        possibleReference = self.context.getRelocSymbol(inFileOffset, common.FileSectionType.Rodata)
-        if possibleReference is not None:
-            value = possibleReference.getNamePlusOffset(w)
-            if possibleReference.type == "@jumptablelabel":
-                if w in self.context.offsetJumpTablesLabels:
-                    value = self.context.offsetJumpTablesLabels[w].name
+        if len(self.context.relocSymbols[self.sectionType]) > 0:
+            possibleReference = self.context.getRelocSymbol(inFileOffset, common.FileSectionType.Rodata)
+            if possibleReference is not None:
+                value = possibleReference.getNamePlusOffset(w)
+                if possibleReference.type == common.SymbolSpecialType.jumptablelabel:
+                    if w in self.context.offsetJumpTablesLabels:
+                        value = self.context.offsetJumpTablesLabels[w].name
 
         dotType = ".word"
         skip = 0

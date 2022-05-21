@@ -163,9 +163,10 @@ class SectionText(SectionBase):
                 break
 
             funcName = f"func_{i}"
-            possibleFuncName = self.context.getOffsetSymbol(start*4, common.FileSectionType.Text)
-            if possibleFuncName is not None:
-                funcName = possibleFuncName.name
+            if len(self.context.offsetSymbols[self.sectionType]) > 0:
+                possibleFuncName = self.context.getOffsetSymbol(start*4, self.sectionType)
+                if possibleFuncName is not None:
+                    funcName = possibleFuncName.name
 
             vram = None
             if self.vram is not None:

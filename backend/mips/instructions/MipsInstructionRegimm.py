@@ -47,8 +47,3 @@ class InstructionRegimm(InstructionBase):
         self.rd = 0
         self.sa = 0
         self.function = 0
-
-    def getOpcodeName(self) -> str:
-        if not self.isImplemented():
-            return f"Regimm (rt: 0x{self.rt:02X})"
-        return super().getOpcodeName()

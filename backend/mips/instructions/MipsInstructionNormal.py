@@ -107,9 +107,3 @@ class InstructionNormal(InstructionBase):
                     self.uniqueId = InstructionId.BNEZ
 
         self.descriptor = instructionDescriptorDict[self.uniqueId]
-
-
-    def getOpcodeName(self) -> str:
-        if not self.isImplemented():
-            return f"Unknown (opcode: 0x{self.opcode:02X})"
-        return super().getOpcodeName()

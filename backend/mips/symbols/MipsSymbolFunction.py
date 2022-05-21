@@ -378,8 +378,8 @@ class SymbolFunction(SymbolText):
                     wasRegisterValuesUpdated = True
                     if instr.uniqueId == instructions.InstructionId.LUI and targetInstr.rs == instr.rt:
                         pairedLoFound = True
-
-                self._tryToSetSymbolType(instr, registersValues)
+                else:
+                    self._tryToSetSymbolType(instr, registersValues)
 
             if prevTargetInstr.uniqueId == instructions.InstructionId.B or (prevTargetInstr.uniqueId == instructions.InstructionId.BEQ and prevTargetInstr.rt == 0 and prevTargetInstr.rs == 0):
                 # TODO: Consider following branches
@@ -529,8 +529,8 @@ class SymbolFunction(SymbolText):
             elif instr.isIType():
                 if self._symbolFinder(instr, prevInstr, instructionOffset, trackedRegisters, trackedRegistersAll, registersValues):
                     wasRegisterValuesUpdated = True
-
-                self._tryToSetSymbolType(instr, registersValues)
+                else:
+                    self._tryToSetSymbolType(instr, registersValues)
 
             elif instr.uniqueId == instructions.InstructionId.JR:
                 rs = instr.rs
@@ -642,6 +642,90 @@ class SymbolFunction(SymbolText):
 
         return f"%lo({symName})"
 
+    def getImmOverrideForInstruction(self, instr: instructions.InstructionBase, instructionOffset: int) -> str|None:
+        if len(self.context.relocSymbols[self.sectionType]) > 0:
+            # Check possible symbols using reloc information (probably from a .o elf file)
+            possibleImmOverride = self.context.getRelocSymbol(self.inFileOffset + instructionOffset, self.sectionType)
+            if possibleImmOverride is not None:
+                auxOverride = possibleImmOverride.name
+                if instr.isIType():
+                    if instructionOffset in self.pointersPerInstruction:
+                        addressOffset = self.pointersPerInstruction[instructionOffset]
+                        auxOverride = possibleImmOverride.getNamePlusOffset(addressOffset)
+
+                    auxOverride = self.generateHiLoStr(instr, auxOverride)
+                return auxOverride
+
+        if instr.isBranch():
+            if not common.GlobalConfig.IGNORE_BRANCHES:
+                branch = instructionOffset + instr.getBranchOffset()
+                targetBranchVram = self.getVramOffset(branch)
+                labelSymbol = self.context.getGenericLabel(targetBranchVram)
+                if labelSymbol is not None:
+                    return labelSymbol.name
+
+                # in case we don't have access to vram or this label was not in context
+                if branch in self.localLabels:
+                    return self.localLabels[branch]
+
+        elif instr.isIType():
+            if not self.pointersRemoved and instructionOffset in self.pointersPerInstruction:
+                address = self.pointersPerInstruction[instructionOffset]
+
+                instrVram = instr.vram
+                if instr.uniqueId == instructions.InstructionId.LUI:
+                    # we need to get the address of the lo instruction to get the patch
+                    if instructionOffset in self.hiToLowDict:
+                        loInstr = self.instructions[self.hiToLowDict[instructionOffset] // 4]
+                        instrVram = loInstr.vram
+
+                # Check for user-defined symbol patches
+                patchedAddress = self.context.getLoPatch(instrVram)
+                if patchedAddress is not None:
+                    symbol = self.context.getGenericSymbol(patchedAddress, True, False)
+                else:
+                    symbol = self.context.getGenericSymbol(address, True)
+
+                if symbol is not None:
+                    return self.generateHiLoStr(instr, symbol.getSymbolPlusOffset(address))
+
+            elif instructionOffset in self.constantsPerInstruction:
+                constant = self.constantsPerInstruction[instructionOffset]
+
+                symbol = self.context.getConstant(constant)
+                if symbol is not None:
+                    return self.generateHiLoStr(instr, symbol.name)
+                if instr.uniqueId == instructions.InstructionId.LUI:
+                    return f"(0x{constant:X} >> 16)"
+                return f"(0x{constant:X} & 0xFFFF)"
+
+        elif instr.isJType():
+            possibleOverride = self.context.getAnySymbol(instr.getInstrIndexAsVram())
+            if possibleOverride is not None:
+                return possibleOverride.name
+
+        return None
+
+    def getLabelForOffset(self, instructionOffset: int) -> str:
+        if not common.GlobalConfig.IGNORE_BRANCHES and instructionOffset != 0:
+            # Skip over this function to avoid duplication
+
+            currentVram = self.getVramOffset(instructionOffset)
+            labelSym = self.context.getGenericLabel(currentVram)
+            if labelSym is None and len(self.context.offsetJumpTablesLabels) > 0:
+                labelSym = self.context.getOffsetGenericLabel(self.inFileOffset+instructionOffset, common.FileSectionType.Text)
+            if labelSym is None and len(self.context.offsetSymbols[self.sectionType]) > 0:
+                labelSym = self.context.getOffsetSymbol(self.inFileOffset+instructionOffset, common.FileSectionType.Text)
+
+            if labelSym is not None:
+                if labelSym.type == common.SymbolSpecialType.function or labelSym.type == common.SymbolSpecialType.jumptablelabel:
+                    return labelSym.getSymbolLabel() + "\n"
+                return labelSym.name + ":\n"
+
+            if instructionOffset in self.localLabels:
+                return self.localLabels[instructionOffset] + ":\n"
+        return ""
+
 
     def disassemble(self) -> str:
         output = ""
@@ -656,114 +740,25 @@ class SymbolFunction(SymbolText):
         output += self.getLabel()
 
         wasLastInstABranch = False
-
         instructionOffset = 0
-        auxOffset = self.inFileOffset
         for instr in self.instructions:
-            immOverride = None
-
-            if instr.isBranch():
-                if not common.GlobalConfig.IGNORE_BRANCHES:
-                    branch = instructionOffset + instr.getBranchOffset()
-                    targetBranchVram = self.getVramOffset(branch)
-                    labelSymbol = self.context.getGenericLabel(targetBranchVram)
-                    if labelSymbol is not None:
-                        immOverride = labelSymbol.name
-
-                    # in case we don't have access to vram or this label was not in context
-                    if immOverride is None:
-                        if branch in self.localLabels:
-                            immOverride = self.localLabels[branch]
-
-            elif instr.isIType():
-                if not self.pointersRemoved and instructionOffset in self.pointersPerInstruction:
-                    address = self.pointersPerInstruction[instructionOffset]
-
-                    instrVram = instr.vram
-                    if instr.uniqueId == instructions.InstructionId.LUI:
-                        # we need to get the address of the lo instruction to get the patch
-                        if instructionOffset in self.hiToLowDict:
-                            loInstr = self.instructions[self.hiToLowDict[instructionOffset] // 4]
-                            instrVram = loInstr.vram
-
-                    # Check for user-defined symbol patches
-                    patchedAddress = self.context.getLoPatch(instrVram)
-                    if patchedAddress is not None:
-                        symbol = self.context.getGenericSymbol(patchedAddress, True, False)
-                    else:
-                        symbol = self.context.getGenericSymbol(address, True)
-
-                    if symbol is not None:
-                        immOverride = self.generateHiLoStr(instr, symbol.getSymbolPlusOffset(address))
-
-                elif instructionOffset in self.constantsPerInstruction:
-                    constant = self.constantsPerInstruction[instructionOffset]
-
-                    symbol = self.context.getConstant(constant)
-                    if symbol is not None:
-                        immOverride = self.generateHiLoStr(instr, symbol.name)
-                    else:
-                        if instr.uniqueId == instructions.InstructionId.LUI:
-                            immOverride = f"(0x{constant:X} >> 16)"
-                        else:
-                            immOverride = f"(0x{constant:X} & 0xFFFF)"
-
-            elif instr.isJType():
-                possibleOverride = self.context.getAnySymbol(instr.getInstrIndexAsVram())
-                if possibleOverride is not None:
-                    immOverride = possibleOverride.name
-
-            # Check possible symbols using reloc information (probably from a .o elf file)
-            possibleImmOverride = self.context.getRelocSymbol(auxOffset, common.FileSectionType.Text)
-            if possibleImmOverride is not None:
-                auxOverride = possibleImmOverride.name
-                if instr.isIType():
-                    if instructionOffset in self.pointersPerInstruction:
-                        addressOffset = self.pointersPerInstruction[instructionOffset]
-                        auxOverride = possibleImmOverride.getNamePlusOffset(addressOffset)
-
-                    auxOverride = self.generateHiLoStr(instr, auxOverride)
-                immOverride = auxOverride
+            immOverride = self.getImmOverrideForInstruction(instr, instructionOffset)
+            comment = self.generateAsmLineComment(instructionOffset, instr.instr)
 
             if wasLastInstABranch:
                 instr.extraLjustWidthOpcode -= 1
+                comment += " "
 
             line = instr.disassemble(immOverride)
 
             if wasLastInstABranch:
                 instr.extraLjustWidthOpcode += 1
 
-            comment = self.generateAsmLineComment(instructionOffset, instr.instr)
-            if wasLastInstABranch:
-                comment += " "
-            line = comment + "  " + line
-
-            label = ""
-            if not common.GlobalConfig.IGNORE_BRANCHES and instructionOffset != 0:
-                # Skip over this function to avoid duplication
-
-                currentVram = self.getVramOffset(instructionOffset)
-                labelSym = self.context.getGenericLabel(currentVram)
-                if labelSym is None:
-                    labelSym = self.context.getOffsetGenericLabel(auxOffset, common.FileSectionType.Text)
-                if labelSym is None:
-                    labelSym = self.context.getOffsetSymbol(auxOffset, common.FileSectionType.Text)
-
-                if labelSym is not None:
-                    if labelSym.type == common.SymbolSpecialType.function or labelSym.type == common.SymbolSpecialType.jumptablelabel:
-                        label = labelSym.getSymbolLabel() + "\n"
-                    else:
-                        label = labelSym.name + ":\n"
-
-                elif instructionOffset in self.localLabels:
-                    label = self.localLabels[instructionOffset] + ":\n"
-
-            output += label + line + "\n"
+            label = self.getLabelForOffset(instructionOffset)
+            output += f"{label}{comment}  {line}\n"
 
             wasLastInstABranch = instr.isBranch() or instr.isJump()
-
             instructionOffset += 4
-            auxOffset += 4
 
         if common.GlobalConfig.ASM_TEXT_END_LABEL:
             output += f"{common.GlobalConfig.ASM_TEXT_END_LABEL} {self.name}\n"

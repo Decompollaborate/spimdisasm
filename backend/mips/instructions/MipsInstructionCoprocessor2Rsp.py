@@ -85,10 +85,6 @@ class InstructionCoprocessor2Rsp(InstructionCoprocessor2):
             return True
         return super().modifiesRt()
 
-    def getOpcodeName(self) -> str:
-        if not self.isImplemented():
-            return f"COP2(0x{self.function:02X})"
-        return super().getOpcodeName()
 
     def disassembleInstruction(self, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName()

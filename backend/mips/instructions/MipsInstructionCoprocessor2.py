@@ -9,7 +9,4 @@ from . import InstructionId, InstructionBase
 
 
 class InstructionCoprocessor2(InstructionBase):
-    def getOpcodeName(self) -> str:
-        if self.uniqueId == InstructionId.INVALID:
-            return f"COP2 (function: 0x{self.function:02X})"
-        return super().getOpcodeName()
+    pass

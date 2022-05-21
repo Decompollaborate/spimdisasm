@@ -118,7 +118,7 @@ class InstructionSpecial(InstructionBase):
 
         if InstructionConfig.SN64_DIV_FIX:
             if self.uniqueId in (InstructionId.DIV, InstructionId.DIVU):
-                self.descriptor.operands = ["{rs}, ", "{rt}"]
+                self.descriptor.operands = ["rs", "rt"]
 
 
     def blankOut(self):
@@ -126,11 +126,6 @@ class InstructionSpecial(InstructionBase):
         self.rt = 0
         self.rd = 0
         self.sa = 0
-
-    def getOpcodeName(self) -> str:
-        if not self.isImplemented():
-            return f"Special (function: 0x{self.function:02X})"
-        return super().getOpcodeName()
 
 
     def disassembleInstruction(self, immOverride: str|None=None) -> str:

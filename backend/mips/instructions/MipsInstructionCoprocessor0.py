@@ -70,8 +70,3 @@ class InstructionCoprocessor0(InstructionBase):
             self.rt = 0
             self.rd = 0
             self.sa = 0
-
-    def getOpcodeName(self) -> str:
-        if not self.isImplemented():
-            return f"COP0 (function: 0x{self.function:02X})"
-        return super().getOpcodeName()

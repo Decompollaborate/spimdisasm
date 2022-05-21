@@ -111,9 +111,10 @@ class SymbolBase(ElementBase):
             value = f"0x{w:08X}"
 
             # .elf relocated symbol
-            possibleReference = self.context.getRelocSymbol(self.inFileOffset + localOffset, self.sectionType)
-            if possibleReference is not None:
-                value = possibleReference.getNamePlusOffset(w)
+            if len(self.context.relocSymbols[self.sectionType]) > 0:
+                possibleReference = self.context.getRelocSymbol(self.inFileOffset + localOffset, self.sectionType)
+                if possibleReference is not None:
+                    value = possibleReference.getNamePlusOffset(w)
 
             # This word could be a reference to a symbol
             symbol = self.context.getGenericSymbol(w, tryPlusOffset=canReferenceSymbolsWithAddends)

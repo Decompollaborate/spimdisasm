@@ -136,6 +136,4 @@ class InstructionCoprocessor1(InstructionBase):
             self.sa = 0
 
     def getOpcodeName(self) -> str:
-        if not self.isImplemented():
-            return f"COP1 (function: 0x{self.function:02X})"
         return super().getOpcodeName().replace("_", ".")
