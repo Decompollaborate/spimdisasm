@@ -170,4 +170,4 @@ class GlobalConfig:
         if args.debug_symbol_finder is not None:
             GlobalConfig.PRINT_SYMBOL_FINDER_DEBUG_INFO = args.debug_symbol_finder
         if args.debug_unpaired_luis is not None:
-            GlobalConfig.PRINT_SYMBOL_FINDER_DEBUG_INFO = args.debug_unpaired_luis
+            GlobalConfig.PRINT_UNPAIRED_LUIS_DEBUG_INFO = args.debug_unpaired_luis

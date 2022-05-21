@@ -771,11 +771,11 @@ class Context:
 
 
     def parseArgs(self, args: argparse.Namespace):
-        if args.default_banned == False:
+        if args.default_banned != False:
             self.fillDefaultBannedSymbols()
-        if args.libultra_syms == False:
+        if args.libultra_syms != False:
             self.fillLibultraSymbols()
-        if not args.hardware_regs == False:
+        if not args.hardware_regs != False:
             self.fillHardwareRegs(args.named_hardware_regs)
 
         if args.functions is not None:
