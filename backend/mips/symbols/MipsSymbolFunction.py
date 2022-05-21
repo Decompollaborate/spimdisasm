@@ -135,16 +135,30 @@ class SymbolFunction(SymbolText):
 
         if luiInstr is not None:
             upperHalf = luiInstr.immediate << 16
-            if common.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES and luiInstr.immediate < 0x4000: # filter out stuff that may not be a real symbol
-                return None
-            if common.GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES and luiInstr.immediate >= 0xC000: # filter out stuff that may not be a real symbol
-                return None
         else:
             assert common.GlobalConfig.GP_VALUE is not None
             upperHalf = common.GlobalConfig.GP_VALUE
+
         lowerHalf = common.Utils.from2Complement(lowerInstr.immediate, 16)
         address = upperHalf + lowerHalf
         if address in self.context.bannedSymbols:
+            return None
+
+        # filter out stuff that may not be a real symbol
+        filterOut = common.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES and upperHalf < 0x40000000
+        filterOut |= common.GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES and upperHalf >= 0xC0000000
+        if filterOut:
+            if common.GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_CONSTANTS:
+                # Let's pretend this value is a constant
+                constant = address
+                self.referencedConstants.add(constant)
+
+                self.constantsPerInstruction[lowerOffset] = constant
+                if luiOffset is not None:
+                    self.constantsPerInstruction[luiOffset] = constant
+
+                    self.hiToLowDict[luiOffset] = lowerOffset
+                    self.lowToHiDict[lowerOffset] = luiOffset
             return None
 
         patchedAddress = address
@@ -611,7 +625,7 @@ class SymbolFunction(SymbolText):
                         labelSymbol = self.context.getGenericLabel(self.vram + branch)
                         if labelSymbol is not None:
                             immOverride = labelSymbol.name
-                            labelSymbol.referenceCounter += 1
+                            # labelSymbol.referenceCounter += 1
 
                     # in case we don't have access to vram or this label was not in context
                     if immOverride is None:
