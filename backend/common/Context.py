@@ -86,7 +86,7 @@ class ContextSymbolBase:
         if self.type is None:
             return ""
         if isinstance(self.type, SymbolSpecialType):
-            return "@" + self.type.name
+            return self.type.toStr()
         return self.type
 
     def getSymbolPlusOffset(self, address: int) -> str:

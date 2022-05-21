@@ -76,7 +76,7 @@ class SymbolBase(ElementBase):
                 return
 
             if self.sectionType == common.FileSectionType.Rodata:
-                if self.contextSym.type != "@jumptable":
+                if self.contextSym.type != common.SymbolSpecialType.jumptable:
                     self.contextSym.name = f"R_{self.vram:08X}"
             elif self.sectionType == common.FileSectionType.Bss:
                 self.contextSym.name = f"B_{self.vram:08X}"

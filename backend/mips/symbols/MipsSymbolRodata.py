@@ -58,7 +58,7 @@ class SymbolRodata(SymbolBase):
                 return
 
             symbolType = self.contextSym.getType()
-            if symbolType != "@jumptable":
+            if symbolType != common.SymbolSpecialType.jumptable:
                 if self.isFloat(symbolType, 0):
                     self.contextSym.name = f"FLT_{self.vram:08X}"
                 elif self.isDouble(symbolType, 0):

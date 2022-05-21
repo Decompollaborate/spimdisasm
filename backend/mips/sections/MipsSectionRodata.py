@@ -138,7 +138,7 @@ class SectionRodata(SectionBase):
                             offsetSym = self.context.getOffsetSymbol(inFileOffset, self.sectionType)
                             if offsetSym is not None:
                                 offsetSym.isLateRodata = True
-                                offsetSym.type = "@jumptable"
+                                offsetSym.type = common.SymbolSpecialType.jumptable
                         self.context.offsetSymbols[sectType][w] = contextOffsetSym
                         relocSymbol.name = relocName
                         # print(relocSymbol.name, f"{w:X}")
