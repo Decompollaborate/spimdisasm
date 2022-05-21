@@ -94,6 +94,8 @@ class SymbolBase(ElementBase):
     def disassembleAsData(self) -> str:
         output = self.getLabel()
 
+        canReferenceSymbolsWithAddends = self.vram in self.context.dataSymbolsWithReferencesWithAddends
+
         localOffset = 0
         i = 0
 
@@ -113,9 +115,9 @@ class SymbolBase(ElementBase):
                 value = possibleReference.getNamePlusOffset(w)
 
             # This word could be a reference to a symbol
-            symbol = self.context.getAnySymbol(w)
+            symbol = self.context.getGenericSymbol(w, tryPlusOffset=canReferenceSymbolsWithAddends)
             if symbol is not None:
-                value = symbol.name
+                value = symbol.getSymbolPlusOffset(w)
 
             comment = self.generateAsmLineComment(localOffset)
             output += f"{label}{comment} .word {value}"

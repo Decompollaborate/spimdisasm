@@ -271,6 +271,9 @@ class Context:
         self.loPatches: dict[int, int] = dict()
         "key: address of %lo, value: symbol's vram to use instead"
 
+        self.dataSymbolsWithReferencesWithAddends: set[int] = set()
+        "Contains the address of data symbols that are allow to have references to other symbols with addends"
+
         # Stuff that looks like pointers, but the disassembler shouldn't count it as a pointer
         self.bannedSymbols: set[int] = set()
 
@@ -353,6 +356,9 @@ class Context:
 
         if vramAddress in self.symbols:
             return self.symbols[vramAddress]
+
+        if vramAddress in self.fakeFunctions:
+            return self.fakeFunctions[vramAddress]
 
         if GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET and tryPlusOffset:
             vramIndex = bisect.bisect(self.symbolsVramSorted, vramAddress)
