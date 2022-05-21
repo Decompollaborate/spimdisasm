@@ -147,11 +147,16 @@ class SymbolFunction(SymbolText):
         if address in self.context.bannedSymbols:
             return None
 
-        self.referencedVRams.add(address)
-        contextSym = self.context.getGenericSymbol(address)
+        patchedAddress = address
+        patch = self.context.getLoPatch(lowerInstr.vram)
+        if patch is not None:
+            patchedAddress = patch
+
+        self.referencedVRams.add(patchedAddress)
+        contextSym = self.context.getGenericSymbol(patchedAddress)
         if contextSym is None:
             if common.GlobalConfig.ADD_NEW_SYMBOLS:
-                contextSym = self.context.addSymbol(address, None)
+                contextSym = self.context.addSymbol(patchedAddress, None)
                 instrType = lowerInstr.mapInstrToType()
                 if instrType is not None:
                     contextSym.setTypeIfUnset(instrType)
@@ -617,7 +622,20 @@ class SymbolFunction(SymbolText):
                 if not self.pointersRemoved and instructionOffset in self.pointersPerInstruction:
                     address = self.pointersPerInstruction[instructionOffset]
 
-                    symbol = self.context.getGenericSymbol(address, True)
+                    instrVram = instr.vram
+                    if instr.uniqueId == instructions.InstructionId.LUI:
+                        # we need to get the address of the lo instruction to get the patch
+                        if instructionOffset in self.hiToLowDict:
+                            loInstr = self.instructions[self.hiToLowDict[instructionOffset] // 4]
+                            instrVram = loInstr.vram
+
+                    # Check for user-defined symbol patches
+                    patchedAddress = self.context.getLoPatch(instrVram)
+                    if patchedAddress is not None:
+                        symbol = self.context.getGenericSymbol(patchedAddress, True, False)
+                    else:
+                        symbol = self.context.getGenericSymbol(address, True)
+
                     if symbol is not None:
                         immOverride = self.generateHiLoStr(instr, symbol.getSymbolPlusOffset(address))
 

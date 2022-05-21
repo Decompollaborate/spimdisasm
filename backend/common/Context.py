@@ -68,6 +68,8 @@ class ContextSymbolBase:
     def getSymbolPlusOffset(self, address: int) -> str:
         if self.address == address:
             return self.name
+        if self.address > address:
+            return f"{self.name} - 0x{self.address - address:X}"
         return f"{self.name} + 0x{address - self.address:X}"
 
     def getSymbolLabel(self) -> str:
@@ -266,6 +268,9 @@ class Context:
 
         self.newPointersInData: set[int] = set()
 
+        self.loPatches: dict[int, int] = dict()
+        "key: address of %lo, value: symbol's vram to use instead"
+
         # Stuff that looks like pointers, but the disassembler shouldn't count it as a pointer
         self.bannedSymbols: set[int] = set()
 
@@ -336,7 +341,7 @@ class Context:
 
         return None
 
-    def getGenericSymbol(self, vramAddress: int, tryPlusOffset: bool = True) -> ContextSymbol|None:
+    def getGenericSymbol(self, vramAddress: int, tryPlusOffset: bool = True, checkUpperLimit: bool = True) -> ContextSymbol|None:
         if vramAddress == 0:
             return None
 
@@ -355,7 +360,9 @@ class Context:
                 symVram = self.symbolsVramSorted[vramIndex-1]
                 contextSym = self.symbols[symVram]
 
-                if vramAddress > symVram and vramAddress < symVram + contextSym.size:
+                if vramAddress > symVram:
+                    if checkUpperLimit and vramAddress >= symVram + contextSym.size:
+                        return None
                     return contextSym
 
         return None
@@ -413,6 +420,12 @@ class Context:
             return self.constants[constantValue]
 
         return None
+
+    def getLoPatch(self, loInstrVram: int|None) -> int|None:
+        if loInstrVram is None:
+            return None
+        return self.loPatches.get(loInstrVram, None)
+
 
     def getOffsetSymbol(self, offset: int, sectionType: FileSectionType) -> ContextOffsetSymbol|None:
         if sectionType in self.offsetSymbols:
