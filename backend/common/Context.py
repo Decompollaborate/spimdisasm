@@ -752,7 +752,7 @@ class Context:
     def addParametersToArgParse(parser: argparse.ArgumentParser):
         contextParser = parser.add_argument_group("Context configuration")
 
-        contextParser.add_argument("--save-context", help="Saves the context to a file. The provided filename will be suffixed with the corresponding version.", metavar="FILENAME")
+        contextParser.add_argument("--save-context", help="Saves the context to a file", metavar="FILENAME")
 
 
         csvConfig = parser.add_argument_group("Context .csv input files")
@@ -764,18 +764,18 @@ class Context:
 
         symbolsConfig = parser.add_argument_group("Context default symbols configuration")
 
-        symbolsConfig.add_argument("--no-default-banned", help="Don't fill the list of default banned symbols", action="store_true")
-        symbolsConfig.add_argument("--no-libultra", help="Don't use built-in libultra symbols", action="store_true")
-        symbolsConfig.add_argument("--no-hardware-regs", help="Don't use built-in hardware registers symbols", action="store_true")
-        symbolsConfig.add_argument("--named-hardware-regs", help="Use actual names for the hardware registers", action="store_true")
+        symbolsConfig.add_argument("--default-banned", help="Toggles filling the list of default banned symbols. Defaults to True", action=argparse.BooleanOptionalAction)
+        symbolsConfig.add_argument("--libultra-syms", help="Toggles using the built-in libultra symbols. Defaults to True", action=argparse.BooleanOptionalAction)
+        symbolsConfig.add_argument("--hardware-regs", help="Toggles using the built-in hardware registers symbols. Defaults to True", action=argparse.BooleanOptionalAction)
+        symbolsConfig.add_argument("--named-hardware-regs", help="Use actual names for the hardware registers", action=argparse.BooleanOptionalAction)
 
 
     def parseArgs(self, args: argparse.Namespace):
-        if not args.no_default_banned:
+        if args.default_banned == False:
             self.fillDefaultBannedSymbols()
-        if not args.no_libultra:
+        if args.libultra_syms == False:
             self.fillLibultraSymbols()
-        if not args.no_hardware_regs:
+        if not args.hardware_regs == False:
             self.fillHardwareRegs(args.named_hardware_regs)
 
         if args.functions is not None:

@@ -58,35 +58,36 @@ class InstructionConfig:
 
     @staticmethod
     def addParametersToArgParse(parser: argparse.ArgumentParser):
-        mipsInstr = parser.add_argument_group("MIPS instructions configuration")
+        registerNames = parser.add_argument_group("MIPS register names options")
 
-        mipsInstr.add_argument("--no-named-registers", help="Disables named registers for every instruction. This flag takes precedence over other similar flags", action="store_true")
+        registerNames.add_argument("--named-registers", help=f"Disables named registers for every instruction. This flag takes precedence over similar flags in this category. Defaults to {InstructionConfig.NAMED_REGISTERS}", action=argparse.BooleanOptionalAction)
 
         abi_choices = ["numeric", "32", "o32", "n32", "n64"]
-        mipsInstr.add_argument("--Mgpr-names", help=f"Use GPR names according to the specified ABI. Defaults to {InstructionConfig.GPR_ABI_NAMES.name}", choices=abi_choices)
-        mipsInstr.add_argument("--Mfpr-names", help=f"Use FPR names according to the specified ABI. Defaults to {InstructionConfig.FPR_ABI_NAMES.name}", choices=abi_choices)
-        mipsInstr.add_argument("--Mreg-names", help=f"Use GPR and FPR names according to the specified ABI. This flag takes precedence over --Mgpr-names and --Mfpr-names", choices=abi_choices)
+        registerNames.add_argument("--Mgpr-names", help=f"Use GPR names according to the specified ABI. Defaults to {InstructionConfig.GPR_ABI_NAMES.name}", choices=abi_choices)
+        registerNames.add_argument("--Mfpr-names", help=f"Use FPR names according to the specified ABI. Defaults to {InstructionConfig.FPR_ABI_NAMES.name}", choices=abi_choices)
+        registerNames.add_argument("--Mreg-names", help=f"Use GPR and FPR names according to the specified ABI. This flag takes precedence over --Mgpr-names and --Mfpr-names", choices=abi_choices)
 
-        mipsInstr.add_argument("--no-use-fpccsr", help="Disables using the FpcCsr alias for float register $31 when using the numeric ABI.", action="store_true")
+        registerNames.add_argument("--use-fpccsr", help=f"Toggles using the FpcCsr alias for float register $31 when using the numeric ABI. Defaults to {InstructionConfig.USE_FPCCSR}", action=argparse.BooleanOptionalAction)
 
-        mipsInstr.add_argument("--no-cop0-named-registers", help="Disables using the built-in names for registers of the VR4300's Coprocessor 0", action="store_true")
-        mipsInstr.add_argument("--no-rsp-cop0-named-registers", help="Disables using the built-in names for registers of the RSP's Coprocessor 0", action="store_true")
-
-        mipsInstr.add_argument("--no-pseudo-instr", help=f"Disables producing pseudo instructions. Defaults to {InstructionConfig.PSEUDO_INSTRUCTIONS}", action="store_true")
-
-        mipsInstr.add_argument("--sn64-div-fix", help="Enables a few fixes for SN64's assembler related to div/divu instructions", action="store_true")
+        registerNames.add_argument("--cop0-named-registers", help=f"Toggles using the built-in names for registers of the VR4300's Coprocessor 0. Defaults to {InstructionConfig.USE_FPCCSR}", action=argparse.BooleanOptionalAction)
+        registerNames.add_argument("--rsp-cop0-named-registers", help=f"Toggles using the built-in names for registers of the RSP's Coprocessor 0. Defaults to {InstructionConfig.USE_FPCCSR}", action=argparse.BooleanOptionalAction)
 
 
-        miscOpts = mipsInstr.add_argument_group("Misc options")
+        miscOpts = parser.add_argument_group("MIPS misc instructions options")
+
+        miscOpts.add_argument("--pseudo-instr", help=f"Toggles producing pseudo instructions. Defaults to {InstructionConfig.PSEUDO_INSTRUCTIONS}", action=argparse.BooleanOptionalAction)
+
+        miscOpts.add_argument("--sn64-div-fix", help=f"Enables a few fixes for SN64's assembler related to div/divu instructions. Defaults to {InstructionConfig.SN64_DIV_FIX}", action=argparse.BooleanOptionalAction)
 
         miscOpts.add_argument("--opcode-ljust", help=f"Set the minimal number of characters to left-align the opcode name. Defaults to {InstructionConfig.OPCODE_LJUST}")
 
-        miscOpts.add_argument("--no-unk-instr-comment", help=f"Disables the extra comment produced after unknown instructions. Defaults to {InstructionConfig.UNKNOWN_INSTR_COMMENT}", action="store_true")
+        miscOpts.add_argument("--unk-instr-comment", help=f"Disables the extra comment produced after unknown instructions. Defaults to {InstructionConfig.UNKNOWN_INSTR_COMMENT}", action=argparse.BooleanOptionalAction)
 
 
     @classmethod
     def parseArgs(cls, args: argparse.Namespace):
-        InstructionConfig.NAMED_REGISTERS = not args.no_named_registers
+        if args.named_registers is not None:
+            InstructionConfig.NAMED_REGISTERS = args.named_registers
 
         if args.Mgpr_names:
             InstructionConfig.GPR_ABI_NAMES = AbiNames.fromStr(args.Mgpr_names)
@@ -96,16 +97,22 @@ class InstructionConfig:
             InstructionConfig.GPR_ABI_NAMES = AbiNames.fromStr(args.Mreg_names)
             InstructionConfig.FPR_ABI_NAMES = AbiNames.fromStr(args.Mreg_names)
 
-        InstructionConfig.USE_FPCCSR = not args.no_use_fpccsr
+        if args.use_fpccsr is not None:
+            InstructionConfig.USE_FPCCSR = args.use_fpccsr
 
-        InstructionConfig.VR4300_COP0_NAMED_REGISTERS = not args.no_cop0_named_registers
-        InstructionConfig.VR4300_RSP_COP0_NAMED_REGISTERS = not args.no_rsp_cop0_named_registers
+        if args.cop0_named_registers is not None:
+            InstructionConfig.VR4300_COP0_NAMED_REGISTERS = args.cop0_named_registers
+        if args.rsp_cop0_named_registers is not None:
+            InstructionConfig.VR4300_RSP_COP0_NAMED_REGISTERS = args.rsp_cop0_named_registers
 
-        InstructionConfig.PSEUDO_INSTRUCTIONS = not args.no_pseudo_instr
+        if args.pseudo_instr is not None:
+            InstructionConfig.PSEUDO_INSTRUCTIONS = args.pseudo_instr
 
-        InstructionConfig.SN64_DIV_FIX = args.sn64_div_fix
+        if args.sn64_div_fix is not None:
+            InstructionConfig.SN64_DIV_FIX = args.sn64_div_fix
 
         if args.opcode_ljust is not None:
-            InstructionConfig.OPCODE_LJUST = int(args.opcode_ljust)
+            InstructionConfig.OPCODE_LJUST = int(args.opcode_ljust, 0)
 
-        InstructionConfig.UNKNOWN_INSTR_COMMENT = not args.no_unk_instr_comment
+        if args.unk_instr_comment is not None:
+            InstructionConfig.UNKNOWN_INSTR_COMMENT = args.unk_instr_comment

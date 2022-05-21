@@ -46,7 +46,7 @@ def getStrHash(byte_array: bytearray) -> str:
 
 def writeBytearrayToFile(filepath: str, array_of_bytes: bytearray):
     with open(filepath, mode="wb") as f:
-       f.write(array_of_bytes)
+        f.write(array_of_bytes)
 
 def readFileAsBytearray(filepath: str) -> bytearray:
     if not os.path.exists(filepath):

@@ -30,7 +30,11 @@ def disassemblerMain():
 
     parser.add_argument("--split-functions", help="Enables the function and rodata splitter. Expects a path to place the splited functions", metavar="PATH")
 
-    parser.add_argument("--nuke-pointers", help="Use every technique available to remove pointers", action="store_true")
+    parser.add_argument("--nuke-pointers", help="Use every technique available to remove pointers", action=argparse.BooleanOptionalAction)
+    parser.add_argument("--ignore-words", help="A space separated list of hex numbers. Any word differences which starts in any of the provided arguments will be ignored. Max value: FF. Only works when --nuke-pointers is passed", action="extend", nargs="+")
+
+    parser.add_argument("--write-binary", help=f"Produce a binary from the processed file. Defaults to {disasmBack.GlobalConfig.WRITE_BINARY}", action=argparse.BooleanOptionalAction)
+
 
     disasmBack.Context.addParametersToArgParse(parser)
 
@@ -48,6 +52,11 @@ def disassemblerMain():
     disasmBack.GlobalConfig.IGNORE_BRANCHES = args.nuke_pointers
     if args.nuke_pointers:
         disasmBack.GlobalConfig.IGNORE_WORD_LIST.add(0x80)
+        if args.ignore_words:
+            for upperByte in args.ignore_words:
+                disasmBack.GlobalConfig.IGNORE_WORD_LIST.add(int(upperByte, 16))
+    if args.write_binary is not None:
+        disasmBack.GlobalConfig.WRITE_BINARY = args.write_binary
 
     disasmBack.GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET = True
     disasmBack.GlobalConfig.TRUST_USER_FUNCTIONS = True

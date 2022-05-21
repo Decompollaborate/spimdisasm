@@ -17,7 +17,7 @@ def disasmdisMain():
 
     parser.add_argument("input", help="Hex words to be disassembled. Leading '0x' must be omitted")
 
-    parser.add_argument("--raw-instr", help="Print raw instructions without performing analyzis on them", action="store_true")
+    parser.add_argument("--raw-instr", help="Print raw instructions without performing analyzis on them", action=argparse.BooleanOptionalAction)
 
     parser.add_argument("--endian", help="Set the endianness of input files. Defaults to 'big'", choices=["big", "little", "middle"])
 
