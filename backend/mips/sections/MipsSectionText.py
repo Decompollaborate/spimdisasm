@@ -46,14 +46,11 @@ class SectionText(SectionBase):
             instrsList.append(instr)
             currentVram += 4
 
-        trackedRegisters: dict[int, int] = dict()
-        registersValues: dict[int, int] = dict()
         instructionOffset = 0
         currentInstructionStart = 0
         currentFunctionSym = self.context.getFunction(self.getVramOffset(instructionOffset))
 
         isLikelyHandwritten = self.isHandwritten
-        newFunctions = list()
 
         isInstrImplemented = True
         index = 0
@@ -66,19 +63,11 @@ class SectionText(SectionBase):
             if functionEnded:
                 functionEnded = False
 
-                if not isLikelyHandwritten or self.isRsp:
-                    for isFake, targetVram, targetFuncName in newFunctions:
-                        if isFake:
-                            self.context.addFakeFunction(targetVram, targetFuncName)
-                        else:
-                            self.context.addFunction(targetVram, targetFuncName)
-
-                newFunctions.clear()
-
                 isLikelyHandwritten = self.isHandwritten
                 index += 1
                 instructionOffset += 4
                 isboundary = False
+                # Loop over until we find a instruction that isn't a nop
                 while index < nInstr:
                     instr = instrsList[index]
                     if instr.uniqueId != instructions.InstructionId.NOP:
@@ -88,9 +77,6 @@ class SectionText(SectionBase):
                     index += 1
                     instructionOffset += 4
                     isboundary = True
-
-                trackedRegisters.clear()
-                registersValues.clear()
 
                 currentInstructionStart = instructionOffset
                 currentFunctionSym = self.context.getFunction(self.getVramOffset(instructionOffset))
@@ -107,10 +93,11 @@ class SectionText(SectionBase):
                     isLikelyHandwritten = True
                 elif isinstance(instr, instructions.InstructionCoprocessor0):
                     isLikelyHandwritten = True
-                elif instr.getRegisterName(instr.rs) in ("$k0", "$k1"):
-                    isLikelyHandwritten = True
-                elif instr.getRegisterName(instr.rt) in ("$k0", "$k1"):
-                    isLikelyHandwritten = True
+                elif instr.isIType() and not instr.isFloatInstruction():
+                    if instr.rs in (26, 27): # "$k0", "$k1"
+                        isLikelyHandwritten = True
+                    elif instr.rt in (26, 27): # "$k0", "$k1"
+                        isLikelyHandwritten = True
 
             if instr.isBranch():
                 branch = common.Utils.from2Complement(instr.immediate, 16) + 1
@@ -137,34 +124,10 @@ class SectionText(SectionBase):
                                 break
                             j -= 1
 
-            elif instr.isIType():
-                isLui = instr.uniqueId == instructions.InstructionId.LUI
-                if isLui:
-                    if instr.immediate >= 0x4000: # filter out stuff that may not be a real symbol
-                        trackedRegisters[instr.rt] = instructionOffset//4
-                elif instr.isIType() and instr.uniqueId not in (instructions.InstructionId.ANDI, instructions.InstructionId.ORI, instructions.InstructionId.XORI, instructions.InstructionId.CACHE):
-                    rs = instr.rs
-                    if rs in trackedRegisters:
-                        luiInstr = instrsList[trackedRegisters[rs]]
-                        upperHalf = luiInstr.immediate << 16
-                        lowerHalf = common.Utils.from2Complement(instr.immediate, 16)
-                        registersValues[instr.rt] = upperHalf + lowerHalf
-
-            elif instr.isJType():
-                target = instr.getInstrIndexAsVram()
-                if instr.uniqueId == instructions.InstructionId.J and not self.isRsp:
-                    # newFunctions.append((True, target, f"fakefunc_{target:08X}"))
-                    newFunctions.append((True, target, f".L{target:08X}"))
-                else:
-                    newFunctions.append((False, target, f"func_{target:08X}"))
-
             if not (farthestBranch > 0):
                 if instr.uniqueId == instructions.InstructionId.JR:
-                    if instr.getRegisterName(instr.rs) == "$ra":
+                    if instr.rs == 31: # $ra
                         functionEnded = True
-                    else:
-                        if instr.rs in registersValues:
-                            functionEnded = True
                 elif instr.uniqueId == instructions.InstructionId.J and (isLikelyHandwritten or (common.GlobalConfig.DISASSEMBLE_RSP and self.isRsp)):
                     functionEnded = True
 
@@ -207,17 +170,18 @@ class SectionText(SectionBase):
             vram = None
             if self.vram is not None:
                 vram = self.getVramOffset(start*4)
-                funcSymbol = self.context.getFunction(vram)
-                if funcSymbol is not None:
-                    funcName = funcSymbol.name
-                else:
-                    funcName = f"func_{vram:06X}"
 
                 if common.GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS or not hasUnimplementedIntrs:
-                    self.context.addFunction(vram, funcName)
                     funcSymbol = self.context.getFunction(vram)
+                    isAutogenerated = True
                     if funcSymbol is not None:
-                        funcSymbol.isDefined = True
+                        funcName = funcSymbol.name
+                        isAutogenerated = funcSymbol.isAutogenerated
+                    else:
+                        funcName = f"func_{vram:06X}"
+                    funcSymbol = self.context.addFunction(vram, funcName)
+                    funcSymbol.isAutogenerated = isAutogenerated
+                    funcSymbol.isDefined = True
                 else:
                     if vram in self.context.symbols:
                         self.context.symbols[vram].isDefined = True

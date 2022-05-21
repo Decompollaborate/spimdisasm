@@ -48,7 +48,6 @@ class InstructionBase:
         30: "$fp",
         31: "$ra",
     }
-
     GprN32RegisterNames = {
         0:  "$zero",
         1:  "$at",

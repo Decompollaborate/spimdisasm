@@ -236,9 +236,9 @@ class SymbolFunction(SymbolText):
             if instr.isRType() or (instr.isBranch() and isinstance(instr, instructions.InstructionNormal)):
                 # $at is a one-use register
                 at = -1
-                if instr.getRegisterName(instr.rs) == "$at":
+                if instr.rs == 1:
                     at = instr.rs
-                elif instr.getRegisterName(instr.rt) == "$at":
+                elif instr.rt == 1:
                     at = instr.rt
 
                 if at in trackedRegistersAll:
@@ -282,9 +282,58 @@ class SymbolFunction(SymbolText):
                 if register in registersValues:
                     del registersValues[register]
 
-    def _lookAheadSymbolFinder(self, instr: instructions.InstructionBase, instructionOffset: int, trackedRegistersOriginal: dict[int, int], trackedRegistersAllOriginal: dict[int, int]):
+    def _tryToSetSymbolType(self, instr: instructions.InstructionBase, registersValues: dict[int, tuple[int, int]]):
+        instrType = instr.mapInstrToType()
+        if instrType is None or instr.rs not in registersValues:
+            return
+
+        address, _ = registersValues[instr.rs]
+        contextSym = self.context.getSymbol(address, tryPlusOffset=False)
+        if contextSym is not None:
+            contextSym.setTypeIfUnset(instrType)
+
+    def _symbolFinder(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase, instructionOffset: int, trackedRegisters: dict[int, int], trackedRegistersAll: dict[int, int], registersValues: dict[int, tuple[int, int]]):
+        if instr.uniqueId == instructions.InstructionId.LUI:
+            if not prevInstr.isBranchLikely():
+                # If the previous instructions is a branch likely, then nulify
+                # the effects of this instruction for future analysis
+                trackedRegisters[instr.rt] = instructionOffset//4
+            trackedRegistersAll[instr.rt] = instructionOffset//4
+            return False
+
+        if instr.uniqueId == instructions.InstructionId.ORI:
+            # Constants
+            rs = instr.rs
+            if rs in trackedRegistersAll:
+                luiOffset = trackedRegistersAll[rs] * 4
+                luiInstr = self.instructions[luiOffset//4]
+                constant = self._processConstant(luiInstr, luiOffset, instr, instructionOffset)
+                if constant is not None:
+                    registersValues[instr.rt] = (constant, instructionOffset)
+                    return True
+            return False
+
+        if instr.uniqueId not in (instructions.InstructionId.ANDI, instructions.InstructionId.XORI, instructions.InstructionId.CACHE, instructions.InstructionId.SLTI, instructions.InstructionId.SLTIU):
+            rs = instr.rs
+            if rs in trackedRegisters:
+                luiInstr = self.instructions[trackedRegisters[rs]]
+                address = self._processSymbol(luiInstr, trackedRegisters[rs]*4, instr, instructionOffset)
+                if address is not None:
+                    registersValues[instr.rt] = (address, instructionOffset)
+                    return True
+            elif rs == 28: # $gp
+                address = self._processSymbol(None, None, instr, instructionOffset)
+                if address is not None:
+                    registersValues[instr.rt] = (address, instructionOffset)
+                    return True
+
+        return False
+
+
+    def _lookAheadSymbolFinder(self, instr: instructions.InstructionBase, instructionOffset: int, trackedRegistersOriginal: dict[int, int], trackedRegistersAllOriginal: dict[int, int], registersValuesOriginal: dict[int, tuple[int, int]]):
         trackedRegisters = dict(trackedRegistersOriginal)
         trackedRegistersAll = dict(trackedRegistersAllOriginal)
+        registersValues = dict(registersValuesOriginal)
 
         lastInstr = self.instructions[instructionOffset//4 - 1]
         if not lastInstr.isBranch():
@@ -296,7 +345,7 @@ class SymbolFunction(SymbolText):
         if branchOffset <= 0 or branch//4 >= len(self.instructions):
             return
 
-        self._removeRegisterFromTrackers(instr, None, None, trackedRegisters, trackedRegistersAll, {}, False)
+        self._removeRegisterFromTrackers(instr, None, None, trackedRegisters, trackedRegistersAll, registersValues, False)
 
         pairedLoFound = False
         i = 0
@@ -313,6 +362,7 @@ class SymbolFunction(SymbolText):
                     # Only check the 5 next instructions in the target branch for non LUI instructions
                     return
 
+            wasRegisterValuesUpdated = False
             prevTargetInstr = self.instructions[branch//4 - 1]
             targetInstr = self.instructions[branch//4]
 
@@ -324,51 +374,78 @@ class SymbolFunction(SymbolText):
                     continue
 
             if targetInstr.isIType():
-                if targetInstr.uniqueId == instructions.InstructionId.LUI:
-                    if not prevTargetInstr.isBranchLikely():
-                        # If the previous instructions is a branch likely, then nulify
-                        # the effects of this instruction for future analysis
-                        trackedRegisters[targetInstr.rt] = branch//4
-                    trackedRegistersAll[targetInstr.rt] = branch//4
+                if self._symbolFinder(targetInstr, prevTargetInstr, branch, trackedRegisters, trackedRegistersAll, registersValues):
+                    wasRegisterValuesUpdated = True
+                    if instr.uniqueId == instructions.InstructionId.LUI and targetInstr.rs == instr.rt:
+                        pairedLoFound = True
 
-                elif targetInstr.uniqueId == instructions.InstructionId.ORI:
-                    # Constants
-                    rs = targetInstr.rs
-                    if rs in trackedRegistersAll:
-                        luiOffset = trackedRegistersAll[rs] * 4
-                        luiInstr = self.instructions[luiOffset//4]
-                        self._processConstant(luiInstr, luiOffset, targetInstr, branch)
-                        if instr.uniqueId == instructions.InstructionId.LUI and rs == instr.rt:
-                            pairedLoFound = True
-
-                elif targetInstr.uniqueId not in (instructions.InstructionId.ANDI, instructions.InstructionId.XORI, instructions.InstructionId.CACHE, instructions.InstructionId.SLTI, instructions.InstructionId.SLTIU):
-                    rs = targetInstr.rs
-                    if rs in trackedRegisters:
-                        luiInstr = self.instructions[trackedRegisters[rs]]
-                        self._processSymbol(luiInstr, trackedRegisters[rs]*4, targetInstr, branch)
-                        if instr.uniqueId == instructions.InstructionId.LUI and rs == instr.rt:
-                            pairedLoFound = True
+                self._tryToSetSymbolType(instr, registersValues)
 
             if prevTargetInstr.uniqueId == instructions.InstructionId.B or (prevTargetInstr.uniqueId == instructions.InstructionId.BEQ and prevTargetInstr.rt == 0 and prevTargetInstr.rs == 0):
                 # TODO: Consider following branches
-                # self._lookAheadSymbolFinder(targetInstr, branch, trackedRegisters, trackedRegistersAll)
+                # self._lookAheadSymbolFinder(targetInstr, branch, trackedRegisters, trackedRegistersAll, registersValues)
                 return
             if prevTargetInstr.isJType():
                 return
             if prevTargetInstr.isJump():
                 return
 
-            self._removeRegisterFromTrackers(targetInstr, prevTargetInstr, None, trackedRegisters, trackedRegistersAll, {}, False)
+            self._removeRegisterFromTrackers(targetInstr, prevTargetInstr, None, trackedRegisters, trackedRegistersAll, registersValues, wasRegisterValuesUpdated)
 
             branch += 4
             i += 1
+
+    def _processElfRelocSymbols(self):
+        if len(self.context.relocSymbols[common.FileSectionType.Text]) == 0:
+            return
+
+        # Process reloc symbols (probably from a .elf file)
+        instructionOffset = 0
+        inFileOffset = self.inFileOffset
+        for instr in self.instructions:
+            relocSymbol = self.context.getRelocSymbol(inFileOffset, common.FileSectionType.Text)
+            if relocSymbol is not None:
+                if relocSymbol.name.startswith("."):
+                    sectType = common.FileSectionType.fromStr(relocSymbol.name)
+
+                    if instructionOffset in self.pointersPerInstruction:
+                        if instructionOffset in self.referencedJumpTableOffsets:
+                            # Jump tables
+                            addressOffset = self.pointersPerInstruction[instructionOffset]
+                            if relocSymbol.name != ".rodata":
+                                common.Utils.eprint(f"Warning. Jumptable referenced in reloc does not have '.rodata' as its name")
+                            contextOffsetSym = self.context.addOffsetJumpTable(addressOffset, sectType)
+                            contextOffsetSym.referenceCounter += 1
+                            relocSymbol.name = contextOffsetSym.name
+                            self.pointersPerInstruction[instructionOffset] = 0
+                            if instructionOffset in self.lowToHiDict:
+                                luiOffset = self.lowToHiDict[instructionOffset]
+                                otherReloc = self.context.getRelocSymbol(self.inFileOffset+luiOffset, common.FileSectionType.Text)
+                                if otherReloc is not None:
+                                    otherReloc.name = relocSymbol.name
+                                    self.pointersPerInstruction[luiOffset] = 0
+                        else:
+                            addressOffset = self.pointersPerInstruction[instructionOffset]
+                            relocName = f"{relocSymbol.name}_{addressOffset:06X}"
+                            isStatic = False
+                            if relocName.startswith("."):
+                                isStatic = True
+                                relocName = relocName[1:]
+                            # print(relocName, addressOffset, instr)
+                            contextOffsetSym = common.ContextOffsetSymbol(addressOffset, relocName, sectType)
+                            contextOffsetSym.isStatic = isStatic
+                            self.context.offsetSymbols[sectType][addressOffset] = contextOffsetSym
+                            relocSymbol.name = relocName
+                            self.pointersPerInstruction[instructionOffset] = 0
+            inFileOffset += 4
+            instructionOffset += 4
+
 
     def analyze(self):
         if not common.GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS and self.hasUnimplementedIntrs:
             if self.vram is not None:
                 offset = 0
                 for instr in self.instructions:
-                    # currentVram = self.vram + offset
                     currentVram = self.getVramOffset(offset)
                     contextSym = self.context.getSymbol(currentVram, False)
                     if contextSym is not None:
@@ -407,6 +484,11 @@ class SymbolFunction(SymbolText):
                     self.isLikelyHandwritten = True
                 elif isinstance(instr, instructions.InstructionCoprocessor0):
                     self.isLikelyHandwritten = True
+                elif instr.isIType() and not instr.isFloatInstruction():
+                    if instr.rs in (26, 27): # "$k0", "$k1"
+                        self.isLikelyHandwritten = True
+                    elif instr.rt in (26, 27): # "$k0", "$k1"
+                        self.isLikelyHandwritten = True
 
             if not common.GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS and not instr.isImplemented():
                 # Abort analysis
@@ -415,20 +497,20 @@ class SymbolFunction(SymbolText):
 
             if instr.isBranch():
                 branch = instructionOffset + instr.getBranchOffset()
-                if self.vram is not None:
-                    self.referencedVRams.add(self.vram + branch)
-                    auxLabel = self.context.getGenericLabel(self.vram + branch)
-                    if auxLabel is not None:
-                        auxLabel.referenceCounter += 1
-                        label = auxLabel.name
-                    else:
-                        label = f".L{self.vram + branch:06X}"
-                else:
-                    label = f".L{self.inFileOffset + branch:06X}"
+                targetBranchVram = self.getVramOffset(branch)
 
-                self.localLabels[branch] = label
-                if self.vram is not None:
-                    self.context.addBranchLabel(self.vram + branch, label)
+                self.referencedVRams.add(targetBranchVram)
+                labelSym = self.context.getGenericLabel(targetBranchVram)
+                if labelSym is not None:
+                    labelName = labelSym.name
+                else:
+                    labelName = f".L{targetBranchVram:06X}"
+
+                if labelSym is None:
+                    labelSym = self.context.addBranchLabel(targetBranchVram, labelName)
+                labelSym.referenceCounter += 1
+
+                self.localLabels[branch] = labelName
                 self.branchInstructions.append(instructionOffset)
 
             elif instr.isJType():
@@ -438,7 +520,6 @@ class SymbolFunction(SymbolText):
                         # RSP address space?
                         self.isLikelyHandwritten = True
                 if instr.uniqueId == instructions.InstructionId.J and not self.isRsp:
-                    # self.context.addFakeFunction(target, f"fakefunc_{target:08X}")
                     self.context.addFakeFunction(target, f".L{target:08X}")
                 else:
                     self.context.addFunction(target, f"func_{target:08X}")
@@ -446,47 +527,14 @@ class SymbolFunction(SymbolText):
 
             # symbol finder
             elif instr.isIType():
-                if instr.uniqueId == instructions.InstructionId.LUI:
-                    if not prevInstr.isBranchLikely():
-                        # If the previous instructions is a branch likely, then nulify
-                        # the effects of this instruction for future analysis
-                        trackedRegisters[instr.rt] = instructionOffset//4
-                    trackedRegistersAll[instr.rt] = instructionOffset//4
-                else:
-                    if instr.uniqueId == instructions.InstructionId.ORI:
-                        # Constants
-                        rs = instr.rs
-                        if rs in trackedRegistersAll:
-                            luiOffset = trackedRegistersAll[rs] * 4
-                            luiInstr = self.instructions[luiOffset//4]
-                            constant = self._processConstant(luiInstr, luiOffset, instr, instructionOffset)
-                            if constant is not None:
-                                registersValues[instr.rt] = (constant, instructionOffset)
-                    elif instr.uniqueId not in (instructions.InstructionId.ANDI, instructions.InstructionId.XORI, instructions.InstructionId.CACHE, instructions.InstructionId.SLTI, instructions.InstructionId.SLTIU):
-                        rs = instr.rs
-                        if rs in trackedRegisters:
-                            luiInstr = self.instructions[trackedRegisters[rs]]
-                            address = self._processSymbol(luiInstr, trackedRegisters[rs]*4, instr, instructionOffset)
-                            if address is not None:
-                                registersValues[instr.rt] = (address, instructionOffset)
-                                wasRegisterValuesUpdated = True
-                        elif instr.getRegisterName(rs) == "$gp":
-                            address = self._processSymbol(None, None, instr, instructionOffset)
-                            if address is not None:
-                                registersValues[instr.rt] = (address, instructionOffset)
-                                wasRegisterValuesUpdated = True
+                if self._symbolFinder(instr, prevInstr, instructionOffset, trackedRegisters, trackedRegistersAll, registersValues):
+                    wasRegisterValuesUpdated = True
 
-                        instrType = instr.mapInstrToType()
-                        if instrType is not None:
-                            if rs in registersValues:
-                                address, _ = registersValues[rs]
-                                contextSym = self.context.getSymbol(address, tryPlusOffset=False)
-                                if contextSym is not None:
-                                    contextSym.setTypeIfUnset(instrType)
+                self._tryToSetSymbolType(instr, registersValues)
 
             elif instr.uniqueId == instructions.InstructionId.JR:
                 rs = instr.rs
-                if instr.getRegisterName(rs) != "$ra":
+                if rs != 31: # $ra
                     if rs in registersValues:
                         # print(instructionOffset, rs, trackedRegisters, trackedRegistersAll, registersValues, self.pointersPerInstruction)
                         address, jmptblSeterOffset = registersValues[rs]
@@ -498,53 +546,14 @@ class SymbolFunction(SymbolText):
             self._removeRegisterFromTrackers(instr, prevInstr, currentVram, trackedRegisters, trackedRegistersAll, registersValues, wasRegisterValuesUpdated)
 
             # look-ahead symbol finder
-            self._lookAheadSymbolFinder(instr, instructionOffset, trackedRegisters, trackedRegistersAll)
+            self._lookAheadSymbolFinder(instr, instructionOffset, trackedRegisters, trackedRegistersAll, registersValues)
 
             instructionOffset += 4
 
         self._printSymbolFinderDebugInfo_UnpairedLuis()
 
-        if len(self.context.relocSymbols[common.FileSectionType.Text]) > 0:
-            # Process reloc symbols (probably from a .elf file)
-            instructionOffset = 0
-            inFileOffset = self.inFileOffset
-            for instr in self.instructions:
-                relocSymbol = self.context.getRelocSymbol(inFileOffset, common.FileSectionType.Text)
-                if relocSymbol is not None:
-                    if relocSymbol.name.startswith("."):
-                        sectType = common.FileSectionType.fromStr(relocSymbol.name)
+        self._processElfRelocSymbols()
 
-                        if instructionOffset in self.pointersPerInstruction:
-                            if instructionOffset in self.referencedJumpTableOffsets:
-                                # Jump tables
-                                addressOffset = self.pointersPerInstruction[instructionOffset]
-                                if relocSymbol.name != ".rodata":
-                                    common.Utils.eprint(f"Warning. Jumptable referenced in reloc does not have '.rodata' as its name")
-                                contextOffsetSym = self.context.addOffsetJumpTable(addressOffset, sectType)
-                                contextOffsetSym.referenceCounter += 1
-                                relocSymbol.name = contextOffsetSym.name
-                                self.pointersPerInstruction[instructionOffset] = 0
-                                if instructionOffset in self.lowToHiDict:
-                                    luiOffset = self.lowToHiDict[instructionOffset]
-                                    otherReloc = self.context.getRelocSymbol(self.inFileOffset+luiOffset, common.FileSectionType.Text)
-                                    if otherReloc is not None:
-                                        otherReloc.name = relocSymbol.name
-                                        self.pointersPerInstruction[luiOffset] = 0
-                            else:
-                                addressOffset = self.pointersPerInstruction[instructionOffset]
-                                relocName = f"{relocSymbol.name}_{addressOffset:06X}"
-                                isStatic = False
-                                if relocName.startswith("."):
-                                    isStatic = True
-                                    relocName = relocName[1:]
-                                # print(relocName, addressOffset, instr)
-                                contextOffsetSym = common.ContextOffsetSymbol(addressOffset, relocName, sectType)
-                                contextOffsetSym.isStatic = isStatic
-                                self.context.offsetSymbols[sectType][addressOffset] = contextOffsetSym
-                                relocSymbol.name = relocName
-                                self.pointersPerInstruction[instructionOffset] = 0
-                inFileOffset += 4
-                instructionOffset += 4
 
     def countDiffOpcodes(self, other: SymbolFunction) -> int:
         result = 0
@@ -612,7 +621,7 @@ class SymbolFunction(SymbolText):
         for i in range(self.nInstr-1, 0-1, -1):
             instr = self.instructions[i]
             if instr.uniqueId != instructions.InstructionId.NOP:
-                if instr.uniqueId == instructions.InstructionId.JR and instr.getRegisterName(instr.rs) == "$ra":
+                if instr.uniqueId == instructions.InstructionId.JR and instr.rs == 31: #$ra
                     first_nop += 1
                 break
             first_nop = i
@@ -656,11 +665,10 @@ class SymbolFunction(SymbolText):
             if instr.isBranch():
                 if not common.GlobalConfig.IGNORE_BRANCHES:
                     branch = instructionOffset + instr.getBranchOffset()
-                    if self.vram is not None:
-                        labelSymbol = self.context.getGenericLabel(self.vram + branch)
-                        if labelSymbol is not None:
-                            immOverride = labelSymbol.name
-                            # labelSymbol.referenceCounter += 1
+                    targetBranchVram = self.getVramOffset(branch)
+                    labelSymbol = self.context.getGenericLabel(targetBranchVram)
+                    if labelSymbol is not None:
+                        immOverride = labelSymbol.name
 
                     # in case we don't have access to vram or this label was not in context
                     if immOverride is None:

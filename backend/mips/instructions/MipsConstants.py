@@ -584,10 +584,10 @@ instructionDescriptorDict: dict[InstructionId|InstructionVectorId, InstrDescript
     InstructionId.ERET      : InstrDescriptor([], InstrType.typeUnknown),
 
     # OP IMM
-    InstructionId.BC0T      : InstrDescriptor(["IMM"], InstrType.typeUnknown, isBranch=True),
-    InstructionId.BC0F      : InstrDescriptor(["IMM"], InstrType.typeUnknown, isBranch=True),
-    InstructionId.BC0TL     : InstrDescriptor(["IMM"], InstrType.typeUnknown, isBranch=True, isBranchLikely=True),
-    InstructionId.BC0FL     : InstrDescriptor(["IMM"], InstrType.typeUnknown, isBranch=True, isBranchLikely=True),
+    InstructionId.BC0T      : InstrDescriptor(["IMM"], InstrType.typeUnknown, isBranch=True, isFloat=True),
+    InstructionId.BC0F      : InstrDescriptor(["IMM"], InstrType.typeUnknown, isBranch=True, isFloat=True),
+    InstructionId.BC0TL     : InstrDescriptor(["IMM"], InstrType.typeUnknown, isBranch=True, isBranchLikely=True, isFloat=True),
+    InstructionId.BC0FL     : InstrDescriptor(["IMM"], InstrType.typeUnknown, isBranch=True, isBranchLikely=True, isFloat=True),
 
     # OP rt, fs
     InstructionId.MFC1      : InstrDescriptor(["rt", "fs"], InstrType.typeUnknown, isFloat=True, modifiesRt=True),
