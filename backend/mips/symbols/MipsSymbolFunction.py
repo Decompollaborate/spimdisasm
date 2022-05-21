@@ -699,6 +699,9 @@ class SymbolFunction(SymbolText):
                     return f"(0x{constant:X} >> 16)"
                 return f"(0x{constant:X} & 0xFFFF)"
 
+            elif instr.uniqueId == instructions.InstructionId.LUI:
+                return f"(0x{instr.immediate<<16:X} >> 16)"
+
         elif instr.isJType():
             possibleOverride = self.context.getAnySymbol(instr.getInstrIndexAsVram())
             if possibleOverride is not None:
