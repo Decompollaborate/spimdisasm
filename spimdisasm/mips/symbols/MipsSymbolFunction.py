@@ -550,6 +550,22 @@ class SymbolFunction(SymbolText):
             instr.inHandwrittenFunction = self.isLikelyHandwritten
 
 
+    def countExtraPadding(self) -> int:
+        count = 0
+        for i in range(len(self.instructions)-1, 0, -1):
+            instr = self.instructions[i]
+            nextInstr = self.instructions[i-1]
+
+            if nextInstr.uniqueId == instructions.InstructionId.JR:
+                return count
+
+            if instr.instr != 0:
+                return count
+
+            count += 1
+        return count
+
+
     def countDiffOpcodes(self, other: SymbolFunction) -> int:
         result = 0
         for i in range(min(self.nInstr, other.nInstr)):

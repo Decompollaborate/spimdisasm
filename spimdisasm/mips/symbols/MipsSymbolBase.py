@@ -152,6 +152,10 @@ class SymbolBase(common.ElementBase):
         return output, 0
 
 
+    def countExtraPadding(self) -> int:
+        return 0
+
+
     def disassembleAsData(self) -> str:
         output = self.getLabel()
 
