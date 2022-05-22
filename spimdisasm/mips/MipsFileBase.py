@@ -73,18 +73,20 @@ class FileBase(common.ElementBase):
         if not common.GlobalConfig.PRINT_NEW_FILE_BOUNDARIES:
             return
 
-        nBoundaries = len(self.fileBoundaries)
-        if nBoundaries > 0:
+        if len(self.fileBoundaries) > 0:
             print(f"File {self.name}")
             print(f"Section: {self.sectionType.toStr()}")
             print(f"Found {len(self.symbolList)} symbols.")
-            print(f"Found {nBoundaries} file boundaries.")
+            print(f"Found {len(self.fileBoundaries)} file boundaries.")
 
             print("\t offset, size, vram\t symbols")
 
-            for i in range(len(self.fileBoundaries)-1):
-                start = self.fileBoundaries[i]
-                end = self.fileBoundaries[i+1]
+            boundaries = list(self.fileBoundaries)
+            boundaries.append(self.sizew*4 + self.inFileOffset)
+
+            for i in range(len(boundaries)-1):
+                start = boundaries[i]
+                end = boundaries[i+1]
 
                 symbolsInBoundary = 0
                 for func in self.symbolList:
@@ -95,20 +97,6 @@ class FileBase(common.ElementBase):
                 if self.vram is not None:
                     fileVram = start + self.vram
                 print("\t", f"{start+self.commentOffset:06X}", f"{end-start:04X}", f"{fileVram:08X}", "\t symbols:", symbolsInBoundary)
-
-            start = self.fileBoundaries[-1]
-            end = self.sizew*4 + self.inFileOffset
-
-            symbolsInBoundary = 0
-            for func in self.symbolList:
-                if func.vram is not None and self.vram is not None:
-                    funcOffset = func.vram - self.vram
-                    if start <= funcOffset < end:
-                        symbolsInBoundary += 1
-            fileVram = 0
-            if self.vram is not None:
-                fileVram = start + self.vram
-            print("\t", f"{start+self.commentOffset:06X}", f"{end-start:04X}", f"{fileVram:08X}", "\t symbols:", symbolsInBoundary)
 
             print()
 
