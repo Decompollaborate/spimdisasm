@@ -131,8 +131,10 @@ class SectionRodata(SectionBase):
             sym.analyze()
             self.symbolList.append(sym)
 
-            # file boundary detection
+            # File boundaries detection
             if sym.inFileOffset % 16 == 0:
+                # Files are always 0x10 aligned
+
                 if previousSymbolWasLateRodata and not sym.contextSym.isLateRodata():
                     # late rodata followed by normal rodata implies a file split
                     self.fileBoundaries.append(sym.inFileOffset)

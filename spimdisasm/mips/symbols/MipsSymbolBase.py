@@ -153,6 +153,7 @@ class SymbolBase(common.ElementBase):
 
 
     def countExtraPadding(self) -> int:
+        "Returns how many extra word paddings this symbol has"
         return 0
 
 
