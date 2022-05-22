@@ -101,36 +101,28 @@ def getRdataAndLateRodataForFunction(func: symbols.SymbolFunction, rodataFileLis
             if rodataSym.vram not in intersection:
                 continue
 
-            rodataSymbol = context.getGenericSymbol(rodataSym.vram, False)
+            rodataSymbol = rodataSym.contextSym
             assert rodataSymbol is not None
             # We only care for rodata that's used once
             if rodataSymbol.referenceCounter != 1:
                 break
 
-            isConstVariable = True
-            if rodataSymbol.type in ("f32", "f64", "Vec3f"):
-                isConstVariable = False
-            elif rodataSym.vram in context.jumpTables:
-                isConstVariable = False
-            elif type == "char" or (common.GlobalConfig.STRING_GUESSER and rodataSymbol.isMaybeString):
-                isConstVariable = False
-
             # A const variable should not be placed with a function
-            if isConstVariable:
+            if rodataSymbol.isMaybeConstVariable():
                 break
 
             if firstRodata is None:
                 firstRodata = rodataSection.vram
 
             dis = rodataSym.disassemble()
-            if rodataSymbol.isLateRodata:
+            if rodataSymbol.isLateRodata():
                 lateRodataList.append(dis)
                 lateRodataLen += rodataSym.sizew
             else:
                 rdataList.append(dis)
 
 
-            if rodataSymbol.isLateRodata:
+            if rodataSymbol.isLateRodata():
                 lateRodataList.append("\n")
             else:
                 rdataList.append("\n")
@@ -177,16 +169,8 @@ def getOtherRodata(vram: int, nextVram: int, rodataSection: sections.SectionRoda
     rodataSymbol = context.getGenericSymbol(vram, False)
     assert rodataSymbol is not None
 
-    isConstVariable = True
-    if rodataSymbol.type in ("f32", "f64", "Vec3f"):
-        isConstVariable = False
-    elif vram in context.jumpTables:
-        isConstVariable = False
-    elif type == "char" or (common.GlobalConfig.STRING_GUESSER and rodataSymbol.isMaybeString):
-        isConstVariable = False
-
     # A const variable should not be placed with a function
-    if not isConstVariable:
+    if not rodataSymbol.isMaybeConstVariable():
         if rodataSymbol.referenceCounter == 1:
             #continue
             return None, []
