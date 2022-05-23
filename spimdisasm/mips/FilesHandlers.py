@@ -81,10 +81,10 @@ def writeSection(path: str, fileSection: sections.SectionBase):
 
 
 def getRdataAndLateRodataForFunction(func: symbols.SymbolFunction, rodataFileList: list[sections.SectionRodata]):
-    rdataList: list[str] = []
-    lateRodataList: list[str] = []
-    lateRodataLen = 0
-    firstRodata = None
+    rdataList: list[symbols.SymbolBase] = []
+    lateRodataList: list[symbols.SymbolBase] = []
+    lateRodataSize = 0
+
     for rodataSection in rodataFileList:
         if len(rdataList) > 0 or len(lateRodataList) > 0:
             # We already have the rodata for this function. Stop searching
@@ -101,54 +101,45 @@ def getRdataAndLateRodataForFunction(func: symbols.SymbolFunction, rodataFileLis
             if rodataSym.vram not in intersection:
                 continue
 
-            rodataSymbol = rodataSym.contextSym
-            assert rodataSymbol is not None
+            assert rodataSym.contextSym is not None
             # We only care for rodata that's used once
-            if rodataSymbol.referenceCounter != 1:
+            if rodataSym.contextSym.referenceCounter != 1:
                 break
 
             # A const variable should not be placed with a function
-            if rodataSymbol.isMaybeConstVariable():
+            if rodataSym.contextSym.isMaybeConstVariable():
                 break
 
-            if firstRodata is None:
-                firstRodata = rodataSection.vram
-
-            dis = rodataSym.disassemble()
-            if rodataSymbol.isLateRodata():
-                lateRodataList.append(dis)
-                lateRodataLen += rodataSym.sizew
+            if rodataSym.contextSym.isLateRodata():
+                lateRodataList.append(rodataSym)
+                lateRodataSize += rodataSym.sizew
             else:
-                rdataList.append(dis)
+                rdataList.append(rodataSym)
 
-
-            if rodataSymbol.isLateRodata():
-                lateRodataList.append("\n")
-            else:
-                rdataList.append("\n")
-
-    return rdataList, lateRodataList, lateRodataLen, firstRodata
+    return rdataList, lateRodataList, lateRodataSize
 
 def writeSplittedFunctionToFile(f: TextIO, func: symbols.SymbolFunction, rodataFileList: list[sections.SectionRodata]):
-    rdataList, lateRodataList, lateRodataLen, firstRodata = getRdataAndLateRodataForFunction(func, rodataFileList)
+    rdataList, lateRodataList, lateRodataSize = getRdataAndLateRodataForFunction(func, rodataFileList)
 
     if len(rdataList) > 0:
         # Write the rdata
         f.write(".rdata\n")
-        for x in rdataList:
-            f.write(x)
+        for sym in rdataList:
+            f.write(sym.disassemble())
+            f.write("\n")
 
     if len(lateRodataList) > 0:
         # Write the late_rodata
         f.write(".late_rodata\n")
-        if lateRodataLen / len(func.instructions) > 1/3:
+        if lateRodataSize / len(func.instructions) > 1/3:
             align = 4
-            if firstRodata is not None:
-                if firstRodata % 8 == 0:
-                    align = 8
+            firstLateRodataVram = lateRodataList[0].vram
+            if firstLateRodataVram is not None and firstLateRodataVram % 8 == 0:
+                align = 8
             f.write(f".late_rodata_alignment {align}\n")
-        for x in lateRodataList:
-            f.write(x)
+        for sym in lateRodataList:
+            f.write(sym.disassemble())
+            f.write("\n")
 
     if len(rdataList) > 0 or len(lateRodataList) > 0:
         f.write("\n")
@@ -173,7 +164,6 @@ def writeOtherRodata(path: str, rodataFileList: list[sections.SectionRodata]):
                 continue
 
             rodataSymbolPath = os.path.join(rodataPath, rodataSym.name) + ".s"
-
             with open(rodataSymbolPath, "w") as f:
                 f.write(".rdata\n")
                 f.write(rodataSym.disassemble())
