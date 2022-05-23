@@ -80,7 +80,7 @@ def writeSection(path: str, fileSection: sections.SectionBase):
     return path
 
 
-def getRdataAndLateRodataForFunction(func: symbols.SymbolFunction, rodataFileList: list[sections.SectionRodata], context: common.Context):
+def getRdataAndLateRodataForFunction(func: symbols.SymbolFunction, rodataFileList: list[sections.SectionRodata]):
     rdataList: list[str] = []
     lateRodataList: list[str] = []
     lateRodataLen = 0
@@ -129,8 +129,8 @@ def getRdataAndLateRodataForFunction(func: symbols.SymbolFunction, rodataFileLis
 
     return rdataList, lateRodataList, lateRodataLen, firstRodata
 
-def writeSplittedFunctionToFile(f: TextIO, func: symbols.SymbolFunction, rodataFileList: list[sections.SectionRodata], context: common.Context):
-    rdataList, lateRodataList, lateRodataLen, firstRodata = getRdataAndLateRodataForFunction(func, rodataFileList, context)
+def writeSplittedFunctionToFile(f: TextIO, func: symbols.SymbolFunction, rodataFileList: list[sections.SectionRodata]):
+    rdataList, lateRodataList, lateRodataLen, firstRodata = getRdataAndLateRodataForFunction(func, rodataFileList)
 
     if len(rdataList) > 0:
         # Write the rdata
@@ -157,56 +157,23 @@ def writeSplittedFunctionToFile(f: TextIO, func: symbols.SymbolFunction, rodataF
     # Write the function
     f.write(func.disassemble())
 
-def writeSplitedFunction(path: str, func: symbols.SymbolFunction, rodataFileList: list[sections.SectionRodata], context: common.Context):
+def writeSplitedFunction(path: str, func: symbols.SymbolFunction, rodataFileList: list[sections.SectionRodata]):
     os.makedirs(path, exist_ok=True)
     with open(os.path.join(path, func.name) + ".s", "w") as f:
-        writeSplittedFunctionToFile(f, func, rodataFileList, context)
+        writeSplittedFunctionToFile(f, func, rodataFileList)
 
 
-def getOtherRodata(vram: int, nextVram: int, rodataSection: sections.SectionRodata, context: common.Context) -> tuple[str|None, list[str]]:
-    rdataList: list[str] = []
-
-    rodataSymbol = context.getGenericSymbol(vram, False)
-    assert rodataSymbol is not None
-
-    # A const variable should not be placed with a function
-    if not rodataSymbol.isMaybeConstVariable():
-        if rodataSymbol.referenceCounter == 1:
-            #continue
-            return None, []
-
-    # print(rodataSymbol.name, rodataSymbol.referenceCounter)
-
-    for rodataSym in rodataSection.symbolList:
-        # TODO: this can be improved a bit
-        assert rodataSym.vram is not None
-        if rodataSym.vram < vram:
-            continue
-        if rodataSym.vram >= nextVram:
-            break
-
-        dis = rodataSym.disassemble()
-        rdataList.append(dis)
-
-    return rodataSymbol.name, rdataList
-
-def writeOtherRodata(path: str, rodataFileList: list[sections.SectionRodata], context: common.Context):
+def writeOtherRodata(path: str, rodataFileList: list[sections.SectionRodata]):
     for rodataSection in rodataFileList:
         rodataPath = os.path.join(path, rodataSection.name)
         os.makedirs(rodataPath, exist_ok=True)
-        sortedSymbolVRams = sorted(rodataSection.symbolsVRams)
 
-        for vram in sortedSymbolVRams:
-            nextVramIndex = sortedSymbolVRams.index(vram) + 1
-            nextVram = 0xFFFFFFFF if nextVramIndex >= len(sortedSymbolVRams) else sortedSymbolVRams[nextVramIndex]
-
-            rodataSymbolName, rdataList = getOtherRodata(vram, nextVram, rodataSection, context)
-            if rodataSymbolName is None:
+        for rodataSym in rodataSection.symbolList:
+            if not rodataSym.isRdata():
                 continue
 
-            rodataSymbolPath = os.path.join(rodataPath, rodataSymbolName) + ".s"
+            rodataSymbolPath = os.path.join(rodataPath, rodataSym.name) + ".s"
 
             with open(rodataSymbolPath, "w") as f:
                 f.write(".rdata\n")
-                for rdata in rdataList:
-                    f.write(rdata)
+                f.write(rodataSym.disassemble())

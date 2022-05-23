@@ -190,8 +190,8 @@ def disassemblerMain():
             file: spimdisasm.mips.sections.SectionText = f
             for func in file.symbolList:
                 assert isinstance(func, spimdisasm.mips.symbols.SymbolFunction)
-                spimdisasm.mips.FilesHandlers.writeSplitedFunction(os.path.join(args.split_functions, file.name), func, processedFiles[spimdisasm.common.FileSectionType.Rodata], context)
-        spimdisasm.mips.FilesHandlers.writeOtherRodata(args.split_functions, processedFiles[spimdisasm.common.FileSectionType.Rodata], context)
+                spimdisasm.mips.FilesHandlers.writeSplitedFunction(os.path.join(args.split_functions, file.name), func, processedFiles[spimdisasm.common.FileSectionType.Rodata])
+        spimdisasm.mips.FilesHandlers.writeOtherRodata(args.split_functions, processedFiles[spimdisasm.common.FileSectionType.Rodata])
 
     if args.save_context is not None:
         head, tail = os.path.split(args.save_context)
