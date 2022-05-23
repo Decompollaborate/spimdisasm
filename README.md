@@ -51,3 +51,5 @@ Every front-end script has its own `--help` screen.
 ### Back-end
 
 TODO
+
+Check `spimdisasm/__main__.py` for a minimal disassembly working example on how to use the API. Checking the front-ends is recommended too.

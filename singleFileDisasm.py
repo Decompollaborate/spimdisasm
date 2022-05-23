@@ -22,9 +22,9 @@ def disassemblerMain():
 
     parser_singleFile = parser.add_argument_group("Single file disassembly options")
 
-    parser_singleFile.add_argument("--start", help="", default="0")
-    parser_singleFile.add_argument("--end", help="",  default="0xFFFFFF")
-    parser_singleFile.add_argument("--vram", help="Set the VRAM address")
+    parser_singleFile.add_argument("--start", help="Raw offset of the input binary file to start disassembling. Expects an hex value", default="0")
+    parser_singleFile.add_argument("--end", help="Offset end of the input binary file to start disassembling. Expects an hex value",  default="0xFFFFFF")
+    parser_singleFile.add_argument("--vram", help="Set the VRAM address. Expects an hex value")
 
     parser.add_argument("--file-splits", help="Path to a file splits csv")
 
