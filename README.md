@@ -42,7 +42,7 @@ This repo can be used either by using the existing front-end scripts or by creat
 
 Every front-end script has its own `--help` screen.
 
-- `simpleDisasm.py`: Allows to disassemble a single binary file, producing matching assembly files.
+- `singleFileDisasm.py`: Allows to disassemble a single binary file, producing matching assembly files.
 
 - `disasmdis.py`: Disassembles raw hex passed to the CLI as a MIPS instruction.
 
