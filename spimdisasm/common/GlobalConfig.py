@@ -48,6 +48,9 @@ class GlobalConfig:
 
     PRINT_NEW_FILE_BOUNDARIES: bool = False
 
+    USE_DOT_BYTE: bool = True
+    USE_DOT_SHORT: bool = True
+
 
     QUIET: bool = False
     VERBOSE: bool = False
@@ -95,6 +98,9 @@ class GlobalConfig:
         miscConfig.add_argument("--asm-end-label", help=f"Tells the disassembler to start using an end label for functions")
 
         miscConfig.add_argument("--print-new-file-boundaries", help=f"Print to stdout any new file boundary found. Defaults to {GlobalConfig.PRINT_NEW_FILE_BOUNDARIES}", action=argparse.BooleanOptionalAction)
+
+        miscConfig.add_argument("--use-dot-byte", help=f"Disassemble symbols marked as bytes with .byte instead of .word . Defaults to {GlobalConfig.USE_DOT_BYTE}", action=argparse.BooleanOptionalAction)
+        miscConfig.add_argument("--use-dot-short", help=f"Disassemble symbols marked as shorts with .short instead of .word. Defaults to {GlobalConfig.USE_DOT_SHORT}", action=argparse.BooleanOptionalAction)
 
 
         verbosityConfig = parser.add_argument_group("Verbosity options")
@@ -157,6 +163,11 @@ class GlobalConfig:
 
         if args.print_new_file_boundaries is not None:
             GlobalConfig.PRINT_NEW_FILE_BOUNDARIES = args.print_new_file_boundaries
+
+        if args.use_dot_byte is not None:
+            GlobalConfig.USE_DOT_BYTE = args.use_dot_byte
+        if args.use_dot_short is not None:
+            GlobalConfig.USE_DOT_SHORT = args.use_dot_short
 
 
         if args.verbose is not None:
