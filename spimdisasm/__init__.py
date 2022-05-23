@@ -10,5 +10,3 @@ __version__ = "0.1.0"
 from . import common
 from . import elf32
 from . import mips
-
-from .common import *

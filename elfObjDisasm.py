@@ -21,7 +21,7 @@ def elfObjDisasmMain():
 
     parser.add_argument("--data-output", help="Path to output the data and rodata disassembly")
 
-    spimdisasm.GlobalConfig.addParametersToArgParse(parser)
+    spimdisasm.common.GlobalConfig.addParametersToArgParse(parser)
 
     spimdisasm.mips.instructions.InstructionConfig.addParametersToArgParse(parser)
 
@@ -29,23 +29,23 @@ def elfObjDisasmMain():
 
     spimdisasm.mips.instructions.InstructionConfig.parseArgs(args)
 
-    spimdisasm.GlobalConfig.parseArgs(args)
+    spimdisasm.common.GlobalConfig.parseArgs(args)
 
-    spimdisasm.GlobalConfig.REMOVE_POINTERS = False
-    spimdisasm.GlobalConfig.IGNORE_BRANCHES = False
-    spimdisasm.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES = False
+    spimdisasm.common.GlobalConfig.REMOVE_POINTERS = False
+    spimdisasm.common.GlobalConfig.IGNORE_BRANCHES = False
+    spimdisasm.common.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES = False
 
     # GlobalConfig.VERBOSE = True
 
     inputPath = pathlib.Path(args.binary)
 
-    context = spimdisasm.Context()
+    context = spimdisasm.common.Context()
 
-    array_of_bytes = spimdisasm.Utils.readFileAsBytearray(args.binary)
+    array_of_bytes = spimdisasm.common.Utils.readFileAsBytearray(args.binary)
 
     elfFile = spimdisasm.elf32.Elf32File(array_of_bytes)
 
-    processedFiles: dict[spimdisasm.FileSectionType, tuple[pathlib.Path, spimdisasm.mips.sections.SectionBase]] = dict()
+    processedFiles: dict[spimdisasm.common.FileSectionType, tuple[pathlib.Path, spimdisasm.mips.sections.SectionBase]] = dict()
 
     textOutput = args.output
     dataOutput = args.data_output
@@ -54,18 +54,18 @@ def elfObjDisasmMain():
 
     for sectionType, sectionBytes in elfFile.progbits.items():
         outputPath = dataOutput
-        if sectionType == spimdisasm.FileSectionType.Text:
+        if sectionType == spimdisasm.common.FileSectionType.Text:
             outputPath = textOutput
 
         outputFilePath = pathlib.Path(outputPath)
         if outputPath != "-":
             outputFilePath /= inputPath.stem
 
-        if sectionType == spimdisasm.FileSectionType.Text:
+        if sectionType == spimdisasm.common.FileSectionType.Text:
             processedFiles[sectionType] = (outputFilePath, spimdisasm.mips.sections.SectionText(context, None, inputPath.stem, sectionBytes))
-        if sectionType == spimdisasm.FileSectionType.Data:
+        if sectionType == spimdisasm.common.FileSectionType.Data:
             processedFiles[sectionType] = (outputFilePath, spimdisasm.mips.sections.SectionData(context, None, inputPath.stem, sectionBytes))
-        if sectionType == spimdisasm.FileSectionType.Rodata:
+        if sectionType == spimdisasm.common.FileSectionType.Rodata:
             processedFiles[sectionType] = (outputFilePath, spimdisasm.mips.sections.SectionRodata(context, None, inputPath.stem, sectionBytes))
 
     if elfFile.nobits is not None:
@@ -75,7 +75,7 @@ def elfObjDisasmMain():
         if outputPath != "-":
             outputFilePath /= inputPath.stem
 
-        processedFiles[spimdisasm.FileSectionType.Bss] = (outputFilePath, spimdisasm.mips.sections.SectionBss(context, 0, elfFile.nobits, inputPath.stem))
+        processedFiles[spimdisasm.common.FileSectionType.Bss] = (outputFilePath, spimdisasm.mips.sections.SectionBss(context, 0, elfFile.nobits, inputPath.stem))
 
     if elfFile.symtab is not None and elfFile.strtab is not None:
         # Inject symbols from the reloc table referenced in each section
@@ -85,7 +85,7 @@ def elfObjDisasmMain():
                 symbolEntry = elfFile.symtab[rel.rSym]
                 symbolName = elfFile.strtab[symbolEntry.name]
 
-                contextRelocSym = spimdisasm.ContextRelocSymbol(rel.offset, symbolName, sectType)
+                contextRelocSym = spimdisasm.common.ContextRelocSymbol(rel.offset, symbolName, sectType)
                 contextRelocSym.isDefined = True
                 contextRelocSym.relocType = rel.rType
                 context.relocSymbols[sectType][rel.offset] = contextRelocSym
@@ -99,12 +99,12 @@ def elfObjDisasmMain():
             if sectHeaderEntry is None:
                 continue
             sectName = elfFile.shstrtab[sectHeaderEntry.name]
-            sectType = spimdisasm.FileSectionType.fromStr(sectName)
-            if sectType != spimdisasm.FileSectionType.Invalid:
+            sectType = spimdisasm.common.FileSectionType.fromStr(sectName)
+            if sectType != spimdisasm.common.FileSectionType.Invalid:
                 subSection = processedFiles[sectType][1]
                 symName = elfFile.strtab[symEntry.name]
 
-                contextOffsetSym = spimdisasm.ContextOffsetSymbol(symEntry.value, symName, sectType)
+                contextOffsetSym = spimdisasm.common.ContextOffsetSymbol(symEntry.value, symName, sectType)
                 contextOffsetSym.isDefined = True
                 # contextOffsetSym.size = symEntry.size
                 context.offsetSymbols[sectType][symEntry.value] = contextOffsetSym

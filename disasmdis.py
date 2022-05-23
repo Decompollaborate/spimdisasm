@@ -23,20 +23,20 @@ def disasmdisMain():
 
     args = parser.parse_args()
 
-    spimdisasm.GlobalConfig.ASM_COMMENT = False
-    spimdisasm.GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS = True
+    spimdisasm.common.GlobalConfig.ASM_COMMENT = False
+    spimdisasm.common.GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS = True
 
     if args.endian == "little":
-        spimdisasm.GlobalConfig.ENDIAN = spimdisasm.InputEndian.LITTLE
+        spimdisasm.common.GlobalConfig.ENDIAN = spimdisasm.common.InputEndian.LITTLE
     elif args.endian == "middle":
-        spimdisasm.GlobalConfig.ENDIAN = spimdisasm.InputEndian.MIDDLE
+        spimdisasm.common.GlobalConfig.ENDIAN = spimdisasm.common.InputEndian.MIDDLE
     else:
-        spimdisasm.GlobalConfig.ENDIAN = spimdisasm.InputEndian.BIG
+        spimdisasm.common.GlobalConfig.ENDIAN = spimdisasm.common.InputEndian.BIG
 
     # Count the amount of words and round up to a word boundary
     wordsCount = (len(args.input) - 1) // 8 + 1
 
-    context = spimdisasm.Context()
+    context = spimdisasm.common.Context()
 
     instructionList: list[spimdisasm.mips.instructions.InstructionBase] = list()
 
@@ -46,7 +46,7 @@ def disasmdisMain():
         for j in range(4):
             array_of_bytes[j] = int(wordStr[j*2:(j+1)*2], 16)
 
-        word = spimdisasm.Utils.bytesToBEWords(array_of_bytes)[0]
+        word = spimdisasm.common.Utils.bytesToBEWords(array_of_bytes)[0]
         instructionList.append(spimdisasm.mips.instructions.wordToInstruction(word))
 
     if args.raw_instr:
