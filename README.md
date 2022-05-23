@@ -1,6 +1,6 @@
-# py-mips-disasm
+# spimdisasm
 
-A matching MIPS disassembler with built-in instruction analysis.
+A matching MIPS disassembler API and front-ends with built-in instruction analysis.
 
 Currently supports all the CPU instructions for MIPS I, II, III and IV.
 
