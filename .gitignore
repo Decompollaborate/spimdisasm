@@ -2,6 +2,7 @@
 __pycache__/
 .pyc
 .DS_Store
+.mypy_cache/
 
 # Text editor remnants
 .vscode/

@@ -7,10 +7,8 @@ from __future__ import annotations
 
 from ... import common
 
-from ..MipsElementBase import ElementBase
 
-
-class SymbolBase(ElementBase):
+class SymbolBase(common.ElementBase):
     def __init__(self, context: common.Context, inFileOffset: int, vram: int|None, name: str, words: list[int], sectionType: common.FileSectionType):
         super().__init__(context, inFileOffset, vram, name, words, sectionType)
 

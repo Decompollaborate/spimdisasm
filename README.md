@@ -1,6 +1,6 @@
-# py-mips-disasm
+# spimdisasm
 
-A matching MIPS disassembler with built-in instruction analysis.
+A matching MIPS disassembler API and front-ends with built-in instruction analysis.
 
 Currently supports all the CPU instructions for MIPS I, II, III and IV.
 
@@ -42,7 +42,7 @@ This repo can be used either by using the existing front-end scripts or by creat
 
 Every front-end script has its own `--help` screen.
 
-- `simpleDisasm.py`: Allows to disassemble a single binary file, producing matching assembly files.
+- `singleFileDisasm.py`: Allows to disassemble a single binary file, producing matching assembly files.
 
 - `disasmdis.py`: Disassembles raw hex passed to the CLI as a MIPS instruction.
 
@@ -51,3 +51,5 @@ Every front-end script has its own `--help` screen.
 ### Back-end
 
 TODO
+
+Check `spimdisasm/__main__.py` for a minimal disassembly working example on how to use the API. Checking the front-ends is recommended too.

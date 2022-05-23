@@ -5,31 +5,33 @@
 
 from __future__ import annotations
 
-from .. import common
+from .GlobalConfig import GlobalConfig
+from .Context import Context, ContextSymbolBase
+from .FileSectionType import FileSectionType
 
 
 class ElementBase:
     """Represents the base class used for most file sections and symbols.
     """
 
-    def __init__(self, context: common.Context, inFileOffset: int, vram: int|None, name: str, words: list[int], sectionType: common.FileSectionType):
+    def __init__(self, context: Context, inFileOffset: int, vram: int|None, name: str, words: list[int], sectionType: FileSectionType):
         """Constructor
 
         Args:
-            context (common.Context):
+            context (Context):
             inFileOffset (int): The offset of this element relative to the start of its file. It is also used to generate the first column of the disassembled line comment.
             vram (int | None): The VRAM address of this element or `None` if the VRAM is unknown.
             name (str): The name of this element.
             words (list[int]): A list of words (4 bytes) corresponding to this element.
-            sectionType (common.FileSectionType): The section type this element corresponds to.
+            sectionType (FileSectionType): The section type this element corresponds to.
         """
 
-        self.context: common.Context = context
+        self.context: Context = context
         self.inFileOffset: int = inFileOffset
         self.vram: int|None = vram
         self.name: str = name
         self.words: list[int] = words
-        self.sectionType: common.FileSectionType = sectionType
+        self.sectionType: FileSectionType = sectionType
 
         self.commentOffset: int = 0
         "This value is added to the first column of the disassembled line comment, allowing to change this value without messing inFileOffset"
@@ -67,11 +69,11 @@ class ElementBase:
         # return self.vram + self.inFileOffset + localOffset
 
 
-    def getLabelFromSymbol(self, sym: common.ContextSymbolBase|None) -> str:
+    def getLabelFromSymbol(self, sym: ContextSymbolBase|None) -> str:
         "Generates a glabel for the passed symbol, including an optional index value if it was set and it is enabled in the GlobalConfig"
         if sym is not None:
             label = sym.getSymbolLabel()
-            if common.GlobalConfig.GLABEL_ASM_COUNT:
+            if GlobalConfig.GLABEL_ASM_COUNT:
                 if self.index is not None:
                     label += f" # {self.index}"
             label += "\n"

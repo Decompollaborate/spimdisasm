@@ -99,7 +99,7 @@ class GlobalConfig:
 
         verbosityConfig = parser.add_argument_group("Verbosity options")
 
-        verbosityConfig.add_argument("-v", "--verbose", help="Enable verbose mode", action=argparse.BooleanOptionalAction)
+        verbosityConfig.add_argument("-V", "--verbose", help="Enable verbose mode", action=argparse.BooleanOptionalAction)
         verbosityConfig.add_argument("-q", "--quiet", help="Silence most of the output", action=argparse.BooleanOptionalAction)
 
 

@@ -5,8 +5,6 @@
 
 from __future__ import annotations
 
-from typing import List
-
 from .. import common
 
 from . import sections
@@ -27,7 +25,7 @@ class FileSplits(FileBase):
             common.FileSectionType.Reloc: dict(),
         }
 
-        self.splitsDataList: List[common.FileSplitEntry] = []
+        self.splitsDataList: list[common.FileSplitEntry] = []
 
         if relocSection is not None:
             relocSection.parent = self

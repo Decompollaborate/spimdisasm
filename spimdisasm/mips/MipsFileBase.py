@@ -12,10 +12,8 @@ from .. import common
 
 from . import symbols
 
-from .MipsElementBase import ElementBase
 
-
-class FileBase(ElementBase):
+class FileBase(common.ElementBase):
     def __init__(self, context: common.Context, vram: int|None, filename: str, array_of_bytes: bytearray, sectionType: common.FileSectionType):
         super().__init__(context, 0, vram, filename, common.Utils.bytesToBEWords(array_of_bytes), sectionType)
 
