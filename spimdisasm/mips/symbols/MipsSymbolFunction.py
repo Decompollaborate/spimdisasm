@@ -639,7 +639,9 @@ class SymbolFunction(SymbolText):
 
         # $gp
         if instr.rs == 28:
-            return f"%gp_rel({symName})"
+            # $gp
+            if instr.rt != 28 or not instr.modifiesRt():
+                return f"%gp_rel({symName})"
 
         return f"%lo({symName})"
 
