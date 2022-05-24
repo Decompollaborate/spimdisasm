@@ -495,9 +495,13 @@ class SymbolFunction(SymbolText):
                 self.hasUnimplementedIntrs = True
                 return
 
-            if instr.isBranch():
-                branch = instructionOffset + instr.getBranchOffset()
-                targetBranchVram = self.getVramOffset(branch)
+            if instr.isBranch() or (common.GlobalConfig.TREAT_J_AS_UNCONDITIONAL_BRANCH and instr.uniqueId == instructions.InstructionId.J):
+                if instr.uniqueId == instructions.InstructionId.J:
+                    targetBranchVram = instr.getInstrIndexAsVram()
+                    branch = instructionOffset + targetBranchVram - currentVram
+                else:
+                    branch = instructionOffset + instr.getBranchOffset()
+                    targetBranchVram = self.getVramOffset(branch)
 
                 self.referencedVRams.add(targetBranchVram)
                 labelSym = self.context.getGenericLabel(targetBranchVram)

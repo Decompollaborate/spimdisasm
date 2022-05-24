@@ -88,6 +88,8 @@ class SectionText(SectionBase):
                 instr = instrsList[index]
                 isInstrImplemented = instr.isImplemented()
 
+            currentVram = self.getVramOffset(instructionOffset)
+
             if not self.isRsp and not isLikelyHandwritten:
                 if isinstance(instr, instructions.InstructionCoprocessor2):
                     isLikelyHandwritten = True
@@ -99,8 +101,11 @@ class SectionText(SectionBase):
                     elif instr.rt in (26, 27): # "$k0", "$k1"
                         isLikelyHandwritten = True
 
-            if instr.isBranch():
-                branch = common.Utils.from2Complement(instr.immediate, 16) + 1
+            if instr.isBranch() or (common.GlobalConfig.TREAT_J_AS_UNCONDITIONAL_BRANCH and instr.uniqueId == instructions.InstructionId.J):
+                if instr.uniqueId == instructions.InstructionId.J:
+                    branch = (instr.getInstrIndexAsVram() - currentVram) // 4
+                else:
+                    branch = common.Utils.from2Complement(instr.immediate, 16) + 1
                 if branch > farthestBranch:
                     # keep track of the farthest branch target
                     farthestBranch = branch
@@ -145,7 +150,7 @@ class SectionText(SectionBase):
                     if isLikelyHandwritten or (common.GlobalConfig.DISASSEMBLE_RSP and self.isRsp):
                         functionEnded = True
 
-            vram = self.getVramOffset(instructionOffset) + 8
+            vram = currentVram + 8
             funcSymbol = self.context.getFunction(vram)
             if funcSymbol is not None and funcSymbol.isTrustableFunction(self.isRsp):
                 functionEnded = True
