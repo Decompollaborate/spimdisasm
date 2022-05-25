@@ -357,7 +357,7 @@ class InstructionBase:
         "LABEL":     lambda instr, immOverride: immOverride if immOverride is not None else f"func_{instr.getInstrIndexAsVram():06X}",
         "cop2t":     lambda instr, immOverride: instr.getCop2RegisterName(instr.rt),
         "cop0d":     lambda instr, immOverride: instr.getCop0RegisterName(instr.rd),
-        "code":      lambda instr, immOverride: str(instr.instr_index >> 16),
+        "code":      lambda instr, immOverride: instr.processCodeParameter(),
         "op":        lambda instr, immOverride: f"0x{instr.rt:02X}",
         "IMM(base)": lambda instr, immOverride: f"{instr.processImmediate(immOverride)}({instr.getRegisterName(instr.baseRegister)})",
     }
@@ -610,6 +610,13 @@ class InstructionBase:
             return f"0x{number:X}"
 
         return f"0x{self.immediate:X}"
+
+    def processCodeParameter(self) -> str:
+        code = f"{self.instr_index >> 16}"
+        lower = (self.rd << 11) | (self.sa << 6) >> 6
+        if lower:
+            code += f", {lower}"
+        return code
 
     def disassembleInstruction(self, immOverride: str|None=None) -> str:
         opcode = self.getOpcodeName().lower()
