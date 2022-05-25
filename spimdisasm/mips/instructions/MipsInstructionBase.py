@@ -381,6 +381,7 @@ class InstructionBase:
         self.extraLjustWidthOpcode = 0
 
         self.vram: int|None = None
+        self._handwrittenCategory: bool = False
 
     @property
     def instr(self) -> int:
@@ -672,6 +673,18 @@ class InstructionBase:
         # if self.uniqueId == InstructionId.LDU or self.uniqueId == InstructionId.SDU:
         #     return "u64"
         return None
+
+    def isLikelyHandwritten(self):
+        if self._handwrittenCategory:
+            return True
+
+        if self.isIType() and not self.isFloatInstruction():
+            if self.rs in (26, 27): # "$k0", "$k1"
+                return True
+            elif self.rt in (26, 27): # "$k0", "$k1"
+                return True
+
+        return False
 
 
     def __str__(self) -> str:
