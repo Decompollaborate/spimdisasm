@@ -26,6 +26,8 @@ def disassemblerMain():
     parser_singleFile.add_argument("--end", help="Offset end of the input binary file to start disassembling. Expects an hex value",  default="0xFFFFFF")
     parser_singleFile.add_argument("--vram", help="Set the VRAM address. Expects an hex value")
 
+    parser_singleFile.add_argument("--disasm-rsp", help=f"Experimental. Disassemble this file using rsp instructions. Warning: In its current state the generated asm may not be assemblable to a matching binary. Defaults to False", action="store_true")
+
     parser.add_argument("--file-splits", help="Path to a file splits csv")
 
     parser.add_argument("--split-functions", help="Enables the function and rodata splitter. Expects a path to place the splited functions", metavar="PATH")
@@ -97,7 +99,7 @@ def disassemblerMain():
         if endVram is not None:
             endVram += end - start
 
-        splitEntry = spimdisasm.common.FileSplitEntry(start, fileVram, "", spimdisasm.common.FileSectionType.Text, end, False, spimdisasm.common.GlobalConfig.DISASSEMBLE_RSP)
+        splitEntry = spimdisasm.common.FileSplitEntry(start, fileVram, "", spimdisasm.common.FileSectionType.Text, end, False, args.disasm_rsp)
         splits.append(splitEntry)
 
         splits.appendEndSection(end, endVram)

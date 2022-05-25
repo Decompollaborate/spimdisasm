@@ -143,7 +143,7 @@ class SectionText(SectionBase):
                     if instr.rs == 31: # $ra
                         functionEnded = True
                 elif instr.uniqueId == instructions.InstructionId.J:
-                    if isLikelyHandwritten or (common.GlobalConfig.DISASSEMBLE_RSP and self.isRsp):
+                    if isLikelyHandwritten or self.isRsp:
                         functionEnded = True
 
             vram = currentVram + 8
