@@ -99,7 +99,8 @@ class InstructionSpecial(InstructionBase):
                 self.uniqueId = InstructionId.NOP
             elif self.rt == 0:
                 if self.uniqueId == InstructionId.OR:
-                    self.uniqueId = InstructionId.MOVE
+                    if self.rs != 0:
+                        self.uniqueId = InstructionId.MOVE
                 elif self.uniqueId == InstructionId.NOR:
                     self.uniqueId = InstructionId.NOT
             elif self.uniqueId == InstructionId.SUBU:
