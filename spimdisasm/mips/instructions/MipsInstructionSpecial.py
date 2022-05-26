@@ -114,10 +114,6 @@ class InstructionSpecial(InstructionBase):
             if self.rd != 31:
                 self.descriptor = instructionDescriptorDict[InstructionId.JALR_RD]
 
-        if InstructionConfig.SN64_DIV_FIX:
-            if self.uniqueId in (InstructionId.DIV, InstructionId.DIVU):
-                self.descriptor.operands = ["rs", "rt"]
-
 
     def blankOut(self):
         self.rs = 0
@@ -129,6 +125,16 @@ class InstructionSpecial(InstructionBase):
     def disassembleInstruction(self, immOverride: str|None=None) -> str:
         patch = False
 
+        if InstructionConfig.SN64_DIV_FIX:
+            if self.uniqueId == InstructionId.BREAK:
+                patch = True
+            elif self.uniqueId == InstructionId.DIV:
+                if not self.inHandwrittenFunction:
+                    self.descriptor = instructionDescriptorDict[InstructionId.SN64_DIV]
+            elif self.uniqueId == InstructionId.DIVU:
+                if not self.inHandwrittenFunction:
+                    self.descriptor = instructionDescriptorDict[InstructionId.SN64_DIVU]
+
         if self.descriptor.instrType == InstrType.typeR and "code" not in self.descriptor.operands:
             if "rs" not in self.descriptor.operands and self.rs != 0:
                 patch = True
@@ -137,10 +143,6 @@ class InstructionSpecial(InstructionBase):
             if "rd" not in self.descriptor.operands and self.rd != 0 and self.uniqueId != InstructionId.JALR:
                 patch = True
             if "sa" not in self.descriptor.operands and self.sa != 0:
-                patch = True
-
-        if InstructionConfig.SN64_DIV_FIX:
-            if self.uniqueId == InstructionId.BREAK:
                 patch = True
 
         if patch:

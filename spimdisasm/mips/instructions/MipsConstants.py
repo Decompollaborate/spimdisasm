@@ -50,6 +50,9 @@ class InstructionId(enum.Enum):
     DDIV      = enum.auto() # Doubleword DIVide
     DDIVU     = enum.auto() # Doubleword DIVide Unsigned
 
+    SN64_DIV  = enum.auto() # DIVide word
+    SN64_DIVU = enum.auto() # DIVide Unsigned word
+
     ADD       = enum.auto() # ADD word
     ADDU      = enum.auto() # ADD Unsigned word
     SUB       = enum.auto() # Subtract word
@@ -437,8 +440,8 @@ instructionDescriptorDict: dict[InstructionId|InstructionVectorId, InstrDescript
     InstructionId.MOVN      : InstrDescriptor(["rd", "rs", "rt"], InstrType.typeR, modifiesRd=True),
     InstructionId.DIV       : InstrDescriptor(["rd", "rs", "rt"], InstrType.typeR),
     InstructionId.DIVU      : InstrDescriptor(["rd", "rs", "rt"], InstrType.typeR),
-    # InstructionId.DIV       : InstrDescriptor(["rs", "rt"], InstrType.typeR),
-    # InstructionId.DIVU      : InstrDescriptor(["rs", "rt"], InstrType.typeR),
+    InstructionId.SN64_DIV  : InstrDescriptor(["rs", "rt"], InstrType.typeR),
+    InstructionId.SN64_DIVU : InstrDescriptor(["rs", "rt"], InstrType.typeR),
     InstructionId.DDIV      : InstrDescriptor(["rd", "rs", "rt"], InstrType.typeR),
     InstructionId.DDIVU     : InstrDescriptor(["rd", "rs", "rt"], InstrType.typeR),
     # InstructionId.DDIV      : InstrDescriptor(["rs", "rt"], InstrType.typeR),

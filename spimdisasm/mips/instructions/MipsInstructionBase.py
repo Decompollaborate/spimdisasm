@@ -381,6 +381,7 @@ class InstructionBase:
 
         self.vram: int|None = None
         self._handwrittenCategory: bool = False
+        self.inHandwrittenFunction: bool = False
 
     @property
     def instr(self) -> int:

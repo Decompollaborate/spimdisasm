@@ -52,7 +52,7 @@ class InstructionConfig:
     """Enables a few fixes for SN64's assembler related to div/divu instructions
 
     - SN64's assembler doesn't like assembling `div $0, a, b` with .set noat active.
-    Removing the $0 fixes this issue.
+    Removing the $0 fixes this issue (but not for handwritten asm)
 
     - SN64's assembler expands div to have break if dividing by zero
     However, the break it generates is different than the one it generates with `break N`

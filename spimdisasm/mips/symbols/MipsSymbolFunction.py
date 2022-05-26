@@ -549,6 +549,9 @@ class SymbolFunction(SymbolText):
 
         self._processElfRelocSymbols()
 
+        for instr in self.instructions:
+            instr.inHandwrittenFunction = self.isLikelyHandwritten
+
 
     def countDiffOpcodes(self, other: SymbolFunction) -> int:
         result = 0
