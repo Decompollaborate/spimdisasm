@@ -134,7 +134,7 @@ class SymbolRodata(SymbolBase):
             rodataWord = doubleWord
             skip = 1
         else:
-            labelSym = self.context.getGenericLabel(w)
+            labelSym = self.context.getAnySymbol(w)
             if labelSym is not None:
                 value = labelSym.getName()
             elif self.isString():
