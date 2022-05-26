@@ -94,18 +94,21 @@ class InstructionSpecial(InstructionBase):
     def processUniqueId(self):
         self.uniqueId = self.SpecialOpcodes.get(self.function, InstructionId.INVALID)
 
-        if InstructionConfig.PSEUDO_INSTRUCTIONS:
-            if self.instr == 0:
-                self.uniqueId = InstructionId.NOP
-            elif self.rt == 0:
+        if self.instr == 0:
+            # NOP is special enough
+            self.uniqueId = InstructionId.NOP
+        elif InstructionConfig.PSEUDO_INSTRUCTIONS:
+            if self.rt == 0:
                 if self.uniqueId == InstructionId.OR:
-                    if self.rs != 0:
+                    if InstructionConfig.PSEUDO_MOVE:
                         self.uniqueId = InstructionId.MOVE
                 elif self.uniqueId == InstructionId.NOR:
-                    self.uniqueId = InstructionId.NOT
+                    if InstructionConfig.PSEUDO_NOT:
+                        self.uniqueId = InstructionId.NOT
             elif self.uniqueId == InstructionId.SUBU:
                 if self.rs == 0:
-                    self.uniqueId = InstructionId.NEGU
+                    if InstructionConfig.PSEUDO_NEGU:
+                        self.uniqueId = InstructionId.NEGU
 
         self.descriptor = instructionDescriptorDict[self.uniqueId]
 

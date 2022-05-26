@@ -99,10 +99,13 @@ class InstructionNormal(InstructionBase):
             if self.rt == 0:
                 if self.uniqueId == InstructionId.BEQ:
                     if self.rs == 0:
-                        self.uniqueId = InstructionId.B
+                        if InstructionConfig.PSEUDO_B:
+                            self.uniqueId = InstructionId.B
                     else:
-                        self.uniqueId = InstructionId.BEQZ
+                        if InstructionConfig.PSEUDO_BEQZ:
+                            self.uniqueId = InstructionId.BEQZ
                 elif self.uniqueId == InstructionId.BNE:
-                    self.uniqueId = InstructionId.BNEZ
+                    if InstructionConfig.PSEUDO_BNEZ:
+                        self.uniqueId = InstructionId.BNEZ
 
         self.descriptor = instructionDescriptorDict[self.uniqueId]

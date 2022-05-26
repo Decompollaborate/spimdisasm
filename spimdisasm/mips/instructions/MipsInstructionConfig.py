@@ -48,6 +48,14 @@ class InstructionConfig:
     PSEUDO_INSTRUCTIONS: bool = True
     """Produce pseudo instructions (like `move`, `nop` or `b`) whenever those should match the desired original instruction"""
 
+    PSEUDO_BEQZ: bool = True
+    PSEUDO_BNEZ: bool = True
+    PSEUDO_B: bool = True
+    PSEUDO_MOVE: bool = True
+    PSEUDO_NOT: bool = True
+    PSEUDO_NEGU: bool = True
+
+
     SN64_DIV_FIX: bool = False
     """Enables a few fixes for SN64's assembler related to div/divu instructions
 
