@@ -288,6 +288,14 @@ class SymbolFunction(SymbolText):
                 shouldRemove = True
                 register = instr.rt
 
+            if instr.modifiesRt():
+                shouldRemove = True
+                register = instr.rt
+
+            if instr.modifiesRd():
+                shouldRemove = True
+                register = instr.rd
+
         if shouldRemove:
             if register in trackedRegisters:
                 self._printSymbolFinderDebugInfo_DelTrackedRegister(instr, register, currentVram, trackedRegisters)
