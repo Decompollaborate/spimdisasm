@@ -549,6 +549,9 @@ class SymbolFunction(SymbolText):
 
         self._processElfRelocSymbols()
 
+        for instr in self.instructions:
+            instr.inHandwrittenFunction = self.isLikelyHandwritten
+
 
     def countDiffOpcodes(self, other: SymbolFunction) -> int:
         result = 0
@@ -749,6 +752,12 @@ class SymbolFunction(SymbolText):
             output += "/* Handwritten function */" + common.GlobalConfig.LINE_ENDS
 
         output += self.getLabel()
+
+        if common.GlobalConfig.ASM_TEXT_ENT_LABEL:
+            output += f"{common.GlobalConfig.ASM_TEXT_ENT_LABEL} {self.name}" + common.GlobalConfig.LINE_ENDS
+
+        if common.GlobalConfig.ASM_TEXT_FUNC_AS_LABEL:
+            output += f"{self.name}:" + common.GlobalConfig.LINE_ENDS
 
         wasLastInstABranch = False
         instructionOffset = 0

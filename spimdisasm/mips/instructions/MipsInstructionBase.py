@@ -381,6 +381,7 @@ class InstructionBase:
 
         self.vram: int|None = None
         self._handwrittenCategory: bool = False
+        self.inHandwrittenFunction: bool = False
 
     @property
     def instr(self) -> int:
@@ -544,6 +545,8 @@ class InstructionBase:
 
     def getFloatRegisterName(self, register: int) -> str:
         if not InstructionConfig.NAMED_REGISTERS:
+            if register == 31:
+                return f"${register}"
             return f"$f{register}"
         if InstructionConfig.FPR_ABI_NAMES == AbiNames.numeric:
             if register == 31 and not InstructionConfig.USE_FPCCSR:
