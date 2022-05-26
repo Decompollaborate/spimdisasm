@@ -13,5 +13,4 @@ setup(
     description="N64 MIPS disassembler",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    modules="spimdisasm",
 )
