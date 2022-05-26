@@ -359,7 +359,7 @@ class SymbolFunction(SymbolText):
         registersValues = dict(registersValuesOriginal)
 
         lastInstr = self.instructions[instructionOffset//4 - 1]
-        if not lastInstr.isBranch():
+        if not lastInstr.isBranch() and not lastInstr.isUnconditionalBranch():
             return
 
         branchOffset = lastInstr.getBranchOffset() - 4
@@ -403,7 +403,7 @@ class SymbolFunction(SymbolText):
                         pairedLoFound = True
                 self._tryToSetSymbolType(targetInstr, branch, registersValues)
 
-            if prevTargetInstr.uniqueId == instructions.InstructionId.B or (prevTargetInstr.uniqueId == instructions.InstructionId.BEQ and prevTargetInstr.rt == 0 and prevTargetInstr.rs == 0):
+            if prevTargetInstr.isUnconditionalBranch():
                 # TODO: Consider following branches
                 # self._lookAheadSymbolFinder(targetInstr, branch, trackedRegisters, trackedRegistersAll, registersValues)
                 return
@@ -504,7 +504,7 @@ class SymbolFunction(SymbolText):
                 self.hasUnimplementedIntrs = True
                 return
 
-            if instr.isBranch() or (common.GlobalConfig.TREAT_J_AS_UNCONDITIONAL_BRANCH and instr.uniqueId == instructions.InstructionId.J):
+            if instr.isBranch() or instr.isUnconditionalBranch():
                 self._processBranch(instr, instructionOffset, currentVram)
 
             elif instr.isJType():
@@ -656,7 +656,7 @@ class SymbolFunction(SymbolText):
                     auxOverride = self.generateHiLoStr(instr, auxOverride)
                 return auxOverride
 
-        if instr.isBranch():
+        if instr.isBranch() or instr.isUnconditionalBranch():
             if not common.GlobalConfig.IGNORE_BRANCHES:
                 if instr.uniqueId == instructions.InstructionId.J:
                     targetBranchVram = instr.getInstrIndexAsVram()
@@ -700,15 +700,19 @@ class SymbolFunction(SymbolText):
                 if symbol is not None:
                     return self.generateHiLoStr(instr, symbol.name)
 
+                # Pretend this pair is a constant
                 if instr.uniqueId == instructions.InstructionId.LUI:
                     loInstr = self.instructions[self.hiToLowDict[instructionOffset] // 4]
                     if loInstr.uniqueId == instructions.InstructionId.ORI:
                         return f"(0x{constant:X} >> 16)"
                 elif instr.uniqueId == instructions.InstructionId.ORI:
                     return f"(0x{constant:X} & 0xFFFF)"
-                return self.generateHiLoStr(instr, f"0x{constant:X}")
+
+                if common.GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_HILO:
+                    return self.generateHiLoStr(instr, f"0x{constant:X}")
 
             elif instr.uniqueId == instructions.InstructionId.LUI:
+                # Unpaired LUI
                 return f"(0x{instr.immediate<<16:X} >> 16)"
 
         elif instr.isJType():
@@ -733,7 +737,10 @@ class SymbolFunction(SymbolText):
                 labelSym.isDefined = True
                 labelSym.sectionType = self.sectionType
                 if labelSym.type == common.SymbolSpecialType.function or labelSym.type == common.SymbolSpecialType.jumptablelabel:
-                    return labelSym.getSymbolLabel() + common.GlobalConfig.LINE_ENDS
+                    label = labelSym.getSymbolLabel() + common.GlobalConfig.LINE_ENDS
+                    if common.GlobalConfig.ASM_TEXT_FUNC_AS_LABEL:
+                        label += f"{labelSym.getName()}:{common.GlobalConfig.LINE_ENDS}"
+                    return label
                 return labelSym.getName() + ":" + common.GlobalConfig.LINE_ENDS
 
             if instructionOffset in self.localLabels:

@@ -97,7 +97,7 @@ class SectionText(SectionBase):
             if not self.isRsp and not isLikelyHandwritten:
                 isLikelyHandwritten = instr.isLikelyHandwritten()
 
-            if instr.isBranch() or (common.GlobalConfig.TREAT_J_AS_UNCONDITIONAL_BRANCH and instr.uniqueId == instructions.InstructionId.J):
+            if instr.isBranch() or instr.isUnconditionalBranch():
                 if instr.uniqueId == instructions.InstructionId.J:
                     branch = instr.getInstrIndexAsVram() - currentVram
                 else:

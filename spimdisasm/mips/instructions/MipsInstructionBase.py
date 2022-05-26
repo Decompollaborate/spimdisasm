@@ -487,6 +487,19 @@ class InstructionBase:
     def isTrap(self) -> bool:
         return self.descriptor.isTrap
 
+    def isUnconditionalBranch(self) -> bool:
+        if self.uniqueId == InstructionId.B:
+            return True
+
+        # In case pseudo instructions are disabled
+        if self.uniqueId == InstructionId.BEQ and self.rt == 0 and self.rs == 0:
+            return True
+
+        if InstructionConfig.TREAT_J_AS_UNCONDITIONAL_BRANCH and self.uniqueId == InstructionId.J:
+            return True
+
+        return False
+
     def isJType(self) -> bool:
         return self.descriptor.instrType == InstrType.typeJ
 
