@@ -46,7 +46,7 @@ class InstructionConfig:
     """Use named registers for VR4300's RSP's coprocessor 0 registers"""
 
     PSEUDO_INSTRUCTIONS: bool = True
-    """Produce pseudo instructions (like `move`, `nop` or `b`) whenever those should match the desired original instruction"""
+    """Produce pseudo instructions (like `move` or `b`) whenever those should match the desired original instruction"""
 
     PSEUDO_BEQZ: bool = True
     PSEUDO_BNEZ: bool = True
@@ -55,6 +55,7 @@ class InstructionConfig:
     PSEUDO_NOT: bool = True
     PSEUDO_NEGU: bool = True
 
+    TREAT_J_AS_UNCONDITIONAL_BRANCH: bool = False
 
     SN64_DIV_FIX: bool = False
     """Enables a few fixes for SN64's assembler related to div/divu instructions
@@ -94,6 +95,8 @@ class InstructionConfig:
 
         miscOpts.add_argument("--pseudo-instr", help=f"Toggles producing pseudo instructions. Defaults to {InstructionConfig.PSEUDO_INSTRUCTIONS}", action=argparse.BooleanOptionalAction)
 
+        miscOpts.add_argument("--j-branch", help=f"Treat J instructions as unconditional branches. {InstructionConfig.TREAT_J_AS_UNCONDITIONAL_BRANCH}", action=argparse.BooleanOptionalAction)
+
         miscOpts.add_argument("--sn64-div-fix", help=f"Enables a few fixes for SN64's assembler related to div/divu instructions. Defaults to {InstructionConfig.SN64_DIV_FIX}", action=argparse.BooleanOptionalAction)
 
         miscOpts.add_argument("--opcode-ljust", help=f"Set the minimal number of characters to left-align the opcode name. Defaults to {InstructionConfig.OPCODE_LJUST}")
@@ -124,6 +127,9 @@ class InstructionConfig:
 
         if args.pseudo_instr is not None:
             InstructionConfig.PSEUDO_INSTRUCTIONS = args.pseudo_instr
+
+        if args.j_branch is not None:
+            InstructionConfig.TREAT_J_AS_UNCONDITIONAL_BRANCH = args.j_branch
 
         if args.sn64_div_fix is not None:
             InstructionConfig.SN64_DIV_FIX = args.sn64_div_fix
