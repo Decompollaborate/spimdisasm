@@ -700,15 +700,19 @@ class SymbolFunction(SymbolText):
                 if symbol is not None:
                     return self.generateHiLoStr(instr, symbol.name)
 
+                # Pretend this pair is a constant
                 if instr.uniqueId == instructions.InstructionId.LUI:
                     loInstr = self.instructions[self.hiToLowDict[instructionOffset] // 4]
                     if loInstr.uniqueId == instructions.InstructionId.ORI:
                         return f"(0x{constant:X} >> 16)"
                 elif instr.uniqueId == instructions.InstructionId.ORI:
                     return f"(0x{constant:X} & 0xFFFF)"
-                return self.generateHiLoStr(instr, f"0x{constant:X}")
+
+                if common.GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_HILO:
+                    return self.generateHiLoStr(instr, f"0x{constant:X}")
 
             elif instr.uniqueId == instructions.InstructionId.LUI:
+                # Unpaired LUI
                 return f"(0x{instr.immediate<<16:X} >> 16)"
 
         elif instr.isJType():

@@ -50,6 +50,8 @@ class GlobalConfig:
     """Toggle pointer detection for higher addresses (higher than 0xC0000000)"""
     SYMBOL_FINDER_FILTERED_ADDRESSES_AS_CONSTANTS: bool = True
     """Treat filtered out addresses as constants pairs"""
+    SYMBOL_FINDER_FILTERED_ADDRESSES_AS_HILO: bool = True
+    """Allow using %hi/%lo syntax for filtered out addresses"""
 
 
     ASM_COMMENT: bool = True
@@ -110,6 +112,7 @@ class GlobalConfig:
         backendConfig.add_argument("--filter-low-addresses", help=f"Filter out low addresses (lower than 0x40000000) when searching for pointers. Defaults to {GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES}", action=argparse.BooleanOptionalAction)
         backendConfig.add_argument("--filter-high-addresses", help=f"Filter out high addresses (higher than 0xC0000000) when searching for pointers. Defaults to {GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES}", action=argparse.BooleanOptionalAction)
         backendConfig.add_argument("--filtered-addresses-as-constants", help=f"Treat filtered out addressed as constants. Defaults to {GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_CONSTANTS}", action=argparse.BooleanOptionalAction)
+        backendConfig.add_argument("--filtered-addresses-as-hilo", help=f"Use %hi/%lo syntax for filtered out addresses. Defaults to {GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_HILO}", action=argparse.BooleanOptionalAction)
 
 
         miscConfig = parser.add_argument_group("Disassembler misc options")
@@ -171,6 +174,8 @@ class GlobalConfig:
             GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES = args.filter_high_addresses
         if args.filtered_addresses_as_constants is not None:
             GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_CONSTANTS = args.filtered_addresses_as_constants
+        if args.filtered_addresses_as_hilo is not None:
+            GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_HILO = args.filtered_addresses_as_hilo
 
 
         if args.asm_comments is not None:
