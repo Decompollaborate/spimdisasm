@@ -15,6 +15,12 @@ def disassemblerMain():
     description = "General purpose N64-mips disassembler"
     parser = argparse.ArgumentParser(description=description)
 
+    if parser.prog == "simpleDisasm.py":
+        spimdisasm.common.Utils.eprint(f"Deprecation warning")
+        spimdisasm.common.Utils.eprint(f"\t The simpleDisasm.py script is deprecated")
+        spimdisasm.common.Utils.eprint(f"\t Use singleFileDisasm.py instead")
+        spimdisasm.common.Utils.eprint()
+
     parser.add_argument("binary", help="Path to input binary")
     parser.add_argument("output", help="Path to output. Use '-' to print to stdout instead")
 
