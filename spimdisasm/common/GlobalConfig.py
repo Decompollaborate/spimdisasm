@@ -60,7 +60,9 @@ class GlobalConfig:
 
     ASM_TEXT_LABEL: str = "glabel"
     ASM_DATA_LABEL: str = "glabel"
+    ASM_TEXT_ENT_LABEL: str = ""
     ASM_TEXT_END_LABEL: str = ""
+    ASM_TEXT_FUNC_AS_LABEL: bool = False
 
     PRINT_NEW_FILE_BOUNDARIES: bool = False
     """Print to stdout every file boundary found in .text and .rodata"""
@@ -120,7 +122,9 @@ class GlobalConfig:
 
         miscConfig.add_argument("--asm-text-label", help=f"Changes the label used to declare functions. Defaults to {GlobalConfig.ASM_TEXT_LABEL}")
         miscConfig.add_argument("--asm-data-label", help=f"Changes the label used to declare data symbols. Defaults to {GlobalConfig.ASM_DATA_LABEL}")
+        miscConfig.add_argument("--asm-ent-label", help=f"Tells the disassembler to start using an ent label for functions")
         miscConfig.add_argument("--asm-end-label", help=f"Tells the disassembler to start using an end label for functions")
+        miscConfig.add_argument("--asm-func-as-label", help=f"Toggle adding the function name as an additional label. Defaults to {GlobalConfig.ASM_TEXT_FUNC_AS_LABEL}", action=argparse.BooleanOptionalAction)
 
         miscConfig.add_argument("--print-new-file-boundaries", help=f"Print to stdout any new file boundary found. Defaults to {GlobalConfig.PRINT_NEW_FILE_BOUNDARIES}", action=argparse.BooleanOptionalAction)
 
@@ -184,8 +188,12 @@ class GlobalConfig:
             GlobalConfig.ASM_TEXT_LABEL = args.asm_text_label
         if args.asm_data_label:
             GlobalConfig.ASM_DATA_LABEL = args.asm_data_label
+        if args.asm_ent_label:
+            GlobalConfig.ASM_TEXT_ENT_LABEL = args.asm_ent_label
         if args.asm_end_label:
             GlobalConfig.ASM_TEXT_END_LABEL = args.asm_end_label
+        if args.asm_func_as_label is not None:
+            GlobalConfig.ASM_TEXT_FUNC_AS_LABEL = args.asm_func_as_label
 
         if args.print_new_file_boundaries is not None:
             GlobalConfig.PRINT_NEW_FILE_BOUNDARIES = args.print_new_file_boundaries
