@@ -7,7 +7,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="spimdisasm",
-    version="1.0.4",
+    version="1.0.5",
     author="Decompollaborate",
     license="MIT",
     description="N64 MIPS disassembler",
