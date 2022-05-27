@@ -149,7 +149,7 @@ def writeSplittedFunctionToFile(f: TextIO, func: symbols.SymbolFunction, rodataF
 
 def writeSplitedFunction(path: str, func: symbols.SymbolFunction, rodataFileList: list[sections.SectionRodata]):
     os.makedirs(path, exist_ok=True)
-    with open(os.path.join(path, func.name) + ".s", "w") as f:
+    with open(os.path.join(path, func.getName()) + ".s", "w") as f:
         writeSplittedFunctionToFile(f, func, rodataFileList)
 
 
@@ -162,7 +162,7 @@ def writeOtherRodata(path: str, rodataFileList: list[sections.SectionRodata]):
             if not rodataSym.isRdata():
                 continue
 
-            rodataSymbolPath = os.path.join(rodataPath, rodataSym.name) + ".s"
+            rodataSymbolPath = os.path.join(rodataPath, rodataSym.getName()) + ".s"
             with open(rodataSymbolPath, "w") as f:
                 f.write(".rdata" + common.GlobalConfig.LINE_ENDS)
                 f.write(rodataSym.disassemble())

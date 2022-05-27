@@ -11,11 +11,8 @@ from . import SymbolBase
 
 
 class SymbolRodata(SymbolBase):
-    def __init__(self, context: common.Context, inFileOffset: int, vram: int|None, name: str, words: list[int]):
-        super().__init__(context, inFileOffset, vram, name, words, common.FileSectionType.Rodata)
-
-        assert self.contextSym is not None
-        self.contextSym: common.ContextSymbol
+    def __init__(self, context: common.Context, inFileOffset: int, vram: int|None, words: list[int]):
+        super().__init__(context, inFileOffset, vram, words, common.FileSectionType.Rodata)
 
 
     def isString(self) -> bool:
@@ -48,9 +45,6 @@ class SymbolRodata(SymbolBase):
 
     def isRdata(self) -> bool:
         "Checks if the current symbol is .rdata"
-        if self.contextSym is None:
-            return False
-
         if self.contextSym.isMaybeConstVariable():
             return True
 
@@ -79,7 +73,6 @@ class SymbolRodata(SymbolBase):
                 self.contextSym.name = f"DBL_{self.vram:08X}"
             elif self.isString():
                 self.contextSym.name = f"STR_{self.vram:08X}"
-        self.name = self.contextSym.name
 
     def analyze(self):
         if self.contextSym.isDouble():
@@ -96,9 +89,8 @@ class SymbolRodata(SymbolBase):
         super().analyze()
 
     def getNthWord(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False) -> tuple[str, int]:
-        if self.contextSym is not None:
-            if self.contextSym.isByte() or self.contextSym.isShort():
-                return super().getNthWord(i, canReferenceSymbolsWithAddends, canReferenceConstants)
+        if self.contextSym.isByte() or self.contextSym.isShort():
+            return super().getNthWord(i, canReferenceSymbolsWithAddends, canReferenceConstants)
 
         localOffset = 4*i
         w = self.words[i]

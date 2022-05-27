@@ -89,7 +89,8 @@ class SectionRelocZ64(SectionBase):
         localOffset = 0
 
         currentVram = self.getVramOffset(localOffset)
-        sym = symbols.SymbolData(self.context, localOffset + self.inFileOffset, currentVram, f"{self.name}_OverlayInfo", self.words[0:4])
+        sym = symbols.SymbolData(self.context, localOffset + self.inFileOffset, currentVram, self.words[0:4])
+        sym.contextSym.name = f"{self.name}_OverlayInfo"
         sym.setCommentOffset(self.commentOffset)
         sym.endOfLineComment = [f" # _{self.name}Segment{sectName.toCapitalizedStr()}Size" for sectName in common.FileSections_ListBasic]
         sym.analyze()
@@ -97,14 +98,16 @@ class SectionRelocZ64(SectionBase):
         localOffset += 4 * 4
 
         currentVram = self.getVramOffset(localOffset)
-        sym = symbols.SymbolData(self.context, localOffset + self.inFileOffset, currentVram, f"{self.name}_RelocCount", [self.relocCount])
+        sym = symbols.SymbolData(self.context, localOffset + self.inFileOffset, currentVram, [self.relocCount])
+        sym.contextSym.name = f"{self.name}_RelocCount"
         sym.setCommentOffset(self.commentOffset)
         sym.analyze()
         self.symbolList.append(sym)
         localOffset += 4
 
         currentVram = self.getVramOffset(localOffset)
-        sym = symbols.SymbolData(self.context, localOffset + self.inFileOffset, currentVram, f"{self.name}_OverlayRelocations", [r.reloc for r in self.entries])
+        sym = symbols.SymbolData(self.context, localOffset + self.inFileOffset, currentVram, [r.reloc for r in self.entries])
+        sym.contextSym.name = f"{self.name}_OverlayRelocations"
         sym.setCommentOffset(self.commentOffset)
         sym.endOfLineComment = [f" # {str(r)}" for r in self.entries]
         sym.analyze()
@@ -113,14 +116,16 @@ class SectionRelocZ64(SectionBase):
 
         if len(self.tail) > 0:
             currentVram = self.getVramOffset(localOffset)
-            sym = symbols.SymbolData(self.context, localOffset + self.inFileOffset, currentVram, f"{self.name}_Padding", self.tail)
+            sym = symbols.SymbolData(self.context, localOffset + self.inFileOffset, currentVram, self.tail)
+            sym.contextSym.name = f"{self.name}_Padding"
             sym.setCommentOffset(self.commentOffset)
             sym.analyze()
             self.symbolList.append(sym)
             localOffset += 4 * len(self.tail)
 
         currentVram = self.getVramOffset(localOffset)
-        sym = symbols.SymbolData(self.context, localOffset + self.inFileOffset, currentVram, f"{self.name}_OverlayInfoOffset", [self.seekup])
+        sym = symbols.SymbolData(self.context, localOffset + self.inFileOffset, currentVram, [self.seekup])
+        sym.contextSym.name = f"{self.name}_OverlayInfoOffset"
         sym.setCommentOffset(self.commentOffset)
         sym.analyze()
         self.symbolList.append(sym)

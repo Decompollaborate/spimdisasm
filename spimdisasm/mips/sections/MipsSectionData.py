@@ -20,7 +20,7 @@ class SectionData(SectionBase):
     def analyze(self):
         self.checkAndCreateFirstSymbol()
 
-        symbolList: list[tuple[int, int, str]] = []
+        symbolList: list[tuple[int, common.ContextSymbol]] = []
         localOffset = 0
 
         for w in self.words:
@@ -28,8 +28,7 @@ class SectionData(SectionBase):
 
             contextSym = self.context.getSymbol(currentVram, tryPlusOffset=False)
             if contextSym is not None:
-                contextSym.isDefined = True
-                symbolList.append((localOffset, currentVram, contextSym.name))
+                symbolList.append((localOffset, contextSym))
 
             if self.vram is not None:
                 if w >= self.vram and w < 0x84000000:
@@ -38,14 +37,14 @@ class SectionData(SectionBase):
 
             localOffset += 4
 
-        for i, (offset, vram, symName) in enumerate(symbolList):
+        for i, (offset, contextSym) in enumerate(symbolList):
             if i + 1 == len(symbolList):
                 words = self.words[offset//4:]
             else:
                 nextOffset = symbolList[i+1][0]
                 words = self.words[offset//4:nextOffset//4]
 
-            sym = symbols.SymbolData(self.context, offset + self.inFileOffset, vram, symName, words)
+            sym = symbols.SymbolData(self.context, offset + self.inFileOffset, contextSym.vram, words)
             sym.setCommentOffset(self.commentOffset)
             sym.analyze()
             self.symbolList.append(sym)
