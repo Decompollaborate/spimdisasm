@@ -33,7 +33,7 @@ class SectionData(SectionBase):
 
             if self.vram is not None:
                 if w >= self.vram and w < 0x84000000:
-                    if self.context.getAnySymbol(w) is None:
+                    if self.context.getSymbol(w, tryPlusOffset=False) is None:
                         self.context.newPointersInData.add(w)
 
             localOffset += 4

@@ -38,7 +38,7 @@ class SymbolRodata(SymbolBase):
                 if (((word0 << 32) | word1) & 0x7FF0000000000000) != 0x7FF0000000000000:
                     # Prevent accidentally losing symbols
                     currentVram = self.getVramOffset(index*4)
-                    if self.context.getGenericSymbol(currentVram+4, False) is None:
+                    if self.context.getSymbol(currentVram+4, False) is None:
                         return True
         return False
 
@@ -134,7 +134,7 @@ class SymbolRodata(SymbolBase):
             rodataWord = doubleWord
             skip = 1
         else:
-            labelSym = self.context.getAnySymbol(w)
+            labelSym = self.context.getSymbol(w, tryPlusOffset=False)
             if labelSym is not None:
                 value = labelSym.getName()
             elif self.isString():
