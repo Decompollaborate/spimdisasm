@@ -50,13 +50,13 @@ class SectionBss(SectionBase):
 
 
         offsetSymbolsInSection = self.context.offsetSymbols[common.FileSectionType.Bss]
-        bssSymbolOffsets: dict[int, common.ContextSymbolBase] = {offset: sym for offset, sym in offsetSymbolsInSection.items()}
+        bssSymbolOffsets: dict[int, common.ContextSymbol] = {offset: sym for offset, sym in offsetSymbolsInSection.items()}
 
-        vramIndexLow = bisect.bisect(self.context.symbolsVramSorted, self.bssVramStart)
-        vramIndexHigh = bisect.bisect(self.context.symbolsVramSorted, self.bssVramEnd)
+        vramIndexLow = bisect.bisect(self.context.globalSegment.symbolsVramSorted, self.bssVramStart)
+        vramIndexHigh = bisect.bisect(self.context.globalSegment.symbolsVramSorted, self.bssVramEnd)
         for vramIndex in range(vramIndexLow-1, vramIndexHigh-1):
-            symbolVram = self.context.symbolsVramSorted[vramIndex]
-            contextSym = self.context.symbols[symbolVram]
+            symbolVram = self.context.globalSegment.symbolsVramSorted[vramIndex]
+            contextSym = self.context.globalSegment.symbols[symbolVram]
             # Mark every known symbol that happens to be in this address space as defined
             contextSym.isDefined = True
             contextSym.sectionType = common.FileSectionType.Bss

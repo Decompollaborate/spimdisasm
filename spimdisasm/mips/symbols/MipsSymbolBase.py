@@ -44,7 +44,7 @@ class SymbolBase(common.ElementBase):
 
         return f"/* {offsetHex} {vramHex}{wordValueHex}*/"
 
-    def getSymbolAtVramOrOffset(self, localOffset: int) -> common.ContextSymbolBase | None:
+    def getSymbolAtVramOrOffset(self, localOffset: int) -> common.ContextSymbol | None:
         if self.vram is not None:
             currentVram = self.getVramOffset(localOffset)
             return self.context.getSymbol(currentVram, tryPlusOffset=False)

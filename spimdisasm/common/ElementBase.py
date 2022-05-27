@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from .GlobalConfig import GlobalConfig
-from .Context import Context, ContextSymbolBase
+from .Context import Context, ContextSymbol
 from .FileSectionType import FileSectionType
 
 
@@ -69,7 +69,7 @@ class ElementBase:
         # return self.vram + self.inFileOffset + localOffset
 
 
-    def getLabelFromSymbol(self, sym: ContextSymbolBase|None) -> str:
+    def getLabelFromSymbol(self, sym: ContextSymbol|None) -> str:
         "Generates a glabel for the passed symbol, including an optional index value if it was set and it is enabled in the GlobalConfig"
         if sym is not None:
             label = sym.getSymbolLabel()

@@ -23,7 +23,7 @@ class SectionRodata(SectionBase):
         self.symbolsVRams: set[int] = set()
 
 
-    def _stringGuesser(self, contextSym: common.ContextSymbolBase, localOffset: int) -> bool:
+    def _stringGuesser(self, contextSym: common.ContextSymbol, localOffset: int) -> bool:
         if contextSym.isMaybeString or contextSym.isString():
             return True
 
