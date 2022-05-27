@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import TextIO
+from typing import TextIO, Generator
 import bisect
 
 from .GlobalConfig import GlobalConfig
@@ -40,6 +40,16 @@ class SymbolsSegment:
                         return None
                     return contextSym
         return None
+
+    def getSymbolRangeIter(self, addressStart: int, addressEnd: int) -> Generator[ContextSymbol, None, None]:
+        vramIndexLow = bisect.bisect(self.symbolsVramSorted, addressStart)
+        vramIndexHigh = bisect.bisect(self.symbolsVramSorted, addressEnd)
+        for vramIndex in range(vramIndexLow-1, vramIndexHigh-1):
+            symbolVram = self.symbolsVramSorted[vramIndex]
+            yield self.symbols[symbolVram]
+
+    def getSymbolRange(self, addressStart: int, addressEnd: int):
+        return list(self.getSymbolRangeIter(addressStart, addressEnd))
 
     def getConstant(self, constantValue: int) -> ContextSymbol|None:
         return self.constants.get(constantValue, None)

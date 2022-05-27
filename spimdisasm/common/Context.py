@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import ast
 import argparse
-import bisect
+from typing import Generator
 import os
 
 from . import Utils
@@ -171,6 +171,11 @@ class Context:
         "Searches symbol or a symbol with an addend if `tryPlusOffset` is True"
         return self.globalSegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
 
+    def getSymbolRangeIter(self, addressStart: int, addressEnd: int) -> Generator[ContextSymbol, None, None]:
+        return self.globalSegment.getSymbolRangeIter(addressStart, addressEnd)
+
+    def getSymbolRange(self, addressStart: int, addressEnd: int):
+        return self.globalSegment.getSymbolRange(addressStart, addressEnd)
 
     def getConstant(self, constantValue: int) -> ContextSymbol|None:
         return self.globalSegment.getConstant(constantValue)

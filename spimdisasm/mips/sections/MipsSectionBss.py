@@ -52,17 +52,13 @@ class SectionBss(SectionBase):
         offsetSymbolsInSection = self.context.offsetSymbols[common.FileSectionType.Bss]
         bssSymbolOffsets: dict[int, common.ContextSymbol] = {offset: sym for offset, sym in offsetSymbolsInSection.items()}
 
-        vramIndexLow = bisect.bisect(self.context.globalSegment.symbolsVramSorted, self.bssVramStart)
-        vramIndexHigh = bisect.bisect(self.context.globalSegment.symbolsVramSorted, self.bssVramEnd)
-        for vramIndex in range(vramIndexLow-1, vramIndexHigh-1):
-            symbolVram = self.context.globalSegment.symbolsVramSorted[vramIndex]
-            contextSym = self.context.globalSegment.symbols[symbolVram]
+        for contextSym in self.context.getSymbolRangeIter(self.bssVramStart, self.bssVramEnd):
             # Mark every known symbol that happens to be in this address space as defined
             contextSym.isDefined = True
             contextSym.sectionType = common.FileSectionType.Bss
 
             # Needs to move this to a list because the algorithm requires to check the size of a bss variable based on the next bss variable' vram
-            bssSymbolOffsets[symbolVram-self.bssVramStart] = contextSym
+            bssSymbolOffsets[contextSym.vram-self.bssVramStart] = contextSym
 
 
         sortedOffsets = sorted(bssSymbolOffsets.items())
