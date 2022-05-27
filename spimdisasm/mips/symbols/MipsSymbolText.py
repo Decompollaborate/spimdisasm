@@ -11,5 +11,5 @@ from . import SymbolBase
 
 
 class SymbolText(SymbolBase):
-    def __init__(self, context: common.Context, inFileOffset: int, vram: int|None, words: list[int]):
-        super().__init__(context, inFileOffset, vram, words, common.FileSectionType.Text)
+    def __init__(self, context: common.Context, vrom: int, inFileOffset: int, vram: int|None, words: list[int]):
+        super().__init__(context, vrom, inFileOffset, vram, words, common.FileSectionType.Text)

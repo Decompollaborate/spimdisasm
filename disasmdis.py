@@ -53,7 +53,7 @@ def disasmdisMain():
         for instr in instructionList:
             print(instr.disassemble())
     else:
-        func = spimdisasm.mips.symbols.SymbolFunction(context, 0, None, "", instructionList)
+        func = spimdisasm.mips.symbols.SymbolFunction(context, 0, 0, None, instructionList)
         func.analyze()
         print(func.disassemble(), end="")
 

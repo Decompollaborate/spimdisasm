@@ -14,7 +14,7 @@ class ElementBase:
     """Represents the base class used for most file sections and symbols.
     """
 
-    def __init__(self, context: Context, inFileOffset: int, vram: int|None, name: str, words: list[int], sectionType: FileSectionType):
+    def __init__(self, context: Context, vrom: int, inFileOffset: int, vram: int|None, name: str, words: list[int], sectionType: FileSectionType):
         """Constructor
 
         Args:
@@ -27,6 +27,7 @@ class ElementBase:
         """
 
         self.context: Context = context
+        self.vrom: int = vrom
         self.inFileOffset: int = inFileOffset
         self.vram: int|None = vram
         self.name: str = name
@@ -61,6 +62,9 @@ class ElementBase:
 
     def setCommentOffset(self, commentOffset: int):
         self.commentOffset = commentOffset
+
+    def getVromOffset(self, localOffset: int) -> int:
+        return self.vrom + localOffset
 
     def getVramOffset(self, localOffset: int) -> int:
         if self.vram is None:

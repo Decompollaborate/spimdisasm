@@ -13,8 +13,8 @@ from . import SectionBase
 
 
 class SectionRodata(SectionBase):
-    def __init__(self, context: common.Context, vram: int|None, filename: str, array_of_bytes: bytearray):
-        super().__init__(context, vram, filename, array_of_bytes, common.FileSectionType.Rodata)
+    def __init__(self, context: common.Context, vrom: int, vram: int|None, filename: str, array_of_bytes: bytearray):
+        super().__init__(context, vrom, vram, filename, array_of_bytes, common.FileSectionType.Rodata)
 
         self.bytes: bytearray = bytearray(self.sizew*4)
         common.Utils.beWordsToBytes(self.words, self.bytes)
@@ -129,7 +129,7 @@ class SectionRodata(SectionBase):
             if self.vram is not None:
                 symVram = vram
 
-            sym = symbols.SymbolRodata(self.context, offset + self.inFileOffset, symVram, words)
+            sym = symbols.SymbolRodata(self.context, self.getVromOffset(offset), offset + self.inFileOffset, symVram, words)
             sym.setCommentOffset(self.commentOffset)
             sym.analyze()
             self.symbolList.append(sym)

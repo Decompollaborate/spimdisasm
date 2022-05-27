@@ -61,12 +61,13 @@ def elfObjDisasmMain():
         if outputPath != "-":
             outputFilePath /= inputPath.stem
 
+        # TODO: use vrom
         if sectionType == spimdisasm.common.FileSectionType.Text:
-            processedFiles[sectionType] = (outputFilePath, spimdisasm.mips.sections.SectionText(context, None, inputPath.stem, sectionBytes))
+            processedFiles[sectionType] = (outputFilePath, spimdisasm.mips.sections.SectionText(context, 0, None, inputPath.stem, sectionBytes))
         if sectionType == spimdisasm.common.FileSectionType.Data:
-            processedFiles[sectionType] = (outputFilePath, spimdisasm.mips.sections.SectionData(context, None, inputPath.stem, sectionBytes))
+            processedFiles[sectionType] = (outputFilePath, spimdisasm.mips.sections.SectionData(context, 0, None, inputPath.stem, sectionBytes))
         if sectionType == spimdisasm.common.FileSectionType.Rodata:
-            processedFiles[sectionType] = (outputFilePath, spimdisasm.mips.sections.SectionRodata(context, None, inputPath.stem, sectionBytes))
+            processedFiles[sectionType] = (outputFilePath, spimdisasm.mips.sections.SectionRodata(context, 0, None, inputPath.stem, sectionBytes))
 
     if elfFile.nobits is not None:
         outputPath = dataOutput
@@ -75,7 +76,7 @@ def elfObjDisasmMain():
         if outputPath != "-":
             outputFilePath /= inputPath.stem
 
-        processedFiles[spimdisasm.common.FileSectionType.Bss] = (outputFilePath, spimdisasm.mips.sections.SectionBss(context, 0, elfFile.nobits, inputPath.stem))
+        processedFiles[spimdisasm.common.FileSectionType.Bss] = (outputFilePath, spimdisasm.mips.sections.SectionBss(context, 0, 0, elfFile.nobits, inputPath.stem))
 
     if elfFile.symtab is not None and elfFile.strtab is not None:
         # Inject symbols from the reloc table referenced in each section

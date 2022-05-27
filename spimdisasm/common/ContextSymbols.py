@@ -48,7 +48,7 @@ class ContextSymbol:
     size: int|None = None
     type: SymbolSpecialType|str|None = None
 
-    vromAddress: int = 0
+    vromAddress: int|None = None
 
     sectionType: FileSectionType = FileSectionType.Unknown
 

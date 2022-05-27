@@ -37,14 +37,14 @@ def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_byte
 
     f: sections.SectionBase
     if splitEntry.section == common.FileSectionType.Text:
-        f = sections.SectionText(context, vram, tail, array_of_bytes)
+        f = sections.SectionText(context, offsetStart, vram, tail, array_of_bytes)
     elif splitEntry.section == common.FileSectionType.Data:
-        f = sections.SectionData(context, vram, tail, array_of_bytes)
+        f = sections.SectionData(context, offsetStart, vram, tail, array_of_bytes)
     elif splitEntry.section == common.FileSectionType.Rodata:
-        f = sections.SectionRodata(context, vram, tail, array_of_bytes)
+        f = sections.SectionRodata(context, offsetStart, vram, tail, array_of_bytes)
     elif splitEntry.section == common.FileSectionType.Bss:
         assert isinstance(splitEntry.vram, int)
-        f = sections.SectionBss(context, splitEntry.vram, splitEntry.vram + offsetEnd - offsetStart, tail)
+        f = sections.SectionBss(context, offsetStart, splitEntry.vram, splitEntry.vram + offsetEnd - offsetStart, tail)
     else:
         common.Utils.eprint("Error! Section not set!")
         exit(-1)

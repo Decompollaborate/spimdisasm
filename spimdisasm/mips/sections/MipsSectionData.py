@@ -13,8 +13,8 @@ from . import SectionBase
 
 
 class SectionData(SectionBase):
-    def __init__(self, context: common.Context, vram: int|None, filename: str, array_of_bytes: bytearray):
-        super().__init__(context, vram, filename, array_of_bytes, common.FileSectionType.Data)
+    def __init__(self, context: common.Context, vrom: int, vram: int|None, filename: str, array_of_bytes: bytearray):
+        super().__init__(context, vrom, vram, filename, array_of_bytes, common.FileSectionType.Data)
 
 
     def analyze(self):
@@ -44,7 +44,7 @@ class SectionData(SectionBase):
                 nextOffset = symbolList[i+1][0]
                 words = self.words[offset//4:nextOffset//4]
 
-            sym = symbols.SymbolData(self.context, offset + self.inFileOffset, contextSym.vram, words)
+            sym = symbols.SymbolData(self.context, self.getVromOffset(offset), offset + self.inFileOffset, contextSym.vram, words)
             sym.setCommentOffset(self.commentOffset)
             sym.analyze()
             self.symbolList.append(sym)

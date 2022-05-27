@@ -11,11 +11,17 @@ from . import SymbolBase
 
 
 class SymbolBss(SymbolBase):
-    def __init__(self, context: common.Context, inFileOffset: int, vram: int|None, spaceSize: int):
-        super().__init__(context, inFileOffset, vram, list(), common.FileSectionType.Bss)
+    def __init__(self, context: common.Context, vrom: int, inFileOffset: int, vram: int|None, spaceSize: int):
+        super().__init__(context, vrom, inFileOffset, vram, list(), common.FileSectionType.Bss)
 
         self.spaceSize: int = spaceSize
 
+
+    @property
+    def vramEnd(self) -> int|None:
+        if self.vram is None:
+            return None
+        return self.vram + self.spaceSize
 
     def disassembleAsBss(self) -> str:
         output = self.getLabel()

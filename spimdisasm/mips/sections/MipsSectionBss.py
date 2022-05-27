@@ -15,8 +15,8 @@ from . import SectionBase
 
 
 class SectionBss(SectionBase):
-    def __init__(self, context: common.Context, bssVramStart: int, bssVramEnd: int, filename: str):
-        super().__init__(context, bssVramStart, filename, bytearray(), common.FileSectionType.Bss)
+    def __init__(self, context: common.Context, vrom: int, bssVramStart: int, bssVramEnd: int, filename: str):
+        super().__init__(context, vrom, bssVramStart, filename, bytearray(), common.FileSectionType.Bss)
 
         self.bssVramStart: int = bssVramStart
         self.bssVramEnd: int = bssVramEnd
@@ -25,6 +25,11 @@ class SectionBss(SectionBase):
 
         self.vram = bssVramStart
 
+    @property
+    def vramEnd(self) -> int|None:
+        if self.vram is None:
+            return None
+        return self.vram + self.bssTotalSize
 
     def setVram(self, vram: int):
         super().setVram(vram)
@@ -75,7 +80,7 @@ class SectionBss(SectionBase):
                 if nextSymbolOffset <= self.bssTotalSize:
                     space = nextSymbolOffset - symbolOffset
 
-            sym = symbols.SymbolBss(self.context, symbolOffset + self.inFileOffset, symbolVram, space)
+            sym = symbols.SymbolBss(self.context, self.getVromOffset(symbolOffset), symbolOffset + self.inFileOffset, symbolVram, space)
             sym.setCommentOffset(self.commentOffset)
             sym.analyze()
             self.symbolList.append(sym)
