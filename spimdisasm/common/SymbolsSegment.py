@@ -57,9 +57,9 @@ class SymbolsSegment:
         return None
 
     def getSymbolRangeIter(self, addressStart: int, addressEnd: int) -> Generator[ContextSymbol, None, None]:
-        vramIndexLow = bisect.bisect(self.symbolsVramSorted, addressStart)
-        vramIndexHigh = bisect.bisect(self.symbolsVramSorted, addressEnd)
-        for vramIndex in range(vramIndexLow-1, vramIndexHigh-1):
+        vramIndexLow = bisect.bisect_right(self.symbolsVramSorted, addressStart)
+        vramIndexHigh = bisect.bisect_left(self.symbolsVramSorted, addressEnd)
+        for vramIndex in range(vramIndexLow-1, vramIndexHigh):
             symbolVram = self.symbolsVramSorted[vramIndex]
             yield self.symbols[symbolVram]
 

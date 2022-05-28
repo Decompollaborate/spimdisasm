@@ -19,7 +19,7 @@ from .SymbolsSegment import SymbolsSegment
 class Context:
     N64DefaultBanned = {0x80000010, 0x80000020}
 
-    N64LibultraSyms = {
+    N64LibultraSyms: dict[int, tuple[str, str, int]] = {
         0x80000300: ("osTvType",       "u32", 0x4),
         0x80000304: ("osRomType",      "u32", 0x4),
         0x80000308: ("osRomBase",      "u32", 0x4),
@@ -263,7 +263,8 @@ class Context:
 
     def fillLibultraSymbols(self):
         for vram, (name, type, size) in self.N64LibultraSyms.items():
-            contextSym = self.addSymbol(vram, name)
+            contextSym = self.addSymbol(vram)
+            contextSym.name = name
             contextSym.type = type
             contextSym.size = size
             contextSym.isDefined = True
