@@ -14,12 +14,13 @@ class ElementBase:
     """Represents the base class used for most file sections and symbols.
     """
 
-    def __init__(self, context: Context, vrom: int, inFileOffset: int, vram: int, name: str, words: list[int], sectionType: FileSectionType):
+    def __init__(self, context: Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, name: str, words: list[int], sectionType: FileSectionType):
         """Constructor
 
         Args:
             context (Context):
-            vrom (int): The VROM address of this element
+            vromStart (int): The VROM address of this element
+            vromEnd (int): The end of this element's VROM address
             inFileOffset (int): The offset of this element relative to the start of its file. It is also used to generate the first column of the disassembled line comment
             vram (int): The VRAM address of this element
             name (str): The name of this element
@@ -28,7 +29,8 @@ class ElementBase:
         """
 
         self.context: Context = context
-        self.vrom: int = vrom
+        self.vromStart: int = vromStart
+        self.vromEnd: int = vromEnd
         self.inFileOffset: int = inFileOffset
         self.vram: int = vram
         self.name: str = name
@@ -55,11 +57,6 @@ class ElementBase:
         "The end of this element's VRAM"
         return self.vram + self.sizew * 4
 
-    @property
-    def vromEnd(self) -> int:
-        "The end of this element's VROM"
-        return self.vrom + self.sizew * 4
-
 
     def setVram(self, vram: int):
         self.vram = vram
@@ -68,7 +65,7 @@ class ElementBase:
         self.commentOffset = commentOffset
 
     def getVromOffset(self, localOffset: int) -> int:
-        return self.vrom + localOffset
+        return self.vromStart + localOffset
 
     def getVramOffset(self, localOffset: int) -> int:
         return self.vram + localOffset

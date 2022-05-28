@@ -11,8 +11,8 @@ from . import SymbolBase
 
 
 class SymbolBss(SymbolBase):
-    def __init__(self, context: common.Context, vrom: int, inFileOffset: int, vram: int, spaceSize: int):
-        super().__init__(context, vrom, inFileOffset, vram, list(), common.FileSectionType.Bss)
+    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, spaceSize: int):
+        super().__init__(context, vromStart, vromEnd, inFileOffset, vram, list(), common.FileSectionType.Bss)
 
         self.spaceSize: int = spaceSize
 
