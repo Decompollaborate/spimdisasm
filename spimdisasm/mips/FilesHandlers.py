@@ -48,20 +48,6 @@ def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_byte
 
     return f
 
-def analyzeSectionFromSplitEntry(fileSection: sections.SectionBase, splitEntry: common.FileSplitEntry):
-    offsetStart = splitEntry.offset
-
-    common.Utils.printVerbose("Analyzing")
-    fileSection.analyze()
-    fileSection.setCommentOffset(offsetStart)
-
-    common.Utils.printVerbose()
-
-    fileSection.printAnalyzisResults()
-
-    return fileSection
-
-
 def writeSection(path: str, fileSection: sections.SectionBase):
     head, tail = os.path.split(path)
 

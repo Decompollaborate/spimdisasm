@@ -5,8 +5,12 @@
 
 from __future__ import annotations
 
+from typing import Generator
+
 from .GlobalConfig import GlobalConfig
-from .Context import Context, ContextSymbol
+from .ContextSymbols import ContextSymbol
+from .SymbolsSegment import SymbolsSegment
+from .Context import Context
 from .FileSectionType import FileSectionType
 
 
@@ -14,7 +18,7 @@ class ElementBase:
     """Represents the base class used for most file sections and symbols.
     """
 
-    def __init__(self, context: Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, name: str, words: list[int], sectionType: FileSectionType, segmentVromStart: int, overlayType: str|None):
+    def __init__(self, context: Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, name: str, words: list[int], sectionType: FileSectionType, segmentVromStart: int, overlayCategory: str|None):
         """Constructor
 
         Args:
@@ -46,7 +50,7 @@ class ElementBase:
         self.parent: ElementBase|None = None
         "For elements that are contained in other elements, like symbols inside of sections"
 
-        self.overlayType: str|None = overlayType
+        self.overlayCategory: str|None = overlayCategory
         self.segmentVromStart: int = segmentVromStart
 
 
@@ -102,3 +106,105 @@ class ElementBase:
         This method can be called as many times as the user wants to.
         """
         return ""
+
+
+    def getSegment(self) -> SymbolsSegment:
+        if self.overlayCategory is not None:
+            # If this element is part of an overlay segment
+
+            # Check only for the segment associated to this vrom address in this category
+            segmentsPerVrom = self.context.overlaySegments.get(self.overlayCategory, None)
+            if segmentsPerVrom is not None:
+                overlaySegment = segmentsPerVrom.get(self.segmentVromStart, None)
+                if overlaySegment is not None:
+                    return overlaySegment
+
+        return self.context.globalSegment
+
+    def getSegmentForVram(self, vram: int) -> SymbolsSegment:
+        if self.overlayCategory is not None:
+            # If this element is part of an overlay segment
+
+            # Check only for the segment associated to this vrom address in this category
+            segmentsPerVrom = self.context.overlaySegments.get(self.overlayCategory, None)
+            if segmentsPerVrom is not None:
+                overlaySegment = segmentsPerVrom.get(self.segmentVromStart, None)
+                if overlaySegment is not None:
+                    if overlaySegment.isVramInRange(vram):
+                        return overlaySegment
+
+        if self.context.globalSegment.isVramInRange(vram):
+            return self.context.globalSegment
+        return self.context.unknownSegment
+
+
+    def getSymbol(self, vramAddress: int, tryPlusOffset: bool = True, checkUpperLimit: bool = True) -> ContextSymbol|None:
+        "Searches symbol or a symbol with an addend if `tryPlusOffset` is True"
+
+        if self.overlayCategory is not None:
+            # If this element is part of an overlay segment
+
+            # Check only for the segment associated to this vrom address in this category
+            segmentsPerVrom = self.context.overlaySegments.get(self.overlayCategory, None)
+            if segmentsPerVrom is not None:
+                overlaySegment = segmentsPerVrom.get(self.segmentVromStart, None)
+                if overlaySegment is not None:
+                    # if overlaySegment.isVramInRange(vramAddress):
+                    contextSym = overlaySegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
+                    if contextSym is not None:
+                        return contextSym
+
+            # If the vram was not part of that segment, then check for every other overlay category
+            for overlayCategory, segmentsPerVrom in self.context.overlaySegments.items():
+                if self.overlayCategory != overlayCategory:
+                    for overlaySegment in segmentsPerVrom.values():
+                        # if overlaySegment.isVramInRange(vramAddress):
+                        contextSym = overlaySegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
+                        if contextSym is not None:
+                            return contextSym
+
+        # if self.context.globalSegment.isVramInRange(vramAddress):
+        contextSym = self.context.globalSegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
+        if contextSym is not None:
+            return contextSym
+        return self.context.unknownSegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
+
+
+    def getSymbolsRangeIter(self, addressStart: int, addressEnd: int) -> Generator[ContextSymbol, None, None]:
+        segment = self.getSegmentForVram(addressStart)
+        return segment.getSymbolsRangeIter(addressStart, addressEnd)
+
+    def getSymbolsRange(self, addressStart: int, addressEnd: int) -> list[ContextSymbol]:
+        segment = self.getSegmentForVram(addressStart)
+        return segment.getSymbolsRange(addressStart, addressEnd)
+
+
+    def getConstant(self, constantValue: int) -> ContextSymbol|None:
+        segment = self.getSegment()
+        return segment.getConstant(constantValue)
+
+
+    def addSymbol(self, vramAddress: int, sectionType: FileSectionType=FileSectionType.Unknown, isAutogenerated: bool=False) -> ContextSymbol:
+        segment = self.getSegmentForVram(vramAddress)
+        return segment.addSymbol(vramAddress, sectionType=sectionType, isAutogenerated=isAutogenerated)
+
+    def addFunction(self, vramAddress: int, isAutogenerated: bool=False) -> ContextSymbol:
+        segment = self.getSegmentForVram(vramAddress)
+        return segment.addFunction(vramAddress, isAutogenerated=isAutogenerated)
+
+    def addBranchLabel(self, vramAddress: int, isAutogenerated: bool=False) -> ContextSymbol:
+        segment = self.getSegmentForVram(vramAddress)
+        return segment.addBranchLabel(vramAddress, isAutogenerated=isAutogenerated)
+
+    def addJumpTable(self, vramAddress: int, isAutogenerated: bool=False) -> ContextSymbol:
+        segment = self.getSegmentForVram(vramAddress)
+        return segment.addJumpTable(vramAddress, isAutogenerated=isAutogenerated)
+
+    def addJumpTableLabel(self, vramAddress: int, isAutogenerated: bool=False) -> ContextSymbol:
+        segment = self.getSegmentForVram(vramAddress)
+        return segment.addJumpTableLabel(vramAddress, isAutogenerated=isAutogenerated)
+
+
+    def addConstant(self, constantValue: int, name: str) -> ContextSymbol:
+        segment = self.getSegment()
+        return segment.addConstant(constantValue, name)

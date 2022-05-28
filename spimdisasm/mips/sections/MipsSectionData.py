@@ -13,8 +13,8 @@ from . import SectionBase
 
 
 class SectionData(SectionBase):
-    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytearray, segmentVromStart: int, overlayType: str|None):
-        super().__init__(context, vromStart, vromEnd, vram, filename, array_of_bytes, common.FileSectionType.Data, segmentVromStart, overlayType)
+    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytearray, segmentVromStart: int, overlayCategory: str|None):
+        super().__init__(context, vromStart, vromEnd, vram, filename, array_of_bytes, common.FileSectionType.Data, segmentVromStart, overlayCategory)
 
 
     def analyze(self):
@@ -26,12 +26,12 @@ class SectionData(SectionBase):
         for w in self.words:
             currentVram = self.getVramOffset(localOffset)
 
-            contextSym = self.context.getSymbol(currentVram, tryPlusOffset=False)
+            contextSym = self.getSymbol(currentVram, tryPlusOffset=False)
             if contextSym is not None:
                 symbolList.append((localOffset, contextSym))
 
             if w >= self.vram and w > 0x80000000 and w < 0x84000000:
-                if self.context.getSymbol(w, tryPlusOffset=False) is None:
+                if self.getSymbol(w, tryPlusOffset=False) is None:
                     self.context.newPointersInData.add(w)
 
             localOffset += 4
@@ -45,7 +45,7 @@ class SectionData(SectionBase):
 
             vrom = self.getVromOffset(offset)
             vromEnd = vrom + 4*len(words)
-            sym = symbols.SymbolData(self.context, vrom, vromEnd, offset + self.inFileOffset, contextSym.vram, words, self.segmentVromStart, self.overlayType)
+            sym = symbols.SymbolData(self.context, vrom, vromEnd, offset + self.inFileOffset, contextSym.vram, words, self.segmentVromStart, self.overlayCategory)
             sym.parent = self
             sym.setCommentOffset(self.commentOffset)
             sym.analyze()

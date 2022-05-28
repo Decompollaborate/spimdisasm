@@ -11,8 +11,8 @@ from . import SymbolBase
 
 
 class SymbolRodata(SymbolBase):
-    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, words: list[int], segmentVromStart: int, overlayType: str|None):
-        super().__init__(context, vromStart, vromEnd, inFileOffset, vram, words, common.FileSectionType.Rodata, segmentVromStart, overlayType)
+    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, words: list[int], segmentVromStart: int, overlayCategory: str|None):
+        super().__init__(context, vromStart, vromEnd, inFileOffset, vram, words, common.FileSectionType.Rodata, segmentVromStart, overlayCategory)
 
 
     def isString(self) -> bool:
@@ -35,7 +35,7 @@ class SymbolRodata(SymbolBase):
                 if (((word0 << 32) | word1) & 0x7FF0000000000000) != 0x7FF0000000000000:
                     # Prevent accidentally losing symbols
                     currentVram = self.getVramOffset(index*4)
-                    if self.context.getSymbol(currentVram+4, False) is None:
+                    if self.getSymbol(currentVram+4, tryPlusOffset=False) is None:
                         return True
         return False
 
@@ -123,7 +123,7 @@ class SymbolRodata(SymbolBase):
             rodataWord = doubleWord
             skip = 1
         else:
-            labelSym = self.context.getSymbol(w, tryPlusOffset=False)
+            labelSym = self.getSymbol(w, tryPlusOffset=False)
             if labelSym is not None:
                 value = labelSym.getName()
             elif self.isString():
