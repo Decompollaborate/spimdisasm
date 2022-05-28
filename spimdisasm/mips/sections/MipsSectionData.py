@@ -13,7 +13,7 @@ from . import SectionBase
 
 
 class SectionData(SectionBase):
-    def __init__(self, context: common.Context, vrom: int, vram: int|None, filename: str, array_of_bytes: bytearray):
+    def __init__(self, context: common.Context, vrom: int, vram: int, filename: str, array_of_bytes: bytearray):
         super().__init__(context, vrom, vram, filename, array_of_bytes, common.FileSectionType.Data)
 
 
@@ -30,10 +30,9 @@ class SectionData(SectionBase):
             if contextSym is not None:
                 symbolList.append((localOffset, contextSym))
 
-            if self.vram is not None:
-                if w >= self.vram and w < 0x84000000:
-                    if self.context.getSymbol(w, tryPlusOffset=False) is None:
-                        self.context.newPointersInData.add(w)
+            if w >= self.vram and w > 0x80000000 and w < 0x84000000:
+                if self.context.getSymbol(w, tryPlusOffset=False) is None:
+                    self.context.newPointersInData.add(w)
 
             localOffset += 4
 
@@ -45,6 +44,7 @@ class SectionData(SectionBase):
                 words = self.words[offset//4:nextOffset//4]
 
             sym = symbols.SymbolData(self.context, self.getVromOffset(offset), offset + self.inFileOffset, contextSym.vram, words)
+            sym.parent = self
             sym.setCommentOffset(self.commentOffset)
             sym.analyze()
             self.symbolList.append(sym)

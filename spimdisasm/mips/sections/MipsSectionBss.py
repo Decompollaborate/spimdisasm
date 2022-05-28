@@ -26,10 +26,8 @@ class SectionBss(SectionBase):
         self.vram = bssVramStart
 
     @property
-    def vramEnd(self) -> int|None:
-        if self.vram is None:
-            return None
-        return self.vram + self.bssTotalSize
+    def sizew(self) -> int:
+        return self.bssTotalSize // 4
 
     def setVram(self, vram: int):
         super().setVram(vram)
@@ -59,7 +57,6 @@ class SectionBss(SectionBase):
 
         for contextSym in self.context.getSymbolRangeIter(self.bssVramStart, self.bssVramEnd):
             # Mark every known symbol that happens to be in this address space as defined
-            contextSym.isDefined = True
             contextSym.sectionType = common.FileSectionType.Bss
 
             # Needs to move this to a list because the algorithm requires to check the size of a bss variable based on the next bss variable' vram
@@ -81,6 +78,7 @@ class SectionBss(SectionBase):
                     space = nextSymbolOffset - symbolOffset
 
             sym = symbols.SymbolBss(self.context, self.getVromOffset(symbolOffset), symbolOffset + self.inFileOffset, symbolVram, space)
+            sym.parent = self
             sym.setCommentOffset(self.commentOffset)
             sym.analyze()
             self.symbolList.append(sym)

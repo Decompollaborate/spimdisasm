@@ -14,22 +14,23 @@ class ElementBase:
     """Represents the base class used for most file sections and symbols.
     """
 
-    def __init__(self, context: Context, vrom: int, inFileOffset: int, vram: int|None, name: str, words: list[int], sectionType: FileSectionType):
+    def __init__(self, context: Context, vrom: int, inFileOffset: int, vram: int, name: str, words: list[int], sectionType: FileSectionType):
         """Constructor
 
         Args:
             context (Context):
-            inFileOffset (int): The offset of this element relative to the start of its file. It is also used to generate the first column of the disassembled line comment.
-            vram (int | None): The VRAM address of this element or `None` if the VRAM is unknown.
-            name (str): The name of this element.
-            words (list[int]): A list of words (4 bytes) corresponding to this element.
-            sectionType (FileSectionType): The section type this element corresponds to.
+            vrom (int): The VROM address of this element
+            inFileOffset (int): The offset of this element relative to the start of its file. It is also used to generate the first column of the disassembled line comment
+            vram (int): The VRAM address of this element
+            name (str): The name of this element
+            words (list[int]): A list of words (4 bytes) corresponding to this element
+            sectionType (FileSectionType): The section type this element corresponds to
         """
 
         self.context: Context = context
         self.vrom: int = vrom
         self.inFileOffset: int = inFileOffset
-        self.vram: int|None = vram
+        self.vram: int = vram
         self.name: str = name
         self.words: list[int] = words
         self.sectionType: FileSectionType = sectionType
@@ -50,11 +51,14 @@ class ElementBase:
         return len(self.words)
 
     @property
-    def vramEnd(self) -> int|None:
-        "The end of this element's VRAM or `None` if VRAM was not specified"
-        if self.vram is None:
-            return None
+    def vramEnd(self) -> int:
+        "The end of this element's VRAM"
         return self.vram + self.sizew * 4
+
+    @property
+    def vromEnd(self) -> int:
+        "The end of this element's VROM"
+        return self.vrom + self.sizew * 4
 
 
     def setVram(self, vram: int):
@@ -67,10 +71,7 @@ class ElementBase:
         return self.vrom + localOffset
 
     def getVramOffset(self, localOffset: int) -> int:
-        if self.vram is None:
-            return self.inFileOffset + localOffset
         return self.vram + localOffset
-        # return self.vram + self.inFileOffset + localOffset
 
 
     def getLabelFromSymbol(self, sym: ContextSymbol|None) -> str:

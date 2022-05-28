@@ -14,7 +14,7 @@ from . import FileBase, createEmptyFile
 
 
 class FileSplits(FileBase):
-    def __init__(self, context: common.Context, vrom: int, vram: int|None, filename: str, array_of_bytes: bytearray, splitsData: common.FileSplitFormat | None = None, relocSection: sections.SectionRelocZ64|None = None):
+    def __init__(self, context: common.Context, vrom: int, vram: int, filename: str, array_of_bytes: bytearray, splitsData: common.FileSplitFormat|None = None, relocSection: sections.SectionRelocZ64|None = None):
         super().__init__(context, vrom, vram, filename, array_of_bytes, common.FileSectionType.Unknown)
 
         self.sectionsDict: dict[common.FileSectionType, dict[str, sections.SectionBase]] = {
@@ -29,13 +29,12 @@ class FileSplits(FileBase):
 
         if relocSection is not None:
             relocSection.parent = self
-            if relocSection.vram is None:
-                relocSection.vram = self.vram
-                if self.vram is not None:
-                    relocStart = relocSection.textSize + relocSection.dataSize + relocSection.rodataSize
-                    if relocSection.differentSegment:
-                        relocStart += relocSection.bssSize
-                    relocSection.vram = self.vram + relocStart
+            # if relocSection.vram is None:
+            if not relocSection.differentSegment:
+                relocStart = relocSection.textSize + relocSection.dataSize + relocSection.rodataSize
+                if relocSection.differentSegment:
+                    relocStart += relocSection.bssSize
+                relocSection.vram = self.vram + relocStart
             self.sectionsDict[common.FileSectionType.Reloc][filename] = relocSection
 
         if splitsData is None and relocSection is None:
@@ -44,8 +43,6 @@ class FileSplits(FileBase):
             for splitEntry in splitsData:
                 self.splitsDataList.append(splitEntry)
         elif relocSection is not None:
-            vram = self.vram
-
             start = 0
             end = 0
             for i in range(len(common.FileSections_ListBasic)):
@@ -66,15 +63,14 @@ class FileSplits(FileBase):
                     # There's no need to disassemble empty sections
                     continue
 
-                if self.vram is not None:
-                    vram = self.vram + start
+                vram = self.vram + start
                 splitEntry = common.FileSplitEntry(start, vram, filename, sectionType, end, False, False)
                 self.splitsDataList.append(splitEntry)
 
 
         for splitEntry in self.splitsDataList:
-            if self.vram is None:
-                self.vram = splitEntry.vram
+            # if self.vram is None:
+            #     self.vram = splitEntry.vram
 
             f = FilesHandlers.createSectionFromSplitEntry(splitEntry, array_of_bytes, splitEntry.fileName, context)
             f.parent = self

@@ -10,9 +10,9 @@ from .FileSectionType import FileSectionType
 
 
 class FileSplitEntry:
-    def __init__(self, offset: int, vram: int|None, fileName: str, section: FileSectionType, nextOffset: int, isHandwritten: bool, isRsp: bool):
+    def __init__(self, offset: int, vram: int, fileName: str, section: FileSectionType, nextOffset: int, isHandwritten: bool, isRsp: bool):
         self.offset: int = offset
-        self.vram: int|None = vram
+        self.vram: int = vram
         self.fileName: str = fileName
         self.section: FileSectionType = section
         self.nextOffset: int = nextOffset
@@ -60,10 +60,7 @@ class FileSplitFormat:
             elif fileName == ".end":
                 break
 
-            if vram.lower() == "none":
-                vram = None
-            else:
-                vram = int(vram, 16)
+            vram = int(vram, 16)
             offset = int(offset, 16)
             nextOffset = 0xFFFFFF
             if i + 1 < len(self.splits):
@@ -92,9 +89,7 @@ class FileSplitFormat:
             elif element.isHandwritten:
                 offset += "H"
 
-            vram = "None"
-            if element.vram is not None:
-                vram = f"{element.vram:X}"
+            vram = f"{element.vram:X}"
             fileName = element.fileName
 
             if element.section != FileSectionType.Invalid:
@@ -117,8 +112,5 @@ class FileSplitFormat:
             # TODO: error message
             raise TypeError()
 
-    def appendEndSection(self, offset: int, vram: int|None):
-        vramStr = "None"
-        if vram is not None:
-            vramStr = f"{vram:X}"
-        self.splits.append([f"{offset:X}", vramStr, ".end"])
+    def appendEndSection(self, offset: int, vram: int):
+        self.splits.append([f"{offset:X}", f"{vram:X}", ".end"])

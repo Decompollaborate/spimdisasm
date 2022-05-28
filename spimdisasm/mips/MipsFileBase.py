@@ -14,7 +14,7 @@ from . import symbols
 
 
 class FileBase(common.ElementBase):
-    def __init__(self, context: common.Context, vrom: int, vram: int|None, filename: str, array_of_bytes: bytearray, sectionType: common.FileSectionType):
+    def __init__(self, context: common.Context, vrom: int, vram: int, filename: str, array_of_bytes: bytearray, sectionType: common.FileSectionType):
         super().__init__(context, vrom, 0, vram, filename, common.Utils.bytesToBEWords(array_of_bytes), sectionType)
 
         self.symbolList: list[symbols.SymbolBase] = []
@@ -29,12 +29,6 @@ class FileBase(common.ElementBase):
         self.commentOffset = commentOffset
         for sym in self.symbolList:
             sym.setCommentOffset(self.commentOffset)
-
-    def getVramOffset(self, localOffset: int) -> int:
-        if self.vram is None:
-            return self.inFileOffset + localOffset
-        # return self.vram + localOffset
-        return self.vram + self.inFileOffset + localOffset
 
     def getAsmPrelude(self) -> str:
         output = ""
@@ -152,4 +146,4 @@ class FileBase(common.ElementBase):
 
 
 def createEmptyFile() -> FileBase:
-    return FileBase(common.Context(), 0, None, "", bytearray(), common.FileSectionType.Unknown)
+    return FileBase(common.Context(), 0, 0, "", bytearray(), common.FileSectionType.Unknown)

@@ -13,7 +13,7 @@ from . import SymbolText
 
 
 class SymbolFunction(SymbolText):
-    def __init__(self, context: common.Context, vrom: int, inFileOffset: int, vram: int|None, instrsList: list[instructions.InstructionBase]):
+    def __init__(self, context: common.Context, vrom: int, inFileOffset: int, vram: int, instrsList: list[instructions.InstructionBase]):
         super().__init__(context, vrom, inFileOffset, vram, list())
         self.instructions: list[instructions.InstructionBase] = list(instrsList)
 
@@ -58,11 +58,8 @@ class SymbolFunction(SymbolText):
         return len(self.instructions)
 
     @property
-    def vramEnd(self) -> int|None:
-        if self.vram is None:
-            return None
-        return self.vram + self.nInstr * 4
-
+    def sizew(self) -> int:
+        return self.nInstr
 
     def _printAnalisisDebugInfo_IterInfo(self, instr: instructions.InstructionBase, register1: int|None, register2: int|None, register3: int|None, currentVram: int, trackedRegisters: dict, registersValues: dict):
         if not common.GlobalConfig.PRINT_FUNCTION_ANALYSIS_DEBUG_INFO:
@@ -130,8 +127,7 @@ class SymbolFunction(SymbolText):
                     if not firstNotePrinted:
                         print("_printSymbolFinderDebugInfo_UnpairedLuis")
                         print(f"func: {self.getName()}")
-                        if self.vram is not None:
-                            print(f"vram: {self.vram:08X}")
+                        print(f"vram: {self.vram:08X}")
                         firstNotePrinted = True
 
                     print(f"{currentVram:06X} ", "NO         ", luiInstr)
@@ -466,15 +462,14 @@ class SymbolFunction(SymbolText):
 
     def analyze(self):
         if not common.GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS and self.hasUnimplementedIntrs:
-            if self.vram is not None:
-                offset = 0
-                for instr in self.instructions:
-                    currentVram = self.getVramOffset(offset)
-                    contextSym = self.context.getSymbol(currentVram, False)
-                    if contextSym is not None:
-                        contextSym.isDefined = True
+            offset = 0
+            for instr in self.instructions:
+                currentVram = self.getVramOffset(offset)
+                contextSym = self.context.getSymbol(currentVram, False)
+                if contextSym is not None:
+                    contextSym.isDefined = True
 
-                    offset += 4
+                offset += 4
             return
 
         # Search for LUI instructions first

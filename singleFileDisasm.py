@@ -30,7 +30,7 @@ def disassemblerMain():
 
     parser_singleFile.add_argument("--start", help="Raw offset of the input binary file to start disassembling. Expects an hex value", default="0")
     parser_singleFile.add_argument("--end", help="Offset end of the input binary file to start disassembling. Expects an hex value",  default="0xFFFFFF")
-    parser_singleFile.add_argument("--vram", help="Set the VRAM address. Expects an hex value")
+    parser_singleFile.add_argument("--vram", help="Set the VRAM address. Expects an hex value", default="0x0")
 
     parser_singleFile.add_argument("--disasm-rsp", help=f"Experimental. Disassemble this file using rsp instructions. Warning: In its current state the generated asm may not be assemblable to a matching binary. Defaults to False", action="store_true")
 
@@ -96,14 +96,8 @@ def disassemblerMain():
 
         start = int(args.start, 16)
         end = int(args.end, 16)
-
-        fileVram = None
-        if args.vram is not None:
-            fileVram = int(args.vram, 16)
-
-        endVram = fileVram
-        if endVram is not None:
-            endVram += end - start
+        fileVram = int(args.vram, 16)
+        endVram = fileVram + end - start
 
         splitEntry = spimdisasm.common.FileSplitEntry(start, fileVram, "", spimdisasm.common.FileSectionType.Text, end, False, args.disasm_rsp)
         splits.append(splitEntry)

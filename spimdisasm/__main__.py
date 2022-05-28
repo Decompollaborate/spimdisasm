@@ -25,7 +25,7 @@ def exampleMain():
 
     parser_singleFile.add_argument("--start", help="Raw offset of the input binary file to start disassembling. Expects an hex value", default="0")
     parser_singleFile.add_argument("--end", help="Offset end of the input binary file to start disassembling. Expects an hex value",  default="0xFFFFFF")
-    parser_singleFile.add_argument("--vram", help="Set the VRAM address. Expects an hex value")
+    parser_singleFile.add_argument("--vram", help="Set the VRAM address. Expects an hex value", default="0x0")
 
     args = parser.parse_args()
 
@@ -38,10 +38,7 @@ def exampleMain():
 
     start = int(args.start, 16)
     end = int(args.end, 16)
-
-    fileVram = None
-    if args.vram is not None:
-        fileVram = int(args.vram, 16)
+    fileVram = int(args.vram, 16)
 
     # Truncate binary to the requested range
     truncatedInputBytes = array_of_bytes[start:end]

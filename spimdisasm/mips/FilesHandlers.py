@@ -30,10 +30,8 @@ def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_byte
         common.Utils.printVerbose(f"Parsing since offset 0x{offsetStart:02X}")
         array_of_bytes = array_of_bytes[offsetStart:]
 
-    vram = None
-    if splitEntry.vram is not None:
-        common.Utils.printVerbose(f"Using VRAM {splitEntry.vram:08X}")
-        vram = splitEntry.vram
+    common.Utils.printVerbose(f"Using VRAM {splitEntry.vram:08X}")
+    vram = splitEntry.vram
 
     f: sections.SectionBase
     if splitEntry.section == common.FileSectionType.Text:
@@ -96,12 +94,9 @@ def getRdataAndLateRodataForFunction(func: symbols.SymbolFunction, rodataFileLis
             continue
 
         for rodataSym in rodataSection.symbolList:
-            assert rodataSym.vram is not None
-
             if rodataSym.vram not in intersection:
                 continue
 
-            assert rodataSym.contextSym is not None
             # We only care for rodata that's used once
             if rodataSym.contextSym.referenceCounter != 1:
                 break
