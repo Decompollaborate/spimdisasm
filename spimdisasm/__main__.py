@@ -47,7 +47,7 @@ def exampleMain():
     truncatedInputBytes = array_of_bytes[start:end]
 
     # Asume the input is a .text section. Insntance a SectionText and analyze it
-    textSection = spimdisasm.mips.sections.SectionText(context, fileVram, inputName, truncatedInputBytes)
+    textSection = spimdisasm.mips.sections.SectionText(context, start, fileVram, inputName, truncatedInputBytes)
     textSection.analyze()
     textSection.setCommentOffset(start)
 

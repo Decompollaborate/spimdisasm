@@ -130,7 +130,10 @@ class Context:
     "N64 OS hardware registers"
 
     def __init__(self):
-        self.globalSegment = SymbolsSegment()
+        # Arbitrary initial range
+        self.globalSegment = SymbolsSegment(0x80000000, 0x80001000)
+        # For symbols that we don't know where they come from
+        self.unknownSegment = SymbolsSegment(0x00000000, 0xFFFFFFFF)
 
         self.newPointersInData: set[int] = set()
 
