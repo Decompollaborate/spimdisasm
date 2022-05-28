@@ -65,20 +65,29 @@ def readJson(filepath):
 def removeExtraWhitespace(line: str) -> str:
     return " ".join(line.split())
 
-def bytesToBEWords(array_of_bytes: bytearray) -> list[int]:
+def bytesToBEWords(array_of_bytes: bytearray, offset: int=0, offsetEnd: int|None=None) -> list[int]:
+    totalBytesCount = len(array_of_bytes)
+    if totalBytesCount == 0:
+        return list()
+
+    bytesCount = totalBytesCount
+    if offsetEnd is not None and offsetEnd > 0:
+        bytesCount = offsetEnd
+    bytesCount -= offset
+
     if GlobalConfig.ENDIAN == InputEndian.MIDDLE:
         # Convert middle endian to big endian
-        halfwords = str(int(len(array_of_bytes)//2))
+        halfwords = bytesCount//2
         little_byte_format = f"<{halfwords}H"
         big_byte_format = f">{halfwords}H"
-        tmp = struct.unpack_from(little_byte_format, array_of_bytes, 0)
-        struct.pack_into(big_byte_format, array_of_bytes, 0, *tmp)
+        tmp = struct.unpack_from(little_byte_format, array_of_bytes, offset)
+        struct.pack_into(big_byte_format, array_of_bytes, offset, *tmp)
 
-    words = len(array_of_bytes)//4
+    words = bytesCount//4
     endian_format = f">{words}I"
     if GlobalConfig.ENDIAN == InputEndian.LITTLE:
         endian_format = f"<{words}I"
-    return list(struct.unpack_from(endian_format, array_of_bytes, 0))
+    return list(struct.unpack_from(endian_format, array_of_bytes, offset))
 
 def beWordsToBytes(words_list: list[int], buffer: bytearray) -> bytearray:
     words = len(words_list)

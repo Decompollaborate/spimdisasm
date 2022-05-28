@@ -22,13 +22,10 @@ def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_byte
 
     if offsetStart >= 0 and offsetEnd >= 0:
         common.Utils.printVerbose(f"Parsing offset range [{offsetStart:02X}, {offsetEnd:02X}]")
-        array_of_bytes = array_of_bytes[offsetStart:offsetEnd]
     elif offsetEnd >= 0:
         common.Utils.printVerbose(f"Parsing until offset 0x{offsetEnd:02X}")
-        array_of_bytes = array_of_bytes[:offsetEnd]
     elif offsetStart >= 0:
         common.Utils.printVerbose(f"Parsing since offset 0x{offsetStart:02X}")
-        array_of_bytes = array_of_bytes[offsetStart:]
 
     common.Utils.printVerbose(f"Using VRAM {splitEntry.vram:08X}")
     vram = splitEntry.vram

@@ -15,7 +15,7 @@ from . import symbols
 
 class FileBase(common.ElementBase):
     def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytearray, sectionType: common.FileSectionType):
-        super().__init__(context, vromStart, vromEnd, 0, vram, filename, common.Utils.bytesToBEWords(array_of_bytes), sectionType)
+        super().__init__(context, vromStart, vromEnd, 0, vram, filename, common.Utils.bytesToBEWords(array_of_bytes, vromStart, vromEnd), sectionType)
 
         self.symbolList: list[symbols.SymbolBase] = []
 
