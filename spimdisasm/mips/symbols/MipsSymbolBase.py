@@ -9,8 +9,8 @@ from ... import common
 
 
 class SymbolBase(common.ElementBase):
-    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, words: list[int], sectionType: common.FileSectionType):
-        super().__init__(context, vromStart, vromEnd, inFileOffset, vram, "", words, sectionType)
+    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, words: list[int], sectionType: common.FileSectionType, segmentVromStart: int, overlayType: str|None):
+        super().__init__(context, vromStart, vromEnd, inFileOffset, vram, "", words, sectionType, segmentVromStart, overlayType)
 
         self.endOfLineComment: list[str] = []
 

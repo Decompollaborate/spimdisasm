@@ -41,8 +41,8 @@ class RelocEntry:
 
 
 class SectionRelocZ64(SectionBase):
-    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytearray):
-        super().__init__(context, vromStart, vromEnd, vram, filename, array_of_bytes, common.FileSectionType.Reloc)
+    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytearray, segmentVromStart: int, overlayType: str|None):
+        super().__init__(context, vromStart, vromEnd, vram, filename, array_of_bytes, common.FileSectionType.Reloc, segmentVromStart, overlayType)
 
         self.seekup = self.words[-1]
 
@@ -91,7 +91,7 @@ class SectionRelocZ64(SectionBase):
         currentVram = self.getVramOffset(localOffset)
         vrom = self.getVromOffset(localOffset)
         vromEnd = vrom + 4 * 4
-        sym = symbols.SymbolData(self.context, vrom, vromEnd, localOffset + self.inFileOffset, currentVram, self.words[0:4])
+        sym = symbols.SymbolData(self.context, vrom, vromEnd, localOffset + self.inFileOffset, currentVram, self.words[0:4], self.segmentVromStart, self.overlayType)
         sym.contextSym.name = f"{self.name}_OverlayInfo"
         sym.parent = self
         sym.setCommentOffset(self.commentOffset)
@@ -103,7 +103,7 @@ class SectionRelocZ64(SectionBase):
         currentVram = self.getVramOffset(localOffset)
         vrom = self.getVromOffset(localOffset)
         vromEnd = vrom + 4
-        sym = symbols.SymbolData(self.context, vrom, vromEnd, localOffset + self.inFileOffset, currentVram, [self.relocCount])
+        sym = symbols.SymbolData(self.context, vrom, vromEnd, localOffset + self.inFileOffset, currentVram, [self.relocCount], self.segmentVromStart, self.overlayType)
         sym.contextSym.name = f"{self.name}_RelocCount"
         sym.parent = self
         sym.setCommentOffset(self.commentOffset)
@@ -114,7 +114,7 @@ class SectionRelocZ64(SectionBase):
         currentVram = self.getVramOffset(localOffset)
         vrom = self.getVromOffset(localOffset)
         vromEnd = vrom + 4 * len(self.entries)
-        sym = symbols.SymbolData(self.context, vrom, vromEnd, localOffset + self.inFileOffset, currentVram, [r.reloc for r in self.entries])
+        sym = symbols.SymbolData(self.context, vrom, vromEnd, localOffset + self.inFileOffset, currentVram, [r.reloc for r in self.entries], self.segmentVromStart, self.overlayType)
         sym.contextSym.name = f"{self.name}_OverlayRelocations"
         sym.parent = self
         sym.setCommentOffset(self.commentOffset)
@@ -127,7 +127,7 @@ class SectionRelocZ64(SectionBase):
             currentVram = self.getVramOffset(localOffset)
             vrom = self.getVromOffset(localOffset)
             vromEnd = vrom + 4 * len(self.tail)
-            sym = symbols.SymbolData(self.context, vrom, vromEnd, localOffset + self.inFileOffset, currentVram, self.tail)
+            sym = symbols.SymbolData(self.context, vrom, vromEnd, localOffset + self.inFileOffset, currentVram, self.tail, self.segmentVromStart, self.overlayType)
             sym.contextSym.name = f"{self.name}_Padding"
             sym.parent = self
             sym.setCommentOffset(self.commentOffset)
@@ -138,7 +138,7 @@ class SectionRelocZ64(SectionBase):
         currentVram = self.getVramOffset(localOffset)
         vrom = self.getVromOffset(localOffset)
         vromEnd = vrom + 4
-        sym = symbols.SymbolData(self.context, vrom, vromEnd, localOffset + self.inFileOffset, currentVram, [self.seekup])
+        sym = symbols.SymbolData(self.context, vrom, vromEnd, localOffset + self.inFileOffset, currentVram, [self.seekup], self.segmentVromStart, self.overlayType)
         sym.contextSym.name = f"{self.name}_OverlayInfoOffset"
         sym.parent = self
         sym.setCommentOffset(self.commentOffset)

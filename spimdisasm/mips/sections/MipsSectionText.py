@@ -16,8 +16,8 @@ from . import SectionBase
 
 
 class SectionText(SectionBase):
-    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytearray):
-        super().__init__(context, vromStart, vromEnd, vram, filename, array_of_bytes, common.FileSectionType.Text)
+    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytearray, segmentVromStart: int, overlayType: str|None):
+        super().__init__(context, vromStart, vromEnd, vram, filename, array_of_bytes, common.FileSectionType.Text, segmentVromStart, overlayType)
 
         # TODO: do something with this information
         self.fileBoundaries: list[int] = list()
@@ -184,7 +184,7 @@ class SectionText(SectionBase):
 
             vrom = self.getVromOffset(localOffset)
             vromEnd = vrom + (end - start)*4
-            func = symbols.SymbolFunction(self.context, vrom, vromEnd, self.inFileOffset + localOffset, vram, instrsList[start:end])
+            func = symbols.SymbolFunction(self.context, vrom, vromEnd, self.inFileOffset + localOffset, vram, instrsList[start:end], self.segmentVromStart, self.overlayType)
             func.index = i
             func.pointersOffsets |= self.pointersOffsets
             func.hasUnimplementedIntrs = hasUnimplementedIntrs

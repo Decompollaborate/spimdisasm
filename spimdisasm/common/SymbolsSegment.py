@@ -31,6 +31,12 @@ class SymbolsSegment:
     def isVramInRange(self, vram: int) -> bool:
         return self.vramStart <= vram < self.vramEnd
 
+    def changeRange(self, vramStart: int, vramEnd: int) -> None:
+        assert vramStart < vramEnd
+
+        self.vramStart = vramStart
+        self.vramEnd = vramEnd
+
     def extendRange(self, vramEnd: int) -> None:
         if self.vramEnd < vramEnd:
             self.vramEnd = vramEnd

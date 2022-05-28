@@ -14,8 +14,8 @@ from . import FileBase, createEmptyFile
 
 
 class FileSplits(FileBase):
-    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytearray, splitsData: common.FileSplitFormat|None = None, relocSection: sections.SectionRelocZ64|None = None):
-        super().__init__(context, vromStart, vromEnd, vram, filename, array_of_bytes, common.FileSectionType.Unknown)
+    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytearray, segmentVromStart: int, overlayType: str|None, splitsData: common.FileSplitFormat|None=None, relocSection: sections.SectionRelocZ64|None=None):
+        super().__init__(context, vromStart, vromEnd, vram, filename, array_of_bytes, common.FileSectionType.Unknown, segmentVromStart, overlayType)
 
         self.sectionsDict: dict[common.FileSectionType, dict[str, sections.SectionBase]] = {
             common.FileSectionType.Text: dict(),
@@ -38,7 +38,7 @@ class FileSplits(FileBase):
             self.sectionsDict[common.FileSectionType.Reloc][filename] = relocSection
 
         if splitsData is None and relocSection is None:
-            self.sectionsDict[common.FileSectionType.Text][filename] = sections.SectionText(context, vromStart, vromEnd, vram, filename, array_of_bytes)
+            self.sectionsDict[common.FileSectionType.Text][filename] = sections.SectionText(context, vromStart, vromEnd, vram, filename, array_of_bytes, segmentVromStart, overlayType)
         elif splitsData is not None and len(splitsData) > 0:
             for splitEntry in splitsData:
                 self.splitsDataList.append(splitEntry)

@@ -31,6 +31,7 @@ def exampleMain():
 
     # Context is used to store information that should be shared between file sections, such as mapping the symbol vram's to its name and more
     context = spimdisasm.common.Context()
+    context.globalSegment.extendRange(0xFFFFFFFF)
 
     # Read whole binary input file
     array_of_bytes = spimdisasm.common.Utils.readFileAsBytearray(args.binary)
@@ -44,7 +45,7 @@ def exampleMain():
     truncatedInputBytes = array_of_bytes[start:end]
 
     # Asume the input is a .text section. Insntance a SectionText and analyze it
-    textSection = spimdisasm.mips.sections.SectionText(context, start, end, fileVram, inputName, truncatedInputBytes)
+    textSection = spimdisasm.mips.sections.SectionText(context, start, end, fileVram, inputName, truncatedInputBytes, 0, None)
     textSection.analyze()
     textSection.setCommentOffset(start)
 

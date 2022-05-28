@@ -13,8 +13,8 @@ from . import SymbolText
 
 
 class SymbolFunction(SymbolText):
-    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, instrsList: list[instructions.InstructionBase]):
-        super().__init__(context, vromStart, vromEnd, inFileOffset, vram, list())
+    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, instrsList: list[instructions.InstructionBase], segmentVromStart: int, overlayType: str|None):
+        super().__init__(context, vromStart, vromEnd, inFileOffset, vram, list(), segmentVromStart, overlayType)
         self.instructions: list[instructions.InstructionBase] = list(instrsList)
 
         self.pointersRemoved: bool = False

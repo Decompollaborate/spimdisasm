@@ -111,6 +111,8 @@ def disassemblerMain():
     if dataOutput is None:
         dataOutput = textOutput
 
+    highestVramEnd = 0x80000000 + len(array_of_bytes)
+
     i = 0
     for row in splits:
         if row.section == spimdisasm.common.FileSectionType.Text:
@@ -129,12 +131,13 @@ def disassemblerMain():
         if outputPath != "-":
             fileName = row.fileName
             if row.fileName == "":
-                if row.vram != None:
-                    fileName = f"{input_name}_{row.vram:08X}"
-                else:
-                    fileName = input_name
+                fileName = f"{input_name}_{row.vram:08X}"
 
             outputFilePath = os.path.join(outputPath, fileName)
+
+        vramEnd = row.vram + row.nextOffset - row.offset
+        if vramEnd > highestVramEnd:
+            highestVramEnd = vramEnd
 
         spimdisasm.common.Utils.printVerbose(f"Reading '{row.fileName}'")
         f = spimdisasm.mips.FilesHandlers.createSectionFromSplitEntry(row, array_of_bytes, outputFilePath, context)
@@ -149,6 +152,8 @@ def disassemblerMain():
 
         spimdisasm.common.Utils.printVerbose("\n")
         i += 1
+
+    context.globalSegment.extendRange(highestVramEnd)
 
     processedFilesCount = 0
     for sect in processedFiles.values():

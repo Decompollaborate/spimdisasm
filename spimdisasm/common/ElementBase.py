@@ -14,7 +14,7 @@ class ElementBase:
     """Represents the base class used for most file sections and symbols.
     """
 
-    def __init__(self, context: Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, name: str, words: list[int], sectionType: FileSectionType):
+    def __init__(self, context: Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, name: str, words: list[int], sectionType: FileSectionType, segmentVromStart: int, overlayType: str|None):
         """Constructor
 
         Args:
@@ -45,6 +45,9 @@ class ElementBase:
 
         self.parent: ElementBase|None = None
         "For elements that are contained in other elements, like symbols inside of sections"
+
+        self.overlayType: str|None = overlayType
+        self.segmentVromStart: int = segmentVromStart
 
 
     @property

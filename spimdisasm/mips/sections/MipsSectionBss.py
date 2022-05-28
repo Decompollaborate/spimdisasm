@@ -15,8 +15,8 @@ from . import SectionBase
 
 
 class SectionBss(SectionBase):
-    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, bssVramStart: int, bssVramEnd: int, filename: str):
-        super().__init__(context, vromStart, vromEnd, bssVramStart, filename, bytearray(), common.FileSectionType.Bss)
+    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, bssVramStart: int, bssVramEnd: int, filename: str, segmentVromStart: int, overlayType: str|None):
+        super().__init__(context, vromStart, vromEnd, bssVramStart, filename, bytearray(), common.FileSectionType.Bss, segmentVromStart, overlayType)
 
         self.bssVramStart: int = bssVramStart
         self.bssVramEnd: int = bssVramEnd
@@ -79,7 +79,7 @@ class SectionBss(SectionBase):
 
             vrom = self.getVromOffset(symbolOffset)
             vromEnd = vrom + space
-            sym = symbols.SymbolBss(self.context, vrom, vromEnd, symbolOffset + self.inFileOffset, symbolVram, space)
+            sym = symbols.SymbolBss(self.context, vrom, vromEnd, symbolOffset + self.inFileOffset, symbolVram, space, self.segmentVromStart, self.overlayType)
             sym.parent = self
             sym.setCommentOffset(self.commentOffset)
             sym.analyze()
