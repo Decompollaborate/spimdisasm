@@ -161,7 +161,11 @@ class SymbolFunction(SymbolText):
                 return None
             luiInstrPrev = self.instructions[(luiOffset-4)//4]
             if luiInstrPrev.isBranchLikely() or luiInstrPrev.isUnconditionalBranch():
-                # This lui will be nullified afterwards, so it is likely for it to be a symbol
+                # This lui will be nullified afterwards, so it is likely for it to be re-used lui
+                pass
+            elif luiInstrPrev.isBranch():
+                # I'm not really sure if a lui on any branch slot is enough to believe this is really a symbol
+                # Let's hope it does for now...
                 pass
             elif luiOffset + 4 != lowerOffset:
                 # Make an exception if the lower instruction is just after the LUI
@@ -247,9 +251,6 @@ class SymbolFunction(SymbolText):
         shouldRemove = False
         register = 0
 
-        if prevInstr is not None and prevInstr.isBranchLikely():
-            return
-
         if not instr.isFloatInstruction():
             if instr.isRType() or (instr.isBranch() and isinstance(instr, instructions.InstructionNormal)):
                 # $at is a one-use register
@@ -327,7 +328,7 @@ class SymbolFunction(SymbolText):
 
     def _symbolFinder(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase|None, instructionOffset: int, trackedRegisters: dict[int, int], trackedRegistersAll: dict[int, int], registersValues: dict[int, tuple[int, int]]):
         if instr.uniqueId == instructions.InstructionId.LUI:
-            if prevInstr is None or not prevInstr.isBranchLikely():
+            if prevInstr is None or (not prevInstr.isBranchLikely() and not prevInstr.isUnconditionalBranch()):
                 # If the previous instructions is a branch likely, then nulify
                 # the effects of this instruction for future analysis
                 trackedRegisters[instr.rt] = instructionOffset//4
@@ -383,7 +384,7 @@ class SymbolFunction(SymbolText):
         if branchOffset <= 0 or branch//4 >= len(self.instructions):
             return
 
-        if lastInstr.isBranchLikely():
+        if instr.uniqueId == instructions.InstructionId.LUI:
             self._symbolFinder(instr, None, instructionOffset, trackedRegisters, trackedRegistersAll, registersValues)
 
         pairedLoFound = False
@@ -406,7 +407,7 @@ class SymbolFunction(SymbolText):
             targetInstr = self.instructions[branch//4]
 
             # Usually array offsets use an ADDU to add the index of the array
-            if targetInstr.uniqueId == instructions.InstructionId.ADDU and not prevTargetInstr.isBranchLikely():
+            if targetInstr.uniqueId == instructions.InstructionId.ADDU and not prevTargetInstr.isBranchLikely() and not prevTargetInstr.isUnconditionalBranch():
                 if targetInstr.rd == targetInstr.rs or targetInstr.rd == targetInstr.rt:
                     branch += 4
                     i += 1
