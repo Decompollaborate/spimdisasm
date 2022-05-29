@@ -1,5 +1,13 @@
 # spimdisasm
 
+-----
+
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/spimdisasm)](https://pypi.org/project/spimdisasm/)
+![GitHub](https://img.shields.io/github/license/Decompollaborate/spimdisasm)
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Decompollaborate/spimdisasm)
+![PyPI](https://img.shields.io/pypi/v/spimdisasm)
+![GitHub contributors](https://img.shields.io/github/contributors/Decompollaborate/spimdisasm?logo=purple)
+
 A matching MIPS disassembler API and front-ends with built-in instruction analysis.
 
 Currently supports all the CPU instructions for MIPS I, II, III and IV.
