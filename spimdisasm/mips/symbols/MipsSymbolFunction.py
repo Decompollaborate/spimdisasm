@@ -170,7 +170,7 @@ class SymbolFunction(SymbolText):
                 pass
             elif luiOffset + 4 != lowerOffset:
                 # Make an exception if the lower instruction is just after the LUI
-                return None
+                return self.pointersPerInstruction[lowerOffset]
 
         if luiInstr is None and common.GlobalConfig.GP_VALUE is None:
             return None
@@ -320,6 +320,29 @@ class SymbolFunction(SymbolText):
                 if register in registersDereferencedValues:
                     del registersDereferencedValues[register]
 
+    def _invalidateRegistersInTrackersAfterFunctionCall(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase, currentVram: int|None, trackedRegisters: dict, trackedRegistersAll: dict, registersValues: dict, registersDereferencedValues: dict[int, tuple[int, int]]) -> None:
+        if prevInstr.uniqueId != instructions.InstructionId.JAL:
+            return
+
+        # Happens $at, $v0 and $v1 have the same raw values for both o32 and n32 ABIs, so no need to worry about it for now...
+        registersToInvalidate = (
+            1, # $at
+            2, # $v0
+            3, # $v1
+        )
+        # TODO: should we worry about $a and $t registers?
+
+        for register in registersToInvalidate:
+            if register in trackedRegisters:
+                self._printSymbolFinderDebugInfo_DelTrackedRegister(instr, register, currentVram, trackedRegisters)
+                del trackedRegisters[register]
+            if register in trackedRegistersAll:
+                del trackedRegistersAll[register]
+            if register in registersValues:
+                del registersValues[register]
+            if register in registersDereferencedValues:
+                del registersDereferencedValues[register]
+
     def _tryToSetSymbolType(self, instr: instructions.InstructionBase, instructionOffset: int, registersValues: dict[int, tuple[int, int]], registersDereferencedValues: dict[int, tuple[int, int]]):
         instrType = instr.mapInstrToType()
         if instrType is None:
@@ -418,7 +441,7 @@ class SymbolFunction(SymbolText):
             if branch//4 >= len(self.instructions):
                 return
 
-            if i >= 5:
+            if i >= 10:
                 if instr.uniqueId == instructions.InstructionId.LUI:
                     # Continue searching until we find the corresponding lo instruction for this LUI
                     if pairedLoFound:
@@ -455,6 +478,8 @@ class SymbolFunction(SymbolText):
                 return
 
             self._removeRegisterFromTrackers(targetInstr, prevTargetInstr, None, trackedRegisters, trackedRegistersAll, registersValues, registersDereferencedValues, wasRegisterValuesUpdated)
+
+            self._invalidateRegistersInTrackersAfterFunctionCall(targetInstr, prevTargetInstr, None, trackedRegisters, trackedRegistersAll, registersValues, registersDereferencedValues)
 
             branch += 4
             i += 1
@@ -580,6 +605,8 @@ class SymbolFunction(SymbolText):
 
             # look-ahead symbol finder
             self._lookAheadSymbolFinder(instr, instructionOffset, trackedRegisters, trackedRegistersAll, registersValues, registersDereferencedValues)
+
+            self._invalidateRegistersInTrackersAfterFunctionCall(instr, prevInstr, currentVram, trackedRegisters, trackedRegistersAll, registersValues, registersDereferencedValues)
 
             instructionOffset += 4
 
