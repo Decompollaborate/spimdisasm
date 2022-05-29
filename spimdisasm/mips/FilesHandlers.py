@@ -22,29 +22,23 @@ def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_byte
 
     if offsetStart >= 0 and offsetEnd >= 0:
         common.Utils.printVerbose(f"Parsing offset range [{offsetStart:02X}, {offsetEnd:02X}]")
-        array_of_bytes = array_of_bytes[offsetStart:offsetEnd]
     elif offsetEnd >= 0:
         common.Utils.printVerbose(f"Parsing until offset 0x{offsetEnd:02X}")
-        array_of_bytes = array_of_bytes[:offsetEnd]
     elif offsetStart >= 0:
         common.Utils.printVerbose(f"Parsing since offset 0x{offsetStart:02X}")
-        array_of_bytes = array_of_bytes[offsetStart:]
 
-    vram = None
-    if splitEntry.vram is not None:
-        common.Utils.printVerbose(f"Using VRAM {splitEntry.vram:08X}")
-        vram = splitEntry.vram
+    common.Utils.printVerbose(f"Using VRAM {splitEntry.vram:08X}")
+    vram = splitEntry.vram
 
     f: sections.SectionBase
     if splitEntry.section == common.FileSectionType.Text:
-        f = sections.SectionText(context, vram, tail, array_of_bytes)
+        f = sections.SectionText(context, offsetStart, offsetEnd, vram, tail, array_of_bytes, 0, None)
     elif splitEntry.section == common.FileSectionType.Data:
-        f = sections.SectionData(context, vram, tail, array_of_bytes)
+        f = sections.SectionData(context, offsetStart, offsetEnd, vram, tail, array_of_bytes, 0, None)
     elif splitEntry.section == common.FileSectionType.Rodata:
-        f = sections.SectionRodata(context, vram, tail, array_of_bytes)
+        f = sections.SectionRodata(context, offsetStart, offsetEnd, vram, tail, array_of_bytes, 0, None)
     elif splitEntry.section == common.FileSectionType.Bss:
-        assert isinstance(splitEntry.vram, int)
-        f = sections.SectionBss(context, splitEntry.vram, splitEntry.vram + offsetEnd - offsetStart, tail)
+        f = sections.SectionBss(context, offsetStart, offsetEnd, splitEntry.vram, splitEntry.vram + offsetEnd - offsetStart, tail, 0, None)
     else:
         common.Utils.eprint("Error! Section not set!")
         exit(-1)
@@ -53,20 +47,6 @@ def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_byte
     f.isRsp = splitEntry.isRsp
 
     return f
-
-def analyzeSectionFromSplitEntry(fileSection: sections.SectionBase, splitEntry: common.FileSplitEntry):
-    offsetStart = splitEntry.offset
-
-    common.Utils.printVerbose("Analyzing")
-    fileSection.analyze()
-    fileSection.setCommentOffset(offsetStart)
-
-    common.Utils.printVerbose()
-
-    fileSection.printAnalyzisResults()
-
-    return fileSection
-
 
 def writeSection(path: str, fileSection: sections.SectionBase):
     head, tail = os.path.split(path)
@@ -96,12 +76,9 @@ def getRdataAndLateRodataForFunction(func: symbols.SymbolFunction, rodataFileLis
             continue
 
         for rodataSym in rodataSection.symbolList:
-            assert rodataSym.vram is not None
-
             if rodataSym.vram not in intersection:
                 continue
 
-            assert rodataSym.contextSym is not None
             # We only care for rodata that's used once
             if rodataSym.contextSym.referenceCounter != 1:
                 break
@@ -149,7 +126,7 @@ def writeSplittedFunctionToFile(f: TextIO, func: symbols.SymbolFunction, rodataF
 
 def writeSplitedFunction(path: str, func: symbols.SymbolFunction, rodataFileList: list[sections.SectionRodata]):
     os.makedirs(path, exist_ok=True)
-    with open(os.path.join(path, func.name) + ".s", "w") as f:
+    with open(os.path.join(path, func.getName()) + ".s", "w") as f:
         writeSplittedFunctionToFile(f, func, rodataFileList)
 
 
@@ -162,7 +139,7 @@ def writeOtherRodata(path: str, rodataFileList: list[sections.SectionRodata]):
             if not rodataSym.isRdata():
                 continue
 
-            rodataSymbolPath = os.path.join(rodataPath, rodataSym.name) + ".s"
+            rodataSymbolPath = os.path.join(rodataPath, rodataSym.getName()) + ".s"
             with open(rodataSymbolPath, "w") as f:
                 f.write(".rdata" + common.GlobalConfig.LINE_ENDS)
                 f.write(rodataSym.disassemble())

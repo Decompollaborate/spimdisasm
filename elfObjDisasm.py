@@ -40,6 +40,7 @@ def elfObjDisasmMain():
     inputPath = pathlib.Path(args.binary)
 
     context = spimdisasm.common.Context()
+    context.globalSegment.extendRange(0xFFFFFFFF)
 
     array_of_bytes = spimdisasm.common.Utils.readFileAsBytearray(args.binary)
 
@@ -61,12 +62,13 @@ def elfObjDisasmMain():
         if outputPath != "-":
             outputFilePath /= inputPath.stem
 
+        # TODO: use vrom
         if sectionType == spimdisasm.common.FileSectionType.Text:
-            processedFiles[sectionType] = (outputFilePath, spimdisasm.mips.sections.SectionText(context, None, inputPath.stem, sectionBytes))
+            processedFiles[sectionType] = (outputFilePath, spimdisasm.mips.sections.SectionText(context, 0, 0, 0, inputPath.stem, sectionBytes, 0, None))
         if sectionType == spimdisasm.common.FileSectionType.Data:
-            processedFiles[sectionType] = (outputFilePath, spimdisasm.mips.sections.SectionData(context, None, inputPath.stem, sectionBytes))
+            processedFiles[sectionType] = (outputFilePath, spimdisasm.mips.sections.SectionData(context, 0, 0, 0, inputPath.stem, sectionBytes, 0, None))
         if sectionType == spimdisasm.common.FileSectionType.Rodata:
-            processedFiles[sectionType] = (outputFilePath, spimdisasm.mips.sections.SectionRodata(context, None, inputPath.stem, sectionBytes))
+            processedFiles[sectionType] = (outputFilePath, spimdisasm.mips.sections.SectionRodata(context, 0, 0, 0, inputPath.stem, sectionBytes, 0, None))
 
     if elfFile.nobits is not None:
         outputPath = dataOutput
@@ -75,7 +77,7 @@ def elfObjDisasmMain():
         if outputPath != "-":
             outputFilePath /= inputPath.stem
 
-        processedFiles[spimdisasm.common.FileSectionType.Bss] = (outputFilePath, spimdisasm.mips.sections.SectionBss(context, 0, elfFile.nobits, inputPath.stem))
+        processedFiles[spimdisasm.common.FileSectionType.Bss] = (outputFilePath, spimdisasm.mips.sections.SectionBss(context, 0, 0, 0, elfFile.nobits, inputPath.stem, 0, None))
 
     if elfFile.symtab is not None and elfFile.strtab is not None:
         # Inject symbols from the reloc table referenced in each section

@@ -13,39 +13,40 @@ from . import SectionBase
 
 
 class SectionData(SectionBase):
-    def __init__(self, context: common.Context, vram: int|None, filename: str, array_of_bytes: bytearray):
-        super().__init__(context, vram, filename, array_of_bytes, common.FileSectionType.Data)
+    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytearray, segmentVromStart: int, overlayCategory: str|None):
+        super().__init__(context, vromStart, vromEnd, vram, filename, array_of_bytes, common.FileSectionType.Data, segmentVromStart, overlayCategory)
 
 
     def analyze(self):
         self.checkAndCreateFirstSymbol()
 
-        symbolList: list[tuple[int, int, str]] = []
+        symbolList: list[tuple[int, common.ContextSymbol]] = []
         localOffset = 0
 
         for w in self.words:
             currentVram = self.getVramOffset(localOffset)
 
-            contextSym = self.context.getSymbol(currentVram, tryPlusOffset=False)
+            contextSym = self.getSymbol(currentVram, tryPlusOffset=False)
             if contextSym is not None:
-                contextSym.isDefined = True
-                symbolList.append((localOffset, currentVram, contextSym.name))
+                symbolList.append((localOffset, contextSym))
 
-            if self.vram is not None:
-                if w >= self.vram and w < 0x84000000:
-                    if self.context.getAnySymbol(w) is None:
-                        self.context.newPointersInData.add(w)
+            if w >= self.vram and w > 0x80000000 and w < 0x84000000:
+                if self.getSymbol(w, tryPlusOffset=False) is None:
+                    self.addPointerInDataReference(w)
 
             localOffset += 4
 
-        for i, (offset, vram, symName) in enumerate(symbolList):
+        for i, (offset, contextSym) in enumerate(symbolList):
             if i + 1 == len(symbolList):
                 words = self.words[offset//4:]
             else:
                 nextOffset = symbolList[i+1][0]
                 words = self.words[offset//4:nextOffset//4]
 
-            sym = symbols.SymbolData(self.context, offset + self.inFileOffset, vram, symName, words)
+            vrom = self.getVromOffset(offset)
+            vromEnd = vrom + 4*len(words)
+            sym = symbols.SymbolData(self.context, vrom, vromEnd, offset + self.inFileOffset, contextSym.vram, words, self.segmentVromStart, self.overlayCategory)
+            sym.parent = self
             sym.setCommentOffset(self.commentOffset)
             sym.analyze()
             self.symbolList.append(sym)

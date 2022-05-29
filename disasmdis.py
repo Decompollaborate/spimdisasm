@@ -37,6 +37,7 @@ def disasmdisMain():
     wordsCount = (len(args.input) - 1) // 8 + 1
 
     context = spimdisasm.common.Context()
+    context.globalSegment.extendRange(0xFFFFFFFF)
 
     instructionList: list[spimdisasm.mips.instructions.InstructionBase] = list()
 
@@ -53,7 +54,7 @@ def disasmdisMain():
         for instr in instructionList:
             print(instr.disassemble())
     else:
-        func = spimdisasm.mips.symbols.SymbolFunction(context, 0, None, "", instructionList)
+        func = spimdisasm.mips.symbols.SymbolFunction(context, 0, 0, 0, 0, instructionList, 0, None)
         func.analyze()
         print(func.disassemble(), end="")
 

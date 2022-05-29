@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import os
+from pathlib import Path
 
 import spimdisasm
 
@@ -30,9 +31,9 @@ def disassemblerMain():
 
     parser_singleFile.add_argument("--start", help="Raw offset of the input binary file to start disassembling. Expects an hex value", default="0")
     parser_singleFile.add_argument("--end", help="Offset end of the input binary file to start disassembling. Expects an hex value",  default="0xFFFFFF")
-    parser_singleFile.add_argument("--vram", help="Set the VRAM address. Expects an hex value")
+    parser_singleFile.add_argument("--vram", help="Set the VRAM address. Expects an hex value", default="0x0")
 
-    parser_singleFile.add_argument("--disasm-rsp", help=f"Experimental. Disassemble this file using rsp instructions. Warning: In its current state the generated asm may not be assemblable to a matching binary. Defaults to False", action="store_true")
+    parser_singleFile.add_argument("--disasm-rsp", help=f"Experimental. Disassemble this file using rsp ABI instructions. Warning: In its current state the generated asm may not be assemblable to a matching binary. Defaults to False", action="store_true")
 
     parser.add_argument("--file-splits", help="Path to a file splits csv")
 
@@ -96,14 +97,8 @@ def disassemblerMain():
 
         start = int(args.start, 16)
         end = int(args.end, 16)
-
-        fileVram = None
-        if args.vram is not None:
-            fileVram = int(args.vram, 16)
-
-        endVram = fileVram
-        if endVram is not None:
-            endVram += end - start
+        fileVram = int(args.vram, 16)
+        endVram = fileVram + end - start
 
         splitEntry = spimdisasm.common.FileSplitEntry(start, fileVram, "", spimdisasm.common.FileSectionType.Text, end, False, args.disasm_rsp)
         splits.append(splitEntry)
@@ -117,7 +112,8 @@ def disassemblerMain():
     if dataOutput is None:
         dataOutput = textOutput
 
-    i = 0
+    highestVramEnd = 0x80000000 + len(array_of_bytes)
+
     for row in splits:
         if row.section == spimdisasm.common.FileSectionType.Text:
             outputPath = textOutput
@@ -135,26 +131,38 @@ def disassemblerMain():
         if outputPath != "-":
             fileName = row.fileName
             if row.fileName == "":
-                if row.vram != None:
-                    fileName = f"{input_name}_{row.vram:08X}"
-                else:
-                    fileName = input_name
+                fileName = f"{input_name}_{row.vram:08X}"
 
             outputFilePath = os.path.join(outputPath, fileName)
 
+        vramEnd = row.vram + row.nextOffset - row.offset
+        if vramEnd > highestVramEnd:
+            highestVramEnd = vramEnd
+
         spimdisasm.common.Utils.printVerbose(f"Reading '{row.fileName}'")
         f = spimdisasm.mips.FilesHandlers.createSectionFromSplitEntry(row, array_of_bytes, outputFilePath, context)
-        spimdisasm.mips.FilesHandlers.analyzeSectionFromSplitEntry(f, row)
+        f.setCommentOffset(row.offset)
         processedFiles[row.section].append(f)
         processedFilesOutputPaths[row.section].append(outputFilePath)
 
-        spimdisasm.common.Utils.printQuietless(lenLastLine*" " + "\r", end="")
-        progressStr = f" Analyzing: {i/splitsCount:%}. File: {row.fileName}\r"
-        lenLastLine = max(len(progressStr), lenLastLine)
-        spimdisasm.common.Utils.printQuietless(progressStr, end="", flush=True)
+    context.globalSegment.extendRange(highestVramEnd)
 
-        spimdisasm.common.Utils.printVerbose("\n")
-        i += 1
+    i = 0
+    for section, filesInSection in processedFiles.items():
+        pathLists = processedFilesOutputPaths[section]
+        for fileIndex, f in enumerate(filesInSection):
+            path = pathLists[fileIndex]
+            spimdisasm.common.Utils.printQuietless(lenLastLine*" " + "\r", end="")
+            progressStr = f"Analyzing: {i/splitsCount:%}. File: {path}\r"
+            lenLastLine = max(len(progressStr), lenLastLine)
+            spimdisasm.common.Utils.printQuietless(progressStr, end="", flush=True)
+            spimdisasm.common.Utils.printVerbose("")
+
+            f.analyze()
+            f.printAnalyzisResults()
+
+            i += 1
+
 
     processedFilesCount = 0
     for sect in processedFiles.values():
@@ -182,7 +190,7 @@ def disassemblerMain():
             path = pathLists[fileIndex]
             spimdisasm.common.Utils.printVerbose(f"Writing {path}")
             spimdisasm.common.Utils.printQuietless(lenLastLine*" " + "\r", end="")
-            progressStr = f" Writing: {i/processedFilesCount:%}. File: {path}\r"
+            progressStr = f"Writing: {i/processedFilesCount:%}. File: {path}\r"
             lenLastLine = max(len(progressStr), lenLastLine)
             spimdisasm.common.Utils.printQuietless(progressStr, end="")
 
@@ -193,19 +201,29 @@ def disassemblerMain():
             i += 1
 
     if args.split_functions is not None:
-        spimdisasm.common.Utils.printVerbose("Spliting functions")
+        spimdisasm.common.Utils.printVerbose("\nSpliting functions...")
+        funcTotal = sum(len(x.symbolList) for x in processedFiles[spimdisasm.common.FileSectionType.Text])
+        i = 0
         for f in processedFiles[spimdisasm.common.FileSectionType.Text]:
-            file: spimdisasm.mips.sections.SectionText = f
-            for func in file.symbolList:
+            for func in f.symbolList:
+                spimdisasm.common.Utils.printVerbose(f"Spliting {func.getName()}", end="")
+                spimdisasm.common.Utils.printQuietless(lenLastLine*" " + "\r", end="")
+                spimdisasm.common.Utils.printVerbose()
+                progressStr = f" Writing: {i/funcTotal:%}. Function: {func.getName()}\r"
+                lenLastLine = max(len(progressStr), lenLastLine)
+                spimdisasm.common.Utils.printQuietless(progressStr, end="")
+
+
                 assert isinstance(func, spimdisasm.mips.symbols.SymbolFunction)
-                spimdisasm.mips.FilesHandlers.writeSplitedFunction(os.path.join(args.split_functions, file.name), func, processedFiles[spimdisasm.common.FileSectionType.Rodata])
+                spimdisasm.mips.FilesHandlers.writeSplitedFunction(os.path.join(args.split_functions, f.name), func, processedFiles[spimdisasm.common.FileSectionType.Rodata])
+
+                i += 1
         spimdisasm.mips.FilesHandlers.writeOtherRodata(args.split_functions, processedFiles[spimdisasm.common.FileSectionType.Rodata])
 
     if args.save_context is not None:
-        head, tail = os.path.split(args.save_context)
-        if head != "":
-            os.makedirs(head, exist_ok=True)
-        context.saveContextToFile(args.save_context)
+        contextPath = Path(args.save_context)
+        contextPath.parent.mkdir(parents=True, exist_ok=True)
+        context.saveContextToFile(contextPath)
 
     spimdisasm.common.Utils.printQuietless(lenLastLine*" " + "\r", end="")
     spimdisasm.common.Utils.printQuietless(f"Done: {args.binary}")

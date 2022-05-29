@@ -25,12 +25,13 @@ def exampleMain():
 
     parser_singleFile.add_argument("--start", help="Raw offset of the input binary file to start disassembling. Expects an hex value", default="0")
     parser_singleFile.add_argument("--end", help="Offset end of the input binary file to start disassembling. Expects an hex value",  default="0xFFFFFF")
-    parser_singleFile.add_argument("--vram", help="Set the VRAM address. Expects an hex value")
+    parser_singleFile.add_argument("--vram", help="Set the VRAM address. Expects an hex value", default="0x0")
 
     args = parser.parse_args()
 
     # Context is used to store information that should be shared between file sections, such as mapping the symbol vram's to its name and more
     context = spimdisasm.common.Context()
+    context.globalSegment.extendRange(0xFFFFFFFF)
 
     # Read whole binary input file
     array_of_bytes = spimdisasm.common.Utils.readFileAsBytearray(args.binary)
@@ -38,16 +39,13 @@ def exampleMain():
 
     start = int(args.start, 16)
     end = int(args.end, 16)
-
-    fileVram = None
-    if args.vram is not None:
-        fileVram = int(args.vram, 16)
+    fileVram = int(args.vram, 16)
 
     # Truncate binary to the requested range
     truncatedInputBytes = array_of_bytes[start:end]
 
     # Asume the input is a .text section. Insntance a SectionText and analyze it
-    textSection = spimdisasm.mips.sections.SectionText(context, fileVram, inputName, truncatedInputBytes)
+    textSection = spimdisasm.mips.sections.SectionText(context, start, end, fileVram, inputName, truncatedInputBytes, 0, None)
     textSection.analyze()
     textSection.setCommentOffset(start)
 
