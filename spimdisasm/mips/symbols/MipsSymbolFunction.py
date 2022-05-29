@@ -153,11 +153,7 @@ class SymbolFunction(SymbolText):
 
     def _processSymbol(self, luiInstr: instructions.InstructionBase|None, luiOffset: int|None, lowerInstr: instructions.InstructionBase, lowerOffset: int) -> int|None:
         # lui being None means this symbol is a $gp access
-        assert ((luiInstr is None and luiOffset is None) or (luiInstr is not None and luiOffset is not None))
-
-        if lowerOffset in self.pointersPerInstruction:
-            # This %lo has been processed already
-            return self.pointersPerInstruction[lowerOffset]
+        assert (luiInstr is None and luiOffset is None) or (luiInstr is not None and luiOffset is not None)
 
         if luiInstr is None and common.GlobalConfig.GP_VALUE is None:
             return None
