@@ -321,9 +321,9 @@ class SymbolFunction(SymbolText):
         if contextSym is not None:
             contextSym.setTypeIfUnset(instrType)
 
-    def _symbolFinder(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase, instructionOffset: int, trackedRegisters: dict[int, int], trackedRegistersAll: dict[int, int], registersValues: dict[int, tuple[int, int]]):
+    def _symbolFinder(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase|None, instructionOffset: int, trackedRegisters: dict[int, int], trackedRegistersAll: dict[int, int], registersValues: dict[int, tuple[int, int]]):
         if instr.uniqueId == instructions.InstructionId.LUI:
-            if not prevInstr.isBranchLikely():
+            if prevInstr is None or not prevInstr.isBranchLikely():
                 # If the previous instructions is a branch likely, then nulify
                 # the effects of this instruction for future analysis
                 trackedRegisters[instr.rt] = instructionOffset//4
@@ -379,7 +379,8 @@ class SymbolFunction(SymbolText):
         if branchOffset <= 0 or branch//4 >= len(self.instructions):
             return
 
-        self._removeRegisterFromTrackers(instr, None, None, trackedRegisters, trackedRegistersAll, registersValues, False)
+        if lastInstr.isBranchLikely():
+            self._symbolFinder(instr, None, instructionOffset, trackedRegisters, trackedRegistersAll, registersValues)
 
         pairedLoFound = False
         i = 0
