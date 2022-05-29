@@ -155,8 +155,8 @@ class SymbolBase(common.ElementBase):
     def disassembleAsData(self) -> str:
         output = self.getLabel()
 
-        canReferenceSymbolsWithAddends = self.vram in self.context.dataSymbolsWithReferencesWithAddends
-        canReferenceConstants = self.vram in self.context.dataReferencingConstants
+        canReferenceSymbolsWithAddends = self.canUseAddendsOnData()
+        canReferenceConstants = self.canUseConstantsOnData()
 
         i = 0
         while i < self.sizew:

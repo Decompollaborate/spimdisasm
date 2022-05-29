@@ -191,7 +191,7 @@ class SymbolFunction(SymbolText):
             return None
 
         patchedAddress = address
-        patch = self.context.getLoPatch(lowerInstr.vram)
+        patch = self.getLoPatch(lowerInstr.vram)
         if patch is not None:
             patchedAddress = patch
 
@@ -681,7 +681,7 @@ class SymbolFunction(SymbolText):
                         instrVram = loInstr.vram
 
                 # Check for user-defined symbol patches
-                patchedAddress = self.context.getLoPatch(instrVram)
+                patchedAddress = self.getLoPatch(instrVram)
                 if patchedAddress is not None:
                     symbol = self.getSymbol(patchedAddress, tryPlusOffset=True, checkUpperLimit=False)
                 else:

@@ -25,17 +25,6 @@ class Context:
         self.overlaySegments: dict[str, dict[int, SymbolsSegment]] = dict()
         "Outer key is overlay type, inner key is the vrom of the overlay's segment"
 
-        self.newPointersInData: set[int] = set()
-
-        self.loPatches: dict[int, int] = dict()
-        "key: address of %lo, value: symbol's vram to use instead"
-
-        self.dataSymbolsWithReferencesWithAddends: set[int] = set()
-        "Contains the address of data symbols which are allowed to have references to other symbols with addends"
-
-        self.dataReferencingConstants: set[int] = set()
-        "Set of addresses of data symbols which are allowed to reference named constants"
-
         # Stuff that looks like pointers, but the disassembler shouldn't count it as a pointer
         self.bannedSymbols: set[int] = set()
 
@@ -58,12 +47,6 @@ class Context:
         self.offsetJumpTables: dict[int, ContextOffsetSymbol] = dict()
         # The addresses every jump table has
         self.offsetJumpTablesLabels: dict[int, ContextOffsetSymbol] = dict()
-
-
-    def getLoPatch(self, loInstrVram: int|None) -> int|None:
-        if loInstrVram is None:
-            return None
-        return self.loPatches.get(loInstrVram, None)
 
 
     def getOffsetSymbol(self, offset: int, sectionType: FileSectionType) -> ContextOffsetSymbol|None:
@@ -121,12 +104,6 @@ class Context:
     def saveContextToFile(self, contextPath: Path):
         with contextPath.open("w") as f:
             self.globalSegment.saveContextToFile(f)
-
-            for address in self.newPointersInData:
-                f.write(f"new_pointer_in_data,0x{address:08X}\n")
-
-            for address in self.bannedSymbols:
-                f.write(f"banned_symbol,0x{address:08X}\n")
 
         unknownPath = contextPath.with_stem(f"{contextPath.stem}_unksegment")
         with unknownPath.open("w") as f:

@@ -208,3 +208,31 @@ class ElementBase:
     def addConstant(self, constantValue: int, name: str) -> ContextSymbol:
         segment = self.getSegment()
         return segment.addConstant(constantValue, name)
+
+
+    def addPointerInDataReference(self, pointer: int) -> None:
+        segment = self.getSegmentForVram(pointer)
+        segment.addPointerInDataReference(pointer)
+
+    def popPointerInDataReference(self, pointer: int) -> int|None:
+        segment = self.getSegmentForVram(pointer)
+        return segment.popPointerInDataReference(pointer)
+
+    def getPointerInDataReferencesIter(self, low: int, high: int) -> Generator[int, None, None]:
+        segment = self.getSegmentForVram(low)
+        return segment.getPointerInDataReferencesIter(low, high)
+
+
+    def getLoPatch(self, loInstrVram: int|None) -> int|None:
+        if loInstrVram is None:
+            return None
+        segment = self.getSegmentForVram(loInstrVram)
+        return segment.getLoPatch(loInstrVram)
+
+    def canUseAddendsOnData(self) -> bool:
+        segment = self.getSegmentForVram(self.vram)
+        return self.vram in segment.dataSymbolsWithReferencesWithAddends
+
+    def canUseConstantsOnData(self) -> bool:
+        segment = self.getSegmentForVram(self.vram)
+        return self.vram in segment.dataReferencingConstants

@@ -40,12 +40,7 @@ class SectionBss(SectionBase):
 
         # If something that could be a pointer found in data happens to be in the middle of this bss file's addresses space
         # Then consider it as a new bss variable
-        for ptr in sorted(self.context.newPointersInData):
-            if ptr < self.bssVramStart:
-                continue
-            if ptr >= self.bssVramEnd:
-                break
-
+        for ptr in self.getPointerInDataReferencesIter(self.bssVramStart, self.bssVramEnd):
             # Check if the symbol already exists, in case the user has provided size
             contextSym = self.getSymbol(ptr, tryPlusOffset=True)
             if contextSym is None:
