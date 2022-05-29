@@ -76,10 +76,7 @@ class ContextSymbol:
 
 
     def isTrustableFunction(self, rsp: bool=False) -> bool:
-        """Checks if the function symbol should be trusted based on the current disassembler settings.
-
-        Note: This function doesn't check if the type of the symbol is SymbolSpecialType.function
-        """
+        """Checks if the function symbol should be trusted based on the current disassembler settings"""
         if GlobalConfig.TRUST_USER_FUNCTIONS and self.isUserDeclared:
             return True
 
@@ -87,6 +84,9 @@ class ContextSymbol:
             return True
 
         if rsp:
+            return True
+
+        if self.type == SymbolSpecialType.function:
             return True
 
         return False

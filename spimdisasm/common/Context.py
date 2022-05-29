@@ -49,6 +49,12 @@ class Context:
         self.offsetJumpTablesLabels: dict[int, ContextOffsetSymbol] = dict()
 
 
+    def addOverlaySegment(self, overlayCategory: str, segmentVromStart: int, segmentVramStart: int, segmentVramEnd: int) -> None:
+        if overlayCategory not in self.overlaySegments:
+            self.overlaySegments[overlayCategory] = dict()
+        self.overlaySegments[overlayCategory][segmentVromStart] = SymbolsSegment(segmentVramStart, segmentVramEnd, isOverlay=True)
+
+
     def getOffsetSymbol(self, offset: int, sectionType: FileSectionType) -> ContextOffsetSymbol|None:
         if sectionType in self.offsetSymbols:
             symbolsInSection = self.offsetSymbols[sectionType]
