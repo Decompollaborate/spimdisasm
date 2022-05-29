@@ -1,7 +1,5 @@
 # spimdisasm
 
------
-
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/spimdisasm)](https://pypi.org/project/spimdisasm/)
 ![GitHub](https://img.shields.io/github/license/Decompollaborate/spimdisasm)
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Decompollaborate/spimdisasm)
