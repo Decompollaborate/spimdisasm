@@ -155,6 +155,14 @@ class SymbolFunction(SymbolText):
         # lui being None means this symbol is a $gp access
         assert (luiInstr is None and luiOffset is None) or (luiInstr is not None and luiOffset is not None)
 
+        if lowerOffset in self.pointersPerInstruction:
+            # This %lo has been processed already
+            if luiOffset is None:
+                return None
+            if luiOffset + 4 != lowerOffset:
+                # Make an exception if the lower instruction is just after the LUI
+                return None
+
         if luiInstr is None and common.GlobalConfig.GP_VALUE is None:
             return None
 
