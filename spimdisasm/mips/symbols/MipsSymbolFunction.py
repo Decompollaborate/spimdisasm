@@ -160,7 +160,7 @@ class SymbolFunction(SymbolText):
             if luiOffset is None:
                 return None
             luiInstrPrev = self.instructions[(luiOffset-4)//4]
-            if luiInstrPrev.isBranchLikely():
+            if luiInstrPrev.isBranchLikely() or luiInstrPrev.isUnconditionalBranch():
                 # This lui will be nullified afterwards, so it is likely for it to be a symbol
                 pass
             elif luiOffset + 4 != lowerOffset:
