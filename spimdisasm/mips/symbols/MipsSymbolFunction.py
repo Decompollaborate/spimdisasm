@@ -368,8 +368,13 @@ class SymbolFunction(SymbolText):
         if not lastInstr.isBranch() and not lastInstr.isUnconditionalBranch():
             return
 
-        branchOffset = lastInstr.getBranchOffset() - 4
+        if lastInstr.uniqueId == instructions.InstructionId.J:
+            targetBranchVram = lastInstr.getInstrIndexAsVram()
+            branchOffset = targetBranchVram - self.getVramOffset(instructionOffset)
+        else:
+            branchOffset = lastInstr.getBranchOffset() - 4
         branch = instructionOffset + branchOffset
+
         # don't check negative branches (loops) or branches outside this function
         if branchOffset <= 0 or branch//4 >= len(self.instructions):
             return
