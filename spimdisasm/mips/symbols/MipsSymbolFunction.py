@@ -469,10 +469,15 @@ class SymbolFunction(SymbolText):
                 luiInstr = None
             else:
                 if instr.uniqueId != instructions.InstructionId.ADDIU and instr.modifiesRt():
+                    updated = False
+                    rt = instr.rt
                     if rs in registersValues:
                         # Simulate a dereference
-                        registersDereferencedValues[instr.rt] = registersValues[rs]
-                        return True
+                        registersDereferencedValues[rt] = registersValues[rs]
+                        updated = True
+                    if rt in registersValues:
+                        del registersValues[rt]
+                    return updated
                 return False
 
             address = self._processSymbol(luiInstr, luiOffset, instr, instructionOffset)
