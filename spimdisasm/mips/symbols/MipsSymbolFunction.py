@@ -506,19 +506,15 @@ class SymbolFunction(SymbolText):
         if instr.uniqueId == instructions.InstructionId.LUI:
             self._symbolFinder(instr, None, instructionOffset, trackedRegisters, trackedRegistersAll, registersValues, registersDereferencedValues)
 
-        pairedLoFound = False
+        registerDeleted = False
         i = 0
-        while True:
-            if branch//4 >= len(self.instructions):
-                return
-
+        while branch//4 < len(self.instructions):
             if i >= 10:
                 if instr.uniqueId == instructions.InstructionId.LUI:
-                    # Continue searching until we find the corresponding lo instruction for this LUI
-                    if pairedLoFound:
+                    if registerDeleted:
                         return
                 else:
-                    # Only check the 5 next instructions in the target branch for non LUI instructions
+                    # Only check the 10 next instructions in the target branch for non LUI instructions
                     return
 
             wasRegisterValuesUpdated = False
@@ -535,13 +531,9 @@ class SymbolFunction(SymbolText):
             if targetInstr.isIType():
                 if self._symbolFinder(targetInstr, prevTargetInstr, branch, trackedRegisters, trackedRegistersAll, registersValues, registersDereferencedValues):
                     wasRegisterValuesUpdated = True
-                    if instr.uniqueId == instructions.InstructionId.LUI and targetInstr.rs == instr.rt:
-                        pairedLoFound = True
                 self._tryToSetSymbolType(targetInstr, branch, registersValues, registersDereferencedValues)
 
             if prevTargetInstr.isUnconditionalBranch():
-                # TODO: Consider following branches
-                # self._lookAheadSymbolFinder(targetInstr, branch, trackedRegisters, trackedRegistersAll, registersValues, registersDereferencedValues)
                 return
             if prevTargetInstr.isJType():
                 return
@@ -551,6 +543,11 @@ class SymbolFunction(SymbolText):
             self._removeRegisterFromTrackers(targetInstr, prevTargetInstr, None, trackedRegisters, trackedRegistersAll, registersValues, registersDereferencedValues, wasRegisterValuesUpdated)
 
             self._invalidateRegistersInTrackersAfterFunctionCall(targetInstr, prevTargetInstr, None, trackedRegisters, trackedRegistersAll, registersValues, registersDereferencedValues)
+
+            if instr.uniqueId == instructions.InstructionId.LUI:
+                if instr.rt not in trackedRegisters:
+                    # Search until the register of the LUI on the delay slot is overwritten
+                    registerDeleted = True
 
             branch += 4
             i += 1
