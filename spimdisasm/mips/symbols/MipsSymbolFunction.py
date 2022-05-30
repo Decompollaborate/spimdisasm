@@ -503,6 +503,10 @@ class SymbolFunction(SymbolText):
             branchOffset = lastInstr.getBranchOffset() - 4
         branch = instructionOffset + branchOffset
 
+        if branch < 0:
+            # Avoid jumping outside of the function
+            return
+
         if instr.uniqueId == instructions.InstructionId.LUI:
             self._symbolFinder(instr, None, instructionOffset, trackedRegisters, trackedRegistersAll, registersValues, registersDereferencedValues)
 
