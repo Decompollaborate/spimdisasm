@@ -248,9 +248,41 @@ class SymbolFunction(SymbolText):
 
         return constant
 
+    def _moveRegisterInTrackers(self, instr: instructions.InstructionBase, trackedRegisters: dict, trackedRegistersAll: dict, registersValues: dict, registersDereferencedValues: dict[int, tuple[int, int]]) -> bool:
+        if instr.uniqueId not in (instructions.InstructionId.MOVE, instructions.InstructionId.OR, instructions.InstructionId.ADDU):
+            return False
+
+        if instr.rt == 0 and instr.rs == 0:
+            return False
+
+        if instr.rt == 0:
+            register = instr.rs
+        elif instr.rs == 0:
+            register = instr.rt
+        else:
+            return False
+
+        updated = False
+        if instr.rs in trackedRegistersAll:
+            trackedRegistersAll[instr.rd] = trackedRegistersAll[register]
+            updated = True
+        if instr.rs in trackedRegisters:
+            trackedRegisters[instr.rd] = trackedRegisters[register]
+            updated = True
+        if instr.rs in registersValues:
+            registersValues[instr.rd] = registersValues[register]
+            updated = True
+        if instr.rs in registersDereferencedValues:
+            registersDereferencedValues[instr.rd] = registersDereferencedValues[register]
+            updated = True
+        return updated
+
     def _removeRegisterFromTrackers(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase|None, currentVram: int|None, trackedRegisters: dict, trackedRegistersAll: dict, registersValues: dict, registersDereferencedValues: dict[int, tuple[int, int]], wasRegisterValuesUpdated: bool):
         shouldRemove = False
         register = 0
+
+        if self._moveRegisterInTrackers(instr, trackedRegisters, trackedRegistersAll, registersValues, registersDereferencedValues):
+            return
 
         if not instr.isFloatInstruction():
             if instr.isRType() or (instr.isBranch() and isinstance(instr, instructions.InstructionNormal)):
