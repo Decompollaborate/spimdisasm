@@ -469,10 +469,6 @@ class SymbolFunction(SymbolText):
             branchOffset = lastInstr.getBranchOffset() - 4
         branch = instructionOffset + branchOffset
 
-        # don't check negative branches (loops) or branches outside this function
-        if branchOffset <= 0 or branch//4 >= len(self.instructions):
-            return
-
         if instr.uniqueId == instructions.InstructionId.LUI:
             self._symbolFinder(instr, None, instructionOffset, trackedRegisters, trackedRegistersAll, registersValues, registersDereferencedValues)
 
