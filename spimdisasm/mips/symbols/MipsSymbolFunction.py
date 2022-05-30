@@ -156,9 +156,11 @@ class SymbolFunction(SymbolText):
         # lui being None means this symbol is a $gp access
         assert (luiInstr is None and luiOffset is None) or (luiInstr is not None and luiOffset is not None)
 
+        lowerHalf = common.Utils.from2Complement(lowerInstr.immediate, 16)
+
         if lowerOffset in self.pointersPerInstruction:
             # This %lo has been processed already
-            if luiOffset is None:
+            if luiOffset is None or luiInstr is None:
                 return None
             luiInstrPrev = self.instructions[(luiOffset-4)//4]
             if luiInstrPrev.isBranchLikely() or luiInstrPrev.isUnconditionalBranch():
@@ -168,9 +170,17 @@ class SymbolFunction(SymbolText):
                 # I'm not really sure if a lui on any branch slot is enough to believe this is really a symbol
                 # Let's hope it does for now...
                 pass
-            elif luiOffset + 4 != lowerOffset:
+            elif luiOffset + 4 == lowerOffset:
                 # Make an exception if the lower instruction is just after the LUI
-                return self.pointersPerInstruction[lowerOffset]
+                pass
+            else:
+                upperHalf = luiInstr.immediate << 16
+                address = upperHalf + lowerHalf
+                if address == self.pointersPerInstruction[lowerOffset]:
+                    # Make an exception if the resulting address is the same
+                    pass
+                else:
+                    return self.pointersPerInstruction[lowerOffset]
 
         if luiInstr is None and common.GlobalConfig.GP_VALUE is None:
             return None
@@ -181,7 +191,6 @@ class SymbolFunction(SymbolText):
             assert common.GlobalConfig.GP_VALUE is not None
             upperHalf = common.GlobalConfig.GP_VALUE
 
-        lowerHalf = common.Utils.from2Complement(lowerInstr.immediate, 16)
         address = upperHalf + lowerHalf
         if address in self.context.bannedSymbols:
             return None
