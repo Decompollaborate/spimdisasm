@@ -269,19 +269,34 @@ class SymbolFunction(SymbolText):
         elif instr.rs == 0:
             register = instr.rt
         else:
-            return False
+            # Check stuff like  `addu   $3, $3, $2`
+            if instr.rd == instr.rs:
+                register = instr.rt
+            elif instr.rd == instr.rt:
+                register = instr.rs
+            else:
+                return False
+
+            updated = False
+            if register in registersValues:
+                registersValues[instr.rd] = registersValues[register]
+                updated = True
+            if register in registersDereferencedValues:
+                registersDereferencedValues[instr.rd] = registersDereferencedValues[register]
+                updated = True
+            return updated
 
         updated = False
-        if instr.rs in trackedRegistersAll:
+        if register in trackedRegistersAll:
             trackedRegistersAll[instr.rd] = trackedRegistersAll[register]
             updated = True
-        if instr.rs in trackedRegisters:
+        if register in trackedRegisters:
             trackedRegisters[instr.rd] = trackedRegisters[register]
             updated = True
-        if instr.rs in registersValues:
+        if register in registersValues:
             registersValues[instr.rd] = registersValues[register]
             updated = True
-        if instr.rs in registersDereferencedValues:
+        if register in registersDereferencedValues:
             registersDereferencedValues[instr.rd] = registersDereferencedValues[register]
             updated = True
         return updated
@@ -439,6 +454,11 @@ class SymbolFunction(SymbolText):
                 luiOffset = None
                 luiInstr = None
             else:
+                if instr.uniqueId != instructions.InstructionId.ADDIU and instr.modifiesRt():
+                    if rs in registersValues:
+                        # Simulate a dereference
+                        registersDereferencedValues[instr.rt] = registersValues[rs]
+                        return True
                 return False
 
             address = self._processSymbol(luiInstr, luiOffset, instr, instructionOffset)
