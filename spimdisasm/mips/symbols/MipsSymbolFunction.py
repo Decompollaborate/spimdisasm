@@ -287,18 +287,32 @@ class SymbolFunction(SymbolText):
             return updated
 
         updated = False
+        rd = instr.rd
+
         if register in trackedRegistersAll:
             trackedRegistersAll[instr.rd] = trackedRegistersAll[register]
             updated = True
+        elif rd in trackedRegistersAll:
+            del trackedRegistersAll[rd]
+
         if register in trackedRegisters:
             trackedRegisters[instr.rd] = trackedRegisters[register]
             updated = True
+        elif rd in trackedRegisters:
+            del trackedRegisters[rd]
+
         if register in registersValues:
             registersValues[instr.rd] = registersValues[register]
             updated = True
+        elif rd in registersValues:
+            del registersValues[rd]
+
         if register in registersDereferencedValues:
             registersDereferencedValues[instr.rd] = registersDereferencedValues[register]
             updated = True
+        elif rd in registersDereferencedValues:
+            del registersDereferencedValues[rd]
+
         return updated
 
     def _removeRegisterFromTrackers(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase|None, currentVram: int|None, trackedRegisters: dict, trackedRegistersAll: dict, registersValues: dict, registersDereferencedValues: dict[int, tuple[int, int]], wasRegisterValuesUpdated: bool):
