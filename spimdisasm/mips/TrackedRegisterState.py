@@ -7,8 +7,6 @@ from __future__ import annotations
 
 import dataclasses
 
-from . import instructions
-
 
 @dataclasses.dataclass
 class TrackedRegisterState:
@@ -25,6 +23,7 @@ class TrackedRegisterState:
     dereferenceOffset: int = 0
 
     value: int = 0
+
 
     def clear(self) -> None:
         self.hasLuiValue = False
@@ -48,6 +47,7 @@ class TrackedRegisterState:
         self.dereferenceOffset = 0
         self.value = 0
 
+
     def copyState(self, other: TrackedRegisterState) -> None:
         self.hasLuiValue = other.hasLuiValue
         self.luiOffset = other.luiOffset
@@ -65,16 +65,11 @@ class TrackedRegisterState:
         other.copyState(self)
         return other
 
-    def processLui(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase|None, instructionOffset: int) -> None:
-        self.clear()
 
+    def setHi(self, value: int, offset: int) -> None:
         self.hasLuiValue = True
-        self.luiOffset = instructionOffset
-        if prevInstr is not None:
-            # If the previous instructions is a branch likely, then nulify
-            # the effects of this instruction for future analysis
-            self.luiSetOnBranchLikely = prevInstr.isBranchLikely() or prevInstr.isUnconditionalBranch()
-        self.value = instr.immediate << 16
+        self.luiOffset = offset
+        self.value = value << 16
 
     def setLo(self, value: int, offset: int) -> None:
         self.value = value
@@ -82,6 +77,7 @@ class TrackedRegisterState:
         self.hasLoValue = True
         self.dereferenced = False
         self.dereferenceOffset = 0
+
 
     def deref(self, offset: int) -> None:
         self.dereferenced = True
@@ -94,3 +90,9 @@ class TrackedRegisterState:
         self.copyState(other)
         self.deref(offset)
 
+
+    def hasAnyValue(self) -> bool:
+        return self.hasLuiValue or self.hasLoValue
+
+    def wasSetInCurrentOffset(self, offset: int) -> bool:
+        return self.loOffset == offset or self.dereferenceOffset == offset

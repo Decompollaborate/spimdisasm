@@ -509,6 +509,11 @@ class InstructionBase:
     def isRType(self) -> bool:
         return self.descriptor.instrType == InstrType.typeR
 
+    def isJrRa(self) -> bool:
+        return self.uniqueId == InstructionId.JR and self.rs == 31 # $ra
+    def isJrNotRa(self) -> bool:
+        return self.uniqueId == InstructionId.JR and self.rs != 31 # $ra
+
 
     def sameOpcode(self, other: InstructionBase) -> bool:
         if not self.isImplemented():

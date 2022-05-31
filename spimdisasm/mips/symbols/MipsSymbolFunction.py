@@ -8,7 +8,7 @@ from __future__ import annotations
 from ... import common
 
 from .. import instructions
-from ..TrackedRegisterState import TrackedRegisterState
+from ..RegistersTracker import RegistersTracker
 
 from . import SymbolText
 
@@ -63,7 +63,7 @@ class SymbolFunction(SymbolText):
     def sizew(self) -> int:
         return self.nInstr
 
-    def _printAnalisisDebugInfo_IterInfo(self, instr: instructions.InstructionBase, register1: int|None, register2: int|None, register3: int|None, currentVram: int, trackedRegisters: dict[int, TrackedRegisterState]):
+    def _printAnalisisDebugInfo_IterInfo(self, instr: instructions.InstructionBase, register1: int|None, register2: int|None, register3: int|None, currentVram: int, regsTracker: RegistersTracker):
         if not common.GlobalConfig.PRINT_FUNCTION_ANALYSIS_DEBUG_INFO:
             return
 
@@ -77,25 +77,10 @@ class SymbolFunction(SymbolText):
             print(register2, instr.getRegisterName(register2))
         if register3 is not None:
             print(register3, instr.getRegisterName(register3))
-        print(trackedRegisters)
-        print({instr.getRegisterName(x): y for x, y in trackedRegisters.items()})
+        print(regsTracker.registers)
+        print({instr.getRegisterName(x): y for x, y in regsTracker.registers.items()})
         # _t is shorthand of temp
-        print({instr.getRegisterName(register_t): f"{state_t.value:X},{state_t.loOffset:X},{state_t.dereferenced}" for register_t, state_t in trackedRegisters.items() if state_t.hasLoValue})
-        print()
-
-    def _printSymbolFinderDebugInfo_DelTrackedRegister(self, instr: instructions.InstructionBase, register: int, currentVram: int|None, trackedRegisters: dict[int, TrackedRegisterState]):
-        if not common.GlobalConfig.PRINT_SYMBOL_FINDER_DEBUG_INFO:
-            return
-
-        if currentVram is None:
-            return
-
-        print("_printSymbolFinderDebugInfo_DelTrackedRegister")
-        print()
-        print(f"vram: {currentVram:X}")
-        print(instr)
-        print(trackedRegisters)
-        print(f"deleting {register} / {instr.getRegisterName(register)}")
+        print({instr.getRegisterName(register_t): f"{state_t.value:X},{state_t.loOffset:X},{state_t.dereferenced}" for register_t, state_t in regsTracker.registers.items() if state_t.hasLoValue})
         print()
 
     def _printSymbolFinderDebugInfo_UnpairedLuis(self):
@@ -177,8 +162,8 @@ class SymbolFunction(SymbolText):
 
         lowerHalf = common.Utils.from2Complement(lowerInstr.immediate, 16)
 
-        if lowerOffset in self.pointersPerInstruction:
-            return self.pointersPerInstruction[lowerOffset]
+        # if lowerOffset in self.pointersPerInstruction:
+        #     return self.pointersPerInstruction[lowerOffset]
         if lowerOffset in self.pointersPerInstruction:
             # This %lo has been processed already
 
@@ -284,196 +269,75 @@ class SymbolFunction(SymbolText):
 
         return constant
 
-    def _moveRegisterInTrackers(self, instr: instructions.InstructionBase, trackedRegisters: dict[int, TrackedRegisterState]) -> bool:
-        if instr.uniqueId not in (instructions.InstructionId.MOVE, instructions.InstructionId.OR, instructions.InstructionId.ADDU):
-            return False
-        if instr.rt == 0 and instr.rs == 0:
-            return False
 
-        if instr.rt == 0:
-            register = instr.rs
-        elif instr.rs == 0:
-            register = instr.rt
-        else:
-            # Check stuff like  `addu   $3, $3, $2`
-            if instr.rd == instr.rs:
-                register = instr.rt
-                if trackedRegisters[instr.rs].hasLuiValue:
-                    register = instr.rs
-            elif instr.rd == instr.rt:
-                register = instr.rs
-                if trackedRegisters[instr.rt].hasLuiValue:
-                    register = instr.rt
-            else:
-                return False
-
-            srcState = trackedRegisters[register]
-            trackedRegisters[instr.rd].copyState(srcState)
-            return True
-
-        srcState = trackedRegisters[register]
-        dstState = trackedRegisters[instr.rd]
-        if srcState.hasLoValue or srcState.hasLuiValue:
-            dstState.copyState(srcState)
-            return True
-        dstState.clear()
-        return False
-
-    def _removeRegisterFromTrackers(self, instr: instructions.InstructionBase, instructionOffset: int, currentVram: int|None, trackedRegisters: dict[int, TrackedRegisterState]):
-        shouldRemove = False
-        register = 0
-
-        if self._moveRegisterInTrackers(instr, trackedRegisters):
-            return
-
-        if instr.isFloatInstruction():
-            if instr.uniqueId in (instructions.InstructionId.MTC1, instructions.InstructionId.DMTC1, instructions.InstructionId.CTC1):
-                # IDO usually use a register as a temp when loading a constant value
-                # into the float coprocessor, after that IDO never re-uses the value
-                # in that register for anything else
-                shouldRemove = True
-                register = instr.rt
-        elif instr.isRType() or (instr.isBranch() and isinstance(instr, instructions.InstructionNormal)):
-            # $at is a one-use register
-            at = 0
-            if instr.rs == 1:
-                at = instr.rs
-            elif instr.rt == 1:
-                at = instr.rt
-
-            state = trackedRegisters[at]
-            if state.hasLoValue or state.hasLuiValue:
-                otherInstr = self.instructions[state.luiOffset//4]
-                if otherInstr.uniqueId == instructions.InstructionId.LUI:
-                    self.nonPointerLuiSet.add(state.luiOffset)
-                shouldRemove = True
-                register = at
-
-        if instr.modifiesRt():
-            shouldRemove = True
-            register = instr.rt
-            if instr.uniqueId == instructions.InstructionId.LUI:
-                trackedRegisters[instr.rt].clearLo()
-                shouldRemove = False
-        if instr.modifiesRd():
-            shouldRemove = True
-            register = instr.rd
-
-        if shouldRemove:
-            state = trackedRegisters[register]
-            if state.hasLuiValue:
-                self._printSymbolFinderDebugInfo_DelTrackedRegister(instr, register, currentVram, trackedRegisters)
-            state.clearHi()
-            if instructionOffset != state.loOffset and instructionOffset != state.dereferenceOffset:
-                state.clearLo()
-
-    def _invalidateRegistersInTrackersAfterFunctionCall(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase, currentVram: int|None, trackedRegisters: dict[int, TrackedRegisterState]) -> None:
-        if prevInstr.uniqueId != instructions.InstructionId.JAL and prevInstr.uniqueId != instructions.InstructionId.JALR:
-            return
-
-        # It happen that every register that we want to clear on a function call have the same raw values for both o32 and n32 ABIs, so no need to worry about it for now...
-        registersToInvalidate = (
-            1,  # $at
-            2,  # $v0
-            3,  # $v1
-            4,  # $a0
-            5,  # $a1
-            6,  # $a2
-            7,  # $a3
-            8,  # $t0 / $a4
-            9,  # $t1 / $a5
-            10, # $t2 / $a6
-            11, # $t3 / $a7
-            12, # $t4 / $t0
-            13, # $t5 / $t1
-            14, # $t6 / $t2
-            15, # $t7 / $t3
-            24, # $t8 / $t8
-            25, # $t9 / $t9
-            31, # $ra
-        )
-
-        for register in registersToInvalidate:
-            state = trackedRegisters[register]
-            if state.hasLuiValue:
-                self._printSymbolFinderDebugInfo_DelTrackedRegister(instr, register, currentVram, trackedRegisters)
-            state.clear()
-
-    def _tryToSetSymbolType(self, instr: instructions.InstructionBase, instructionOffset: int, trackedRegisters: dict[int, TrackedRegisterState]):
+    def _tryToSetSymbolType(self, instr: instructions.InstructionBase, instructionOffset: int, regsTracker: RegistersTracker):
         instrType = instr.mapInstrToType()
         if instrType is None:
             return
-
-        state = trackedRegisters[instr.rs]
-        if not state.hasLoValue:
+        address = regsTracker.getAddressIfCanSetType(instr, instructionOffset)
+        if address is None:
             return
 
-        if not state.dereferenced or instructionOffset == state.dereferenceOffset:
-            contextSym = self.getSymbol(state.value, tryPlusOffset=False)
-            if contextSym is not None:
-                contextSym.setTypeIfUnset(instrType)
+        contextSym = self.getSymbol(address, tryPlusOffset=False)
+        if contextSym is not None:
+            contextSym.setTypeIfUnset(instrType)
 
-    def _symbolFinder(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase|None, instructionOffset: int, trackedRegisters: dict[int, TrackedRegisterState]):
+    def _symbolFinder(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase|None, instructionOffset: int, regsTracker: RegistersTracker) -> None:
         if instr.uniqueId == instructions.InstructionId.LUI:
-            trackedRegisters[instr.rt].processLui(instr, prevInstr, instructionOffset)
+            regsTracker.processLui(instr, prevInstr, instructionOffset)
+            return
 
-        elif instr.uniqueId == instructions.InstructionId.ORI:
+        if instr.uniqueId == instructions.InstructionId.ORI:
             # Constants
-            state = trackedRegisters[instr.rs]
-            if state.hasLuiValue:
-                luiInstr = self.instructions[state.luiOffset//4]
-                constant = self._processConstant(luiInstr, state.luiOffset, instr, instructionOffset)
-                if constant is not None:
-                    trackedRegisters[instr.rt].setLo(constant, instructionOffset)
-
-        elif instr.uniqueId not in (instructions.InstructionId.ANDI, instructions.InstructionId.XORI, instructions.InstructionId.CACHE, instructions.InstructionId.SLTI, instructions.InstructionId.SLTIU):
-            stateSrc = trackedRegisters[instr.rs]
-            if stateSrc.hasLuiValue and not stateSrc.luiSetOnBranchLikely:
-                luiOffset = stateSrc.luiOffset
-                luiInstr = self.instructions[luiOffset//4]
-            elif instr.rs == 28: # $gp
-                luiOffset = None
-                luiInstr = None
-            else:
-                if instr.modifiesRt() and instr.uniqueId not in {instructions.InstructionId.ADDIU, instructions.InstructionId.ADDI}:
-                    if stateSrc.hasLoValue and not stateSrc.dereferenced:
-                        # Simulate a dereference
-                        trackedRegisters[instr.rt].dereferenceState(stateSrc, instructionOffset)
+            luiOffset = regsTracker.getLuiOffsetForConstant(instr)
+            if luiOffset is None:
                 return
+            luiInstr = self.instructions[luiOffset//4]
+            constant = self._processConstant(luiInstr, luiOffset, instr, instructionOffset)
+            if constant is not None:
+                regsTracker.processConstant(instr, constant, instructionOffset)
+            return
 
-            address = self._processSymbol(luiInstr, luiOffset, instr, instructionOffset)
-            if address is not None and instr.modifiesRt():
-                stateDst = trackedRegisters[instr.rt]
-                stateDst.setLo(address, instructionOffset)
-                if instr.uniqueId not in {instructions.InstructionId.ADDIU, instructions.InstructionId.ADDI}:
-                    stateDst.deref(instructionOffset)
+        if instr.uniqueId in {instructions.InstructionId.ANDI, instructions.InstructionId.XORI, instructions.InstructionId.CACHE, instructions.InstructionId.SLTI, instructions.InstructionId.SLTIU}:
+            return
+
+        luiOffset, shouldProcess = regsTracker.getLuiOffsetForLo(instr, instructionOffset)
+        if not shouldProcess:
+            return
+
+        luiInstr = None
+        if luiOffset is not None:
+            luiInstr = self.instructions[luiOffset//4]
+
+        address = self._processSymbol(luiInstr, luiOffset, instr, instructionOffset)
+        if address is not None:
+            regsTracker.processLo(instr, address, instructionOffset)
 
 
-    def _processInstr(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase, instructionOffset: int, currentVram: int, trackedRegisters: dict[int, TrackedRegisterState]) -> None:
+    def _processInstr(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase, instructionOffset: int, currentVram: int, regsTracker: RegistersTracker) -> None:
         if instr.isBranch() or instr.isUnconditionalBranch():
             self._processBranch(instr, instructionOffset, currentVram)
 
         elif instr.isJType():
             self._processFuncCall(instr, instructionOffset)
 
-        # symbol finder
         elif instr.isIType():
-            self._symbolFinder(instr, prevInstr, instructionOffset, trackedRegisters)
-            self._tryToSetSymbolType(instr, instructionOffset, trackedRegisters)
+            self._symbolFinder(instr, prevInstr, instructionOffset, regsTracker)
+            self._tryToSetSymbolType(instr, instructionOffset, regsTracker)
 
-        elif instr.uniqueId == instructions.InstructionId.JR:
-            if instr.rs != 31: # $ra
-                state = trackedRegisters[instr.rs]
-                if state.hasLoValue and state.dereferenced:
-                    self.referencedJumpTableOffsets.add(state.loOffset)
-                    self.referencedVRams.add(state.value)
-                    self.addJumpTable(state.value, isAutogenerated=True)
+        elif instr.isJrNotRa():
+            jrInfo = regsTracker.getJrInfo(instr)
+            if jrInfo is not None:
+                offset, address = jrInfo
+                self.referencedJumpTableOffsets.add(offset)
+                self.referencedVRams.add(address)
+                self.addJumpTable(address, isAutogenerated=True)
 
-        self._removeRegisterFromTrackers(instr, instructionOffset, currentVram, trackedRegisters)
+        regsTracker.overwriteRegisters(instr, instructionOffset, currentVram)
 
 
-    def _lookAheadSymbolFinder(self, instr: instructions.InstructionBase, instructionOffset: int, trackedRegistersOriginal: dict[int, TrackedRegisterState]):
-        trackedRegisters = {register: state.makeACopy() for register, state in trackedRegistersOriginal.items()}
+    def _lookAheadSymbolFinder(self, instr: instructions.InstructionBase, instructionOffset: int, trackedRegistersOriginal: RegistersTracker):
+        regsTracker = RegistersTracker(trackedRegistersOriginal)
 
         lastInstr = self.instructions[instructionOffset//4 - 1]
         if not lastInstr.isBranch() and not lastInstr.isUnconditionalBranch():
@@ -491,8 +355,8 @@ class SymbolFunction(SymbolText):
             return
 
         if instr.isIType():
-            self._symbolFinder(instr, None, instructionOffset, trackedRegisters)
-            self._removeRegisterFromTrackers(instr, instructionOffset, None, trackedRegisters)
+            self._symbolFinder(instr, None, instructionOffset, regsTracker)
+            regsTracker.overwriteRegisters(instr, instructionOffset)
 
         registerDeleted = False
         i = 0
@@ -508,7 +372,7 @@ class SymbolFunction(SymbolText):
             prevTargetInstr = self.instructions[branch//4 - 1]
             targetInstr = self.instructions[branch//4]
 
-            self._processInstr(targetInstr, prevTargetInstr, branch, self.getVramOffset(branch), trackedRegisters)
+            self._processInstr(targetInstr, prevTargetInstr, branch, self.getVramOffset(branch), regsTracker)
 
             if prevTargetInstr.isUnconditionalBranch():
                 return
@@ -517,10 +381,10 @@ class SymbolFunction(SymbolText):
             if prevTargetInstr.isJump():
                 return
 
-            self._invalidateRegistersInTrackersAfterFunctionCall(targetInstr, prevTargetInstr, None, trackedRegisters)
+            regsTracker.unsetRegistersAfterFuncCall(targetInstr, prevTargetInstr)
 
             if instr.uniqueId == instructions.InstructionId.LUI:
-                if not trackedRegisters[instr.rt].hasLuiValue:
+                if not regsTracker.registers[instr.rt].hasLuiValue:
                     # Search until the register of the LUI on the delay slot is overwritten
                     registerDeleted = True
 
@@ -590,7 +454,7 @@ class SymbolFunction(SymbolText):
                     self.nonPointerLuiSet.add(instructionOffset)
             instructionOffset += 4
 
-        trackedRegisters: dict[int, TrackedRegisterState] = {i: TrackedRegisterState(i) for i in range(32)}
+        regsTracker = RegistersTracker()
 
         instructionOffset = 0
         for instr in self.instructions:
@@ -598,7 +462,7 @@ class SymbolFunction(SymbolText):
             self.isLikelyHandwritten |= instr.uniqueId in instructions.InstructionsNotEmitedByIDO
             prevInstr = self.instructions[instructionOffset//4 - 1]
 
-            self._printAnalisisDebugInfo_IterInfo(instr, instr.rs, instr.rt, instr.rd, currentVram, trackedRegisters)
+            self._printAnalisisDebugInfo_IterInfo(instr, instr.rs, instr.rt, instr.rd, currentVram, regsTracker)
 
             if not self.isLikelyHandwritten:
                 self.isLikelyHandwritten = instr.isLikelyHandwritten()
@@ -609,12 +473,12 @@ class SymbolFunction(SymbolText):
                 return
 
             if not prevInstr.isBranchLikely() and not prevInstr.isUnconditionalBranch():
-                self._processInstr(instr, prevInstr, instructionOffset, currentVram, trackedRegisters)
+                self._processInstr(instr, prevInstr, instructionOffset, currentVram, regsTracker)
 
             # look-ahead symbol finder
-            self._lookAheadSymbolFinder(instr, instructionOffset, trackedRegisters)
+            self._lookAheadSymbolFinder(instr, instructionOffset, regsTracker)
 
-            self._invalidateRegistersInTrackersAfterFunctionCall(instr, prevInstr, currentVram, trackedRegisters)
+            regsTracker.unsetRegistersAfterFuncCall(instr, prevInstr, currentVram)
 
             instructionOffset += 4
 
