@@ -363,20 +363,33 @@ class SymbolFunction(SymbolText):
         if prevInstr.uniqueId != instructions.InstructionId.JAL and prevInstr.uniqueId != instructions.InstructionId.JALR:
             return
 
-        # Happens $at, $v0 and $v1 have the same raw values for both o32 and n32 ABIs, so no need to worry about it for now...
+        # It happen that every register that we want to clear on a function call have the same raw values for both o32 and n32 ABIs, so no need to worry about it for now...
         registersToInvalidate = (
-            1, # $at
-            2, # $v0
-            3, # $v1
+            1,  # $at
+            2,  # $v0
+            3,  # $v1
+            4,  # $a0
+            5,  # $a1
+            6,  # $a2
+            7,  # $a3
+            8,  # $t0 / $a4
+            9,  # $t1 / $a5
+            10, # $t2 / $a6
+            11, # $t3 / $a7
+            12, # $t4 / $t0
+            13, # $t5 / $t1
+            14, # $t6 / $t2
+            15, # $t7 / $t3
+            24, # $t8 / $t8
+            25, # $t9 / $t9
+            31, # $ra
         )
-        # TODO: should we worry about $a and $t registers?
 
         for register in registersToInvalidate:
             state = trackedRegisters[register]
             if state.hasLuiValue:
                 self._printSymbolFinderDebugInfo_DelTrackedRegister(instr, register, currentVram, trackedRegisters)
             state.clear()
-
 
     def _tryToSetSymbolType(self, instr: instructions.InstructionBase, instructionOffset: int, trackedRegisters: dict[int, TrackedRegisterState]):
         instrType = instr.mapInstrToType()
