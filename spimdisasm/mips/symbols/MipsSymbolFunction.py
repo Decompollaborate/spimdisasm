@@ -178,9 +178,17 @@ class SymbolFunction(SymbolText):
         lowerHalf = common.Utils.from2Complement(lowerInstr.immediate, 16)
 
         if lowerOffset in self.pointersPerInstruction:
+            return self.pointersPerInstruction[lowerOffset]
+        if lowerOffset in self.pointersPerInstruction:
             # This %lo has been processed already
+
             if luiOffset is None or luiInstr is None:
                 return None
+
+            if self.hiToLowDict.get(luiOffset, None) == lowerOffset and self.lowToHiDict.get(lowerOffset, None) == luiOffset:
+                # This pair has been already paired
+                return self.pointersPerInstruction[lowerOffset]
+
             luiInstrPrev = self.instructions[(luiOffset-4)//4]
             if luiInstrPrev.isBranchLikely() or luiInstrPrev.isUnconditionalBranch():
                 # This lui will be nullified afterwards, so it is likely for it to be re-used lui
@@ -400,16 +408,10 @@ class SymbolFunction(SymbolText):
         if not state.hasLoValue:
             return
 
-        if state.dereferenced and instructionOffset != state.loOffset:
-            loInstr = self.instructions[state.loOffset//4]
-            if loInstr.uniqueId != instructions.InstructionId.ADDIU:
-                # if the instruction used to load this value wasn't an ADDIU
-                # then the register has the value pointed by this address
-                return
-
-        contextSym = self.getSymbol(state.value, tryPlusOffset=False)
-        if contextSym is not None:
-            contextSym.setTypeIfUnset(instrType)
+        if not state.dereferenced or instructionOffset == state.dereferenceOffset:
+            contextSym = self.getSymbol(state.value, tryPlusOffset=False)
+            if contextSym is not None:
+                contextSym.setTypeIfUnset(instrType)
 
     def _symbolFinder(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase|None, instructionOffset: int, trackedRegisters: dict[int, TrackedRegisterState]):
         if instr.uniqueId == instructions.InstructionId.LUI:
