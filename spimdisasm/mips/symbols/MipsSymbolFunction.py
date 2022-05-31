@@ -162,39 +162,43 @@ class SymbolFunction(SymbolText):
 
         lowerHalf = common.Utils.from2Complement(lowerInstr.immediate, 16)
 
-        # if lowerOffset in self.pointersPerInstruction:
-        #     return self.pointersPerInstruction[lowerOffset]
         if lowerOffset in self.pointersPerInstruction:
             # This %lo has been processed already
 
-            if luiOffset is None or luiInstr is None:
-                return None
-
-            if self.hiToLowDict.get(luiOffset, None) == lowerOffset and self.lowToHiDict.get(lowerOffset, None) == luiOffset:
-                # This pair has been already paired
+            if common.GlobalConfig.COMPILER == common.Compiler.IDO:
+                # IDO does not pair multiples %hi to the same %lo
                 return self.pointersPerInstruction[lowerOffset]
 
-            luiInstrPrev = self.instructions[(luiOffset-4)//4]
-            if luiInstrPrev.isBranchLikely() or luiInstrPrev.isUnconditionalBranch():
-                # This lui will be nullified afterwards, so it is likely for it to be re-used lui
-                pass
-            elif luiInstrPrev.isBranch():
-                # I'm not really sure if a lui on any branch slot is enough to believe this is really a symbol
-                # Let's hope it does for now...
-                pass
-            elif luiOffset + 4 == lowerOffset:
-                # Make an exception if the lower instruction is just after the LUI
-                pass
-            else:
-                upperHalf = luiInstr.immediate << 16
-                address = upperHalf + lowerHalf
-                if address == self.pointersPerInstruction[lowerOffset]:
-                    # Make an exception if the resulting address is the same
-                    pass
-                else:
+            elif common.GlobalConfig.COMPILER in {common.Compiler.GCC, common.Compiler.SN64}:
+                if luiOffset is None or luiInstr is None:
+                    return None
+
+                if self.hiToLowDict.get(luiOffset, None) == lowerOffset and self.lowToHiDict.get(lowerOffset, None) == luiOffset:
+                    # This pair has been already paired
                     return self.pointersPerInstruction[lowerOffset]
 
+                luiInstrPrev = self.instructions[(luiOffset-4)//4]
+                if luiInstrPrev.isBranchLikely() or luiInstrPrev.isUnconditionalBranch():
+                    # This lui will be nullified afterwards, so it is likely for it to be re-used lui
+                    pass
+                elif luiInstrPrev.isBranch():
+                    # I'm not really sure if a lui on any branch slot is enough to believe this is really a symbol
+                    # Let's hope it does for now...
+                    pass
+                elif luiOffset + 4 == lowerOffset:
+                    # Make an exception if the lower instruction is just after the LUI
+                    pass
+                else:
+                    upperHalf = luiInstr.immediate << 16
+                    address = upperHalf + lowerHalf
+                    if address == self.pointersPerInstruction[lowerOffset]:
+                        # Make an exception if the resulting address is the same
+                        pass
+                    else:
+                        return self.pointersPerInstruction[lowerOffset]
+
         if luiInstr is None and common.GlobalConfig.GP_VALUE is None:
+            # Trying to pair a gp relative offset, but we don't know the gp address
             return None
 
         if luiInstr is not None:
