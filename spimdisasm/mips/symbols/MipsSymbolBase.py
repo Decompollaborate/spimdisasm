@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from typing import Callable
+
 from ... import common
 
 
@@ -23,6 +25,13 @@ class SymbolBase(common.ElementBase):
 
     def getName(self) -> str:
         return self.contextSym.getName()
+
+    def setNameIfUnset(self, name: str) -> None:
+        self.contextSym.setNameIfUnset(name)
+
+    def setNameGetCallback(self, callback: Callable[[common.ContextSymbol], str]) -> None:
+        self.contextSym.nameGetCallback = callback
+
 
     def generateAsmLineComment(self, localOffset: int, wordValue: int|None = None) -> str:
         if not common.GlobalConfig.ASM_COMMENT:
