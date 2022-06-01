@@ -187,6 +187,9 @@ class ContextSymbol:
             return True
         return False
 
+    def setNameGetCallback(self, callback: Callable[[ContextSymbol], str]) -> None:
+        self.nameGetCallback = callback
+
     def getSize(self) -> int:
         if self.size is None:
             return 4
