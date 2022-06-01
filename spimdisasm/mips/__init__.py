@@ -14,6 +14,3 @@ from . import FilesHandlers
 from .MipsFileBase import FileBase, createEmptyFile
 from .MipsFileSplits import FileSplits
 from .MipsRelocTypes import RelocTypes
-
-from .TrackedRegisterState import TrackedRegisterState
-from .RegistersTracker import RegistersTracker

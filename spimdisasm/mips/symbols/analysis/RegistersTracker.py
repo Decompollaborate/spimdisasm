@@ -5,9 +5,10 @@
 
 from __future__ import annotations
 
-from .. import common
+from .... import common
 
-from . import instructions
+from ... import instructions
+
 from .TrackedRegisterState import TrackedRegisterState
 
 
