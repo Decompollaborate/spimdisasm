@@ -34,6 +34,8 @@ class SymbolFunction(SymbolText):
         self.branchInstructions: set[int] = set()
         self.funcCallInstructions: set[int] = set()
 
+        self.branchesTaken: set[int] = set()
+
         # key: %hi (lui) instruction offset, value: %lo instruction offset
         self.hiToLowDict: dict[int, int] = dict()
         # key: %lo instruction offset, value: %hi (lui) instruction offset
@@ -340,31 +342,35 @@ class SymbolFunction(SymbolText):
         regsTracker.overwriteRegisters(instr, instructionOffset, currentVram)
 
 
-    def _lookAheadSymbolFinder(self, instr: instructions.InstructionBase, instructionOffset: int, trackedRegistersOriginal: RegistersTracker):
-        regsTracker = RegistersTracker(trackedRegistersOriginal)
-
-        lastInstr = self.instructions[instructionOffset//4 - 1]
-        if not lastInstr.isBranch() and not lastInstr.isUnconditionalBranch():
+    def _lookAheadSymbolFinder(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase, instructionOffset: int, trackedRegistersOriginal: RegistersTracker):
+        if not prevInstr.isBranch() and not prevInstr.isUnconditionalBranch():
             return
 
-        if lastInstr.uniqueId == instructions.InstructionId.J:
-            targetBranchVram = lastInstr.getInstrIndexAsVram()
+        if prevInstr.uniqueId == instructions.InstructionId.J:
+            targetBranchVram = prevInstr.getInstrIndexAsVram()
             branchOffset = targetBranchVram - self.getVramOffset(instructionOffset)
         else:
-            branchOffset = lastInstr.getBranchOffset() - 4
+            branchOffset = prevInstr.getBranchOffset() - 4
         branch = instructionOffset + branchOffset
 
         if branch < 0:
             # Avoid jumping outside of the function
             return
 
+        regsTracker = RegistersTracker(trackedRegistersOriginal)
+
         if instr.isIType():
             self._symbolFinder(instr, None, instructionOffset, regsTracker)
             regsTracker.overwriteRegisters(instr, instructionOffset)
 
+        if instructionOffset in self.branchesTaken:
+            return
+        self.branchesTaken.add(instructionOffset)
+
         registerDeleted = False
         i = 0
-        while branch//4 < len(self.instructions):
+        sizew = len(self.instructions)*4
+        while branch < sizew:
             if i >= 10:
                 if instr.uniqueId == instructions.InstructionId.LUI:
                     if registerDeleted:
@@ -480,7 +486,7 @@ class SymbolFunction(SymbolText):
                 self._processInstr(instr, prevInstr, instructionOffset, currentVram, regsTracker)
 
             # look-ahead symbol finder
-            self._lookAheadSymbolFinder(instr, instructionOffset, regsTracker)
+            self._lookAheadSymbolFinder(instr, prevInstr, instructionOffset, regsTracker)
 
             regsTracker.unsetRegistersAfterFuncCall(instr, prevInstr, currentVram)
 

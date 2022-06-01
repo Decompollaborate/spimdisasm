@@ -60,11 +60,6 @@ class TrackedRegisterState:
 
         self.value = other.value
 
-    def makeACopy(self) -> TrackedRegisterState:
-        other = TrackedRegisterState(self.registerNum)
-        other.copyState(self)
-        return other
-
 
     def setHi(self, value: int, offset: int) -> None:
         self.hasLuiValue = True

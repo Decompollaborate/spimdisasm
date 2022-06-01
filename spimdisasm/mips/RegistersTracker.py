@@ -15,12 +15,11 @@ class RegistersTracker:
     def __init__(self, other: RegistersTracker|None=None):
         self.registers: dict[int, TrackedRegisterState] = dict()
 
-        if other is not None:
-            for register, state in other.registers.items():
-                self.registers[register] = state.makeACopy()
-        else:
-            for register in range(32):
-                self.registers[register] = TrackedRegisterState(register)
+        for register in range(32):
+            state = TrackedRegisterState(register)
+            if other is not None:
+                state.copyState(other.registers[register])
+            self.registers[register] = state
 
 
     def moveRegisters(self, instr: instructions.InstructionBase) -> bool:
