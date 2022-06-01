@@ -40,7 +40,7 @@ def elfObjDisasmMain():
     inputPath = pathlib.Path(args.binary)
 
     context = spimdisasm.common.Context()
-    context.globalSegment.extendRange(0xFFFFFFFF)
+    context.globalSegment.changeRanges(0x0, 0xFFFFFFFF, 0x0, 0xFFFFFFFF)
 
     array_of_bytes = spimdisasm.common.Utils.readFileAsBytearray(args.binary)
 

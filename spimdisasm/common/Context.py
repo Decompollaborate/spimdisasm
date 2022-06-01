@@ -18,9 +18,9 @@ class Context:
 
     def __init__(self):
         # Arbitrary initial range
-        self.globalSegment = SymbolsSegment(0x80000000, 0x80001000, overlayCategory=None)
+        self.globalSegment = SymbolsSegment(0x0, 0x1000, 0x80000000, 0x80001000, overlayCategory=None)
         # For symbols that we don't know where they come from
-        self.unknownSegment = SymbolsSegment(0x00000000, 0xFFFFFFFF, overlayCategory=None)
+        self.unknownSegment = SymbolsSegment(None, None, 0x00000000, 0xFFFFFFFF, overlayCategory=None)
 
         self.overlaySegments: dict[str, dict[int, SymbolsSegment]] = dict()
         "Outer key is overlay type, inner key is the vrom of the overlay's segment"
@@ -49,10 +49,10 @@ class Context:
         self.offsetJumpTablesLabels: dict[int, ContextOffsetSymbol] = dict()
 
 
-    def addOverlaySegment(self, overlayCategory: str, segmentVromStart: int, segmentVramStart: int, segmentVramEnd: int) -> None:
+    def addOverlaySegment(self, overlayCategory: str, segmentVromStart: int, segmentVromEnd: int, segmentVramStart: int, segmentVramEnd: int) -> None:
         if overlayCategory not in self.overlaySegments:
             self.overlaySegments[overlayCategory] = dict()
-        self.overlaySegments[overlayCategory][segmentVromStart] = SymbolsSegment(segmentVramStart, segmentVramEnd, overlayCategory=overlayCategory)
+        self.overlaySegments[overlayCategory][segmentVromStart] = SymbolsSegment(segmentVromStart, segmentVromEnd, segmentVramStart, segmentVramEnd, overlayCategory=overlayCategory)
 
 
     def getOffsetSymbol(self, offset: int, sectionType: FileSectionType) -> ContextOffsetSymbol|None:

@@ -31,7 +31,7 @@ def exampleMain():
 
     # Context is used to store information that should be shared between file sections, such as mapping the symbol vram's to its name and more
     context = spimdisasm.common.Context()
-    context.globalSegment.extendRange(0xFFFFFFFF)
+    context.globalSegment.changeRanges(0x0, 0xFFFFFFFF, 0x0, 0xFFFFFFFF)
 
     # Read whole binary input file
     array_of_bytes = spimdisasm.common.Utils.readFileAsBytearray(args.binary)
