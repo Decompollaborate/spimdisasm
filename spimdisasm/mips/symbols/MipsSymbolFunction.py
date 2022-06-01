@@ -8,9 +8,8 @@ from __future__ import annotations
 from ... import common
 
 from .. import instructions
-from ..RegistersTracker import RegistersTracker
 
-from . import SymbolText
+from . import SymbolText, analysis
 
 
 class SymbolFunction(SymbolText):
@@ -65,7 +64,7 @@ class SymbolFunction(SymbolText):
     def sizew(self) -> int:
         return self.nInstr
 
-    def _printAnalisisDebugInfo_IterInfo(self, instr: instructions.InstructionBase, register1: int|None, register2: int|None, register3: int|None, currentVram: int, regsTracker: RegistersTracker):
+    def _printAnalisisDebugInfo_IterInfo(self, instr: instructions.InstructionBase, register1: int|None, register2: int|None, register3: int|None, currentVram: int, regsTracker: analysis.RegistersTracker):
         if not common.GlobalConfig.PRINT_FUNCTION_ANALYSIS_DEBUG_INFO:
             return
 
@@ -276,7 +275,7 @@ class SymbolFunction(SymbolText):
         return constant
 
 
-    def _tryToSetSymbolType(self, instr: instructions.InstructionBase, instructionOffset: int, regsTracker: RegistersTracker):
+    def _tryToSetSymbolType(self, instr: instructions.InstructionBase, instructionOffset: int, regsTracker: analysis.RegistersTracker):
         instrType = instr.mapInstrToType()
         if instrType is None:
             return
@@ -288,7 +287,7 @@ class SymbolFunction(SymbolText):
         if contextSym is not None:
             contextSym.setTypeIfUnset(instrType)
 
-    def _symbolFinder(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase|None, instructionOffset: int, regsTracker: RegistersTracker) -> None:
+    def _symbolFinder(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase|None, instructionOffset: int, regsTracker: analysis.RegistersTracker) -> None:
         if instr.uniqueId == instructions.InstructionId.LUI:
             regsTracker.processLui(instr, prevInstr, instructionOffset)
             return
@@ -320,7 +319,7 @@ class SymbolFunction(SymbolText):
             regsTracker.processLo(instr, address, instructionOffset)
 
 
-    def _processInstr(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase, instructionOffset: int, currentVram: int, regsTracker: RegistersTracker) -> None:
+    def _processInstr(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase, instructionOffset: int, currentVram: int, regsTracker: analysis.RegistersTracker) -> None:
         if instr.isBranch() or instr.isUnconditionalBranch():
             self._processBranch(instr, instructionOffset, currentVram)
 
@@ -342,7 +341,7 @@ class SymbolFunction(SymbolText):
         regsTracker.overwriteRegisters(instr, instructionOffset, currentVram)
 
 
-    def _lookAheadSymbolFinder(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase, instructionOffset: int, trackedRegistersOriginal: RegistersTracker):
+    def _lookAheadSymbolFinder(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase, instructionOffset: int, trackedRegistersOriginal: analysis.RegistersTracker):
         if not prevInstr.isBranch() and not prevInstr.isUnconditionalBranch():
             return
 
@@ -357,7 +356,7 @@ class SymbolFunction(SymbolText):
             # Avoid jumping outside of the function
             return
 
-        regsTracker = RegistersTracker(trackedRegistersOriginal)
+        regsTracker = analysis.RegistersTracker(trackedRegistersOriginal)
 
         if instr.isIType():
             self._symbolFinder(instr, None, instructionOffset, regsTracker)
@@ -464,7 +463,7 @@ class SymbolFunction(SymbolText):
                     self.nonPointerLuiSet.add(instructionOffset)
             instructionOffset += 4
 
-        regsTracker = RegistersTracker()
+        regsTracker = analysis.RegistersTracker()
 
         instructionOffset = 0
         for instr in self.instructions:
