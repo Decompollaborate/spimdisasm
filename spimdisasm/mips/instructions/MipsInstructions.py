@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from typing import Generator
+
 from . import InstructionBase, InstructionNormal, InstructionSpecial, InstructionRegimm, InstructionCoprocessor0, InstructionCoprocessor1, InstructionCoprocessor2, InstructionNormalRsp, InstructionSpecialRsp, InstructionRegimmRsp, InstructionCoprocessor0Rsp, InstructionCoprocessor2Rsp
 
 
@@ -34,3 +36,15 @@ def wordToInstructionRsp(word: int) -> InstructionBase:
     if ((word >> 26) & 0x3F) == 0x12:
         return InstructionCoprocessor2Rsp(word)
     return InstructionNormalRsp(word)
+
+
+def wordsToInstructionsIter(wordList: list[int], vram: int) -> Generator[InstructionBase, None, None]:
+    for word in wordList:
+        instr = wordToInstruction(word)
+        instr.vram = vram
+
+        if not instr.isImplemented():
+            break
+
+        yield instr
+        vram += 4
