@@ -22,4 +22,4 @@ from .MipsInstructionRegimmRsp import InstructionRegimmRsp
 from .MipsInstructionCoprocessor0Rsp import InstructionCoprocessor0Rsp
 from .MipsInstructionCoprocessor2Rsp import InstructionCoprocessor2Rsp
 
-from .MipsInstructions import wordToInstruction, wordToInstructionRsp
+from .MipsInstructions import wordToInstruction, wordToInstructionRsp, wordsToInstructionsIter
