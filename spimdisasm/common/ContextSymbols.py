@@ -75,6 +75,8 @@ class ContextSymbol:
     Used by .getName() instead of using the setted name or the default generated name.
     """
 
+    unknownSegment: bool = False
+
 
     @property
     def vram(self) -> int:
@@ -86,6 +88,9 @@ class ContextSymbol:
 
     def isTrustableFunction(self, rsp: bool=False) -> bool:
         """Checks if the function symbol should be trusted based on the current disassembler settings"""
+        if self.unknownSegment:
+            return False
+
         if GlobalConfig.TRUST_USER_FUNCTIONS and self.isUserDeclared:
             return True
 

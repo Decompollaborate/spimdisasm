@@ -143,7 +143,8 @@ class SectionText(SectionBase):
 
             funcSymbol = self.getSymbol(currentVram + 8, tryPlusOffset=False)
             if funcSymbol is not None and funcSymbol.isTrustableFunction(self.isRsp):
-                functionEnded = True
+                if funcSymbol.vromAddress is None or self.getVromOffset(instructionOffset+8) == funcSymbol.vromAddress:
+                    functionEnded = True
 
             if currentFunctionSym is not None and currentFunctionSym.size is not None:
                 if instructionOffset + 8 == currentInstructionStart + currentFunctionSym.getSize():
