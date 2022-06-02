@@ -53,6 +53,8 @@ class ElementBase:
         self.overlayCategory: str|None = overlayCategory
         self.segmentVromStart: int = segmentVromStart
 
+        self._ownSegmentReference: SymbolsSegment|None = None
+
 
     @property
     def sizew(self) -> int:
@@ -117,8 +119,14 @@ class ElementBase:
             if segmentsPerVrom is not None:
                 overlaySegment = segmentsPerVrom.get(self.segmentVromStart, None)
                 if overlaySegment is not None:
+                    if self._ownSegmentReference is None:
+                        if overlaySegment.isVromInRange(self.vromStart):
+                            self._ownSegmentReference = overlaySegment
                     return overlaySegment
 
+        if self._ownSegmentReference is None:
+            if self.context.globalSegment.isVromInRange(self.vromStart):
+                self._ownSegmentReference = self.context.globalSegment
         return self.context.globalSegment
 
     def getSegmentForVram(self, vram: int) -> SymbolsSegment:
@@ -130,9 +138,15 @@ class ElementBase:
             if segmentsPerVrom is not None:
                 overlaySegment = segmentsPerVrom.get(self.segmentVromStart, None)
                 if overlaySegment is not None:
+                    if self._ownSegmentReference is None:
+                        if overlaySegment.isVromInRange(self.vromStart):
+                            self._ownSegmentReference = overlaySegment
                     if overlaySegment.isVramInRange(vram):
                         return overlaySegment
 
+        if self._ownSegmentReference is None:
+            if self.context.globalSegment.isVromInRange(self.vromStart):
+                self._ownSegmentReference = self.context.globalSegment
         if self.context.globalSegment.isVramInRange(vram):
             return self.context.globalSegment
         return self.context.unknownSegment
@@ -144,9 +158,11 @@ class ElementBase:
             # Check only for the segment associated to this vrom address in this category
             segmentsPerVrom = self.context.overlaySegments.get(self.overlayCategory, None)
             if segmentsPerVrom is not None:
-                for segmentVrom, overlaySegment in segmentsPerVrom.items():
-                    if vrom < segmentVrom:
-                        continue
+                overlaySegment = segmentsPerVrom.get(self.segmentVromStart, None)
+                if overlaySegment is not None:
+                    if self._ownSegmentReference is None:
+                        if overlaySegment.isVromInRange(self.vromStart):
+                            self._ownSegmentReference = overlaySegment
                     if overlaySegment.isVromInRange(vrom):
                         return overlaySegment
 
@@ -159,6 +175,9 @@ class ElementBase:
                         if overlaySegment.isVromInRange(vrom):
                             return overlaySegment
 
+        if self._ownSegmentReference is None:
+            if self.context.globalSegment.isVromInRange(self.vromStart):
+                self._ownSegmentReference = self.context.globalSegment
         if self.context.globalSegment.isVromInRange(vrom):
             return self.context.globalSegment
         return self.context.unknownSegment
@@ -193,7 +212,12 @@ class ElementBase:
         contextSym = self.context.globalSegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
         if contextSym is not None:
             return contextSym
-        return self.context.unknownSegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
+        contextSym = self.context.unknownSegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
+        if self._ownSegmentReference is not None:
+            if contextSym is not None and contextSym.vromAddress is not None:
+                if not self._ownSegmentReference.isVromInRange(contextSym.getVrom()):
+                    return None
+        return contextSym
 
     def getSymbolByVrom(self, vromAddress: int, tryPlusOffset: bool = True, checkUpperLimit: bool = True) -> ContextSymbol|None:
         segment = self.getSegmentForVrom(vromAddress)
