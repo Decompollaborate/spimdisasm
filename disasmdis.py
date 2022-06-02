@@ -37,7 +37,7 @@ def disasmdisMain():
     wordsCount = (len(args.input) - 1) // 8 + 1
 
     context = spimdisasm.common.Context()
-    context.globalSegment.extendRange(0xFFFFFFFF)
+    context.globalSegment.changeRanges(0x0, 0xFFFFFFFF, 0x0, 0xFFFFFFFF)
 
     instructionList: list[spimdisasm.mips.instructions.InstructionBase] = list()
 

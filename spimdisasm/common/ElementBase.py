@@ -53,6 +53,8 @@ class ElementBase:
         self.overlayCategory: str|None = overlayCategory
         self.segmentVromStart: int = segmentVromStart
 
+        self._ownSegmentReference: SymbolsSegment|None = None
+
 
     @property
     def sizew(self) -> int:
@@ -117,8 +119,14 @@ class ElementBase:
             if segmentsPerVrom is not None:
                 overlaySegment = segmentsPerVrom.get(self.segmentVromStart, None)
                 if overlaySegment is not None:
+                    if self._ownSegmentReference is None:
+                        if overlaySegment.isVromInRange(self.vromStart):
+                            self._ownSegmentReference = overlaySegment
                     return overlaySegment
 
+        if self._ownSegmentReference is None:
+            if self.context.globalSegment.isVromInRange(self.vromStart):
+                self._ownSegmentReference = self.context.globalSegment
         return self.context.globalSegment
 
     def getSegmentForVram(self, vram: int) -> SymbolsSegment:
@@ -130,10 +138,47 @@ class ElementBase:
             if segmentsPerVrom is not None:
                 overlaySegment = segmentsPerVrom.get(self.segmentVromStart, None)
                 if overlaySegment is not None:
+                    if self._ownSegmentReference is None:
+                        if overlaySegment.isVromInRange(self.vromStart):
+                            self._ownSegmentReference = overlaySegment
                     if overlaySegment.isVramInRange(vram):
                         return overlaySegment
 
+        if self._ownSegmentReference is None:
+            if self.context.globalSegment.isVromInRange(self.vromStart):
+                self._ownSegmentReference = self.context.globalSegment
         if self.context.globalSegment.isVramInRange(vram):
+            return self.context.globalSegment
+        return self.context.unknownSegment
+
+    def getSegmentForVrom(self, vrom: int) -> SymbolsSegment:
+        if self.overlayCategory is not None:
+            # If this element is part of an overlay segment
+
+            # Check only for the segment associated to this vrom address in this category
+            segmentsPerVrom = self.context.overlaySegments.get(self.overlayCategory, None)
+            if segmentsPerVrom is not None:
+                overlaySegment = segmentsPerVrom.get(self.segmentVromStart, None)
+                if overlaySegment is not None:
+                    if self._ownSegmentReference is None:
+                        if overlaySegment.isVromInRange(self.vromStart):
+                            self._ownSegmentReference = overlaySegment
+                    if overlaySegment.isVromInRange(vrom):
+                        return overlaySegment
+
+            # If the vrom was not part of that segment, then check for every other overlay category
+            for overlayCategory, segmentsPerVrom in self.context.overlaySegments.items():
+                if self.overlayCategory != overlayCategory:
+                    for segmentVrom, overlaySegment in segmentsPerVrom.items():
+                        if vrom < segmentVrom:
+                            continue
+                        if overlaySegment.isVromInRange(vrom):
+                            return overlaySegment
+
+        if self._ownSegmentReference is None:
+            if self.context.globalSegment.isVromInRange(self.vromStart):
+                self._ownSegmentReference = self.context.globalSegment
+        if self.context.globalSegment.isVromInRange(vrom):
             return self.context.globalSegment
         return self.context.unknownSegment
 
@@ -167,8 +212,19 @@ class ElementBase:
         contextSym = self.context.globalSegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
         if contextSym is not None:
             return contextSym
-        return self.context.unknownSegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
+        contextSym = self.context.unknownSegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
+        if self._ownSegmentReference is not None:
+            if contextSym is not None and contextSym.vromAddress is not None:
+                if not self._ownSegmentReference.isVromInRange(contextSym.getVrom()):
+                    return None
+        return contextSym
 
+    def getSymbolByVrom(self, vromAddress: int, tryPlusOffset: bool = True, checkUpperLimit: bool = True) -> ContextSymbol|None:
+        segment = self.getSegmentForVrom(vromAddress)
+        vram = segment.vromToVram(vromAddress)
+        if vram is None:
+            return None
+        return segment.getSymbol(vram, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
 
     def getSymbolsRangeIter(self, addressStart: int, addressEnd: int) -> Generator[ContextSymbol, None, None]:
         segment = self.getSegmentForVram(addressStart)
@@ -184,25 +240,40 @@ class ElementBase:
         return segment.getConstant(constantValue)
 
 
-    def addSymbol(self, vramAddress: int, sectionType: FileSectionType=FileSectionType.Unknown, isAutogenerated: bool=False) -> ContextSymbol:
-        segment = self.getSegmentForVram(vramAddress)
-        return segment.addSymbol(vramAddress, sectionType=sectionType, isAutogenerated=isAutogenerated)
+    def addSymbol(self, vramAddress: int, sectionType: FileSectionType=FileSectionType.Unknown, isAutogenerated: bool=False, symbolVrom: int|None=None) -> ContextSymbol:
+        if symbolVrom is not None:
+            segment = self.getSegmentForVrom(symbolVrom)
+        else:
+            segment = self.getSegmentForVram(vramAddress)
+        return segment.addSymbol(vramAddress, sectionType=sectionType, isAutogenerated=isAutogenerated, vromAddress=symbolVrom)
 
-    def addFunction(self, vramAddress: int, isAutogenerated: bool=False) -> ContextSymbol:
-        segment = self.getSegmentForVram(vramAddress)
-        return segment.addFunction(vramAddress, isAutogenerated=isAutogenerated)
+    def addFunction(self, vramAddress: int, isAutogenerated: bool=False, symbolVrom: int|None=None) -> ContextSymbol:
+        if symbolVrom is not None:
+            segment = self.getSegmentForVrom(symbolVrom)
+        else:
+            segment = self.getSegmentForVram(vramAddress)
+        return segment.addFunction(vramAddress, isAutogenerated=isAutogenerated, vromAddress=symbolVrom)
 
-    def addBranchLabel(self, vramAddress: int, isAutogenerated: bool=False) -> ContextSymbol:
-        segment = self.getSegmentForVram(vramAddress)
-        return segment.addBranchLabel(vramAddress, isAutogenerated=isAutogenerated)
+    def addBranchLabel(self, vramAddress: int, isAutogenerated: bool=False, symbolVrom: int|None=None) -> ContextSymbol:
+        if symbolVrom is not None:
+            segment = self.getSegmentForVrom(symbolVrom)
+        else:
+            segment = self.getSegmentForVram(vramAddress)
+        return segment.addBranchLabel(vramAddress, isAutogenerated=isAutogenerated, vromAddress=symbolVrom)
 
-    def addJumpTable(self, vramAddress: int, isAutogenerated: bool=False) -> ContextSymbol:
-        segment = self.getSegmentForVram(vramAddress)
-        return segment.addJumpTable(vramAddress, isAutogenerated=isAutogenerated)
+    def addJumpTable(self, vramAddress: int, isAutogenerated: bool=False, symbolVrom: int|None=None) -> ContextSymbol:
+        if symbolVrom is not None:
+            segment = self.getSegmentForVrom(symbolVrom)
+        else:
+            segment = self.getSegmentForVram(vramAddress)
+        return segment.addJumpTable(vramAddress, isAutogenerated=isAutogenerated, vromAddress=symbolVrom)
 
-    def addJumpTableLabel(self, vramAddress: int, isAutogenerated: bool=False) -> ContextSymbol:
-        segment = self.getSegmentForVram(vramAddress)
-        return segment.addJumpTableLabel(vramAddress, isAutogenerated=isAutogenerated)
+    def addJumpTableLabel(self, vramAddress: int, isAutogenerated: bool=False, symbolVrom: int|None=None) -> ContextSymbol:
+        if symbolVrom is not None:
+            segment = self.getSegmentForVrom(symbolVrom)
+        else:
+            segment = self.getSegmentForVram(vramAddress)
+        return segment.addJumpTableLabel(vramAddress, isAutogenerated=isAutogenerated, vromAddress=symbolVrom)
 
 
     def addConstant(self, constantValue: int, name: str) -> ContextSymbol:
