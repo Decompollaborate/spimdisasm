@@ -17,24 +17,12 @@ class SymbolFunction(SymbolText):
         super().__init__(context, vromStart, vromEnd, inFileOffset, vram, list(), segmentVromStart, overlayCategory)
         self.instructions: list[instructions.InstructionBase] = list(instrsList)
 
-        self.pointersRemoved: bool = False
-
-        self.localLabels: dict[int, str] = dict()
-        """Branch labels found on this function.
-
-        The key is the offset relative to the start of the function and the value is the name of the label
-
-        If VRAM is available, then it is preferred to use `context.getSymbol(self.vram + branch, tryPlusOffset=False)` to get the name of a label instead.
-        """
-
         self.instrAnalyzer = analysis.InstrAnalyzer(self.vram)
 
         self.branchesTaken: set[int] = set()
 
-        self.luiInstructions: dict[int, instructions.InstructionBase] = dict()
-        self.nonPointerLuiSet: set[int] = set()
-
         self.pointersOffsets: set[int] = set()
+        self.pointersRemoved: bool = False
 
         self.hasUnimplementedIntrs: bool = False
         self.isRsp: bool = False
@@ -48,136 +36,16 @@ class SymbolFunction(SymbolText):
     def sizew(self) -> int:
         return self.nInstr
 
-    def _printAnalisisDebugInfo_IterInfo(self, instr: instructions.InstructionBase, register1: int|None, register2: int|None, register3: int|None, currentVram: int, regsTracker: analysis.RegistersTracker):
-        if not common.GlobalConfig.PRINT_FUNCTION_ANALYSIS_DEBUG_INFO:
-            return
-
-        print("_printAnalisisDebugInfo_IterInfo")
-        print()
-        print(f"vram: {currentVram:X}")
-        print(instr)
-        if register1 is not None:
-            print(register1, instr.getRegisterName(register1))
-        if register2 is not None:
-            print(register2, instr.getRegisterName(register2))
-        if register3 is not None:
-            print(register3, instr.getRegisterName(register3))
-        print(regsTracker.registers)
-        print({instr.getRegisterName(x): y for x, y in regsTracker.registers.items()})
-        # _t is shorthand of temp
-        print({instr.getRegisterName(register_t): f"{state_t.value:X},{state_t.loOffset:X},{state_t.dereferenced}" for register_t, state_t in regsTracker.registers.items() if state_t.hasLoValue})
-        print()
-
-    def _printSymbolFinderDebugInfo_UnpairedLuis(self):
-        if not common.GlobalConfig.PRINT_UNPAIRED_LUIS_DEBUG_INFO:
-            return
-
-        firstNotePrinted = False
-
-        for instructionOffset, luiInstr in self.luiInstructions.items():
-            # inFileOffset = self.inFileOffset + instructionOffset
-            currentVram = self.getVramOffset(instructionOffset)
-            if instructionOffset in self.nonPointerLuiSet:
-                continue
-            if instructionOffset in self.instrAnalyzer.constantInstrOffset:
-                # print(f"{currentVram:06X} ", end="")
-                # print(f"C  {self.constantsPerInstruction[instructionOffset]:8X}", luiInstr)
-                pass
-            else:
-                if common.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES and luiInstr.immediate < 0x4000: # filter out stuff that may not be a real symbol
-                    continue
-                if common.GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES and luiInstr.immediate >= 0xC000: # filter out stuff that may not be a real symbol
-                    continue
-
-                # print(f"{currentVram:06X} ", end="")
-                # if instructionOffset in self.pointersPerInstruction:
-                #     print(f"P  {self.pointersPerInstruction[instructionOffset]:8X}", luiInstr)
-                # else:
-                #     print("NO         ", luiInstr)
-
-                if instructionOffset not in self.instrAnalyzer.symbolInstrOffset:
-                    if not firstNotePrinted:
-                        print("_printSymbolFinderDebugInfo_UnpairedLuis")
-                        print(f"func: {self.getName()}")
-                        print(f"vram: {self.vram:08X}")
-                        firstNotePrinted = True
-
-                    print(f"{currentVram:06X} ", "NO         ", luiInstr)
-
-        if firstNotePrinted:
-            print()
-
-
-    def _symbolFinder(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase|None, instructionOffset: int, regsTracker: analysis.RegistersTracker) -> None:
-        if instr.uniqueId == instructions.InstructionId.LUI:
-            regsTracker.processLui(instr, prevInstr, instructionOffset)
-            return
-
-        if instr.uniqueId == instructions.InstructionId.ORI:
-            # Constants
-            luiOffset = regsTracker.getLuiOffsetForConstant(instr)
-            if luiOffset is None:
-                return
-            luiInstr = self.instructions[luiOffset//4]
-            constant = self.instrAnalyzer.processConstant(luiInstr, luiOffset, instr, instructionOffset)
-            if constant is not None:
-                regsTracker.processConstant(instr, constant, instructionOffset)
-            return
-
-        if instr.uniqueId in {instructions.InstructionId.ANDI, instructions.InstructionId.XORI, instructions.InstructionId.CACHE, instructions.InstructionId.SLTI, instructions.InstructionId.SLTIU}:
-            return
-
-        luiOffset, shouldProcess = regsTracker.getLuiOffsetForLo(instr, instructionOffset)
-        if not shouldProcess:
-            return
-
-        luiInstr = None
-        if luiOffset is not None:
-            luiInstr = self.instructions[luiOffset//4]
-
-        address = self.instrAnalyzer.pairHiLo(luiInstr, luiOffset, instr, instructionOffset)
-        if address is None:
-            return
-        if address in self.context.bannedSymbols:
-            return
-
-        patchedAddress = self.getLoPatch(instructionOffset)
-        if patchedAddress is not None:
-            address = patchedAddress
-
-        address = self.instrAnalyzer.processSymbol(address, luiOffset, instr, instructionOffset)
-
-        if address is not None:
-            regsTracker.processLo(instr, address, instructionOffset)
-
-
-    def _processInstr(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase, instructionOffset: int, currentVram: int, regsTracker: analysis.RegistersTracker) -> None:
-        if instr.isBranch() or instr.isUnconditionalBranch():
-            self.instrAnalyzer.processBranch(instr, instructionOffset, currentVram)
-
-        elif instr.isJType():
-            self.instrAnalyzer.processFuncCall(instr, instructionOffset)
-
-        elif instr.isIType():
-            self._symbolFinder(instr, prevInstr, instructionOffset, regsTracker)
-            self.instrAnalyzer.processSymbolDereferenceType(instr, instructionOffset, regsTracker)
-
-        elif instr.isJrNotRa():
-            jrInfo = regsTracker.getJrInfo(instr)
-            if jrInfo is not None:
-                offset, address = jrInfo
-                self.instrAnalyzer.processJumpRegister(address, instructionOffset, offset)
-
-        regsTracker.overwriteRegisters(instr, instructionOffset, currentVram)
-
 
     def _lookAheadSymbolFinder(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase, instructionOffset: int, trackedRegistersOriginal: analysis.RegistersTracker):
         if not prevInstr.isBranch() and not prevInstr.isUnconditionalBranch():
             return
 
+        currentVram = self.getVramOffset(instructionOffset)
+
         if prevInstr.uniqueId == instructions.InstructionId.J:
             targetBranchVram = prevInstr.getInstrIndexAsVram()
-            branchOffset = targetBranchVram - self.getVramOffset(instructionOffset)
+            branchOffset = targetBranchVram - currentVram
         else:
             branchOffset = prevInstr.getBranchOffset() - 4
         branch = instructionOffset + branchOffset
@@ -188,9 +56,7 @@ class SymbolFunction(SymbolText):
 
         regsTracker = analysis.RegistersTracker(trackedRegistersOriginal)
 
-        if instr.isIType():
-            self._symbolFinder(instr, None, instructionOffset, regsTracker)
-            regsTracker.overwriteRegisters(instr, instructionOffset)
+        self.instrAnalyzer.processInstr(regsTracker, instr, instructionOffset, currentVram)
 
         if instructionOffset in self.branchesTaken:
             return
@@ -211,7 +77,7 @@ class SymbolFunction(SymbolText):
             prevTargetInstr = self.instructions[branch//4 - 1]
             targetInstr = self.instructions[branch//4]
 
-            self._processInstr(targetInstr, prevTargetInstr, branch, self.getVramOffset(branch), regsTracker)
+            self.instrAnalyzer.processInstr(regsTracker, targetInstr, branch, self.getVramOffset(branch), prevTargetInstr)
 
             if prevTargetInstr.isUnconditionalBranch():
                 return
@@ -220,7 +86,7 @@ class SymbolFunction(SymbolText):
             if prevTargetInstr.isJump():
                 return
 
-            regsTracker.unsetRegistersAfterFuncCall(targetInstr, prevTargetInstr)
+            self.instrAnalyzer.processPrevFuncCall(regsTracker, targetInstr, prevTargetInstr)
 
             if instr.uniqueId == instructions.InstructionId.LUI:
                 if not regsTracker.registers[instr.rt].hasLuiValue:
@@ -282,17 +148,6 @@ class SymbolFunction(SymbolText):
                 offset += 4
             return
 
-        # Search for LUI instructions first
-        instructionOffset = 0
-        for instr in self.instructions:
-            if instr.uniqueId == instructions.InstructionId.LUI:
-                self.luiInstructions[instructionOffset] = instr
-            if instructionOffset > 0:
-                prevInstr = self.instructions[instructionOffset//4 - 1]
-                if prevInstr.isJType() or prevInstr.isJump():
-                    self.nonPointerLuiSet.add(instructionOffset)
-            instructionOffset += 4
-
         regsTracker = analysis.RegistersTracker()
 
         instructionOffset = 0
@@ -301,7 +156,7 @@ class SymbolFunction(SymbolText):
             self.isLikelyHandwritten |= instr.uniqueId in instructions.InstructionsNotEmitedByIDO
             prevInstr = self.instructions[instructionOffset//4 - 1]
 
-            self._printAnalisisDebugInfo_IterInfo(instr, instr.rs, instr.rt, instr.rd, currentVram, regsTracker)
+            self.instrAnalyzer.printAnalisisDebugInfo_IterInfo(regsTracker, instr, currentVram)
 
             if not self.isLikelyHandwritten:
                 self.isLikelyHandwritten = instr.isLikelyHandwritten()
@@ -312,16 +167,16 @@ class SymbolFunction(SymbolText):
                 return
 
             if not prevInstr.isBranchLikely() and not prevInstr.isUnconditionalBranch():
-                self._processInstr(instr, prevInstr, instructionOffset, currentVram, regsTracker)
+                self.instrAnalyzer.processInstr(regsTracker, instr, instructionOffset, currentVram, prevInstr)
 
             # look-ahead symbol finder
             self._lookAheadSymbolFinder(instr, prevInstr, instructionOffset, regsTracker)
 
-            regsTracker.unsetRegistersAfterFuncCall(instr, prevInstr, currentVram)
+            self.instrAnalyzer.processPrevFuncCall(regsTracker, instr, prevInstr, currentVram)
 
             instructionOffset += 4
 
-        self._printSymbolFinderDebugInfo_UnpairedLuis()
+        self.instrAnalyzer.printSymbolFinderDebugInfo_UnpairedLuis()
 
         self._processElfRelocSymbols()
 
@@ -341,6 +196,14 @@ class SymbolFunction(SymbolText):
 
         # Symbols
         for loOffset, symVram in self.instrAnalyzer.symbolLoInstrOffset.items():
+            if symVram in self.context.bannedSymbols:
+                continue
+
+            # Check for user-defined symbol patches
+            patchedAddress = self.getLoPatch(self.getVramOffset(loOffset))
+            if patchedAddress is not None:
+                symVram = patchedAddress
+
             symType = self.instrAnalyzer.possibleSymbolTypes.get(symVram, None)
             contextSym = self.getSymbol(symVram)
             if contextSym is None:
@@ -483,15 +346,26 @@ class SymbolFunction(SymbolText):
                 if labelSymbol is not None:
                     return labelSymbol.getName()
 
-                # in case we don't have access to vram or this label was not in context
-                if branch in self.localLabels:
-                    return self.localLabels[branch]
-
         elif instr.isIType():
             if not self.pointersRemoved and instructionOffset in self.instrAnalyzer.symbolInstrOffset:
                 address = self.instrAnalyzer.symbolInstrOffset[instructionOffset]
 
-                symbol = self.getSymbol(address, tryPlusOffset=True)
+                if address in self.context.bannedSymbols:
+                    return None
+
+                instrVram = self.getVramOffset(instructionOffset)
+                if instr.uniqueId == instructions.InstructionId.LUI:
+                    # we need to get the address of the lo instruction to get the patch
+                    if instructionOffset in self.instrAnalyzer.hiToLowDict:
+                        instrVram = self.getVramOffset(self.instrAnalyzer.hiToLowDict[instructionOffset])
+
+                # Check for user-defined symbol patches
+                patchedAddress = self.getLoPatch(instrVram)
+                if patchedAddress is not None:
+                    symbol = self.getSymbol(patchedAddress, tryPlusOffset=True, checkUpperLimit=False)
+                else:
+                    symbol = self.getSymbol(address, tryPlusOffset=True)
+
                 if symbol is not None:
                     return self.generateHiLoStr(instr, symbol.getSymbolPlusOffset(address))
 
@@ -544,9 +418,6 @@ class SymbolFunction(SymbolText):
                         label += f"{labelSym.getName()}:{common.GlobalConfig.LINE_ENDS}"
                     return label
                 return labelSym.getName() + ":" + common.GlobalConfig.LINE_ENDS
-
-            if instructionOffset in self.localLabels:
-                return self.localLabels[instructionOffset] + ":" + common.GlobalConfig.LINE_ENDS
         return ""
 
 
