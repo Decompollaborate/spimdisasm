@@ -30,7 +30,10 @@ class SymbolBase(common.ElementBase):
         self.contextSym.setNameIfUnset(name)
 
     def setNameGetCallback(self, callback: Callable[[common.ContextSymbol], str]) -> None:
-        self.contextSym.nameGetCallback = callback
+        self.contextSym.setNameGetCallback(callback)
+
+    def setNameGetCallbackIfUnset(self, callback: Callable[[common.ContextSymbol], str]) -> None:
+        self.contextSym.setNameGetCallbackIfUnset(callback)
 
 
     def generateAsmLineComment(self, localOffset: int, wordValue: int|None = None) -> str:
