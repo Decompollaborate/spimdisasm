@@ -196,6 +196,13 @@ class ContextSymbol:
     def getSize(self) -> int:
         if self.size is not None:
             return self.size
+        if self.type is not None:
+            if self.type in {"s8", "u8"}:
+                return 1
+            elif self.type in {"s16", "u16"}:
+                return 2
+            elif self.type in {"s64", "u64", "f64"}:
+                return 8
         if self.vram % 4 == 0:
             return 4
         if self.vram % 2 == 0:

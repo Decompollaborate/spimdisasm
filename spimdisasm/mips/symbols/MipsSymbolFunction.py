@@ -242,13 +242,6 @@ class SymbolFunction(SymbolText):
                 instrType = lowerInstr.mapInstrToType()
                 if instrType is not None:
                     contextSym.setTypeIfUnset(instrType)
-                    if contextSym.size is None:
-                        if instrType in {"s8", "u8"}:
-                            contextSym.size = 1
-                        elif instrType in {"s16", "u16"}:
-                            contextSym.size = 2
-                        elif instrType == {"s64", "f64"}:
-                            contextSym.size = 8
                 contextSym.referenceCounter += 1
         else:
             contextSym.referenceCounter += 1
@@ -293,13 +286,6 @@ class SymbolFunction(SymbolText):
         contextSym = self.getSymbol(address, tryPlusOffset=False)
         if contextSym is not None:
             contextSym.setTypeIfUnset(instrType)
-            if contextSym.size is None:
-                if instrType in {"s8", "u8"}:
-                    contextSym.size = 1
-                elif instrType in {"s16", "u16"}:
-                    contextSym.size = 2
-                elif instrType == {"s64", "f64"}:
-                    contextSym.size = 8
 
     def _symbolFinder(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase|None, instructionOffset: int, regsTracker: analysis.RegistersTracker) -> None:
         if instr.uniqueId == instructions.InstructionId.LUI:
