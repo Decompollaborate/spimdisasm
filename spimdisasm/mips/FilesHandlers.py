@@ -71,7 +71,7 @@ def getRdataAndLateRodataForFunction(func: symbols.SymbolFunction, rodataFileLis
             break
 
         # Skip the file if there's nothing in this file refenced by the current function
-        intersection = func.referencedVRams & rodataSection.symbolsVRams
+        intersection = func.instrAnalyzer.referencedVrams & rodataSection.symbolsVRams
         if len(intersection) == 0:
             continue
 
