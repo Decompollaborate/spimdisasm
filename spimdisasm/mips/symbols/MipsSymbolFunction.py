@@ -62,18 +62,8 @@ class SymbolFunction(SymbolText):
             return
         self.branchesTaken.add(instructionOffset)
 
-        registerDeleted = False
-        i = 0
         sizew = len(self.instructions)*4
         while branch < sizew:
-            if i >= 10:
-                if instr.uniqueId == instructions.InstructionId.LUI:
-                    if registerDeleted:
-                        return
-                else:
-                    # Only check the 10 next instructions in the target branch for non LUI instructions
-                    return
-
             prevTargetInstr = self.instructions[branch//4 - 1]
             targetInstr = self.instructions[branch//4]
 
@@ -81,20 +71,11 @@ class SymbolFunction(SymbolText):
 
             if prevTargetInstr.isUnconditionalBranch():
                 return
-            if prevTargetInstr.isJType():
-                return
-            if prevTargetInstr.isJump():
+            if prevTargetInstr.uniqueId == instructions.InstructionId.JR:
                 return
 
             self.instrAnalyzer.processPrevFuncCall(regsTracker, targetInstr, prevTargetInstr)
-
-            if instr.uniqueId == instructions.InstructionId.LUI:
-                if not regsTracker.registers[instr.rt].hasLuiValue:
-                    # Search until the register of the LUI on the delay slot is overwritten
-                    registerDeleted = True
-
             branch += 4
-            i += 1
 
     def _processElfRelocSymbols(self):
         if len(self.context.relocSymbols[common.FileSectionType.Text]) == 0:
