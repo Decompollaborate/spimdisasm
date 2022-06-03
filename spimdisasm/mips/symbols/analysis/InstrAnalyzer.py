@@ -70,6 +70,8 @@ class InstrAnalyzer:
 
         self.luiInstrs: dict[int, instructions.InstructionBase] = dict()
 
+        self.nonLoInstrOffsets: set[int] = set()
+
 
     def processBranch(self, instr: instructions.InstructionBase, instrOffset: int, currentVram: int) -> None:
         if instrOffset in self.branchInstrOffsets:
@@ -258,8 +260,14 @@ class InstrAnalyzer:
         if instr.uniqueId in {instructions.InstructionId.ANDI, instructions.InstructionId.XORI, instructions.InstructionId.CACHE, instructions.InstructionId.SLTI, instructions.InstructionId.SLTIU}:
             return
 
+        if instrOffset in self.nonLoInstrOffsets:
+            return
+
         luiOffset, shouldProcess = regsTracker.getLuiOffsetForLo(instr, instrOffset)
         if not shouldProcess:
+            state = regsTracker.registers[instr.rs]
+            if state.hasLoValue and not state.hasLuiValue:
+                self.nonLoInstrOffsets.add(instrOffset)
             return
 
         luiInstr = None
