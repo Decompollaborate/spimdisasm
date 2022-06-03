@@ -399,26 +399,28 @@ class SymbolFunction(SymbolText):
         return None
 
     def getLabelForOffset(self, instructionOffset: int) -> str:
-        if not common.GlobalConfig.IGNORE_BRANCHES and instructionOffset != 0:
+        if common.GlobalConfig.IGNORE_BRANCHES or instructionOffset == 0:
             # Skip over this function to avoid duplication
+            return ""
 
-            currentVram = self.getVramOffset(instructionOffset)
-            labelSym = self.getSymbol(currentVram, tryPlusOffset=False)
-            if labelSym is None and len(self.context.offsetJumpTablesLabels) > 0:
-                labelSym = self.context.getOffsetGenericLabel(self.inFileOffset+instructionOffset, common.FileSectionType.Text)
-            if labelSym is None and len(self.context.offsetSymbols[self.sectionType]) > 0:
-                labelSym = self.context.getOffsetSymbol(self.inFileOffset+instructionOffset, common.FileSectionType.Text)
+        currentVram = self.getVramOffset(instructionOffset)
+        labelSym = self.getSymbol(currentVram, tryPlusOffset=False)
+        if labelSym is None and len(self.context.offsetJumpTablesLabels) > 0:
+            labelSym = self.context.getOffsetGenericLabel(self.inFileOffset+instructionOffset, common.FileSectionType.Text)
+        if labelSym is None and len(self.context.offsetSymbols[self.sectionType]) > 0:
+            labelSym = self.context.getOffsetSymbol(self.inFileOffset+instructionOffset, common.FileSectionType.Text)
 
-            if labelSym is not None:
-                labelSym.isDefined = True
-                labelSym.sectionType = self.sectionType
-                if labelSym.type == common.SymbolSpecialType.function or labelSym.type == common.SymbolSpecialType.jumptablelabel:
-                    label = labelSym.getSymbolLabel() + common.GlobalConfig.LINE_ENDS
-                    if common.GlobalConfig.ASM_TEXT_FUNC_AS_LABEL:
-                        label += f"{labelSym.getName()}:{common.GlobalConfig.LINE_ENDS}"
-                    return label
-                return labelSym.getName() + ":" + common.GlobalConfig.LINE_ENDS
-        return ""
+        if labelSym is None or labelSym.overlayCategory != self.overlayCategory:
+            return ""
+
+        labelSym.isDefined = True
+        labelSym.sectionType = self.sectionType
+        if labelSym.type == common.SymbolSpecialType.function or labelSym.type == common.SymbolSpecialType.jumptablelabel:
+            label = labelSym.getSymbolLabel() + common.GlobalConfig.LINE_ENDS
+            if common.GlobalConfig.ASM_TEXT_FUNC_AS_LABEL:
+                label += f"{labelSym.getName()}:{common.GlobalConfig.LINE_ENDS}"
+            return label
+        return labelSym.getName() + ":" + common.GlobalConfig.LINE_ENDS
 
 
     def disassemble(self) -> str:
