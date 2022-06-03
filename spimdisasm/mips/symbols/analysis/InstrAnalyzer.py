@@ -135,6 +135,15 @@ class InstrAnalyzer:
         if lowerOffset in self.symbolLoInstrOffset:
             # This %lo has been processed already
 
+            # Check the other lui has the same immediate value as this one, and reject the pair if it doesn't
+            if luiInstr is not None:
+                otherLuiOffset = self.lowToHiDict.get(lowerOffset, None)
+                if otherLuiOffset is not None:
+                    otherLuiInstr = self.luiInstrs.get(otherLuiOffset, None)
+                    if otherLuiInstr is not None:
+                        if luiInstr.immediate != otherLuiInstr.immediate:
+                            return None
+
             if common.GlobalConfig.COMPILER == common.Compiler.IDO:
                 # IDO does not pair multiples %hi to the same %lo
                 return self.symbolLoInstrOffset[lowerOffset]
