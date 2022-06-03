@@ -171,7 +171,7 @@ class RegistersTracker:
             return stateSrc.luiOffset
         return None
 
-    def processConstant(self, instr: instructions.InstructionBase, value: int, offset: int) -> None:
+    def processConstant(self, value: int, instr: instructions.InstructionBase, offset: int) -> None:
         stateDst = self.registers[instr.rt]
         stateDst.setLo(value, offset)
 
