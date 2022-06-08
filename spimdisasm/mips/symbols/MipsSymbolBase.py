@@ -40,7 +40,7 @@ class SymbolBase(common.ElementBase):
         if not common.GlobalConfig.ASM_COMMENT:
             return ""
 
-        offsetHex = f"{localOffset + self.inFileOffset + self.commentOffset:06X}"
+        offsetHex = "{0:0{1}X}".format(localOffset + self.inFileOffset + self.commentOffset, common.GlobalConfig.ASM_COMMENT_OFFSET_WIDTH)
 
         currentVram = self.getVramOffset(localOffset)
         vramHex = f"{currentVram:08X}"

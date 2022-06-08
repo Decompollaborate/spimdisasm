@@ -73,6 +73,7 @@ class GlobalConfig:
 
     ASM_COMMENT: bool = True
     """Toggle the comments in generated assembly code"""
+    ASM_COMMENT_OFFSET_WIDTH: int = 6
     GLABEL_ASM_COUNT: bool = True
     """Toggle the glabel count comment on functions"""
 
@@ -137,6 +138,7 @@ class GlobalConfig:
         miscConfig = parser.add_argument_group("Disassembler misc options")
 
         miscConfig.add_argument("--asm-comments", help=f"Toggle the comments in generated assembly code. Defaults to {GlobalConfig.ASM_COMMENT}", action=argparse.BooleanOptionalAction)
+        miscConfig.add_argument("--comment-offset-width", help=f"Sets the zeroes width padding for the file offset comment. Defaults to {GlobalConfig.ASM_COMMENT_OFFSET_WIDTH}", action=argparse.BooleanOptionalAction)
         miscConfig.add_argument("--glabel-count", help=f"Toggle glabel count comment. Defaults to {GlobalConfig.GLABEL_ASM_COUNT}", action=argparse.BooleanOptionalAction)
 
         miscConfig.add_argument("--asm-text-label", help=f"Changes the label used to declare functions. Defaults to {GlobalConfig.ASM_TEXT_LABEL}")
@@ -202,6 +204,8 @@ class GlobalConfig:
 
         if args.asm_comments is not None:
             GlobalConfig.ASM_COMMENT = args.asm_comments
+        if args.comment_offset_width is not None:
+            GlobalConfig.ASM_COMMENT_OFFSET_WIDTH = args.comment_offset_width
         if args.glabel_count is not None:
             GlobalConfig.GLABEL_ASM_COUNT = args.glabel_count
 
