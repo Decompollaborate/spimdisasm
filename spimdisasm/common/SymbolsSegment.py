@@ -145,21 +145,17 @@ class SymbolsSegment:
 
     def getSymbol(self, address: int, tryPlusOffset: bool = True, checkUpperLimit: bool = True) -> ContextSymbol|None:
         "Searches symbol or a symbol with an addend if `tryPlusOffset` is True"
-        if address == 0:
-            return None
-
-        if address in self.symbols:
-            return self.symbols[address]
-
         if GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET and tryPlusOffset:
-            pair = self.symbols.getKeyRight(address)
-            if pair is not None:
-                symVram, contextSym = pair
-                if address > symVram:
-                    if checkUpperLimit and address >= symVram + contextSym.getSize():
-                        return None
-                    return contextSym
-        return None
+            pair = self.symbols.getKeyRight(address, inclusive=True)
+            if pair is None:
+                return None
+
+            symVram, contextSym = pair
+            if checkUpperLimit and address >= symVram + contextSym.getSize():
+                return None
+            return contextSym
+
+        return self.symbols.get(address, None)
 
     def getSymbolsRange(self, addressStart: int, addressEnd: int) -> Generator[tuple[int, ContextSymbol], None, None]:
         return self.symbols.getRange(addressStart, addressEnd, startInclusive=True, endInclusive=False)
@@ -174,7 +170,6 @@ class SymbolsSegment:
     def popPointerInDataReference(self, pointer: int) -> int|None:
         return self.newPointersInData.pop(pointer, None)
 
-    # TODO: rename
     def getAndPopPointerInDataReferencesRange(self, low: int, high: int) -> Generator[int, None, None]:
         for key, _ in self.newPointersInData.getRangeAndPop(low, high, startInclusive=True, endInclusive=False):
             yield key

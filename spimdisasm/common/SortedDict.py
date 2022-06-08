@@ -55,8 +55,8 @@ class SortedDict(MutableMapping[KeyType, ValueType]):
             index = bisect.bisect_left(self.sortedKeys, key)
         if index == 0:
             return None
-        key = self.sortedKeys[index - 1]
-        return key, self.map[key]
+        currentKey = self.sortedKeys[index - 1]
+        return currentKey, self.map[currentKey]
 
     def getKeyLeft(self, key: KeyType, inclusive: bool=True) -> tuple[KeyType, ValueType]|None:
         """Returns the pair with the smallest key which is gretest or equal to the `key` parameter, or None if there's no greater pair than the passed `key`.
@@ -111,6 +111,12 @@ class SortedDict(MutableMapping[KeyType, ValueType]):
             self.remove(key)
             yield (key, value)
 
+    def pop(self, key: KeyType, default: ValueType|_OtherType=None) -> ValueType|_OtherType:
+        if key not in self.map:
+            return default
+        value = self.map[key]
+        self.remove(key)
+        return value
 
     def __getitem__(self, key: KeyType) -> ValueType:
         return self.map[key]
