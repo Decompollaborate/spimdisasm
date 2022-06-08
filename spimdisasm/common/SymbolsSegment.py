@@ -6,11 +6,11 @@
 from __future__ import annotations
 
 import ast
-import bisect
 from typing import TextIO, Generator
 import os
 
 from . import Utils
+from .SortedDict import SortedDict
 from .GlobalConfig import GlobalConfig
 from .FileSectionType import FileSectionType
 from .ContextSymbols import SymbolSpecialType, ContextSymbol
@@ -30,13 +30,12 @@ class SymbolsSegment:
 
         self.overlayCategory: str|None = overlayCategory
 
-        self.symbols: dict[int, ContextSymbol] = dict()
-        self.symbolsVramSorted: list[int] = list()
+        self.symbols: SortedDict[int, ContextSymbol] = SortedDict()
 
         self.constants: dict[int, ContextSymbol] = dict()
 
-        self.newPointersInData: list[int] = list()
-        "Stuff that looks like pointers, found referenced by data. It is keept sorted"
+        self.newPointersInData: SortedDict[int, int] = SortedDict()
+        "Stuff that looks like pointers, found referenced by data"
 
         self.loPatches: dict[int, int] = dict()
         "key: address of %lo, value: symbol's vram to use instead"
@@ -96,7 +95,6 @@ class SymbolsSegment:
             contextSym.sectionType = sectionType
             contextSym.overlayCategory = self.overlayCategory
             self.symbols[address] = contextSym
-            bisect.insort(self.symbolsVramSorted, address)
 
         if contextSym.sectionType == FileSectionType.Unknown:
             contextSym.sectionType = sectionType
@@ -147,59 +145,34 @@ class SymbolsSegment:
 
     def getSymbol(self, address: int, tryPlusOffset: bool = True, checkUpperLimit: bool = True) -> ContextSymbol|None:
         "Searches symbol or a symbol with an addend if `tryPlusOffset` is True"
-        if address == 0:
-            return None
-
-        if address in self.symbols:
-            return self.symbols[address]
-
         if GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET and tryPlusOffset:
-            vramIndex = bisect.bisect(self.symbolsVramSorted, address)
-            if vramIndex != len(self.symbolsVramSorted):
-                symVram = self.symbolsVramSorted[vramIndex-1]
-                contextSym = self.symbols[symVram]
+            pair = self.symbols.getKeyRight(address, inclusive=True)
+            if pair is None:
+                return None
 
-                if address > symVram:
-                    if checkUpperLimit and address >= symVram + contextSym.getSize():
-                        return None
-                    return contextSym
-        return None
+            symVram, contextSym = pair
+            if checkUpperLimit and address >= symVram + contextSym.getSize():
+                return None
+            return contextSym
 
-    def getSymbolsRangeIter(self, addressStart: int, addressEnd: int) -> Generator[ContextSymbol, None, None]:
-        vramIndexLow = bisect.bisect_left(self.symbolsVramSorted, addressStart)
-        vramIndexHigh = bisect.bisect_left(self.symbolsVramSorted, addressEnd)
-        for vramIndex in range(vramIndexLow, vramIndexHigh):
-            symbolVram = self.symbolsVramSorted[vramIndex]
-            yield self.symbols[symbolVram]
+        return self.symbols.get(address, None)
 
-    def getSymbolsRange(self, addressStart: int, addressEnd: int) -> list[ContextSymbol]:
-        return list(self.getSymbolsRangeIter(addressStart, addressEnd))
+    def getSymbolsRange(self, addressStart: int, addressEnd: int) -> Generator[tuple[int, ContextSymbol], None, None]:
+        return self.symbols.getRange(addressStart, addressEnd, startInclusive=True, endInclusive=False)
 
     def getConstant(self, constantValue: int) -> ContextSymbol|None:
         return self.constants.get(constantValue, None)
 
 
     def addPointerInDataReference(self, pointer: int) -> None:
-        index = bisect.bisect_left(self.newPointersInData, pointer)
-        if index < len(self.newPointersInData) and self.newPointersInData[index] == pointer:
-            return
-        self.newPointersInData.insert(index, pointer)
+        self.newPointersInData[pointer] = pointer
 
     def popPointerInDataReference(self, pointer: int) -> int|None:
-        index = bisect.bisect(self.newPointersInData, pointer)
-        if index == len(self.newPointersInData):
-            return None
-        if self.newPointersInData[index-1] != pointer:
-            return None
-        del self.newPointersInData[index-1]
-        return pointer
+        return self.newPointersInData.pop(pointer, None)
 
-    def getPointerInDataReferencesIter(self, low: int, high: int) -> Generator[int, None, None]:
-        lowIndex = bisect.bisect_left(self.newPointersInData, low)
-        highIndex = bisect.bisect_left(self.newPointersInData, high)
-        for index in range(highIndex-1, lowIndex-1, -1):
-            yield self.newPointersInData[index]
-            del self.newPointersInData[index]
+    def getAndPopPointerInDataReferencesRange(self, low: int, high: int) -> Generator[int, None, None]:
+        for key, _ in self.newPointersInData.getRangeAndPop(low, high, startInclusive=True, endInclusive=False):
+            yield key
 
 
     def getLoPatch(self, loInstrVram: int|None) -> int|None:
@@ -209,7 +182,7 @@ class SymbolsSegment:
 
 
     def saveContextToFile(self, f: TextIO):
-        for address in self.symbolsVramSorted:
+        for address in self.symbols:
             f.write(f"symbol,{self.symbols[address].toCsv()}\n")
 
         for address, constant in self.constants.items():

@@ -10,7 +10,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="spimdisasm",
-    version="1.1.6",
+    version="1.1.7",
     author="Decompollaborate",
     license="MIT",
     url="https://github.com/Decompollaborate/spimdisasm",
