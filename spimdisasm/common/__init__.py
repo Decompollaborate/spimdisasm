@@ -3,6 +3,7 @@
 
 from . import Utils
 
+from .SortedDict import SortedDict
 from .GlobalConfig import GlobalConfig, InputEndian, Compiler
 from .FileSectionType import FileSectionType, FileSections_ListBasic, FileSections_ListAll
 from .ContextSymbols import SymbolSpecialType, ContextSymbol, ContextOffsetSymbol, ContextRelocSymbol

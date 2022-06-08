@@ -11,6 +11,7 @@ from typing import TextIO, Generator
 import os
 
 from . import Utils
+from .SortedDict import SortedDict
 from .GlobalConfig import GlobalConfig
 from .FileSectionType import FileSectionType
 from .ContextSymbols import SymbolSpecialType, ContextSymbol
@@ -30,8 +31,7 @@ class SymbolsSegment:
 
         self.overlayCategory: str|None = overlayCategory
 
-        self.symbols: dict[int, ContextSymbol] = dict()
-        self.symbolsVramSorted: list[int] = list()
+        self.symbols: SortedDict[int, ContextSymbol] = SortedDict()
 
         self.constants: dict[int, ContextSymbol] = dict()
 
@@ -96,7 +96,6 @@ class SymbolsSegment:
             contextSym.sectionType = sectionType
             contextSym.overlayCategory = self.overlayCategory
             self.symbols[address] = contextSym
-            bisect.insort(self.symbolsVramSorted, address)
 
         if contextSym.sectionType == FileSectionType.Unknown:
             contextSym.sectionType = sectionType
@@ -154,26 +153,17 @@ class SymbolsSegment:
             return self.symbols[address]
 
         if GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET and tryPlusOffset:
-            vramIndex = bisect.bisect(self.symbolsVramSorted, address)
-            if vramIndex != len(self.symbolsVramSorted):
-                symVram = self.symbolsVramSorted[vramIndex-1]
-                contextSym = self.symbols[symVram]
-
+            pair = self.symbols.getKeyRight(address)
+            if pair is not None:
+                symVram, contextSym = pair
                 if address > symVram:
                     if checkUpperLimit and address >= symVram + contextSym.getSize():
                         return None
                     return contextSym
         return None
 
-    def getSymbolsRangeIter(self, addressStart: int, addressEnd: int) -> Generator[ContextSymbol, None, None]:
-        vramIndexLow = bisect.bisect_left(self.symbolsVramSorted, addressStart)
-        vramIndexHigh = bisect.bisect_left(self.symbolsVramSorted, addressEnd)
-        for vramIndex in range(vramIndexLow, vramIndexHigh):
-            symbolVram = self.symbolsVramSorted[vramIndex]
-            yield self.symbols[symbolVram]
-
-    def getSymbolsRange(self, addressStart: int, addressEnd: int) -> list[ContextSymbol]:
-        return list(self.getSymbolsRangeIter(addressStart, addressEnd))
+    def getSymbolsRangeIter(self, addressStart: int, addressEnd: int) -> Generator[tuple[int, ContextSymbol], None, None]:
+        return self.symbols.getRange(addressStart, addressEnd, startInclusive=True, endInclusive=False)
 
     def getConstant(self, constantValue: int) -> ContextSymbol|None:
         return self.constants.get(constantValue, None)
@@ -194,6 +184,7 @@ class SymbolsSegment:
         del self.newPointersInData[index-1]
         return pointer
 
+    # TODO: rename
     def getPointerInDataReferencesIter(self, low: int, high: int) -> Generator[int, None, None]:
         lowIndex = bisect.bisect_left(self.newPointersInData, low)
         highIndex = bisect.bisect_left(self.newPointersInData, high)
@@ -209,7 +200,7 @@ class SymbolsSegment:
 
 
     def saveContextToFile(self, f: TextIO):
-        for address in self.symbolsVramSorted:
+        for address in self.symbols:
             f.write(f"symbol,{self.symbols[address].toCsv()}\n")
 
         for address, constant in self.constants.items():

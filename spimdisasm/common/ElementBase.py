@@ -226,13 +226,9 @@ class ElementBase:
             return None
         return segment.getSymbol(vram, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
 
-    def getSymbolsRangeIter(self, addressStart: int, addressEnd: int) -> Generator[ContextSymbol, None, None]:
+    def getSymbolsRangeIter(self, addressStart: int, addressEnd: int) -> Generator[tuple[int, ContextSymbol], None, None]:
         segment = self.getSegmentForVram(addressStart)
         return segment.getSymbolsRangeIter(addressStart, addressEnd)
-
-    def getSymbolsRange(self, addressStart: int, addressEnd: int) -> list[ContextSymbol]:
-        segment = self.getSegmentForVram(addressStart)
-        return segment.getSymbolsRange(addressStart, addressEnd)
 
 
     def getConstant(self, constantValue: int) -> ContextSymbol|None:
