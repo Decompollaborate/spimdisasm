@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import rabbitizer
+
 from ... import common
 
 from .. import instructions
@@ -13,9 +15,9 @@ from . import SymbolText, analysis
 
 
 class SymbolFunction(SymbolText):
-    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, instrsList: list[instructions.InstructionBase], segmentVromStart: int, overlayCategory: str|None):
+    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, instrsList: list[rabbitizer.Instruction], segmentVromStart: int, overlayCategory: str|None):
         super().__init__(context, vromStart, vromEnd, inFileOffset, vram, list(), segmentVromStart, overlayCategory)
-        self.instructions: list[instructions.InstructionBase] = list(instrsList)
+        self.instructions = list(instrsList)
 
         self.instrAnalyzer = analysis.InstrAnalyzer(self.vram)
 
@@ -37,7 +39,7 @@ class SymbolFunction(SymbolText):
         return self.nInstr
 
 
-    def _lookAheadSymbolFinder(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase, instructionOffset: int, trackedRegistersOriginal: analysis.RegistersTracker):
+    def _lookAheadSymbolFinder(self, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction, instructionOffset: int, trackedRegistersOriginal: analysis.RegistersTracker):
         if not prevInstr.isBranch() and not prevInstr.isUnconditionalBranch():
             return
 
@@ -289,7 +291,7 @@ class SymbolFunction(SymbolText):
         return was_updated
 
 
-    def generateHiLoStr(self, instr: instructions.InstructionBase, symName: str) -> str:
+    def generateHiLoStr(self, instr: rabbitizer.Instruction, symName: str) -> str:
         if instr.uniqueId == instructions.InstructionId.LUI:
             return f"%hi({symName})"
 
@@ -301,7 +303,7 @@ class SymbolFunction(SymbolText):
 
         return f"%lo({symName})"
 
-    def getImmOverrideForInstruction(self, instr: instructions.InstructionBase, instructionOffset: int) -> str|None:
+    def getImmOverrideForInstruction(self, instr: rabbitizer.Instruction, instructionOffset: int) -> str|None:
         if len(self.context.relocSymbols[self.sectionType]) > 0:
             # Check possible symbols using reloc information (probably from a .o elf file)
             possibleImmOverride = self.context.getRelocSymbol(self.inFileOffset + instructionOffset, self.sectionType)
@@ -427,15 +429,13 @@ class SymbolFunction(SymbolText):
         for instr in self.instructions:
             immOverride = self.getImmOverrideForInstruction(instr, instructionOffset)
             comment = self.generateAsmLineComment(instructionOffset, instr.instr)
+            extraLJust = 0
 
             if wasLastInstABranch:
-                instr.extraLjustWidthOpcode -= 1
+                extraLJust = -1
                 comment += " "
 
-            line = instr.disassemble(immOverride)
-
-            if wasLastInstABranch:
-                instr.extraLjustWidthOpcode += 1
+            line = instr.disassemble(immOverride, extraLJust=extraLJust)
 
             label = self.getLabelForOffset(instructionOffset)
             output += f"{label}{comment}  {line}" + common.GlobalConfig.LINE_ENDS

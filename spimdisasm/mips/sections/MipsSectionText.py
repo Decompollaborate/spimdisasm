@@ -5,11 +5,12 @@
 
 from __future__ import annotations
 
+import rabbitizer
+
 from ... import common
 
 from .. import instructions
 from .. import symbols
-
 from ..MipsFileBase import FileBase
 
 from . import SectionBase
@@ -27,13 +28,15 @@ class SectionText(SectionBase):
         return len(self.symbolList)
 
     @staticmethod
-    def wordListToInstructions(wordList: list[int], currentVram: int|None, isRsp: bool=False) -> list[instructions.InstructionBase]:
-        instrsList: list[instructions.InstructionBase] = list()
+    def wordListToInstructions(wordList: list[int], currentVram: int|None, isRsp: bool=False) -> list[rabbitizer.Instruction]:
+        instrsList: list[rabbitizer.Instruction] = list()
         for word in wordList:
-            if isRsp:
-                instr = instructions.wordToInstructionRsp(word)
-            else:
-                instr = instructions.wordToInstruction(word)
+            # if isRsp:
+            #     instr = instructions.wordToInstructionRsp(word)
+            # else:
+            #     instr = instructions.wordToInstruction(word)
+            # TODO: rsp
+            instr = rabbitizer.Instruction(word)
 
             if currentVram is not None:
                 instr.vram = currentVram

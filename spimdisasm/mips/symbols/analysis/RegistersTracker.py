@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import rabbitizer
+
 from .... import common
 
 from ... import instructions
@@ -23,7 +25,7 @@ class RegistersTracker:
             self.registers[register] = state
 
 
-    def moveRegisters(self, instr: instructions.InstructionBase) -> bool:
+    def moveRegisters(self, instr: rabbitizer.Instruction) -> bool:
         if instr.uniqueId not in (instructions.InstructionId.MOVE, instructions.InstructionId.OR, instructions.InstructionId.ADDU):
             return False
         if instr.rt == 0 and instr.rs == 0:
@@ -58,7 +60,7 @@ class RegistersTracker:
         dstState.clear()
         return False
 
-    def overwriteRegisters(self, instr: instructions.InstructionBase, instructionOffset: int, currentVram: int|None=None) -> None:
+    def overwriteRegisters(self, instr: rabbitizer.Instruction, instructionOffset: int, currentVram: int|None=None) -> None:
         shouldRemove = False
         register = 0
 
@@ -104,7 +106,7 @@ class RegistersTracker:
             if not state.wasSetInCurrentOffset(instructionOffset):
                 state.clearLo()
 
-    def unsetRegistersAfterFuncCall(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase, currentVram: int|None=None) -> None:
+    def unsetRegistersAfterFuncCall(self, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction, currentVram: int|None=None) -> None:
         if prevInstr.uniqueId != instructions.InstructionId.JAL and prevInstr.uniqueId != instructions.InstructionId.JALR:
             return
 
@@ -136,7 +138,7 @@ class RegistersTracker:
                 self._printDebugInfo_clearRegister(instr, register, currentVram)
             state.clear()
 
-    def getAddressIfCanSetType(self, instr: instructions.InstructionBase, instrOffset: int) -> int|None:
+    def getAddressIfCanSetType(self, instr: rabbitizer.Instruction, instrOffset: int) -> int|None:
         state = self.registers[instr.rs]
         if not state.hasLoValue:
             return None
@@ -146,14 +148,14 @@ class RegistersTracker:
 
         return None
 
-    def getJrInfo(self, instr: instructions.InstructionBase) -> tuple[int, int]|None:
+    def getJrInfo(self, instr: rabbitizer.Instruction) -> tuple[int, int]|None:
         state = self.registers[instr.rs]
         if state.hasLoValue and state.dereferenced:
             return state.loOffset, state.value
         return None
 
 
-    def processLui(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase|None, instrOffset: int) -> None:
+    def processLui(self, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction|None, instrOffset: int) -> None:
         assert instr.uniqueId == instructions.InstructionId.LUI
 
         state = self.registers[instr.rt]
@@ -165,17 +167,17 @@ class RegistersTracker:
             # the effects of this instruction for future analysis
             state.luiSetOnBranchLikely = prevInstr.isBranchLikely() or prevInstr.isUnconditionalBranch()
 
-    def getLuiOffsetForConstant(self, instr: instructions.InstructionBase) -> int|None:
+    def getLuiOffsetForConstant(self, instr: rabbitizer.Instruction) -> int|None:
         stateSrc = self.registers[instr.rs]
         if stateSrc.hasLuiValue:
             return stateSrc.luiOffset
         return None
 
-    def processConstant(self, value: int, instr: instructions.InstructionBase, offset: int) -> None:
+    def processConstant(self, value: int, instr: rabbitizer.Instruction, offset: int) -> None:
         stateDst = self.registers[instr.rt]
         stateDst.setLo(value, offset)
 
-    def getLuiOffsetForLo(self, instr: instructions.InstructionBase, instrOffset: int) -> tuple[int|None, bool]:
+    def getLuiOffsetForLo(self, instr: rabbitizer.Instruction, instrOffset: int) -> tuple[int|None, bool]:
         stateSrc = self.registers[instr.rs]
         if stateSrc.hasLuiValue and not stateSrc.luiSetOnBranchLikely:
             return stateSrc.luiOffset, True
@@ -189,7 +191,7 @@ class RegistersTracker:
                 self.registers[instr.rt].dereferenceState(stateSrc, instrOffset)
         return None, False
 
-    def processLo(self, instr: instructions.InstructionBase, value: int, offset: int) -> None:
+    def processLo(self, instr: rabbitizer.Instruction, value: int, offset: int) -> None:
         if not instr.modifiesRt():
             return
 
@@ -201,7 +203,7 @@ class RegistersTracker:
             stateDst.clearHi()
 
 
-    def _printDebugInfo_clearRegister(self, instr: instructions.InstructionBase, register: int, currentVram: int|None=None) -> None:
+    def _printDebugInfo_clearRegister(self, instr: rabbitizer.Instruction, register: int, currentVram: int|None=None) -> None:
         if not common.GlobalConfig.PRINT_SYMBOL_FINDER_DEBUG_INFO:
             return
 
@@ -213,6 +215,7 @@ class RegistersTracker:
         print(f"vram: {currentVram:X}")
         print(instr)
         print(self.registers)
-        print(f"deleting {register} / {instr.getRegisterName(register)}")
+        # TODO
+        # print(f"deleting {register} / {instr.getRegisterName(register)}")
         print()
 

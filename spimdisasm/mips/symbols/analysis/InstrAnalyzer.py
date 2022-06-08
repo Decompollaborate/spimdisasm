@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import rabbitizer
+
 from .... import common
 
 from ... import instructions
@@ -68,12 +70,12 @@ class InstrAnalyzer:
         self.lowToHiDict: dict[int, int] = dict()
         "key: %lo instruction offset, value: %hi instruction offset"
 
-        self.luiInstrs: dict[int, instructions.InstructionBase] = dict()
+        self.luiInstrs: dict[int, rabbitizer.Instruction] = dict()
 
         self.nonLoInstrOffsets: set[int] = set()
 
 
-    def processBranch(self, instr: instructions.InstructionBase, instrOffset: int, currentVram: int) -> None:
+    def processBranch(self, instr: rabbitizer.Instruction, instrOffset: int, currentVram: int) -> None:
         if instrOffset in self.branchInstrOffsets:
             # Already processed
             return
@@ -91,7 +93,7 @@ class InstrAnalyzer:
         self.branchInstrOffsets[instrOffset] = targetBranchVram
         self.branchTargetInstrOffsets[instrOffset] = branch
 
-    def processFuncCall(self, instr: instructions.InstructionBase, instrOffset: int) -> None:
+    def processFuncCall(self, instr: rabbitizer.Instruction, instrOffset: int) -> None:
         if instrOffset in self.funcCallInstrOffsets:
             # Already processed
             return
@@ -106,7 +108,7 @@ class InstrAnalyzer:
         self.funcCallInstrOffsets[instrOffset] = target
 
 
-    def processConstant(self, regsTracker: RegistersTracker, luiInstr: instructions.InstructionBase, luiOffset: int, lowerInstr: instructions.InstructionBase, lowerOffset: int) -> int|None:
+    def processConstant(self, regsTracker: RegistersTracker, luiInstr: rabbitizer.Instruction, luiOffset: int, lowerInstr: rabbitizer.Instruction, lowerOffset: int) -> int|None:
         upperHalf = luiInstr.immediate << 16
         lowerHalf = lowerInstr.immediate
         constant = upperHalf | lowerHalf
@@ -126,7 +128,7 @@ class InstrAnalyzer:
         return constant
 
 
-    def pairHiLo(self, luiInstr: instructions.InstructionBase|None, luiOffset: int|None, lowerInstr: instructions.InstructionBase, lowerOffset: int) -> int|None:
+    def pairHiLo(self, luiInstr: rabbitizer.Instruction|None, luiOffset: int|None, lowerInstr: rabbitizer.Instruction, lowerOffset: int) -> int|None:
         # lui being None means this symbol is a $gp access
         assert (luiInstr is None and luiOffset is None) or (luiInstr is not None and luiOffset is not None)
 
@@ -190,7 +192,7 @@ class InstrAnalyzer:
         return upperHalf + lowerHalf
 
 
-    def processSymbol(self, address: int, luiOffset: int|None, lowerInstr: instructions.InstructionBase, lowerOffset: int) -> int|None:
+    def processSymbol(self, address: int, luiOffset: int|None, lowerInstr: rabbitizer.Instruction, lowerOffset: int) -> int|None:
         # filter out stuff that may not be a real symbol
         filterOut = common.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES and address < 0x80000000
         filterOut |= common.GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES and address >= 0xC0000000
@@ -233,7 +235,7 @@ class InstrAnalyzer:
 
         return address
 
-    def processSymbolType(self, address: int, instr: instructions.InstructionBase) -> None:
+    def processSymbolType(self, address: int, instr: rabbitizer.Instruction) -> None:
         instrType = instr.mapInstrToType()
         if instrType is None:
             return
@@ -241,7 +243,7 @@ class InstrAnalyzer:
         if address not in self.possibleSymbolTypes:
             self.possibleSymbolTypes[address] = instrType
 
-    def processSymbolDereferenceType(self, regsTracker: RegistersTracker, instr: instructions.InstructionBase, instrOffset: int) -> None:
+    def processSymbolDereferenceType(self, regsTracker: RegistersTracker, instr: rabbitizer.Instruction, instrOffset: int) -> None:
         address = regsTracker.getAddressIfCanSetType(instr, instrOffset)
         if address is None:
             return
@@ -249,7 +251,7 @@ class InstrAnalyzer:
         self.processSymbolType(address, instr)
 
 
-    def symbolFinder(self, regsTracker: RegistersTracker, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase|None, instrOffset: int) -> None:
+    def symbolFinder(self, regsTracker: RegistersTracker, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction|None, instrOffset: int) -> None:
         if instr.uniqueId == instructions.InstructionId.LUI:
             regsTracker.processLui(instr, prevInstr, instrOffset)
             self.luiInstrs[instrOffset] = instr
@@ -294,7 +296,7 @@ class InstrAnalyzer:
             regsTracker.processLo(instr, address, instrOffset)
 
 
-    def processJumpRegister(self, regsTracker: RegistersTracker, instr: instructions.InstructionBase, instrOffset: int) -> None:
+    def processJumpRegister(self, regsTracker: RegistersTracker, instr: rabbitizer.Instruction, instrOffset: int) -> None:
         jrInfo = regsTracker.getJrInfo(instr)
         if jrInfo is not None:
             offset, address = jrInfo
@@ -304,7 +306,7 @@ class InstrAnalyzer:
             self.referencedVrams.add(address)
 
 
-    def processInstr(self, regsTracker: RegistersTracker, instr: instructions.InstructionBase, instrOffset: int, currentVram: int, prevInstr: instructions.InstructionBase|None=None) -> None:
+    def processInstr(self, regsTracker: RegistersTracker, instr: rabbitizer.Instruction, instrOffset: int, currentVram: int, prevInstr: rabbitizer.Instruction|None=None) -> None:
         if instr.isBranch() or instr.isUnconditionalBranch():
             self.processBranch(instr, instrOffset, currentVram)
 
@@ -321,12 +323,12 @@ class InstrAnalyzer:
         regsTracker.overwriteRegisters(instr, instrOffset, currentVram)
 
 
-    def processPrevFuncCall(self, regsTracker: RegistersTracker, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase, currentVram: int | None = None) -> None:
+    def processPrevFuncCall(self, regsTracker: RegistersTracker, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction, currentVram: int | None = None) -> None:
         regsTracker.unsetRegistersAfterFuncCall(instr, prevInstr, currentVram)
 
 
 
-    def printAnalisisDebugInfo_IterInfo(self, regsTracker: RegistersTracker, instr: instructions.InstructionBase, currentVram: int):
+    def printAnalisisDebugInfo_IterInfo(self, regsTracker: RegistersTracker, instr: rabbitizer.Instruction, currentVram: int):
         if not common.GlobalConfig.PRINT_FUNCTION_ANALYSIS_DEBUG_INFO:
             return
 
@@ -334,13 +336,13 @@ class InstrAnalyzer:
         print()
         print(f"vram: {currentVram:X}")
         print(instr)
-        print(instr.rs, instr.getRegisterName(instr.rs))
-        print(instr.rt, instr.getRegisterName(instr.rt))
-        print(instr.rd, instr.getRegisterName(instr.rd))
+        # print(instr.rs, instr.getRegisterName(instr.rs))
+        # print(instr.rt, instr.getRegisterName(instr.rt))
+        # print(instr.rd, instr.getRegisterName(instr.rd))
         print(regsTracker.registers)
-        print({instr.getRegisterName(x): y for x, y in regsTracker.registers.items()})
+        # print({instr.getRegisterName(x): y for x, y in regsTracker.registers.items()})
         # _t is shorthand of temp
-        print({instr.getRegisterName(register_t): f"{state_t.value:X},{state_t.loOffset:X},{state_t.dereferenced}" for register_t, state_t in regsTracker.registers.items() if state_t.hasLoValue})
+        # print({instr.getRegisterName(register_t): f"{state_t.value:X},{state_t.loOffset:X},{state_t.dereferenced}" for register_t, state_t in regsTracker.registers.items() if state_t.hasLoValue})
         print()
 
     def printSymbolFinderDebugInfo_UnpairedLuis(self):
