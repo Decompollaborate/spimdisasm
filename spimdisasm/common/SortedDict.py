@@ -15,8 +15,9 @@ class Comparable(Protocol):
     @abstractmethod
     def __lt__(self, other: Any, /) -> bool: ...
 
-KeyType = TypeVar('KeyType', bound=Comparable)
+KeyType = TypeVar("KeyType", bound=Comparable)
 ValueType = TypeVar("ValueType")
+_OtherType = TypeVar("_OtherType")
 
 
 class SortedDict(MutableMapping[KeyType, ValueType]):
@@ -26,8 +27,7 @@ class SortedDict(MutableMapping[KeyType, ValueType]):
 
         if other is not None:
             for key, value in other.items():
-                self.map[key] = value
-                bisect.insort(self.sortedKeys, key)
+                self.add(key, value)
 
 
     def add(self, key: KeyType, value: ValueType) -> None:
@@ -40,8 +40,15 @@ class SortedDict(MutableMapping[KeyType, ValueType]):
         del self.map[key]
         self.sortedKeys.remove(key)
 
+    def get(self, key: KeyType, default: _OtherType=None) -> ValueType | _OtherType:
+        return self.map.get(key, default)
+
 
     def getKeyRight(self, key: KeyType, inclusive: bool=True) -> tuple[KeyType, ValueType]|None:
+        """Returns the pair with the greatest key which is less or equal to the `key` parameter, or None if there's no smaller pair than the passed `key`.
+
+        If `inclusive` is `False`, then the returned pair will be strictly less than the passed `key`.
+        """
         if inclusive:
             index = bisect.bisect_right(self.sortedKeys, key)
         else:
@@ -52,6 +59,10 @@ class SortedDict(MutableMapping[KeyType, ValueType]):
         return key, self.map[key]
 
     def getKeyLeft(self, key: KeyType, inclusive: bool=True) -> tuple[KeyType, ValueType]|None:
+        """Returns the pair with the smallest key which is gretest or equal to the `key` parameter, or None if there's no greater pair than the passed `key`.
+
+        If `inclusive` is `False`, then the returned pair will be strictly greater than the passed `key`.
+        """
         if inclusive:
             index = bisect.bisect_left(self.sortedKeys, key)
         else:
@@ -63,6 +74,9 @@ class SortedDict(MutableMapping[KeyType, ValueType]):
 
 
     def getRange(self, startKey: KeyType, endKey: KeyType, startInclusive: bool=True, endInclusive: bool=False) -> Generator[tuple[KeyType, ValueType], None, None]:
+        """Generator which iterates in the range [`startKey`, `endKey`], returining a (key, value) tuple.
+
+        By default the `startKey` is inclusive but the `endKey` isn't, this can be changed with the `startInclusive` and `endInclusive` parameters"""
         if startInclusive:
             keyIndexStart = bisect.bisect_left(self.sortedKeys, startKey)
         else:
@@ -77,6 +91,26 @@ class SortedDict(MutableMapping[KeyType, ValueType]):
             key = self.sortedKeys[index]
             yield (key, self.map[key])
 
+    def getRangeAndPop(self, startKey: KeyType, endKey: KeyType, startInclusive: bool=True, endInclusive: bool=False) -> Generator[tuple[KeyType, ValueType], None, None]:
+        """Similar to `getRange`, but every pair is removed from the dictionary.
+
+        Please note this generator iterates in reverse/descending order"""
+        if startInclusive:
+            keyIndexStart = bisect.bisect_left(self.sortedKeys, startKey)
+        else:
+            keyIndexStart = bisect.bisect_right(self.sortedKeys, startKey)
+
+        if endInclusive:
+            keyIndexEnd = bisect.bisect_right(self.sortedKeys, endKey)
+        else:
+            keyIndexEnd = bisect.bisect_left(self.sortedKeys, endKey)
+
+        for index in range(keyIndexEnd-1, keyIndexStart-1, -1):
+            key = self.sortedKeys[index]
+            value = self.map[key]
+            self.remove(key)
+            yield (key, value)
+
 
     def __getitem__(self, key: KeyType) -> ValueType:
         return self.map[key]
@@ -88,11 +122,15 @@ class SortedDict(MutableMapping[KeyType, ValueType]):
         self.remove(key)
 
     def __iter__(self) -> Generator[KeyType, None, None]:
+        "Iteration is sorted by keys"
         for key in self.sortedKeys:
             yield key
 
     def __len__(self) -> int:
         return len(self.map)
+
+    def __contains__(self, key: KeyType) -> bool:
+        return self.map.__contains__(key)
 
 
     def __str__(self) -> str:

@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import ast
-import bisect
 from typing import TextIO, Generator
 import os
 
@@ -35,8 +34,8 @@ class SymbolsSegment:
 
         self.constants: dict[int, ContextSymbol] = dict()
 
-        self.newPointersInData: list[int] = list()
-        "Stuff that looks like pointers, found referenced by data. It is keept sorted"
+        self.newPointersInData: SortedDict[int, int] = SortedDict()
+        "Stuff that looks like pointers, found referenced by data"
 
         self.loPatches: dict[int, int] = dict()
         "key: address of %lo, value: symbol's vram to use instead"
@@ -162,7 +161,7 @@ class SymbolsSegment:
                     return contextSym
         return None
 
-    def getSymbolsRangeIter(self, addressStart: int, addressEnd: int) -> Generator[tuple[int, ContextSymbol], None, None]:
+    def getSymbolsRange(self, addressStart: int, addressEnd: int) -> Generator[tuple[int, ContextSymbol], None, None]:
         return self.symbols.getRange(addressStart, addressEnd, startInclusive=True, endInclusive=False)
 
     def getConstant(self, constantValue: int) -> ContextSymbol|None:
@@ -170,27 +169,15 @@ class SymbolsSegment:
 
 
     def addPointerInDataReference(self, pointer: int) -> None:
-        index = bisect.bisect_left(self.newPointersInData, pointer)
-        if index < len(self.newPointersInData) and self.newPointersInData[index] == pointer:
-            return
-        self.newPointersInData.insert(index, pointer)
+        self.newPointersInData[pointer] = pointer
 
     def popPointerInDataReference(self, pointer: int) -> int|None:
-        index = bisect.bisect(self.newPointersInData, pointer)
-        if index == len(self.newPointersInData):
-            return None
-        if self.newPointersInData[index-1] != pointer:
-            return None
-        del self.newPointersInData[index-1]
-        return pointer
+        return self.newPointersInData.pop(pointer, None)
 
     # TODO: rename
-    def getPointerInDataReferencesIter(self, low: int, high: int) -> Generator[int, None, None]:
-        lowIndex = bisect.bisect_left(self.newPointersInData, low)
-        highIndex = bisect.bisect_left(self.newPointersInData, high)
-        for index in range(highIndex-1, lowIndex-1, -1):
-            yield self.newPointersInData[index]
-            del self.newPointersInData[index]
+    def getAndPopPointerInDataReferencesRange(self, low: int, high: int) -> Generator[int, None, None]:
+        for key, _ in self.newPointersInData.getRangeAndPop(low, high, startInclusive=True, endInclusive=False):
+            yield key
 
 
     def getLoPatch(self, loInstrVram: int|None) -> int|None:

@@ -226,9 +226,9 @@ class ElementBase:
             return None
         return segment.getSymbol(vram, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
 
-    def getSymbolsRangeIter(self, addressStart: int, addressEnd: int) -> Generator[tuple[int, ContextSymbol], None, None]:
+    def getSymbolsRange(self, addressStart: int, addressEnd: int) -> Generator[tuple[int, ContextSymbol], None, None]:
         segment = self.getSegmentForVram(addressStart)
-        return segment.getSymbolsRangeIter(addressStart, addressEnd)
+        return segment.getSymbolsRange(addressStart, addressEnd)
 
 
     def getConstant(self, constantValue: int) -> ContextSymbol|None:
@@ -285,9 +285,9 @@ class ElementBase:
         segment = self.getSegmentForVram(pointer)
         return segment.popPointerInDataReference(pointer)
 
-    def getPointerInDataReferencesIter(self, low: int, high: int) -> Generator[int, None, None]:
+    def getAndPopPointerInDataReferencesRange(self, low: int, high: int) -> Generator[int, None, None]:
         segment = self.getSegmentForVram(low)
-        return segment.getPointerInDataReferencesIter(low, high)
+        return segment.getAndPopPointerInDataReferencesRange(low, high)
 
 
     def getLoPatch(self, loInstrVram: int|None) -> int|None:
