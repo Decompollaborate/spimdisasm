@@ -26,7 +26,8 @@ class RegistersTracker:
 
 
     def moveRegisters(self, instr: rabbitizer.Instruction) -> bool:
-        if instr.uniqueId not in (instructions.InstructionId.MOVE, instructions.InstructionId.OR, instructions.InstructionId.ADDU):
+        # if instr.uniqueId not in (instructions.InstructionId.MOVE, instructions.InstructionId.OR, instructions.InstructionId.ADDU):
+        if instr.uniqueId not in {rabbitizer.instr_id.cpu_move, rabbitizer.instr_id.cpu_or, rabbitizer.instr_id.cpu_addu}:
             return False
         if instr.rt == 0 and instr.rs == 0:
             return False
@@ -68,12 +69,14 @@ class RegistersTracker:
             return
 
         if instr.isFloatInstruction():
-            if instr.uniqueId in (instructions.InstructionId.MTC1, instructions.InstructionId.DMTC1, instructions.InstructionId.CTC1):
+            # if instr.uniqueId in (instructions.InstructionId.MTC1, instructions.InstructionId.DMTC1, instructions.InstructionId.CTC1):
+            if instr.uniqueId in {rabbitizer.instr_id.cpu_mtc1, rabbitizer.instr_id.cpu_dmtc1, rabbitizer.instr_id.cpu_ctc1}:
                 # IDO usually use a register as a temp when loading a constant value
                 # into the float coprocessor, after that IDO never re-uses the value
                 # in that register for anything else
                 shouldRemove = True
                 register = instr.rt
+        # TODO: errr, what?
         elif instr.isRType() or (instr.isBranch() and isinstance(instr, instructions.InstructionNormal)):
             # $at is a one-use register
             at = 0
@@ -90,7 +93,8 @@ class RegistersTracker:
         if instr.modifiesRt():
             shouldRemove = True
             register = instr.rt
-            if instr.uniqueId == instructions.InstructionId.LUI:
+            # if instr.uniqueId == instructions.InstructionId.LUI:
+            if instr.isHiPair():
                 self.registers[instr.rt].clearLo()
                 shouldRemove = False
         if instr.modifiesRd():
@@ -107,7 +111,8 @@ class RegistersTracker:
                 state.clearLo()
 
     def unsetRegistersAfterFuncCall(self, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction, currentVram: int|None=None) -> None:
-        if prevInstr.uniqueId != instructions.InstructionId.JAL and prevInstr.uniqueId != instructions.InstructionId.JALR:
+        # if prevInstr.uniqueId != instructions.InstructionId.JAL and prevInstr.uniqueId != instructions.InstructionId.JALR:
+        if not prevInstr.doesLink():
             return
 
         # It happen that every register that we want to clear on a function call have the same raw values for both o32 and n32 ABIs, so no need to worry about it for now...
@@ -156,7 +161,8 @@ class RegistersTracker:
 
 
     def processLui(self, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction|None, instrOffset: int) -> None:
-        assert instr.uniqueId == instructions.InstructionId.LUI
+        # assert instr.uniqueId == instructions.InstructionId.LUI
+        assert instr.isHiPair()
 
         state = self.registers[instr.rt]
         state.clear()
@@ -185,7 +191,8 @@ class RegistersTracker:
         if instr.rs == 28: # $gp
             return None, True
 
-        if instr.modifiesRt() and instr.uniqueId not in {instructions.InstructionId.ADDIU, instructions.InstructionId.ADDI}:
+        # if instr.modifiesRt() and instr.uniqueId not in {instructions.InstructionId.ADDIU, instructions.InstructionId.ADDI}:
+        if instr.modifiesRt() and instr.doesDereference():
             if stateSrc.hasLoValue and not stateSrc.dereferenced:
                 # Simulate a dereference
                 self.registers[instr.rt].dereferenceState(stateSrc, instrOffset)
@@ -197,7 +204,8 @@ class RegistersTracker:
 
         stateDst = self.registers[instr.rt]
         stateDst.setLo(value, offset)
-        if instr.uniqueId not in {instructions.InstructionId.ADDIU, instructions.InstructionId.ADDI}:
+        # if instr.uniqueId not in {instructions.InstructionId.ADDIU, instructions.InstructionId.ADDI}:
+        if instr.doesDereference():
             stateDst.deref(offset)
         if instr.rt == instr.rs:
             stateDst.clearHi()
@@ -218,4 +226,3 @@ class RegistersTracker:
         # TODO
         # print(f"deleting {register} / {instr.getRegisterName(register)}")
         print()
-

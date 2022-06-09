@@ -45,12 +45,16 @@ class SymbolFunction(SymbolText):
 
         currentVram = self.getVramOffset(instructionOffset)
 
-        if prevInstr.uniqueId == instructions.InstructionId.J:
-            targetBranchVram = prevInstr.getInstrIndexAsVram()
-            branchOffset = targetBranchVram - currentVram
-        else:
-            branchOffset = prevInstr.getBranchOffset() - 4
-        branch = instructionOffset + branchOffset
+        # if prevInstr.uniqueId == instructions.InstructionId.J:
+        #     targetBranchVram = prevInstr.getInstrIndexAsVram()
+        #     branchOffset = targetBranchVram - currentVram
+        # else:
+        #     branchOffset = prevInstr.getBranchOffset() - 4
+        # branch = instructionOffset + branchOffset
+        prevInstrOffset = instructionOffset - 4
+        prevVram = self.getVramOffset(prevInstrOffset)
+        branchOffset = prevInstr.getGenericBranchOffset(prevVram)
+        branch = prevInstrOffset + branchOffset
 
         if branch < 0:
             # Avoid jumping outside of the function
@@ -73,7 +77,8 @@ class SymbolFunction(SymbolText):
 
             if prevTargetInstr.isUnconditionalBranch():
                 return
-            if prevTargetInstr.uniqueId == instructions.InstructionId.JR:
+            # if prevTargetInstr.uniqueId == instructions.InstructionId.JR:
+            if prevTargetInstr.uniqueId == rabbitizer.instr_id.cpu_jr:
                 return
 
             self.instrAnalyzer.processPrevFuncCall(regsTracker, targetInstr, prevTargetInstr)
@@ -279,8 +284,10 @@ class SymbolFunction(SymbolText):
 
         for i in range(self.nInstr-1, 0-1, -1):
             instr = self.instructions[i]
-            if instr.uniqueId != instructions.InstructionId.NOP:
-                if instr.uniqueId == instructions.InstructionId.JR and instr.rs == 31: #$ra
+            # if instr.uniqueId != instructions.InstructionId.NOP:
+            if not instr.isNop():
+                # if instr.uniqueId == instructions.InstructionId.JR and instr.rs == 31: #$ra
+                if instr.isJrRa():
                     first_nop += 1
                 break
             first_nop = i
@@ -292,7 +299,8 @@ class SymbolFunction(SymbolText):
 
 
     def generateHiLoStr(self, instr: rabbitizer.Instruction, symName: str) -> str:
-        if instr.uniqueId == instructions.InstructionId.LUI:
+        # if instr.uniqueId == instructions.InstructionId.LUI:
+        if instr.isHiPair():
             return f"%hi({symName})"
 
         # $gp
@@ -319,12 +327,14 @@ class SymbolFunction(SymbolText):
 
         if instr.isBranch() or instr.isUnconditionalBranch():
             if not common.GlobalConfig.IGNORE_BRANCHES:
-                if instr.uniqueId == instructions.InstructionId.J:
-                    targetBranchVram = instr.getInstrIndexAsVram()
-                    branch = instructionOffset + targetBranchVram - self.getVramOffset(instructionOffset)
-                else:
-                    branch = instructionOffset + instr.getBranchOffset()
-                    targetBranchVram = self.getVramOffset(branch)
+                # if instr.uniqueId == instructions.InstructionId.J:
+                #     targetBranchVram = instr.getInstrIndexAsVram()
+                #     branch = instructionOffset + targetBranchVram - self.getVramOffset(instructionOffset)
+                # else:
+                #     branch = instructionOffset + instr.getBranchOffset()
+                #     targetBranchVram = self.getVramOffset(branch)
+                branchOffset = instr.getGenericBranchOffset(self.getVramOffset(instructionOffset))
+                targetBranchVram = self.getVramOffset(instructionOffset + branchOffset)
                 labelSymbol = self.getSymbol(targetBranchVram, tryPlusOffset=False)
                 if labelSymbol is not None:
                     return labelSymbol.getName()
@@ -337,7 +347,8 @@ class SymbolFunction(SymbolText):
                     return None
 
                 instrVram = self.getVramOffset(instructionOffset)
-                if instr.uniqueId == instructions.InstructionId.LUI:
+                # if instr.uniqueId == instructions.InstructionId.LUI:
+                if instr.isHiPair():
                     # we need to get the address of the lo instruction to get the patch
                     if instructionOffset in self.instrAnalyzer.hiToLowDict:
                         instrVram = self.getVramOffset(self.instrAnalyzer.hiToLowDict[instructionOffset])
@@ -360,17 +371,21 @@ class SymbolFunction(SymbolText):
                     return self.generateHiLoStr(instr, symbol.getName())
 
                 # Pretend this pair is a constant
-                if instr.uniqueId == instructions.InstructionId.LUI:
+                # if instr.uniqueId == instructions.InstructionId.LUI:
+                if instr.isHiPair():
                     loInstr = self.instructions[self.instrAnalyzer.hiToLowDict[instructionOffset] // 4]
-                    if loInstr.uniqueId == instructions.InstructionId.ORI:
+                    # if loInstr.uniqueId == instructions.InstructionId.ORI:
+                    if loInstr.isLoPair() and loInstr.isUnsigned():
                         return f"(0x{constant:X} >> 16)"
-                elif instr.uniqueId == instructions.InstructionId.ORI:
+                # elif instr.uniqueId == instructions.InstructionId.ORI:
+                elif instr.isLoPair() and instr.isUnsigned():
                     return f"(0x{constant:X} & 0xFFFF)"
 
                 if common.GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_HILO:
                     return self.generateHiLoStr(instr, f"0x{constant:X}")
 
-            elif instr.uniqueId == instructions.InstructionId.LUI:
+            # elif instr.uniqueId == instructions.InstructionId.LUI:
+            elif instr.isHiPair():
                 # Unpaired LUI
                 return f"(0x{instr.immediate<<16:X} >> 16)"
 
