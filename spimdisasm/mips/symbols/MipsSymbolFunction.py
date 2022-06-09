@@ -9,8 +9,6 @@ import rabbitizer
 
 from ... import common
 
-from .. import instructions
-
 from . import SymbolText, analysis
 
 
@@ -141,7 +139,7 @@ class SymbolFunction(SymbolText):
         instructionOffset = 0
         for instr in self.instructions:
             currentVram = self.getVramOffset(instructionOffset)
-            self.isLikelyHandwritten |= instr.uniqueId in instructions.InstructionsNotEmitedByIDO
+            # self.isLikelyHandwritten |= instr.uniqueId in instructions.InstructionsNotEmitedByIDO
             prevInstr = self.instructions[instructionOffset//4 - 1]
 
             self.instrAnalyzer.printAnalisisDebugInfo_IterInfo(regsTracker, instr, currentVram)

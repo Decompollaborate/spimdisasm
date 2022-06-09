@@ -9,7 +9,6 @@ import rabbitizer
 
 from ... import common
 
-from .. import instructions
 from .. import symbols
 from ..MipsFileBase import FileBase
 

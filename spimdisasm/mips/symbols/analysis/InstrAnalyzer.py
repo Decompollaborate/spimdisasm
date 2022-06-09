@@ -9,8 +9,6 @@ import rabbitizer
 
 from .... import common
 
-from ... import instructions
-
 from .RegistersTracker import RegistersTracker
 
 

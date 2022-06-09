@@ -9,8 +9,6 @@ import rabbitizer
 
 from .... import common
 
-from ... import instructions
-
 from .TrackedRegisterState import TrackedRegisterState
 
 
@@ -77,7 +75,8 @@ class RegistersTracker:
                 shouldRemove = True
                 register = instr.rt
         # TODO: errr, what?
-        elif instr.isRType() or (instr.isBranch() and isinstance(instr, instructions.InstructionNormal)):
+        # elif instr.isRType() or (instr.isBranch() and isinstance(instr, instructions.InstructionNormal)):
+        elif instr.isRType() or (instr.isBranch() and instr.isIType()):
             # $at is a one-use register
             at = 0
             if instr.rs == 1:
