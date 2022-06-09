@@ -24,7 +24,7 @@ class RegistersTracker:
 
 
     def moveRegisters(self, instr: rabbitizer.Instruction) -> bool:
-        if instr.uniqueId not in {rabbitizer.instr_id.cpu_move, rabbitizer.instr_id.cpu_or, rabbitizer.instr_id.cpu_addu}:
+        if instr.uniqueId not in {rabbitizer.InstrId.cpu_move, rabbitizer.InstrId.cpu_or, rabbitizer.InstrId.cpu_addu}:
             return False
         if instr.rt == 0 and instr.rs == 0:
             return False
@@ -66,7 +66,7 @@ class RegistersTracker:
             return
 
         if instr.isFloatInstruction():
-            if instr.uniqueId in {rabbitizer.instr_id.cpu_mtc1, rabbitizer.instr_id.cpu_dmtc1, rabbitizer.instr_id.cpu_ctc1}:
+            if instr.uniqueId in {rabbitizer.InstrId.cpu_mtc1, rabbitizer.InstrId.cpu_dmtc1, rabbitizer.InstrId.cpu_ctc1}:
                 # IDO usually use a register as a temp when loading a constant value
                 # into the float coprocessor, after that IDO never re-uses the value
                 # in that register for anything else
