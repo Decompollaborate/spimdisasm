@@ -78,12 +78,6 @@ class InstrAnalyzer:
             # Already processed
             return
 
-        # if instr.uniqueId == instructions.InstructionId.J:
-        #     targetBranchVram = instr.getInstrIndexAsVram()
-        #     branch = instrOffset + targetBranchVram - currentVram
-        # else:
-        #     branch = instrOffset + instr.getBranchOffset()
-        #     targetBranchVram = self.funcVram + branch
         branchOffset = instr.getGenericBranchOffset(currentVram)
         branch = instrOffset + branchOffset
         targetBranchVram = self.funcVram + branch
@@ -253,7 +247,6 @@ class InstrAnalyzer:
 
 
     def symbolFinder(self, regsTracker: RegistersTracker, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction|None, instrOffset: int) -> None:
-        # if instr.uniqueId == instructions.InstructionId.LUI:
         if instr.isHiPair():
             regsTracker.processLui(instr, prevInstr, instrOffset)
             self.luiInstrs[instrOffset] = instr
@@ -262,7 +255,6 @@ class InstrAnalyzer:
         if not instr.isLoPair():
             return
 
-        # if instr.uniqueId == instructions.InstructionId.ORI:
         if instr.isUnsigned():
             # Constants
             luiOffset = regsTracker.getLuiOffsetForConstant(instr)
@@ -273,9 +265,6 @@ class InstrAnalyzer:
                 return
             self.processConstant(regsTracker, luiInstr, luiOffset, instr, instrOffset)
             return
-
-        # if instr.uniqueId in {instructions.InstructionId.ANDI, instructions.InstructionId.XORI, instructions.InstructionId.CACHE, instructions.InstructionId.SLTI, instructions.InstructionId.SLTIU}:
-        #     return
 
         if instrOffset in self.nonLoInstrOffsets:
             return
