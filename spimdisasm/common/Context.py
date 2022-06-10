@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from . import Utils
 from .FileSectionType import FileSectionType
 from .ContextSymbols import SymbolSpecialType, ContextOffsetSymbol, ContextRelocSymbol
 from .SymbolsSegment import SymbolsSegment
@@ -111,14 +112,16 @@ class Context:
         with contextPath.open("w") as f:
             self.globalSegment.saveContextToFile(f)
 
-        unknownPath = contextPath.with_stem(f"{contextPath.stem}_unksegment")
+        # unknownPath = contextPath.with_stem(f"{contextPath.stem}_unksegment")
+        unknownPath = contextPath.with_name(f"{contextPath.stem}_unksegment" + contextPath.suffix)
         with unknownPath.open("w") as f:
             self.unknownSegment.saveContextToFile(f)
 
         for overlayCategory, segmentsPerVrom in self.overlaySegments.items():
             for segmentVrom, overlaySegment in segmentsPerVrom.items():
 
-                ovlPath = contextPath.with_stem(f"{contextPath.stem}_{overlayCategory}_{segmentVrom:06X}")
+                # ovlPath = contextPath.with_stem(f"{contextPath.stem}_{overlayCategory}_{segmentVrom:06X}")
+                ovlPath = contextPath.with_name(f"{contextPath.stem}_{overlayCategory}_{segmentVrom:06X}" + contextPath.suffix)
                 with ovlPath.open("w") as f:
                     overlaySegment.saveContextToFile(f)
 
@@ -139,10 +142,10 @@ class Context:
 
         symbolsConfig = parser.add_argument_group("Context default symbols configuration")
 
-        symbolsConfig.add_argument("--default-banned", help="Toggles filling the list of default banned symbols. Defaults to True", action=argparse.BooleanOptionalAction)
-        symbolsConfig.add_argument("--libultra-syms", help="Toggles using the built-in libultra symbols. Defaults to True", action=argparse.BooleanOptionalAction)
-        symbolsConfig.add_argument("--hardware-regs", help="Toggles using the built-in hardware registers symbols. Defaults to True", action=argparse.BooleanOptionalAction)
-        symbolsConfig.add_argument("--named-hardware-regs", help="Use actual names for the hardware registers", action=argparse.BooleanOptionalAction)
+        symbolsConfig.add_argument("--default-banned", help="Toggles filling the list of default banned symbols. Defaults to True", action=Utils.BooleanOptionalAction)
+        symbolsConfig.add_argument("--libultra-syms", help="Toggles using the built-in libultra symbols. Defaults to True", action=Utils.BooleanOptionalAction)
+        symbolsConfig.add_argument("--hardware-regs", help="Toggles using the built-in hardware registers symbols. Defaults to True", action=Utils.BooleanOptionalAction)
+        symbolsConfig.add_argument("--named-hardware-regs", help="Use actual names for the hardware registers", action=Utils.BooleanOptionalAction)
 
 
     def parseArgs(self, args: argparse.Namespace):

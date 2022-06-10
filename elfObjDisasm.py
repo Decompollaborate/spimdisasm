@@ -23,11 +23,11 @@ def elfObjDisasmMain():
 
     spimdisasm.common.GlobalConfig.addParametersToArgParse(parser)
 
-    spimdisasm.mips.instructions.InstructionConfig.addParametersToArgParse(parser)
+    spimdisasm.mips.InstructionConfig.addParametersToArgParse(parser)
 
     args = parser.parse_args()
 
-    spimdisasm.mips.instructions.InstructionConfig.parseArgs(args)
+    spimdisasm.mips.InstructionConfig.parseArgs(args)
 
     spimdisasm.common.GlobalConfig.parseArgs(args)
 

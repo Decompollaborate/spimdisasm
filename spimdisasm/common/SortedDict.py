@@ -13,11 +13,10 @@ from typing import Any, Generator, TypeVar, Protocol
 
 class Comparable(Protocol):
     @abstractmethod
-    def __lt__(self, other: Any, /) -> bool: ...
+    def __lt__(self, other: Any) -> bool: ...
 
 KeyType = TypeVar("KeyType", bound=Comparable)
 ValueType = TypeVar("ValueType")
-_OtherType = TypeVar("_OtherType")
 
 
 class SortedDict(MutableMapping[KeyType, ValueType]):

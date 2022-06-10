@@ -5,9 +5,9 @@
 
 from __future__ import annotations
 
-from .... import common
+import rabbitizer
 
-from ... import instructions
+from .... import common
 
 from .TrackedRegisterState import TrackedRegisterState
 
@@ -23,8 +23,8 @@ class RegistersTracker:
             self.registers[register] = state
 
 
-    def moveRegisters(self, instr: instructions.InstructionBase) -> bool:
-        if instr.uniqueId not in (instructions.InstructionId.MOVE, instructions.InstructionId.OR, instructions.InstructionId.ADDU):
+    def moveRegisters(self, instr: rabbitizer.Instruction) -> bool:
+        if instr.uniqueId not in {rabbitizer.InstrId.cpu_move, rabbitizer.InstrId.cpu_or, rabbitizer.InstrId.cpu_addu}:
             return False
         if instr.rt == 0 and instr.rs == 0:
             return False
@@ -58,21 +58,21 @@ class RegistersTracker:
         dstState.clear()
         return False
 
-    def overwriteRegisters(self, instr: instructions.InstructionBase, instructionOffset: int, currentVram: int|None=None) -> None:
+    def overwriteRegisters(self, instr: rabbitizer.Instruction, instructionOffset: int, currentVram: int|None=None) -> None:
         shouldRemove = False
         register = 0
 
         if self.moveRegisters(instr):
             return
 
-        if instr.isFloatInstruction():
-            if instr.uniqueId in (instructions.InstructionId.MTC1, instructions.InstructionId.DMTC1, instructions.InstructionId.CTC1):
+        if instr.isFloat():
+            if instr.uniqueId in {rabbitizer.InstrId.cpu_mtc1, rabbitizer.InstrId.cpu_dmtc1, rabbitizer.InstrId.cpu_ctc1}:
                 # IDO usually use a register as a temp when loading a constant value
                 # into the float coprocessor, after that IDO never re-uses the value
                 # in that register for anything else
                 shouldRemove = True
                 register = instr.rt
-        elif instr.isRType() or (instr.isBranch() and isinstance(instr, instructions.InstructionNormal)):
+        elif instr.isRType() or (instr.isBranch() and instr.isIType()):
             # $at is a one-use register
             at = 0
             if instr.rs == 1:
@@ -88,7 +88,7 @@ class RegistersTracker:
         if instr.modifiesRt():
             shouldRemove = True
             register = instr.rt
-            if instr.uniqueId == instructions.InstructionId.LUI:
+            if instr.isHiPair():
                 self.registers[instr.rt].clearLo()
                 shouldRemove = False
         if instr.modifiesRd():
@@ -100,12 +100,11 @@ class RegistersTracker:
             if state.hasLuiValue:
                 self._printDebugInfo_clearRegister(instr, register, currentVram)
             state.clearHi()
-            # if instructionOffset != state.loOffset and instructionOffset != state.dereferenceOffset:
             if not state.wasSetInCurrentOffset(instructionOffset):
                 state.clearLo()
 
-    def unsetRegistersAfterFuncCall(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase, currentVram: int|None=None) -> None:
-        if prevInstr.uniqueId != instructions.InstructionId.JAL and prevInstr.uniqueId != instructions.InstructionId.JALR:
+    def unsetRegistersAfterFuncCall(self, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction, currentVram: int|None=None) -> None:
+        if not prevInstr.doesLink():
             return
 
         # It happen that every register that we want to clear on a function call have the same raw values for both o32 and n32 ABIs, so no need to worry about it for now...
@@ -136,7 +135,7 @@ class RegistersTracker:
                 self._printDebugInfo_clearRegister(instr, register, currentVram)
             state.clear()
 
-    def getAddressIfCanSetType(self, instr: instructions.InstructionBase, instrOffset: int) -> int|None:
+    def getAddressIfCanSetType(self, instr: rabbitizer.Instruction, instrOffset: int) -> int|None:
         state = self.registers[instr.rs]
         if not state.hasLoValue:
             return None
@@ -146,36 +145,36 @@ class RegistersTracker:
 
         return None
 
-    def getJrInfo(self, instr: instructions.InstructionBase) -> tuple[int, int]|None:
+    def getJrInfo(self, instr: rabbitizer.Instruction) -> tuple[int, int]|None:
         state = self.registers[instr.rs]
         if state.hasLoValue and state.dereferenced:
             return state.loOffset, state.value
         return None
 
 
-    def processLui(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase|None, instrOffset: int) -> None:
-        assert instr.uniqueId == instructions.InstructionId.LUI
+    def processLui(self, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction|None, instrOffset: int) -> None:
+        assert instr.isHiPair()
 
         state = self.registers[instr.rt]
         state.clear()
-        state.setHi(instr.immediate, instrOffset)
+        state.setHi(instr.getImmediate(), instrOffset)
 
         if prevInstr is not None:
             # If the previous instructions is a branch likely, then nulify
             # the effects of this instruction for future analysis
             state.luiSetOnBranchLikely = prevInstr.isBranchLikely() or prevInstr.isUnconditionalBranch()
 
-    def getLuiOffsetForConstant(self, instr: instructions.InstructionBase) -> int|None:
+    def getLuiOffsetForConstant(self, instr: rabbitizer.Instruction) -> int|None:
         stateSrc = self.registers[instr.rs]
         if stateSrc.hasLuiValue:
             return stateSrc.luiOffset
         return None
 
-    def processConstant(self, value: int, instr: instructions.InstructionBase, offset: int) -> None:
+    def processConstant(self, value: int, instr: rabbitizer.Instruction, offset: int) -> None:
         stateDst = self.registers[instr.rt]
         stateDst.setLo(value, offset)
 
-    def getLuiOffsetForLo(self, instr: instructions.InstructionBase, instrOffset: int) -> tuple[int|None, bool]:
+    def getLuiOffsetForLo(self, instr: rabbitizer.Instruction, instrOffset: int) -> tuple[int|None, bool]:
         stateSrc = self.registers[instr.rs]
         if stateSrc.hasLuiValue and not stateSrc.luiSetOnBranchLikely:
             return stateSrc.luiOffset, True
@@ -183,25 +182,25 @@ class RegistersTracker:
         if instr.rs == 28: # $gp
             return None, True
 
-        if instr.modifiesRt() and instr.uniqueId not in {instructions.InstructionId.ADDIU, instructions.InstructionId.ADDI}:
+        if instr.modifiesRt() and instr.doesDereference():
             if stateSrc.hasLoValue and not stateSrc.dereferenced:
                 # Simulate a dereference
                 self.registers[instr.rt].dereferenceState(stateSrc, instrOffset)
         return None, False
 
-    def processLo(self, instr: instructions.InstructionBase, value: int, offset: int) -> None:
+    def processLo(self, instr: rabbitizer.Instruction, value: int, offset: int) -> None:
         if not instr.modifiesRt():
             return
 
         stateDst = self.registers[instr.rt]
         stateDst.setLo(value, offset)
-        if instr.uniqueId not in {instructions.InstructionId.ADDIU, instructions.InstructionId.ADDI}:
+        if instr.doesDereference():
             stateDst.deref(offset)
         if instr.rt == instr.rs:
             stateDst.clearHi()
 
 
-    def _printDebugInfo_clearRegister(self, instr: instructions.InstructionBase, register: int, currentVram: int|None=None) -> None:
+    def _printDebugInfo_clearRegister(self, instr: rabbitizer.Instruction, register: int, currentVram: int|None=None) -> None:
         if not common.GlobalConfig.PRINT_SYMBOL_FINDER_DEBUG_INFO:
             return
 
@@ -213,6 +212,6 @@ class RegistersTracker:
         print(f"vram: {currentVram:X}")
         print(instr)
         print(self.registers)
-        print(f"deleting {register} / {instr.getRegisterName(register)}")
+        # TODO
+        # print(f"deleting {register} / {instr.getRegisterName(register)}")
         print()
-
