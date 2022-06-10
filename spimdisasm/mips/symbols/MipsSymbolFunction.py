@@ -363,7 +363,7 @@ class SymbolFunction(SymbolText):
 
             elif instr.isHiPair():
                 # Unpaired LUI
-                return f"(0x{instr.immediate<<16:X} >> 16)"
+                return f"(0x{instr.getImmediate()<<16:X} >> 16)"
 
         elif instr.isJType():
             possibleOverride = self.getSymbol(instr.getInstrIndexAsVram(), tryPlusOffset=False)
@@ -419,7 +419,7 @@ class SymbolFunction(SymbolText):
         instructionOffset = 0
         for instr in self.instructions:
             immOverride = self.getImmOverrideForInstruction(instr, instructionOffset)
-            comment = self.generateAsmLineComment(instructionOffset, instr.instr)
+            comment = self.generateAsmLineComment(instructionOffset, instr.getRaw())
             extraLJust = 0
 
             if wasLastInstABranch:
@@ -440,5 +440,5 @@ class SymbolFunction(SymbolText):
         return output
 
     def disassembleAsData(self) -> str:
-        self.words = [instr.instr for instr in self.instructions]
+        self.words = [instr.getRaw() for instr in self.instructions]
         return super().disassembleAsData()

@@ -65,7 +65,7 @@ class RegistersTracker:
         if self.moveRegisters(instr):
             return
 
-        if instr.isFloatInstruction():
+        if instr.isFloat():
             if instr.uniqueId in {rabbitizer.InstrId.cpu_mtc1, rabbitizer.InstrId.cpu_dmtc1, rabbitizer.InstrId.cpu_ctc1}:
                 # IDO usually use a register as a temp when loading a constant value
                 # into the float coprocessor, after that IDO never re-uses the value
@@ -157,7 +157,7 @@ class RegistersTracker:
 
         state = self.registers[instr.rt]
         state.clear()
-        state.setHi(instr.immediate, instrOffset)
+        state.setHi(instr.getImmediate(), instrOffset)
 
         if prevInstr is not None:
             # If the previous instructions is a branch likely, then nulify

@@ -119,12 +119,6 @@ def runCommandGetOutput(command: str, args: list[str]) -> list[str] | None:
     except:
         return None
 
-def from2Complement(number: int, bits: int) -> int:
-    isNegative = number & (1 << (bits - 1))
-    if isNegative:
-        return -((~number + 1) & ((1 << bits) - 1))
-    return number
-
 def readCsv(filepath: str) -> list[list[str]]:
     data: list[list[str]] = []
     with open(filepath) as f:

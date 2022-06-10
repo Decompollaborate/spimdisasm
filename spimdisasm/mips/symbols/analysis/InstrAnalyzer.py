@@ -104,8 +104,8 @@ class InstrAnalyzer:
 
 
     def processConstant(self, regsTracker: RegistersTracker, luiInstr: rabbitizer.Instruction, luiOffset: int, lowerInstr: rabbitizer.Instruction, lowerOffset: int) -> int|None:
-        upperHalf = luiInstr.immediate << 16
-        lowerHalf = lowerInstr.immediate
+        upperHalf = luiInstr.getImmediate() << 16
+        lowerHalf = lowerInstr.getImmediate()
         constant = upperHalf | lowerHalf
 
         self.referencedConstants.add(constant)
@@ -127,7 +127,7 @@ class InstrAnalyzer:
         # lui being None means this symbol is a $gp access
         assert (luiInstr is None and luiOffset is None) or (luiInstr is not None and luiOffset is not None)
 
-        lowerHalf = common.Utils.from2Complement(lowerInstr.immediate, 16)
+        lowerHalf = rabbitizer.Utils.from2Complement(lowerInstr.getImmediate(), 16)
 
         if lowerOffset in self.symbolLoInstrOffset:
             # This %lo has been processed already
@@ -138,7 +138,7 @@ class InstrAnalyzer:
                 if otherLuiOffset is not None:
                     otherLuiInstr = self.luiInstrs.get(otherLuiOffset, None)
                     if otherLuiInstr is not None:
-                        if luiInstr.immediate != otherLuiInstr.immediate:
+                        if luiInstr.getImmediate() != otherLuiInstr.getImmediate():
                             return None
 
             if common.GlobalConfig.COMPILER == common.Compiler.IDO:
@@ -166,7 +166,7 @@ class InstrAnalyzer:
                     # Make an exception if the lower instruction is just after the LUI
                     pass
                 else:
-                    upperHalf = luiInstr.immediate << 16
+                    upperHalf = luiInstr.getImmediate() << 16
                     address = upperHalf + lowerHalf
                     if address == self.symbolLoInstrOffset[lowerOffset]:
                         # Make an exception if the resulting address is the same
@@ -179,7 +179,7 @@ class InstrAnalyzer:
             return None
 
         if luiInstr is not None:
-            upperHalf = luiInstr.immediate << 16
+            upperHalf = luiInstr.getImmediate() << 16
         else:
             assert common.GlobalConfig.GP_VALUE is not None
             upperHalf = common.GlobalConfig.GP_VALUE
@@ -354,9 +354,9 @@ class InstrAnalyzer:
                 # print(f"C  {self.constantsPerInstruction[instructionOffset]:8X}", luiInstr)
                 pass
             else:
-                if common.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES and luiInstr.immediate < 0x8000: # filter out stuff that may not be a real symbol
+                if common.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES and luiInstr.getImmediate() < 0x8000: # filter out stuff that may not be a real symbol
                     continue
-                if common.GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES and luiInstr.immediate >= 0xC000: # filter out stuff that may not be a real symbol
+                if common.GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES and luiInstr.getImmediate() >= 0xC000: # filter out stuff that may not be a real symbol
                     continue
 
                 # print(f"{currentVram:06X} ", end="")
