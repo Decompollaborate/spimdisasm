@@ -6,25 +6,7 @@
 from __future__ import annotations
 
 import argparse
-import enum
 import rabbitizer
-
-
-class AbiNames(enum.Enum):
-    numeric = enum.auto()
-    o32 = enum.auto()
-    n32 = enum.auto()
-    n64 = enum.auto()
-
-    @staticmethod
-    def fromStr(x: str) -> AbiNames:
-        if x in ("32", "o32"):
-            return AbiNames.o32
-        if x in ("n32",):
-            return AbiNames.n32
-        if x in ("64", "n64"):
-            return AbiNames.n64
-        return AbiNames.numeric
 
 
 class InstructionConfig:
@@ -35,8 +17,8 @@ class InstructionConfig:
         registerNames.add_argument("--named-registers", help=f"(Dis)allows named registers for every instruction. This flag takes precedence over similar flags in this category. Defaults to {rabbitizer.config.regNames_namedRegisters}", action=argparse.BooleanOptionalAction)
 
         abi_choices = ["numeric", "32", "o32", "n32", "n64"]
-        registerNames.add_argument("--Mgpr-names", help=f"Use GPR names according to the specified ABI. Defaults to {rabbitizer.config.regNames_gprAbiNames}", choices=abi_choices)
-        registerNames.add_argument("--Mfpr-names", help=f"Use FPR names according to the specified ABI. Defaults to {rabbitizer.config.regNames_fprAbiNames}", choices=abi_choices)
+        registerNames.add_argument("--Mgpr-names", help=f"Use GPR names according to the specified ABI. Defaults to {rabbitizer.config.regNames_gprAbiNames.name.lower()}", choices=abi_choices)
+        registerNames.add_argument("--Mfpr-names", help=f"Use FPR names according to the specified ABI. Defaults to {rabbitizer.config.regNames_fprAbiNames.name.lower()}", choices=abi_choices)
         registerNames.add_argument("--Mreg-names", help=f"Use GPR and FPR names according to the specified ABI. This flag takes precedence over --Mgpr-names and --Mfpr-names", choices=abi_choices)
 
         registerNames.add_argument("--use-fpccsr", help=f"Toggles using the FpcCsr alias for float register $31 when using the numeric ABI. Defaults to {rabbitizer.config.regNames_userFpcCsr}", action=argparse.BooleanOptionalAction)
@@ -63,14 +45,13 @@ class InstructionConfig:
         if args.named_registers is not None:
             rabbitizer.config.regNames_namedRegisters = args.named_registers
 
-        # TODO
-        # if args.Mgpr_names:
-        #     InstructionConfig.GPR_ABI_NAMES = AbiNames.fromStr(args.Mgpr_names)
-        # if args.Mfpr_names:
-        #     InstructionConfig.FPR_ABI_NAMES = AbiNames.fromStr(args.Mfpr_names)
-        # if args.Mreg_names:
-        #     InstructionConfig.GPR_ABI_NAMES = AbiNames.fromStr(args.Mreg_names)
-        #     InstructionConfig.FPR_ABI_NAMES = AbiNames.fromStr(args.Mreg_names)
+        if args.Mgpr_names:
+            InstructionConfig.GPR_ABI_NAMES = rabbitizer.Abi.fromStr(args.Mgpr_names)
+        if args.Mfpr_names:
+            InstructionConfig.FPR_ABI_NAMES = rabbitizer.Abi.fromStr(args.Mfpr_names)
+        if args.Mreg_names:
+            InstructionConfig.GPR_ABI_NAMES = rabbitizer.Abi.fromStr(args.Mreg_names)
+            InstructionConfig.FPR_ABI_NAMES = rabbitizer.Abi.fromStr(args.Mreg_names)
 
         if args.use_fpccsr is not None:
             rabbitizer.config.regNames_userFpcCsr = args.use_fpccsr
