@@ -40,9 +40,6 @@ class SortedDict(MutableMapping[KeyType, ValueType]):
         del self.map[key]
         self.sortedKeys.remove(key)
 
-    def get(self, key: KeyType, default: _OtherType=None) -> ValueType | _OtherType:
-        return self.map.get(key, default)
-
 
     def getKeyRight(self, key: KeyType, inclusive: bool=True) -> tuple[KeyType, ValueType]|None:
         """Returns the pair with the greatest key which is less or equal to the `key` parameter, or None if there's no smaller pair than the passed `key`.
@@ -111,13 +108,6 @@ class SortedDict(MutableMapping[KeyType, ValueType]):
             self.remove(key)
             yield (key, value)
 
-    def pop(self, key: KeyType, default: ValueType|_OtherType=None) -> ValueType|_OtherType:
-        if key not in self.map:
-            return default
-        value = self.map[key]
-        self.remove(key)
-        return value
-
     def __getitem__(self, key: KeyType) -> ValueType:
         return self.map[key]
 
@@ -135,7 +125,7 @@ class SortedDict(MutableMapping[KeyType, ValueType]):
     def __len__(self) -> int:
         return len(self.map)
 
-    def __contains__(self, key: KeyType) -> bool:
+    def __contains__(self, key: object) -> bool:
         return self.map.__contains__(key)
 
 
