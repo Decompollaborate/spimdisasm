@@ -16,7 +16,7 @@ jobs:
     - name: Install Dependencies
       run: |
         pip install mypy
-        pip install -r requirements.txt
+#        pip install -r requirements.txt
     - name: mypy
       run: mypy --show-column-numbers --hide-error-context .
 
