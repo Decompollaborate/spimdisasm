@@ -5,17 +5,17 @@
 
 from __future__ import annotations
 
-from ... import common
+import rabbitizer
 
-from .. import instructions
+from ... import common
 
 from . import SymbolText, analysis
 
 
 class SymbolFunction(SymbolText):
-    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, instrsList: list[instructions.InstructionBase], segmentVromStart: int, overlayCategory: str|None):
+    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, instrsList: list[rabbitizer.Instruction], segmentVromStart: int, overlayCategory: str|None):
         super().__init__(context, vromStart, vromEnd, inFileOffset, vram, list(), segmentVromStart, overlayCategory)
-        self.instructions: list[instructions.InstructionBase] = list(instrsList)
+        self.instructions = list(instrsList)
 
         self.instrAnalyzer = analysis.InstrAnalyzer(self.vram)
 
@@ -37,18 +37,16 @@ class SymbolFunction(SymbolText):
         return self.nInstr
 
 
-    def _lookAheadSymbolFinder(self, instr: instructions.InstructionBase, prevInstr: instructions.InstructionBase, instructionOffset: int, trackedRegistersOriginal: analysis.RegistersTracker):
+    def _lookAheadSymbolFinder(self, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction, instructionOffset: int, trackedRegistersOriginal: analysis.RegistersTracker):
         if not prevInstr.isBranch() and not prevInstr.isUnconditionalBranch():
             return
 
         currentVram = self.getVramOffset(instructionOffset)
 
-        if prevInstr.uniqueId == instructions.InstructionId.J:
-            targetBranchVram = prevInstr.getInstrIndexAsVram()
-            branchOffset = targetBranchVram - currentVram
-        else:
-            branchOffset = prevInstr.getBranchOffset() - 4
-        branch = instructionOffset + branchOffset
+        prevInstrOffset = instructionOffset - 4
+        prevVram = self.getVramOffset(prevInstrOffset)
+        branchOffset = prevInstr.getGenericBranchOffset(prevVram)
+        branch = prevInstrOffset + branchOffset
 
         if branch < 0:
             # Avoid jumping outside of the function
@@ -71,7 +69,7 @@ class SymbolFunction(SymbolText):
 
             if prevTargetInstr.isUnconditionalBranch():
                 return
-            if prevTargetInstr.uniqueId == instructions.InstructionId.JR:
+            if prevTargetInstr.isJump() and not prevTargetInstr.doesLink():
                 return
 
             self.instrAnalyzer.processPrevFuncCall(regsTracker, targetInstr, prevTargetInstr)
@@ -134,7 +132,6 @@ class SymbolFunction(SymbolText):
         instructionOffset = 0
         for instr in self.instructions:
             currentVram = self.getVramOffset(instructionOffset)
-            self.isLikelyHandwritten |= instr.uniqueId in instructions.InstructionsNotEmitedByIDO
             prevInstr = self.instructions[instructionOffset//4 - 1]
 
             self.instrAnalyzer.printAnalisisDebugInfo_IterInfo(regsTracker, instr, currentVram)
@@ -277,8 +274,8 @@ class SymbolFunction(SymbolText):
 
         for i in range(self.nInstr-1, 0-1, -1):
             instr = self.instructions[i]
-            if instr.uniqueId != instructions.InstructionId.NOP:
-                if instr.uniqueId == instructions.InstructionId.JR and instr.rs == 31: #$ra
+            if not instr.isNop():
+                if instr.isJrRa():
                     first_nop += 1
                 break
             first_nop = i
@@ -289,8 +286,8 @@ class SymbolFunction(SymbolText):
         return was_updated
 
 
-    def generateHiLoStr(self, instr: instructions.InstructionBase, symName: str) -> str:
-        if instr.uniqueId == instructions.InstructionId.LUI:
+    def generateHiLoStr(self, instr: rabbitizer.Instruction, symName: str) -> str:
+        if instr.isHiPair():
             return f"%hi({symName})"
 
         # $gp
@@ -301,7 +298,7 @@ class SymbolFunction(SymbolText):
 
         return f"%lo({symName})"
 
-    def getImmOverrideForInstruction(self, instr: instructions.InstructionBase, instructionOffset: int) -> str|None:
+    def getImmOverrideForInstruction(self, instr: rabbitizer.Instruction, instructionOffset: int) -> str|None:
         if len(self.context.relocSymbols[self.sectionType]) > 0:
             # Check possible symbols using reloc information (probably from a .o elf file)
             possibleImmOverride = self.context.getRelocSymbol(self.inFileOffset + instructionOffset, self.sectionType)
@@ -317,12 +314,8 @@ class SymbolFunction(SymbolText):
 
         if instr.isBranch() or instr.isUnconditionalBranch():
             if not common.GlobalConfig.IGNORE_BRANCHES:
-                if instr.uniqueId == instructions.InstructionId.J:
-                    targetBranchVram = instr.getInstrIndexAsVram()
-                    branch = instructionOffset + targetBranchVram - self.getVramOffset(instructionOffset)
-                else:
-                    branch = instructionOffset + instr.getBranchOffset()
-                    targetBranchVram = self.getVramOffset(branch)
+                branchOffset = instr.getGenericBranchOffset(self.getVramOffset(instructionOffset))
+                targetBranchVram = self.getVramOffset(instructionOffset + branchOffset)
                 labelSymbol = self.getSymbol(targetBranchVram, tryPlusOffset=False)
                 if labelSymbol is not None:
                     return labelSymbol.getName()
@@ -335,7 +328,7 @@ class SymbolFunction(SymbolText):
                     return None
 
                 instrVram = self.getVramOffset(instructionOffset)
-                if instr.uniqueId == instructions.InstructionId.LUI:
+                if instr.isHiPair():
                     # we need to get the address of the lo instruction to get the patch
                     if instructionOffset in self.instrAnalyzer.hiToLowDict:
                         instrVram = self.getVramOffset(self.instrAnalyzer.hiToLowDict[instructionOffset])
@@ -358,19 +351,19 @@ class SymbolFunction(SymbolText):
                     return self.generateHiLoStr(instr, symbol.getName())
 
                 # Pretend this pair is a constant
-                if instr.uniqueId == instructions.InstructionId.LUI:
+                if instr.isHiPair():
                     loInstr = self.instructions[self.instrAnalyzer.hiToLowDict[instructionOffset] // 4]
-                    if loInstr.uniqueId == instructions.InstructionId.ORI:
+                    if loInstr.isLoPair() and loInstr.isUnsigned():
                         return f"(0x{constant:X} >> 16)"
-                elif instr.uniqueId == instructions.InstructionId.ORI:
+                elif instr.isLoPair() and instr.isUnsigned():
                     return f"(0x{constant:X} & 0xFFFF)"
 
                 if common.GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_HILO:
                     return self.generateHiLoStr(instr, f"0x{constant:X}")
 
-            elif instr.uniqueId == instructions.InstructionId.LUI:
+            elif instr.isHiPair():
                 # Unpaired LUI
-                return f"(0x{instr.immediate<<16:X} >> 16)"
+                return f"(0x{instr.getImmediate()<<16:X} >> 16)"
 
         elif instr.isJType():
             possibleOverride = self.getSymbol(instr.getInstrIndexAsVram(), tryPlusOffset=False)
@@ -426,16 +419,14 @@ class SymbolFunction(SymbolText):
         instructionOffset = 0
         for instr in self.instructions:
             immOverride = self.getImmOverrideForInstruction(instr, instructionOffset)
-            comment = self.generateAsmLineComment(instructionOffset, instr.instr)
+            comment = self.generateAsmLineComment(instructionOffset, instr.getRaw())
+            extraLJust = 0
 
             if wasLastInstABranch:
-                instr.extraLjustWidthOpcode -= 1
+                extraLJust = -1
                 comment += " "
 
-            line = instr.disassemble(immOverride)
-
-            if wasLastInstABranch:
-                instr.extraLjustWidthOpcode += 1
+            line = instr.disassemble(immOverride, extraLJust=extraLJust)
 
             label = self.getLabelForOffset(instructionOffset)
             output += f"{label}{comment}  {line}" + common.GlobalConfig.LINE_ENDS
@@ -449,5 +440,5 @@ class SymbolFunction(SymbolText):
         return output
 
     def disassembleAsData(self) -> str:
-        self.words = [instr.instr for instr in self.instructions]
+        self.words = [instr.getRaw() for instr in self.instructions]
         return super().disassembleAsData()

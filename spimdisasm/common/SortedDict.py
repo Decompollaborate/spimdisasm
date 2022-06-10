@@ -13,11 +13,10 @@ from typing import Any, Generator, TypeVar, Protocol
 
 class Comparable(Protocol):
     @abstractmethod
-    def __lt__(self, other: Any, /) -> bool: ...
+    def __lt__(self, other: Any) -> bool: ...
 
 KeyType = TypeVar("KeyType", bound=Comparable)
 ValueType = TypeVar("ValueType")
-_OtherType = TypeVar("_OtherType")
 
 
 class SortedDict(MutableMapping[KeyType, ValueType]):
@@ -39,9 +38,6 @@ class SortedDict(MutableMapping[KeyType, ValueType]):
     def remove(self, key: KeyType) -> None:
         del self.map[key]
         self.sortedKeys.remove(key)
-
-    def get(self, key: KeyType, default: _OtherType=None) -> ValueType | _OtherType:
-        return self.map.get(key, default)
 
 
     def getKeyRight(self, key: KeyType, inclusive: bool=True) -> tuple[KeyType, ValueType]|None:
@@ -111,13 +107,6 @@ class SortedDict(MutableMapping[KeyType, ValueType]):
             self.remove(key)
             yield (key, value)
 
-    def pop(self, key: KeyType, default: ValueType|_OtherType=None) -> ValueType|_OtherType:
-        if key not in self.map:
-            return default
-        value = self.map[key]
-        self.remove(key)
-        return value
-
     def __getitem__(self, key: KeyType) -> ValueType:
         return self.map[key]
 
@@ -135,7 +124,7 @@ class SortedDict(MutableMapping[KeyType, ValueType]):
     def __len__(self) -> int:
         return len(self.map)
 
-    def __contains__(self, key: KeyType) -> bool:
+    def __contains__(self, key: object) -> bool:
         return self.map.__contains__(key)
 
 

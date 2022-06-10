@@ -39,21 +39,21 @@ def disassemblerMain():
 
     parser.add_argument("--split-functions", help="Enables the function and rodata splitter. Expects a path to place the splited functions", metavar="PATH")
 
-    parser.add_argument("--nuke-pointers", help="Use every technique available to remove pointers", action=argparse.BooleanOptionalAction)
+    parser.add_argument("--nuke-pointers", help="Use every technique available to remove pointers", action=spimdisasm.common.Utils.BooleanOptionalAction)
     parser.add_argument("--ignore-words", help="A space separated list of hex numbers. Any word differences which starts in any of the provided arguments will be ignored. Max value: FF. Only works when --nuke-pointers is passed", action="extend", nargs="+")
 
-    parser.add_argument("--write-binary", help=f"Produce a binary from the processed file. Defaults to {spimdisasm.common.GlobalConfig.WRITE_BINARY}", action=argparse.BooleanOptionalAction)
+    parser.add_argument("--write-binary", help=f"Produce a binary from the processed file. Defaults to {spimdisasm.common.GlobalConfig.WRITE_BINARY}", action=spimdisasm.common.Utils.BooleanOptionalAction)
 
 
     spimdisasm.common.Context.addParametersToArgParse(parser)
 
     spimdisasm.common.GlobalConfig.addParametersToArgParse(parser)
 
-    spimdisasm.mips.instructions.InstructionConfig.addParametersToArgParse(parser)
+    spimdisasm.mips.InstructionConfig.addParametersToArgParse(parser)
 
     args = parser.parse_args()
 
-    spimdisasm.mips.instructions.InstructionConfig.parseArgs(args)
+    spimdisasm.mips.InstructionConfig.parseArgs(args)
 
     spimdisasm.common.GlobalConfig.parseArgs(args)
 
