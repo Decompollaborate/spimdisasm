@@ -46,12 +46,12 @@ class InstructionConfig:
             rabbitizer.config.regNames_namedRegisters = args.named_registers
 
         if args.Mgpr_names:
-            InstructionConfig.GPR_ABI_NAMES = rabbitizer.Abi.fromStr(args.Mgpr_names)
+            rabbitizer.config.regNames_gprAbiNames = rabbitizer.Abi.fromStr(args.Mgpr_names)
         if args.Mfpr_names:
-            InstructionConfig.FPR_ABI_NAMES = rabbitizer.Abi.fromStr(args.Mfpr_names)
+            rabbitizer.config.regNames_fprAbiNames = rabbitizer.Abi.fromStr(args.Mfpr_names)
         if args.Mreg_names:
-            InstructionConfig.GPR_ABI_NAMES = rabbitizer.Abi.fromStr(args.Mreg_names)
-            InstructionConfig.FPR_ABI_NAMES = rabbitizer.Abi.fromStr(args.Mreg_names)
+            rabbitizer.config.regNames_gprAbiNames = rabbitizer.Abi.fromStr(args.Mreg_names)
+            rabbitizer.config.regNames_fprAbiNames = rabbitizer.Abi.fromStr(args.Mreg_names)
 
         if args.use_fpccsr is not None:
             rabbitizer.config.regNames_userFpcCsr = args.use_fpccsr
