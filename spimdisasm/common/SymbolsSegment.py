@@ -30,11 +30,11 @@ class SymbolsSegment:
 
         self.overlayCategory: str|None = overlayCategory
 
-        self.symbols: SortedDict[int, ContextSymbol] = SortedDict()
+        self.symbols: SortedDict[ContextSymbol] = SortedDict()
 
         self.constants: dict[int, ContextSymbol] = dict()
 
-        self.newPointersInData: SortedDict[int, int] = SortedDict()
+        self.newPointersInData: SortedDict[int] = SortedDict()
         "Stuff that looks like pointers, found referenced by data"
 
         self.loPatches: dict[int, int] = dict()
