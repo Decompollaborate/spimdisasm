@@ -191,7 +191,7 @@ class InstrAnalyzer:
         # filter out stuff that may not be a real symbol
         filterOut = common.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES and address < 0x80000000
         filterOut |= common.GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES and address >= 0xC0000000
-        if filterOut:
+        if filterOut and lowerInstr.uniqueId != rabbitizer.InstrId.cpu_addiu:
             if common.GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_CONSTANTS:
                 # Let's pretend this value is a constant
                 constant = address
