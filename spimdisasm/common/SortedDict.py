@@ -5,13 +5,23 @@
 
 from __future__ import annotations
 
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
 import bisect
-from collections.abc import Mapping, MutableMapping
-from typing import Any, Generator, TypeVar, Protocol
+from typing import Any, Generator, TypeVar
+
+# typing.Mapping and typing.MutableMapping are deprecated since Python 3.9.
+# Using collections.abc is encouraged instead, but 3.7 and 3.8 will to run this file
+# with a "'ABCMeta' object is not subscriptable" exception, so this is a hacky way to
+# try to be future proof and not have problems because those types will be removed
+# in the future
+try:
+    from collections.abc import Mapping, MutableMapping
+    MutableMapping[int, int]
+except:
+    from typing import Mapping, MutableMapping
 
 
-class Comparable(Protocol):
+class Comparable(metaclass=ABCMeta):
     @abstractmethod
     def __lt__(self, other: Any) -> bool: ...
 
