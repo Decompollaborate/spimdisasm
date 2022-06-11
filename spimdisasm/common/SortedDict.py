@@ -20,37 +20,31 @@ try:
 except:
     from typing import Mapping, MutableMapping
 
-
-class Comparable(metaclass=ABCMeta):
-    @abstractmethod
-    def __lt__(self, other: Any) -> bool: ...
-
-KeyType = TypeVar("KeyType", bound=Comparable)
 ValueType = TypeVar("ValueType")
 
 
-class SortedDict(MutableMapping[KeyType, ValueType]):
-    def __init__(self, other: Mapping[KeyType, ValueType]|None=None):
-        self.map: dict[KeyType, ValueType] = dict()
-        self.sortedKeys: list[KeyType] = list()
+class SortedDict(MutableMapping[int, ValueType]):
+    def __init__(self, other: Mapping[int, ValueType]|None=None):
+        self.map: dict[int, ValueType] = dict()
+        self.sortedKeys: list[int] = list()
 
         if other is not None:
             for key, value in other.items():
                 self.add(key, value)
 
 
-    def add(self, key: KeyType, value: ValueType) -> None:
+    def add(self, key: int, value: ValueType) -> None:
         if key not in self.map:
             # Avoid adding the key twice if it is already on the map
             bisect.insort(self.sortedKeys, key)
         self.map[key] = value
 
-    def remove(self, key: KeyType) -> None:
+    def remove(self, key: int) -> None:
         del self.map[key]
         self.sortedKeys.remove(key)
 
 
-    def getKeyRight(self, key: KeyType, inclusive: bool=True) -> tuple[KeyType, ValueType]|None:
+    def getKeyRight(self, key: int, inclusive: bool=True) -> tuple[int, ValueType]|None:
         """Returns the pair with the greatest key which is less or equal to the `key` parameter, or None if there's no smaller pair than the passed `key`.
 
         If `inclusive` is `False`, then the returned pair will be strictly less than the passed `key`.
@@ -64,7 +58,7 @@ class SortedDict(MutableMapping[KeyType, ValueType]):
         currentKey = self.sortedKeys[index - 1]
         return currentKey, self.map[currentKey]
 
-    def getKeyLeft(self, key: KeyType, inclusive: bool=True) -> tuple[KeyType, ValueType]|None:
+    def getKeyLeft(self, key: int, inclusive: bool=True) -> tuple[int, ValueType]|None:
         """Returns the pair with the smallest key which is gretest or equal to the `key` parameter, or None if there's no greater pair than the passed `key`.
 
         If `inclusive` is `False`, then the returned pair will be strictly greater than the passed `key`.
@@ -79,7 +73,7 @@ class SortedDict(MutableMapping[KeyType, ValueType]):
         return key, self.map[key]
 
 
-    def getRange(self, startKey: KeyType, endKey: KeyType, startInclusive: bool=True, endInclusive: bool=False) -> Generator[tuple[KeyType, ValueType], None, None]:
+    def getRange(self, startKey: int, endKey: int, startInclusive: bool=True, endInclusive: bool=False) -> Generator[tuple[int, ValueType], None, None]:
         """Generator which iterates in the range [`startKey`, `endKey`], returining a (key, value) tuple.
 
         By default the `startKey` is inclusive but the `endKey` isn't, this can be changed with the `startInclusive` and `endInclusive` parameters"""
@@ -97,7 +91,7 @@ class SortedDict(MutableMapping[KeyType, ValueType]):
             key = self.sortedKeys[index]
             yield (key, self.map[key])
 
-    def getRangeAndPop(self, startKey: KeyType, endKey: KeyType, startInclusive: bool=True, endInclusive: bool=False) -> Generator[tuple[KeyType, ValueType], None, None]:
+    def getRangeAndPop(self, startKey: int, endKey: int, startInclusive: bool=True, endInclusive: bool=False) -> Generator[tuple[int, ValueType], None, None]:
         """Similar to `getRange`, but every pair is removed from the dictionary.
 
         Please note this generator iterates in reverse/descending order"""
@@ -117,16 +111,16 @@ class SortedDict(MutableMapping[KeyType, ValueType]):
             self.remove(key)
             yield (key, value)
 
-    def __getitem__(self, key: KeyType) -> ValueType:
+    def __getitem__(self, key: int) -> ValueType:
         return self.map[key]
 
-    def __setitem__(self, key: KeyType, value: ValueType) -> None:
+    def __setitem__(self, key: int, value: ValueType) -> None:
         self.add(key, value)
 
-    def __delitem__(self, key: KeyType) -> None:
+    def __delitem__(self, key: int) -> None:
         self.remove(key)
 
-    def __iter__(self) -> Generator[KeyType, None, None]:
+    def __iter__(self) -> Generator[int, None, None]:
         "Iteration is sorted by keys"
         for key in self.sortedKeys:
             yield key
