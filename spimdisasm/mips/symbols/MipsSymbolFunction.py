@@ -37,7 +37,7 @@ class SymbolFunction(SymbolText):
         return self.nInstr
 
 
-    def _lookAheadSymbolFinder(self, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction, instructionOffset: int, trackedRegistersOriginal: analysis.RegistersTracker):
+    def _lookAheadSymbolFinder(self, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction, instructionOffset: int, trackedRegistersOriginal: rabbitizer.RegistersTracker):
         if not prevInstr.isBranch() and not prevInstr.isUnconditionalBranch():
             return
 
@@ -52,7 +52,7 @@ class SymbolFunction(SymbolText):
             # Avoid jumping outside of the function
             return
 
-        regsTracker = analysis.RegistersTracker(trackedRegistersOriginal)
+        regsTracker = rabbitizer.RegistersTracker(trackedRegistersOriginal)
 
         self.instrAnalyzer.processInstr(regsTracker, instr, instructionOffset, currentVram)
 
@@ -127,7 +127,7 @@ class SymbolFunction(SymbolText):
                 offset += 4
             return
 
-        regsTracker = analysis.RegistersTracker()
+        regsTracker = rabbitizer.RegistersTracker()
 
         instructionOffset = 0
         for instr in self.instructions:
