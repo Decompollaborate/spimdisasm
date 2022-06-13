@@ -272,9 +272,8 @@ class InstrAnalyzer:
 
         luiOffset, isGp, shouldProcess = regsTracker.getLuiOffsetForLo(instr, instrOffset)
         if not shouldProcess:
-            # state = regsTracker.registers[instr.rs]
-            # if state.hasLoValue and not state.hasLuiValue:
-            #     self.nonLoInstrOffsets.add(instrOffset)
+            if regsTracker.hasLoButNoHi(instr):
+                self.nonLoInstrOffsets.add(instrOffset)
             return
 
         if isGp:
