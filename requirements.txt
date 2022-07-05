@@ -1,1 +1,1 @@
-rabbitizer
+rabbitizer<1.0.0
