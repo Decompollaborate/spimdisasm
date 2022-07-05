@@ -290,10 +290,8 @@ class SymbolFunction(SymbolText):
         if instr.isHiPair():
             return f"%hi({symName})"
 
-        # $gp
-        if instr.rs == 28:
-            # $gp
-            if instr.rt != 28 or not instr.modifiesRt():
+        if instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
+            if instr.rt in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp} or not instr.modifiesRt():
                 return f"%gp_rel({symName})"
 
         return f"%lo({symName})"
