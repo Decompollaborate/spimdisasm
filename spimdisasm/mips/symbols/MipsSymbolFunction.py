@@ -287,7 +287,7 @@ class SymbolFunction(SymbolText):
 
 
     def generateHiLoStr(self, instr: rabbitizer.Instruction, symName: str) -> str:
-        if instr.isHiPair():
+        if instr.canBeHi():
             return f"%hi({symName})"
 
         if instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
@@ -326,7 +326,7 @@ class SymbolFunction(SymbolText):
                     return None
 
                 instrVram = self.getVramOffset(instructionOffset)
-                if instr.isHiPair():
+                if instr.canBeHi():
                     # we need to get the address of the lo instruction to get the patch
                     if instructionOffset in self.instrAnalyzer.hiToLowDict:
                         instrVram = self.getVramOffset(self.instrAnalyzer.hiToLowDict[instructionOffset])
@@ -349,17 +349,17 @@ class SymbolFunction(SymbolText):
                     return self.generateHiLoStr(instr, symbol.getName())
 
                 # Pretend this pair is a constant
-                if instr.isHiPair():
+                if instr.canBeHi():
                     loInstr = self.instructions[self.instrAnalyzer.hiToLowDict[instructionOffset] // 4]
-                    if loInstr.isLoPair() and loInstr.isUnsigned():
+                    if loInstr.canBeLo() and loInstr.isUnsigned():
                         return f"(0x{constant:X} >> 16)"
-                elif instr.isLoPair() and instr.isUnsigned():
+                elif instr.canBeLo() and instr.isUnsigned():
                     return f"(0x{constant:X} & 0xFFFF)"
 
                 if common.GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_HILO:
                     return self.generateHiLoStr(instr, f"0x{constant:X}")
 
-            elif instr.isHiPair():
+            elif instr.canBeHi():
                 # Unpaired LUI
                 return f"(0x{instr.getImmediate()<<16:X} >> 16)"
 

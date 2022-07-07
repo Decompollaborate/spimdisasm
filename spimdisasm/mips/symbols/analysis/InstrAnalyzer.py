@@ -245,7 +245,7 @@ class InstrAnalyzer:
 
 
     def symbolFinder(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction|None, instrOffset: int) -> None:
-        if instr.isHiPair():
+        if instr.canBeHi():
             if prevInstr is None:
                 regsTracker.processLui(instr, instrOffset)
             else:
@@ -253,7 +253,7 @@ class InstrAnalyzer:
             self.luiInstrs[instrOffset] = instr
             return
 
-        if not instr.isLoPair():
+        if not instr.canBeLo():
             return
 
         if instr.isUnsigned():
