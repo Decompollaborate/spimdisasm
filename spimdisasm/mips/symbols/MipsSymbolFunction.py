@@ -429,7 +429,7 @@ class SymbolFunction(SymbolText):
             label = self.getLabelForOffset(instructionOffset)
             output += f"{label}{comment}  {line}" + common.GlobalConfig.LINE_ENDS
 
-            wasLastInstABranch = instr.isBranch() or instr.isJump()
+            wasLastInstABranch = instr.hasDelaySlot()
             instructionOffset += 4
 
         if common.GlobalConfig.ASM_TEXT_END_LABEL:
