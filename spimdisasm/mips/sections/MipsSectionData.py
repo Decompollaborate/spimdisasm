@@ -51,6 +51,8 @@ class SectionData(SectionBase):
             sym.analyze()
             self.symbolList.append(sym)
 
+            self.symbolsVRams.add(vram)
+
 
     def removePointers(self) -> bool:
         if not common.GlobalConfig.REMOVE_POINTERS:

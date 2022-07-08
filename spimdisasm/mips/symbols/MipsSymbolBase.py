@@ -164,6 +164,11 @@ class SymbolBase(common.ElementBase):
         return output, 0
 
 
+    def countExtraPadding(self) -> int:
+        "Returns how many extra word paddings this symbol has"
+        return 0
+
+
     def disassembleAsData(self) -> str:
         output = self.getLabel()
 
