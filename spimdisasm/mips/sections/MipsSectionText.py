@@ -33,7 +33,7 @@ class SectionText(SectionBase):
             instrCat = rabbitizer.InstrCategory.CPU
             if isRsp:
                 instrCat = rabbitizer.InstrCategory.RSP
-            instr = rabbitizer.Instruction(word, instrCat)
+            instr = rabbitizer.Instruction(word, category=instrCat)
 
             if currentVram is not None:
                 instr.vram = currentVram
