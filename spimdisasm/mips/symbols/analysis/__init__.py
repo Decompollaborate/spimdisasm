@@ -5,6 +5,4 @@
 
 from __future__ import annotations
 
-from .TrackedRegisterState import TrackedRegisterState
-from .RegistersTracker import RegistersTracker
 from .InstrAnalyzer import InstrAnalyzer

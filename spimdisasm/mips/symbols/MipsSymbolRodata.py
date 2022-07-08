@@ -40,6 +40,9 @@ class SymbolRodata(SymbolBase):
         return False
 
     def isJumpTable(self) -> bool:
+        # jumptables must have at least 3 labels
+        if self.sizew < 3:
+            return False
         return self.contextSym.isJumpTable()
 
 
@@ -84,6 +87,29 @@ class SymbolRodata(SymbolBase):
                         break
 
         super().analyze()
+
+
+    def countExtraPadding(self) -> int:
+        count = 0
+        if self.isString():
+            for i in range(len(self.words)-1, 0, -1):
+                if self.words[i] != 0:
+                    break
+                if (self.words[i-1] & 0x000000FF) != 0:
+                    break
+                count += 1
+        elif self.isDouble(0):
+            for i in range(len(self.words)-1, 0, -2):
+                if self.words[i] != 0 or self.words[i-1] != 0:
+                    break
+                count += 2
+        else:
+            for i in range(len(self.words)-1, 0, -1):
+                if self.words[i] != 0:
+                    break
+                count += 1
+        return count
+
 
     def getNthWord(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False) -> tuple[str, int]:
         if self.contextSym.isByte() or self.contextSym.isShort():

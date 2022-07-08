@@ -19,9 +19,6 @@ class SectionRodata(SectionBase):
         self.bytes: bytearray = bytearray(self.sizew*4)
         common.Utils.beWordsToBytes(self.words, self.bytes)
 
-        # addresses of symbols in this rodata section
-        self.symbolsVRams: set[int] = set()
-
 
     def _stringGuesser(self, contextSym: common.ContextSymbol, localOffset: int) -> bool:
         if contextSym.isMaybeString or contextSym.isString():
@@ -116,6 +113,9 @@ class SectionRodata(SectionBase):
 
             localOffset += 4
 
+        previousSymbolWasLateRodata = False
+        previousSymbolExtraPadding = 0
+
         for i, (offset, vram) in enumerate(symbolList):
             if i + 1 == len(symbolList):
                 words = self.words[offset//4:]
@@ -130,6 +130,24 @@ class SectionRodata(SectionBase):
             sym.setCommentOffset(self.commentOffset)
             sym.analyze()
             self.symbolList.append(sym)
+
+            # File boundaries detection
+            if sym.inFileOffset % 16 == 0:
+                # Files are always 0x10 aligned
+
+                if previousSymbolWasLateRodata and not sym.contextSym.isLateRodata():
+                    # late rodata followed by normal rodata implies a file split
+                    self.fileBoundaries.append(sym.inFileOffset)
+                elif previousSymbolExtraPadding > 0:
+                    if sym.contextSym.isDouble():
+                        # doubles require a bit extra of alignment
+                        if previousSymbolExtraPadding >= 2:
+                            self.fileBoundaries.append(sym.inFileOffset)
+                    else:
+                        self.fileBoundaries.append(sym.inFileOffset)
+
+            previousSymbolWasLateRodata = sym.contextSym.isLateRodata()
+            previousSymbolExtraPadding = sym.countExtraPadding()
 
         self._processElfRelocSymbols()
 

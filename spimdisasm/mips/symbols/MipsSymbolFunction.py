@@ -37,7 +37,7 @@ class SymbolFunction(SymbolText):
         return self.nInstr
 
 
-    def _lookAheadSymbolFinder(self, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction, instructionOffset: int, trackedRegistersOriginal: analysis.RegistersTracker):
+    def _lookAheadSymbolFinder(self, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction, instructionOffset: int, trackedRegistersOriginal: rabbitizer.RegistersTracker):
         if not prevInstr.isBranch() and not prevInstr.isUnconditionalBranch():
             return
 
@@ -52,7 +52,7 @@ class SymbolFunction(SymbolText):
             # Avoid jumping outside of the function
             return
 
-        regsTracker = analysis.RegistersTracker(trackedRegistersOriginal)
+        regsTracker = rabbitizer.RegistersTracker(trackedRegistersOriginal)
 
         self.instrAnalyzer.processInstr(regsTracker, instr, instructionOffset, currentVram)
 
@@ -127,7 +127,7 @@ class SymbolFunction(SymbolText):
                 offset += 4
             return
 
-        regsTracker = analysis.RegistersTracker()
+        regsTracker = rabbitizer.RegistersTracker()
 
         instructionOffset = 0
         for instr in self.instructions:
@@ -209,6 +209,22 @@ class SymbolFunction(SymbolText):
             instr.inHandwrittenFunction = self.isLikelyHandwritten
 
 
+    def countExtraPadding(self) -> int:
+        count = 0
+        for i in range(len(self.instructions)-1, 0, -1):
+            instr = self.instructions[i]
+            nextInstr = self.instructions[i-1]
+
+            if nextInstr.uniqueId == rabbitizer.InstrId.cpu_jr:
+                return count
+
+            if not instr.isNop():
+                return count
+
+            count += 1
+        return count
+
+
     def countDiffOpcodes(self, other: SymbolFunction) -> int:
         result = 0
         for i in range(min(self.nInstr, other.nInstr)):
@@ -287,13 +303,11 @@ class SymbolFunction(SymbolText):
 
 
     def generateHiLoStr(self, instr: rabbitizer.Instruction, symName: str) -> str:
-        if instr.isHiPair():
+        if instr.canBeHi():
             return f"%hi({symName})"
 
-        # $gp
-        if instr.rs == 28:
-            # $gp
-            if instr.rt != 28 or not instr.modifiesRt():
+        if instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
+            if instr.rt in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp} or not instr.modifiesRt():
                 return f"%gp_rel({symName})"
 
         return f"%lo({symName})"
@@ -328,7 +342,7 @@ class SymbolFunction(SymbolText):
                     return None
 
                 instrVram = self.getVramOffset(instructionOffset)
-                if instr.isHiPair():
+                if instr.canBeHi():
                     # we need to get the address of the lo instruction to get the patch
                     if instructionOffset in self.instrAnalyzer.hiToLowDict:
                         instrVram = self.getVramOffset(self.instrAnalyzer.hiToLowDict[instructionOffset])
@@ -351,17 +365,17 @@ class SymbolFunction(SymbolText):
                     return self.generateHiLoStr(instr, symbol.getName())
 
                 # Pretend this pair is a constant
-                if instr.isHiPair():
+                if instr.canBeHi():
                     loInstr = self.instructions[self.instrAnalyzer.hiToLowDict[instructionOffset] // 4]
-                    if loInstr.isLoPair() and loInstr.isUnsigned():
+                    if loInstr.canBeLo() and loInstr.isUnsigned():
                         return f"(0x{constant:X} >> 16)"
-                elif instr.isLoPair() and instr.isUnsigned():
+                elif instr.canBeLo() and instr.isUnsigned():
                     return f"(0x{constant:X} & 0xFFFF)"
 
                 if common.GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_HILO:
                     return self.generateHiLoStr(instr, f"0x{constant:X}")
 
-            elif instr.isHiPair():
+            elif instr.canBeHi():
                 # Unpaired LUI
                 return f"(0x{instr.getImmediate()<<16:X} >> 16)"
 
@@ -431,7 +445,7 @@ class SymbolFunction(SymbolText):
             label = self.getLabelForOffset(instructionOffset)
             output += f"{label}{comment}  {line}" + common.GlobalConfig.LINE_ENDS
 
-            wasLastInstABranch = instr.isBranch() or instr.isJump()
+            wasLastInstABranch = instr.hasDelaySlot()
             instructionOffset += 4
 
         if common.GlobalConfig.ASM_TEXT_END_LABEL:

@@ -144,3 +144,7 @@ class SectionRelocZ64(SectionBase):
         sym.setCommentOffset(self.commentOffset)
         sym.analyze()
         self.symbolList.append(sym)
+
+        for sym in self.symbolList:
+            if sym.vram is not None:
+                self.symbolsVRams.add(sym.vram)

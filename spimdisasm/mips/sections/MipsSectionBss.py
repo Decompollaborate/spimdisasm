@@ -80,4 +80,6 @@ class SectionBss(SectionBase):
             sym.analyze()
             self.symbolList.append(sym)
 
+            self.symbolsVRams.add(symbolVram)
+
             i += 1
