@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import argparse
+import rabbitizer
 
 import spimdisasm
 
@@ -17,7 +18,7 @@ def disasmdisMain():
 
     parser.add_argument("input", help="Hex words to be disassembled. Leading '0x' must be omitted")
 
-    parser.add_argument("--raw-instr", help="Print raw instructions without performing analyzis on them", action=argparse.BooleanOptionalAction)
+    parser.add_argument("--raw-instr", help="Print raw instructions without performing analyzis on them", action=spimdisasm.common.Utils.BooleanOptionalAction)
 
     parser.add_argument("--endian", help="Set the endianness of input files. Defaults to 'big'", choices=["big", "little", "middle"])
 
@@ -37,9 +38,9 @@ def disasmdisMain():
     wordsCount = (len(args.input) - 1) // 8 + 1
 
     context = spimdisasm.common.Context()
-    context.globalSegment.extendRange(0xFFFFFFFF)
+    context.globalSegment.changeRanges(0x0, 0xFFFFFFFF, 0x0, 0xFFFFFFFF)
 
-    instructionList: list[spimdisasm.mips.instructions.InstructionBase] = list()
+    instructionList: list[rabbitizer.Instruction] = list()
 
     for i in range(wordsCount):
         array_of_bytes = bytearray(4)
@@ -48,7 +49,7 @@ def disasmdisMain():
             array_of_bytes[j] = int(wordStr[j*2:(j+1)*2], 16)
 
         word = spimdisasm.common.Utils.bytesToBEWords(array_of_bytes)[0]
-        instructionList.append(spimdisasm.mips.instructions.wordToInstruction(word))
+        instructionList.append(rabbitizer.Instruction(word))
 
     if args.raw_instr:
         for instr in instructionList:

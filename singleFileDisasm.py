@@ -39,21 +39,21 @@ def disassemblerMain():
 
     parser.add_argument("--split-functions", help="Enables the function and rodata splitter. Expects a path to place the splited functions", metavar="PATH")
 
-    parser.add_argument("--nuke-pointers", help="Use every technique available to remove pointers", action=argparse.BooleanOptionalAction)
+    parser.add_argument("--nuke-pointers", help="Use every technique available to remove pointers", action=spimdisasm.common.Utils.BooleanOptionalAction)
     parser.add_argument("--ignore-words", help="A space separated list of hex numbers. Any word differences which starts in any of the provided arguments will be ignored. Max value: FF. Only works when --nuke-pointers is passed", action="extend", nargs="+")
 
-    parser.add_argument("--write-binary", help=f"Produce a binary from the processed file. Defaults to {spimdisasm.common.GlobalConfig.WRITE_BINARY}", action=argparse.BooleanOptionalAction)
+    parser.add_argument("--write-binary", help=f"Produce a binary from the processed file. Defaults to {spimdisasm.common.GlobalConfig.WRITE_BINARY}", action=spimdisasm.common.Utils.BooleanOptionalAction)
 
 
     spimdisasm.common.Context.addParametersToArgParse(parser)
 
     spimdisasm.common.GlobalConfig.addParametersToArgParse(parser)
 
-    spimdisasm.mips.instructions.InstructionConfig.addParametersToArgParse(parser)
+    spimdisasm.mips.InstructionConfig.addParametersToArgParse(parser)
 
     args = parser.parse_args()
 
-    spimdisasm.mips.instructions.InstructionConfig.parseArgs(args)
+    spimdisasm.mips.InstructionConfig.parseArgs(args)
 
     spimdisasm.common.GlobalConfig.parseArgs(args)
 
@@ -112,7 +112,11 @@ def disassemblerMain():
     if dataOutput is None:
         dataOutput = textOutput
 
-    highestVramEnd = 0x80000000 + len(array_of_bytes)
+    highestVromEnd = len(array_of_bytes)
+    highestVramEnd = 0x80000000 + highestVromEnd
+    fileVram = int(args.vram, 16)
+    if fileVram != 0:
+        highestVramEnd = (fileVram & 0xF0000000) + highestVromEnd
 
     for row in splits:
         if row.section == spimdisasm.common.FileSectionType.Text:
@@ -138,6 +142,8 @@ def disassemblerMain():
         vramEnd = row.vram + row.nextOffset - row.offset
         if vramEnd > highestVramEnd:
             highestVramEnd = vramEnd
+        if row.nextOffset > highestVromEnd:
+            highestVromEnd = row.nextOffset
 
         spimdisasm.common.Utils.printVerbose(f"Reading '{row.fileName}'")
         f = spimdisasm.mips.FilesHandlers.createSectionFromSplitEntry(row, array_of_bytes, outputFilePath, context)
@@ -145,7 +151,7 @@ def disassemblerMain():
         processedFiles[row.section].append(f)
         processedFilesOutputPaths[row.section].append(outputFilePath)
 
-    context.globalSegment.extendRange(highestVramEnd)
+    context.globalSegment.changeRanges(0, highestVromEnd, 0x80000000, highestVramEnd)
 
     i = 0
     for section, filesInSection in processedFiles.items():

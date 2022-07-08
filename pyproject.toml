@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: © 2022 Decompollaborate
+# SPDX-License-Identifier: MIT
+
+[build-system]
+requires = ["setuptools", "wheel"]
+
+[tool.cibuildwheel]
+skip = ["cp36-*"]

@@ -40,7 +40,7 @@ class SectionBss(SectionBase):
 
         # If something that could be a pointer found in data happens to be in the middle of this bss file's addresses space
         # Then consider it as a new bss variable
-        for ptr in self.getPointerInDataReferencesIter(self.bssVramStart, self.bssVramEnd):
+        for ptr in self.getAndPopPointerInDataReferencesRange(self.bssVramStart, self.bssVramEnd):
             # Check if the symbol already exists, in case the user has provided size
             contextSym = self.getSymbol(ptr, tryPlusOffset=True)
             if contextSym is None:
@@ -50,12 +50,12 @@ class SectionBss(SectionBase):
         offsetSymbolsInSection = self.context.offsetSymbols[common.FileSectionType.Bss]
         bssSymbolOffsets: dict[int, common.ContextSymbol] = {offset: sym for offset, sym in offsetSymbolsInSection.items()}
 
-        for contextSym in self.getSymbolsRangeIter(self.bssVramStart, self.bssVramEnd):
+        for symbolVram, contextSym in self.getSymbolsRange(self.bssVramStart, self.bssVramEnd):
             # Mark every known symbol that happens to be in this address space as defined
             contextSym.sectionType = common.FileSectionType.Bss
 
             # Needs to move this to a list because the algorithm requires to check the size of a bss variable based on the next bss variable' vram
-            bssSymbolOffsets[contextSym.vram-self.bssVramStart] = contextSym
+            bssSymbolOffsets[symbolVram-self.bssVramStart] = contextSym
 
 
         sortedOffsets = sorted(bssSymbolOffsets.items())

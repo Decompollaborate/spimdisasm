@@ -5,12 +5,12 @@
 
 from __future__ import annotations
 
-from . import instructions
 from . import sections
 from . import symbols
 
 from . import FilesHandlers
 
+from .InstructionConfig import InstructionConfig
 from .MipsFileBase import FileBase, createEmptyFile
 from .MipsFileSplits import FileSplits
 from .MipsRelocTypes import RelocTypes

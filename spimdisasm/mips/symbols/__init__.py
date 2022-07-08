@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from . import analysis
+
 from .MipsSymbolBase import SymbolBase
 
 from .MipsSymbolText import SymbolText

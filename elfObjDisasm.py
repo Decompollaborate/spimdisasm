@@ -23,11 +23,11 @@ def elfObjDisasmMain():
 
     spimdisasm.common.GlobalConfig.addParametersToArgParse(parser)
 
-    spimdisasm.mips.instructions.InstructionConfig.addParametersToArgParse(parser)
+    spimdisasm.mips.InstructionConfig.addParametersToArgParse(parser)
 
     args = parser.parse_args()
 
-    spimdisasm.mips.instructions.InstructionConfig.parseArgs(args)
+    spimdisasm.mips.InstructionConfig.parseArgs(args)
 
     spimdisasm.common.GlobalConfig.parseArgs(args)
 
@@ -40,7 +40,7 @@ def elfObjDisasmMain():
     inputPath = pathlib.Path(args.binary)
 
     context = spimdisasm.common.Context()
-    context.globalSegment.extendRange(0xFFFFFFFF)
+    context.globalSegment.changeRanges(0x0, 0xFFFFFFFF, 0x0, 0xFFFFFFFF)
 
     array_of_bytes = spimdisasm.common.Utils.readFileAsBytearray(args.binary)
 
