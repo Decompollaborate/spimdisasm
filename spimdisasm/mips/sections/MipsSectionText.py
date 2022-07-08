@@ -28,12 +28,10 @@ class SectionText(SectionBase):
     def wordListToInstructions(wordList: list[int], currentVram: int|None, isRsp: bool=False) -> list[rabbitizer.Instruction]:
         instrsList: list[rabbitizer.Instruction] = list()
         for word in wordList:
-            # if isRsp:
-            #     instr = instructions.wordToInstructionRsp(word)
-            # else:
-            #     instr = instructions.wordToInstruction(word)
-            # TODO: rsp
-            instr = rabbitizer.Instruction(word)
+            instrCat = rabbitizer.InstrCategory.CPU
+            if isRsp:
+                instrCat = rabbitizer.InstrCategory.RSP
+            instr = rabbitizer.Instruction(word, category=instrCat)
 
             if currentVram is not None:
                 instr.vram = currentVram
