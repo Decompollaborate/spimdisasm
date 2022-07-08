@@ -215,10 +215,10 @@ class SymbolFunction(SymbolText):
             instr = self.instructions[i]
             nextInstr = self.instructions[i-1]
 
-            if nextInstr.uniqueId == instructions.InstructionId.JR:
+            if nextInstr.uniqueId == rabbitizer.InstrId.cpu_jr:
                 return count
 
-            if instr.instr != 0:
+            if not instr.isNop():
                 return count
 
             count += 1
