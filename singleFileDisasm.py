@@ -113,9 +113,11 @@ def disassemblerMain():
         dataOutput = textOutput
 
     highestVromEnd = len(array_of_bytes)
-    highestVramEnd = 0x80000000 + highestVromEnd
+    lowestVramStart = 0x80000000
+    highestVramEnd = lowestVramStart + highestVromEnd
     fileVram = int(args.vram, 16)
     if fileVram != 0:
+        lowestVramStart = fileVram
         highestVramEnd = (fileVram & 0xF0000000) + highestVromEnd
 
     for row in splits:
@@ -151,7 +153,7 @@ def disassemblerMain():
         processedFiles[row.section].append(f)
         processedFilesOutputPaths[row.section].append(outputFilePath)
 
-    context.globalSegment.changeRanges(0, highestVromEnd, 0x80000000, highestVramEnd)
+    context.globalSegment.changeRanges(0, highestVromEnd, lowestVramStart, highestVramEnd)
 
     i = 0
     for section, filesInSection in processedFiles.items():
