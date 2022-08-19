@@ -125,7 +125,9 @@ class SymbolRodata(SymbolBase):
         # try to get the symbol name from the offset of the file (possibly from a .o elf file)
         possibleSymbolName = self.context.getOffsetGenericSymbol(self.inFileOffset + localOffset, self.sectionType)
         if possibleSymbolName is not None:
-            label = possibleSymbolName.getSymbolLabel() + common.GlobalConfig.LINE_ENDS
+            label = possibleSymbolName.getSymbolLabel()
+            if label:
+                label += common.GlobalConfig.LINE_ENDS
 
         if len(self.context.relocSymbols[self.sectionType]) > 0:
             possibleReference = self.context.getRelocSymbol(self.inFileOffset + localOffset, self.sectionType)

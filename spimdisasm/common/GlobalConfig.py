@@ -81,6 +81,7 @@ class GlobalConfig:
 
     ASM_TEXT_LABEL: str = "glabel"
     ASM_DATA_LABEL: str = "glabel"
+    ASM_USE_SYMBOL_LABEL: bool = True
     ASM_TEXT_ENT_LABEL: str = ""
     ASM_TEXT_END_LABEL: str = ""
     ASM_TEXT_FUNC_AS_LABEL: bool = False
@@ -146,6 +147,7 @@ class GlobalConfig:
 
         miscConfig.add_argument("--asm-text-label", help=f"Changes the label used to declare functions. Defaults to {GlobalConfig.ASM_TEXT_LABEL}")
         miscConfig.add_argument("--asm-data-label", help=f"Changes the label used to declare data symbols. Defaults to {GlobalConfig.ASM_DATA_LABEL}")
+        miscConfig.add_argument("--asm-use-symbol-label", help=f"Toggles the use of labels for symbols. Defaults to {GlobalConfig.ASM_USE_SYMBOL_LABEL}", action=Utils.BooleanOptionalAction)
         miscConfig.add_argument("--asm-ent-label", help=f"Tells the disassembler to start using an ent label for functions")
         miscConfig.add_argument("--asm-end-label", help=f"Tells the disassembler to start using an end label for functions")
         miscConfig.add_argument("--asm-func-as-label", help=f"Toggle adding the function name as an additional label. Defaults to {GlobalConfig.ASM_TEXT_FUNC_AS_LABEL}", action=Utils.BooleanOptionalAction)
@@ -217,6 +219,8 @@ class GlobalConfig:
             GlobalConfig.ASM_TEXT_LABEL = args.asm_text_label
         if args.asm_data_label:
             GlobalConfig.ASM_DATA_LABEL = args.asm_data_label
+        if args.asm_use_symbol_label is not None:
+            GlobalConfig.ASM_USE_SYMBOL_LABEL = args.asm_use_symbol_label
         if args.asm_ent_label:
             GlobalConfig.ASM_TEXT_ENT_LABEL = args.asm_ent_label
         if args.asm_end_label:

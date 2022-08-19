@@ -404,7 +404,9 @@ class SymbolFunction(SymbolText):
         labelSym.isDefined = True
         labelSym.sectionType = self.sectionType
         if labelSym.type == common.SymbolSpecialType.function or labelSym.type == common.SymbolSpecialType.jumptablelabel:
-            label = labelSym.getSymbolLabel() + common.GlobalConfig.LINE_ENDS
+            label = labelSym.getSymbolLabel()
+            if label:
+                label += common.GlobalConfig.LINE_ENDS
             if common.GlobalConfig.ASM_TEXT_FUNC_AS_LABEL:
                 label += f"{labelSym.getName()}:{common.GlobalConfig.LINE_ENDS}"
             return label
