@@ -419,7 +419,9 @@ class SymbolFunction(SymbolText):
                 return self.disassembleAsData()
 
         if self.isLikelyHandwritten:
-            output += "# Handwritten function" + common.GlobalConfig.LINE_ENDS
+            if not self.isRsp:
+                # RSP functions are always handwritten, so this is redundant
+                output += "# Handwritten function" + common.GlobalConfig.LINE_ENDS
 
         output += self.getLabel()
 
