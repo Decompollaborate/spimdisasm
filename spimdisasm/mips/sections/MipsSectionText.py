@@ -19,18 +19,17 @@ class SectionText(SectionBase):
     def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytearray, segmentVromStart: int, overlayCategory: str|None):
         super().__init__(context, vromStart, vromEnd, vram, filename, array_of_bytes, common.FileSectionType.Text, segmentVromStart, overlayCategory)
 
+        self.instrCat: rabbitizer.Enum = rabbitizer.InstrCategory.CPU
+
 
     @property
     def nFuncs(self) -> int:
         return len(self.symbolList)
 
     @staticmethod
-    def wordListToInstructions(wordList: list[int], currentVram: int|None, isRsp: bool=False) -> list[rabbitizer.Instruction]:
+    def wordListToInstructions(wordList: list[int], currentVram: int|None, instrCat: rabbitizer.Enum) -> list[rabbitizer.Instruction]:
         instrsList: list[rabbitizer.Instruction] = list()
         for word in wordList:
-            instrCat = rabbitizer.InstrCategory.CPU
-            if isRsp:
-                instrCat = rabbitizer.InstrCategory.RSP
             instr = rabbitizer.Instruction(word, category=instrCat)
 
             if currentVram is not None:
@@ -46,7 +45,7 @@ class SectionText(SectionBase):
         funcsStartsList = [0]
         unimplementedInstructionsFuncList = []
 
-        instrsList = self.wordListToInstructions(self.words, self.getVramOffset(0), self.isRsp)
+        instrsList = self.wordListToInstructions(self.words, self.getVramOffset(0), self.instrCat)
 
         instructionOffset = 0
         currentInstructionStart = 0
@@ -92,7 +91,7 @@ class SectionText(SectionBase):
 
             currentVram = self.getVramOffset(instructionOffset)
 
-            if not self.isRsp and not isLikelyHandwritten:
+            if self.instrCat != rabbitizer.InstrCategory.RSP and not isLikelyHandwritten:
                 isLikelyHandwritten = instr.isLikelyHandwritten()
 
             if instr.isBranch() or instr.isUnconditionalBranch():
@@ -111,7 +110,7 @@ class SectionText(SectionBase):
                             if (branchOffset + instructionOffset) < funcsStartsList[j] * 4:
                                 vram = self.getVramOffset(funcsStartsList[j]*4)
                                 funcSymbol = self.getSymbol(vram, tryPlusOffset=False)
-                                if funcSymbol is not None and funcSymbol.isTrustableFunction(self.isRsp):
+                                if funcSymbol is not None and funcSymbol.isTrustableFunction(self.instrCat == rabbitizer.InstrCategory.RSP):
                                     j -= 1
                                     continue
                                 del funcsStartsList[j]
@@ -122,7 +121,7 @@ class SectionText(SectionBase):
 
             elif instr.isJType():
                 target = instr.getInstrIndexAsVram()
-                if not self.isRsp:
+                if self.instrCat != rabbitizer.InstrCategory.RSP:
                     if target >= 0x84000000:
                         # RSP address space?
                         isLikelyHandwritten = True
@@ -134,11 +133,11 @@ class SectionText(SectionBase):
                 elif instr.isJrNotRa():
                     pass
                 elif not instr.doesLink():
-                    if isLikelyHandwritten or self.isRsp:
+                    if isLikelyHandwritten or self.instrCat == rabbitizer.InstrCategory.RSP:
                         functionEnded = True
 
             funcSymbol = self.getSymbol(currentVram + 8, tryPlusOffset=False)
-            if funcSymbol is not None and funcSymbol.isTrustableFunction(self.isRsp):
+            if funcSymbol is not None and funcSymbol.isTrustableFunction(self.instrCat == rabbitizer.InstrCategory.RSP):
                 if funcSymbol.vromAddress is None or self.getVromOffset(instructionOffset+8) == funcSymbol.vromAddress:
                     functionEnded = True
 
@@ -190,7 +189,7 @@ class SectionText(SectionBase):
             func.pointersOffsets |= self.pointersOffsets
             func.hasUnimplementedIntrs = hasUnimplementedIntrs
             func.parent = self
-            func.isRsp = self.isRsp
+            func.isRsp = self.instrCat == rabbitizer.InstrCategory.RSP
             func.analyze()
             self.symbolList.append(func)
             i += 1

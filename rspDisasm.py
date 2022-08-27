@@ -58,7 +58,7 @@ def rspDisasmMain():
     fileVram = int(args.vram, 16)
 
     f = spimdisasm.mips.sections.SectionText(context, start, end, fileVram, input_name, array_of_bytes, 0, None)
-    f.isRsp = True
+    f.instrCat = rabbitizer.InstrCategory.RSP
 
     highestVromEnd = len(array_of_bytes)
     lowestVramStart = 0x00000000

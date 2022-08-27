@@ -22,7 +22,6 @@ class FileBase(common.ElementBase):
         self.pointersOffsets: set[int] = set()
 
         self.isHandwritten: bool = False
-        self.isRsp: bool = False
 
         self.fileBoundaries: list[int] = list()
 
