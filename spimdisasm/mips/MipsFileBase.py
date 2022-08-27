@@ -22,7 +22,6 @@ class FileBase(common.ElementBase):
         self.pointersOffsets: set[int] = set()
 
         self.isHandwritten: bool = False
-        self.isRsp: bool = False
 
         self.fileBoundaries: list[int] = list()
 
@@ -161,8 +160,9 @@ class FileBase(common.ElementBase):
         return output
 
     def disassembleToFile(self, f: TextIO):
-        f.write(self.getAsmPrelude())
-        f.write(common.GlobalConfig.LINE_ENDS)
+        if common.GlobalConfig.ASM_USE_PRELUDE:
+            f.write(self.getAsmPrelude())
+            f.write(common.GlobalConfig.LINE_ENDS)
         f.write(self.disassemble())
 
 

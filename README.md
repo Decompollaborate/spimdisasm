@@ -40,8 +40,8 @@ Mainly focused on supporting Nintendo 64 binaries, but it should work with other
 - Some workarounds for some specific compilers/assemblers:
   - `SN64`:
     - `div`/`divu` fix: tweaks a bit the produced `div`, `divu` and `break` instructions.
-- (Experimental) N64 RSP disassembly support.
-  - NOTE: This mode has not been tested to even be assemblable.
+- N64 RSP instruction disassembly support.
+  - RSP decoding has been tested to build back to matching assemblies with [armips](https://github.com/Kingcom/armips/).
 - (Experimental) Same VRAM overlay support.
   - Overlays which are able to reference symbols from other overlays in other categories/types is supported too.
   - NOTE: This feature lacks lots of testing and probably has many bugs.
@@ -59,6 +59,8 @@ Every front-end script has its own `--help` screen.
 - `disasmdis.py`: Disassembles raw hex passed to the CLI as a MIPS instruction.
 
 - `elfObjDisasm.py`: \[EXPERIMENTAL\] Allows to disassemble `.o` elf files. Generated assembly files are not guaranteed to match or be assemblable.
+
+- `rspDisasm.py`: Disassemblies RSP binaries.
 
 ### Back-end
 

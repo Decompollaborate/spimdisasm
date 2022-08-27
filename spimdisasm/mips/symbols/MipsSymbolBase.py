@@ -127,7 +127,10 @@ class SymbolBase(common.ElementBase):
                 contextSym = self.getSymbolAtVramOrOffset(localOffset+j)
                 if contextSym is not None:
                     # Possible symbols in the middle
-                    label = common.GlobalConfig.LINE_ENDS + contextSym.getSymbolLabel()  + common.GlobalConfig.LINE_ENDS
+                    label = common.GlobalConfig.LINE_ENDS
+                    symLabel = contextSym.getSymbolLabel()
+                    if symLabel:
+                        label += symLabel + common.GlobalConfig.LINE_ENDS
 
             if isByte:
                 shiftValue = 24 - (j * 8)

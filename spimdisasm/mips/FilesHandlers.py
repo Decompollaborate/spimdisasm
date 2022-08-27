@@ -8,6 +8,8 @@ from __future__ import annotations
 import os
 from typing import TextIO
 
+import rabbitizer
+
 from .. import common
 
 from . import sections
@@ -33,6 +35,8 @@ def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_byte
     f: sections.SectionBase
     if splitEntry.section == common.FileSectionType.Text:
         f = sections.SectionText(context, offsetStart, offsetEnd, vram, tail, array_of_bytes, 0, None)
+        if splitEntry.isRsp:
+            f.instrCat = rabbitizer.InstrCategory.RSP
     elif splitEntry.section == common.FileSectionType.Data:
         f = sections.SectionData(context, offsetStart, offsetEnd, vram, tail, array_of_bytes, 0, None)
     elif splitEntry.section == common.FileSectionType.Rodata:
@@ -44,7 +48,6 @@ def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_byte
         exit(-1)
 
     f.isHandwritten = splitEntry.isHandwritten
-    f.isRsp = splitEntry.isRsp
 
     return f
 

@@ -404,7 +404,9 @@ class SymbolFunction(SymbolText):
         labelSym.isDefined = True
         labelSym.sectionType = self.sectionType
         if labelSym.type == common.SymbolSpecialType.function or labelSym.type == common.SymbolSpecialType.jumptablelabel:
-            label = labelSym.getSymbolLabel() + common.GlobalConfig.LINE_ENDS
+            label = labelSym.getSymbolLabel()
+            if label:
+                label += common.GlobalConfig.LINE_ENDS
             if common.GlobalConfig.ASM_TEXT_FUNC_AS_LABEL:
                 label += f"{labelSym.getName()}:{common.GlobalConfig.LINE_ENDS}"
             return label
@@ -419,7 +421,9 @@ class SymbolFunction(SymbolText):
                 return self.disassembleAsData()
 
         if self.isLikelyHandwritten:
-            output += "# Handwritten function" + common.GlobalConfig.LINE_ENDS
+            if not self.isRsp:
+                # RSP functions are always handwritten, so this is redundant
+                output += "# Handwritten function" + common.GlobalConfig.LINE_ENDS
 
         output += self.getLabel()
 

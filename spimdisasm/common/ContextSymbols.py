@@ -246,6 +246,8 @@ class ContextSymbol:
         return f"{self.getName()} + 0x{address - self.address:X}"
 
     def getSymbolLabel(self) -> str:
+        if not GlobalConfig.ASM_USE_SYMBOL_LABEL:
+            return ""
         label = ""
         if self.isStatic():
             label += "# static variable" + GlobalConfig.LINE_ENDS
