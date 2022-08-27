@@ -84,6 +84,8 @@ class ElementBase:
         "Generates a glabel for the passed symbol, including an optional index value if it was set and it is enabled in the GlobalConfig"
         if sym is not None:
             label = sym.getSymbolLabel()
+            if not label:
+                return ""
             if GlobalConfig.GLABEL_ASM_COUNT:
                 if self.index is not None:
                     label += f" # {self.index}"

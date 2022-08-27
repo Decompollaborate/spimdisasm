@@ -18,9 +18,8 @@ def disasmdisMain():
 
     parser.add_argument("input", help="Hex words to be disassembled. Leading '0x' must be omitted")
 
-    parser.add_argument("--raw-instr", help="Print raw instructions without performing analyzis on them", action=spimdisasm.common.Utils.BooleanOptionalAction)
-
     parser.add_argument("--endian", help="Set the endianness of input files. Defaults to 'big'", choices=["big", "little", "middle"])
+    parser.add_argument("--category", help="The instruction category to use when disassembling every passed instruction. Defaults to 'cpu'", choices=["cpu", "rsp"])
 
     args = parser.parse_args()
 
@@ -49,15 +48,14 @@ def disasmdisMain():
             array_of_bytes[j] = int(wordStr[j*2:(j+1)*2], 16)
 
         word = spimdisasm.common.Utils.bytesToBEWords(array_of_bytes)[0]
-        instructionList.append(rabbitizer.Instruction(word))
 
-    if args.raw_instr:
-        for instr in instructionList:
-            print(instr.disassemble())
-    else:
-        func = spimdisasm.mips.symbols.SymbolFunction(context, 0, 0, 0, 0, instructionList, 0, None)
-        func.analyze()
-        print(func.disassemble(), end="")
+        category = rabbitizer.InstrCategory.CPU
+        if args.category == "rsp":
+            category = rabbitizer.InstrCategory.RSP
+        instructionList.append(rabbitizer.Instruction(word, category=category))
+
+    for instr in instructionList:
+        print(instr.disassemble())
 
 
 if __name__ == "__main__":
