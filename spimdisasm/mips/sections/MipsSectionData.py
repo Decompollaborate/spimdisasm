@@ -51,7 +51,7 @@ class SectionData(SectionBase):
             sym.analyze()
             self.symbolList.append(sym)
 
-            self.symbolsVRams.add(vram)
+            self.symbolsVRams.add(contextSym.vram)
 
 
     def removePointers(self) -> bool:
