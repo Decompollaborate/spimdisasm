@@ -5,8 +5,6 @@
 
 from __future__ import annotations
 
-import bisect
-
 from ... import common
 
 from .. import symbols
