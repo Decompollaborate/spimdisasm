@@ -35,7 +35,7 @@ class SectionRodata(SectionBase):
             return False
 
         try:
-            common.Utils.decodeStringExtended(self.bytes, localOffset)
+            common.Utils.decodeString(self.bytes, localOffset)
         except (UnicodeDecodeError, RuntimeError):
             # String can't be decoded
             return False

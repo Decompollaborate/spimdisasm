@@ -158,7 +158,7 @@ class SymbolRodata(SymbolBase):
                 try:
                     buffer = bytearray(4*len(self.words))
                     common.Utils.beWordsToBytes(self.words, buffer)
-                    decodedStrings, rawStringSize = common.Utils.decodeStringExtended(buffer, 4*i)
+                    decodedStrings, rawStringSize = common.Utils.decodeString(buffer, 4*i)
                     # dotType = ".asciz"
                     # value = f'"{decodedValue}"'
                     # value += common.GlobalConfig.LINE_ENDS + (22 * " ") + ".balign 4"

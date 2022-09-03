@@ -10,6 +10,7 @@ import csv
 import os
 import hashlib
 import json
+import rabbitizer
 import struct
 import subprocess
 import sys
@@ -166,25 +167,9 @@ bannedEscapeCharacters = {
     0x1F,
 }
 
-def decodeString(buf: bytearray, offset: int) -> tuple[str, int]:
-    dst = bytearray()
-    i = 0
-    while offset + i < len(buf) and buf[offset + i] != 0:
-        char = buf[offset + i]
-        if char in bannedEscapeCharacters:
-            raise RuntimeError()
-        dst.append(char)
-        i += 1
-    if offset + i > len(buf):
-        # We reached the end of the buffer without reaching a 0.
-        raise RuntimeError()
-
-    result = dst.decode("EUC-JP").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t").replace('"', '\\"').replace("\f", "\\f").replace("\a", "\\a").replace("\x1B", "\\x1B")
-    return result, i
-
 escapeCharactersSpecialCases = {0x1B, 0x8C, 0x8D}
 
-def decodeStringExtended(buf: bytearray, offset: int) -> tuple[list[str], int]:
+def decodeString(buf: bytearray, offset: int) -> tuple[list[str], int]:
     result = []
 
     dst = bytearray()
@@ -195,7 +180,7 @@ def decodeStringExtended(buf: bytearray, offset: int) -> tuple[list[str], int]:
             raise RuntimeError()
         elif char in escapeCharactersSpecialCases:
             if dst:
-                decoded = dst.decode("EUC-JP").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t").replace('"', '\\"').replace("\f", "\\f").replace("\a", "\\a")
+                decoded = rabbitizer.Utils.escapeString(dst.decode("EUC-JP"))
                 result.append(decoded)
                 dst.clear()
             result.append(f"\\x{char:02X}")
@@ -207,7 +192,7 @@ def decodeStringExtended(buf: bytearray, offset: int) -> tuple[list[str], int]:
         raise RuntimeError("Reached the end of the buffer without finding an 0")
 
     if dst:
-        decoded = dst.decode("EUC-JP").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t").replace('"', '\\"').replace("\f", "\\f").replace("\a", "\\a")
+        decoded = rabbitizer.Utils.escapeString(dst.decode("EUC-JP"))
         result.append(decoded)
     return result, i
 
