@@ -185,7 +185,7 @@ class ElementBase:
         return self.context.unknownSegment
 
 
-    def getSymbol(self, vramAddress: int, tryPlusOffset: bool = True, checkUpperLimit: bool = True) -> ContextSymbol|None:
+    def getSymbol(self, vramAddress: int, tryPlusOffset: bool = True, checkUpperLimit: bool = True, checkGlobalSegment: bool = True) -> ContextSymbol|None:
         "Searches symbol or a symbol with an addend if `tryPlusOffset` is True"
 
         if self.overlayCategory is not None:
@@ -209,6 +209,9 @@ class ElementBase:
                         contextSym = overlaySegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
                         if contextSym is not None:
                             return contextSym
+
+            if not checkGlobalSegment:
+                return None
 
         # if self.context.globalSegment.isVramInRange(vramAddress):
         contextSym = self.context.globalSegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
