@@ -61,9 +61,6 @@ class SectionText(SectionBase):
             if not instr.isImplemented():
                 isInstrImplemented = False
 
-            if self.name == '87A330' and index == 224-4:
-                dog = 6
-
             if functionEnded:
                 functionEnded = False
 
