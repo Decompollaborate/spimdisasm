@@ -49,7 +49,7 @@ class SectionText(SectionBase):
 
         instructionOffset = 0
         currentInstructionStart = 0
-        currentFunctionSym = self.getSymbol(self.getVramOffset(instructionOffset), tryPlusOffset=False)
+        currentFunctionSym = self.getSymbol(self.getVramOffset(instructionOffset), tryPlusOffset=False, checkGlobalSegment=False)
 
         isLikelyHandwritten = self.isHandwritten
 
@@ -80,7 +80,7 @@ class SectionText(SectionBase):
                     isboundary = True
 
                 currentInstructionStart = instructionOffset
-                currentFunctionSym = self.getSymbol(self.getVramOffset(instructionOffset), tryPlusOffset=False)
+                currentFunctionSym = self.getSymbol(self.getVramOffset(instructionOffset), tryPlusOffset=False, checkGlobalSegment=False)
 
                 funcsStartsList.append(index)
                 unimplementedInstructionsFuncList.append(not isInstrImplemented)
@@ -109,7 +109,7 @@ class SectionText(SectionBase):
                         while j >= 0:
                             if (branchOffset + instructionOffset) < funcsStartsList[j] * 4:
                                 vram = self.getVramOffset(funcsStartsList[j]*4)
-                                funcSymbol = self.getSymbol(vram, tryPlusOffset=False)
+                                funcSymbol = self.getSymbol(vram, tryPlusOffset=False, checkGlobalSegment=False)
                                 if funcSymbol is not None and funcSymbol.isTrustableFunction(self.instrCat == rabbitizer.InstrCategory.RSP):
                                     j -= 1
                                     continue
@@ -136,7 +136,7 @@ class SectionText(SectionBase):
                     if isLikelyHandwritten or self.instrCat == rabbitizer.InstrCategory.RSP:
                         functionEnded = True
 
-            funcSymbol = self.getSymbol(currentVram + 8, tryPlusOffset=False)
+            funcSymbol = self.getSymbol(currentVram + 8, tryPlusOffset=False, checkGlobalSegment=False)
             if funcSymbol is not None and funcSymbol.isTrustableFunction(self.instrCat == rabbitizer.InstrCategory.RSP):
                 if funcSymbol.vromAddress is None or self.getVromOffset(instructionOffset+8) == funcSymbol.vromAddress:
                     functionEnded = True
