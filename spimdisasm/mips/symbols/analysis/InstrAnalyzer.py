@@ -186,6 +186,10 @@ class InstrAnalyzer:
 
 
     def processSymbol(self, address: int, luiOffset: int|None, lowerInstr: rabbitizer.Instruction, lowerOffset: int) -> int|None:
+        if address <= 0:
+            # PS2 seems to do LUI/ADDIU pairs for 0 and -1 for some reason, filter them out
+            return None
+
         # filter out stuff that may not be a real symbol
         filterOut = common.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES and address < 0x80000000
         filterOut |= common.GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES and address >= 0xC0000000

@@ -10,6 +10,7 @@ import csv
 import os
 import hashlib
 import json
+import rabbitizer
 import struct
 import subprocess
 import sys
@@ -131,55 +132,68 @@ def readCsv(filepath: str) -> list[list[str]]:
 
     return data
 
-def decodeString(buf: bytearray, offset: int) -> tuple[str, int]:
-    # Escape characters that are unlikely to be used
-    bannedEscapeCharacters = [
-        0x01,
-        0x02,
-        0x03,
-        0x04,
-        0x05,
-        0x06,
-        # 0x07, # '\a'
-        0x08, # '\b'
-        # 0x09, # '\t'
-        # 0x0A, # '\n'
-        0x0B, # '\v'
-        # 0x0C, # '\f'
-        # 0x0D, # '\r'
-        0x0E,
-        0x0F,
-        0x10,
-        0x11,
-        0x12,
-        0x13,
-        0x14,
-        0x15,
-        0x16,
-        0x17,
-        0x18,
-        0x19,
-        0x1A,
-        # 0x1B, # VT escape sequences
-        0x1C,
-        0x1D,
-        0x1E,
-        0x1F,
-    ]
+# Escape characters that are unlikely to be used
+bannedEscapeCharacters = {
+    0x01,
+    0x02,
+    0x03,
+    0x04,
+    0x05,
+    0x06,
+    # 0x07, # '\a'
+    0x08, # '\b'
+    # 0x09, # '\t'
+    # 0x0A, # '\n'
+    0x0B, # '\v'
+    # 0x0C, # '\f'
+    # 0x0D, # '\r'
+    0x0E,
+    0x0F,
+    0x10,
+    0x11,
+    0x12,
+    0x13,
+    0x14,
+    0x15,
+    0x16,
+    0x17,
+    0x18,
+    0x19,
+    0x1A,
+    # 0x1B, # VT escape sequences
+    0x1C,
+    0x1D,
+    0x1E,
+    0x1F,
+}
+
+escapeCharactersSpecialCases = {0x1B, 0x8C, 0x8D}
+
+def decodeString(buf: bytearray, offset: int) -> tuple[list[str], int]:
+    result = []
+
     dst = bytearray()
     i = 0
     while offset + i < len(buf) and buf[offset + i] != 0:
-        dst.append(buf[offset + i])
-        i += 1
-    if offset + i > len(buf):
-        # We reached the end of the buffer without reaching a 0.
-        raise RuntimeError()
-
-    for bannedChar in bannedEscapeCharacters:
-        if bannedChar in dst:
+        char = buf[offset + i]
+        if char in bannedEscapeCharacters:
             raise RuntimeError()
+        elif char in escapeCharactersSpecialCases:
+            if dst:
+                decoded = rabbitizer.Utils.escapeString(dst.decode("EUC-JP"))
+                result.append(decoded)
+                dst.clear()
+            result.append(f"\\x{char:02X}")
+        else:
+            dst.append(char)
+        i += 1
 
-    result = dst.decode("EUC-JP").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t").replace('"', '\\"').replace("\f", "\\f").replace("\a", "\\a").replace("\x1B", "\\x1B")
+    if offset + i > len(buf):
+        raise RuntimeError("Reached the end of the buffer without finding an 0")
+
+    if dst:
+        decoded = rabbitizer.Utils.escapeString(dst.decode("EUC-JP"))
+        result.append(decoded)
     return result, i
 
 

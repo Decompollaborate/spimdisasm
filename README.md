@@ -1,10 +1,10 @@
 # spimdisasm
 
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/spimdisasm)](https://pypi.org/project/spimdisasm/)
-![GitHub](https://img.shields.io/github/license/Decompollaborate/spimdisasm)
-![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Decompollaborate/spimdisasm)
-![PyPI](https://img.shields.io/pypi/v/spimdisasm)
-![GitHub contributors](https://img.shields.io/github/contributors/Decompollaborate/spimdisasm?logo=purple)
+[![GitHub License](https://img.shields.io/github/license/Decompollaborate/spimdisasm)](https://github.com/Decompollaborate/spimdisasm/releases/latest)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/Decompollaborate/spimdisasm)](https://github.com/Decompollaborate/spimdisasm/releases/latest)
+[![PyPI](https://img.shields.io/pypi/v/spimdisasm)](https://pypi.org/project/spimdisasm/)
+[![GitHub contributors](https://img.shields.io/github/contributors/Decompollaborate/spimdisasm?logo=purple)](https://github.com/Decompollaborate/spimdisasm/graphs/contributors)
 
 A matching MIPS disassembler API and front-ends with built-in instruction analysis.
 
