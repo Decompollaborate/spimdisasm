@@ -159,6 +159,7 @@ class SymbolRodata(SymbolBase):
                     buffer = bytearray(4*len(self.words))
                     common.Utils.beWordsToBytes(self.words, buffer)
                     decodedStrings, rawStringSize = common.Utils.decodeString(buffer, 4*i)
+
                     # dotType = ".asciz"
                     # value = f'"{decodedValue}"'
                     # value += common.GlobalConfig.LINE_ENDS + (22 * " ") + ".balign 4"
@@ -166,6 +167,9 @@ class SymbolRodata(SymbolBase):
                     skip = rawStringSize // 4
                     comment = self.generateAsmLineComment(localOffset)
                     result = f"{label}{comment} "
+
+                    if rawStringSize == 0:
+                        decodedStrings.append("")
                     for decodedValue in decodedStrings[:-1]:
                         result += f'.ascii "{decodedValue}"'
                         result += common.GlobalConfig.LINE_ENDS + (22 * " ")
@@ -173,6 +177,7 @@ class SymbolRodata(SymbolBase):
                     result += common.GlobalConfig.LINE_ENDS + (22 * " ")
                     result += ".balign 4"
                     result += common.GlobalConfig.LINE_ENDS
+
                     return result, skip
                 except (UnicodeDecodeError, RuntimeError):
                     # Not a string

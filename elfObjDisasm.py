@@ -53,7 +53,7 @@ def elfObjDisasmMain():
     if dataOutput is None:
         dataOutput = textOutput
 
-    for sectionType, sectionBytes in elfFile.progbits.items():
+    for sectionType, sectionEntry in elfFile.progbits.items():
         outputPath = dataOutput
         if sectionType == spimdisasm.common.FileSectionType.Text:
             outputPath = textOutput
@@ -62,13 +62,22 @@ def elfObjDisasmMain():
         if outputPath != "-":
             outputFilePath /= inputPath.stem
 
-        # TODO: use vrom
+        vromStart = sectionEntry.offset
+        vromEnd = vromStart + sectionEntry.size
+        addr = sectionEntry.addr
+
+        mipsSection: spimdisasm.mips.sections.SectionBase
         if sectionType == spimdisasm.common.FileSectionType.Text:
-            processedFiles[sectionType] = (outputFilePath, spimdisasm.mips.sections.SectionText(context, 0, 0, 0, inputPath.stem, sectionBytes, 0, None))
-        if sectionType == spimdisasm.common.FileSectionType.Data:
-            processedFiles[sectionType] = (outputFilePath, spimdisasm.mips.sections.SectionData(context, 0, 0, 0, inputPath.stem, sectionBytes, 0, None))
-        if sectionType == spimdisasm.common.FileSectionType.Rodata:
-            processedFiles[sectionType] = (outputFilePath, spimdisasm.mips.sections.SectionRodata(context, 0, 0, 0, inputPath.stem, sectionBytes, 0, None))
+            mipsSection = spimdisasm.mips.sections.SectionText(context, vromStart, vromEnd, addr, inputPath.stem, array_of_bytes, 0, None)
+        elif sectionType == spimdisasm.common.FileSectionType.Data:
+            mipsSection = spimdisasm.mips.sections.SectionData(context, vromStart, vromEnd, addr, inputPath.stem, array_of_bytes, 0, None)
+        elif sectionType == spimdisasm.common.FileSectionType.Rodata:
+            mipsSection = spimdisasm.mips.sections.SectionRodata(context, vromStart, vromEnd, addr, inputPath.stem, array_of_bytes, 0, None)
+        else:
+            spimdisasm.common.Utils.eprint(f"Error! Invalid section type '{sectionType}'")
+            exit(-1)
+        mipsSection.setCommentOffset(vromStart)
+        processedFiles[sectionType] = (outputFilePath, mipsSection)
 
     if elfFile.nobits is not None:
         outputPath = dataOutput
@@ -77,7 +86,11 @@ def elfObjDisasmMain():
         if outputPath != "-":
             outputFilePath /= inputPath.stem
 
-        processedFiles[spimdisasm.common.FileSectionType.Bss] = (outputFilePath, spimdisasm.mips.sections.SectionBss(context, 0, 0, 0, elfFile.nobits, inputPath.stem, 0, None))
+        bssSize = elfFile.nobits.size
+        vromStart = elfFile.nobits.offset
+        vromEnd = vromStart + elfFile.nobits.size
+        addr = elfFile.nobits.addr
+        processedFiles[spimdisasm.common.FileSectionType.Bss] = (outputFilePath, spimdisasm.mips.sections.SectionBss(context, vromStart, vromEnd, addr, bssSize, inputPath.stem, 0, None))
 
     if elfFile.symtab is not None and elfFile.strtab is not None:
         # Inject symbols from the reloc table referenced in each section

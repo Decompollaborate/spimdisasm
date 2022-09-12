@@ -9,7 +9,7 @@ from .. import common
 
 from .Elf32Constants import Elf32SectionHeaderType
 from .Elf32Header import Elf32Header
-from .Elf32SectionHeaders import Elf32SectionHeaders
+from .Elf32SectionHeaders import Elf32SectionHeaders, Elf32SectionHeaderEntry
 from .Elf32StringTable import Elf32StringTable
 from .Elf32Syms import Elf32Syms
 from .Elf32Rels import Elf32Rels
@@ -23,8 +23,8 @@ class Elf32File:
         self.strtab: Elf32StringTable | None = None
         self.symtab: Elf32Syms | None = None
 
-        self.progbits: dict[common.FileSectionType, bytearray] = dict()
-        self.nobits: int | None = None
+        self.progbits: dict[common.FileSectionType, Elf32SectionHeaderEntry] = dict()
+        self.nobits: Elf32SectionHeaderEntry | None = None
 
         self.rel: dict[common.FileSectionType, Elf32Rels] = dict()
 
@@ -42,8 +42,8 @@ class Elf32File:
             elif entry.type == Elf32SectionHeaderType.PROGBITS.value:
                 fileSecType = common.FileSectionType.fromStr(sectionEntryName)
                 if fileSecType != common.FileSectionType.Invalid:
-                    self.progbits[fileSecType] = array_of_bytes[entry.offset:entry.offset+entry.size]
-                    common.Utils.printVerbose(sectionEntryName, "size: ", len(self.progbits[fileSecType]))
+                    self.progbits[fileSecType] = entry
+                    common.Utils.printVerbose(sectionEntryName, "size: ", entry.size)
                     common.Utils.printVerbose()
                 else:
                     common.Utils.eprint("Unknown PROGBITS found: ", sectionEntryName, entry)
@@ -79,8 +79,8 @@ class Elf32File:
             #     pass
             elif entry.type == Elf32SectionHeaderType.NOBITS.value:
                 if sectionEntryName == ".bss":
-                    self.nobits = entry.size
-                    common.Utils.printVerbose(sectionEntryName, "size: ", self.nobits)
+                    self.nobits = entry
+                    common.Utils.printVerbose(sectionEntryName, "size: ", self.nobits.size)
                     common.Utils.printVerbose()
                 else:
                     common.Utils.eprint("Unknown NOBITS found: ", sectionEntryName, entry)
