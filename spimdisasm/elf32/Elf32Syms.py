@@ -35,6 +35,10 @@ class Elf32SymEntry:
 
         return Elf32SymEntry(*unpacked)
 
+    @staticmethod
+    def structSize() -> int:
+        return 0x10
+
 
 class Elf32Syms:
     def __init__(self, array_of_bytes: bytearray, offset: int, rawSize: int):
@@ -42,8 +46,8 @@ class Elf32Syms:
         self.offset: int = offset
         self.rawSize: int = rawSize
 
-        for i in range(rawSize // 0x10):
-            entry = Elf32SymEntry.fromBytearray(array_of_bytes, offset + i*0x10)
+        for i in range(rawSize // Elf32SymEntry.structSize()):
+            entry = Elf32SymEntry.fromBytearray(array_of_bytes, offset + i*Elf32SymEntry.structSize())
             self.symbols.append(entry)
 
     def __getitem__(self, key: int) -> Elf32SymEntry:
