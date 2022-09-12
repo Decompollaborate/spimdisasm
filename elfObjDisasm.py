@@ -133,11 +133,13 @@ def elfObjDisasmMain():
         if outputPath != "-":
             outputFilePath /= inputPath.stem
 
-        bssSize = elfFile.nobits.size
         vromStart = elfFile.nobits.offset
         vromEnd = vromStart + elfFile.nobits.size
-        addr = elfFile.nobits.addr
-        processedFiles[spimdisasm.common.FileSectionType.Bss] = (outputFilePath, spimdisasm.mips.sections.SectionBss(context, vromStart, vromEnd, addr, bssSize, inputPath.stem, 0, None))
+        bssStart = elfFile.nobits.addr
+        bssEnd = bssStart + elfFile.nobits.size
+        mipsSection = spimdisasm.mips.sections.SectionBss(context, vromStart, vromEnd, bssStart, bssEnd, inputPath.stem, 0, None)
+        mipsSection.setCommentOffset(vromStart)
+        processedFiles[spimdisasm.common.FileSectionType.Bss] = (outputFilePath, mipsSection)
 
     if elfFile.symtab is not None and elfFile.strtab is not None:
         # Inject symbols from the reloc table referenced in each section
