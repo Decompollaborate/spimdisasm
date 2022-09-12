@@ -11,6 +11,53 @@ import pathlib
 import spimdisasm
 
 
+def insertSymbolsIntoContext(context: spimdisasm.common.Context, symbolTable: spimdisasm.elf32.Elf32Syms, stringTable: spimdisasm.elf32.Elf32StringTable, elfFile: spimdisasm.elf32.Elf32File, isDynamic: bool):
+    # Use the symbol table to replace symbol names present in disassembled sections
+    for symEntry in symbolTable:
+        if symEntry.shndx == 0:
+            continue
+
+        symName = stringTable[symEntry.name]
+
+        if isDynamic:
+            if symEntry.stType == spimdisasm.elf32.Elf32SymbolTableType.FUNC.value:
+                contextSym = context.globalSegment.addFunction(symEntry.value)
+                contextSym.name = symName
+                contextSym.isUserDeclared = True
+                # contextSym.setSizeIfUnset(symEntry.size)
+            elif symEntry.stType == spimdisasm.elf32.Elf32SymbolTableType.OBJECT.value:
+                contextSym = context.globalSegment.addSymbol(symEntry.value)
+                contextSym.name = symName
+                contextSym.isUserDeclared = True
+                # contextSym.setSizeIfUnset(symEntry.size)
+            elif symEntry.stType == spimdisasm.elf32.Elf32SymbolTableType.SECTION.value:
+                # print(symEntry)
+                pass
+            else:
+                spimdisasm.common.Utils.eprint(f"Warning: symbol '{symName}' has an unhandled stType: '{symEntry.stType}'")
+                contextSym = context.globalSegment.addSymbol(symEntry.value)
+                contextSym.name = symName
+                contextSym.isUserDeclared = True
+                # contextSym.setSizeIfUnset(symEntry.size)
+
+            continue
+
+        sectHeaderEntry = elfFile.sectionHeaders[symEntry.shndx]
+        if sectHeaderEntry is None:
+            continue
+        sectName = elfFile.shstrtab[sectHeaderEntry.name]
+        sectType = spimdisasm.common.FileSectionType.fromStr(sectName)
+        if sectType != spimdisasm.common.FileSectionType.Invalid:
+            # subSection = processedFiles[sectType][1]
+
+            contextOffsetSym = spimdisasm.common.ContextOffsetSymbol(symEntry.value, symName, sectType)
+            contextOffsetSym.isUserDeclared = True
+            context.offsetSymbols[sectType][symEntry.value] = contextOffsetSym
+        else:
+            spimdisasm.common.Utils.eprint(f"symbol referencing invalid section '{sectName}'")
+
+
+
 def elfObjDisasmMain():
     # TODO
     description = ""
@@ -95,7 +142,7 @@ def elfObjDisasmMain():
     if elfFile.symtab is not None and elfFile.strtab is not None:
         # Inject symbols from the reloc table referenced in each section
         for sectType, relocs in elfFile.rel.items():
-            subSection = processedFiles[sectType][1]
+            # subSection = processedFiles[sectType][1]
             for rel in relocs:
                 symbolEntry = elfFile.symtab[rel.rSym]
                 symbolName = elfFile.strtab[symbolEntry.name]
@@ -106,23 +153,11 @@ def elfObjDisasmMain():
                 context.relocSymbols[sectType][rel.offset] = contextRelocSym
 
         # Use the symtab to replace symbol names present in disassembled sections
-        for symEntry in elfFile.symtab:
-            if symEntry.shndx == 0:
-                continue
+        insertSymbolsIntoContext(context, elfFile.symtab, elfFile.strtab, elfFile, False)
 
-            sectHeaderEntry = elfFile.sectionHeaders[symEntry.shndx]
-            if sectHeaderEntry is None:
-                continue
-            sectName = elfFile.shstrtab[sectHeaderEntry.name]
-            sectType = spimdisasm.common.FileSectionType.fromStr(sectName)
-            if sectType != spimdisasm.common.FileSectionType.Invalid:
-                subSection = processedFiles[sectType][1]
-                symName = elfFile.strtab[symEntry.name]
-
-                contextOffsetSym = spimdisasm.common.ContextOffsetSymbol(symEntry.value, symName, sectType)
-                contextOffsetSym.isDefined = True
-                # contextOffsetSym.size = symEntry.size
-                context.offsetSymbols[sectType][symEntry.value] = contextOffsetSym
+    if elfFile.dynsym is not None and elfFile.dynstr is not None:
+        # Use the dynsym to replace symbol names present in disassembled sections
+        insertSymbolsIntoContext(context, elfFile.dynsym, elfFile.dynstr, elfFile, True)
 
 
     for outputFilePath, subFile in processedFiles.values():

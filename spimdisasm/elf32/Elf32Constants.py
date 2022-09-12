@@ -44,3 +44,24 @@ class Elf32SymbolTableType(enum.Enum):
     COMMON       =  5
     TLS          =  6
     NUM          =  7
+
+# a.k.a. STB (symbol table binding)
+@enum.unique
+class Elf32SymbolTableBinding(enum.Enum):
+    LOCAL       =  0
+    GLOBAL      =  1
+    WEAK        =  2
+    LOOS        = 10
+    HIOS        = 12
+    LOPROC      = 13
+    HIPROC      = 14
+
+
+# a.k.a. SHN (section header number)
+@enum.unique
+class Elf32SectionHeaderNumber(enum.Enum):
+    UNDEF           = 0
+    COMMON          = 0xFFF2
+    MIPS_ACOMMON    = 0xFF00
+    MIPS_TEXT       = 0xFF01
+    MIPS_DATA       = 0xFF02

@@ -48,6 +48,10 @@ class Elf32File:
                 fileSecType = common.FileSectionType.fromStr(sectionEntryName)
                 if fileSecType != common.FileSectionType.Invalid:
                     self.progbits[fileSecType] = entry
+                    if fileSecType == common.FileSectionType.Text:
+                        self.sectionHeaders.mipsText = entry
+                    elif fileSecType == common.FileSectionType.Data:
+                        self.sectionHeaders.mipsData = entry
                     common.Utils.printVerbose(sectionEntryName, "size: ", entry.size)
                     common.Utils.printVerbose()
                 else:
