@@ -70,6 +70,8 @@ class InstrAnalyzer:
 
         self.nonLoInstrOffsets: set[int] = set()
 
+        self.gpLoads: dict[int, rabbitizer.Instruction] = dict()
+
 
     def processBranch(self, instr: rabbitizer.Instruction, instrOffset: int, currentVram: int) -> None:
         if instrOffset in self.branchInstrOffsets:
@@ -121,22 +123,22 @@ class InstrAnalyzer:
         return constant
 
 
-    def pairHiLo(self, luiInstr: rabbitizer.Instruction|None, luiOffset: int|None, lowerInstr: rabbitizer.Instruction, lowerOffset: int, gotLocalsTable: list[int], gotGlobalsTable: list[int], gotStart: int|None) -> int|None:
+    def pairHiLo(self, hiValue: int|None, luiOffset: int|None, lowerInstr: rabbitizer.Instruction, lowerOffset: int, gotLocalsTable: list[int], gotGlobalsTable: list[int], gotStart: int|None) -> int|None:
         # lui being None means this symbol is a $gp access
-        assert (luiInstr is None and luiOffset is None) or (luiInstr is not None and luiOffset is not None)
+        assert (hiValue is None and luiOffset is None) or (hiValue is not None and luiOffset is not None)
 
-        lowerHalf = rabbitizer.Utils.from2Complement(lowerInstr.getImmediate(), 16)
+        lowerHalf = lowerInstr.getProcessedImmediate()
 
         if lowerOffset in self.symbolLoInstrOffset:
             # This %lo has been processed already
 
             # Check the other lui has the same immediate value as this one, and reject the pair if it doesn't
-            if luiInstr is not None:
+            if hiValue is not None:
                 otherLuiOffset = self.lowToHiDict.get(lowerOffset, None)
                 if otherLuiOffset is not None:
                     otherLuiInstr = self.luiInstrs.get(otherLuiOffset, None)
                     if otherLuiInstr is not None:
-                        if luiInstr.getImmediate() != otherLuiInstr.getImmediate():
+                        if hiValue != otherLuiInstr.getImmediate() << 16:
                             return None
 
             if common.GlobalConfig.COMPILER == common.Compiler.IDO:
@@ -144,7 +146,7 @@ class InstrAnalyzer:
                 return self.symbolLoInstrOffset[lowerOffset]
 
             elif common.GlobalConfig.COMPILER in {common.Compiler.GCC, common.Compiler.SN64}:
-                if luiOffset is None or luiInstr is None:
+                if luiOffset is None or hiValue is None:
                     return None
 
                 if self.hiToLowDict.get(luiOffset, None) == lowerOffset and self.lowToHiDict.get(lowerOffset, None) == luiOffset:
@@ -164,7 +166,7 @@ class InstrAnalyzer:
                     # Make an exception if the lower instruction is just after the LUI
                     pass
                 else:
-                    upperHalf = luiInstr.getImmediate() << 16
+                    upperHalf = hiValue
                     address = upperHalf + lowerHalf
                     if address == self.symbolLoInstrOffset[lowerOffset]:
                         # Make an exception if the resulting address is the same
@@ -172,12 +174,12 @@ class InstrAnalyzer:
                     else:
                         return self.symbolLoInstrOffset[lowerOffset]
 
-        if luiInstr is None and common.GlobalConfig.GP_VALUE is None:
+        if hiValue is None and common.GlobalConfig.GP_VALUE is None:
             # Trying to pair a gp relative offset, but we don't know the gp address
             return None
 
-        if luiInstr is not None:
-            upperHalf = luiInstr.getImmediate() << 16
+        if hiValue is not None:
+            upperHalf = hiValue
         else:
             assert common.GlobalConfig.GP_VALUE is not None
             upperHalf = common.GlobalConfig.GP_VALUE
@@ -265,6 +267,10 @@ class InstrAnalyzer:
             self.luiInstrs[instrOffset] = instr
             return
 
+        if instr.doesLoad() and instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
+            regsTracker.processGpLoad(instr, instrOffset)
+            self.gpLoads[instrOffset] = instr
+
         if not instr.canBeLo():
             return
 
@@ -282,22 +288,19 @@ class InstrAnalyzer:
         if instrOffset in self.nonLoInstrOffsets:
             return
 
-        luiOffset, isGp, shouldProcess = regsTracker.getLuiOffsetForLo(instr, instrOffset)
-        if not shouldProcess:
+        pairingInfo = regsTracker.preprocessLoAndGetInfo(instr, instrOffset)
+        if not pairingInfo.shouldProcess:
             if regsTracker.hasLoButNoHi(instr):
                 self.nonLoInstrOffsets.add(instrOffset)
             return
 
-        if isGp:
+        upperHalf = pairingInfo.value
+        luiOffset = pairingInfo.instrOffset
+        if pairingInfo.isGpRel:
+            upperHalf = None
             luiOffset = None
 
-        luiInstr = None
-        if luiOffset is not None:
-            luiInstr = self.luiInstrs.get(luiOffset, None)
-            if luiInstr is None:
-                return
-
-        address = self.pairHiLo(luiInstr, luiOffset, instr, instrOffset, gotLocalsTable, gotGlobalsTable, gotStart)
+        address = self.pairHiLo(upperHalf, luiOffset, instr, instrOffset, gotLocalsTable, gotGlobalsTable, gotStart)
         if address is None:
             return
 
