@@ -54,7 +54,7 @@ class SymbolFunction(SymbolText):
 
         regsTracker = rabbitizer.RegistersTracker(trackedRegistersOriginal)
 
-        self.instrAnalyzer.processInstr(regsTracker, instr, instructionOffset, currentVram, None, self.context.gotTable, self.context.gotStart)
+        self.instrAnalyzer.processInstr(regsTracker, instr, instructionOffset, currentVram, None, self.context.gotLocalsTable, self.context.gotGlobalsTable, self.context.gotStart)
 
         if instructionOffset in self.branchesTaken:
             return
@@ -65,7 +65,7 @@ class SymbolFunction(SymbolText):
             prevTargetInstr = self.instructions[branch//4 - 1]
             targetInstr = self.instructions[branch//4]
 
-            self.instrAnalyzer.processInstr(regsTracker, targetInstr, branch, self.getVramOffset(branch), prevTargetInstr, self.context.gotTable, self.context.gotStart)
+            self.instrAnalyzer.processInstr(regsTracker, targetInstr, branch, self.getVramOffset(branch), prevTargetInstr, self.context.gotLocalsTable, self.context.gotGlobalsTable, self.context.gotStart)
 
             if prevTargetInstr.isUnconditionalBranch():
                 return
@@ -145,7 +145,7 @@ class SymbolFunction(SymbolText):
                 return
 
             if not prevInstr.isBranchLikely() and not prevInstr.isUnconditionalBranch():
-                self.instrAnalyzer.processInstr(regsTracker, instr, instructionOffset, currentVram, prevInstr, self.context.gotTable, self.context.gotStart)
+                self.instrAnalyzer.processInstr(regsTracker, instr, instructionOffset, currentVram, prevInstr, self.context.gotLocalsTable, self.context.gotGlobalsTable, self.context.gotStart)
 
             # look-ahead symbol finder
             self._lookAheadSymbolFinder(instr, prevInstr, instructionOffset, regsTracker)

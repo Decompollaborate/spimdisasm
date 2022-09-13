@@ -49,7 +49,8 @@ class Context:
         # The addresses every jump table has
         self.offsetJumpTablesLabels: dict[int, ContextOffsetSymbol] = dict()
 
-        self.gotTable: list[int] = list()
+        self.gotGlobalsTable: list[int] = list()
+        self.gotLocalsTable: list[int] = list()
         self.gotStart: int|None = None
 
 

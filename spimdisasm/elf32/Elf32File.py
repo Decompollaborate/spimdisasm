@@ -43,7 +43,8 @@ class Elf32File:
         self.shstrtab = Elf32StringTable(array_of_bytes, shstrtabSectionEntry.offset, shstrtabSectionEntry.size)
 
         self.got: Elf32GlobalOffsetTable | None = None
-        self.gotTable: list[int] = list()
+        self.gotGlobalsTable: list[int] = list()
+        self.gotLocalsTable: list[int] = list()
 
         for entry in self.sectionHeaders.sections:
             sectionEntryName = self.shstrtab[entry.name]
@@ -178,12 +179,15 @@ class Elf32File:
                     for i in range(self.dynamic.gotSym, len(self.dynsym)):
                         symEntry = self.dynsym[i]
                         if symEntry.stType == Elf32SymbolTableType.FUNC.value and symEntry.shndx == Elf32SectionHeaderNumber.MIPS_TEXT.value:
-                            self.gotTable.append(symEntry.value)
+                            self.gotGlobalsTable.append(symEntry.value)
                             # print(f"{i - self.dynamic.gotSym:X} {symEntry.value:X}")
                         elif symEntry.stType == Elf32SymbolTableType.OBJECT.value and (symEntry.shndx == Elf32SectionHeaderNumber.UNDEF.value or symEntry.shndx == Elf32SectionHeaderNumber.COMMON.value):
                             gotIndex = self.dynamic.localGotNo + (i - self.dynamic.gotSym)
-                            self.gotTable.append(self.got[gotIndex])
+                            self.gotGlobalsTable.append(self.got[gotIndex])
                             # print(f"{i - self.dynamic.gotSym:X} {self.got[gotIndex]:X}")
                         else:
-                            self.gotTable.append(symEntry.value)
+                            self.gotGlobalsTable.append(symEntry.value)
                             # print(f"{i - self.dynamic.gotSym:X} {symEntry.value:X}")
+
+                    for i in range(self.dynamic.localGotNo):
+                        self.gotLocalsTable.append(self.got[i])

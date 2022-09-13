@@ -167,10 +167,8 @@ def elfObjDisasmMain():
     if elfFile.reginfo is not None:
         spimdisasm.common.GlobalConfig.GP_VALUE = elfFile.reginfo.gpValue
 
-        # if elfFile.dynamic is not None and elfFile.dynamic.pltGot is not None:
-        #     spimdisasm.common.GlobalConfig.GP_VALUE = elfFile.reginfo.gpValue - elfFile.dynamic.pltGot
-
-    context.gotTable = elfFile.gotTable
+    context.gotGlobalsTable = elfFile.gotGlobalsTable
+    context.gotLocalsTable = elfFile.gotLocalsTable
     if elfFile.dynamic is not None:
         context.gotStart = elfFile.dynamic.pltGot
 
