@@ -14,12 +14,12 @@ import spimdisasm
 def insertSymbolsIntoContext(context: spimdisasm.common.Context, symbolTable: spimdisasm.elf32.Elf32Syms, stringTable: spimdisasm.elf32.Elf32StringTable, elfFile: spimdisasm.elf32.Elf32File, isDynamic: bool):
     # Use the symbol table to replace symbol names present in disassembled sections
     for symEntry in symbolTable:
-        if symEntry.shndx == 0:
-            continue
-
         symName = stringTable[symEntry.name]
 
         if isDynamic:
+            if symEntry.value == 0:
+                continue
+
             if symEntry.stType == spimdisasm.elf32.Elf32SymbolTableType.FUNC.value:
                 contextSym = context.globalSegment.addFunction(symEntry.value)
                 contextSym.name = symName
@@ -40,6 +40,9 @@ def insertSymbolsIntoContext(context: spimdisasm.common.Context, symbolTable: sp
                 contextSym.isUserDeclared = True
                 # contextSym.setSizeIfUnset(symEntry.size)
 
+            continue
+
+        if symEntry.shndx == 0:
             continue
 
         sectHeaderEntry = elfFile.sectionHeaders[symEntry.shndx]

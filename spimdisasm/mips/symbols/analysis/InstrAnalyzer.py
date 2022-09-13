@@ -184,9 +184,11 @@ class InstrAnalyzer:
 
             if gotStart is not None:
                 index = (upperHalf + lowerHalf - gotStart) // 4
-                print(upperHalf, lowerHalf, gotStart, index, len(gotTable))
                 if index < len(gotTable):
                     return gotTable[index]
+                else:
+                    # print(upperHalf, lowerHalf, gotStart, index, len(gotTable))
+                    pass
 
         return upperHalf + lowerHalf
 
