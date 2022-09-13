@@ -121,7 +121,7 @@ class InstrAnalyzer:
         return constant
 
 
-    def pairHiLo(self, luiInstr: rabbitizer.Instruction|None, luiOffset: int|None, lowerInstr: rabbitizer.Instruction, lowerOffset: int) -> int|None:
+    def pairHiLo(self, luiInstr: rabbitizer.Instruction|None, luiOffset: int|None, lowerInstr: rabbitizer.Instruction, lowerOffset: int, gotTable: list[int], gotStart: int|None) -> int|None:
         # lui being None means this symbol is a $gp access
         assert (luiInstr is None and luiOffset is None) or (luiInstr is not None and luiOffset is not None)
 
@@ -181,6 +181,12 @@ class InstrAnalyzer:
         else:
             assert common.GlobalConfig.GP_VALUE is not None
             upperHalf = common.GlobalConfig.GP_VALUE
+
+            if gotStart is not None:
+                index = (upperHalf + lowerHalf - gotStart) // 4
+                print(upperHalf, lowerHalf, gotStart, index, len(gotTable))
+                if index < len(gotTable):
+                    return gotTable[index]
 
         return upperHalf + lowerHalf
 
@@ -248,7 +254,7 @@ class InstrAnalyzer:
         self.processSymbolType(address, instr)
 
 
-    def symbolFinder(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction|None, instrOffset: int) -> None:
+    def symbolFinder(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction|None, instrOffset: int, gotTable: list[int], gotStart: int|None) -> None:
         if instr.canBeHi():
             if prevInstr is None:
                 regsTracker.processLui(instr, instrOffset)
@@ -289,7 +295,7 @@ class InstrAnalyzer:
             if luiInstr is None:
                 return
 
-        address = self.pairHiLo(luiInstr, luiOffset, instr, instrOffset)
+        address = self.pairHiLo(luiInstr, luiOffset, instr, instrOffset, gotTable, gotStart)
         if address is None:
             return
 
@@ -308,7 +314,7 @@ class InstrAnalyzer:
             self.referencedVrams.add(address)
 
 
-    def processInstr(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, instrOffset: int, currentVram: int, prevInstr: rabbitizer.Instruction|None=None) -> None:
+    def processInstr(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, instrOffset: int, currentVram: int, prevInstr: rabbitizer.Instruction|None, gotTable: list[int], gotStart: int|None) -> None:
         if instr.isBranch() or instr.isUnconditionalBranch():
             self.processBranch(instr, instrOffset, currentVram)
 
@@ -316,7 +322,7 @@ class InstrAnalyzer:
             self.processFuncCall(instr, instrOffset)
 
         elif instr.isIType():
-            self.symbolFinder(regsTracker, instr, prevInstr, instrOffset)
+            self.symbolFinder(regsTracker, instr, prevInstr, instrOffset, gotTable, gotStart)
             self.processSymbolDereferenceType(regsTracker, instr, instrOffset)
 
         elif instr.isJrNotRa():

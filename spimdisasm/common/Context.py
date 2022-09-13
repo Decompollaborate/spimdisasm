@@ -49,6 +49,9 @@ class Context:
         # The addresses every jump table has
         self.offsetJumpTablesLabels: dict[int, ContextOffsetSymbol] = dict()
 
+        self.gotTable: list[int] = list()
+        self.gotStart: int|None = None
+
 
     def addOverlaySegment(self, overlayCategory: str, segmentVromStart: int, segmentVromEnd: int, segmentVramStart: int, segmentVramEnd: int) -> None:
         if overlayCategory not in self.overlaySegments:
