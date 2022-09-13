@@ -161,6 +161,11 @@ def elfObjDisasmMain():
         # Use the dynsym to replace symbol names present in disassembled sections
         insertSymbolsIntoContext(context, elfFile.dynsym, elfFile.dynstr, elfFile, True)
 
+    if elfFile.reginfo is not None:
+        spimdisasm.common.GlobalConfig.GP_VALUE = elfFile.reginfo.gpValue
+
+        # if elfFile.dynamic is not None and elfFile.dynamic.pltGot is not None:
+        #     spimdisasm.common.GlobalConfig.GP_VALUE = elfFile.reginfo.gpValue - elfFile.dynamic.pltGot
 
     for outputFilePath, subFile in processedFiles.values():
         subFile.analyze()

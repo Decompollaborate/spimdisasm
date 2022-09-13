@@ -65,3 +65,12 @@ class Elf32SectionHeaderNumber(enum.Enum):
     MIPS_ACOMMON    = 0xFF00
     MIPS_TEXT       = 0xFF01
     MIPS_DATA       = 0xFF02
+
+
+# a.k.a. DT
+@enum.unique
+class Elf32DynamicTable(enum.Enum):
+    PLTGOT              = 3
+    MIPS_LOCAL_GOTNO    = 0x7000000a
+    MIPS_SYMTABNO       = 0x70000011
+    MIPS_GOTSYM         = 0x70000013

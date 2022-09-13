@@ -7,9 +7,11 @@ from __future__ import annotations
 
 from .. import common
 
-from .Elf32Constants import Elf32SectionHeaderType
+from .Elf32Constants import Elf32SymbolTableType, Elf32SectionHeaderType, Elf32SectionHeaderNumber
 from .Elf32Dyns import Elf32Dyns
+from .Elf32GlobalOffsetTable import Elf32GlobalOffsetTable
 from .Elf32Header import Elf32Header
+from .Elf32RegInfo import Elf32RegInfo
 from .Elf32SectionHeaders import Elf32SectionHeaders, Elf32SectionHeaderEntry
 from .Elf32StringTable import Elf32StringTable
 from .Elf32Syms import Elf32Syms
@@ -33,10 +35,15 @@ class Elf32File:
 
         self.rel: dict[common.FileSectionType, Elf32Rels] = dict()
 
+        self.reginfo: Elf32RegInfo | None = None
+
         self.sectionHeaders = Elf32SectionHeaders(array_of_bytes, self.header.shoff, self.header.shnum)
 
         shstrtabSectionEntry = self.sectionHeaders.sections[self.header.shstrndx]
         self.shstrtab = Elf32StringTable(array_of_bytes, shstrtabSectionEntry.offset, shstrtabSectionEntry.size)
+
+        self.got: Elf32GlobalOffsetTable | None = None
+        self.gotGlobals: dict[int, int] = dict()
 
         for entry in self.sectionHeaders.sections:
             sectionEntryName = self.shstrtab[entry.name]
@@ -54,6 +61,8 @@ class Elf32File:
                         self.sectionHeaders.mipsData = entry
                     common.Utils.printVerbose(sectionEntryName, "size: ", entry.size)
                     common.Utils.printVerbose()
+                elif sectionEntryName == ".got":
+                    self.got = Elf32GlobalOffsetTable(array_of_bytes, entry.offset, entry.size)
                 else:
                     common.Utils.eprint("Unknown PROGBITS found: ", sectionEntryName, entry, "\n")
             elif entry.type == Elf32SectionHeaderType.SYMTAB.value:
@@ -150,8 +159,7 @@ class Elf32File:
                 # ?
                 pass
             elif entry.type == Elf32SectionHeaderType.MIPS_REGINFO.value:
-                # ?
-                pass
+                self.reginfo = Elf32RegInfo.fromBytearray(array_of_bytes, entry.offset)
             elif entry.type == Elf32SectionHeaderType.MIPS_OPTIONS.value:
                 # ?
                 pass
@@ -163,3 +171,19 @@ class Elf32File:
                 pass
             else:
                 common.Utils.eprint("Unknown section header type found:", sectionEntryName, entry, "\n")
+
+        if self.dynsym is not None:
+            if self.dynamic is not None and self.dynamic.gotSym is not None and self.dynamic.localGotNo is not None:
+                if self.got is not None:
+                    for i in range(self.dynamic.gotSym, len(self.dynsym)):
+                        symEntry = self.dynsym[i]
+                        if symEntry.stType == Elf32SymbolTableType.FUNC.value and symEntry.shndx == Elf32SectionHeaderNumber.MIPS_TEXT.value:
+                            self.gotGlobals[i - self.dynamic.gotSym] = symEntry.value
+                            # print(f"{i - self.dynamic.gotSym:X} {symEntry.value:X}")
+                        elif symEntry.stType == Elf32SymbolTableType.OBJECT.value and (symEntry.shndx == Elf32SectionHeaderNumber.UNDEF.value or symEntry.shndx == Elf32SectionHeaderNumber.COMMON.value):
+                            gotIndex = self.dynamic.localGotNo + (i - self.dynamic.gotSym)
+                            self.gotGlobals[i - self.dynamic.gotSym] = self.got[gotIndex]
+                            # print(f"{i - self.dynamic.gotSym:X} {self.got[gotIndex]:X}")
+                        else:
+                            self.gotGlobals[i - self.dynamic.gotSym] = symEntry.value
+                            # print(f"{i - self.dynamic.gotSym:X} {symEntry.value:X}")

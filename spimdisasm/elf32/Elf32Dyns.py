@@ -8,21 +8,23 @@ from __future__ import annotations
 import dataclasses
 import struct
 
+from .Elf32Constants import Elf32DynamicTable
+
 
 # a.k.a. Dyn ()
 @dataclasses.dataclass
 class Elf32DynEntry:
-    d_tag:  int  # int32_t  # 0x00
+    tag:  int  # int32_t  # 0x00
     "Dynamic entry type"
-    d_val:  int  # uint32_t # 0x04
+    val:  int  # uint32_t # 0x04
     "Integer value"
                             # 0x08
 
     @property
-    def d_ptr(self) -> int:
+    def ptr(self) -> int:
         "Address value"
         # Elf32_Addr
-        return self.d_val
+        return self.val
 
     @staticmethod
     def fromBytearray(array_of_bytes: bytearray, offset: int = 0) -> Elf32DynEntry:
@@ -42,9 +44,27 @@ class Elf32Dyns:
         self.offset: int = offset
         self.rawSize: int = rawSize
 
+        self.pltGot: int | None = None
+        self.localGotNo: int | None = None
+        self.symTabNo: int | None = None
+        self.gotSym: int | None = None
+
         for i in range(rawSize // Elf32DynEntry.structSize()):
             entry = Elf32DynEntry.fromBytearray(array_of_bytes, offset + i*Elf32DynEntry.structSize())
             self.dyns.append(entry)
 
+            if entry.tag == Elf32DynamicTable.PLTGOT.value:
+                self.pltGot = entry.val
+            elif entry.tag == Elf32DynamicTable.MIPS_LOCAL_GOTNO.value:
+                self.localGotNo = entry.val
+            elif entry.tag == Elf32DynamicTable.MIPS_SYMTABNO.value:
+                self.symTabNo = entry.val
+            elif entry.tag == Elf32DynamicTable.MIPS_GOTSYM.value:
+                self.gotSym = entry.val
+
     def __getitem__(self, key: int) -> Elf32DynEntry:
         return self.dyns[key]
+
+    def __iter__(self):
+        for entry in self.dyns:
+            yield entry
