@@ -61,6 +61,11 @@ class Elf32Dyns:
                 self.symTabNo = entry.val
             elif entry.tag == Elf32DynamicTable.MIPS_GOTSYM.value:
                 self.gotSym = entry.val
+            elif entry.tag == Elf32DynamicTable.NULL.value:
+                self.gotSym = entry.val
+            else:
+                pass
+                # print(f"Unknown dyn value: tag={entry.tag:08X} val={entry.val:08X}")
 
     def __getitem__(self, key: int) -> Elf32DynEntry:
         return self.dyns[key]

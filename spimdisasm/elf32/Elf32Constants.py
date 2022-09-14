@@ -70,7 +70,14 @@ class Elf32SectionHeaderNumber(enum.Enum):
 # a.k.a. DT
 @enum.unique
 class Elf32DynamicTable(enum.Enum):
+    NULL                = 0
+    "Marks end of dynamic section"
     PLTGOT              = 3
-    MIPS_LOCAL_GOTNO    = 0x7000000a
+    "Processor defined value"
+
+    MIPS_LOCAL_GOTNO    = 0x7000000A
+    "Number of local GOT entries"
     MIPS_SYMTABNO       = 0x70000011
+    "Number of DYNSYM entries"
     MIPS_GOTSYM         = 0x70000013
+    "First GOT entry in DYNSYM"

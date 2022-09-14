@@ -167,10 +167,11 @@ def elfObjDisasmMain():
     if elfFile.reginfo is not None:
         spimdisasm.common.GlobalConfig.GP_VALUE = elfFile.reginfo.gpValue
 
-    context.gotGlobalsTable = elfFile.gotGlobalsTable
-    context.gotLocalsTable = elfFile.gotLocalsTable
+    if elfFile.got is not None:
+        context.got.localsTable = elfFile.got.localsTable
+        context.got.globalsTable = elfFile.got.globalsTable
     if elfFile.dynamic is not None:
-        context.gotStart = elfFile.dynamic.pltGot
+        context.got.tableStart = elfFile.dynamic.pltGot
 
     for outputFilePath, subFile in processedFiles.values():
         subFile.analyze()

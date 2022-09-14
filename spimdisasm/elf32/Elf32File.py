@@ -43,8 +43,6 @@ class Elf32File:
         self.shstrtab = Elf32StringTable(array_of_bytes, shstrtabSectionEntry.offset, shstrtabSectionEntry.size)
 
         self.got: Elf32GlobalOffsetTable | None = None
-        self.gotGlobalsTable: list[int] = list()
-        self.gotLocalsTable: list[int] = list()
 
         for entry in self.sectionHeaders.sections:
             sectionEntryName = self.shstrtab[entry.name]
@@ -64,8 +62,17 @@ class Elf32File:
                     common.Utils.printVerbose()
                 elif sectionEntryName == ".got":
                     self.got = Elf32GlobalOffsetTable(array_of_bytes, entry.offset, entry.size)
+                elif sectionEntryName == ".interp":
+                    # strings with names of dynamic libraries
+                    common.Utils.printVerbose(f"Unhandled SYMTAB found: '{sectionEntryName}'")
+                elif sectionEntryName == ".MIPS.stubs":
+                    # ?
+                    common.Utils.printVerbose(f"Unhandled SYMTAB found: '{sectionEntryName}'")
+                elif sectionEntryName == ".init":
+                    # ?
+                    common.Utils.printVerbose(f"Unhandled SYMTAB found: '{sectionEntryName}'")
                 else:
-                    common.Utils.eprint("Unknown PROGBITS found: ", sectionEntryName, entry, "\n")
+                    common.Utils.eprint(f"Unknown PROGBITS found: '{sectionEntryName}'", entry, "\n")
             elif entry.type == Elf32SectionHeaderType.SYMTAB.value:
                 if sectionEntryName == ".symtab":
                     self.symtab = Elf32Syms(array_of_bytes, entry.offset, entry.size)
@@ -173,21 +180,5 @@ class Elf32File:
             else:
                 common.Utils.eprint("Unknown section header type found:", sectionEntryName, entry, "\n")
 
-        if self.dynsym is not None:
-            if self.dynamic is not None and self.dynamic.gotSym is not None and self.dynamic.localGotNo is not None:
-                if self.got is not None:
-                    for i in range(self.dynamic.gotSym, len(self.dynsym)):
-                        symEntry = self.dynsym[i]
-                        if symEntry.stType == Elf32SymbolTableType.FUNC.value and symEntry.shndx == Elf32SectionHeaderNumber.MIPS_TEXT.value:
-                            self.gotGlobalsTable.append(symEntry.value)
-                            # print(f"{i - self.dynamic.gotSym:X} {symEntry.value:X}")
-                        elif symEntry.stType == Elf32SymbolTableType.OBJECT.value and (symEntry.shndx == Elf32SectionHeaderNumber.UNDEF.value or symEntry.shndx == Elf32SectionHeaderNumber.COMMON.value):
-                            gotIndex = self.dynamic.localGotNo + (i - self.dynamic.gotSym)
-                            self.gotGlobalsTable.append(self.got[gotIndex])
-                            # print(f"{i - self.dynamic.gotSym:X} {self.got[gotIndex]:X}")
-                        else:
-                            self.gotGlobalsTable.append(symEntry.value)
-                            # print(f"{i - self.dynamic.gotSym:X} {symEntry.value:X}")
-
-                    for i in range(self.dynamic.localGotNo):
-                        self.gotLocalsTable.append(self.got[i])
+        if self.got is not None and self.dynamic is not None and self.dynsym is not None:
+            self.got.initTables(self.dynamic, self.dynsym)

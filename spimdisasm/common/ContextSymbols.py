@@ -269,7 +269,9 @@ class ContextSymbol:
 
 class ContextOffsetSymbol(ContextSymbol):
     def __init__(self, offset: int, name: str, sectionType: FileSectionType, *args, **kwargs):
-        super().__init__(offset, *args, name=name, sectionType=sectionType, **kwargs)
+        super().__init__(offset, *args, **kwargs)
+        self.name=name
+        self.sectionType=sectionType
 
     # Relative to the start of the section
     @property

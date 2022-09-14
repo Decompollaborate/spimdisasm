@@ -12,6 +12,7 @@ from . import Utils
 from .FileSectionType import FileSectionType
 from .ContextSymbols import SymbolSpecialType, ContextOffsetSymbol, ContextRelocSymbol
 from .SymbolsSegment import SymbolsSegment
+from .GlobalOffsetTable import GlobalOffsetTable
 
 
 class Context:
@@ -49,9 +50,7 @@ class Context:
         # The addresses every jump table has
         self.offsetJumpTablesLabels: dict[int, ContextOffsetSymbol] = dict()
 
-        self.gotGlobalsTable: list[int] = list()
-        self.gotLocalsTable: list[int] = list()
-        self.gotStart: int|None = None
+        self.got: GlobalOffsetTable = GlobalOffsetTable()
 
 
     def addOverlaySegment(self, overlayCategory: str, segmentVromStart: int, segmentVromEnd: int, segmentVramStart: int, segmentVramEnd: int) -> None:
