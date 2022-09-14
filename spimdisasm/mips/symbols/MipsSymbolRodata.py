@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import rabbitizer
+
 from ... import common
 
 from . import SymbolBase
@@ -151,7 +153,11 @@ class SymbolRodata(SymbolBase):
             rodataWord = doubleWord
             skip = 1
         else:
-            labelSym = self.getSymbol(w, tryPlusOffset=False)
+            if self.contextSym.isJumpTable() and self.contextSym.isGot and common.GlobalConfig.GP_VALUE is not None:
+                labelAddr = common.GlobalConfig.GP_VALUE + rabbitizer.Utils.from2Complement(w, 32)
+                labelSym = self.getSymbol(labelAddr, tryPlusOffset=False)
+            else:
+                labelSym = self.getSymbol(w, tryPlusOffset=False)
             if labelSym is not None:
                 value = labelSym.getName()
             elif self.isString():
