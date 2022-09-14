@@ -222,6 +222,8 @@ class ContextSymbol:
         return self.vromAddress
 
     def setSizeIfUnset(self, size: int) -> bool:
+        if size <= 0:
+            return False
         if self.size is None:
             self.size = size
             return True

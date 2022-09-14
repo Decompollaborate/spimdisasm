@@ -24,12 +24,12 @@ def insertSymbolsIntoContext(context: spimdisasm.common.Context, symbolTable: sp
                 contextSym = context.globalSegment.addFunction(symEntry.value)
                 contextSym.name = symName
                 contextSym.isUserDeclared = True
-                # contextSym.setSizeIfUnset(symEntry.size)
+                contextSym.setSizeIfUnset(symEntry.size)
             elif symEntry.stType == spimdisasm.elf32.Elf32SymbolTableType.OBJECT.value:
                 contextSym = context.globalSegment.addSymbol(symEntry.value)
                 contextSym.name = symName
                 contextSym.isUserDeclared = True
-                # contextSym.setSizeIfUnset(symEntry.size)
+                contextSym.setSizeIfUnset(symEntry.size)
             elif symEntry.stType == spimdisasm.elf32.Elf32SymbolTableType.SECTION.value:
                 # print(symEntry)
                 pass
@@ -38,7 +38,7 @@ def insertSymbolsIntoContext(context: spimdisasm.common.Context, symbolTable: sp
                 contextSym = context.globalSegment.addSymbol(symEntry.value)
                 contextSym.name = symName
                 contextSym.isUserDeclared = True
-                # contextSym.setSizeIfUnset(symEntry.size)
+                contextSym.setSizeIfUnset(symEntry.size)
 
             continue
 
