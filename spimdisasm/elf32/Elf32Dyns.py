@@ -62,7 +62,7 @@ class Elf32Dyns:
             elif entry.tag == Elf32DynamicTable.MIPS_GOTSYM.value:
                 self.gotSym = entry.val
             elif entry.tag == Elf32DynamicTable.NULL.value:
-                self.gotSym = entry.val
+                pass
             else:
                 pass
                 # print(f"Unknown dyn value: tag={entry.tag:08X} val={entry.val:08X}")
