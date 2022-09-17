@@ -74,6 +74,7 @@ class GlobalConfig:
 
     ALLOW_UNKSEGMENT: bool = True
 
+
     ASM_COMMENT: bool = True
     """Toggle the comments in generated assembly code"""
     ASM_COMMENT_OFFSET_WIDTH: int = 6
