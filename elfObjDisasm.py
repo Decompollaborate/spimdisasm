@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import argparse
-import pathlib
+from pathlib import Path
 
 import spimdisasm
 
@@ -71,6 +71,8 @@ def elfObjDisasmMain():
 
     parser.add_argument("--data-output", help="Path to output the data and rodata disassembly")
 
+    parser.add_argument("--save-context", help="Saves the context to a file", metavar="FILENAME")
+
     spimdisasm.common.GlobalConfig.addParametersToArgParse(parser)
 
     spimdisasm.mips.InstructionConfig.addParametersToArgParse(parser)
@@ -87,7 +89,7 @@ def elfObjDisasmMain():
 
     # GlobalConfig.VERBOSE = True
 
-    inputPath = pathlib.Path(args.binary)
+    inputPath = Path(args.binary)
 
     context = spimdisasm.common.Context()
     context.globalSegment.changeRanges(0x0, 0xFFFFFFFF, 0x0, 0xFFFFFFFF)
@@ -96,7 +98,7 @@ def elfObjDisasmMain():
 
     elfFile = spimdisasm.elf32.Elf32File(array_of_bytes)
 
-    processedFiles: dict[spimdisasm.common.FileSectionType, tuple[pathlib.Path, spimdisasm.mips.sections.SectionBase]] = dict()
+    processedFiles: dict[spimdisasm.common.FileSectionType, tuple[Path, spimdisasm.mips.sections.SectionBase]] = dict()
 
     textOutput = args.output
     dataOutput = args.data_output
@@ -108,7 +110,7 @@ def elfObjDisasmMain():
         if sectionType == spimdisasm.common.FileSectionType.Text:
             outputPath = textOutput
 
-        outputFilePath = pathlib.Path(outputPath)
+        outputFilePath = Path(outputPath)
         if outputPath != "-":
             outputFilePath /= inputPath.stem
 
@@ -132,7 +134,7 @@ def elfObjDisasmMain():
     if elfFile.nobits is not None:
         outputPath = dataOutput
 
-        outputFilePath = pathlib.Path(dataOutput)
+        outputFilePath = Path(dataOutput)
         if outputPath != "-":
             outputFilePath /= inputPath.stem
 
@@ -170,6 +172,12 @@ def elfObjDisasmMain():
     if elfFile.got is not None:
         context.got.localsTable = elfFile.got.localsTable
         context.got.globalsTable = elfFile.got.globalsTable
+
+        for address in context.got.globalsTable:
+            contextSym = context.globalSegment.getSymbol(address)
+            if contextSym is not None:
+                contextSym.isGotGlobal = True
+
     if elfFile.dynamic is not None:
         context.got.tableStart = elfFile.dynamic.pltGot
 
@@ -179,6 +187,10 @@ def elfObjDisasmMain():
     for outputFilePath, subFile in processedFiles.values():
         spimdisasm.mips.FilesHandlers.writeSection(str(outputFilePath), subFile)
 
+    if args.save_context is not None:
+        contextPath = Path(args.save_context)
+        contextPath.parent.mkdir(parents=True, exist_ok=True)
+        context.saveContextToFile(contextPath)
 
 if __name__ == "__main__":
     elfObjDisasmMain()

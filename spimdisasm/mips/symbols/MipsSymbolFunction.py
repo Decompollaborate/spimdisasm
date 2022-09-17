@@ -315,18 +315,20 @@ class SymbolFunction(SymbolText):
         return was_updated
 
 
-    def generateHiLoStr(self, instr: rabbitizer.Instruction, symName: str, isGot: bool=False) -> str:
+    def generateHiLoStr(self, instr: rabbitizer.Instruction, symName: str, symbol: common.ContextSymbol|None) -> str:
         if instr.canBeHi():
             return f"%hi({symName})"
 
         if instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
+            if symbol is not None and symbol.isGotGlobal and symbol.type == common.SymbolSpecialType.function:
+                return f"%call16({symName})"
             if instr.rt in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp} or not instr.modifiesRt():
                 return f"%gp_rel({symName})"
             else:
                 return f"%got({symName})"
 
-        if isGot:
-            return f"%got({symName})"
+        # if symbol is not None and symbol.isGot:
+        #     return f"%got({symName})"
 
         return f"%lo({symName})"
 
@@ -341,7 +343,7 @@ class SymbolFunction(SymbolText):
                         addressOffset = self.instrAnalyzer.symbolInstrOffset[instructionOffset]
                         auxOverride = possibleImmOverride.getNamePlusOffset(addressOffset)
 
-                    auxOverride = self.generateHiLoStr(instr, auxOverride, possibleImmOverride.isGot)
+                    auxOverride = self.generateHiLoStr(instr, auxOverride, possibleImmOverride)
                 return auxOverride
 
         if instr.isBranch() or instr.isUnconditionalBranch():
@@ -373,14 +375,14 @@ class SymbolFunction(SymbolText):
                     symbol = self.getSymbol(address, tryPlusOffset=True)
 
                 if symbol is not None:
-                    return self.generateHiLoStr(instr, symbol.getSymbolPlusOffset(address), symbol.isGot)
+                    return self.generateHiLoStr(instr, symbol.getSymbolPlusOffset(address), symbol)
 
             elif instructionOffset in self.instrAnalyzer.constantInstrOffset:
                 constant = self.instrAnalyzer.constantInstrOffset[instructionOffset]
 
                 symbol = self.getConstant(constant)
                 if symbol is not None:
-                    return self.generateHiLoStr(instr, symbol.getName(), symbol.isGot)
+                    return self.generateHiLoStr(instr, symbol.getName(), symbol)
 
                 # Pretend this pair is a constant
                 if instr.canBeHi():
@@ -391,7 +393,7 @@ class SymbolFunction(SymbolText):
                     return f"(0x{constant:X} & 0xFFFF)"
 
                 if common.GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_HILO:
-                    return self.generateHiLoStr(instr, f"0x{constant:X}", False)
+                    return self.generateHiLoStr(instr, f"0x{constant:X}", None)
 
             elif instr.canBeHi():
                 # Unpaired LUI
