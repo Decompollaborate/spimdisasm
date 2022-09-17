@@ -5,10 +5,18 @@
 
 from __future__ import annotations
 
+import dataclasses
 import rabbitizer
 
 from .... import common
 
+
+@dataclasses.dataclass
+class CploadInfo:
+    hiOffset: int
+    loOffset: int
+    adduOffset: int|None = None
+    reg: rabbitizer.Enum|None = None
 
 class InstrAnalyzer:
     def __init__(self, funcVram: int) -> None:
@@ -71,6 +79,13 @@ class InstrAnalyzer:
         self.nonLoInstrOffsets: set[int] = set()
 
         self.gpLoads: dict[int, rabbitizer.Instruction] = dict()
+
+        self.unpairedCploads: list[CploadInfo] = list()
+        "cploads which are not yet fully paired"
+        self.cploadOffsets: set[int] = set()
+        "Offset of every cpload instruction"
+        self.cploads: dict[int, CploadInfo] = dict()
+        "Completed cpload, key: offset of last instruction of the cpload"
 
 
     def processBranch(self, instr: rabbitizer.Instruction, instrOffset: int, currentVram: int) -> None:
@@ -296,6 +311,16 @@ class InstrAnalyzer:
             upperHalf = None
             luiOffset = None
 
+        if luiOffset is not None:
+            luiInstr = self.luiInstrs.get(luiOffset)
+            if luiInstr is not None:
+                if luiInstr.rt in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
+                    if instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp} and instr.rt in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
+                        # cpload
+                        self.unpairedCploads.append(CploadInfo(luiOffset, instrOffset))
+                        # early return to avoid counting this pairing as a symbol
+                        return
+
         address = self.pairHiLo(upperHalf, luiOffset, instr, instrOffset, got)
         if address is None:
             return
@@ -328,6 +353,18 @@ class InstrAnalyzer:
 
         elif instr.isJrNotRa():
             self.processJumpRegister(regsTracker, instr, instrOffset)
+
+        elif instr.uniqueId == rabbitizer.InstrId.cpu_addu:
+            # special check for .cpload
+            if len(self.unpairedCploads) > 0:
+                if instr.rd in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp} and instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
+                    cpload = self.unpairedCploads.pop()
+                    cpload.adduOffset = instrOffset
+                    cpload.reg = instr.rt
+                    self.cploadOffsets.add(cpload.hiOffset)
+                    self.cploadOffsets.add(cpload.loOffset)
+                    self.cploadOffsets.add(instrOffset)
+                    self.cploads[instrOffset] = cpload
 
         regsTracker.overwriteRegisters(instr, instrOffset)
 
