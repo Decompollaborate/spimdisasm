@@ -5,11 +5,16 @@
 
 from __future__ import annotations
 
+from typing import Callable
+
 from .. import common
 
-from .Elf32Constants import Elf32SectionHeaderType
+from .Elf32Constants import Elf32SymbolTableType, Elf32SectionHeaderType, Elf32SectionHeaderNumber
+from .Elf32Dyns import Elf32Dyns
+from .Elf32GlobalOffsetTable import Elf32GlobalOffsetTable
 from .Elf32Header import Elf32Header
-from .Elf32SectionHeaders import Elf32SectionHeaders
+from .Elf32RegInfo import Elf32RegInfo
+from .Elf32SectionHeaders import Elf32SectionHeaders, Elf32SectionHeaderEntry
 from .Elf32StringTable import Elf32StringTable
 from .Elf32Syms import Elf32Syms
 from .Elf32Rels import Elf32Rels
@@ -23,95 +28,176 @@ class Elf32File:
         self.strtab: Elf32StringTable | None = None
         self.symtab: Elf32Syms | None = None
 
-        self.progbits: dict[common.FileSectionType, bytearray] = dict()
-        self.nobits: int | None = None
+        self.dynamic: Elf32Dyns | None = None
+        self.dynstr: Elf32StringTable | None = None
+        self.dynsym: Elf32Syms | None = None
+
+        self.progbits: dict[common.FileSectionType, Elf32SectionHeaderEntry] = dict()
+        self.nobits: Elf32SectionHeaderEntry | None = None
 
         self.rel: dict[common.FileSectionType, Elf32Rels] = dict()
+
+        self.reginfo: Elf32RegInfo | None = None
 
         self.sectionHeaders = Elf32SectionHeaders(array_of_bytes, self.header.shoff, self.header.shnum)
 
         shstrtabSectionEntry = self.sectionHeaders.sections[self.header.shstrndx]
         self.shstrtab = Elf32StringTable(array_of_bytes, shstrtabSectionEntry.offset, shstrtabSectionEntry.size)
 
+        self.got: Elf32GlobalOffsetTable | None = None
+
         for entry in self.sectionHeaders.sections:
             sectionEntryName = self.shstrtab[entry.name]
             # print(sectionEntryName, end="\t ")
             # print(entry)
-            if entry.type == Elf32SectionHeaderType.NULL.value:
-                continue
-            elif entry.type == Elf32SectionHeaderType.PROGBITS.value:
-                fileSecType = common.FileSectionType.fromStr(sectionEntryName)
-                if fileSecType != common.FileSectionType.Invalid:
-                    self.progbits[fileSecType] = array_of_bytes[entry.offset:entry.offset+entry.size]
-                    common.Utils.printVerbose(sectionEntryName, "size: ", len(self.progbits[fileSecType]))
-                    common.Utils.printVerbose()
-                else:
-                    common.Utils.eprint("Unknown PROGBITS found: ", sectionEntryName, entry)
-            elif entry.type == Elf32SectionHeaderType.SYMTAB.value:
-                if sectionEntryName == ".symtab":
-                    self.symtab = Elf32Syms(array_of_bytes, entry.offset, entry.size)
-                    common.Utils.printVerbose()
-                    common.Utils.printVerbose("SYMTAB:")
-                    for i, sym in enumerate(self.symtab.symbols):
-                        common.Utils.printVerbose(i, sym)
-                    common.Utils.printVerbose()
-                else:
-                    common.Utils.eprint("Unknown SYMTAB found: ", sectionEntryName, entry)
-            elif entry.type == Elf32SectionHeaderType.STRTAB.value:
-                if sectionEntryName == ".strtab":
-                    self.strtab = Elf32StringTable(array_of_bytes, entry.offset, entry.size)
-                    common.Utils.printVerbose()
-                    common.Utils.printVerbose("STRTAB:")
-                    for i, string in enumerate(self.strtab):
-                        common.Utils.printVerbose(i, string)
-                    common.Utils.printVerbose()
-                elif sectionEntryName == ".shstrtab":
-                    pass
-                else:
-                    common.Utils.eprint("Unknown STRTAB found: ", sectionEntryName, entry)
-            # elif entry.type == Elf32SectionHeaderType.RELA.value:
-            #     pass
-            # elif entry.type == Elf32SectionHeaderType.HASH.value:
-            #     pass
-            # elif entry.type == Elf32SectionHeaderType.DYNAMIC.value:
-            #     pass
-            # elif entry.type == Elf32SectionHeaderType.NOTE.value:
-            #     pass
-            elif entry.type == Elf32SectionHeaderType.NOBITS.value:
-                if sectionEntryName == ".bss":
-                    self.nobits = entry.size
-                    common.Utils.printVerbose(sectionEntryName, "size: ", self.nobits)
-                    common.Utils.printVerbose()
-                else:
-                    common.Utils.eprint("Unknown NOBITS found: ", sectionEntryName, entry)
-            elif entry.type == Elf32SectionHeaderType.REL.value:
-                if sectionEntryName.startswith(".rel."):
-                    fileSecType = common.FileSectionType.fromStr(sectionEntryName[4:])
-                    if fileSecType != common.FileSectionType.Invalid:
-                        self.rel[fileSecType] = Elf32Rels(array_of_bytes, entry.offset, entry.size)
-                        common.Utils.printVerbose()
-                        common.Utils.printVerbose(f"REL: ({sectionEntryName})")
-                        for i, rel in enumerate(self.rel[fileSecType]):
-                            common.Utils.printVerbose(i, rel, rel.rType, rel.rSym)
-                        common.Utils.printVerbose()
-                    else:
-                        common.Utils.eprint("Unknown REL subsection found: ", sectionEntryName, entry)
-                else:
-                    common.Utils.eprint("Unknown REL found: ", sectionEntryName, entry)
-            elif entry.type == Elf32SectionHeaderType.MIPS_GPTAB.value:
-                # ?
-                pass
-            elif entry.type == Elf32SectionHeaderType.MIPS_DEBUG.value:
-                # ?
-                pass
-            elif entry.type == Elf32SectionHeaderType.MIPS_REGINFO.value:
-                # ?
-                pass
-            elif entry.type == Elf32SectionHeaderType.MIPS_OPTIONS.value:
-                # ?
-                pass
-            elif entry.type == Elf32SectionHeaderType.MIPS_ABIFLAGS.value:
-                # ?
-                pass
+
+            callback = self._sectionProcessorCallbacks.get(entry.type)
+            if callback is not None:
+                callback(self, array_of_bytes, entry, sectionEntryName)
             else:
-                common.Utils.eprint("Unknown section header type found:", sectionEntryName, entry)
+                common.Utils.eprint("Unknown section header type found:", sectionEntryName, entry, "\n")
+
+        if self.got is not None and self.dynamic is not None and self.dynsym is not None:
+            self.got.initTables(self.dynamic, self.dynsym)
+
+
+    def _processSection_NULL(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
+        pass
+
+    def _processSection_PROGBITS(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
+        fileSecType = common.FileSectionType.fromStr(sectionEntryName)
+
+        if fileSecType != common.FileSectionType.Invalid:
+            self.progbits[fileSecType] = entry
+            if fileSecType == common.FileSectionType.Text:
+                self.sectionHeaders.mipsText = entry
+            elif fileSecType == common.FileSectionType.Data:
+                self.sectionHeaders.mipsData = entry
+        elif sectionEntryName == ".got":
+            self.got = Elf32GlobalOffsetTable(array_of_bytes, entry.offset, entry.size)
+        elif sectionEntryName == ".interp":
+            # strings with names of dynamic libraries
+            common.Utils.printVerbose(f"Unhandled SYMTAB found: '{sectionEntryName}'")
+        elif sectionEntryName == ".MIPS.stubs":
+            # ?
+            common.Utils.printVerbose(f"Unhandled SYMTAB found: '{sectionEntryName}'")
+        elif sectionEntryName == ".init":
+            # ?
+            common.Utils.printVerbose(f"Unhandled SYMTAB found: '{sectionEntryName}'")
+        else:
+            common.Utils.eprint(f"Unknown PROGBITS found: '{sectionEntryName}'", entry, "\n")
+
+    def _processSection_SYMTAB(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
+        if sectionEntryName == ".symtab":
+            self.symtab = Elf32Syms(array_of_bytes, entry.offset, entry.size)
+        else:
+            common.Utils.eprint("Unknown SYMTAB found: ", sectionEntryName, entry, "\n")
+
+    def _processSection_STRTAB(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
+        if sectionEntryName == ".strtab":
+            self.strtab = Elf32StringTable(array_of_bytes, entry.offset, entry.size)
+        elif sectionEntryName == ".dynstr":
+            self.dynstr = Elf32StringTable(array_of_bytes, entry.offset, entry.size)
+        elif sectionEntryName == ".shstrtab":
+            pass
+        else:
+            common.Utils.eprint("Unknown STRTAB found: ", sectionEntryName, entry, "\n")
+
+    def _processSection_RELA(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
+        # ?
+        pass
+
+    def _processSection_HASH(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
+        # ?
+        pass
+
+    def _processSection_DYNAMIC(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
+        if sectionEntryName == ".dynamic":
+            self.dynamic = Elf32Dyns(array_of_bytes, entry.offset, entry.size)
+        else:
+            common.Utils.eprint("Unknown DYNAMIC found: ", sectionEntryName, entry, "\n")
+
+    def _processSection_NOTE(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
+        # ?
+        pass
+
+    def _processSection_NOBITS(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
+        if sectionEntryName == ".bss":
+            self.nobits = entry
+        else:
+            common.Utils.eprint("Unknown NOBITS found: ", sectionEntryName, entry, "\n")
+
+    def _processSection_REL(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
+        if sectionEntryName.startswith(".rel."):
+            fileSecType = common.FileSectionType.fromStr(sectionEntryName[4:])
+            if fileSecType != common.FileSectionType.Invalid:
+                self.rel[fileSecType] = Elf32Rels(array_of_bytes, entry.offset, entry.size)
+            else:
+                common.Utils.eprint("Unknown REL subsection found: ", sectionEntryName, entry, "\n")
+        else:
+            common.Utils.eprint("Unknown REL found: ", sectionEntryName, entry, "\n")
+
+    def _processSection_DYNSYM(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
+        if sectionEntryName == ".dynsym":
+            self.dynsym = Elf32Syms(array_of_bytes, entry.offset, entry.size)
+        else:
+            common.Utils.eprint("Unknown DYNSYM found: ", sectionEntryName, entry, "\n")
+
+
+    def _processSection_MIPS_LIBLIST(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
+        # ?
+        pass
+
+    def _processSection_MIPS_MSYM(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
+        # ?
+        pass
+
+    def _processSection_MIPS_GPTAB(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
+        # ?
+        pass
+
+    def _processSection_MIPS_DEBUG(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
+        # ?
+        pass
+
+    def _processSection_MIPS_REGINFO(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
+        if sectionEntryName == ".reginfo":
+            self.reginfo = Elf32RegInfo.fromBytearray(array_of_bytes, entry.offset)
+        else:
+            common.Utils.eprint("Unknown MIPS_REGINFO found: ", sectionEntryName, entry, "\n")
+
+    def _processSection_MIPS_OPTIONS(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
+        # ?
+        pass
+
+    def _processSection_MIPS_SYMBOL_LIB(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
+        # ?
+        pass
+
+    def _processSection_MIPS_ABIFLAGS(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
+        # ?
+        pass
+
+
+    _sectionProcessorCallbacks: dict[int, Callable[[Elf32File, bytearray, Elf32SectionHeaderEntry, str], None]] = {
+        Elf32SectionHeaderType.NULL.value: _processSection_NULL,
+        Elf32SectionHeaderType.PROGBITS.value: _processSection_PROGBITS,
+        Elf32SectionHeaderType.SYMTAB.value: _processSection_SYMTAB,
+        Elf32SectionHeaderType.STRTAB.value: _processSection_STRTAB,
+        # Elf32SectionHeaderType.RELA.value: _processSection_RELA,
+        Elf32SectionHeaderType.HASH.value: _processSection_HASH,
+        Elf32SectionHeaderType.DYNAMIC.value: _processSection_DYNAMIC,
+        # Elf32SectionHeaderType.NOTE.value: _processSection_NOTE,
+        Elf32SectionHeaderType.NOBITS.value: _processSection_NOBITS,
+        Elf32SectionHeaderType.REL.value: _processSection_REL,
+        Elf32SectionHeaderType.DYNSYM.value: _processSection_DYNSYM,
+
+        Elf32SectionHeaderType.MIPS_LIBLIST.value: _processSection_MIPS_LIBLIST,
+        Elf32SectionHeaderType.MIPS_MSYM.value: _processSection_MIPS_MSYM,
+        Elf32SectionHeaderType.MIPS_GPTAB.value: _processSection_MIPS_GPTAB,
+        Elf32SectionHeaderType.MIPS_DEBUG.value: _processSection_MIPS_DEBUG,
+        Elf32SectionHeaderType.MIPS_REGINFO.value: _processSection_MIPS_REGINFO,
+        Elf32SectionHeaderType.MIPS_OPTIONS.value: _processSection_MIPS_OPTIONS,
+        Elf32SectionHeaderType.MIPS_SYMBOL_LIB.value: _processSection_MIPS_SYMBOL_LIB,
+        Elf32SectionHeaderType.MIPS_ABIFLAGS.value: _processSection_MIPS_ABIFLAGS,
+    }

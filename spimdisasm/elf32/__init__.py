@@ -5,8 +5,11 @@
 
 from __future__ import annotations
 
-from .Elf32Constants import Elf32SectionHeaderType, Elf32SymbolTableType
+from .Elf32Constants import Elf32SectionHeaderType, Elf32SymbolTableType, Elf32SymbolTableBinding, Elf32SectionHeaderNumber, Elf32DynamicTable
+from .Elf32Dyns import Elf32Dyns, Elf32DynEntry
+from .Elf32GlobalOffsetTable import Elf32GlobalOffsetTable
 from .Elf32Header import Elf32Header
+from .Elf32RegInfo import Elf32RegInfo
 from .Elf32SectionHeaders import Elf32SectionHeaders, Elf32SectionHeaderEntry
 from .Elf32StringTable import Elf32StringTable
 from .Elf32Syms import Elf32Syms, Elf32SymEntry

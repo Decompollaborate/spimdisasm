@@ -11,3 +11,4 @@ from .SymbolsSegment import SymbolsSegment
 from .Context import Context
 from .FileSplitFormat import FileSplitFormat, FileSplitEntry
 from .ElementBase import ElementBase
+from .GlobalOffsetTable import GlobalOffsetTable

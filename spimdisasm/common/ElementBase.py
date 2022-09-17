@@ -222,6 +222,8 @@ class ElementBase:
             if contextSym is not None and contextSym.vromAddress is not None:
                 if not self._ownSegmentReference.isVromInRange(contextSym.getVrom()):
                     return None
+        if not GlobalConfig.ALLOW_UNKSEGMENT:
+            return None
         return contextSym
 
     def getSymbolByVrom(self, vromAddress: int, tryPlusOffset: bool = True, checkUpperLimit: bool = True) -> ContextSymbol|None:

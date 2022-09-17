@@ -72,6 +72,8 @@ class GlobalConfig:
     SYMBOL_FINDER_FILTERED_ADDRESSES_AS_HILO: bool = True
     """Allow using %hi/%lo syntax for filtered out addresses"""
 
+    ALLOW_UNKSEGMENT: bool = True
+
 
     ASM_COMMENT: bool = True
     """Toggle the comments in generated assembly code"""
@@ -137,6 +139,8 @@ class GlobalConfig:
         backendConfig.add_argument("--filter-high-addresses", help=f"Filter out high addresses (higher than 0xC0000000) when searching for pointers. Defaults to {GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES}", action=Utils.BooleanOptionalAction)
         backendConfig.add_argument("--filtered-addresses-as-constants", help=f"Treat filtered out addressed as constants. Defaults to {GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_CONSTANTS}", action=Utils.BooleanOptionalAction)
         backendConfig.add_argument("--filtered-addresses-as-hilo", help=f"Use %%hi/%%lo syntax for filtered out addresses. Defaults to {GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_HILO}", action=Utils.BooleanOptionalAction)
+
+        backendConfig.add_argument("--allow-unksegment", help=f"Defaults to {GlobalConfig.ALLOW_UNKSEGMENT}", action=Utils.BooleanOptionalAction)
 
 
         miscConfig = parser.add_argument_group("Disassembler misc options")
@@ -206,6 +210,9 @@ class GlobalConfig:
             GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_CONSTANTS = args.filtered_addresses_as_constants
         if args.filtered_addresses_as_hilo is not None:
             GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_HILO = args.filtered_addresses_as_hilo
+
+        if args.allow_unksegment is not None:
+            GlobalConfig.ALLOW_UNKSEGMENT = args.allow_unksegment
 
 
         if args.asm_comments is not None:
