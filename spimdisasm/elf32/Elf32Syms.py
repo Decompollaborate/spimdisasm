@@ -53,5 +53,9 @@ class Elf32Syms:
     def __getitem__(self, key: int) -> Elf32SymEntry:
         return self.symbols[key]
 
+    def __iter__(self):
+        for entry in self.symbols:
+            yield entry
+
     def __len__(self) -> int:
         return len(self.symbols)
