@@ -335,6 +335,34 @@ class SymbolFunction(SymbolText):
 
         return f"%lo({symName})"
 
+    def generateHiLoConstantStr(self, constantValue: int, currentInstr: rabbitizer.Instruction, loInstr: rabbitizer.Instruction|None) -> str|None:
+        if loInstr is None:
+            if currentInstr.canBeHi():
+                return f"(0x{constantValue:X} >> 16)"
+            return None
+
+        if loInstr.canBeLo():
+            if loInstr.isUnsigned():
+                if currentInstr.canBeHi():
+                    return f"(0x{constantValue:X} >> 16)"
+                if currentInstr.canBeLo():
+                    return f"(0x{constantValue:X} & 0xFFFF)"
+                return None
+            else:
+                hiHalf = constantValue > 16
+                loHalf = constantValue & 0xFFFF
+                if loHalf < 0x8000:
+                    # positive lo half
+                    if currentInstr.canBeHi():
+                        return f"(0x{constantValue:X} >> 16)"
+                    if currentInstr.canBeLo():
+                        return f"(0x{constantValue:X} & 0xFFFF)"
+                else:
+                    # negative lo half
+                    # loHalf = rabbitizer.Utils.from2Complement(loHalf, 16)
+                    return
+
+
     def getImmOverrideForInstruction(self, instr: rabbitizer.Instruction, instructionOffset: int) -> str|None:
         if len(self.context.relocSymbols[self.sectionType]) > 0:
             # Check possible symbols using reloc information (probably from a .o elf file)
@@ -364,11 +392,14 @@ class SymbolFunction(SymbolText):
                 if address in self.context.bannedSymbols:
                     return None
 
+                loInstr = instr
                 instrVram = self.getVramOffset(instructionOffset)
                 if instr.canBeHi():
                     # we need to get the address of the lo instruction to get the patch
                     if instructionOffset in self.instrAnalyzer.hiToLowDict:
-                        instrVram = self.getVramOffset(self.instrAnalyzer.hiToLowDict[instructionOffset])
+                        loOffset = self.instrAnalyzer.hiToLowDict[instructionOffset]
+                        instrVram = self.getVramOffset(loOffset)
+                        loInstr = self.instructions[loOffset // 4]
 
                 # Check for user-defined symbol patches
                 patchedAddress = self.getLoPatch(instrVram)
@@ -379,6 +410,7 @@ class SymbolFunction(SymbolText):
 
                 if symbol is not None:
                     return self.generateHiLoStr(instr, symbol.getSymbolPlusOffset(address), symbol)
+                return self.generateHiLoConstantStr(address, instr, loInstr)
 
             elif instructionOffset in self.instrAnalyzer.constantInstrOffset:
                 constant = self.instrAnalyzer.constantInstrOffset[instructionOffset]
@@ -388,19 +420,20 @@ class SymbolFunction(SymbolText):
                     return self.generateHiLoStr(instr, symbol.getName(), symbol)
 
                 # Pretend this pair is a constant
+                loInstr = instr
                 if instr.canBeHi():
                     loInstr = self.instructions[self.instrAnalyzer.hiToLowDict[instructionOffset] // 4]
-                    if loInstr.canBeLo() and loInstr.isUnsigned():
-                        return f"(0x{constant:X} >> 16)"
-                elif instr.canBeLo() and instr.isUnsigned():
-                    return f"(0x{constant:X} & 0xFFFF)"
+
+                generatedStr = self.generateHiLoConstantStr(constant, instr, loInstr)
+                if generatedStr is not None:
+                    return generatedStr
 
                 if common.GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_HILO:
                     return self.generateHiLoStr(instr, f"0x{constant:X}", None)
 
-            elif instr.canBeHi():
+            if instr.canBeHi():
                 # Unpaired LUI
-                return f"(0x{instr.getImmediate()<<16:X} >> 16)"
+                return self.generateHiLoConstantStr(instr.getImmediate()<<16, instr, None)
 
         elif instr.isJType():
             possibleOverride = self.getSymbol(instr.getInstrIndexAsVram(), tryPlusOffset=False)

@@ -87,12 +87,18 @@ def elfObjDisasmMain():
     spimdisasm.common.GlobalConfig.IGNORE_BRANCHES = False
     spimdisasm.common.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES = False
 
+    spimdisasm.common.GlobalConfig.ALLOW_UNKSEGMENT = False
+
     # GlobalConfig.VERBOSE = True
 
     inputPath = Path(args.binary)
 
     context = spimdisasm.common.Context()
-    context.globalSegment.changeRanges(0x0, 0xFFFFFFFF, 0x0, 0xFFFFFFFF)
+
+    lowestVromStart = None
+    highestVromEnd = None
+    lowestVramStart = None
+    highestVramEnd = None
 
     array_of_bytes = spimdisasm.common.Utils.readFileAsBytearray(args.binary)
 
@@ -116,15 +122,25 @@ def elfObjDisasmMain():
 
         vromStart = sectionEntry.offset
         vromEnd = vromStart + sectionEntry.size
-        addr = sectionEntry.addr
+        vramStart = sectionEntry.addr
+        vramEnd = vramStart + sectionEntry.size
+
+        if lowestVromStart is None or vromStart < lowestVromStart:
+            lowestVromStart = vromStart
+        if highestVromEnd is None or vromEnd > highestVromEnd:
+            highestVromEnd = vromEnd
+        if lowestVramStart is None or vramStart < lowestVramStart:
+            lowestVramStart = vramStart
+        if highestVramEnd is None or vramEnd > highestVramEnd:
+            highestVramEnd = vramEnd
 
         mipsSection: spimdisasm.mips.sections.SectionBase
         if sectionType == spimdisasm.common.FileSectionType.Text:
-            mipsSection = spimdisasm.mips.sections.SectionText(context, vromStart, vromEnd, addr, inputPath.stem, array_of_bytes, 0, None)
+            mipsSection = spimdisasm.mips.sections.SectionText(context, vromStart, vromEnd, vramStart, inputPath.stem, array_of_bytes, 0, None)
         elif sectionType == spimdisasm.common.FileSectionType.Data:
-            mipsSection = spimdisasm.mips.sections.SectionData(context, vromStart, vromEnd, addr, inputPath.stem, array_of_bytes, 0, None)
+            mipsSection = spimdisasm.mips.sections.SectionData(context, vromStart, vromEnd, vramStart, inputPath.stem, array_of_bytes, 0, None)
         elif sectionType == spimdisasm.common.FileSectionType.Rodata:
-            mipsSection = spimdisasm.mips.sections.SectionRodata(context, vromStart, vromEnd, addr, inputPath.stem, array_of_bytes, 0, None)
+            mipsSection = spimdisasm.mips.sections.SectionRodata(context, vromStart, vromEnd, vramStart, inputPath.stem, array_of_bytes, 0, None)
         else:
             spimdisasm.common.Utils.eprint(f"Error! Invalid section type '{sectionType}'")
             exit(-1)
@@ -142,9 +158,29 @@ def elfObjDisasmMain():
         vromEnd = vromStart + elfFile.nobits.size
         bssStart = elfFile.nobits.addr
         bssEnd = bssStart + elfFile.nobits.size
+
+        if lowestVromStart is None or vromStart < lowestVromStart:
+            lowestVromStart = vromStart
+        if highestVromEnd is None or vromEnd > highestVromEnd:
+            highestVromEnd = vromEnd
+        if lowestVramStart is None or bssStart < lowestVramStart:
+            lowestVramStart = bssStart
+        if highestVramEnd is None or bssEnd > highestVramEnd:
+            highestVramEnd = bssEnd
+
         mipsSection = spimdisasm.mips.sections.SectionBss(context, vromStart, vromEnd, bssStart, bssEnd, inputPath.stem, 0, None)
         mipsSection.setCommentOffset(vromStart)
         processedFiles[spimdisasm.common.FileSectionType.Bss] = (outputFilePath, mipsSection)
+
+    if lowestVromStart is None:
+        lowestVromStart = 0x0
+    if highestVromEnd is None:
+        highestVromEnd = 0xFFFFFFFF
+    if lowestVramStart is None:
+        lowestVramStart = 0x0
+    if highestVramEnd is None:
+        highestVramEnd = 0xFFFFFFFF
+    context.globalSegment.changeRanges(lowestVromStart, highestVromEnd, lowestVramStart, highestVramEnd)
 
     if elfFile.symtab is not None and elfFile.strtab is not None:
         # Inject symbols from the reloc table referenced in each section
