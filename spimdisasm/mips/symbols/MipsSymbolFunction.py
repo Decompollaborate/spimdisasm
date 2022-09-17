@@ -459,13 +459,16 @@ class SymbolFunction(SymbolText):
         wasLastInstABranch = False
         instructionOffset = 0
         for instr in self.instructions:
+            label = self.getLabelForOffset(instructionOffset)
+            output += label
+
             cpload = self.instrAnalyzer.cploads.get(instructionOffset)
             if cpload is not None:
                 assert cpload.reg is not None
                 output += f".set noreorder; .cpload ${cpload.reg.name}; # .set reorder" + common.GlobalConfig.LINE_ENDS
             elif instructionOffset in self.instrAnalyzer.cploadOffsets:
-                pass
                 # don't emit the other instructions which are part of .cpload
+                pass
             else:
                 immOverride = self.getImmOverrideForInstruction(instr, instructionOffset)
                 comment = self.generateAsmLineComment(instructionOffset, instr.getRaw())
@@ -477,8 +480,7 @@ class SymbolFunction(SymbolText):
 
                 line = instr.disassemble(immOverride, extraLJust=extraLJust)
 
-                label = self.getLabelForOffset(instructionOffset)
-                output += f"{label}{comment}  {line}" + common.GlobalConfig.LINE_ENDS
+                output += f"{comment}  {line}" + common.GlobalConfig.LINE_ENDS
 
             wasLastInstABranch = instr.hasDelaySlot()
             instructionOffset += 4
