@@ -360,7 +360,8 @@ class SymbolFunction(SymbolText):
                 else:
                     # negative lo half
                     # loHalf = rabbitizer.Utils.from2Complement(loHalf, 16)
-                    return
+                    pass
+        return None
 
 
     def getImmOverrideForInstruction(self, instr: rabbitizer.Instruction, instructionOffset: int) -> str|None:

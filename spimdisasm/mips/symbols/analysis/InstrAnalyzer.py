@@ -199,9 +199,9 @@ class InstrAnalyzer:
             assert common.GlobalConfig.GP_VALUE is not None
             upperHalf = common.GlobalConfig.GP_VALUE
 
-            address = got.getAddress(upperHalf + lowerHalf)
-            if address is not None:
-                return address
+            gotAddress = got.getAddress(upperHalf + lowerHalf)
+            if gotAddress is not None:
+                return gotAddress
 
         return upperHalf + lowerHalf
 
@@ -305,7 +305,7 @@ class InstrAnalyzer:
                 self.nonLoInstrOffsets.add(instrOffset)
             return
 
-        upperHalf = pairingInfo.value
+        upperHalf: int|None = pairingInfo.value
         luiOffset = pairingInfo.instrOffset
         if pairingInfo.isGpRel:
             upperHalf = None
