@@ -79,6 +79,13 @@ class ElementBase:
     def getVramOffset(self, localOffset: int) -> int:
         return self.vram + localOffset
 
+    def containsVram(self, vram: int) -> bool:
+        if vram < self.vram:
+            return False
+        if vram >= self.vramEnd:
+            return False
+        return True
+
 
     def getLabelFromSymbol(self, sym: ContextSymbol|None) -> str:
         "Generates a glabel for the passed symbol, including an optional index value if it was set and it is enabled in the GlobalConfig"
