@@ -53,7 +53,7 @@ def disasmdisMain():
         for j in range(4):
             array_of_bytes[j] = int(wordStr[j*2:(j+1)*2], 16)
 
-        word = spimdisasm.common.Utils.bytesToBEWords(array_of_bytes)[0]
+        word = spimdisasm.common.Utils.bytesToWords(array_of_bytes)[0]
 
         instructionList.append(rabbitizer.Instruction(word, category=category))
 
