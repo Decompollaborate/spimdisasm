@@ -9,7 +9,7 @@ from typing import Callable
 
 from .. import common
 
-from .Elf32Constants import Elf32SymbolTableType, Elf32SectionHeaderType, Elf32SectionHeaderNumber
+from .Elf32Constants import Elf32HeaderIdentifier, Elf32SectionHeaderType
 from .Elf32Dyns import Elf32Dyns
 from .Elf32GlobalOffsetTable import Elf32GlobalOffsetTable
 from .Elf32Header import Elf32Header
@@ -24,6 +24,12 @@ class Elf32File:
     def __init__(self, array_of_bytes: bytearray):
         self.header = Elf32Header.fromBytearray(array_of_bytes)
         # print(self.header)
+
+        dataEncoding = self.header.ident.getDataEncoding()
+        if dataEncoding == Elf32HeaderIdentifier.DataEncoding.DATA2MSB:
+            common.GlobalConfig.ENDIAN = common.InputEndian.BIG
+        elif dataEncoding == Elf32HeaderIdentifier.DataEncoding.DATA2LSB:
+            common.GlobalConfig.ENDIAN = common.InputEndian.LITTLE
 
         self.strtab: Elf32StringTable | None = None
         self.symtab: Elf32Syms | None = None

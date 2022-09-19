@@ -7,7 +7,9 @@ from __future__ import annotations
 
 import struct
 
-from .Elf32Constants import Elf32SymbolTableType, Elf32SectionHeaderType, Elf32SectionHeaderNumber
+from .. import common
+
+from .Elf32Constants import Elf32SymbolTableType, Elf32SectionHeaderNumber
 from .Elf32Dyns import Elf32Dyns
 from .Elf32Syms import Elf32Syms
 
@@ -18,7 +20,7 @@ class Elf32GlobalOffsetTable:
         self.offset: int = offset
         self.rawSize: int = rawSize
 
-        entryFormat = f">{rawSize//4}I"
+        entryFormat = common.GlobalConfig.ENDIAN.toFormatString() + f"{rawSize//4}I"
         self.entries = list(struct.unpack_from(entryFormat, array_of_bytes, offset))
 
 

@@ -8,6 +8,8 @@ from __future__ import annotations
 import dataclasses
 import struct
 
+from .. import common
+
 
 # a.k.a. Sym (symbol)
 @dataclasses.dataclass
@@ -30,7 +32,7 @@ class Elf32SymEntry:
 
     @staticmethod
     def fromBytearray(array_of_bytes: bytearray, offset: int = 0) -> Elf32SymEntry:
-        entryFormat = ">IIIBBH"
+        entryFormat = common.GlobalConfig.ENDIAN.toFormatString() + "IIIBBH"
         unpacked = struct.unpack_from(entryFormat, array_of_bytes, offset)
 
         return Elf32SymEntry(*unpacked)

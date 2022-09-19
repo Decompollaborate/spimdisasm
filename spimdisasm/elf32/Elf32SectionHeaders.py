@@ -30,7 +30,7 @@ class Elf32SectionHeaderEntry:
 
     @staticmethod
     def fromBytearray(array_of_bytes: bytearray, offset: int = 0) -> Elf32SectionHeaderEntry:
-        headerFormat = ">10I"
+        headerFormat = common.GlobalConfig.ENDIAN.toFormatString() + "10I"
         unpacked = struct.unpack_from(headerFormat, array_of_bytes, offset)
 
         return Elf32SectionHeaderEntry(*unpacked)

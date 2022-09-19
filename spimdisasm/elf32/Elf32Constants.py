@@ -8,6 +8,43 @@ from __future__ import annotations
 import enum
 
 
+# a.k.a. EI
+class Elf32HeaderIdentifier:
+    @enum.unique
+    class FileClass(enum.Enum):
+        # EI_CLASS    4        /* File class byte index */
+        CLASSNONE   = 0 # Invalid class
+        CLASS32     = 1 # 32-bit objects
+        CLASS64     = 2 # 64-bit objects
+        CLASSNUM    = 3
+
+    @enum.unique
+    class DataEncoding(enum.Enum):
+        # EI_DATA        5        /* Data encoding byte index */
+        DATANONE    = 0 # Invalid data encoding
+        DATA2LSB    = 1 # 2's complement, little endian
+        DATA2MSB    = 2 # 2's complement, big endian
+        DATANUM     = 3 #
+
+    class OsAbi(enum.Enum):
+        # EI_OSABI    7        /* OS ABI identification */
+        NONE        =   0 # UNIX System V ABI
+        SYSV        =   0 # Alias.
+        HPUX        =   1 # HP-UX
+        NETBSD      =   2 # NetBSD.
+        GNU         =   3 # Object uses GNU ELF extensions.
+        LINUX       = GNU # Compatibility alias.
+        SOLARIS     =   6 # Sun Solaris.
+        AIX         =   7 # IBM AIX.
+        IRIX        =   8 # SGI Irix.
+        FREEBSD     =   9 # FreeBSD.
+        TRU64       =  10 # Compaq TRU64 UNIX.
+        MODESTO     =  11 # Novell Modesto.
+        OPENBSD     =  12 # OpenBSD.
+        ARM_AEABI   =  64 # ARM EABI
+        ARM         =  97 # ARM
+        STANDALONE  = 255 # Standalone (embedded) application
+
 # a.k.a. SHT (section header type)
 @enum.unique
 class Elf32SectionHeaderType(enum.Enum):
