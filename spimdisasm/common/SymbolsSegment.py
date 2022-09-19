@@ -182,6 +182,8 @@ class SymbolsSegment:
 
 
     def saveContextToFile(self, f: TextIO):
+        f.write(f"category,{ContextSymbol.getCsvHeader()}\n")
+
         for address in self.symbols:
             f.write(f"symbol,{self.symbols[address].toCsv()}\n")
 
