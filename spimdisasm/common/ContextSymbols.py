@@ -149,7 +149,9 @@ class ContextSymbol:
     def isStatic(self) -> bool:
         if self.type == SymbolSpecialType.jumptablelabel:
             return False
-        return self.getName().startswith(".")
+        if self.name is None:
+            return False
+        return self.name.startswith(".")
 
     def isLateRodata(self) -> bool:
         # if self.referenceCounter > 1: return False # ?
