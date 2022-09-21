@@ -99,7 +99,7 @@ class FileSplits(FileBase):
             for section in sectDict.values():
                 words += section.words
         buffer = bytearray(4*len(words))
-        common.Utils.beWordsToBytes(words, buffer)
+        common.Utils.wordsToBytes(words, buffer)
         return common.Utils.getStrHash(buffer)
 
     def analyze(self):

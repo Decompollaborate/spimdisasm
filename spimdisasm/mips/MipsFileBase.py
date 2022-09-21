@@ -15,7 +15,7 @@ from . import symbols
 
 class FileBase(common.ElementBase):
     def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytearray, sectionType: common.FileSectionType, segmentVromStart: int, overlayCategory: str|None):
-        super().__init__(context, vromStart, vromEnd, 0, vram, filename, common.Utils.bytesToBEWords(array_of_bytes, vromStart, vromEnd), sectionType, segmentVromStart, overlayCategory)
+        super().__init__(context, vromStart, vromEnd, 0, vram, filename, common.Utils.bytesToWords(array_of_bytes, vromStart, vromEnd), sectionType, segmentVromStart, overlayCategory)
 
         self.symbolList: list[symbols.SymbolBase] = []
 
@@ -52,7 +52,7 @@ class FileBase(common.ElementBase):
 
     def getHash(self) -> str:
         buffer = bytearray(4*len(self.words))
-        common.Utils.beWordsToBytes(self.words, buffer)
+        common.Utils.wordsToBytes(self.words, buffer)
         return common.Utils.getStrHash(buffer)
 
 
@@ -176,7 +176,7 @@ class FileBase(common.ElementBase):
             if common.GlobalConfig.WRITE_BINARY:
                 if self.sizew > 0:
                     buffer = bytearray(4*len(self.words))
-                    common.Utils.beWordsToBytes(self.words, buffer)
+                    common.Utils.wordsToBytes(self.words, buffer)
                     common.Utils.writeBytearrayToFile(filepath + self.sectionType.toStr(), buffer)
             with open(filepath + self.sectionType.toStr() + ".s", "w") as f:
                 self.disassembleToFile(f)

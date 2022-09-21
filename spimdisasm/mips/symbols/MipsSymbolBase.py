@@ -47,7 +47,7 @@ class SymbolBase(common.ElementBase):
 
         wordValueHex = ""
         if wordValue is not None:
-            wordValueHex = f"{common.Utils.beWordToCurrenEndian(wordValue):08X} "
+            wordValueHex = f"{common.Utils.wordToCurrenEndian(wordValue):08X} "
 
         return f"/* {offsetHex} {vramHex} {wordValueHex}*/"
 

@@ -67,7 +67,7 @@ def readJson(filepath):
 def removeExtraWhitespace(line: str) -> str:
     return " ".join(line.split())
 
-def bytesToBEWords(array_of_bytes: bytearray, offset: int=0, offsetEnd: int|None=None) -> list[int]:
+def bytesToWords(array_of_bytes: bytearray, offset: int=0, offsetEnd: int|None=None) -> list[int]:
     totalBytesCount = len(array_of_bytes)
     if totalBytesCount == 0:
         return list()
@@ -91,11 +91,22 @@ def bytesToBEWords(array_of_bytes: bytearray, offset: int=0, offsetEnd: int|None
         endian_format = f"<{words}I"
     return list(struct.unpack_from(endian_format, array_of_bytes, offset))
 
-def beWordsToBytes(words_list: list[int], buffer: bytearray) -> bytearray:
+#! deprecated
+bytesToBEWords = bytesToWords
+
+def wordsToBytes(words_list: list[int], buffer: bytearray) -> bytearray:
+    if GlobalConfig.ENDIAN == InputEndian.MIDDLE:
+        raise BufferError("TODO: wordsToBytes: GlobalConfig.ENDIAN == InputEndian.MIDDLE")
+
     words = len(words_list)
-    big_endian_format = f">{words}I"
-    struct.pack_into(big_endian_format, buffer, 0, *words_list)
+    endian_format = f">{words}I"
+    if GlobalConfig.ENDIAN == InputEndian.LITTLE:
+        endian_format = f"<{words}I"
+    struct.pack_into(endian_format, buffer, 0, *words_list)
     return buffer
+
+#! deprecated
+beWordsToBytes = wordsToBytes
 
 def wordToFloat(word: int) -> float:
     return struct.unpack('>f', struct.pack('>I', word))[0]
@@ -103,7 +114,7 @@ def wordToFloat(word: int) -> float:
 def qwordToDouble(qword: int) -> float:
     return struct.unpack('>d', struct.pack('>Q', qword))[0]
 
-def beWordToCurrenEndian(word: int) -> int:
+def wordToCurrenEndian(word: int) -> int:
     if GlobalConfig.ENDIAN == InputEndian.BIG:
         return word
 

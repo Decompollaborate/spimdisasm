@@ -17,6 +17,14 @@ class InputEndian(enum.Enum):
     LITTLE = enum.auto()
     MIDDLE = enum.auto()
 
+    def toFormatString(self) -> str:
+        if self == InputEndian.BIG:
+            return ">"
+        if self == InputEndian.LITTLE:
+            return "<"
+        raise ValueError(f"No struct format string available for : {self}")
+
+
 compilerOptions = {"IDO", "GCC", "SN64"}
 
 @enum.unique

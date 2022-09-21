@@ -163,7 +163,7 @@ class SymbolRodata(SymbolBase):
             elif self.isString():
                 try:
                     buffer = bytearray(4*len(self.words))
-                    common.Utils.beWordsToBytes(self.words, buffer)
+                    common.Utils.wordsToBytes(self.words, buffer)
                     decodedStrings, rawStringSize = common.Utils.decodeString(buffer, 4*i)
 
                     # dotType = ".asciz"

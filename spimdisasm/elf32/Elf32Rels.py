@@ -8,6 +8,8 @@ from __future__ import annotations
 import dataclasses
 import struct
 
+from .. import common
+
 
 @dataclasses.dataclass
 class Elf32RelEntry:
@@ -25,7 +27,7 @@ class Elf32RelEntry:
 
     @staticmethod
     def fromBytearray(array_of_bytes: bytearray, offset: int = 0) -> Elf32RelEntry:
-        entryFormat = ">II"
+        entryFormat = common.GlobalConfig.ENDIAN.toFormatString() + "II"
         unpacked = struct.unpack_from(entryFormat, array_of_bytes, offset)
 
         return Elf32RelEntry(*unpacked)

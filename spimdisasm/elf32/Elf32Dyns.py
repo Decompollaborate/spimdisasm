@@ -8,6 +8,8 @@ from __future__ import annotations
 import dataclasses
 import struct
 
+from .. import common
+
 from .Elf32Constants import Elf32DynamicTable
 
 
@@ -28,7 +30,7 @@ class Elf32DynEntry:
 
     @staticmethod
     def fromBytearray(array_of_bytes: bytearray, offset: int = 0) -> Elf32DynEntry:
-        entryFormat = ">II"
+        entryFormat = common.GlobalConfig.ENDIAN.toFormatString() + "II"
         unpacked = struct.unpack_from(entryFormat, array_of_bytes, offset)
 
         return Elf32DynEntry(*unpacked)

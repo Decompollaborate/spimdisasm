@@ -19,7 +19,7 @@ class SectionRodata(SectionBase):
         super().__init__(context, vromStart, vromEnd, vram, filename, array_of_bytes, common.FileSectionType.Rodata, segmentVromStart, overlayCategory)
 
         self.bytes: bytearray = bytearray(self.sizew*4)
-        common.Utils.beWordsToBytes(self.words, self.bytes)
+        common.Utils.wordsToBytes(self.words, self.bytes)
 
 
     def _stringGuesser(self, contextSym: common.ContextSymbol, localOffset: int) -> bool:

@@ -16,7 +16,12 @@ from .GlobalOffsetTable import GlobalOffsetTable
 
 
 class Context:
-    N64DefaultBanned = {0x80000010, 0x80000020}
+    N64DefaultBanned = {
+        0x7FFFFFE0, # osInvalICache
+        0x7FFFFFF0, # osInvalDCache, osWritebackDCache, osWritebackDCacheAll
+        0x80000010,
+        0x80000020,
+    }
 
     def __init__(self):
         # Arbitrary initial range
