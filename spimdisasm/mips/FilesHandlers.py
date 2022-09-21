@@ -111,14 +111,14 @@ def getRdataAndLateRodataForFunction(func: symbols.SymbolFunction, rodataFileLis
 def writeFunctionRodataToFile(f: TextIO, func: symbols.SymbolFunction, rdataList: list[symbols.SymbolBase], lateRodataList: list[symbols.SymbolBase], lateRodataSize: int):
     if len(rdataList) > 0:
         # Write the rdata
-        f.write(".rdata" + common.GlobalConfig.LINE_ENDS)
+        f.write(".section .rodata" + common.GlobalConfig.LINE_ENDS)
         for sym in rdataList:
             f.write(sym.disassemble())
             f.write(common.GlobalConfig.LINE_ENDS)
 
     if len(lateRodataList) > 0:
         # Write the late_rodata
-        f.write(".late_rodata" + common.GlobalConfig.LINE_ENDS)
+        f.write(".section .late_rodata" + common.GlobalConfig.LINE_ENDS)
         if lateRodataSize / len(func.instructions) > 1/3:
             align = 4
             firstLateRodataVram = lateRodataList[0].vram
@@ -130,7 +130,7 @@ def writeFunctionRodataToFile(f: TextIO, func: symbols.SymbolFunction, rdataList
             f.write(common.GlobalConfig.LINE_ENDS)
 
     if len(rdataList) > 0 or len(lateRodataList) > 0:
-        f.write(common.GlobalConfig.LINE_ENDS + ".text" + common.GlobalConfig.LINE_ENDS)
+        f.write(common.GlobalConfig.LINE_ENDS + ".section .text" + common.GlobalConfig.LINE_ENDS)
 
 def writeSplitedFunction(path: str, func: symbols.SymbolFunction, rodataFileList: list[sections.SectionRodata]):
     os.makedirs(path, exist_ok=True)
@@ -152,5 +152,5 @@ def writeOtherRodata(path: str, rodataFileList: list[sections.SectionRodata]):
 
             rodataSymbolPath = os.path.join(rodataPath, rodataSym.getName()) + ".s"
             with open(rodataSymbolPath, "w") as f:
-                f.write(".rdata" + common.GlobalConfig.LINE_ENDS)
+                f.write(".section .rdata" + common.GlobalConfig.LINE_ENDS)
                 f.write(rodataSym.disassemble())
