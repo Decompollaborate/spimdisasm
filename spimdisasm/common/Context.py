@@ -19,6 +19,7 @@ class Context:
     N64DefaultBanned = {
         0x7FFFFFE0, # osInvalICache
         0x7FFFFFF0, # osInvalDCache, osWritebackDCache, osWritebackDCacheAll
+        0x7FFFFFFF,
         0x80000010,
         0x80000020,
     }

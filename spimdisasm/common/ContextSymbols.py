@@ -149,7 +149,9 @@ class ContextSymbol:
     def isStatic(self) -> bool:
         if self.type == SymbolSpecialType.jumptablelabel:
             return False
-        return self.getName().startswith(".")
+        if self.name is None:
+            return False
+        return self.name.startswith(".")
 
     def isLateRodata(self) -> bool:
         # if self.referenceCounter > 1: return False # ?
@@ -311,8 +313,7 @@ class ContextRelocSymbol(ContextSymbol):
     relocType: int = -1 # Same number as the .elf specification
 
     def __init__(self, offset: int, name: str|None, relocSection: FileSectionType, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.address = offset
+        super().__init__(offset, *args, **kwargs)
         self.name = name
         self.relocSection = relocSection
 
