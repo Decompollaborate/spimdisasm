@@ -95,6 +95,7 @@ class GlobalConfig:
     ASM_TEXT_ENT_LABEL: str = ""
     ASM_TEXT_END_LABEL: str = ""
     ASM_TEXT_FUNC_AS_LABEL: bool = False
+    ASM_DATA_SYM_AS_LABEL: bool = False
     ASM_USE_PRELUDE: bool = True
 
     PRINT_NEW_FILE_BOUNDARIES: bool = False
@@ -163,6 +164,7 @@ class GlobalConfig:
         miscConfig.add_argument("--asm-ent-label", help=f"Tells the disassembler to start using an ent label for functions")
         miscConfig.add_argument("--asm-end-label", help=f"Tells the disassembler to start using an end label for functions")
         miscConfig.add_argument("--asm-func-as-label", help=f"Toggle adding the function name as an additional label. Defaults to {GlobalConfig.ASM_TEXT_FUNC_AS_LABEL}", action=Utils.BooleanOptionalAction)
+        miscConfig.add_argument("--asm-data-as-label", help=f"Toggle adding the data symbol name as an additional label. Defaults to {GlobalConfig.ASM_DATA_SYM_AS_LABEL}", action=Utils.BooleanOptionalAction)
         miscConfig.add_argument("--asm-use-prelude", help=f"Toggle use of the default prelude for asm files. Defaults to {GlobalConfig.ASM_USE_PRELUDE}", action=Utils.BooleanOptionalAction)
 
         miscConfig.add_argument("--print-new-file-boundaries", help=f"Print to stdout any new file boundary found. Defaults to {GlobalConfig.PRINT_NEW_FILE_BOUNDARIES}", action=Utils.BooleanOptionalAction)
@@ -242,6 +244,8 @@ class GlobalConfig:
             GlobalConfig.ASM_TEXT_END_LABEL = args.asm_end_label
         if args.asm_func_as_label is not None:
             GlobalConfig.ASM_TEXT_FUNC_AS_LABEL = args.asm_func_as_label
+        if args.asm_data_as_label is not None:
+            GlobalConfig.ASM_DATA_SYM_AS_LABEL = args.asm_data_as_label
         if args.asm_use_prelude is not None:
             GlobalConfig.ASM_USE_PRELUDE = args.asm_use_prelude
 
