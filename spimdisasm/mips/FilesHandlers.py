@@ -81,7 +81,7 @@ def getRdataAndLateRodataForFunctionFromSection(func: symbols.SymbolFunction, ro
         if rodataSym.contextSym.isMaybeConstVariable():
             break
 
-        if rodataSym.contextSym.isLateRodata():
+        if rodataSym.contextSym.isLateRodata() and common.GlobalConfig.COMPILER == common.Compiler.IDO:
             lateRodataList.append(rodataSym)
             lateRodataSize += rodataSym.sizew
         else:

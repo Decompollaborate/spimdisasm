@@ -312,7 +312,7 @@ class ElementBase:
 
     def canUseAddendsOnData(self) -> bool:
         segment = self.getSegmentForVram(self.vram)
-        return self.vram in segment.dataSymbolsWithReferencesWithAddends
+        return GlobalConfig.ALLOW_ALL_ADDENDS_ON_DATA or self.vram in segment.dataSymbolsWithReferencesWithAddends
 
     def canUseConstantsOnData(self) -> bool:
         segment = self.getSegmentForVram(self.vram)

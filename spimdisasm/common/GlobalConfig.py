@@ -81,6 +81,10 @@ class GlobalConfig:
     """Allow using %hi/%lo syntax for filtered out addresses"""
 
     ALLOW_UNKSEGMENT: bool = True
+    """Allow using symbols from the unknown segment"""
+
+    ALLOW_ALL_ADDENDS_ON_DATA: bool = True
+    """Enable using addends on symbols referenced by data"""
 
 
     ASM_COMMENT: bool = True
@@ -95,6 +99,7 @@ class GlobalConfig:
     ASM_TEXT_ENT_LABEL: str = ""
     ASM_TEXT_END_LABEL: str = ""
     ASM_TEXT_FUNC_AS_LABEL: bool = False
+    ASM_DATA_SYM_AS_LABEL: bool = False
     ASM_USE_PRELUDE: bool = True
 
     PRINT_NEW_FILE_BOUNDARIES: bool = False
@@ -148,7 +153,9 @@ class GlobalConfig:
         backendConfig.add_argument("--filtered-addresses-as-constants", help=f"Treat filtered out addressed as constants. Defaults to {GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_CONSTANTS}", action=Utils.BooleanOptionalAction)
         backendConfig.add_argument("--filtered-addresses-as-hilo", help=f"Use %%hi/%%lo syntax for filtered out addresses. Defaults to {GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_HILO}", action=Utils.BooleanOptionalAction)
 
-        backendConfig.add_argument("--allow-unksegment", help=f"Defaults to {GlobalConfig.ALLOW_UNKSEGMENT}", action=Utils.BooleanOptionalAction)
+        backendConfig.add_argument("--allow-unksegment", help=f"Allow using symbols from the unknown segment. Defaults to {GlobalConfig.ALLOW_UNKSEGMENT}", action=Utils.BooleanOptionalAction)
+
+        backendConfig.add_argument("--allow-all-addends-on-data", help=f"Enable using addends on symbols referenced by data. Defaults to {GlobalConfig.ALLOW_ALL_ADDENDS_ON_DATA}", action=Utils.BooleanOptionalAction)
 
 
         miscConfig = parser.add_argument_group("Disassembler misc options")
@@ -163,6 +170,7 @@ class GlobalConfig:
         miscConfig.add_argument("--asm-ent-label", help=f"Tells the disassembler to start using an ent label for functions")
         miscConfig.add_argument("--asm-end-label", help=f"Tells the disassembler to start using an end label for functions")
         miscConfig.add_argument("--asm-func-as-label", help=f"Toggle adding the function name as an additional label. Defaults to {GlobalConfig.ASM_TEXT_FUNC_AS_LABEL}", action=Utils.BooleanOptionalAction)
+        miscConfig.add_argument("--asm-data-as-label", help=f"Toggle adding the data symbol name as an additional label. Defaults to {GlobalConfig.ASM_DATA_SYM_AS_LABEL}", action=Utils.BooleanOptionalAction)
         miscConfig.add_argument("--asm-use-prelude", help=f"Toggle use of the default prelude for asm files. Defaults to {GlobalConfig.ASM_USE_PRELUDE}", action=Utils.BooleanOptionalAction)
 
         miscConfig.add_argument("--print-new-file-boundaries", help=f"Print to stdout any new file boundary found. Defaults to {GlobalConfig.PRINT_NEW_FILE_BOUNDARIES}", action=Utils.BooleanOptionalAction)
@@ -222,6 +230,9 @@ class GlobalConfig:
         if args.allow_unksegment is not None:
             GlobalConfig.ALLOW_UNKSEGMENT = args.allow_unksegment
 
+        if args.allow_all_addends_on_data is not None:
+            GlobalConfig.ALLOW_ALL_ADDENDS_ON_DATA = args.allow_all_addends_on_data
+
 
         if args.asm_comments is not None:
             GlobalConfig.ASM_COMMENT = args.asm_comments
@@ -242,6 +253,8 @@ class GlobalConfig:
             GlobalConfig.ASM_TEXT_END_LABEL = args.asm_end_label
         if args.asm_func_as_label is not None:
             GlobalConfig.ASM_TEXT_FUNC_AS_LABEL = args.asm_func_as_label
+        if args.asm_data_as_label is not None:
+            GlobalConfig.ASM_DATA_SYM_AS_LABEL = args.asm_data_as_label
         if args.asm_use_prelude is not None:
             GlobalConfig.ASM_USE_PRELUDE = args.asm_use_prelude
 

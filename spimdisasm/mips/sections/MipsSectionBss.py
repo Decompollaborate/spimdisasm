@@ -46,27 +46,31 @@ class SectionBss(SectionBase):
 
 
         offsetSymbolsInSection = self.context.offsetSymbols[common.FileSectionType.Bss]
-        bssSymbolOffsets: dict[int, common.ContextSymbol] = {offset: sym for offset, sym in offsetSymbolsInSection.items()}
+        bssSymbolOffsets: set[int] = set(offsetSymbolsInSection.keys())
 
         for symbolVram, contextSym in self.getSymbolsRange(self.bssVramStart, self.bssVramEnd):
             # Mark every known symbol that happens to be in this address space as defined
             contextSym.sectionType = common.FileSectionType.Bss
 
             # Needs to move this to a list because the algorithm requires to check the size of a bss variable based on the next bss variable' vram
-            bssSymbolOffsets[symbolVram-self.bssVramStart] = contextSym
+            bssSymbolOffsets.add(symbolVram - self.bssVramStart)
+
+            # If the bss has an explicit size then produce an extra symbol after it, so the generated bss symbol uses the user-declared size
+            if contextSym.size is not None:
+                bssSymbolOffsets.add(symbolVram + contextSym.size - self.bssVramStart)
 
 
-        sortedOffsets = sorted(bssSymbolOffsets.items())
+        sortedOffsets = sorted(bssSymbolOffsets)
 
         i = 0
         while i < len(sortedOffsets):
-            symbolOffset, contextSym = sortedOffsets[i]
+            symbolOffset = sortedOffsets[i]
             symbolVram = self.bssVramStart + symbolOffset
 
             # Calculate the space of the bss variable
             space = self.bssTotalSize - symbolOffset
             if i + 1 < len(sortedOffsets):
-                nextSymbolOffset, _ = sortedOffsets[i+1]
+                nextSymbolOffset = sortedOffsets[i+1]
                 if nextSymbolOffset <= self.bssTotalSize:
                     space = nextSymbolOffset - symbolOffset
 

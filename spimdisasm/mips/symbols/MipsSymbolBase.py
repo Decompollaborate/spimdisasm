@@ -131,6 +131,8 @@ class SymbolBase(common.ElementBase):
                     symLabel = contextSym.getSymbolLabel()
                     if symLabel:
                         label += symLabel + common.GlobalConfig.LINE_ENDS
+                        if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
+                            label += f"{symLabel}:" + common.GlobalConfig.LINE_ENDS
 
             if isByte:
                 shiftValue = 24 - (j * 8)
@@ -174,6 +176,8 @@ class SymbolBase(common.ElementBase):
 
     def disassembleAsData(self) -> str:
         output = self.getLabel()
+        if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
+            output += f"{self.getName()}:" + common.GlobalConfig.LINE_ENDS
 
         canReferenceSymbolsWithAddends = self.canUseAddendsOnData()
         canReferenceConstants = self.canUseConstantsOnData()
