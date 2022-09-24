@@ -81,6 +81,10 @@ class GlobalConfig:
     """Allow using %hi/%lo syntax for filtered out addresses"""
 
     ALLOW_UNKSEGMENT: bool = True
+    """Allow using symbols from the unknown segment"""
+
+    ALLOW_ALL_ADDENDS_ON_DATA: bool = True
+    """Enable using addends on symbols referenced by data"""
 
 
     ASM_COMMENT: bool = True
@@ -149,7 +153,9 @@ class GlobalConfig:
         backendConfig.add_argument("--filtered-addresses-as-constants", help=f"Treat filtered out addressed as constants. Defaults to {GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_CONSTANTS}", action=Utils.BooleanOptionalAction)
         backendConfig.add_argument("--filtered-addresses-as-hilo", help=f"Use %%hi/%%lo syntax for filtered out addresses. Defaults to {GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_HILO}", action=Utils.BooleanOptionalAction)
 
-        backendConfig.add_argument("--allow-unksegment", help=f"Defaults to {GlobalConfig.ALLOW_UNKSEGMENT}", action=Utils.BooleanOptionalAction)
+        backendConfig.add_argument("--allow-unksegment", help=f"Allow using symbols from the unknown segment. Defaults to {GlobalConfig.ALLOW_UNKSEGMENT}", action=Utils.BooleanOptionalAction)
+
+        backendConfig.add_argument("--allow-all-addends-on-data", help=f"Enable using addends on symbols referenced by data. Defaults to {GlobalConfig.ALLOW_ALL_ADDENDS_ON_DATA}", action=Utils.BooleanOptionalAction)
 
 
         miscConfig = parser.add_argument_group("Disassembler misc options")
@@ -223,6 +229,9 @@ class GlobalConfig:
 
         if args.allow_unksegment is not None:
             GlobalConfig.ALLOW_UNKSEGMENT = args.allow_unksegment
+
+        if args.allow_all_addends_on_data is not None:
+            GlobalConfig.ALLOW_ALL_ADDENDS_ON_DATA = args.allow_all_addends_on_data
 
 
         if args.asm_comments is not None:
