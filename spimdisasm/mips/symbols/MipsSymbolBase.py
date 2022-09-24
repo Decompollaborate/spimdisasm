@@ -132,7 +132,7 @@ class SymbolBase(common.ElementBase):
                     if symLabel:
                         label += symLabel + common.GlobalConfig.LINE_ENDS
                         if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
-                            label += f"{symLabel}:" + common.GlobalConfig.LINE_ENDS
+                            label += f"{contextSym.getName()}:" + common.GlobalConfig.LINE_ENDS
 
             if isByte:
                 shiftValue = 24 - (j * 8)
