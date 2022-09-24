@@ -23,6 +23,8 @@ class SymbolBss(SymbolBase):
 
     def disassembleAsBss(self) -> str:
         output = self.getLabel()
+        if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
+            output += f"{self.getName()}:" + common.GlobalConfig.LINE_ENDS
         output += self.generateAsmLineComment(0)
         output += f" .space 0x{self.spaceSize:02X}" + common.GlobalConfig.LINE_ENDS
         return output

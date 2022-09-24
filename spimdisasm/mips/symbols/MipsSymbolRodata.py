@@ -131,7 +131,7 @@ class SymbolRodata(SymbolBase):
             if labelName:
                 label = labelName + common.GlobalConfig.LINE_ENDS
                 if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
-                    label += f"{labelName}:" + common.GlobalConfig.LINE_ENDS
+                    label += f"{possibleSymbolName.getName()}:" + common.GlobalConfig.LINE_ENDS
 
         if len(self.context.relocSymbols[self.sectionType]) > 0:
             possibleReference = self.context.getRelocSymbol(self.inFileOffset + localOffset, self.sectionType)
