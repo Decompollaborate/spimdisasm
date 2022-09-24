@@ -75,11 +75,11 @@ def getRdataAndLateRodataForFunctionFromSection(func: symbols.SymbolFunction, ro
 
         # We only care for rodata that's used once
         if rodataSym.contextSym.referenceCounter != 1:
-            break
+            continue
 
         # A const variable should not be placed with a function
         if rodataSym.contextSym.isMaybeConstVariable():
-            break
+            continue
 
         if rodataSym.contextSym.isLateRodata() and common.GlobalConfig.COMPILER == common.Compiler.IDO:
             lateRodataList.append(rodataSym)
