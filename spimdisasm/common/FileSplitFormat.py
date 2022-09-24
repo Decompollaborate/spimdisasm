@@ -54,6 +54,9 @@ class FileSplitFormat:
             elif fileName == ".rodata":
                 section = FileSectionType.Rodata
                 continue
+            elif fileName == ".rdata":
+                section = FileSectionType.Rodata
+                continue
             elif fileName == ".bss":
                 section = FileSectionType.Bss
                 continue

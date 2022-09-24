@@ -111,7 +111,11 @@ def getRdataAndLateRodataForFunction(func: symbols.SymbolFunction, rodataFileLis
 def writeFunctionRodataToFile(f: TextIO, func: symbols.SymbolFunction, rdataList: list[symbols.SymbolBase], lateRodataList: list[symbols.SymbolBase], lateRodataSize: int):
     if len(rdataList) > 0:
         # Write the rdata
-        f.write(".section .rodata" + common.GlobalConfig.LINE_ENDS)
+        sectionName = ".rodata"
+        if common.GlobalConfig.COMPILER == common.Compiler.SN64:
+            sectionName = ".rdata"
+
+        f.write(f".section {sectionName}" + common.GlobalConfig.LINE_ENDS)
         for sym in rdataList:
             f.write(sym.disassemble())
             f.write(common.GlobalConfig.LINE_ENDS)
