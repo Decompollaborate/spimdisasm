@@ -55,6 +55,7 @@ class SectionBss(SectionBase):
             # Needs to move this to a list because the algorithm requires to check the size of a bss variable based on the next bss variable' vram
             bssSymbolOffsets.add(symbolVram - self.bssVramStart)
 
+            # If the bss has an explicit size then produce an extra symbol after it, so the generated bss symbol uses the user-declared size
             if contextSym.size is not None:
                 bssSymbolOffsets.add(symbolVram + contextSym.size - self.bssVramStart)
 
