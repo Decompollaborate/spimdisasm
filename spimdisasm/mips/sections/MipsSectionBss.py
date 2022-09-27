@@ -14,7 +14,7 @@ from . import SectionBase
 
 class SectionBss(SectionBase):
     def __init__(self, context: common.Context, vromStart: int, vromEnd: int, bssVramStart: int, bssVramEnd: int, filename: str, segmentVromStart: int, overlayCategory: str|None):
-        super().__init__(context, vromStart, vromEnd, bssVramStart, filename, bytearray(), common.FileSectionType.Bss, segmentVromStart, overlayCategory)
+        super().__init__(context, vromStart, vromEnd, bssVramStart, filename, [], common.FileSectionType.Bss, segmentVromStart, overlayCategory)
 
         self.bssVramStart: int = bssVramStart
         self.bssVramEnd: int = bssVramEnd

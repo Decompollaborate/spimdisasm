@@ -15,7 +15,7 @@ from . import FileBase, createEmptyFile
 
 class FileSplits(FileBase):
     def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytearray, segmentVromStart: int, overlayCategory: str|None, splitsData: common.FileSplitFormat|None=None, relocSection: sections.SectionRelocZ64|None=None):
-        super().__init__(context, vromStart, vromEnd, vram, filename, array_of_bytes, common.FileSectionType.Unknown, segmentVromStart, overlayCategory)
+        super().__init__(context, vromStart, vromEnd, vram, filename, common.Utils.bytesToWords(array_of_bytes, vromStart, vromEnd), common.FileSectionType.Unknown, segmentVromStart, overlayCategory)
 
         self.sectionsDict: dict[common.FileSectionType, dict[str, sections.SectionBase]] = {
             common.FileSectionType.Text: dict(),

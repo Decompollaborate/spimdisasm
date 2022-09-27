@@ -41,6 +41,8 @@ class FileSectionType(enum.Enum):
             return FileSectionType.Data
         if x == ".rodata":
             return FileSectionType.Rodata
+        if x == ".rdata":
+            return FileSectionType.Rodata
         if x == ".bss":
             return FileSectionType.Bss
         if x == ".reloc":

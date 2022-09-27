@@ -14,8 +14,8 @@ from . import symbols
 
 
 class FileBase(common.ElementBase):
-    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytearray, sectionType: common.FileSectionType, segmentVromStart: int, overlayCategory: str|None):
-        super().__init__(context, vromStart, vromEnd, 0, vram, filename, common.Utils.bytesToWords(array_of_bytes, vromStart, vromEnd), sectionType, segmentVromStart, overlayCategory)
+    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, words: list[int], sectionType: common.FileSectionType, segmentVromStart: int, overlayCategory: str|None):
+        super().__init__(context, vromStart, vromEnd, 0, vram, filename, words, sectionType, segmentVromStart, overlayCategory)
 
         self.symbolList: list[symbols.SymbolBase] = []
 
@@ -183,4 +183,4 @@ class FileBase(common.ElementBase):
 
 
 def createEmptyFile() -> FileBase:
-    return FileBase(common.Context(), 0, 0, 0, "", bytearray(), common.FileSectionType.Unknown, 0, None)
+    return FileBase(common.Context(), 0, 0, 0, "", [], common.FileSectionType.Unknown, 0, None)

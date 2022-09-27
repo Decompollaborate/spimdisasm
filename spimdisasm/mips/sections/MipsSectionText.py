@@ -17,7 +17,7 @@ from . import SectionBase
 
 class SectionText(SectionBase):
     def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytearray, segmentVromStart: int, overlayCategory: str|None):
-        super().__init__(context, vromStart, vromEnd, vram, filename, array_of_bytes, common.FileSectionType.Text, segmentVromStart, overlayCategory)
+        super().__init__(context, vromStart, vromEnd, vram, filename, common.Utils.bytesToWords(array_of_bytes, vromStart, vromEnd), common.FileSectionType.Text, segmentVromStart, overlayCategory)
 
         self.instrCat: rabbitizer.Enum = rabbitizer.InstrCategory.CPU
 

@@ -75,11 +75,11 @@ def getRdataAndLateRodataForFunctionFromSection(func: symbols.SymbolFunction, ro
 
         # We only care for rodata that's used once
         if rodataSym.contextSym.referenceCounter != 1:
-            break
+            continue
 
         # A const variable should not be placed with a function
         if rodataSym.contextSym.isMaybeConstVariable():
-            break
+            continue
 
         if rodataSym.contextSym.isLateRodata() and common.GlobalConfig.COMPILER == common.Compiler.IDO:
             lateRodataList.append(rodataSym)
@@ -111,7 +111,11 @@ def getRdataAndLateRodataForFunction(func: symbols.SymbolFunction, rodataFileLis
 def writeFunctionRodataToFile(f: TextIO, func: symbols.SymbolFunction, rdataList: list[symbols.SymbolBase], lateRodataList: list[symbols.SymbolBase], lateRodataSize: int):
     if len(rdataList) > 0:
         # Write the rdata
-        f.write(".section .rodata" + common.GlobalConfig.LINE_ENDS)
+        sectionName = ".rodata"
+        if common.GlobalConfig.COMPILER == common.Compiler.SN64:
+            sectionName = ".rdata"
+
+        f.write(f".section {sectionName}" + common.GlobalConfig.LINE_ENDS)
         for sym in rdataList:
             f.write(sym.disassemble())
             f.write(common.GlobalConfig.LINE_ENDS)

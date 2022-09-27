@@ -14,7 +14,11 @@ from . import SectionBase
 
 class SectionData(SectionBase):
     def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytearray, segmentVromStart: int, overlayCategory: str|None):
-        super().__init__(context, vromStart, vromEnd, vram, filename, array_of_bytes, common.FileSectionType.Data, segmentVromStart, overlayCategory)
+        if common.GlobalConfig.ENDIAN_DATA is not None:
+            words = common.Utils.endianessBytesToWords(common.GlobalConfig.ENDIAN_DATA, array_of_bytes, vromStart, vromEnd)
+        else:
+            words = common.Utils.bytesToWords(array_of_bytes, vromStart, vromEnd)
+        super().__init__(context, vromStart, vromEnd, vram, filename, words, common.FileSectionType.Data, segmentVromStart, overlayCategory)
 
 
     def analyze(self):
@@ -37,12 +41,13 @@ class SectionData(SectionBase):
                     symbolList.append((localOffset, contextSym))
 
             if w >= self.vram and w > 0x80000000 and w < 0x84000000:
-                if self.getSymbol(w, tryPlusOffset=True, checkUpperLimit=True) is None:
-                    self.addPointerInDataReference(w)
+                if w not in self.context.bannedSymbols:
+                    if self.getSymbol(w, tryPlusOffset=True, checkUpperLimit=True) is None:
+                        self.addPointerInDataReference(w)
 
-                    if w < currentVram and self.containsVram(w):
-                        # References a data symbol from this section and it is behind this current symbol
-                        needsFurtherAnalyzis = True
+                        if w < currentVram and self.containsVram(w):
+                            # References a data symbol from this section and it is behind this current symbol
+                            needsFurtherAnalyzis = True
 
             localOffset += 4
 

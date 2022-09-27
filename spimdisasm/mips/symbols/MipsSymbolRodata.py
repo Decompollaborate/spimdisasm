@@ -16,6 +16,8 @@ class SymbolRodata(SymbolBase):
     def __init__(self, context: common.Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, words: list[int], segmentVromStart: int, overlayCategory: str|None):
         super().__init__(context, vromStart, vromEnd, inFileOffset, vram, words, common.FileSectionType.Rodata, segmentVromStart, overlayCategory)
 
+        self.stringEncoding: str = "EUC-JP"
+
 
     def isString(self) -> bool:
         return self.contextSym.isString()
@@ -131,7 +133,7 @@ class SymbolRodata(SymbolBase):
             if labelName:
                 label = labelName + common.GlobalConfig.LINE_ENDS
                 if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
-                    label += f"{labelName}:" + common.GlobalConfig.LINE_ENDS
+                    label += f"{possibleSymbolName.getName()}:" + common.GlobalConfig.LINE_ENDS
 
         if len(self.context.relocSymbols[self.sectionType]) > 0:
             possibleReference = self.context.getRelocSymbol(self.inFileOffset + localOffset, self.sectionType)
@@ -166,7 +168,7 @@ class SymbolRodata(SymbolBase):
                 try:
                     buffer = bytearray(4*len(self.words))
                     common.Utils.wordsToBytes(self.words, buffer)
-                    decodedStrings, rawStringSize = common.Utils.decodeString(buffer, 4*i)
+                    decodedStrings, rawStringSize = common.Utils.decodeString(buffer, 4*i, self.stringEncoding)
 
                     # dotType = ".asciz"
                     # value = f'"{decodedValue}"'
