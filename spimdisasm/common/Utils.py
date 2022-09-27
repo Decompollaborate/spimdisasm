@@ -67,7 +67,7 @@ def readJson(filepath):
 def removeExtraWhitespace(line: str) -> str:
     return " ".join(line.split())
 
-def bytesToWords(array_of_bytes: bytearray, offset: int=0, offsetEnd: int|None=None) -> list[int]:
+def endianessBytesToWords(endian: InputEndian, array_of_bytes: bytearray, offset: int=0, offsetEnd: int|None=None) -> list[int]:
     totalBytesCount = len(array_of_bytes)
     if totalBytesCount == 0:
         return list()
@@ -77,7 +77,7 @@ def bytesToWords(array_of_bytes: bytearray, offset: int=0, offsetEnd: int|None=N
         bytesCount = offsetEnd
     bytesCount -= offset
 
-    if GlobalConfig.ENDIAN == InputEndian.MIDDLE:
+    if endian == InputEndian.MIDDLE:
         # Convert middle endian to big endian
         halfwords = bytesCount//2
         little_byte_format = f"<{halfwords}H"
@@ -87,23 +87,29 @@ def bytesToWords(array_of_bytes: bytearray, offset: int=0, offsetEnd: int|None=N
 
     words = bytesCount//4
     endian_format = f">{words}I"
-    if GlobalConfig.ENDIAN == InputEndian.LITTLE:
+    if endian == InputEndian.LITTLE:
         endian_format = f"<{words}I"
     return list(struct.unpack_from(endian_format, array_of_bytes, offset))
+
+def bytesToWords(array_of_bytes: bytearray, offset: int=0, offsetEnd: int|None=None) -> list[int]:
+    return endianessBytesToWords(GlobalConfig.ENDIAN, array_of_bytes, offset, offsetEnd)
 
 #! deprecated
 bytesToBEWords = bytesToWords
 
-def wordsToBytes(words_list: list[int], buffer: bytearray) -> bytearray:
-    if GlobalConfig.ENDIAN == InputEndian.MIDDLE:
-        raise BufferError("TODO: wordsToBytes: GlobalConfig.ENDIAN == InputEndian.MIDDLE")
+def endianessWordsToBytes(endian: InputEndian, words_list: list[int], buffer: bytearray) -> bytearray:
+    if endian == InputEndian.MIDDLE:
+        raise BufferError("TODO: wordsToBytesEndianess: GlobalConfig.ENDIAN == InputEndian.MIDDLE")
 
     words = len(words_list)
     endian_format = f">{words}I"
-    if GlobalConfig.ENDIAN == InputEndian.LITTLE:
+    if endian == InputEndian.LITTLE:
         endian_format = f"<{words}I"
     struct.pack_into(endian_format, buffer, 0, *words_list)
     return buffer
+
+def wordsToBytes(words_list: list[int], buffer: bytearray) -> bytearray:
+    return endianessWordsToBytes(GlobalConfig.ENDIAN, words_list, buffer)
 
 #! deprecated
 beWordsToBytes = wordsToBytes

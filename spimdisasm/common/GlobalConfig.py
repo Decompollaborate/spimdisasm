@@ -67,6 +67,10 @@ class GlobalConfig:
 
     ENDIAN: InputEndian = InputEndian.BIG
     """Endian for input binary files"""
+    ENDIAN_DATA: InputEndian|None = None
+    """If not None then specifies the endian for the .data section"""
+    ENDIAN_RODATA: InputEndian|None = None
+    """If not None then specifies the endian for the .rodata section"""
 
     GP_VALUE: int|None = None
     """Value used for $gp relocation loads and stores"""
