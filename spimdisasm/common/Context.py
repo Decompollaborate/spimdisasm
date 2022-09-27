@@ -59,10 +59,12 @@ class Context:
         self.got: GlobalOffsetTable = GlobalOffsetTable()
 
 
-    def addOverlaySegment(self, overlayCategory: str, segmentVromStart: int, segmentVromEnd: int, segmentVramStart: int, segmentVramEnd: int) -> None:
+    def addOverlaySegment(self, overlayCategory: str, segmentVromStart: int, segmentVromEnd: int, segmentVramStart: int, segmentVramEnd: int) -> SymbolsSegment:
         if overlayCategory not in self.overlaySegments:
             self.overlaySegments[overlayCategory] = dict()
-        self.overlaySegments[overlayCategory][segmentVromStart] = SymbolsSegment(segmentVromStart, segmentVromEnd, segmentVramStart, segmentVramEnd, overlayCategory=overlayCategory)
+        segment = SymbolsSegment(segmentVromStart, segmentVromEnd, segmentVramStart, segmentVramEnd, overlayCategory=overlayCategory)
+        self.overlaySegments[overlayCategory][segmentVromStart] = segment
+        return segment
 
 
     def getOffsetSymbol(self, offset: int, sectionType: FileSectionType) -> ContextOffsetSymbol|None:
