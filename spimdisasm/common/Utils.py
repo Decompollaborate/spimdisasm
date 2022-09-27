@@ -186,7 +186,7 @@ bannedEscapeCharacters = {
 
 escapeCharactersSpecialCases = {0x1B, 0x8C, 0x8D}
 
-def decodeString(buf: bytearray, offset: int) -> tuple[list[str], int]:
+def decodeString(buf: bytearray, offset: int, stringEncoding: str) -> tuple[list[str], int]:
     result = []
 
     dst = bytearray()
@@ -197,7 +197,7 @@ def decodeString(buf: bytearray, offset: int) -> tuple[list[str], int]:
             raise RuntimeError()
         elif char in escapeCharactersSpecialCases:
             if dst:
-                decoded = rabbitizer.Utils.escapeString(dst.decode("EUC-JP"))
+                decoded = rabbitizer.Utils.escapeString(dst.decode(stringEncoding))
                 result.append(decoded)
                 dst.clear()
             result.append(f"\\x{char:02X}")
@@ -209,7 +209,7 @@ def decodeString(buf: bytearray, offset: int) -> tuple[list[str], int]:
         raise RuntimeError("Reached the end of the buffer without finding an 0")
 
     if dst:
-        decoded = rabbitizer.Utils.escapeString(dst.decode("EUC-JP"))
+        decoded = rabbitizer.Utils.escapeString(dst.decode(stringEncoding))
         result.append(decoded)
     return result, i
 

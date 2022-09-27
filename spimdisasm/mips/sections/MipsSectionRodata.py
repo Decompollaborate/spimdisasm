@@ -25,6 +25,8 @@ class SectionRodata(SectionBase):
         self.bytes: bytearray = bytearray(self.sizew*4)
         common.Utils.wordsToBytes(self.words, self.bytes)
 
+        self.stringEncoding: str = "EUC-JP"
+
 
     def _stringGuesser(self, contextSym: common.ContextSymbol, localOffset: int) -> bool:
         if contextSym.isMaybeString or contextSym.isString():
@@ -41,7 +43,7 @@ class SectionRodata(SectionBase):
             return False
 
         try:
-            common.Utils.decodeString(self.bytes, localOffset)
+            common.Utils.decodeString(self.bytes, localOffset, self.stringEncoding)
         except (UnicodeDecodeError, RuntimeError):
             # String can't be decoded
             return False
@@ -148,6 +150,7 @@ class SectionRodata(SectionBase):
             sym = symbols.SymbolRodata(self.context, vrom, vromEnd, offset + self.inFileOffset, vram, words, self.segmentVromStart, self.overlayCategory)
             sym.parent = self
             sym.setCommentOffset(self.commentOffset)
+            sym.stringEncoding = self.stringEncoding
             sym.analyze()
             self.symbolList.append(sym)
 
