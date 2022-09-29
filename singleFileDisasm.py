@@ -97,6 +97,8 @@ def disassemblerMain():
 
         start = int(args.start, 16)
         end = int(args.end, 16)
+        if end == 0xFFFFFF:
+            end = len(array_of_bytes)
         fileVram = int(args.vram, 16)
         endVram = fileVram + end - start
 

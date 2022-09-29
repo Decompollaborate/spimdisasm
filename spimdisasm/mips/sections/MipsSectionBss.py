@@ -53,11 +53,15 @@ class SectionBss(SectionBase):
             contextSym.sectionType = common.FileSectionType.Bss
 
             # Needs to move this to a list because the algorithm requires to check the size of a bss variable based on the next bss variable' vram
+            assert symbolVram < self.bssVramEnd
             bssSymbolOffsets.add(symbolVram - self.bssVramStart)
 
             # If the bss has an explicit size then produce an extra symbol after it, so the generated bss symbol uses the user-declared size
             if contextSym.size is not None:
-                bssSymbolOffsets.add(symbolVram + contextSym.size - self.bssVramStart)
+                newSymbolVram = symbolVram + contextSym.size
+                if newSymbolVram != self.bssVramEnd:
+                    assert newSymbolVram < self.bssVramEnd
+                    bssSymbolOffsets.add(symbolVram + contextSym.size - self.bssVramStart)
 
 
         sortedOffsets = sorted(bssSymbolOffsets)
@@ -73,6 +77,8 @@ class SectionBss(SectionBase):
                 nextSymbolOffset = sortedOffsets[i+1]
                 if nextSymbolOffset <= self.bssTotalSize:
                     space = nextSymbolOffset - symbolOffset
+
+            assert space > 0
 
             vrom = self.getVromOffset(symbolOffset)
             vromEnd = vrom + space
