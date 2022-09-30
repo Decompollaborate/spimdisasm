@@ -5,8 +5,5 @@
 
 from __future__ import annotations
 
-from . import disasmdisMain
 
-
-if __name__ == "__main__":
-    disasmdisMain()
+from .RspDisasmInternals import getArgsParser, applyArgs, initializeContext, rspDisasmMain

@@ -5,8 +5,8 @@
 
 from __future__ import annotations
 
-from . import disasmdisMain
+from . import rspDisasmMain
 
 
 if __name__ == "__main__":
-    disasmdisMain()
+    rspDisasmMain()

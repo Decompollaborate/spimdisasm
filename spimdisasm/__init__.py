@@ -15,3 +15,4 @@ from . import mips
 
 # Front-end scripts
 from . import disasmdis
+from . import rspDisasm
