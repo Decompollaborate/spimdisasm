@@ -12,6 +12,22 @@ Currently supports all the CPU instructions for MIPS I, II, III and IV.
 
 Mainly focused on supporting Nintendo 64 binaries, but it should work with other MIPS platforms too.
 
+## Installing
+
+The recommended way to install is using from the PyPi release, via `pip`:
+
+```bash
+pip install spimdisasm
+```
+
+In case you want to mess with the latest development version without wanting to clone the repository, then you could use the following command:
+
+```bash
+pip install git+https://github.com/Decompollaborate/spimdisasm.git@develop
+```
+
+NOTE: Installing the development version is not recommended. Proceed at your own risk.
+
 ## Features
 
 - Produces matching assembly.
