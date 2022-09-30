@@ -12,3 +12,6 @@ __author__ = "Decompollaborate"
 from . import common
 from . import elf32
 from . import mips
+
+# Front-end scripts
+from . import disasmdis

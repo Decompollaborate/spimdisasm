@@ -11,11 +11,10 @@ import enum
 from . import Utils
 
 
-@enum.unique
 class InputEndian(enum.Enum):
-    BIG = enum.auto()
-    LITTLE = enum.auto()
-    MIDDLE = enum.auto()
+    BIG = "big"
+    LITTLE = "little"
+    MIDDLE = "middle"
 
     def toFormatString(self) -> str:
         if self == InputEndian.BIG:
