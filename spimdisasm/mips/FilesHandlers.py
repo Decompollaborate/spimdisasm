@@ -79,7 +79,8 @@ def getRdataAndLateRodataForFunctionFromSection(func: symbols.SymbolFunction, ro
 
         # A const variable should not be placed with a function
         if rodataSym.contextSym.isMaybeConstVariable():
-            continue
+            if common.GlobalConfig.COMPILER != common.Compiler.SN64:
+                continue
 
         if rodataSym.contextSym.isLateRodata() and common.GlobalConfig.COMPILER == common.Compiler.IDO:
             lateRodataList.append(rodataSym)
