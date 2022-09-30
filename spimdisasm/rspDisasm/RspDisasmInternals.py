@@ -37,6 +37,13 @@ def applyArgs(args: argparse.Namespace) -> None:
     mips.InstructionConfig.parseArgs(args)
     common.GlobalConfig.parseArgs(args)
 
+def applyGlobalConfigurations() -> None:
+    common.GlobalConfig.GLABEL_ASM_COUNT = False
+    common.GlobalConfig.ASM_TEXT_FUNC_AS_LABEL = True
+    common.GlobalConfig.ASM_USE_PRELUDE = False
+    common.GlobalConfig.ASM_USE_SYMBOL_LABEL = False
+    rabbitizer.config.misc_unknownInstrComment = False
+
 def initializeContext(args: argparse.Namespace, fileSize: int, fileVram: int) -> common.Context:
     context = common.Context()
     context.parseArgs(args)
@@ -54,13 +61,10 @@ def initializeContext(args: argparse.Namespace, fileSize: int, fileVram: int) ->
 
 
 def rspDisasmMain():
-    common.GlobalConfig.GLABEL_ASM_COUNT = False
-    common.GlobalConfig.ASM_TEXT_FUNC_AS_LABEL = True
-    common.GlobalConfig.ASM_USE_PRELUDE = False
-    common.GlobalConfig.ASM_USE_SYMBOL_LABEL = False
-    rabbitizer.config.misc_unknownInstrComment = False
-
     args = getArgsParser().parse_args()
+    applyArgs(args)
+
+    applyGlobalConfigurations()
 
     binaryPath = Path(args.binary)
     array_of_bytes = common.Utils.readFileAsBytearray(args.binary)
