@@ -68,15 +68,17 @@ This repo can be used either by using the existing front-end scripts or by creat
 
 ### Front-end
 
-Every front-end script has its own `--help` screen.
+Every front-end submodule has its own `--help` screen.
 
-- `singleFileDisasm.py`: Allows to disassemble a single binary file, producing matching assembly files.
+The submodules can be executed with `python3 -m spimdisasm.modulename`, for example `python3 -m spimdisasm.disasmdis`
 
-- `disasmdis.py`: Disassembles raw hex passed to the CLI as a MIPS instruction.
+- `singleFileDisasm`: Allows to disassemble a single binary file, producing matching assembly files.
 
-- `elfObjDisasm.py`: \[EXPERIMENTAL\] Allows to disassemble `.o` elf files. Generated assembly files are not guaranteed to match or be assemblable.
+- `disasmdis`: Disassembles raw hex passed to the CLI as a MIPS instruction.
 
-- `rspDisasm.py`: Disassemblies RSP binaries.
+- `elfObjDisasm`: \[EXPERIMENTAL\] Allows to disassemble `.o` elf files. Generated assembly files are not guaranteed to match or be assemblable.
+
+- `rspDisasm`: Disassemblies RSP binaries.
 
 ### Back-end
 
