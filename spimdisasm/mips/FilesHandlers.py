@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import os
 from typing import TextIO
 from pathlib import Path
 
@@ -127,25 +126,27 @@ def writeFunctionRodataToFile(f: TextIO, func: symbols.SymbolFunction, rdataList
     if len(rdataList) > 0 or len(lateRodataList) > 0:
         f.write(common.GlobalConfig.LINE_ENDS + ".section .text" + common.GlobalConfig.LINE_ENDS)
 
-def writeSplitedFunction(path: str, func: symbols.SymbolFunction, rodataFileList: list[sections.SectionRodata]):
-    os.makedirs(path, exist_ok=True)
-    with open(os.path.join(path, func.getName()) + ".s", "w") as f:
+def writeSplitedFunction(path: Path, func: symbols.SymbolFunction, rodataFileList: list[sections.SectionRodata]):
+    path.mkdir(parents=True, exist_ok=True)
+
+    funcPath = path / (func.getName()+ ".s")
+    with funcPath.open("w") as f:
         rdataList, lateRodataList, lateRodataSize = getRdataAndLateRodataForFunction(func, rodataFileList)
         writeFunctionRodataToFile(f, func, rdataList, lateRodataList, lateRodataSize)
 
         # Write the function itself
         f.write(func.disassemble())
 
-def writeOtherRodata(path: str, rodataFileList: list[sections.SectionRodata]):
+def writeOtherRodata(path: Path, rodataFileList: list[sections.SectionRodata]):
     for rodataSection in rodataFileList:
-        rodataPath = os.path.join(path, rodataSection.name)
-        os.makedirs(rodataPath, exist_ok=True)
+        rodataPath = path / rodataSection.name
+        rodataPath.mkdir(parents=True, exist_ok=True)
 
         for rodataSym in rodataSection.symbolList:
             if not rodataSym.isRdata():
                 continue
 
-            rodataSymbolPath = os.path.join(rodataPath, rodataSym.getName()) + ".s"
-            with open(rodataSymbolPath, "w") as f:
+            rodataSymbolPath = rodataPath / (rodataSym.getName() + ".s")
+            with rodataSymbolPath.open("w") as f:
                 f.write(".section .rdata" + common.GlobalConfig.LINE_ENDS)
                 f.write(rodataSym.disassemble())

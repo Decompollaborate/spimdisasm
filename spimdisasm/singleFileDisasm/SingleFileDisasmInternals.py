@@ -223,10 +223,10 @@ def migrateFunctions(processedFiles, functionMigrationPath: Path):
 
             assert isinstance(func, mips.symbols.SymbolFunction)
             functionPath = functionMigrationPath / f.name
-            mips.FilesHandlers.writeSplitedFunction(str(functionPath), func, processedFiles[common.FileSectionType.Rodata])
+            mips.FilesHandlers.writeSplitedFunction(functionPath, func, processedFiles[common.FileSectionType.Rodata])
 
             i += 1
-    mips.FilesHandlers.writeOtherRodata(str(functionMigrationPath), processedFiles[common.FileSectionType.Rodata])
+    mips.FilesHandlers.writeOtherRodata(functionMigrationPath, processedFiles[common.FileSectionType.Rodata])
 
 
 def disassemblerMain():
