@@ -20,6 +20,9 @@ def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_byte
     offsetStart = splitEntry.offset
     offsetEnd = splitEntry.nextOffset
 
+    if offsetEnd == 0xFFFFFF:
+        offsetEnd = len(array_of_bytes)
+
     if offsetStart >= 0 and offsetEnd >= 0:
         common.Utils.printVerbose(f"Parsing offset range [{offsetStart:02X}, {offsetEnd:02X}]")
     elif offsetEnd >= 0:
