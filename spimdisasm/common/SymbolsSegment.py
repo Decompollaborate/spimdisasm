@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import ast
 from typing import TextIO, Generator
-import os
+from pathlib import Path
 
 from . import Utils
 from .SortedDict import SortedDict
@@ -349,8 +349,8 @@ class SymbolsSegment:
             contextSym.size = varSize
             contextSym.isUserDeclared = True
 
-    def readVariablesCsv(self, filepath: str):
-        if not os.path.exists(filepath):
+    def readVariablesCsv(self, filepath: Path):
+        if not filepath.exists():
             return
 
         variables_file = Utils.readCsv(filepath)
@@ -391,8 +391,8 @@ class SymbolsSegment:
             contextSym.size = varSize
             contextSym.isUserDeclared = True
 
-    def readFunctionsCsv(self, filepath: str):
-        if not os.path.exists(filepath):
+    def readFunctionsCsv(self, filepath: Path):
+        if not filepath.exists():
             return
 
         functions_file = Utils.readCsv(filepath)
@@ -409,8 +409,8 @@ class SymbolsSegment:
             contextSym.name = funcName
             contextSym.isUserDeclared = True
 
-    def readConstantsCsv(self, filepath: str):
-        if not os.path.exists(filepath):
+    def readConstantsCsv(self, filepath: Path):
+        if not filepath.exists():
             return
 
         constants_file = Utils.readCsv(filepath)

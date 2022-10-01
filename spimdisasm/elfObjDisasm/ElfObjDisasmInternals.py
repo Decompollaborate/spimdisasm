@@ -215,10 +215,10 @@ def elfObjDisasmMain():
 
     context = common.Context()
 
-    array_of_bytes = common.Utils.readFileAsBytearray(args.binary)
+    inputPath = Path(args.binary)
+    array_of_bytes = common.Utils.readFileAsBytearray(inputPath)
     elfFile = elf32.Elf32File(array_of_bytes)
 
-    inputPath = Path(args.binary)
     textOutput = Path(args.output)
     if args.data_output is None:
         dataOutput = textOutput
@@ -235,7 +235,7 @@ def elfObjDisasmMain():
         subFile.analyze()
 
     for outputFilePath, subFile in processedFiles.values():
-        mips.FilesHandlers.writeSection(str(outputFilePath), subFile)
+        mips.FilesHandlers.writeSection(outputFilePath, subFile)
 
     if args.save_context is not None:
         contextPath = Path(args.save_context)

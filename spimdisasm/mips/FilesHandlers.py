@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 from typing import TextIO
+from pathlib import Path
 
 import rabbitizer
 
@@ -16,9 +17,7 @@ from . import sections
 from . import symbols
 
 
-def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_bytes: bytearray, outputPath: str, context: common.Context) -> sections.SectionBase:
-    head, tail = os.path.split(outputPath)
-
+def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_bytes: bytearray, outputPath: Path, context: common.Context) -> sections.SectionBase:
     offsetStart = splitEntry.offset
     offsetEnd = splitEntry.nextOffset
 
@@ -34,15 +33,15 @@ def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_byte
 
     f: sections.SectionBase
     if splitEntry.section == common.FileSectionType.Text:
-        f = sections.SectionText(context, offsetStart, offsetEnd, vram, tail, array_of_bytes, 0, None)
+        f = sections.SectionText(context, offsetStart, offsetEnd, vram, outputPath.stem, array_of_bytes, 0, None)
         if splitEntry.isRsp:
             f.instrCat = rabbitizer.InstrCategory.RSP
     elif splitEntry.section == common.FileSectionType.Data:
-        f = sections.SectionData(context, offsetStart, offsetEnd, vram, tail, array_of_bytes, 0, None)
+        f = sections.SectionData(context, offsetStart, offsetEnd, vram, outputPath.stem, array_of_bytes, 0, None)
     elif splitEntry.section == common.FileSectionType.Rodata:
-        f = sections.SectionRodata(context, offsetStart, offsetEnd, vram, tail, array_of_bytes, 0, None)
+        f = sections.SectionRodata(context, offsetStart, offsetEnd, vram, outputPath.stem, array_of_bytes, 0, None)
     elif splitEntry.section == common.FileSectionType.Bss:
-        f = sections.SectionBss(context, offsetStart, offsetEnd, splitEntry.vram, splitEntry.vram + offsetEnd - offsetStart, tail, 0, None)
+        f = sections.SectionBss(context, offsetStart, offsetEnd, splitEntry.vram, splitEntry.vram + offsetEnd - offsetStart, outputPath.stem, 0, None)
     else:
         common.Utils.eprint("Error! Section not set!")
         exit(-1)
@@ -51,15 +50,9 @@ def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_byte
 
     return f
 
-def writeSection(path: str, fileSection: sections.SectionBase):
-    head, tail = os.path.split(path)
-
-    # Create directories
-    if head != "":
-        os.makedirs(head, exist_ok=True)
-
-    fileSection.saveToFile(path)
-
+def writeSection(path: Path, fileSection: sections.SectionBase):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fileSection.saveToFile(str(path))
     return path
 
 

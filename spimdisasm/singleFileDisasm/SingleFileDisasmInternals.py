@@ -71,7 +71,7 @@ def applyGlobalConfigurations() -> None:
 def getSplits(fileSplitsPath: Path|None, vromStart: int, vromEnd: int, fileVram: int, disasmRsp: bool) -> common.FileSplitFormat:
     splits = common.FileSplitFormat()
     if fileSplitsPath is not None:
-        splits.readCsvFile(str(fileSplitsPath))
+        splits.readCsvFile(fileSplitsPath)
 
     if len(splits) == 0:
         if fileSplitsPath is not None:
@@ -88,13 +88,13 @@ def getSplits(fileSplitsPath: Path|None, vromStart: int, vromEnd: int, fileVram:
     return splits
 
 def getProcessedSections(context: common.Context, splits: common.FileSplitFormat, array_of_bytes: bytearray, inputPath: Path, textOutput: Path, dataOutput: Path):
-    processedFiles = {
+    processedFiles: dict[common.FileSectionType, list[mips.sections.SectionBase]] = {
         common.FileSectionType.Text: [],
         common.FileSectionType.Data: [],
         common.FileSectionType.Rodata: [],
         common.FileSectionType.Bss: [],
     }
-    processedFilesOutputPaths = {k: [] for k in processedFiles}
+    processedFilesOutputPaths: dict[common.FileSectionType, list[Path]] = {k: [] for k in processedFiles}
 
     for row in splits:
         if row.section == common.FileSectionType.Text:
@@ -110,7 +110,7 @@ def getProcessedSections(context: common.Context, splits: common.FileSplitFormat
             exit(1)
 
         outputFilePath = outputPath
-        if outputPath != "-":
+        if str(outputPath) != "-":
             fileName = row.fileName
             if row.fileName == "":
                 fileName = f"{inputPath.stem}_{row.vram:08X}"
@@ -118,7 +118,7 @@ def getProcessedSections(context: common.Context, splits: common.FileSplitFormat
             outputFilePath = outputPath / fileName
 
         common.Utils.printVerbose(f"Reading '{row.fileName}'")
-        f = mips.FilesHandlers.createSectionFromSplitEntry(row, array_of_bytes, str(outputFilePath), context)
+        f = mips.FilesHandlers.createSectionFromSplitEntry(row, array_of_bytes, outputFilePath, context)
         f.setCommentOffset(row.offset)
         processedFiles[row.section].append(f)
         processedFilesOutputPaths[row.section].append(outputFilePath)
@@ -202,7 +202,7 @@ def writeProcessedFiles(processedFiles, processedFilesOutputPaths, processedFile
             if path == "-":
                 common.Utils.printQuietless()
 
-            mips.FilesHandlers.writeSection(path, f)
+            mips.FilesHandlers.writeSection(Path(path), f)
             i += 1
     return
 
@@ -239,7 +239,7 @@ def disassemblerMain():
     context.parseArgs(args)
 
     inputPath = Path(args.binary)
-    array_of_bytes = common.Utils.readFileAsBytearray(args.binary)
+    array_of_bytes = common.Utils.readFileAsBytearray(inputPath)
 
     fileSplitsPath = None
     if args.file_splits is not None:

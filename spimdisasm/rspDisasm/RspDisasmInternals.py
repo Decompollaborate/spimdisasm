@@ -67,7 +67,7 @@ def rspDisasmMain():
     applyGlobalConfigurations()
 
     binaryPath = Path(args.binary)
-    array_of_bytes = common.Utils.readFileAsBytearray(args.binary)
+    array_of_bytes = common.Utils.readFileAsBytearray(binaryPath)
     inputName = binaryPath.stem
 
     start = int(args.start, 16)
@@ -84,7 +84,7 @@ def rspDisasmMain():
     f.analyze()
     f.printAnalyzisResults()
 
-    mips.FilesHandlers.writeSection(args.output, f)
+    mips.FilesHandlers.writeSection(Path(args.output), f)
 
     if args.save_context is not None:
         contextPath = Path(args.save_context)

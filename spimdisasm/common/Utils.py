@@ -7,9 +7,9 @@ from __future__ import annotations
 
 import argparse
 import csv
-import os
 import hashlib
 import json
+from pathlib import Path
 import rabbitizer
 import struct
 import subprocess
@@ -46,22 +46,22 @@ def isStdoutRedirected() -> bool:
 def getStrHash(byte_array: bytearray) -> str:
     return str(hashlib.md5(byte_array).hexdigest())
 
-def writeBytearrayToFile(filepath: str, array_of_bytes: bytearray):
-    with open(filepath, mode="wb") as f:
+def writeBytearrayToFile(filepath: Path, array_of_bytes: bytearray):
+    with filepath.open(mode="wb") as f:
         f.write(array_of_bytes)
 
-def readFileAsBytearray(filepath: str) -> bytearray:
-    if not os.path.exists(filepath):
+def readFileAsBytearray(filepath: Path) -> bytearray:
+    if not filepath.exists():
         return bytearray(0)
-    with open(filepath, mode="rb") as f:
+    with filepath.open(mode="rb") as f:
         return bytearray(f.read())
 
-def readFile(filepath: str) -> list[str]:
-    with open(filepath) as f:
+def readFile(filepath: Path) -> list[str]:
+    with filepath.open() as f:
         return [x.strip() for x in f.readlines()]
 
-def readJson(filepath):
-    with open(filepath) as f:
+def readJson(filepath: Path):
+    with filepath.open() as f:
         return json.load(f)
 
 def removeExtraWhitespace(line: str) -> str:
@@ -138,9 +138,10 @@ def runCommandGetOutput(command: str, args: list[str]) -> list[str] | None:
     except:
         return None
 
-def readCsv(filepath: str) -> list[list[str]]:
+def readCsv(filepath: Path) -> list[list[str]]:
     data: list[list[str]] = []
-    with open(filepath) as f:
+
+    with filepath.open() as f:
         lines = f.readlines()
         processedLines = [x.strip().split("#")[0] for x in lines]
         csvReader = csv.reader(processedLines)

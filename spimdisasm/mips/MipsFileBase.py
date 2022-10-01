@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import sys
 from typing import TextIO
+from pathlib import Path
 
 from .. import common
 
@@ -177,7 +178,7 @@ class FileBase(common.ElementBase):
                 if self.sizew > 0:
                     buffer = bytearray(4*len(self.words))
                     common.Utils.wordsToBytes(self.words, buffer)
-                    common.Utils.writeBytearrayToFile(filepath + self.sectionType.toStr(), buffer)
+                    common.Utils.writeBytearrayToFile(Path(filepath + self.sectionType.toStr()), buffer)
             with open(filepath + self.sectionType.toStr() + ".s", "w") as f:
                 self.disassembleToFile(f)
 
