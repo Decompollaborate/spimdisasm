@@ -5,8 +5,8 @@
 
 from __future__ import annotations
 
-import os
 from typing import TextIO
+from pathlib import Path
 
 import rabbitizer
 
@@ -16,9 +16,7 @@ from . import sections
 from . import symbols
 
 
-def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_bytes: bytearray, outputPath: str, context: common.Context) -> sections.SectionBase:
-    head, tail = os.path.split(outputPath)
-
+def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_bytes: bytearray, outputPath: Path, context: common.Context) -> sections.SectionBase:
     offsetStart = splitEntry.offset
     offsetEnd = splitEntry.nextOffset
 
@@ -34,15 +32,15 @@ def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_byte
 
     f: sections.SectionBase
     if splitEntry.section == common.FileSectionType.Text:
-        f = sections.SectionText(context, offsetStart, offsetEnd, vram, tail, array_of_bytes, 0, None)
+        f = sections.SectionText(context, offsetStart, offsetEnd, vram, outputPath.stem, array_of_bytes, 0, None)
         if splitEntry.isRsp:
             f.instrCat = rabbitizer.InstrCategory.RSP
     elif splitEntry.section == common.FileSectionType.Data:
-        f = sections.SectionData(context, offsetStart, offsetEnd, vram, tail, array_of_bytes, 0, None)
+        f = sections.SectionData(context, offsetStart, offsetEnd, vram, outputPath.stem, array_of_bytes, 0, None)
     elif splitEntry.section == common.FileSectionType.Rodata:
-        f = sections.SectionRodata(context, offsetStart, offsetEnd, vram, tail, array_of_bytes, 0, None)
+        f = sections.SectionRodata(context, offsetStart, offsetEnd, vram, outputPath.stem, array_of_bytes, 0, None)
     elif splitEntry.section == common.FileSectionType.Bss:
-        f = sections.SectionBss(context, offsetStart, offsetEnd, splitEntry.vram, splitEntry.vram + offsetEnd - offsetStart, tail, 0, None)
+        f = sections.SectionBss(context, offsetStart, offsetEnd, splitEntry.vram, splitEntry.vram + offsetEnd - offsetStart, outputPath.stem, 0, None)
     else:
         common.Utils.eprint("Error! Section not set!")
         exit(-1)
@@ -51,15 +49,9 @@ def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_byte
 
     return f
 
-def writeSection(path: str, fileSection: sections.SectionBase):
-    head, tail = os.path.split(path)
-
-    # Create directories
-    if head != "":
-        os.makedirs(head, exist_ok=True)
-
-    fileSection.saveToFile(path)
-
+def writeSection(path: Path, fileSection: sections.SectionBase):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fileSection.saveToFile(str(path))
     return path
 
 
@@ -79,7 +71,8 @@ def getRdataAndLateRodataForFunctionFromSection(func: symbols.SymbolFunction, ro
 
         # A const variable should not be placed with a function
         if rodataSym.contextSym.isMaybeConstVariable():
-            continue
+            if common.GlobalConfig.COMPILER != common.Compiler.SN64:
+                continue
 
         if rodataSym.contextSym.isLateRodata() and common.GlobalConfig.COMPILER == common.Compiler.IDO:
             lateRodataList.append(rodataSym)
@@ -112,9 +105,6 @@ def writeFunctionRodataToFile(f: TextIO, func: symbols.SymbolFunction, rdataList
     if len(rdataList) > 0:
         # Write the rdata
         sectionName = ".rodata"
-        if common.GlobalConfig.COMPILER == common.Compiler.SN64:
-            sectionName = ".rdata"
-
         f.write(f".section {sectionName}" + common.GlobalConfig.LINE_ENDS)
         for sym in rdataList:
             f.write(sym.disassemble())
@@ -136,25 +126,27 @@ def writeFunctionRodataToFile(f: TextIO, func: symbols.SymbolFunction, rdataList
     if len(rdataList) > 0 or len(lateRodataList) > 0:
         f.write(common.GlobalConfig.LINE_ENDS + ".section .text" + common.GlobalConfig.LINE_ENDS)
 
-def writeSplitedFunction(path: str, func: symbols.SymbolFunction, rodataFileList: list[sections.SectionRodata]):
-    os.makedirs(path, exist_ok=True)
-    with open(os.path.join(path, func.getName()) + ".s", "w") as f:
+def writeSplitedFunction(path: Path, func: symbols.SymbolFunction, rodataFileList: list[sections.SectionRodata]):
+    path.mkdir(parents=True, exist_ok=True)
+
+    funcPath = path / (func.getName()+ ".s")
+    with funcPath.open("w") as f:
         rdataList, lateRodataList, lateRodataSize = getRdataAndLateRodataForFunction(func, rodataFileList)
         writeFunctionRodataToFile(f, func, rdataList, lateRodataList, lateRodataSize)
 
         # Write the function itself
         f.write(func.disassemble())
 
-def writeOtherRodata(path: str, rodataFileList: list[sections.SectionRodata]):
+def writeOtherRodata(path: Path, rodataFileList: list[sections.SectionRodata]):
     for rodataSection in rodataFileList:
-        rodataPath = os.path.join(path, rodataSection.name)
-        os.makedirs(rodataPath, exist_ok=True)
+        rodataPath = path / rodataSection.name
+        rodataPath.mkdir(parents=True, exist_ok=True)
 
         for rodataSym in rodataSection.symbolList:
             if not rodataSym.isRdata():
                 continue
 
-            rodataSymbolPath = os.path.join(rodataPath, rodataSym.getName()) + ".s"
-            with open(rodataSymbolPath, "w") as f:
+            rodataSymbolPath = rodataPath / (rodataSym.getName() + ".s")
+            with rodataSymbolPath.open("w") as f:
                 f.write(".section .rdata" + common.GlobalConfig.LINE_ENDS)
                 f.write(rodataSym.disassemble())

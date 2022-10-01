@@ -12,6 +12,22 @@ Currently supports all the CPU instructions for MIPS I, II, III and IV.
 
 Mainly focused on supporting Nintendo 64 binaries, but it should work with other MIPS platforms too.
 
+## Installing
+
+The recommended way to install is using from the PyPi release, via `pip`:
+
+```bash
+pip install spimdisasm
+```
+
+In case you want to mess with the latest development version without wanting to clone the repository, then you could use the following command:
+
+```bash
+pip install git+https://github.com/Decompollaborate/spimdisasm.git@develop
+```
+
+NOTE: Installing the development version is not recommended. Proceed at your own risk.
+
 ## Features
 
 - Produces matching assembly.
@@ -52,15 +68,17 @@ This repo can be used either by using the existing front-end scripts or by creat
 
 ### Front-end
 
-Every front-end script has its own `--help` screen.
+Every front-end submodule has its own `--help` screen.
 
-- `singleFileDisasm.py`: Allows to disassemble a single binary file, producing matching assembly files.
+The submodules can be executed with `python3 -m spimdisasm.modulename`, for example `python3 -m spimdisasm.disasmdis`
 
-- `disasmdis.py`: Disassembles raw hex passed to the CLI as a MIPS instruction.
+- `singleFileDisasm`: Allows to disassemble a single binary file, producing matching assembly files.
 
-- `elfObjDisasm.py`: \[EXPERIMENTAL\] Allows to disassemble `.o` elf files. Generated assembly files are not guaranteed to match or be assemblable.
+- `disasmdis`: Disassembles raw hex passed to the CLI as a MIPS instruction.
 
-- `rspDisasm.py`: Disassemblies RSP binaries.
+- `elfObjDisasm`: \[EXPERIMENTAL\] Allows to disassemble `.o` elf files. Generated assembly files are not guaranteed to match or be assemblable.
+
+- `rspDisasm`: Disassemblies RSP binaries.
 
 ### Back-end
 

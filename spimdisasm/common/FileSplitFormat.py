@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from . import Utils
 from .FileSectionType import FileSectionType
 
@@ -21,8 +23,9 @@ class FileSplitEntry:
 
 
 class FileSplitFormat:
-    def __init__(self, csvPath: str|None = None):
+    def __init__(self, csvPath: Path|None = None):
         self.splits: list[list[str]] = list()
+
         if csvPath is not None:
             self.readCsvFile(csvPath)
 
@@ -79,7 +82,7 @@ class FileSplitFormat:
 
             yield FileSplitEntry(offset, vram, fileName, section, nextOffset, isHandwritten, isRsp)
 
-    def readCsvFile(self, csvPath: str):
+    def readCsvFile(self, csvPath: Path):
         self.splits = Utils.readCsv(csvPath)
         self.splits = [x for x in self.splits if len(x) > 0]
 

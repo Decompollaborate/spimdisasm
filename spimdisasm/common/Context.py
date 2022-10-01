@@ -169,10 +169,10 @@ class Context:
 
         if args.functions is not None:
             for funcsPath in args.functions:
-                self.globalSegment.readFunctionsCsv(funcsPath)
+                self.globalSegment.readFunctionsCsv(Path(funcsPath))
         if args.variables is not None:
             for varsPath in args.variables:
-                self.globalSegment.readVariablesCsv(varsPath)
+                self.globalSegment.readVariablesCsv(Path(varsPath))
         if args.constants is not None:
             for constantsPath in args.constants:
-                self.globalSegment.readConstantsCsv(constantsPath)
+                self.globalSegment.readConstantsCsv(Path(constantsPath))

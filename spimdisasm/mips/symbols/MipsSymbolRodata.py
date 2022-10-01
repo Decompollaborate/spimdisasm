@@ -178,14 +178,21 @@ class SymbolRodata(SymbolBase):
                     comment = self.generateAsmLineComment(localOffset)
                     result = f"{label}{comment} "
 
+                    commentPaddingNum = 22
+                    if not common.GlobalConfig.ASM_COMMENT:
+                        commentPaddingNum = 1
+
                     if rawStringSize == 0:
                         decodedStrings.append("")
                     for decodedValue in decodedStrings[:-1]:
                         result += f'.ascii "{decodedValue}"'
-                        result += common.GlobalConfig.LINE_ENDS + (22 * " ")
+                        result += common.GlobalConfig.LINE_ENDS + (commentPaddingNum * " ")
                     result += f'.asciz "{decodedStrings[-1]}"'
-                    result += common.GlobalConfig.LINE_ENDS + (22 * " ")
-                    result += ".balign 4"
+                    result += common.GlobalConfig.LINE_ENDS + (commentPaddingNum * " ")
+                    if common.GlobalConfig.COMPILER == common.Compiler.SN64:
+                        result += ".align 2"
+                    else:
+                        result += ".balign 4"
                     result += common.GlobalConfig.LINE_ENDS
 
                     return result, skip

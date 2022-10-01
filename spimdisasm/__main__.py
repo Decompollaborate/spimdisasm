@@ -34,8 +34,8 @@ def exampleMain():
     context.globalSegment.changeRanges(0x0, 0xFFFFFFFF, 0x0, 0xFFFFFFFF)
 
     # Read whole binary input file
-    array_of_bytes = spimdisasm.common.Utils.readFileAsBytearray(args.binary)
-    inputName = pathlib.Path(args.binary).stem
+    inputPath = pathlib.Path(args.binary)
+    array_of_bytes = spimdisasm.common.Utils.readFileAsBytearray(inputPath)
 
     start = int(args.start, 16)
     end = int(args.end, 16)
@@ -45,7 +45,7 @@ def exampleMain():
     truncatedInputBytes = array_of_bytes[start:end]
 
     # Asume the input is a .text section. Insntance a SectionText and analyze it
-    textSection = spimdisasm.mips.sections.SectionText(context, start, end, fileVram, inputName, truncatedInputBytes, 0, None)
+    textSection = spimdisasm.mips.sections.SectionText(context, start, end, fileVram, inputPath.stem, truncatedInputBytes, 0, None)
     textSection.analyze()
     textSection.setCommentOffset(start)
 
