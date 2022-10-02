@@ -116,7 +116,7 @@ class SymbolRodata(SymbolBase):
         return count
 
 
-    def getAlignDirective(self, i: int=0) -> str:
+    def getPrevAlignDirective(self, i: int=0) -> str:
         commentPaddingNum = 22
         if not common.GlobalConfig.ASM_COMMENT:
             commentPaddingNum = 1
@@ -129,7 +129,16 @@ class SymbolRodata(SymbolBase):
                 alignDirective += ".align 3"
                 alignDirective += common.GlobalConfig.LINE_ENDS
 
-        elif self.isString():
+        return alignDirective
+
+    def getPostAlignDirective(self, i: int=0) -> str:
+        commentPaddingNum = 22
+        if not common.GlobalConfig.ASM_COMMENT:
+            commentPaddingNum = 1
+
+        alignDirective = ""
+
+        if self.isString():
             alignDirective += commentPaddingNum * " "
             if common.GlobalConfig.COMPILER == common.Compiler.SN64:
                 alignDirective += ".align 2"
@@ -208,7 +217,6 @@ class SymbolRodata(SymbolBase):
                         result += f'.ascii "{decodedValue}"'
                         result += common.GlobalConfig.LINE_ENDS + (commentPaddingNum * " ")
                     result += f'.asciz "{decodedStrings[-1]}"{common.GlobalConfig.LINE_ENDS}'
-                    result += self.getAlignDirective()
 
                     return result, skip
                 except (UnicodeDecodeError, RuntimeError):
@@ -216,5 +224,4 @@ class SymbolRodata(SymbolBase):
                     self._failedStringDecoding = True
 
         comment = self.generateAsmLineComment(localOffset, rodataWord)
-        alignDirective = self.getAlignDirective(i)
-        return f"{label}{comment} {dotType} {value}{common.GlobalConfig.LINE_ENDS}{alignDirective}", skip
+        return f"{label}{comment} {dotType} {value}{common.GlobalConfig.LINE_ENDS}", skip
