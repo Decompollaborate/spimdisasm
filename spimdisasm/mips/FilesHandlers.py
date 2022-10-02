@@ -66,7 +66,7 @@ def getRdataAndLateRodataForFunctionFromSection(func: symbols.SymbolFunction, ro
             continue
 
         # We only care for rodata that's used once
-        if rodataSym.contextSym.referenceCounter != 1:
+        if rodataSym.contextSym.referenceCounter != 1 and len(rodataSym.contextSym.referenceFunctions) != 1:
             continue
 
         # A const variable should not be placed with a function
