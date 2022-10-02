@@ -181,12 +181,12 @@ class SymbolRodata(SymbolBase):
 
         if self.isFloat(i):
             dotType = ".float"
-            value = str(common.Utils.wordToFloat(w))
+            value = f"{common.Utils.wordToFloat(w):.9f}"
         elif self.isDouble(i):
             dotType = ".double"
             otherHalf = self.words[i+1]
             doubleWord = (w << 32) | otherHalf
-            value = str(common.Utils.qwordToDouble(doubleWord))
+            value = f"{common.Utils.qwordToDouble(doubleWord):.18f}"
             rodataWord = doubleWord
             skip = 1
         else:
