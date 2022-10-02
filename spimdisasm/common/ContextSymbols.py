@@ -65,7 +65,7 @@ class ContextSymbol:
     referenceCounter: int = 0
     "How much this symbol is referenced by something else"
 
-    referenceFunctions: Set = dataclasses.field(default_factory=set)
+    referenceFunctions: set[ContextSymbol] = dataclasses.field(default_factory=set)
     "Which functions reference this symbol"
 
     overlayCategory: str|None = None

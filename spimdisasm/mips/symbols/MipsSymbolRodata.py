@@ -56,7 +56,7 @@ class SymbolRodata(SymbolBase):
             return True
 
         # This symbol could be an unreferenced non-const variable
-        if self.contextSym.referenceCounter == 1 or len(self.contextSym.referenceFunctions) == 1:
+        if self.contextSym.referenceCounter == 1 or (len(self.contextSym.referenceFunctions) == 1 and common.GlobalConfig.COMPILER != common.Compiler.IDO):
             # This const variable was already used in a function
             return False
 
