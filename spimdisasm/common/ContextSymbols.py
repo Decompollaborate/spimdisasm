@@ -294,6 +294,15 @@ class ContextSymbol:
         return output
 
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, ContextSymbol):
+            return False
+        return self.address == other.address and self.vromAddress == other.vromAddress
+
+    # https://stackoverflow.com/a/56915493/6292472
+    def __hash__(self):
+        return hash((self.address, self.vromAddress))
+
 class ContextOffsetSymbol(ContextSymbol):
     def __init__(self, offset: int, name: str, sectionType: FileSectionType, *args, **kwargs):
         super().__init__(offset, *args, **kwargs)
