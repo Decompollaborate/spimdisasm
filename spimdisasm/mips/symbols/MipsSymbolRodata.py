@@ -17,10 +17,11 @@ class SymbolRodata(SymbolBase):
         super().__init__(context, vromStart, vromEnd, inFileOffset, vram, words, common.FileSectionType.Rodata, segmentVromStart, overlayCategory)
 
         self.stringEncoding: str = "EUC-JP"
+        self._failedStringDecoding: bool = False
 
 
     def isString(self) -> bool:
-        return self.contextSym.isString()
+        return self.contextSym.isString() and not self._failedStringDecoding
 
     def isFloat(self, index: int) -> bool:
         if self.contextSym.isFloat():
@@ -56,7 +57,7 @@ class SymbolRodata(SymbolBase):
             return True
 
         # This symbol could be an unreferenced non-const variable
-        if self.contextSym.referenceCounter == 1:
+        if self.contextSym.referenceCounter == 1 or (len(self.contextSym.referenceFunctions) == 1 and common.GlobalConfig.COMPILER != common.Compiler.IDO):
             # This const variable was already used in a function
             return False
 
@@ -115,6 +116,38 @@ class SymbolRodata(SymbolBase):
         return count
 
 
+    def getPrevAlignDirective(self, i: int=0) -> str:
+        commentPaddingNum = 22
+        if not common.GlobalConfig.ASM_COMMENT:
+            commentPaddingNum = 1
+
+        alignDirective = ""
+
+        if self.isDouble(i):
+            if common.GlobalConfig.COMPILER == common.Compiler.SN64:
+                alignDirective += commentPaddingNum * " "
+                alignDirective += ".align 3"
+                alignDirective += common.GlobalConfig.LINE_ENDS
+
+        return alignDirective
+
+    def getPostAlignDirective(self, i: int=0) -> str:
+        commentPaddingNum = 22
+        if not common.GlobalConfig.ASM_COMMENT:
+            commentPaddingNum = 1
+
+        alignDirective = ""
+
+        if self.isString():
+            alignDirective += commentPaddingNum * " "
+            if common.GlobalConfig.COMPILER == common.Compiler.SN64:
+                alignDirective += ".align 2"
+            else:
+                alignDirective += ".balign 4"
+            alignDirective += common.GlobalConfig.LINE_ENDS
+
+        return alignDirective
+
     def getNthWord(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False) -> tuple[str, int]:
         if self.contextSym.isByte() or self.contextSym.isShort():
             return super().getNthWord(i, canReferenceSymbolsWithAddends, canReferenceConstants)
@@ -148,12 +181,14 @@ class SymbolRodata(SymbolBase):
 
         if self.isFloat(i):
             dotType = ".float"
-            value = str(common.Utils.wordToFloat(w))
+            floatValue = common.Utils.wordToFloat(w)
+            value = f"{floatValue:.10g}"
         elif self.isDouble(i):
             dotType = ".double"
             otherHalf = self.words[i+1]
             doubleWord = (w << 32) | otherHalf
-            value = str(common.Utils.qwordToDouble(doubleWord))
+            doubleValue = common.Utils.qwordToDouble(doubleWord)
+            value = f"{doubleValue:.18g}"
             rodataWord = doubleWord
             skip = 1
         else:
@@ -170,10 +205,6 @@ class SymbolRodata(SymbolBase):
                     common.Utils.wordsToBytes(self.words, buffer)
                     decodedStrings, rawStringSize = common.Utils.decodeString(buffer, 4*i, self.stringEncoding)
 
-                    # dotType = ".asciz"
-                    # value = f'"{decodedValue}"'
-                    # value += common.GlobalConfig.LINE_ENDS + (22 * " ") + ".balign 4"
-                    # rodataWord = None
                     skip = rawStringSize // 4
                     comment = self.generateAsmLineComment(localOffset)
                     result = f"{label}{comment} "
@@ -187,18 +218,12 @@ class SymbolRodata(SymbolBase):
                     for decodedValue in decodedStrings[:-1]:
                         result += f'.ascii "{decodedValue}"'
                         result += common.GlobalConfig.LINE_ENDS + (commentPaddingNum * " ")
-                    result += f'.asciz "{decodedStrings[-1]}"'
-                    result += common.GlobalConfig.LINE_ENDS + (commentPaddingNum * " ")
-                    if common.GlobalConfig.COMPILER == common.Compiler.SN64:
-                        result += ".align 2"
-                    else:
-                        result += ".balign 4"
-                    result += common.GlobalConfig.LINE_ENDS
+                    result += f'.asciz "{decodedStrings[-1]}"{common.GlobalConfig.LINE_ENDS}'
 
                     return result, skip
                 except (UnicodeDecodeError, RuntimeError):
                     # Not a string
-                    pass
+                    self._failedStringDecoding = True
 
         comment = self.generateAsmLineComment(localOffset, rodataWord)
-        return f"{label}{comment} {dotType} {value}" + common.GlobalConfig.LINE_ENDS, skip
+        return f"{label}{comment} {dotType} {value}{common.GlobalConfig.LINE_ENDS}", skip

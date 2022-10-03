@@ -20,6 +20,9 @@ def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_byte
     offsetStart = splitEntry.offset
     offsetEnd = splitEntry.nextOffset
 
+    if offsetEnd == 0xFFFFFF:
+        offsetEnd = len(array_of_bytes)
+
     if offsetStart >= 0 and offsetEnd >= 0:
         common.Utils.printVerbose(f"Parsing offset range [{offsetStart:02X}, {offsetEnd:02X}]")
     elif offsetEnd >= 0:
@@ -67,7 +70,10 @@ def getRdataAndLateRodataForFunctionFromSection(func: symbols.SymbolFunction, ro
 
         # We only care for rodata that's used once
         if rodataSym.contextSym.referenceCounter != 1:
-            continue
+            if common.GlobalConfig.COMPILER == common.Compiler.IDO:
+                continue
+            elif len(rodataSym.contextSym.referenceFunctions) != 1:
+                continue
 
         # A const variable should not be placed with a function
         if rodataSym.contextSym.isMaybeConstVariable():

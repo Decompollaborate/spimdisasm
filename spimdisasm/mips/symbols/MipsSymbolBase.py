@@ -173,9 +173,15 @@ class SymbolBase(common.ElementBase):
         "Returns how many extra word paddings this symbol has"
         return 0
 
+    def getPrevAlignDirective(self, i: int=0) -> str:
+        return ""
+
+    def getPostAlignDirective(self, i: int=0) -> str:
+        return ""
 
     def disassembleAsData(self) -> str:
-        output = self.getLabel()
+        output = self.getPrevAlignDirective(0)
+        output += self.getLabel()
         if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
             output += f"{self.getName()}:" + common.GlobalConfig.LINE_ENDS
 
@@ -185,7 +191,10 @@ class SymbolBase(common.ElementBase):
         i = 0
         while i < self.sizew:
             data, skip = self.getNthWord(i, canReferenceSymbolsWithAddends, canReferenceConstants)
+            if i != 0:
+                output += self.getPrevAlignDirective(i)
             output += data
+            output += self.getPostAlignDirective(i)
 
             i += skip
             i += 1
