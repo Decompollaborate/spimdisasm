@@ -23,6 +23,7 @@ pip install spimdisasm
 In case you want to mess with the latest development version without wanting to clone the repository, then you could use the following command:
 
 ```bash
+pip uninstall spimdisasm
 pip install git+https://github.com/Decompollaborate/spimdisasm.git@develop
 ```
 
