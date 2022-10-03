@@ -195,6 +195,10 @@ class ElementBase:
     def getSymbol(self, vramAddress: int, tryPlusOffset: bool = True, checkUpperLimit: bool = True, checkGlobalSegment: bool = True) -> ContextSymbol|None:
         "Searches symbol or a symbol with an addend if `tryPlusOffset` is True"
 
+        contextSym = self.context.globalSegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
+        if contextSym is not None:
+            return contextSym
+
         if self.overlayCategory is not None:
             # If this element is part of an overlay segment
 
@@ -212,7 +216,8 @@ class ElementBase:
             for overlayCategory, segmentsPerVrom in self.context.overlaySegments.items():
                 if self.overlayCategory != overlayCategory:
                     for overlaySegment in segmentsPerVrom.values():
-                        # if overlaySegment.isVramInRange(vramAddress):
+                        if not overlaySegment.isVramInRange(vramAddress):
+                            continue
                         contextSym = overlaySegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
                         if contextSym is not None:
                             return contextSym
@@ -220,10 +225,6 @@ class ElementBase:
             if not checkGlobalSegment:
                 return None
 
-        # if self.context.globalSegment.isVramInRange(vramAddress):
-        contextSym = self.context.globalSegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
-        if contextSym is not None:
-            return contextSym
         contextSym = self.context.unknownSegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
         if self._ownSegmentReference is not None:
             if contextSym is not None and contextSym.vromAddress is not None:
