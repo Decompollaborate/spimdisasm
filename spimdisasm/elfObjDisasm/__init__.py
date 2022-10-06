@@ -6,4 +6,4 @@
 from __future__ import annotations
 
 
-from .ElfObjDisasmInternals import getArgsParser, applyArgs, applyGlobalConfigurations, getOutputPath, getProcessedSections, changeGlobalSegmentRanges, insertSymbolsIntoContext, injectAllElfSymbols, processGlobalOffsetTable, elfObjDisasmMain
+from .ElfObjDisasmInternals import getArgsParser, applyArgs, applyGlobalConfigurations, getOutputPath, getProcessedSections, changeGlobalSegmentRanges, insertSymtabIntoContext, insertDynsymIntoContext, injectAllElfSymbols, processGlobalOffsetTable, elfObjDisasmMain
