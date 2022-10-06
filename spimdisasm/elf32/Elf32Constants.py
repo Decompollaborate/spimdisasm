@@ -45,6 +45,21 @@ class Elf32HeaderIdentifier:
         ARM         =  97 # ARM
         STANDALONE  = 255 # Standalone (embedded) application
 
+
+# ET (object file type)
+class Elf32ObjectFileType(enum.Enum):
+    NONE            = 0 # No file type
+    REL             = 1 # Relocatable file
+    EXEC            = 2 # Executable file
+    DYN             = 3 # Shared object file
+    CORE            = 4 # Core file
+    NUM             = 5 # Number of defined types
+    # LOOS		0xfe00		/* OS-specific range start */
+    # HIOS		0xfeff		/* OS-specific range end */
+    # LOPROC	0xff00		/* Processor-specific range start */
+    # HIPROC	0xffff		/* Processor-specific range end */
+
+
 # a.k.a. SHT (section header type)
 @enum.unique
 class Elf32SectionHeaderType(enum.Enum):
