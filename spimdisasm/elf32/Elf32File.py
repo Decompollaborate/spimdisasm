@@ -9,7 +9,7 @@ from typing import Callable
 
 from .. import common
 
-from .Elf32Constants import Elf32HeaderIdentifier, Elf32SectionHeaderType
+from .Elf32Constants import Elf32HeaderIdentifier, Elf32HeaderFlag, Elf32SectionHeaderType
 from .Elf32Dyns import Elf32Dyns
 from .Elf32GlobalOffsetTable import Elf32GlobalOffsetTable
 from .Elf32Header import Elf32Header
@@ -30,6 +30,13 @@ class Elf32File:
             common.GlobalConfig.ENDIAN = common.InputEndian.BIG
         elif dataEncoding == Elf32HeaderIdentifier.DataEncoding.DATA2LSB:
             common.GlobalConfig.ENDIAN = common.InputEndian.LITTLE
+
+        elfFlags, unknownElfFlags = Elf32HeaderFlag.parseFlags(self.header.flags)
+        self.elfFlags = elfFlags
+        self.unknownElfFlags = unknownElfFlags
+
+        if self.unknownElfFlags != 0:
+            common.Utils.eprint(f"Warning: Elf header has unknown flags: 0x{self.unknownElfFlags:X}")
 
         self.strtab: Elf32StringTable | None = None
         self.symtab: Elf32Syms | None = None

@@ -234,6 +234,9 @@ def elfObjDisasmMain():
     array_of_bytes = common.Utils.readFileAsBytearray(inputPath)
     elfFile = elf32.Elf32File(array_of_bytes)
 
+    if elf32.Elf32HeaderFlag.PIC in elfFile.elfFlags or elf32.Elf32HeaderFlag.CPIC in elfFile.elfFlags:
+        common.GlobalConfig.PIC = True
+
     textOutput = Path(args.output)
     if args.data_output is None:
         dataOutput = textOutput
