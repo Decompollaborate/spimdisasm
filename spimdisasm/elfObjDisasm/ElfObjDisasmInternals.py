@@ -143,7 +143,7 @@ def addRelocatedSymbol(context: common.Context, symEntry: elf32.Elf32SymEntry, s
 
 def insertSymtabIntoContext(context: common.Context, symbolTable: elf32.Elf32Syms, stringTable: elf32.Elf32StringTable, elfFile: elf32.Elf32File):
     # Use the symbol table to replace symbol names present in disassembled sections
-    for symEntry in symbolTable:
+    for i, symEntry in enumerate(symbolTable):
         symName = stringTable[symEntry.name]
 
         if symEntry.shndx == 0:
@@ -153,7 +153,7 @@ def insertSymtabIntoContext(context: common.Context, symbolTable: elf32.Elf32Sym
         if sectHeaderEntry is None:
             continue
 
-        if elfFile.header.type != elf32.Elf32ObjectFileType.REL.value:
+        if len(elfFile.rel) == 0:
             addRelocatedSymbol(context, symEntry, symName)
             continue
 
@@ -166,7 +166,7 @@ def insertSymtabIntoContext(context: common.Context, symbolTable: elf32.Elf32Sym
             contextOffsetSym.isUserDeclared = True
             context.offsetSymbols[sectType][symEntry.value] = contextOffsetSym
         else:
-            common.Utils.eprint(f"symbol referencing invalid section '{sectName}'")
+            common.Utils.eprint(f"Warning: symbol {i} (name: '{symName}', value: 0x{symEntry.value:X}) is referencing invalid section '{sectName}'")
 
 def insertDynsymIntoContext(context: common.Context, symbolTable: elf32.Elf32Syms, stringTable: elf32.Elf32StringTable):
     for symEntry in symbolTable:
