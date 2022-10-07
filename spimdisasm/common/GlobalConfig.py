@@ -73,6 +73,8 @@ class GlobalConfig:
 
     GP_VALUE: int|None = None
     """Value used for $gp relocation loads and stores"""
+    PIC: bool = False
+    """Position independent code"""
 
     SYMBOL_FINDER_FILTER_LOW_ADDRESSES: bool = True
     """Toggle pointer detection for lower addresses (lower than 0x40000000)"""
@@ -150,6 +152,7 @@ class GlobalConfig:
         backendConfig.add_argument("--endian", help=f"Set the endianness of input files. Defaults to {GlobalConfig.ENDIAN.name.lower()}", choices=["big", "little", "middle"], default=GlobalConfig.ENDIAN.name.lower())
 
         backendConfig.add_argument("--gp", help="Set the value used for loads and stores related to the $gp register. A hex value is expected")
+        backendConfig.add_argument("--pic", help=f"Enables PIC analysis and the usage of some rel types, like %got. Defaults to {GlobalConfig.PIC}", action=Utils.BooleanOptionalAction)
 
         backendConfig.add_argument("--filter-low-addresses", help=f"Filter out low addresses (lower than 0x40000000) when searching for pointers. Defaults to {GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES}", action=Utils.BooleanOptionalAction)
         backendConfig.add_argument("--filter-high-addresses", help=f"Filter out high addresses (higher than 0xC0000000) when searching for pointers. Defaults to {GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES}", action=Utils.BooleanOptionalAction)
@@ -220,6 +223,8 @@ class GlobalConfig:
 
         if args.gp is not None:
             GlobalConfig.GP_VALUE = int(args.gp, 16)
+        if args.pic is not None:
+            GlobalConfig.PIC = args.pic
 
         if args.filter_low_addresses is not None:
             GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES = args.filter_low_addresses

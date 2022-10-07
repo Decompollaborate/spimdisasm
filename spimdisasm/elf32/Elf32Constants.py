@@ -60,6 +60,73 @@ class Elf32ObjectFileType(enum.Enum):
     # HIPROC	0xffff		/* Processor-specific range end */
 
 
+# Legal values for e_flags field of Elf32_Ehdr
+class Elf32HeaderFlag(enum.Enum):
+    NOREORDER       = 0x00000001 # A .noreorder directive was used.
+    PIC             = 0x00000002 # Contains PIC code.
+    CPIC            = 0x00000004 # Uses PIC calling sequence.
+    XGOT            = 0x00000008
+    F_64BIT_WHIRL   = 0x00000010
+    ABI2            = 0x00000020
+    ABI_ON32        = 0x00000040
+
+    FP64            = 0x00000200 # Uses FP64 (12 callee-saved).
+    NAN2008         = 0x00000400 # Uses IEEE 754-2008 NaN encoding.
+
+    ARCH            = 0xF0000000 # MIPS architecture level.
+
+    # Legal values for MIPS architecture level
+    ARCH_1          = 0x00000000 # -mips1 code.
+    ARCH_2          = 0x10000000 # -mips2 code.
+    ARCH_3          = 0x20000000 # -mips3 code.
+    ARCH_4          = 0x30000000 # -mips4 code.
+    ARCH_5          = 0x40000000 # -mips5 code.
+    ARCH_32         = 0x50000000 # MIPS32 code.
+    ARCH_64         = 0x60000000 # MIPS64 code.
+    ARCH_32R2       = 0x70000000 # MIPS32r2 code.
+    ARCH_64R2       = 0x80000000 # MIPS64r2 code.
+
+
+    @staticmethod
+    def parseFlags(rawFlags: int) -> tuple[list[Elf32HeaderFlag], int]:
+        flagsToCheck = {
+            Elf32HeaderFlag.NOREORDER, Elf32HeaderFlag.PIC, Elf32HeaderFlag.CPIC,
+            Elf32HeaderFlag.XGOT, Elf32HeaderFlag.F_64BIT_WHIRL, Elf32HeaderFlag.ABI2,
+            Elf32HeaderFlag.ABI_ON32,
+            Elf32HeaderFlag.FP64, Elf32HeaderFlag.NAN2008}
+        parsedFlags: list[Elf32HeaderFlag] = list()
+
+        for flagEnum in flagsToCheck:
+            if rawFlags & flagEnum.value:
+                parsedFlags.append(flagEnum)
+                rawFlags &= ~flagEnum.value
+
+        archLevel = rawFlags & Elf32HeaderFlag.ARCH.value
+        rawFlags &= ~Elf32HeaderFlag.ARCH.value
+        if archLevel == Elf32HeaderFlag.ARCH_1.value:
+            parsedFlags.append(Elf32HeaderFlag.ARCH_1)
+        elif archLevel == Elf32HeaderFlag.ARCH_2.value:
+            parsedFlags.append(Elf32HeaderFlag.ARCH_2)
+        elif archLevel == Elf32HeaderFlag.ARCH_3.value:
+            parsedFlags.append(Elf32HeaderFlag.ARCH_3)
+        elif archLevel == Elf32HeaderFlag.ARCH_4.value:
+            parsedFlags.append(Elf32HeaderFlag.ARCH_4)
+        elif archLevel == Elf32HeaderFlag.ARCH_5.value:
+            parsedFlags.append(Elf32HeaderFlag.ARCH_5)
+        elif archLevel == Elf32HeaderFlag.ARCH_32.value:
+            parsedFlags.append(Elf32HeaderFlag.ARCH_32)
+        elif archLevel == Elf32HeaderFlag.ARCH_64.value:
+            parsedFlags.append(Elf32HeaderFlag.ARCH_64)
+        elif archLevel == Elf32HeaderFlag.ARCH_32R2.value:
+            parsedFlags.append(Elf32HeaderFlag.ARCH_32R2)
+        elif archLevel == Elf32HeaderFlag.ARCH_64R2.value:
+            parsedFlags.append(Elf32HeaderFlag.ARCH_64R2)
+        else:
+            rawFlags |= archLevel
+
+        return parsedFlags, rawFlags
+
+
 # a.k.a. SHT (section header type)
 @enum.unique
 class Elf32SectionHeaderType(enum.Enum):

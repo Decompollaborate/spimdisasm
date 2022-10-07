@@ -333,12 +333,14 @@ class SymbolFunction(SymbolText):
             return f"%hi({symName})"
 
         if instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
-            if symbol is not None:
-                if symbol.isGotGlobal and symbol.type == common.SymbolSpecialType.function:
-                    return f"%call16({symName})"
-                elif symbol.isGot:
-                    return f"%got({symName})"
-            return f"%gp_rel({symName})"
+            if common.GlobalConfig.PIC:
+                if symbol is not None:
+                    if symbol.isGotGlobal and symbol.type == common.SymbolSpecialType.function:
+                        return f"%call16({symName})"
+                    elif symbol.isGot:
+                        return f"%got({symName})"
+            if not common.GlobalConfig.PIC:
+                return f"%gp_rel({symName})"
 
         return f"%lo({symName})"
 

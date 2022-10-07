@@ -169,13 +169,6 @@ class SectionText(SectionBase):
             if start >= end:
                 break
 
-            # TODO: wire up back
-            # funcName = f"func_{i}"
-            # if len(self.context.offsetSymbols[self.sectionType]) > 0:
-            #     possibleFuncName = self.context.getOffsetSymbol(start*4, self.sectionType)
-            #     if possibleFuncName is not None:
-            #         funcName = possibleFuncName.getName()
-
             localOffset = start*4
             vram = self.getVramOffset(localOffset)
 

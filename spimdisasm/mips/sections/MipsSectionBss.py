@@ -19,9 +19,11 @@ class SectionBss(SectionBase):
         self.bssVramStart: int = bssVramStart
         self.bssVramEnd: int = bssVramEnd
 
-        self.bssTotalSize: int = bssVramEnd - bssVramStart
-
         self.vram = bssVramStart
+
+    @property
+    def bssTotalSize(self) -> int:
+        return self.bssVramEnd - self.bssVramStart
 
     @property
     def sizew(self) -> int:
@@ -46,13 +48,20 @@ class SectionBss(SectionBase):
 
 
         offsetSymbolsInSection = self.context.offsetSymbols[common.FileSectionType.Bss]
-        bssSymbolOffsets: set[int] = set(offsetSymbolsInSection.keys())
+        bssSymbolOffsets: set[int] = set()
+        for offset in offsetSymbolsInSection.keys():
+            if offset < self.vromStart:
+                continue
+            if offset >= self.vromEnd:
+                continue
+            bssSymbolOffsets.add(offset - self.vromStart)
 
         for symbolVram, contextSym in self.getSymbolsRange(self.bssVramStart, self.bssVramEnd):
             # Mark every known symbol that happens to be in this address space as defined
             contextSym.sectionType = common.FileSectionType.Bss
 
             # Needs to move this to a list because the algorithm requires to check the size of a bss variable based on the next bss variable' vram
+            assert symbolVram >= self.bssVramStart
             assert symbolVram < self.bssVramEnd
             bssSymbolOffsets.add(symbolVram - self.bssVramStart)
 
@@ -60,6 +69,7 @@ class SectionBss(SectionBase):
             if contextSym.size is not None:
                 newSymbolVram = symbolVram + contextSym.size
                 if newSymbolVram != self.bssVramEnd:
+                    assert newSymbolVram >= self.bssVramStart
                     assert newSymbolVram < self.bssVramEnd
                     bssSymbolOffsets.add(symbolVram + contextSym.size - self.bssVramStart)
 
