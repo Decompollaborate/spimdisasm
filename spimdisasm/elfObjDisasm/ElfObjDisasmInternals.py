@@ -153,7 +153,7 @@ def insertSymtabIntoContext(context: common.Context, symbolTable: elf32.Elf32Sym
         if sectHeaderEntry is None:
             continue
 
-        if len(elfFile.rel) == 0:
+        if elfFile.header.type != elf32.Elf32ObjectFileType.REL.value:
             addRelocatedSymbol(context, symEntry, symName)
             continue
 
@@ -178,16 +178,17 @@ def insertDynsymIntoContext(context: common.Context, symbolTable: elf32.Elf32Sym
 def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File) -> None:
     if elfFile.symtab is not None and elfFile.strtab is not None:
         # Inject symbols from the reloc table referenced in each section
-        for sectType, relocs in elfFile.rel.items():
-            # subSection = processedFiles[sectType][1]
-            for rel in relocs:
-                symbolEntry = elfFile.symtab[rel.rSym]
-                symbolName = elfFile.strtab[symbolEntry.name]
+        if elfFile.header.type == elf32.Elf32ObjectFileType.REL.value:
+            for sectType, relocs in elfFile.rel.items():
+                # subSection = processedFiles[sectType][1]
+                for rel in relocs:
+                    symbolEntry = elfFile.symtab[rel.rSym]
+                    symbolName = elfFile.strtab[symbolEntry.name]
 
-                contextRelocSym = common.ContextRelocSymbol(rel.offset, symbolName, sectType)
-                contextRelocSym.isDefined = True
-                contextRelocSym.relocType = rel.rType
-                context.relocSymbols[sectType][rel.offset] = contextRelocSym
+                    contextRelocSym = common.ContextRelocSymbol(rel.offset, symbolName, sectType)
+                    contextRelocSym.isDefined = True
+                    contextRelocSym.relocType = rel.rType
+                    context.relocSymbols[sectType][rel.offset] = contextRelocSym
 
         # Use the symtab to replace symbol names present in disassembled sections
         insertSymtabIntoContext(context, elfFile.symtab, elfFile.strtab, elfFile)
