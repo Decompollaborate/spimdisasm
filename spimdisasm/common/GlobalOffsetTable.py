@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from .. import common
+
 
 class GlobalOffsetTable:
     def __init__(self):
@@ -23,4 +25,8 @@ class GlobalOffsetTable:
             return self.localsTable[index]
 
         index -= len(self.localsTable)
+        if index >= len(self.globalsTable):
+            common.Utils.eprint(f"Warning: %got address 0x{address:X} not found on local or global table")
+            common.Utils.eprint(f"\tindex: {index}, len(globalsTable): {len(self.globalsTable)}")
+            return None
         return self.globalsTable[index]
