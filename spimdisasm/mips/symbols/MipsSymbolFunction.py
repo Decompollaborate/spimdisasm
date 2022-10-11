@@ -506,10 +506,10 @@ class SymbolFunction(SymbolText):
             output += label
 
             cpload = self.instrAnalyzer.cploads.get(instructionOffset)
-            if cpload is not None:
+            if common.GlobalConfig.EMIT_CPLOAD and cpload is not None:
                 assert cpload.reg is not None
                 output += f".set noreorder; .cpload ${cpload.reg.name}; # .set reorder" + common.GlobalConfig.LINE_ENDS
-            elif instructionOffset in self.instrAnalyzer.cploadOffsets:
+            elif common.GlobalConfig.EMIT_CPLOAD and instructionOffset in self.instrAnalyzer.cploadOffsets:
                 # don't emit the other instructions which are part of .cpload
                 pass
             else:
