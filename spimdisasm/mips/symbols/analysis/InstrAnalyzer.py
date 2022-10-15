@@ -93,7 +93,7 @@ class InstrAnalyzer:
             # Already processed
             return
 
-        branchOffset = instr.getGenericBranchOffset(currentVram)
+        branchOffset = instr.getBranchOffsetGeneric()
         branch = instrOffset + branchOffset
         targetBranchVram = self.funcVram + branch
 
@@ -344,10 +344,10 @@ class InstrAnalyzer:
         if instr.isBranch() or instr.isUnconditionalBranch():
             self.processBranch(instr, instrOffset, currentVram)
 
-        elif instr.isJType():
+        elif instr.isJumpWithAddress():
             self.processFuncCall(instr, instrOffset)
 
-        elif instr.isIType():
+        elif instr.hasOperandAlias(rabbitizer.OperandType.cpu_immediate):
             self.symbolFinder(regsTracker, instr, prevInstr, instrOffset, got)
             self.processSymbolDereferenceType(regsTracker, instr, instrOffset)
 

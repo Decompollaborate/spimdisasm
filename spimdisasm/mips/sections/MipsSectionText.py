@@ -95,7 +95,7 @@ class SectionText(SectionBase):
                 isLikelyHandwritten = instr.isLikelyHandwritten()
 
             if instr.isBranch() or instr.isUnconditionalBranch():
-                branchOffset = instr.getGenericBranchOffset(currentVram)
+                branchOffset = instr.getBranchOffsetGeneric()
                 if branchOffset > farthestBranch:
                     # keep track of the farthest branch target
                     farthestBranch = branchOffset
@@ -119,7 +119,7 @@ class SectionText(SectionBase):
                                 break
                             j -= 1
 
-            elif instr.isJType():
+            elif instr.isJumpWithAddress():
                 target = instr.getInstrIndexAsVram()
                 if self.instrCat != rabbitizer.InstrCategory.RSP:
                     if target >= 0x84000000:

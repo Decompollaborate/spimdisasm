@@ -45,7 +45,7 @@ class SymbolFunction(SymbolText):
 
         prevInstrOffset = instructionOffset - 4
         prevVram = self.getVramOffset(prevInstrOffset)
-        branchOffset = prevInstr.getGenericBranchOffset(prevVram)
+        branchOffset = prevInstr.getBranchOffsetGeneric()
         branch = prevInstrOffset + branchOffset
 
         if branch < 0:
@@ -379,7 +379,7 @@ class SymbolFunction(SymbolText):
             possibleImmOverride = self.context.getRelocSymbol(self.inFileOffset + instructionOffset, self.sectionType)
             if possibleImmOverride is not None:
                 auxOverride = possibleImmOverride.getName()
-                if instr.isIType():
+                if instr.hasOperandAlias(rabbitizer.OperandType.cpu_immediate):
                     if instructionOffset in self.instrAnalyzer.symbolInstrOffset:
                         addressOffset = self.instrAnalyzer.symbolInstrOffset[instructionOffset]
                         auxOverride = possibleImmOverride.getNamePlusOffset(addressOffset)
@@ -389,13 +389,13 @@ class SymbolFunction(SymbolText):
 
         if instr.isBranch() or instr.isUnconditionalBranch():
             if not common.GlobalConfig.IGNORE_BRANCHES:
-                branchOffset = instr.getGenericBranchOffset(self.getVramOffset(instructionOffset))
+                branchOffset = instr.getBranchOffsetGeneric()
                 targetBranchVram = self.getVramOffset(instructionOffset + branchOffset)
                 labelSymbol = self.getSymbol(targetBranchVram, tryPlusOffset=False)
                 if labelSymbol is not None:
                     return labelSymbol.getName()
 
-        elif instr.isIType():
+        elif instr.hasOperandAlias(rabbitizer.OperandType.cpu_immediate):
             if not self.pointersRemoved and instructionOffset in self.instrAnalyzer.symbolInstrOffset:
                 address = self.instrAnalyzer.symbolInstrOffset[instructionOffset]
 
@@ -445,7 +445,7 @@ class SymbolFunction(SymbolText):
                 # Unpaired LUI
                 return self.generateHiLoConstantStr(instr.getImmediate()<<16, instr, None)
 
-        elif instr.isJType():
+        elif instr.isJumpWithAddress():
             possibleOverride = self.getSymbol(instr.getInstrIndexAsVram(), tryPlusOffset=False)
             if possibleOverride is not None:
                 return possibleOverride.getName()
