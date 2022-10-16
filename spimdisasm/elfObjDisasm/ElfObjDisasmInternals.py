@@ -251,6 +251,7 @@ def elfObjDisasmMain():
 
     for subSegment in processedSegments.values():
         subSegment.analyze()
+        subSegment.printAnalyzisResults()
 
     for sectionType, subSegment in processedSegments.items():
         outputFilePath = segmentPaths[sectionType]

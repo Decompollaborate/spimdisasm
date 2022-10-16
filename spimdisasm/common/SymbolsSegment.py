@@ -195,13 +195,13 @@ class SymbolsSegment:
 
 
     N64LibultraSyms: dict[int, tuple[str, str, int]] = {
+        0x800001A0: ("leoBootID",      "u32", 0x4),
         0x80000300: ("osTvType",       "u32", 0x4),
         0x80000304: ("osRomType",      "u32", 0x4),
         0x80000308: ("osRomBase",      "u32", 0x4),
         0x8000030C: ("osResetType",    "u32", 0x4),
         0x80000310: ("osCicId",        "u32", 0x4),
         0x80000314: ("osVersion",      "u32", 0x4),
-        0x80000304: ("osRomType",      "u32", 0x4),
         0x80000318: ("osMemSize",      "u32", 0x4),
         0x8000031C: ("osAppNmiBuffer", "u8",  0x40),
     }
