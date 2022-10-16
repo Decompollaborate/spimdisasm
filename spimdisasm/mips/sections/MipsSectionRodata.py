@@ -47,7 +47,7 @@ class SectionRodata(SectionBase):
 
             # Check if there is already another symbol after the current one and before the end of the string,
             # in which case we say this symbol should not be a string
-            otherSym = self.getSymbol(self.getVramOffset(localOffset) + rawStringSize, checkUpperLimit=False)
+            otherSym = self.getSymbol(self.getVramOffset(localOffset) + rawStringSize, checkUpperLimit=False, checkGlobalSegment=False)
             if otherSym != contextSym:
                 return False
 
