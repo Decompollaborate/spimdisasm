@@ -140,11 +140,15 @@ class SymbolBase(common.ElementBase):
                             label += f"{contextSym.getName()}:" + common.GlobalConfig.LINE_ENDS
 
             if isByte:
-                shiftValue = 24 - (j * 8)
+                shiftValue = j * 8
+                if common.GlobalConfig.ENDIAN == common.InputEndian.BIG:
+                    shiftValue = 24 - shiftValue
                 subVal = (w & (0xFF << shiftValue)) >> shiftValue
                 value = f"0x{subVal:02X}"
             elif isShort:
-                shiftValue = 16 - (j * 8)
+                shiftValue = j * 8
+                if common.GlobalConfig.ENDIAN == common.InputEndian.BIG:
+                    shiftValue = 16 - shiftValue
                 subVal = (w & (0xFFFF << shiftValue)) >> shiftValue
                 value = f"0x{subVal:04X}"
             else:
