@@ -43,7 +43,14 @@ class SectionRodata(SectionBase):
             return False
 
         try:
-            common.Utils.decodeString(self.bytes, localOffset, self.stringEncoding)
+            _, rawStringSize = common.Utils.decodeString(self.bytes, localOffset, self.stringEncoding)
+
+            # Check if there is already another symbol after the current one and before the end of the string,
+            # in which case we say this symbol should not be a string
+            otherSym = self.getSymbol(self.getVramOffset(localOffset) + rawStringSize, checkUpperLimit=False)
+            if otherSym != contextSym:
+                return False
+
         except (UnicodeDecodeError, RuntimeError):
             # String can't be decoded
             return False
@@ -127,7 +134,7 @@ class SectionRodata(SectionBase):
             elif contextSym is not None:
                 contextSym.isMaybeString = self._stringGuesser(contextSym, localOffset)
 
-            contextSym = self.getSymbol(currentVram, tryPlusOffset=False)
+            # contextSym = self.getSymbol(currentVram, tryPlusOffset=False)
             if contextSym is not None:
                 self.symbolsVRams.add(currentVram)
 
