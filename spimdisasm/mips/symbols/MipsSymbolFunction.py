@@ -443,7 +443,7 @@ class SymbolFunction(SymbolText):
 
             if instr.canBeHi():
                 # Unpaired LUI
-                return self.generateHiLoConstantStr(instr.getImmediate()<<16, instr, None)
+                return self.generateHiLoConstantStr(instr.getProcessedImmediate()<<16, instr, None)
 
         elif instr.isJumpWithAddress():
             possibleOverride = self.getSymbol(instr.getInstrIndexAsVram(), tryPlusOffset=False)

@@ -119,8 +119,8 @@ class InstrAnalyzer:
 
 
     def processConstant(self, regsTracker: rabbitizer.RegistersTracker, luiInstr: rabbitizer.Instruction, luiOffset: int, lowerInstr: rabbitizer.Instruction, lowerOffset: int) -> int|None:
-        upperHalf = luiInstr.getImmediate() << 16
-        lowerHalf = lowerInstr.getImmediate()
+        upperHalf = luiInstr.getProcessedImmediate() << 16
+        lowerHalf = lowerInstr.getProcessedImmediate()
         constant = upperHalf | lowerHalf
 
         self.referencedConstants.add(constant)
@@ -153,7 +153,7 @@ class InstrAnalyzer:
                 if otherLuiOffset is not None:
                     otherLuiInstr = self.luiInstrs.get(otherLuiOffset, None)
                     if otherLuiInstr is not None:
-                        if hiValue != otherLuiInstr.getImmediate() << 16:
+                        if hiValue != otherLuiInstr.getProcessedImmediate() << 16:
                             return None
 
             if common.GlobalConfig.COMPILER == common.Compiler.IDO:
@@ -405,9 +405,9 @@ class InstrAnalyzer:
                 # print(f"C  {self.constantsPerInstruction[instructionOffset]:8X}", luiInstr)
                 pass
             else:
-                if common.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES and luiInstr.getImmediate() < 0x8000: # filter out stuff that may not be a real symbol
+                if common.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES and luiInstr.getProcessedImmediate() < 0x8000: # filter out stuff that may not be a real symbol
                     continue
-                if common.GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES and luiInstr.getImmediate() >= 0xC000: # filter out stuff that may not be a real symbol
+                if common.GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES and luiInstr.getProcessedImmediate() >= 0xC000: # filter out stuff that may not be a real symbol
                     continue
 
                 # print(f"{currentVram:06X} ", end="")
