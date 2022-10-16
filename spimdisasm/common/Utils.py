@@ -158,7 +158,7 @@ bannedEscapeCharacters = {
     0x04,
     0x05,
     0x06,
-    # 0x07, # '\a'
+    0x07, # '\a'
     0x08, # '\b'
     # 0x09, # '\t'
     # 0x0A, # '\n'
