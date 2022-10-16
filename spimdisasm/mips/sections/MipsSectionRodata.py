@@ -51,6 +51,13 @@ class SectionRodata(SectionBase):
             if otherSym != contextSym:
                 return False
 
+            # To be a valid aligned string, the next word-aligned bytes needs to be zero
+            checkStartOffset = localOffset + rawStringSize
+            checkEndOffset = min(checkStartOffset + ((checkStartOffset + 3) % 4) + 1, len(self.bytes))
+            while checkStartOffset < checkEndOffset:
+                if self.bytes[checkStartOffset] != 0:
+                    return False
+                checkStartOffset += 1
         except (UnicodeDecodeError, RuntimeError):
             # String can't be decoded
             return False
