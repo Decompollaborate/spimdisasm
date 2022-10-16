@@ -149,11 +149,21 @@ class SymbolRodata(SymbolBase):
         return alignDirective
 
     def getNthWord(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False) -> tuple[str, int]:
-        if self.contextSym.isByte() or self.contextSym.isShort():
-            return super().getNthWord(i, canReferenceSymbolsWithAddends, canReferenceConstants)
+        if self.contextSym.isByte():
+            return self.getNthWordAsBytes(i)
+        if self.contextSym.isShort():
+            return self.getNthWordAsShorts(i)
 
         localOffset = 4*i
         w = self.words[i]
+
+        # Check for symbols in the middle of this word
+        if self.getSymbol(self.getVramOffset(localOffset+3), tryPlusOffset=False, checkGlobalSegment=False) is not None:
+            return self.getNthWordAsBytes(i)
+        if self.getSymbol(self.getVramOffset(localOffset+1), tryPlusOffset=False, checkGlobalSegment=False) is not None:
+            return self.getNthWordAsBytes(i)
+        if self.getSymbol(self.getVramOffset(localOffset+2), tryPlusOffset=False, checkGlobalSegment=False) is not None:
+            return self.getNthWordAsShorts(i)
 
         label = ""
         rodataWord: int|None = w

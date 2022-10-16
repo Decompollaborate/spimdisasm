@@ -71,6 +71,19 @@ class SymbolBase(common.ElementBase):
         offsetSym = self.context.getOffsetSymbol(self.inFileOffset, self.sectionType)
         return self.getLabelFromSymbol(offsetSym)
 
+    def getLabelAtOffset(self, localOffset: int) -> str:
+        label = ""
+        contextSym = self.getSymbolAtVramOrOffset(localOffset)
+        if contextSym is not None:
+            # Possible symbols in the middle
+            label = common.GlobalConfig.LINE_ENDS
+            symLabel = contextSym.getSymbolLabel()
+            if symLabel:
+                label += symLabel + common.GlobalConfig.LINE_ENDS
+                if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
+                    label += f"{contextSym.getName()}:" + common.GlobalConfig.LINE_ENDS
+        return label
+
 
     def isRdata(self) -> bool:
         "Checks if the current symbol is .rdata"
@@ -105,69 +118,22 @@ class SymbolBase(common.ElementBase):
                             contextSym.type = contextSym.type
 
 
-    def getNthWord(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False) -> tuple[str, int]:
+    def getNthWordAsBytes(self, i: int) -> tuple[str, int]:
         output = ""
         localOffset = 4*i
         w = self.words[i]
 
-        isByte = False
-        isShort = False
-        if self.contextSym.isByte():
-            isByte = True
-        elif self.contextSym.isShort():
-            isShort = True
-
-        dotType = ".word"
-        byteStep = 4
-        if isByte:
-            dotType = ".byte"
-            byteStep = 1
-        elif isShort:
-            dotType = ".short"
-            byteStep = 2
-
-        for j in range(0, 4, byteStep):
+        dotType = ".byte"
+        for j in range(0, 4):
             label = ""
             if j != 0 or i != 0:
-                contextSym = self.getSymbolAtVramOrOffset(localOffset+j)
-                if contextSym is not None:
-                    # Possible symbols in the middle
-                    label = common.GlobalConfig.LINE_ENDS
-                    symLabel = contextSym.getSymbolLabel()
-                    if symLabel:
-                        label += symLabel + common.GlobalConfig.LINE_ENDS
-                        if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
-                            label += f"{contextSym.getName()}:" + common.GlobalConfig.LINE_ENDS
+                label = self.getLabelAtOffset(localOffset + j)
 
-            if isByte:
-                shiftValue = j * 8
-                if common.GlobalConfig.ENDIAN == common.InputEndian.BIG:
-                    shiftValue = 24 - shiftValue
-                subVal = (w & (0xFF << shiftValue)) >> shiftValue
-                value = f"0x{subVal:02X}"
-            elif isShort:
-                shiftValue = j * 8
-                if common.GlobalConfig.ENDIAN == common.InputEndian.BIG:
-                    shiftValue = 16 - shiftValue
-                subVal = (w & (0xFFFF << shiftValue)) >> shiftValue
-                value = f"0x{subVal:04X}"
-            else:
-                value = f"0x{w:08X}"
-
-                # .elf relocated symbol
-                if len(self.context.relocSymbols[self.sectionType]) > 0:
-                    possibleReference = self.context.getRelocSymbol(self.inFileOffset + localOffset, self.sectionType)
-                    if possibleReference is not None:
-                        value = possibleReference.getNamePlusOffset(w)
-                else:
-                    # This word could be a reference to a symbol
-                    symbolRef = self.getSymbol(w, tryPlusOffset=canReferenceSymbolsWithAddends)
-                    if symbolRef is not None:
-                        value = symbolRef.getSymbolPlusOffset(w)
-                    elif canReferenceConstants:
-                        constant = self.getConstant(w)
-                        if constant is not None:
-                            value = constant.getName()
+            shiftValue = j * 8
+            if common.GlobalConfig.ENDIAN == common.InputEndian.BIG:
+                shiftValue = 24 - shiftValue
+            subVal = (w & (0xFF << shiftValue)) >> shiftValue
+            value = f"0x{subVal:02X}"
 
             comment = self.generateAsmLineComment(localOffset+j)
             output += f"{label}{comment} {dotType} {value}"
@@ -176,6 +142,74 @@ class SymbolBase(common.ElementBase):
             output += common.GlobalConfig.LINE_ENDS
 
         return output, 0
+
+    def getNthWordAsShorts(self, i: int) -> tuple[str, int]:
+        output = ""
+        localOffset = 4*i
+        w = self.words[i]
+
+        dotType = ".short"
+        for j in range(0, 4, 2):
+            label = ""
+            if j != 0 or i != 0:
+                label = self.getLabelAtOffset(localOffset + j)
+
+            shiftValue = j * 8
+            if common.GlobalConfig.ENDIAN == common.InputEndian.BIG:
+                shiftValue = 16 - shiftValue
+            subVal = (w & (0xFFFF << shiftValue)) >> shiftValue
+            value = f"0x{subVal:04X}"
+
+            comment = self.generateAsmLineComment(localOffset+j)
+            output += f"{label}{comment} {dotType} {value}"
+            if j == 0 and i < len(self.endOfLineComment):
+                output += self.endOfLineComment[i]
+            output += common.GlobalConfig.LINE_ENDS
+
+        return output, 0
+
+    def getNthWordAsWords(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False) -> tuple[str, int]:
+        output = ""
+        localOffset = 4*i
+        w = self.words[i]
+
+        dotType = ".word"
+
+        label = ""
+        if i != 0:
+            label = self.getLabelAtOffset(localOffset)
+
+        value = f"0x{w:08X}"
+
+        # .elf relocated symbol
+        if len(self.context.relocSymbols[self.sectionType]) > 0:
+            possibleReference = self.context.getRelocSymbol(self.inFileOffset + localOffset, self.sectionType)
+            if possibleReference is not None:
+                value = possibleReference.getNamePlusOffset(w)
+        else:
+            # This word could be a reference to a symbol
+            symbolRef = self.getSymbol(w, tryPlusOffset=canReferenceSymbolsWithAddends)
+            if symbolRef is not None:
+                value = symbolRef.getSymbolPlusOffset(w)
+            elif canReferenceConstants:
+                constant = self.getConstant(w)
+                if constant is not None:
+                    value = constant.getName()
+
+        comment = self.generateAsmLineComment(localOffset)
+        output += f"{label}{comment} {dotType} {value}"
+        if i < len(self.endOfLineComment):
+            output += self.endOfLineComment[i]
+        output += common.GlobalConfig.LINE_ENDS
+
+        return output, 0
+
+    def getNthWord(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False) -> tuple[str, int]:
+        if self.contextSym.isByte():
+            return self.getNthWordAsBytes(i)
+        if self.contextSym.isShort():
+            return self.getNthWordAsShorts(i)
+        return self.getNthWordAsWords(i, canReferenceSymbolsWithAddends=canReferenceSymbolsWithAddends, canReferenceConstants=canReferenceConstants)
 
 
     def countExtraPadding(self) -> int:
