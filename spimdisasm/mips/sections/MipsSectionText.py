@@ -39,13 +39,12 @@ class SectionText(SectionBase):
             instrsList.append(instr)
         return instrsList
 
-    def analyze(self):
+
+    def _findFunctions(self, instrsList: list[rabbitizer.Instruction]):
         functionEnded = False
         farthestBranch = 0
         funcsStartsList = [0]
         unimplementedInstructionsFuncList = []
-
-        instrsList = self.wordListToInstructions(self.words, self.getVramOffset(0), self.instrCat)
 
         instructionOffset = 0
         currentInstructionStart = 0
@@ -156,6 +155,14 @@ class SectionText(SectionBase):
             instructionOffset += 4
 
         unimplementedInstructionsFuncList.append(not isInstrImplemented)
+        return funcsStartsList, unimplementedInstructionsFuncList
+
+
+    def analyze(self):
+        instrsList = self.wordListToInstructions(self.words, self.getVramOffset(0), self.instrCat)
+        nInstr = len(instrsList)
+
+        funcsStartsList, unimplementedInstructionsFuncList = self._findFunctions(instrsList)
 
         i = 0
         startsCount = len(funcsStartsList)
