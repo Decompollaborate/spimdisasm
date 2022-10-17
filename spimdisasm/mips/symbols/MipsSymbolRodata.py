@@ -213,7 +213,15 @@ class SymbolRodata(SymbolBase):
                 try:
                     buffer = bytearray(4*len(self.words))
                     common.Utils.wordsToBytes(self.words, buffer)
-                    decodedStrings, rawStringSize = common.Utils.decodeString(buffer, 4*i, self.stringEncoding)
+                    decodedStrings, rawStringSize = common.Utils.decodeString(buffer, localOffset, self.stringEncoding)
+
+                    # To be a valid aligned string, the next word-aligned bytes needs to be zero
+                    checkStartOffset = localOffset + rawStringSize
+                    checkEndOffset = min((checkStartOffset & ~3) + 4, len(buffer))
+                    while checkStartOffset < checkEndOffset:
+                        if buffer[checkStartOffset] != 0:
+                            raise RuntimeError()
+                        checkStartOffset += 1
 
                     skip = rawStringSize // 4
                     comment = self.generateAsmLineComment(localOffset)
