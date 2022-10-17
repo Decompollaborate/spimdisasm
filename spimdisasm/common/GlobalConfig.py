@@ -44,7 +44,6 @@ class GlobalConfig:
     DISASSEMBLE_UNKNOWN_INSTRUCTIONS: bool = False
     """Try to disassemble non implemented instructions and functions"""
 
-    ADD_NEW_SYMBOLS: bool = True
     PRODUCE_SYMBOLS_PLUS_OFFSET: bool = True
     TRUST_USER_FUNCTIONS: bool = True
     TRUST_JAL_FUNCTIONS: bool = True

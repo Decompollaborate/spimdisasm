@@ -60,9 +60,6 @@ class FileBase(common.ElementBase):
     def checkAndCreateFirstSymbol(self) -> None:
         "Check if the very start of the file has a symbol and create it if it doesn't exist yet"
 
-        if not common.GlobalConfig.ADD_NEW_SYMBOLS:
-            return
-
         currentVram = self.getVramOffset(0)
         vrom = self.getVromOffset(0)
         contextSym = self.getSymbol(currentVram, tryPlusOffset=False)
