@@ -66,7 +66,8 @@ class InstrAnalyzer:
 
         self.symbolInstrOffset: dict[int, int] = dict()
 
-        self.possibleSymbolTypes: dict[int, str] = dict()
+        self.possibleSymbolTypes: dict[int, tuple[rabbitizer.Enum, bool]] = dict()
+        "key: address, value: (<rabbitizer.AccessType>, unsignedMemoryAccess)"
 
         # %hi/%lo pairing
         self.hiToLowDict: dict[int, int] = dict()
@@ -254,12 +255,17 @@ class InstrAnalyzer:
         return address
 
     def processSymbolType(self, address: int, instr: rabbitizer.Instruction) -> None:
-        instrType = instr.mapInstrToType()
-        if instrType is None:
+        accessType = instr.getAccessType()
+        unsignedMemoryAccess = instr.doesUnsignedMemoryAccess()
+        if accessType == rabbitizer.AccessType.INVALID:
             return
 
+        if accessType == rabbitizer.AccessType.WORD:
+            if not unsignedMemoryAccess:
+                return
+
         if address not in self.possibleSymbolTypes:
-            self.possibleSymbolTypes[address] = instrType
+            self.possibleSymbolTypes[address] = (accessType, unsignedMemoryAccess)
 
     def processSymbolDereferenceType(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, instrOffset: int) -> None:
         address = regsTracker.getAddressIfCanSetType(instr, instrOffset)
