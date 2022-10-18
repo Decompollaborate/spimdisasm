@@ -311,6 +311,9 @@ class InstrAnalyzer:
                 self.nonLoInstrOffsets.add(instrOffset)
             return
 
+        if pairingInfo.isGpGot and not common.GlobalConfig.PIC:
+            return
+
         upperHalf: int|None = pairingInfo.value
         luiOffset = pairingInfo.instrOffset
         if pairingInfo.isGpRel:
