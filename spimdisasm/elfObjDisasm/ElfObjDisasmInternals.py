@@ -56,23 +56,24 @@ def readelf_displayGot(elfFile: elf32.Elf32File) -> None:
 
     print()
 
-    print(f" Reserved entries:")
-    print(f"  TODO")
-
-    print()
-
     if elfFile.got is not None:
+        print(f" Reserved entries:")
+        print(f"   Address     Access  Initial Purpose")
+        print(f"  {'':8} {'':10} {elfFile.got.localsTable[0]:08X} Lazy resolver")
+
+        print()
+
         print(f" Local entries:")
-        # print(f"   Address     Access  Initial")
-        for x in elfFile.got.localsTable:
-            print(f"  {x:X}")
+        print(f"   Address     Access  Initial")
+        for x in elfFile.got.localsTable[1:]:
+            print(f"  {'':8} {'':10} {x:08X}")
 
         print()
 
         print(f" Global entries:")
-        # print(f"   Address     Access  Initial Sym.Val. Type    Ndx Name")
+        print(f"   Address     Access  Initial Sym.Val. Type    Ndx Name")
         for x in elfFile.got.globalsTable:
-            print(f"  {x:X}")
+            print(f"  {'':8} {'':10} {x:08X}")
 
         print()
 
