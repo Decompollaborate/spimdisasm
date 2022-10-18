@@ -479,6 +479,40 @@ class SymbolFunction(SymbolText):
             return label
         return labelSym.getName() + ":" + common.GlobalConfig.LINE_ENDS
 
+    def _emitInstruction(self, instr: rabbitizer.Instruction, instructionOffset: int, wasLastInstABranch: bool) -> str:
+        immOverride = self.getImmOverrideForInstruction(instr, instructionOffset)
+        comment = self.generateAsmLineComment(instructionOffset, instr.getRaw())
+        extraLJust = 0
+
+        if wasLastInstABranch:
+            extraLJust = -1
+            comment += " "
+
+        line = instr.disassemble(immOverride, extraLJust=extraLJust)
+
+        return f"{comment}  {line}{common.GlobalConfig.LINE_ENDS}"
+
+
+    def _emitCpload(self, instr: rabbitizer.Instruction, instructionOffset: int, wasLastInstABranch: bool) -> str:
+        output = ""
+
+        cpload = self.instrAnalyzer.cploads.get(instructionOffset)
+        if cpload is not None:
+            hiInstr = self.instructions[cpload.hiOffset//4]
+            loInstr = self.instructions[cpload.loOffset//4]
+            gpDisp = hiInstr.getProcessedImmediate() << 16
+            gpDisp += loInstr.getProcessedImmediate()
+            output += f"# _gp_disp: 0x{gpDisp:X}{common.GlobalConfig.LINE_ENDS}"
+            if common.GlobalConfig.EMIT_CPLOAD:
+                assert cpload.reg is not None
+                output += f".set noreorder; .cpload ${cpload.reg.name}; # .set reorder" + common.GlobalConfig.LINE_ENDS
+            else:
+                output += self._emitInstruction(instr, instructionOffset, wasLastInstABranch)
+        else:
+            if not common.GlobalConfig.EMIT_CPLOAD:
+                output += self._emitInstruction(instr, instructionOffset, wasLastInstABranch)
+            # don't emit the other instructions which are part of .cpload if the directive was emitted
+        return output
 
     def disassemble(self) -> str:
         output = ""
@@ -506,25 +540,11 @@ class SymbolFunction(SymbolText):
             label = self.getLabelForOffset(instructionOffset)
             output += label
 
-            cpload = self.instrAnalyzer.cploads.get(instructionOffset)
-            if common.GlobalConfig.EMIT_CPLOAD and cpload is not None:
-                assert cpload.reg is not None
-                output += f".set noreorder; .cpload ${cpload.reg.name}; # .set reorder" + common.GlobalConfig.LINE_ENDS
-            elif common.GlobalConfig.EMIT_CPLOAD and instructionOffset in self.instrAnalyzer.cploadOffsets:
-                # don't emit the other instructions which are part of .cpload
-                pass
+            isCpload = instructionOffset in self.instrAnalyzer.cploadOffsets
+            if isCpload:
+                output += self._emitCpload(instr, instructionOffset, wasLastInstABranch)
             else:
-                immOverride = self.getImmOverrideForInstruction(instr, instructionOffset)
-                comment = self.generateAsmLineComment(instructionOffset, instr.getRaw())
-                extraLJust = 0
-
-                if wasLastInstABranch:
-                    extraLJust = -1
-                    comment += " "
-
-                line = instr.disassemble(immOverride, extraLJust=extraLJust)
-
-                output += f"{comment}  {line}" + common.GlobalConfig.LINE_ENDS
+                output += self._emitInstruction(instr, instructionOffset, wasLastInstABranch)
 
             wasLastInstABranch = instr.hasDelaySlot()
             instructionOffset += 4
