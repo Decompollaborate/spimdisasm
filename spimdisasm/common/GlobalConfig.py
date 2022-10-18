@@ -44,7 +44,6 @@ class GlobalConfig:
     DISASSEMBLE_UNKNOWN_INSTRUCTIONS: bool = False
     """Try to disassemble non implemented instructions and functions"""
 
-    ADD_NEW_SYMBOLS: bool = True
     PRODUCE_SYMBOLS_PLUS_OFFSET: bool = True
     TRUST_USER_FUNCTIONS: bool = True
     TRUST_JAL_FUNCTIONS: bool = True
@@ -75,6 +74,8 @@ class GlobalConfig:
     """Value used for $gp relocation loads and stores"""
     PIC: bool = False
     """Position independent code"""
+    EMIT_CPLOAD: bool = True
+    """Emits a .cpload directive instead of the corresponding instructions if it were detected"""
 
     SYMBOL_FINDER_FILTER_LOW_ADDRESSES: bool = True
     """Toggle pointer detection for lower addresses (lower than 0x40000000)"""
@@ -152,7 +153,8 @@ class GlobalConfig:
         backendConfig.add_argument("--endian", help=f"Set the endianness of input files. Defaults to {GlobalConfig.ENDIAN.name.lower()}", choices=["big", "little", "middle"], default=GlobalConfig.ENDIAN.name.lower())
 
         backendConfig.add_argument("--gp", help="Set the value used for loads and stores related to the $gp register. A hex value is expected")
-        backendConfig.add_argument("--pic", help=f"Enables PIC analysis and the usage of some rel types, like %got. Defaults to {GlobalConfig.PIC}", action=Utils.BooleanOptionalAction)
+        backendConfig.add_argument("--pic", help=f"Enables PIC analysis and the usage of some rel types, like %%got. Defaults to {GlobalConfig.PIC}", action=Utils.BooleanOptionalAction)
+        backendConfig.add_argument("--emit-cpload", help=f"Emits a .cpload directive instead of the corresponding instructions if it were detected on PIC binaries. Defaults to {GlobalConfig.EMIT_CPLOAD}", action=Utils.BooleanOptionalAction)
 
         backendConfig.add_argument("--filter-low-addresses", help=f"Filter out low addresses (lower than 0x40000000) when searching for pointers. Defaults to {GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES}", action=Utils.BooleanOptionalAction)
         backendConfig.add_argument("--filter-high-addresses", help=f"Filter out high addresses (higher than 0xC0000000) when searching for pointers. Defaults to {GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES}", action=Utils.BooleanOptionalAction)
@@ -225,6 +227,8 @@ class GlobalConfig:
             GlobalConfig.GP_VALUE = int(args.gp, 16)
         if args.pic is not None:
             GlobalConfig.PIC = args.pic
+        if args.emit_cpload is not None:
+            GlobalConfig.EMIT_CPLOAD = args.emit_cpload
 
         if args.filter_low_addresses is not None:
             GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES = args.filter_low_addresses

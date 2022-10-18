@@ -119,6 +119,8 @@ def changeGlobalSegmentRanges(context: common.Context, processedSegments: dict[c
     if highestVramEnd is None:
         highestVramEnd = 0xFFFFFFFF
     context.globalSegment.changeRanges(lowestVromStart, highestVromEnd, lowestVramStart, highestVramEnd)
+    context.totalVramStart = lowestVramStart
+    context.totalVramEnd = highestVramEnd
     return
 
 
@@ -251,6 +253,7 @@ def elfObjDisasmMain():
 
     for subSegment in processedSegments.values():
         subSegment.analyze()
+        subSegment.printAnalyzisResults()
 
     for sectionType, subSegment in processedSegments.items():
         outputFilePath = segmentPaths[sectionType]

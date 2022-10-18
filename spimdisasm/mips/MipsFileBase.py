@@ -60,9 +60,6 @@ class FileBase(common.ElementBase):
     def checkAndCreateFirstSymbol(self) -> None:
         "Check if the very start of the file has a symbol and create it if it doesn't exist yet"
 
-        if not common.GlobalConfig.ADD_NEW_SYMBOLS:
-            return
-
         currentVram = self.getVramOffset(0)
         vrom = self.getVromOffset(0)
         contextSym = self.getSymbol(currentVram, tryPlusOffset=False)
@@ -80,7 +77,7 @@ class FileBase(common.ElementBase):
             print(f"Found {len(self.symbolList)} symbols.")
             print(f"Found {len(self.fileBoundaries)} file boundaries.")
 
-            print("\t offset, size, vram\t symbols")
+            print("\t offset, size,     vram, symbols")
 
             boundaries = list(self.fileBoundaries)
             boundaries.append(self.sizew*4 + self.inFileOffset)
@@ -97,7 +94,7 @@ class FileBase(common.ElementBase):
                 fileVram = 0
                 if self.vram is not None:
                     fileVram = start + self.vram
-                print("\t", f"{start+self.commentOffset:06X}", f"{end-start:04X}", f"{fileVram:08X}", "\t symbols:", symbolsInBoundary)
+                print(f"\t {start+self.commentOffset:06X}, {end-start:04X}, {fileVram:08X}, {symbolsInBoundary:7}")
 
             print()
 

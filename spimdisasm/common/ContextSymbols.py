@@ -8,6 +8,7 @@ from __future__ import annotations
 import dataclasses
 import enum
 from typing import Callable
+import rabbitizer
 
 from .GlobalConfig import GlobalConfig
 from .FileSectionType import FileSectionType
@@ -43,11 +44,41 @@ class SymbolSpecialType(enum.Enum):
 
 
 @dataclasses.dataclass
+class AccessTypeInfo:
+    size: int
+    typeSigned: str|None
+    typeUnsigned: str|None
+    typeNameAliases: set[str] = dataclasses.field(default_factory=set)
+
+    def typeMatchesAccess(self, typename) -> bool:
+        if typename is None:
+            return False
+        if typename == self.typeSigned:
+            return True
+        if typename == self.typeUnsigned:
+            return True
+        return typename in self.typeNameAliases
+
+gAccessKinds: dict[rabbitizer.Enum, AccessTypeInfo] = {
+    rabbitizer.AccessType.BYTE: AccessTypeInfo(1, "s8", "u8"),
+    rabbitizer.AccessType.SHORT: AccessTypeInfo(2, "s16", "u16"),
+    # Ignore signed WORD since it tends to not give a proper type
+    rabbitizer.AccessType.WORD: AccessTypeInfo(1, None, "u32"),
+    rabbitizer.AccessType.DOUBLEWORD: AccessTypeInfo(1, "s64", "u64"),
+    rabbitizer.AccessType.FLOAT: AccessTypeInfo(1, "f32", None, {"Vec3f"}),
+    rabbitizer.AccessType.DOUBLEFLOAT: AccessTypeInfo(1, "f64", None),
+}
+
+
+@dataclasses.dataclass
 class ContextSymbol:
     address: int
     name: str|None = None
     size: int|None = None
     type: SymbolSpecialType|str|None = None
+
+    accessType: rabbitizer.Enum|None = None
+    unsignedAccessType: bool|None = None
 
     vromAddress: int|None = None
 
@@ -89,7 +120,7 @@ class ContextSymbol:
         return self.address
 
     def hasNoType(self) -> bool:
-        return self.type is None or self.type == ""
+        return (self.type is None or self.type == "") and self.accessType is None
 
 
     def isTrustableFunction(self, rsp: bool=False) -> bool:
@@ -114,12 +145,21 @@ class ContextSymbol:
     def isByte(self) -> bool:
         if not GlobalConfig.USE_DOT_BYTE:
             return False
-        return self.type in ("u8", "s8")
+        # Type is checked first to favour user-declared type over the autodetected one
+        if gAccessKinds[rabbitizer.AccessType.BYTE].typeMatchesAccess(self.type):
+            return True
+        if self.accessType == rabbitizer.AccessType.BYTE:
+            return True
+        return False
 
     def isShort(self) -> bool:
         if not GlobalConfig.USE_DOT_SHORT:
             return False
-        return self.type in ("u16", "s16")
+        if gAccessKinds[rabbitizer.AccessType.SHORT].typeMatchesAccess(self.type):
+            return True
+        if self.accessType == rabbitizer.AccessType.SHORT:
+            return True
+        return False
 
 
     def isString(self) -> bool:
@@ -131,10 +171,18 @@ class ContextSymbol:
         return False
 
     def isFloat(self) -> bool:
-        return self.type in ("f32", "Vec3f")
+        if gAccessKinds[rabbitizer.AccessType.FLOAT].typeMatchesAccess(self.type):
+            return True
+        if self.accessType == rabbitizer.AccessType.FLOAT:
+            return True
+        return False
 
     def isDouble(self) -> bool:
-        return self.type == "f64"
+        if gAccessKinds[rabbitizer.AccessType.DOUBLEFLOAT].typeMatchesAccess(self.type):
+            return True
+        if self.accessType == rabbitizer.AccessType.DOUBLEFLOAT:
+            return True
+        return False
 
     def isJumpTable(self) -> bool:
         return self.type == SymbolSpecialType.jumptable
@@ -209,15 +257,21 @@ class ContextSymbol:
             self.nameGetCallback = callback
 
     def getSize(self) -> int:
+        # User-declared size first
         if self.size is not None:
             return self.size
-        if self.type is not None:
-            if self.type in {"s8", "u8"}:
-                return 1
-            elif self.type in {"s16", "u16"}:
-                return 2
-            elif self.type in {"s64", "u64", "f64"}:
-                return 8
+
+        # Infer size based on user-declared type
+        if self.type is not None and not isinstance(self.type, SymbolSpecialType):
+            for info in gAccessKinds.values():
+                if info.typeMatchesAccess(self.type):
+                    return info.size
+
+        # Infer size based on instruction access type
+        if self.accessType is not None:
+            return gAccessKinds[self.accessType].size
+
+        # Infer size based on symbol's address alignment
         if self.vram % 4 == 0:
             return 4
         if self.vram % 2 == 0:
@@ -239,6 +293,11 @@ class ContextSymbol:
 
     def getType(self) -> str:
         if self.type is None:
+            if self.accessType is not None and self.unsignedAccessType is not None:
+                typeInfo = gAccessKinds[self.accessType]
+                t = typeInfo.typeUnsigned if self.unsignedAccessType else typeInfo.typeSigned
+                if t is not None:
+                    return t
             return ""
         if isinstance(self.type, SymbolSpecialType):
             return self.type.toStr()
@@ -247,6 +306,13 @@ class ContextSymbol:
     def setTypeIfUnset(self, varType: str) -> bool:
         if self.hasNoType():
             self.type = varType
+            return True
+        return False
+
+    def setAccessTypeIfUnset(self, accessType: rabbitizer.Enum, unsignedMemoryAccess: bool) -> bool:
+        if self.accessType is None and self.unsignedAccessType is None:
+            self.accessType = accessType
+            self.unsignedAccessType = unsignedMemoryAccess
             return True
         return False
 
@@ -273,7 +339,7 @@ class ContextSymbol:
 
     @staticmethod
     def getCsvHeader() -> str:
-        output = "address,name,getName,getType,"
+        output = "address,name,getName,getType,accessType,"
         output += "size,"
         output += "getSize,getVrom,sectionType,"
         output += "isDefined,isUserDeclared,isAutogenerated,isMaybeString,"
@@ -282,7 +348,7 @@ class ContextSymbol:
         return output
 
     def toCsv(self) -> str:
-        output = f"0x{self.address:06X},{self.name},{self.getName()},{self.getType()},"
+        output = f"0x{self.address:06X},{self.name},{self.getName()},{self.getType()},{self.accessType},"
         if self.size is None:
             output += "None,"
         else:

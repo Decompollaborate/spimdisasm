@@ -66,7 +66,8 @@ class InstrAnalyzer:
 
         self.symbolInstrOffset: dict[int, int] = dict()
 
-        self.possibleSymbolTypes: dict[int, str] = dict()
+        self.possibleSymbolTypes: dict[int, tuple[rabbitizer.Enum, bool]] = dict()
+        "key: address, value: (<rabbitizer.AccessType>, unsignedMemoryAccess)"
 
         # %hi/%lo pairing
         self.hiToLowDict: dict[int, int] = dict()
@@ -93,7 +94,7 @@ class InstrAnalyzer:
             # Already processed
             return
 
-        branchOffset = instr.getGenericBranchOffset(currentVram)
+        branchOffset = instr.getBranchOffsetGeneric()
         branch = instrOffset + branchOffset
         targetBranchVram = self.funcVram + branch
 
@@ -119,8 +120,8 @@ class InstrAnalyzer:
 
 
     def processConstant(self, regsTracker: rabbitizer.RegistersTracker, luiInstr: rabbitizer.Instruction, luiOffset: int, lowerInstr: rabbitizer.Instruction, lowerOffset: int) -> int|None:
-        upperHalf = luiInstr.getImmediate() << 16
-        lowerHalf = lowerInstr.getImmediate()
+        upperHalf = luiInstr.getProcessedImmediate() << 16
+        lowerHalf = lowerInstr.getProcessedImmediate()
         constant = upperHalf | lowerHalf
 
         self.referencedConstants.add(constant)
@@ -153,7 +154,7 @@ class InstrAnalyzer:
                 if otherLuiOffset is not None:
                     otherLuiInstr = self.luiInstrs.get(otherLuiOffset, None)
                     if otherLuiInstr is not None:
-                        if hiValue != otherLuiInstr.getImmediate() << 16:
+                        if hiValue != otherLuiInstr.getProcessedImmediate() << 16:
                             return None
 
             if common.GlobalConfig.COMPILER == common.Compiler.IDO:
@@ -254,12 +255,17 @@ class InstrAnalyzer:
         return address
 
     def processSymbolType(self, address: int, instr: rabbitizer.Instruction) -> None:
-        instrType = instr.mapInstrToType()
-        if instrType is None:
+        accessType = instr.getAccessType()
+        unsignedMemoryAccess = instr.doesUnsignedMemoryAccess()
+        if accessType == rabbitizer.AccessType.INVALID:
             return
 
+        if accessType == rabbitizer.AccessType.WORD:
+            if not unsignedMemoryAccess:
+                return
+
         if address not in self.possibleSymbolTypes:
-            self.possibleSymbolTypes[address] = instrType
+            self.possibleSymbolTypes[address] = (accessType, unsignedMemoryAccess)
 
     def processSymbolDereferenceType(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, instrOffset: int) -> None:
         address = regsTracker.getAddressIfCanSetType(instr, instrOffset)
@@ -305,6 +311,9 @@ class InstrAnalyzer:
                 self.nonLoInstrOffsets.add(instrOffset)
             return
 
+        if pairingInfo.isGpGot and not common.GlobalConfig.PIC:
+            return
+
         upperHalf: int|None = pairingInfo.value
         luiOffset = pairingInfo.instrOffset
         if pairingInfo.isGpRel:
@@ -344,10 +353,10 @@ class InstrAnalyzer:
         if instr.isBranch() or instr.isUnconditionalBranch():
             self.processBranch(instr, instrOffset, currentVram)
 
-        elif instr.isJType():
+        elif instr.isJumpWithAddress():
             self.processFuncCall(instr, instrOffset)
 
-        elif instr.isIType():
+        elif instr.hasOperandAlias(rabbitizer.OperandType.cpu_immediate):
             self.symbolFinder(regsTracker, instr, prevInstr, instrOffset, got)
             self.processSymbolDereferenceType(regsTracker, instr, instrOffset)
 
@@ -405,9 +414,9 @@ class InstrAnalyzer:
                 # print(f"C  {self.constantsPerInstruction[instructionOffset]:8X}", luiInstr)
                 pass
             else:
-                if common.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES and luiInstr.getImmediate() < 0x8000: # filter out stuff that may not be a real symbol
+                if common.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES and luiInstr.getProcessedImmediate() < 0x8000: # filter out stuff that may not be a real symbol
                     continue
-                if common.GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES and luiInstr.getImmediate() >= 0xC000: # filter out stuff that may not be a real symbol
+                if common.GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES and luiInstr.getProcessedImmediate() >= 0xC000: # filter out stuff that may not be a real symbol
                     continue
 
                 # print(f"{currentVram:06X} ", end="")
