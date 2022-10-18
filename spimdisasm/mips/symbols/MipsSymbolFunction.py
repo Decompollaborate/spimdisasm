@@ -393,6 +393,10 @@ class SymbolFunction(SymbolText):
                     return labelSymbol.getName()
 
         elif instr.hasOperandAlias(rabbitizer.OperandType.cpu_immediate):
+            # .cpload directive is meant to use the `_gp_disp` pseudo-symbol
+            if instructionOffset in self.instrAnalyzer.cploadOffsets:
+                return self.generateHiLoStr(instr, "_gp_disp", None)
+
             if not self.pointersRemoved and instructionOffset in self.instrAnalyzer.symbolInstrOffset:
                 address = self.instrAnalyzer.symbolInstrOffset[instructionOffset]
 
