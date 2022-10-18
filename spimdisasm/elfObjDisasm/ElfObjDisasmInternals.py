@@ -25,6 +25,12 @@ def getArgsParser() -> argparse.ArgumentParser:
 
     parser.add_argument("--save-context", help="Saves the context to a file", metavar="FILENAME")
 
+
+    readelfOptions = parser.add_argument_group("readelf-like flags")
+
+    readelfOptions.add_argument("--display-got", help="Shows Global offset table information", action="store_true")
+
+
     common.GlobalConfig.addParametersToArgParse(parser)
 
     mips.InstructionConfig.addParametersToArgParse(parser)
@@ -41,6 +47,34 @@ def applyGlobalConfigurations() -> None:
     common.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES = False
 
     common.GlobalConfig.ALLOW_UNKSEGMENT = False
+
+
+def readelf_displayGot(elfFile: elf32.Elf32File) -> None:
+    print(f"Primary GOT:")
+    if elfFile.reginfo is not None:
+        print(f" Canonical gp value: {elfFile.reginfo.gpValue:X}")
+
+    print()
+
+    print(f" Reserved entries:")
+    print(f"  TODO")
+
+    print()
+
+    if elfFile.got is not None:
+        print(f" Local entries:")
+        # print(f"   Address     Access  Initial")
+        for x in elfFile.got.localsTable:
+            print(f"  {x:X}")
+
+        print()
+
+        print(f" Global entries:")
+        # print(f"   Address     Access  Initial Sym.Val. Type    Ndx Name")
+        for x in elfFile.got.globalsTable:
+            print(f"  {x:X}")
+
+        print()
 
 
 def getOutputPath(inputPath: Path, textOutput: Path, dataOutput: Path, sectionType: common.FileSectionType) -> Path:
@@ -235,6 +269,9 @@ def elfObjDisasmMain():
     inputPath = Path(args.binary)
     array_of_bytes = common.Utils.readFileAsBytearray(inputPath)
     elfFile = elf32.Elf32File(array_of_bytes)
+
+    if args.display_got:
+        readelf_displayGot(elfFile)
 
     if elf32.Elf32HeaderFlag.PIC in elfFile.elfFlags or elf32.Elf32HeaderFlag.CPIC in elfFile.elfFlags:
         common.GlobalConfig.PIC = True
