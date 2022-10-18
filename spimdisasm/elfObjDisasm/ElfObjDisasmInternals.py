@@ -71,9 +71,14 @@ def readelf_displayGot(elfFile: elf32.Elf32File) -> None:
         print()
 
         print(f" Global entries:")
-        print(f"   Address     Access  Initial Sym.Val. Type    Ndx Name")
-        for x in elfFile.got.globalsTable:
-            print(f"  {'':8} {'':10} {x:08X}")
+        print(f"   Address     Access  Initial Sym.Val. Type    {'Ndx':12} Name")
+        for gotEntry in elfFile.got.globalsTable:
+            entryType = elf32.Elf32SymbolTableType(gotEntry.symEntry.stType)
+            ndx = elf32.Elf32SectionHeaderNumber(gotEntry.symEntry.shndx)
+            symName = ""
+            if elfFile.dynstr is not None:
+                symName = elfFile.dynstr[gotEntry.symEntry.name]
+            print(f"  {'':8} {'':10} {gotEntry.getAddress():08X} {gotEntry.symEntry.value:08X} {entryType.name:7} {ndx.name:12} {symName}")
 
         print()
 
@@ -247,9 +252,11 @@ def processGlobalOffsetTable(context: common.Context, elfFile: elf32.Elf32File) 
 
     if elfFile.got is not None:
         context.got.localsTable = elfFile.got.localsTable
-        context.got.globalsTable = elfFile.got.globalsTable
 
-        for address in context.got.globalsTable:
+        for gotEntry in elfFile.got.globalsTable:
+            address = gotEntry.getAddress()
+
+            context.got.globalsTable.append(address)
             contextSym = context.globalSegment.getSymbol(address)
             if contextSym is not None:
                 contextSym.isGotGlobal = True
