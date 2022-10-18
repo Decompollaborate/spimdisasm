@@ -119,6 +119,10 @@ def changeGlobalSegmentRanges(context: common.Context, processedSegments: dict[c
     if highestVramEnd is None:
         highestVramEnd = 0xFFFFFFFF
     context.globalSegment.changeRanges(lowestVromStart, highestVromEnd, lowestVramStart, highestVramEnd)
+    context.totalVramStart = lowestVramStart
+    context.totalVramEnd = highestVramEnd
+    print(f"{context.totalVramStart:X}")
+    print(f"{context.totalVramEnd:X}")
     return
 
 

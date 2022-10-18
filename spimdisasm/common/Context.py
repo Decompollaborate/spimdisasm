@@ -33,6 +33,9 @@ class Context:
         self.overlaySegments: dict[str, dict[int, SymbolsSegment]] = dict()
         "Outer key is overlay type, inner key is the vrom of the overlay's segment"
 
+        self.totalVramStart: int = self.globalSegment.vramStart
+        self.totalVramEnd: int = self.globalSegment.vramEnd
+
         # Stuff that looks like pointers, but the disassembler shouldn't count it as a pointer
         self.bannedSymbols: set[int] = set()
 
@@ -64,6 +67,10 @@ class Context:
             self.overlaySegments[overlayCategory] = dict()
         segment = SymbolsSegment(segmentVromStart, segmentVromEnd, segmentVramStart, segmentVramEnd, overlayCategory=overlayCategory)
         self.overlaySegments[overlayCategory][segmentVromStart] = segment
+        if segmentVramStart < self.totalVramStart:
+            self.totalVramStart = segmentVramStart
+        if segmentVramEnd > self.totalVramEnd:
+            self.totalVramEnd = segmentVramEnd
         return segment
 
 

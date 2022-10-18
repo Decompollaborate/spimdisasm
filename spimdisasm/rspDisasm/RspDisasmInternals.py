@@ -56,7 +56,8 @@ def initializeContext(args: argparse.Namespace, fileSize: int, fileVram: int) ->
         highestVramEnd = fileVram + highestVromEnd
 
     context.globalSegment.changeRanges(0, highestVromEnd, lowestVramStart, highestVramEnd)
-
+    context.totalVramStart = lowestVramStart
+    context.totalVramEnd = highestVramEnd
     return context
 
 
