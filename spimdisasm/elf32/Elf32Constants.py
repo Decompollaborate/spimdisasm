@@ -175,6 +175,29 @@ class Elf32SymbolTableBinding(enum.Enum):
     LOPROC      = 13
     HIPROC      = 14
 
+    @staticmethod
+    def fromValue(value: int) -> Elf32SymbolTableBinding|None:
+        try:
+            return Elf32SymbolTableBinding(value)
+        except ValueError:
+            return None
+
+# Symbol visibility specification encoded in the st_other field.
+class Elf32SymbolVisibility(enum.Enum):
+    DEFAULT         =    0 # Default symbol visibility rules
+    INTERNAL        =    1 # Processor specific hidden class
+    HIDDEN          =    2 # Sym unavailable in other modules
+    PROTECTED       =    3 # Not preemptible, not exported
+    PLT             =    8
+    SC_ALIGN_UNUSED = 0xFF
+
+    @staticmethod
+    def fromValue(value: int) -> Elf32SymbolVisibility|None:
+        try:
+            return Elf32SymbolVisibility(value)
+        except ValueError:
+            return None
+
 
 # a.k.a. SHN (section header number)
 @enum.unique
@@ -184,6 +207,13 @@ class Elf32SectionHeaderNumber(enum.Enum):
     MIPS_ACOMMON    = 0xFF00
     MIPS_TEXT       = 0xFF01
     MIPS_DATA       = 0xFF02
+
+    @staticmethod
+    def fromValue(value: int) -> Elf32SectionHeaderNumber|None:
+        try:
+            return Elf32SectionHeaderNumber(value)
+        except ValueError:
+            return None
 
 
 # a.k.a. DT

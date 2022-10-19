@@ -28,6 +28,7 @@ def getArgsParser() -> argparse.ArgumentParser:
 
     readelfOptions = parser.add_argument_group("readelf-like flags")
 
+    readelfOptions.add_argument("--syms", help="Display the symbol table", action="store_true")
     readelfOptions.add_argument("--display-got", help="Shows Global offset table information", action="store_true")
 
 
@@ -49,14 +50,42 @@ def applyGlobalConfigurations() -> None:
     common.GlobalConfig.ALLOW_UNKSEGMENT = False
 
 
+def readelf_syms(elfFile: elf32.Elf32File) -> None:
+    if elfFile.symtab is not None:
+        print(f"Symbol table '.symtab' contains {len(elfFile.symtab.symbols)} entries:")
+
+        print(f" {'Num':>5}: {'Value':>8} {'Size':>5} {'Type':7} {'Bind':6} {'Vis':7} {'Ndx':>7} {'Name'}")
+
+        for i, sym in enumerate(elfFile.symtab.symbols):
+            entryType = elf32.Elf32SymbolTableType(sym.stType)
+
+            bind = sym.stBind
+            stBind = elf32.Elf32SymbolTableBinding.fromValue(sym.stBind)
+            if stBind is not None:
+                bind = stBind.name
+
+            visibility = sym.other
+            stOther = elf32.Elf32SymbolVisibility.fromValue(sym.other)
+            if stOther is not None:
+                visibility = stOther.name
+
+            ndx = sym.shndx
+            shndx = elf32.Elf32SectionHeaderNumber.fromValue(sym.shndx)
+            if shndx is not None:
+                ndx = shndx.name
+
+            symName = ""
+            if elfFile.strtab is not None:
+                symName = elfFile.strtab[sym.name]
+            print(f" {i:>5}: {sym.value:08X} {sym.size:>5} {entryType.name:7} {bind:6} {visibility:7} {ndx:>7} {symName}")
+
 def readelf_displayGot(elfFile: elf32.Elf32File) -> None:
     print(f"Primary GOT:")
     gpValue = 0
     if elfFile.reginfo is not None:
         gpValue = elfFile.reginfo.gpValue
         print(f" Canonical gp value: {gpValue:X}")
-
-    print()
+        print()
 
     entryAddress = 0
     if elfFile.dynamic is not None and elfFile.dynamic.pltGot is not None:
@@ -335,6 +364,9 @@ def elfObjDisasmMain():
     inputPath = Path(args.binary)
     array_of_bytes = common.Utils.readFileAsBytearray(inputPath)
     elfFile = elf32.Elf32File(array_of_bytes)
+
+    if args.syms:
+        readelf_syms(elfFile)
 
     if args.display_got:
         readelf_displayGot(elfFile)
