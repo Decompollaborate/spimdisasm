@@ -139,7 +139,7 @@ class InstrAnalyzer:
         return constant
 
 
-    def pairHiLo(self, hiValue: int|None, luiOffset: int|None, lowerInstr: rabbitizer.Instruction, lowerOffset: int, got: common.GlobalOffsetTable) -> int|None:
+    def pairHiLo(self, hiValue: int|None, luiOffset: int|None, lowerInstr: rabbitizer.Instruction, lowerOffset: int, got: common.GlobalOffsetTable, otherIsGpGot: bool) -> int|None:
         # lui being None means this symbol is a $gp access
         assert (hiValue is None and luiOffset is None) or (hiValue is not None and luiOffset is not None)
 
@@ -196,6 +196,8 @@ class InstrAnalyzer:
 
         if hiValue is not None:
             upperHalf = hiValue
+            if otherIsGpGot and upperHalf in got.globalsTable:
+                lowerHalf = 0
         else:
             assert common.GlobalConfig.GP_VALUE is not None
             upperHalf = common.GlobalConfig.GP_VALUE
@@ -330,7 +332,7 @@ class InstrAnalyzer:
                         # early return to avoid counting this pairing as a symbol
                         return
 
-        address = self.pairHiLo(upperHalf, luiOffset, instr, instrOffset, got)
+        address = self.pairHiLo(upperHalf, luiOffset, instr, instrOffset, got, pairingInfo.isGpGot)
         if address is None:
             return
 

@@ -420,7 +420,19 @@ class SymbolFunction(SymbolText):
                     symbol = self.getSymbol(address, tryPlusOffset=True)
 
                 if symbol is not None:
-                    return self.generateHiLoStr(instr, symbol.getSymbolPlusOffset(address), symbol)
+                    symName = symbol.getSymbolPlusOffset(address)
+                    if common.GlobalConfig.PIC:
+                        if instructionOffset not in self.instrAnalyzer.gpLoads:
+                            if address in self.context.got.globalsTable:
+                                # addend = instr.getProcessedImmediate()
+                                # if addend < 0:
+                                #     symName = f"{symName} - 0x{-addend:X}"
+                                # elif addend > 0:
+                                #     symName = f"{symName} + 0x{addend:X}"
+                                # # do nothing if addend is zero
+                                return None
+
+                    return self.generateHiLoStr(instr, symName, symbol)
                 return self.generateHiLoConstantStr(address, instr, loInstr)
 
             elif instructionOffset in self.instrAnalyzer.constantInstrOffset:
