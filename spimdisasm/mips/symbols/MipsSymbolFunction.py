@@ -492,7 +492,7 @@ class SymbolFunction(SymbolText):
         if labelSym is None and len(self.context.offsetSymbols[self.sectionType]) > 0:
             labelSym = self.context.getOffsetSymbol(self.inFileOffset+instructionOffset, common.FileSectionType.Text)
 
-        if labelSym is None or labelSym.overlayCategory != self.overlayCategory:
+        if labelSym is None or labelSym.overlayCategory != self.overlayCategory or labelSym.isGotLocal:
             return ""
 
         labelSym.isDefined = True
