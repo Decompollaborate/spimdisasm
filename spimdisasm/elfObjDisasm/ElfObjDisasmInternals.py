@@ -182,9 +182,7 @@ def changeGlobalSegmentRanges(context: common.Context, processedSegments: dict[c
         lowestVramStart = 0x0
     if highestVramEnd is None:
         highestVramEnd = 0xFFFFFFFF
-    context.globalSegment.changeRanges(lowestVromStart, highestVromEnd, lowestVramStart, highestVramEnd)
-    context.totalVramStart = lowestVramStart
-    context.totalVramEnd = highestVramEnd
+    context.changeGlobalSegmentRanges(lowestVromStart, highestVromEnd, lowestVramStart, highestVramEnd)
     return
 
 
@@ -356,7 +354,7 @@ def elfObjDisasmMain():
     injectAllElfSymbols(context, elfFile, processedSegments)
     processGlobalOffsetTable(context, elfFile)
 
-    for subSegment in processedSegments.values():
+    for _, subSegment in sorted(processedSegments.items()):
         subSegment.analyze()
         subSegment.printAnalyzisResults()
 

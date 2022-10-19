@@ -144,9 +144,7 @@ def changeGlobalSegmentRanges(context: common.Context, processedFiles: dict[comm
         lowestVramStart = 0x0
     if highestVramEnd is None:
         highestVramEnd = 0xFFFFFFFF
-    context.globalSegment.changeRanges(0, highestVromEnd, lowestVramStart, highestVramEnd)
-    context.totalVramStart = lowestVramStart
-    context.totalVramEnd = highestVramEnd
+    context.changeGlobalSegmentRanges(0, highestVromEnd, lowestVramStart, highestVramEnd)
     return
 
 def analyzeProcessedFiles(processedFiles, processedFilesOutputPaths, processedFilesCount: int):

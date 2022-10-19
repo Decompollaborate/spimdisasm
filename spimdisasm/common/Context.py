@@ -35,6 +35,7 @@ class Context:
 
         self.totalVramStart: int = self.globalSegment.vramStart
         self.totalVramEnd: int = self.globalSegment.vramEnd
+        self._defaultVramRanges: bool = True
 
         # Stuff that looks like pointers, but the disassembler shouldn't count it as a pointer
         self.bannedSymbols: set[int] = set()
@@ -62,15 +63,32 @@ class Context:
         self.got: GlobalOffsetTable = GlobalOffsetTable()
 
 
+    def changeGlobalSegmentRanges(self, vromStart: int, vromEnd: int, vramStart: int, vramEnd: int):
+        self.globalSegment.changeRanges(vromStart, vromEnd, vramStart, vramEnd)
+        if self._defaultVramRanges:
+            self.totalVramStart = vramStart
+            self.totalVramEnd = vramEnd
+            self._defaultVramRanges = False
+        if vramStart < self.totalVramStart:
+            self.totalVramStart = vramStart
+        if vramEnd > self.totalVramEnd:
+            self.totalVramEnd = vramEnd
+
     def addOverlaySegment(self, overlayCategory: str, segmentVromStart: int, segmentVromEnd: int, segmentVramStart: int, segmentVramEnd: int) -> SymbolsSegment:
         if overlayCategory not in self.overlaySegments:
             self.overlaySegments[overlayCategory] = dict()
         segment = SymbolsSegment(segmentVromStart, segmentVromEnd, segmentVramStart, segmentVramEnd, overlayCategory=overlayCategory)
         self.overlaySegments[overlayCategory][segmentVromStart] = segment
+
+        if self._defaultVramRanges:
+            self.totalVramStart = segmentVramStart
+            self.totalVramEnd = segmentVramEnd
+            self._defaultVramRanges = False
         if segmentVramStart < self.totalVramStart:
             self.totalVramStart = segmentVramStart
         if segmentVramEnd > self.totalVramEnd:
             self.totalVramEnd = segmentVramEnd
+
         return segment
 
 

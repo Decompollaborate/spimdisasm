@@ -88,5 +88,9 @@ class FileSectionType(enum.Enum):
             return ".ovl"
         return ""
 
+    def __lt__(self, other: FileSectionType) -> bool:
+        return self.value < other.value
+
+
 FileSections_ListBasic = [FileSectionType.Text, FileSectionType.Data, FileSectionType.Rodata, FileSectionType.Bss]
 FileSections_ListAll = [FileSectionType.Text, FileSectionType.Data, FileSectionType.Rodata, FileSectionType.Bss, FileSectionType.Reloc]
