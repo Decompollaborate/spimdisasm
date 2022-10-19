@@ -64,32 +64,44 @@ def readelf_displayGot(elfFile: elf32.Elf32File) -> None:
 
     if elfFile.got is not None:
         print(f" Reserved entries:")
-        print(f"   Address     Access  Initial Purpose")
+        print(f"   Address {'Access':>9}  Initial Purpose")
         access = entryAddress - gpValue
-        print(f"  {entryAddress:8X} {access:6}(gp) {elfFile.got.localsTable[0]:08X} Lazy resolver")
+        if access < 0:
+            accessStr = f"-{-access:X}"
+        else:
+            accessStr = f"{access:X}"
+        print(f"  {entryAddress:8X} {accessStr:5}(gp) {elfFile.got.localsTable[0]:08X} Lazy resolver")
         entryAddress += 4
 
         print()
 
         print(f" Local entries:")
-        print(f"   Address     Access  Initial")
+        print(f"   Address {'Access':>9}  Initial")
         for x in elfFile.got.localsTable[1:]:
             access = entryAddress - gpValue
-            print(f"  {entryAddress:8X} {access:6}(gp) {x:08X}")
+            if access < 0:
+                accessStr = f"-{-access:X}"
+            else:
+                accessStr = f"{access:X}"
+            print(f"  {entryAddress:8X} {accessStr:5}(gp) {x:08X}")
             entryAddress += 4
 
         print()
 
         print(f" Global entries:")
-        print(f"   Address     Access  Initial Sym.Val. Type    {'Ndx':12} Name")
+        print(f"  {'Address':>8} {'Access':>9}  Initial Sym.Val. Type    {'Ndx':12} Name")
         for gotEntry in elfFile.got.globalsTable:
             access = entryAddress - gpValue
+            if access < 0:
+                accessStr = f"-{-access:X}"
+            else:
+                accessStr = f"{access:X}"
             entryType = elf32.Elf32SymbolTableType(gotEntry.symEntry.stType)
             ndx = elf32.Elf32SectionHeaderNumber(gotEntry.symEntry.shndx)
             symName = ""
             if elfFile.dynstr is not None:
                 symName = elfFile.dynstr[gotEntry.symEntry.name]
-            print(f"  {entryAddress:8X} {access:6}(gp) {gotEntry.getAddress():08X} {gotEntry.symEntry.value:08X} {entryType.name:7} {ndx.name:12} {symName}")
+            print(f"  {entryAddress:8X} {accessStr:5}(gp) {gotEntry.getAddress():08X} {gotEntry.symEntry.value:08X} {entryType.name:7} {ndx.name:12} {symName}")
             entryAddress += 4
 
         print()
