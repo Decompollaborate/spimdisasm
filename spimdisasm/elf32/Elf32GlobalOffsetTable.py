@@ -60,7 +60,7 @@ class Elf32GlobalOffsetTable:
             symEntry = dynsym[i]
             gotEntry = GotEntry(symEntry)
 
-            if symEntry.stType == Elf32SymbolTableType.OBJECT.value and (symEntry.shndx == Elf32SectionHeaderNumber.UNDEF.value or symEntry.shndx == Elf32SectionHeaderNumber.COMMON.value):
+            if symEntry.shndx == Elf32SectionHeaderNumber.UNDEF.value or symEntry.shndx == Elf32SectionHeaderNumber.COMMON.value:
                 gotIndex = dynamic.localGotNo + (i - dynamic.gotSym)
                 gotEntry.initial = self.entries[gotIndex]
 

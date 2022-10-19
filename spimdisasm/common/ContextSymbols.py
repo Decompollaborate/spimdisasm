@@ -348,7 +348,11 @@ class ContextSymbol:
         return output
 
     def toCsv(self) -> str:
-        output = f"0x{self.address:06X},{self.name},{self.getName()},{self.getType()},{self.accessType},"
+        output = f"0x{self.address:06X},{self.name},{self.getName()},{self.getType()},"
+        if self.accessType is None:
+            output += "None,"
+        else:
+            output += f"{self.accessType.name},"
         if self.size is None:
             output += "None,"
         else:
