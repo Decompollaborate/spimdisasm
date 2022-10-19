@@ -352,7 +352,7 @@ class ContextSymbol:
         if self.accessType is None:
             output += "None,"
         else:
-            output += f"{self.accessType.name},"
+            output += f"{self.accessType},"
         if self.size is None:
             output += "None,"
         else:

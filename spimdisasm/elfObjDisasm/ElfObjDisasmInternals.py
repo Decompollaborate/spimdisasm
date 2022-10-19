@@ -189,7 +189,7 @@ def changeGlobalSegmentRanges(context: common.Context, processedSegments: dict[c
 
 
 def addRelocatedSymbol(context: common.Context, symEntry: elf32.Elf32SymEntry, symName: str|None):
-    if symEntry.value == 0:
+    if symEntry.value == 0 or symEntry.shndx == 0:
         return
 
     if symEntry.stType == elf32.Elf32SymbolTableType.FUNC.value:
@@ -205,6 +205,28 @@ def addRelocatedSymbol(context: common.Context, symEntry: elf32.Elf32SymEntry, s
     else:
         common.Utils.eprint(f"Warning: symbol '{symName}' has an unhandled stType: '{symEntry.stType}'")
         contextSym = context.globalSegment.addSymbol(symEntry.value)
+    if symName is not None:
+        contextSym.name = symName
+    contextSym.isUserDeclared = True
+    contextSym.setSizeIfUnset(symEntry.size)
+
+def addUndefinedSymbol(context: common.Context, symEntry: elf32.Elf32SymEntry, symName: str|None, symAddress: int):
+    if symAddress == 0:
+        return
+
+    if symEntry.stType == elf32.Elf32SymbolTableType.FUNC.value:
+        contextSym = context.globalSegment.addFunction(symAddress)
+    elif symEntry.stType == elf32.Elf32SymbolTableType.OBJECT.value:
+        contextSym = context.globalSegment.addSymbol(symAddress)
+    elif symEntry.stType == elf32.Elf32SymbolTableType.SECTION.value:
+        # print(symEntry)
+        return
+    elif symEntry.stType == elf32.Elf32SymbolTableType.NOTYPE.value:
+        # Is ok to just ignore this?
+        return
+    else:
+        common.Utils.eprint(f"Warning: symbol '{symName}' has an unhandled stType: '{symEntry.stType}'")
+        contextSym = context.globalSegment.addSymbol(symAddress)
     if symName is not None:
         contextSym.name = symName
     contextSym.isUserDeclared = True
@@ -244,6 +266,12 @@ def insertDynsymIntoContext(context: common.Context, symbolTable: elf32.Elf32Sym
 
         addRelocatedSymbol(context, symEntry, symName)
 
+def insertGotIntoContext(context: common.Context, got: elf32.Elf32GlobalOffsetTable, stringTable: elf32.Elf32StringTable):
+    for gotEntry in got.globalsTable:
+        symName = stringTable[gotEntry.symEntry.name]
+
+        addUndefinedSymbol(context, gotEntry.symEntry, symName, gotEntry.getAddress())
+
 
 def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, processedSegments: dict[common.FileSectionType, mips.sections.SectionBase]) -> None:
     if elfFile.symtab is not None and elfFile.strtab is not None:
@@ -268,6 +296,9 @@ def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, proce
     if elfFile.dynsym is not None and elfFile.dynstr is not None:
         # Use the dynsym to replace symbol names present in disassembled sections
         insertDynsymIntoContext(context, elfFile.dynsym, elfFile.dynstr)
+
+    if elfFile.got is not None and elfFile.dynstr is not None:
+        insertGotIntoContext(context, elfFile.got, elfFile.dynstr)
     return
 
 def processGlobalOffsetTable(context: common.Context, elfFile: elf32.Elf32File) -> None:
