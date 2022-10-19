@@ -267,6 +267,11 @@ def insertDynsymIntoContext(context: common.Context, symbolTable: elf32.Elf32Sym
         addRelocatedSymbol(context, symEntry, symName)
 
 def insertGotIntoContext(context: common.Context, got: elf32.Elf32GlobalOffsetTable, stringTable: elf32.Elf32StringTable):
+    for local in got.localsTable:
+        contextSym = context.globalSegment.addSymbol(local)
+        contextSym.isUserDeclared = True
+        contextSym.isGotLocal = True
+
     for gotEntry in got.globalsTable:
         symName = stringTable[gotEntry.symEntry.name]
 
