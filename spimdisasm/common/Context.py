@@ -10,7 +10,7 @@ from pathlib import Path
 
 from . import Utils
 from .FileSectionType import FileSectionType
-from .ContextSymbols import SymbolSpecialType, ContextOffsetSymbol, ContextRelocSymbol
+from .ContextSymbols import SymbolSpecialType, ContextOffsetSymbol, ContextRelocInfo
 from .SymbolsSegment import SymbolsSegment
 from .GlobalOffsetTable import GlobalOffsetTable
 
@@ -48,7 +48,7 @@ class Context:
             FileSectionType.Bss: dict(),
         }
 
-        self.relocSymbols: dict[FileSectionType, dict[int, ContextRelocSymbol]] = {
+        self.relocSymbols: dict[FileSectionType, dict[int, ContextRelocInfo]] = {
             FileSectionType.Text: dict(),
             FileSectionType.Data: dict(),
             FileSectionType.Rodata: dict(),
@@ -110,7 +110,7 @@ class Context:
 
         return None
 
-    def getRelocSymbol(self, offset: int, sectionType: FileSectionType) -> ContextRelocSymbol|None:
+    def getRelocSymbol(self, offset: int, sectionType: FileSectionType) -> ContextRelocInfo|None:
         if sectionType in self.relocSymbols:
             relocsInSection = self.relocSymbols[sectionType]
             if offset in relocsInSection:

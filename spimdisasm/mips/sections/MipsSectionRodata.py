@@ -74,7 +74,7 @@ class SectionRodata(SectionBase):
             if relocSymbol is not None:
                 if relocSymbol.name is not None and relocSymbol.name.startswith("."):
                     sectType = common.FileSectionType.fromStr(relocSymbol.name)
-                    relocSymbol.sectionType = sectType
+                    # relocSymbol.sectionType = sectType
 
                     relocName = f"{relocSymbol.name}_{w:06X}"
                     contextOffsetSym = common.ContextOffsetSymbol(w, relocName, sectType)
@@ -82,7 +82,8 @@ class SectionRodata(SectionBase):
                         # jumptable
                         relocName = f"L{w:06X}"
                         contextOffsetSym = self.context.addOffsetJumpTableLabel(w, relocName, common.FileSectionType.Text)
-                        relocSymbol.type = contextOffsetSym.type
+                        if contextOffsetSym.type == common.SymbolSpecialType.jumptablelabel:
+                            relocSymbol.jumptableLabel = True
                         offsetSym = self.context.getOffsetSymbol(inFileOffset, self.sectionType)
                         if offsetSym is not None:
                             offsetSym.type = common.SymbolSpecialType.jumptable

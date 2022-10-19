@@ -393,19 +393,21 @@ class ContextOffsetSymbol(ContextSymbol):
         return self.name
 
 
-class ContextRelocSymbol(ContextSymbol):
-    relocSection: FileSectionType
-    relocType: int = -1 # Same number as the .elf specification
-
-    def __init__(self, offset: int, name: str|None, relocSection: FileSectionType, *args, **kwargs):
-        super().__init__(offset, *args, **kwargs)
-        self.name = name
-        self.relocSection = relocSection
-
+@dataclasses.dataclass
+class ContextRelocInfo():
     # Relative to the start of the section
-    @property
-    def offset(self) -> int:
-        return self.address
+    offset: int
+    name: str
+    relocSection: FileSectionType
+
+    # Same number as the .elf specification
+    relocType: int
+
+    jumptableLabel: bool = False
+
+
+    def getName(self) -> str:
+        return self.name
 
     def getNamePlusOffset(self, offset: int) -> str:
         if offset == 0:
@@ -413,6 +415,3 @@ class ContextRelocSymbol(ContextSymbol):
         if offset < 0:
             return f"{self.getName()} - 0x{-offset:X}"
         return f"{self.getName()} + 0x{offset:X}"
-
-    def toCsv(self) -> str:
-        return super().toCsv() + f",{self.relocSection.toStr()},{self.relocType}"

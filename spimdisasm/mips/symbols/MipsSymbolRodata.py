@@ -182,7 +182,7 @@ class SymbolRodata(SymbolBase):
             possibleReference = self.context.getRelocSymbol(self.inFileOffset + localOffset, self.sectionType)
             if possibleReference is not None:
                 value = possibleReference.getNamePlusOffset(w)
-                if possibleReference.type == common.SymbolSpecialType.jumptablelabel:
+                if possibleReference.jumptableLabel:
                     if w in self.context.offsetJumpTablesLabels:
                         value = self.context.offsetJumpTablesLabels[w].getName()
 

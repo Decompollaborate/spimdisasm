@@ -232,9 +232,9 @@ def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, proce
                     if symbolName == "":
                         continue
 
-                    contextRelocSym = common.ContextRelocSymbol(rel.offset, symbolName, sectType)
-                    contextRelocSym.isDefined = True
-                    contextRelocSym.relocType = rel.rType
+                    contextRelocSym = common.ContextRelocInfo(rel.offset, symbolName, sectType, rel.rType)
+                    # contextRelocSym.isDefined = True
+                    # contextRelocSym.relocType = rel.rType
                     context.relocSymbols[sectType][rel.offset] = contextRelocSym
 
         # Use the symtab to replace symbol names present in disassembled sections
