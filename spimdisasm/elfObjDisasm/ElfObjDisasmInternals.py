@@ -28,7 +28,8 @@ def getArgsParser() -> argparse.ArgumentParser:
 
     readelfOptions = parser.add_argument_group("readelf-like flags")
 
-    readelfOptions.add_argument("--syms", help="Display the symbol table", action="store_true")
+    readelfOptions.add_argument("-s", "--syms", help="Display the symbol table", action="store_true")
+    readelfOptions.add_argument("-r", "--relocs", help="Display the relocations (if present)", action="store_true")
     readelfOptions.add_argument("--display-got", help="Shows Global offset table information", action="store_true")
 
 
@@ -281,6 +282,9 @@ def elfObjDisasmMain():
 
     if args.syms:
         elfFile.readelf_syms()
+
+    if args.relocs:
+        elfFile.readelf_relocs()
 
     if args.display_got:
         elfFile.readelf_displayGot()

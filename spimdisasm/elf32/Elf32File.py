@@ -9,7 +9,7 @@ from typing import Callable
 
 from .. import common
 
-from .Elf32Constants import Elf32HeaderIdentifier, Elf32HeaderFlag, Elf32SectionHeaderType, Elf32SymbolTableType, Elf32SymbolTableBinding, Elf32SymbolVisibility, Elf32SectionHeaderNumber
+from .Elf32Constants import Elf32HeaderIdentifier, Elf32HeaderFlag, Elf32SectionHeaderType, Elf32SymbolTableType, Elf32SymbolTableBinding, Elf32SymbolVisibility, Elf32SectionHeaderNumber, Elf32Relocs
 from .Elf32Dyns import Elf32Dyns
 from .Elf32GlobalOffsetTable import Elf32GlobalOffsetTable
 from .Elf32Header import Elf32Header
@@ -144,7 +144,7 @@ class Elf32File:
         if sectionEntryName.startswith(".rel."):
             fileSecType = common.FileSectionType.fromStr(sectionEntryName[4:])
             if fileSecType != common.FileSectionType.Invalid:
-                self.rel[fileSecType] = Elf32Rels(array_of_bytes, entry.offset, entry.size)
+                self.rel[fileSecType] = Elf32Rels(sectionEntryName, array_of_bytes, entry.offset, entry.size)
             elif common.GlobalConfig.VERBOSE:
                 common.Utils.eprint("Unhandled REL subsection found: ", sectionEntryName, entry, "\n")
         elif common.GlobalConfig.VERBOSE:
@@ -244,6 +244,29 @@ class Elf32File:
                 if self.strtab is not None:
                     symName = self.strtab[sym.name]
                 print(f" {i:>5}: {sym.value:08X} {sym.size:>5} {entryType.name:7} {bind:6} {visibility:7} {ndx:>7} {symName}")
+
+    def readelf_relocs(self) -> None:
+        for relSection in self.rel.values():
+            print(f"Relocation section '{relSection.sectionName}' at offset 0x{relSection.offset:X} contains {len(relSection.relocations)} entries:")
+
+            # Info column is basically useless since this shows the type and sym too
+            print(f" {'Offset':8} {'Info':8} {'Type':12} {'Sym.Value':>9} {'Sym.Name'}")
+            for rel in relSection.relocations:
+                relType = rel.rType
+                rType = Elf32Relocs.fromValue(rel.rType)
+                if rType is not None:
+                    relType = rType.name
+
+                symValue = ""
+                symName = ""
+                if self.symtab is not None:
+                    sym = self.symtab[rel.rSym]
+                    symValue = f"{sym.value:08X}"
+                    if self.strtab is not None:
+                        symName = self.strtab[sym.name]
+                print(f" {rel.offset:08X} {rel.info:08X} {relType:<12} {symValue:>9} {symName}")
+
+            print()
 
     def readelf_displayGot(self) -> None:
         print(f"Primary GOT:")
