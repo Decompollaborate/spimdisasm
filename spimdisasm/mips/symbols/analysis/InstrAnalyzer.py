@@ -266,6 +266,11 @@ class InstrAnalyzer:
             if not unsignedMemoryAccess:
                 return
 
+        if instr.hasOperandAlias(rabbitizer.OperandType.cpu_immediate):
+            if instr.getProcessedImmediate() != 0:
+                # Only store type information if the addend is zero
+                return
+
         if address not in self.possibleSymbolTypes:
             self.possibleSymbolTypes[address] = (accessType, unsignedMemoryAccess)
 
