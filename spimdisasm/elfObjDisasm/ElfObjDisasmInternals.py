@@ -51,34 +51,46 @@ def applyGlobalConfigurations() -> None:
 
 def readelf_displayGot(elfFile: elf32.Elf32File) -> None:
     print(f"Primary GOT:")
+    gpValue = 0
     if elfFile.reginfo is not None:
-        print(f" Canonical gp value: {elfFile.reginfo.gpValue:X}")
+        gpValue = elfFile.reginfo.gpValue
+        print(f" Canonical gp value: {gpValue:X}")
 
     print()
+
+    entryAddress = 0
+    if elfFile.dynamic is not None and elfFile.dynamic.pltGot is not None:
+        entryAddress = elfFile.dynamic.pltGot
 
     if elfFile.got is not None:
         print(f" Reserved entries:")
         print(f"   Address     Access  Initial Purpose")
-        print(f"  {'':8} {'':10} {elfFile.got.localsTable[0]:08X} Lazy resolver")
+        access = entryAddress - gpValue
+        print(f"  {entryAddress:8X} {access:6}(gp) {elfFile.got.localsTable[0]:08X} Lazy resolver")
+        entryAddress += 4
 
         print()
 
         print(f" Local entries:")
         print(f"   Address     Access  Initial")
         for x in elfFile.got.localsTable[1:]:
-            print(f"  {'':8} {'':10} {x:08X}")
+            access = entryAddress - gpValue
+            print(f"  {entryAddress:8X} {access:6}(gp) {x:08X}")
+            entryAddress += 4
 
         print()
 
         print(f" Global entries:")
         print(f"   Address     Access  Initial Sym.Val. Type    {'Ndx':12} Name")
         for gotEntry in elfFile.got.globalsTable:
+            access = entryAddress - gpValue
             entryType = elf32.Elf32SymbolTableType(gotEntry.symEntry.stType)
             ndx = elf32.Elf32SectionHeaderNumber(gotEntry.symEntry.shndx)
             symName = ""
             if elfFile.dynstr is not None:
                 symName = elfFile.dynstr[gotEntry.symEntry.name]
-            print(f"  {'':8} {'':10} {gotEntry.getAddress():08X} {gotEntry.symEntry.value:08X} {entryType.name:7} {ndx.name:12} {symName}")
+            print(f"  {entryAddress:8X} {access:6}(gp) {gotEntry.getAddress():08X} {gotEntry.symEntry.value:08X} {entryType.name:7} {ndx.name:12} {symName}")
+            entryAddress += 4
 
         print()
 
