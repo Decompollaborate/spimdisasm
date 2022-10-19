@@ -9,7 +9,7 @@ from typing import Callable
 
 from .. import common
 
-from .Elf32Constants import Elf32HeaderIdentifier, Elf32HeaderFlag, Elf32SectionHeaderType
+from .Elf32Constants import Elf32HeaderIdentifier, Elf32HeaderFlag, Elf32SectionHeaderType, Elf32SymbolTableType, Elf32SymbolTableBinding, Elf32SymbolVisibility, Elf32SectionHeaderNumber
 from .Elf32Dyns import Elf32Dyns
 from .Elf32GlobalOffsetTable import Elf32GlobalOffsetTable
 from .Elf32Header import Elf32Header
@@ -214,3 +214,89 @@ class Elf32File:
         Elf32SectionHeaderType.MIPS_SYMBOL_LIB.value: _processSection_MIPS_SYMBOL_LIB,
         Elf32SectionHeaderType.MIPS_ABIFLAGS.value: _processSection_MIPS_ABIFLAGS,
     }
+
+
+    def readelf_syms(self) -> None:
+        if self.symtab is not None:
+            print(f"Symbol table '.symtab' contains {len(self.symtab.symbols)} entries:")
+
+            print(f" {'Num':>5}: {'Value':>8} {'Size':>5} {'Type':7} {'Bind':6} {'Vis':7} {'Ndx':>7} {'Name'}")
+
+            for i, sym in enumerate(self.symtab.symbols):
+                entryType = Elf32SymbolTableType(sym.stType)
+
+                bind = sym.stBind
+                stBind = Elf32SymbolTableBinding.fromValue(sym.stBind)
+                if stBind is not None:
+                    bind = stBind.name
+
+                visibility = sym.other
+                stOther = Elf32SymbolVisibility.fromValue(sym.other)
+                if stOther is not None:
+                    visibility = stOther.name
+
+                ndx = sym.shndx
+                shndx = Elf32SectionHeaderNumber.fromValue(sym.shndx)
+                if shndx is not None:
+                    ndx = shndx.name
+
+                symName = ""
+                if self.strtab is not None:
+                    symName = self.strtab[sym.name]
+                print(f" {i:>5}: {sym.value:08X} {sym.size:>5} {entryType.name:7} {bind:6} {visibility:7} {ndx:>7} {symName}")
+
+    def readelf_displayGot(self) -> None:
+        print(f"Primary GOT:")
+        gpValue = 0
+        if self.reginfo is not None:
+            gpValue = self.reginfo.gpValue
+            print(f" Canonical gp value: {gpValue:X}")
+            print()
+
+        entryAddress = 0
+        if self.dynamic is not None and self.dynamic.pltGot is not None:
+            entryAddress = self.dynamic.pltGot
+
+        if self.got is not None:
+            print(f" Reserved entries:")
+            print(f"   Address {'Access':>9}  Initial Purpose")
+            access = entryAddress - gpValue
+            if access < 0:
+                accessStr = f"-{-access:X}"
+            else:
+                accessStr = f"{access:X}"
+            print(f"  {entryAddress:8X} {accessStr:5}(gp) {self.got.localsTable[0]:08X} Lazy resolver")
+            entryAddress += 4
+
+            print()
+
+            print(f" Local entries:")
+            print(f"   Address {'Access':>9}  Initial")
+            for x in self.got.localsTable[1:]:
+                access = entryAddress - gpValue
+                if access < 0:
+                    accessStr = f"-{-access:X}"
+                else:
+                    accessStr = f"{access:X}"
+                print(f"  {entryAddress:8X} {accessStr:5}(gp) {x:08X}")
+                entryAddress += 4
+
+            print()
+
+            print(f" Global entries:")
+            print(f"  {'Address':>8} {'Access':>9}  Initial Sym.Val. Type    {'Ndx':12} Name")
+            for gotEntry in self.got.globalsTable:
+                access = entryAddress - gpValue
+                if access < 0:
+                    accessStr = f"-{-access:X}"
+                else:
+                    accessStr = f"{access:X}"
+                entryType = Elf32SymbolTableType(gotEntry.symEntry.stType)
+                ndx = Elf32SectionHeaderNumber(gotEntry.symEntry.shndx)
+                symName = ""
+                if self.dynstr is not None:
+                    symName = self.dynstr[gotEntry.symEntry.name]
+                print(f"  {entryAddress:8X} {accessStr:5}(gp) {gotEntry.getAddress():08X} {gotEntry.symEntry.value:08X} {entryType.name:7} {ndx.name:12} {symName}")
+                entryAddress += 4
+
+            print()
