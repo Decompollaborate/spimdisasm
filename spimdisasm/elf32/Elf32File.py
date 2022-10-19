@@ -230,12 +230,12 @@ class Elf32File:
                 if stBind is not None:
                     bind = stBind.name
 
-                visibility = sym.other
+                visibility: str|int = sym.other
                 stOther = Elf32SymbolVisibility.fromValue(sym.other)
                 if stOther is not None:
                     visibility = stOther.name
 
-                ndx = sym.shndx
+                ndx: str|int = sym.shndx
                 shndx = Elf32SectionHeaderNumber.fromValue(sym.shndx)
                 if shndx is not None:
                     ndx = shndx.name
