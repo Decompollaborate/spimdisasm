@@ -9,7 +9,7 @@ from typing import Callable
 
 from .. import common
 
-from .Elf32Constants import Elf32HeaderIdentifier, Elf32HeaderFlag, Elf32SectionHeaderType, Elf32SymbolTableType, Elf32SymbolTableBinding, Elf32SymbolVisibility, Elf32SectionHeaderNumber, Elf32Relocs
+from .Elf32Constants import Elf32HeaderIdentifier, Elf32ObjectFileType, Elf32HeaderFlag, Elf32SectionHeaderType, Elf32SymbolTableType, Elf32SymbolTableBinding, Elf32SymbolVisibility, Elf32SectionHeaderNumber, Elf32Relocs
 from .Elf32Dyns import Elf32Dyns
 from .Elf32GlobalOffsetTable import Elf32GlobalOffsetTable
 from .Elf32Header import Elf32Header
@@ -69,6 +69,11 @@ class Elf32File:
 
         if self.got is not None and self.dynamic is not None and self.dynsym is not None:
             self.got.initTables(self.dynamic, self.dynsym)
+
+
+    def handleHeaderIdent(self) -> None:
+        if self.header.ident.getVersion() != 1:
+            common.Utils.eprint(f"Warning: Elf version '{self.header.ident.getVersion()}' when version '1' was expected.")
 
 
     def handleFlags(self) -> None:
@@ -249,6 +254,105 @@ class Elf32File:
         Elf32SectionHeaderType.MIPS_SYMBOL_LIB.value: _processSection_MIPS_SYMBOL_LIB,
         Elf32SectionHeaderType.MIPS_ABIFLAGS.value: _processSection_MIPS_ABIFLAGS,
     }
+
+
+    def readelf_fileHeader(self) -> None:
+        print(f"ELF Header:")
+        print(f"  Magic:  ", end="")
+        for magic in self.header.ident.ident:
+            print(f" {magic:02X}", end="")
+        print(f"\n          ", end="")
+        for magic in self.header.ident.ident:
+            character = chr(magic)
+            if not character.isprintable():
+                character = f"{magic:02X}"
+
+            print(f" {character:>2}", end="")
+        print()
+
+        print(f"  {'Class:':<34} {self.header.ident.getFileClass().name.replace('CLASS', 'ELF')}")
+
+        print(f"  {'Data:':<34} ", end="")
+        dataEncoding = self.header.ident.getDataEncoding()
+        if dataEncoding == Elf32HeaderIdentifier.DataEncoding.DATANONE:
+            print("Invalid data encoding")
+        elif dataEncoding == Elf32HeaderIdentifier.DataEncoding.DATA2LSB:
+            print("2's complement, little endian")
+        elif dataEncoding == Elf32HeaderIdentifier.DataEncoding.DATA2MSB:
+            print("2's complement, big endian")
+        else:
+            print(dataEncoding.name)
+
+        print(f"  {'Version:':<34} ", end="")
+        version = self.header.ident.getVersion()
+        print(f"{version}" + (" (current)" if version == 1 else ""))
+
+        print(f"  {'OS/ABI:':<34} ", end="")
+        osAbi = self.header.ident.getOsAbi()
+        if osAbi == Elf32HeaderIdentifier.OsAbi.NONE:
+            print(f"UNIX - System V")
+        elif osAbi == Elf32HeaderIdentifier.OsAbi.IRIX:
+            print(f"SGI Irix")
+        else:
+            print(osAbi.name)
+
+        print(f"  {'ABI Version:':<34} {self.header.ident.getAbiVersion()}")
+
+        print(f"  {'Type:':<34} ", end="")
+        try:
+            filetype = Elf32ObjectFileType(self.header.type)
+            print(f"{filetype.name}", end="")
+            if filetype == Elf32ObjectFileType.NONE:
+                print(" (No file type)")
+            elif filetype == Elf32ObjectFileType.REL:
+                print(" (Relocatable file)")
+            elif filetype == Elf32ObjectFileType.EXEC:
+                print(" (Executable file)")
+            elif filetype == Elf32ObjectFileType.DYN:
+                print(" (Shared object file)")
+            elif filetype == Elf32ObjectFileType.CORE:
+                print(" (Core file)")
+            else:
+                print(" (Unknown)")
+        except ValueError:
+            print(f"0x{self.header.type:04X}", end="")
+            if 0xFE00 <= self.header.type <= 0xFEFF:
+                print(" (OS-specific)")
+            if 0xFF00 <= self.header.type <= 0xFFFF:
+                print(" (Processor-specific)")
+            else:
+                print(" (Unknown)")
+
+        # TODO: print name
+        # print(f"  Machine:                           MIPS R3000")
+        print(f"  {'Machine:':<34} {self.header.machine}")
+
+        print(f"  {'Version:':<34} 0x{self.header.version:X}")
+
+        print(f"  {'Entry point address:':<34} 0x{self.header.entry:08X}")
+
+        print(f"  {'Start of program headers:':<34} 0x{self.header.phoff:X} (bytes into file)")
+
+        print(f"  {'Start of section headers:':<34} 0x{self.header.shoff:X} (bytes into file)")
+
+        print(f"  {'Flags:':<34} 0x{self.header.flags:X}", end="")
+        for flag in self.elfFlags:
+            print(f", {flag.name.lower().replace('arch_', 'mips')}", end="")
+        if self.unknownElfFlags != 0:
+            print(f", 0x{self.unknownElfFlags:08X}", end="")
+        print()
+
+        print(f"  {'Size of this header:':<34} 0x{self.header.ehsize:X} (bytes)")
+
+        print(f"  {'Size of program headers:':<34} 0x{self.header.phentsize:X} (bytes)")
+
+        print(f"  {'Number of program headers:':<34} {self.header.phnum}")
+
+        print(f"  {'Size of section headers:':<34} 0x{self.header.shentsize:X} (bytes)")
+
+        print(f"  {'Number of section headers:':<34} {self.header.shnum}")
+
+        print(f"  {'Section header string table index:':<34} {self.header.shstrndx}")
 
 
     def readelf_syms(self) -> None:

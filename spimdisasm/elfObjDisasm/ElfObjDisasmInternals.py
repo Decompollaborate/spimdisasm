@@ -28,6 +28,7 @@ def getArgsParser() -> argparse.ArgumentParser:
 
     readelfOptions = parser.add_argument_group("readelf-like flags")
 
+    readelfOptions.add_argument("--file-header", help="Display the ELF file header", action="store_true")
     readelfOptions.add_argument("-s", "--syms", help="Display the symbol table", action="store_true")
     readelfOptions.add_argument("-r", "--relocs", help="Display the relocations (if present)", action="store_true")
     readelfOptions.add_argument("--display-got", help="Shows Global offset table information", action="store_true")
@@ -280,7 +281,11 @@ def elfObjDisasmMain():
     array_of_bytes = common.Utils.readFileAsBytearray(inputPath)
     elfFile = elf32.Elf32File(array_of_bytes)
 
+    elfFile.handleHeaderIdent()
     elfFile.handleFlags()
+
+    if args.file_header:
+        elfFile.readelf_fileHeader()
 
     if args.syms:
         elfFile.readelf_syms()
