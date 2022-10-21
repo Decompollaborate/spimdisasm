@@ -409,15 +409,13 @@ class Elf32File:
 
     def readelf_displayGot(self) -> None:
         print(f"Primary GOT:")
-        gpValue = 0
-        if self.reginfo is not None:
-            gpValue = self.reginfo.gpValue
-            print(f" Canonical gp value: {gpValue:X}")
-            print()
-
+        gpValue = 0x7FF0
         entryAddress = 0
         if self.dynamic is not None and self.dynamic.pltGot is not None:
+            gpValue = self.dynamic.getGpValue() or 0
             entryAddress = self.dynamic.pltGot
+            print(f" Canonical gp value: {gpValue:X}")
+            print()
 
         if self.got is not None:
             print(f" Reserved entries:")

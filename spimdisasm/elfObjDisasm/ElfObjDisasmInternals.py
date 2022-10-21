@@ -250,8 +250,8 @@ def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, proce
     return
 
 def processGlobalOffsetTable(context: common.Context, elfFile: elf32.Elf32File) -> None:
-    if elfFile.reginfo is not None:
-        common.GlobalConfig.GP_VALUE = elfFile.reginfo.gpValue
+    if elfFile.dynamic is not None:
+        common.GlobalConfig.GP_VALUE = elfFile.dynamic.getGpValue()
 
     if elfFile.got is not None:
         context.got.localsTable = elfFile.got.localsTable
