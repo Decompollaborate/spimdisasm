@@ -292,6 +292,10 @@ def elfObjDisasmMain():
     if elf32.Elf32HeaderFlag.PIC in elfFile.elfFlags or elf32.Elf32HeaderFlag.CPIC in elfFile.elfFlags:
         common.GlobalConfig.PIC = True
 
+    if elf32.Elf32HeaderFlag.ABI2 in elfFile.elfFlags:
+        common.Utils.eprint(f"Warning: Elf compiled with N32 ABI, which is currently unsupported")
+        common.GlobalConfig.ABI = common.Abi.N32
+
     textOutput = Path(args.output)
     if args.data_output is None:
         dataOutput = textOutput

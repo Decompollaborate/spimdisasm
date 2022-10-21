@@ -40,6 +40,12 @@ class Compiler(enum.Enum):
         return Compiler(value)
 
 
+class Abi(enum.Enum):
+    O32 = "O32"
+    N32 = "N32"
+    N64 = "N64"
+
+
 class GlobalConfig:
     DISASSEMBLE_UNKNOWN_INSTRUCTIONS: bool = False
     """Try to disassemble non implemented instructions and functions"""
@@ -69,6 +75,15 @@ class GlobalConfig:
     """If not None then specifies the endian for the .data section"""
     ENDIAN_RODATA: InputEndian|None = None
     """If not None then specifies the endian for the .rodata section"""
+
+    ABI: Abi = Abi.O32
+    """Controls tweaks related to the used ABI
+
+    O32 is known as 'abi1'
+    N32 is known as 'abi2'
+
+    Please note this option does not control the register names used by rabbitizer
+    """
 
     GP_VALUE: int|None = None
     """Value used for $gp relocation loads and stores"""
@@ -152,6 +167,8 @@ class GlobalConfig:
 
         backendConfig.add_argument("--endian", help=f"Set the endianness of input files. Defaults to {GlobalConfig.ENDIAN.name.lower()}", choices=["big", "little", "middle"], default=GlobalConfig.ENDIAN.name.lower())
 
+        backendConfig.add_argument("--abi", help=f"Changes the ABI of the disassembly, applying corresponding tweaks. Defaults to {GlobalConfig.ABI.name}", choices=["O32", "N32", "N64"], default=GlobalConfig.ABI.name)
+
         backendConfig.add_argument("--gp", help="Set the value used for loads and stores related to the $gp register. A hex value is expected")
         backendConfig.add_argument("--pic", help=f"Enables PIC analysis and the usage of some rel types, like %%got. Defaults to {GlobalConfig.PIC}", action=Utils.BooleanOptionalAction)
         backendConfig.add_argument("--emit-cpload", help=f"Emits a .cpload directive instead of the corresponding instructions if it were detected on PIC binaries. Defaults to {GlobalConfig.EMIT_CPLOAD}", action=Utils.BooleanOptionalAction)
@@ -222,6 +239,12 @@ class GlobalConfig:
             GlobalConfig.ENDIAN = InputEndian.MIDDLE
         else:
             GlobalConfig.ENDIAN = InputEndian.BIG
+
+        try:
+            GlobalConfig.ABI = Abi(args.abi)
+        except ValueError:
+            Utils.eprint(f"Unknown ABI used: '{args.abi}'. Defaulting to O32")
+            GlobalConfig.ABI = Abi.O32
 
         if args.gp is not None:
             GlobalConfig.GP_VALUE = int(args.gp, 16)
