@@ -35,9 +35,6 @@ class Elf32File:
         self.elfFlags = elfFlags
         self.unknownElfFlags = unknownElfFlags
 
-        if self.unknownElfFlags != 0:
-            common.Utils.eprint(f"Warning: Elf header has unknown flags: 0x{self.unknownElfFlags:X}")
-
         self.strtab: Elf32StringTable | None = None
         self.symtab: Elf32Syms | None = None
 
@@ -72,6 +69,44 @@ class Elf32File:
 
         if self.got is not None and self.dynamic is not None and self.dynsym is not None:
             self.got.initTables(self.dynamic, self.dynsym)
+
+
+    def handleFlags(self) -> None:
+        if self.unknownElfFlags != 0:
+            common.Utils.eprint(f"Warning: Elf header has unknown flags: 0x{self.unknownElfFlags:X}")
+
+        if Elf32HeaderFlag.PIC in self.elfFlags or Elf32HeaderFlag.CPIC in self.elfFlags:
+            common.GlobalConfig.PIC = True
+
+        if Elf32HeaderFlag.XGOT in self.elfFlags:
+            common.Utils.eprint(f"Warning: Elf with XGOT flag.")
+            common.Utils.eprint(f"\t This flag is currently not handled in any way, please report this")
+
+        if Elf32HeaderFlag.F_64BIT_WHIRL in self.elfFlags:
+            common.Utils.eprint(f"Warning: Elf with F_64BIT_WHIRL flag.")
+            common.Utils.eprint(f"\t This flag is currently not handled in any way, please report this")
+
+        if Elf32HeaderFlag.ABI_ON32 in self.elfFlags:
+            common.Utils.eprint(f"Warning: Elf with ABI_ON32 flag.")
+            common.Utils.eprint(f"\t This flag is currently not handled in any way, please report this")
+
+        if Elf32HeaderFlag.FP64 in self.elfFlags:
+            common.Utils.eprint(f"Warning: Elf with FP64 flag.")
+            common.Utils.eprint(f"\t This flag is currently not handled in any way, please report this")
+
+        if Elf32HeaderFlag.NAN2008 in self.elfFlags:
+            common.Utils.eprint(f"Warning: Elf with NAN2008 flag.")
+            common.Utils.eprint(f"\t This flag is currently not handled in any way, please report this")
+
+        if Elf32HeaderFlag.ABI2 in self.elfFlags:
+            common.Utils.eprint(f"Warning: Elf compiled with N32 ABI, which is currently unsupported")
+            common.GlobalConfig.ABI = common.Abi.N32
+
+        unkArchLevel = {Elf32HeaderFlag.ARCH_5, Elf32HeaderFlag.ARCH_32, Elf32HeaderFlag.ARCH_64, Elf32HeaderFlag.ARCH_32R2, Elf32HeaderFlag.ARCH_64R2} & set(self.elfFlags)
+        if unkArchLevel:
+            unkArchLevelNames = [x.name for x in unkArchLevel]
+            common.Utils.eprint(f"Warning: Elf uses not supported architecture level: {unkArchLevelNames}")
+            common.Utils.eprint(f"\t This means this elf probably uses an unknown instruction set")
 
 
     def _processSection_NULL(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
