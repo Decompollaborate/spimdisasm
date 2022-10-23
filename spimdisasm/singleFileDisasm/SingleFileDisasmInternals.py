@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .. import common
 from .. import mips
+from .. import frontendCommon as fec
 
 
 sLenLastLine = 80
@@ -206,28 +207,6 @@ def writeProcessedFiles(processedFiles, processedFilesOutputPaths, processedFile
             i += 1
     return
 
-def migrateFunctions(processedFiles, functionMigrationPath: Path):
-    global sLenLastLine
-
-    common.Utils.printVerbose("\nSpliting functions...")
-    funcTotal = sum(len(x.symbolList) for x in processedFiles[common.FileSectionType.Text])
-    i = 0
-    for f in processedFiles[common.FileSectionType.Text]:
-        for func in f.symbolList:
-            common.Utils.printVerbose(f"Spliting {func.getName()}", end="")
-            common.Utils.printQuietless(sLenLastLine*" " + "\r", end="")
-            common.Utils.printVerbose()
-            progressStr = f" Writing: {i/funcTotal:%}. Function: {func.getName()}\r"
-            sLenLastLine = max(len(progressStr), sLenLastLine)
-            common.Utils.printQuietless(progressStr, end="")
-
-            assert isinstance(func, mips.symbols.SymbolFunction)
-            functionPath = functionMigrationPath / f.name
-            mips.FilesHandlers.writeSplitedFunction(functionPath, func, processedFiles[common.FileSectionType.Rodata])
-
-            i += 1
-    mips.FilesHandlers.writeOtherRodata(functionMigrationPath, processedFiles[common.FileSectionType.Rodata])
-
 
 def disassemblerMain():
     args = getArgsParser().parse_args()
@@ -272,7 +251,9 @@ def disassemblerMain():
     writeProcessedFiles(processedFiles, processedFilesOutputPaths, processedFilesCount)
 
     if args.split_functions is not None:
-        migrateFunctions(processedFiles, Path(args.split_functions))
+        common.Utils.printVerbose("\nSpliting functions...")
+        progressCallback = fec.FrontendUtilities.progressCallback_migrateFunctions
+        fec.FrontendUtilities.migrateFunctions(processedFiles, Path(args.split_functions), progressCallback)
 
     if args.save_context is not None:
         contextPath = Path(args.save_context)

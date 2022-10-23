@@ -88,12 +88,14 @@ def getRdataAndLateRodataForFunctionFromSection(func: symbols.SymbolFunction, ro
 
     return rdataList, lateRodataList, lateRodataSize
 
-def getRdataAndLateRodataForFunction(func: symbols.SymbolFunction, rodataFileList: list[sections.SectionRodata]) -> tuple[list[symbols.SymbolBase], list[symbols.SymbolBase], int]:
+def getRdataAndLateRodataForFunction(func: symbols.SymbolFunction, rodataFileList: list[sections.SectionBase]) -> tuple[list[symbols.SymbolBase], list[symbols.SymbolBase], int]:
     rdataList: list[symbols.SymbolBase] = []
     lateRodataList: list[symbols.SymbolBase] = []
     lateRodataSize = 0
 
     for rodataSection in rodataFileList:
+        assert isinstance(rodataSection, sections.SectionRodata)
+
         if len(rdataList) > 0 or len(lateRodataList) > 0:
             # We already have the rodata for this function. Stop searching
             break
@@ -132,7 +134,7 @@ def writeFunctionRodataToFile(f: TextIO, func: symbols.SymbolFunction, rdataList
     if len(rdataList) > 0 or len(lateRodataList) > 0:
         f.write(common.GlobalConfig.LINE_ENDS + ".section .text" + common.GlobalConfig.LINE_ENDS)
 
-def writeSplitedFunction(path: Path, func: symbols.SymbolFunction, rodataFileList: list[sections.SectionRodata]):
+def writeSplitedFunction(path: Path, func: symbols.SymbolFunction, rodataFileList: list[sections.SectionBase]):
     path.mkdir(parents=True, exist_ok=True)
 
     funcPath = path / (func.getName()+ ".s")
@@ -143,8 +145,10 @@ def writeSplitedFunction(path: Path, func: symbols.SymbolFunction, rodataFileLis
         # Write the function itself
         f.write(func.disassemble())
 
-def writeOtherRodata(path: Path, rodataFileList: list[sections.SectionRodata]):
+def writeOtherRodata(path: Path, rodataFileList: list[sections.SectionBase]):
     for rodataSection in rodataFileList:
+        assert isinstance(rodataSection, sections.SectionRodata)
+
         rodataPath = path / rodataSection.name
         rodataPath.mkdir(parents=True, exist_ok=True)
 

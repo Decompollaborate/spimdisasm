@@ -14,6 +14,7 @@ from . import elf32
 from . import mips
 
 # Front-end scripts
+from . import frontendCommon
 from . import disasmdis
 from . import rspDisasm
 from . import elfObjDisasm
