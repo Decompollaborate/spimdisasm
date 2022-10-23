@@ -34,7 +34,8 @@ class Elf32RelEntry:
 
 
 class Elf32Rels:
-    def __init__(self, array_of_bytes: bytearray, offset: int, rawSize: int):
+    def __init__(self, sectionName: str, array_of_bytes: bytearray, offset: int, rawSize: int):
+        self.sectionName = sectionName
         self.relocations: list[Elf32RelEntry] = list()
         self.offset: int = offset
         self.rawSize: int = rawSize

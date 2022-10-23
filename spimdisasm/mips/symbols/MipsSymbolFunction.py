@@ -8,6 +8,7 @@ from __future__ import annotations
 import rabbitizer
 
 from ... import common
+from ... import elf32
 
 from . import SymbolText, analysis
 
@@ -97,7 +98,8 @@ class SymbolFunction(SymbolText):
                             contextOffsetSym = self.context.addOffsetJumpTable(addressOffset, sectType)
                             contextOffsetSym.referenceCounter += 1
                             contextOffsetSym.referenceFunctions.add(self.contextSym)
-                            relocSymbol.name = contextOffsetSym.name
+                            if contextOffsetSym.name is not None:
+                                relocSymbol.name = contextOffsetSym.name
                             self.instrAnalyzer.symbolInstrOffset[instructionOffset] = 0
                             if instructionOffset in self.instrAnalyzer.lowToHiDict:
                                 luiOffset = self.instrAnalyzer.lowToHiDict[instructionOffset]
@@ -325,7 +327,20 @@ class SymbolFunction(SymbolText):
         return was_updated
 
 
-    def generateHiLoStr(self, instr: rabbitizer.Instruction, symName: str, symbol: common.ContextSymbol|None) -> str:
+    def generateHiLoStr(self, instr: rabbitizer.Instruction, symName: str, symbol: common.ContextSymbol|None, relocInfo: common.ContextRelocInfo|None=None) -> str:
+        if relocInfo is not None:
+            if relocInfo.relocType == elf32.Elf32Relocs.MIPS_HI16.value:
+                return f"%hi({symName})"
+            if relocInfo.relocType == elf32.Elf32Relocs.MIPS_LO16.value:
+                return f"%lo({symName})"
+            if relocInfo.relocType == elf32.Elf32Relocs.MIPS_GPREL16.value:
+                return f"%gp_rel({symName})"
+            if relocInfo.relocType == elf32.Elf32Relocs.MIPS_GOT16.value:
+                return f"%got({symName})"
+            if relocInfo.relocType == elf32.Elf32Relocs.MIPS_CALL16.value:
+                return f"%call16({symName})"
+            common.Utils.eprint(f"generateHiLoStr: Warning: Unhandled relocType '{relocInfo.relocType}'")
+
         if instr.canBeHi():
             return f"%hi({symName})"
 
@@ -381,7 +396,7 @@ class SymbolFunction(SymbolText):
                         addressOffset = self.instrAnalyzer.symbolInstrOffset[instructionOffset]
                         auxOverride = possibleImmOverride.getNamePlusOffset(addressOffset)
 
-                    auxOverride = self.generateHiLoStr(instr, auxOverride, possibleImmOverride)
+                    auxOverride = self.generateHiLoStr(instr, auxOverride, None, relocInfo=possibleImmOverride)
                 return auxOverride
 
         if instr.isBranch() or instr.isUnconditionalBranch():
@@ -420,7 +435,19 @@ class SymbolFunction(SymbolText):
                     symbol = self.getSymbol(address, tryPlusOffset=True)
 
                 if symbol is not None:
-                    return self.generateHiLoStr(instr, symbol.getSymbolPlusOffset(address), symbol)
+                    symName = symbol.getSymbolPlusOffset(address)
+                    if common.GlobalConfig.PIC:
+                        if instructionOffset not in self.instrAnalyzer.gpLoads:
+                            if address in self.context.got.globalsTable:
+                                # addend = instr.getProcessedImmediate()
+                                # if addend < 0:
+                                #     symName = f"{symName} - 0x{-addend:X}"
+                                # elif addend > 0:
+                                #     symName = f"{symName} + 0x{addend:X}"
+                                # # do nothing if addend is zero
+                                return None
+
+                    return self.generateHiLoStr(instr, symName, symbol)
                 return self.generateHiLoConstantStr(address, instr, loInstr)
 
             elif instructionOffset in self.instrAnalyzer.constantInstrOffset:
@@ -465,7 +492,7 @@ class SymbolFunction(SymbolText):
         if labelSym is None and len(self.context.offsetSymbols[self.sectionType]) > 0:
             labelSym = self.context.getOffsetSymbol(self.inFileOffset+instructionOffset, common.FileSectionType.Text)
 
-        if labelSym is None or labelSym.overlayCategory != self.overlayCategory:
+        if labelSym is None or labelSym.overlayCategory != self.overlayCategory or labelSym.isGotLocal:
             return ""
 
         labelSym.isDefined = True

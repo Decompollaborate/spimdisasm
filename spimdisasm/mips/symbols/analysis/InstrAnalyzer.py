@@ -139,7 +139,7 @@ class InstrAnalyzer:
         return constant
 
 
-    def pairHiLo(self, hiValue: int|None, luiOffset: int|None, lowerInstr: rabbitizer.Instruction, lowerOffset: int, got: common.GlobalOffsetTable) -> int|None:
+    def pairHiLo(self, hiValue: int|None, luiOffset: int|None, lowerInstr: rabbitizer.Instruction, lowerOffset: int, got: common.GlobalOffsetTable, otherIsGpGot: bool) -> int|None:
         # lui being None means this symbol is a $gp access
         assert (hiValue is None and luiOffset is None) or (hiValue is not None and luiOffset is not None)
 
@@ -196,13 +196,14 @@ class InstrAnalyzer:
 
         if hiValue is not None:
             upperHalf = hiValue
+            if otherIsGpGot and upperHalf in got.globalsTable:
+                lowerHalf = 0
         else:
             assert common.GlobalConfig.GP_VALUE is not None
             upperHalf = common.GlobalConfig.GP_VALUE
 
-            gotAddress = got.getAddress(upperHalf + lowerHalf)
-            if gotAddress is not None:
-                return gotAddress
+            if got.tableStart is not None:
+                return got.getAddress(upperHalf + lowerHalf)
 
         return upperHalf + lowerHalf
 
@@ -284,9 +285,10 @@ class InstrAnalyzer:
             self.luiInstrs[instrOffset] = instr
             return
 
+        instrDoesGpLoad = False
         if instr.doesLoad() and instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
             regsTracker.processGpLoad(instr, instrOffset)
-            self.gpLoads[instrOffset] = instr
+            instrDoesGpLoad = True
 
         if not instr.canBeLo():
             return
@@ -330,9 +332,12 @@ class InstrAnalyzer:
                         # early return to avoid counting this pairing as a symbol
                         return
 
-        address = self.pairHiLo(upperHalf, luiOffset, instr, instrOffset, got)
+        address = self.pairHiLo(upperHalf, luiOffset, instr, instrOffset, got, pairingInfo.isGpGot)
         if address is None:
             return
+
+        if instrDoesGpLoad:
+            self.gpLoads[instrOffset] = instr
 
         address = self.processSymbol(address, luiOffset, instr, instrOffset)
         if address is not None:

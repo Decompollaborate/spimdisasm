@@ -4,9 +4,9 @@
 from . import Utils
 
 from .SortedDict import SortedDict
-from .GlobalConfig import GlobalConfig, InputEndian, Compiler
+from .GlobalConfig import GlobalConfig, InputEndian, Compiler, Abi
 from .FileSectionType import FileSectionType, FileSections_ListBasic, FileSections_ListAll
-from .ContextSymbols import SymbolSpecialType, ContextSymbol, ContextOffsetSymbol, ContextRelocSymbol
+from .ContextSymbols import SymbolSpecialType, ContextSymbol, ContextOffsetSymbol, ContextRelocInfo
 from .SymbolsSegment import SymbolsSegment
 from .Context import Context
 from .FileSplitFormat import FileSplitFormat, FileSplitEntry

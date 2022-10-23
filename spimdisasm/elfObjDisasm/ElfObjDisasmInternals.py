@@ -11,6 +11,7 @@ from pathlib import Path
 from .. import common
 from .. import elf32
 from .. import mips
+from .. import frontendCommon as fec
 
 
 def getArgsParser() -> argparse.ArgumentParser:
@@ -24,6 +25,17 @@ def getArgsParser() -> argparse.ArgumentParser:
     parser.add_argument("--data-output", help="Path to output the data and rodata disassembly")
 
     parser.add_argument("--save-context", help="Saves the context to a file", metavar="FILENAME")
+
+    parser.add_argument("--split-functions", help="Enables the function and rodata splitter. Expects a path to place the splited functions", metavar="PATH")
+
+
+    readelfOptions = parser.add_argument_group("readelf-like flags")
+
+    readelfOptions.add_argument("--file-header", help="Display the ELF file header", action="store_true")
+    readelfOptions.add_argument("-s", "--syms", help="Display the symbol table", action="store_true")
+    readelfOptions.add_argument("-r", "--relocs", help="Display the relocations (if present)", action="store_true")
+    readelfOptions.add_argument("--display-got", help="Shows Global offset table information", action="store_true")
+
 
     common.GlobalConfig.addParametersToArgParse(parser)
 
@@ -49,14 +61,14 @@ def getOutputPath(inputPath: Path, textOutput: Path, dataOutput: Path, sectionTy
         outputPath = textOutput
 
     outputFilePath = outputPath
-    if outputPath != "-":
+    if str(outputPath) != "-":
         outputFilePath = outputFilePath / inputPath.stem
 
     return outputFilePath
 
-def getProcessedSections(context: common.Context, elfFile: elf32.Elf32File, array_of_bytes: bytearray, inputPath: Path, textOutput: Path, dataOutput: Path) -> tuple[dict[common.FileSectionType, mips.sections.SectionBase], dict[common.FileSectionType, Path]]:
-    processedSegments: dict[common.FileSectionType, mips.sections.SectionBase] = dict()
-    segmentPaths: dict[common.FileSectionType, Path] = dict()
+def getProcessedSections(context: common.Context, elfFile: elf32.Elf32File, array_of_bytes: bytearray, inputPath: Path, textOutput: Path, dataOutput: Path) -> tuple[dict[common.FileSectionType, list[mips.sections.SectionBase]], dict[common.FileSectionType, list[Path]]]:
+    processedSegments: dict[common.FileSectionType, list[mips.sections.SectionBase]] = dict()
+    segmentPaths: dict[common.FileSectionType, list[Path]] = dict()
 
     for sectionType, sectionEntry in elfFile.progbits.items():
         outputFilePath = getOutputPath(inputPath, textOutput, dataOutput, sectionType)
@@ -76,8 +88,8 @@ def getProcessedSections(context: common.Context, elfFile: elf32.Elf32File, arra
             common.Utils.eprint(f"Error! Invalid section type '{sectionType}'")
             exit(-1)
         mipsSection.setCommentOffset(vromStart)
-        processedSegments[sectionType] = mipsSection
-        segmentPaths[sectionType] = outputFilePath
+        processedSegments[sectionType] = [mipsSection]
+        segmentPaths[sectionType] = [outputFilePath]
 
     if elfFile.nobits is not None:
         outputFilePath = getOutputPath(inputPath, textOutput, dataOutput, common.FileSectionType.Bss)
@@ -89,26 +101,27 @@ def getProcessedSections(context: common.Context, elfFile: elf32.Elf32File, arra
 
         mipsSection = mips.sections.SectionBss(context, vromStart, vromEnd, bssStart, bssEnd, inputPath.stem, 0, None)
         mipsSection.setCommentOffset(vromStart)
-        processedSegments[common.FileSectionType.Bss] = mipsSection
-        segmentPaths[common.FileSectionType.Bss] = outputFilePath
+        processedSegments[common.FileSectionType.Bss] = [mipsSection]
+        segmentPaths[common.FileSectionType.Bss] = [outputFilePath]
 
     return processedSegments, segmentPaths
 
-def changeGlobalSegmentRanges(context: common.Context, processedSegments: dict[common.FileSectionType, mips.sections.SectionBase]) -> None:
+def changeGlobalSegmentRanges(context: common.Context, processedSegments: dict[common.FileSectionType, list[mips.sections.SectionBase]]) -> None:
     lowestVromStart = None
     highestVromEnd = None
     lowestVramStart = None
     highestVramEnd = None
 
     for subSegment in processedSegments.values():
-        if lowestVromStart is None or subSegment.vromStart < lowestVromStart:
-            lowestVromStart = subSegment.vromStart
-        if highestVromEnd is None or subSegment.vromEnd > highestVromEnd:
-            highestVromEnd = subSegment.vromEnd
-        if lowestVramStart is None or subSegment.vram < lowestVramStart:
-            lowestVramStart = subSegment.vram
-        if highestVramEnd is None or subSegment.vramEnd > highestVramEnd:
-            highestVramEnd = subSegment.vramEnd
+        for section in subSegment:
+            if lowestVromStart is None or section.vromStart < lowestVromStart:
+                lowestVromStart = section.vromStart
+            if highestVromEnd is None or section.vromEnd > highestVromEnd:
+                highestVromEnd = section.vromEnd
+            if lowestVramStart is None or section.vram < lowestVramStart:
+                lowestVramStart = section.vram
+            if highestVramEnd is None or section.vramEnd > highestVramEnd:
+                highestVramEnd = section.vramEnd
 
     if lowestVromStart is None:
         lowestVromStart = 0x0
@@ -118,14 +131,12 @@ def changeGlobalSegmentRanges(context: common.Context, processedSegments: dict[c
         lowestVramStart = 0x0
     if highestVramEnd is None:
         highestVramEnd = 0xFFFFFFFF
-    context.globalSegment.changeRanges(lowestVromStart, highestVromEnd, lowestVramStart, highestVramEnd)
-    context.totalVramStart = lowestVramStart
-    context.totalVramEnd = highestVramEnd
+    context.changeGlobalSegmentRanges(lowestVromStart, highestVromEnd, lowestVramStart, highestVramEnd)
     return
 
 
 def addRelocatedSymbol(context: common.Context, symEntry: elf32.Elf32SymEntry, symName: str|None):
-    if symEntry.value == 0:
+    if symEntry.value == 0 or symEntry.shndx == 0:
         return
 
     if symEntry.stType == elf32.Elf32SymbolTableType.FUNC.value:
@@ -146,7 +157,29 @@ def addRelocatedSymbol(context: common.Context, symEntry: elf32.Elf32SymEntry, s
     contextSym.isUserDeclared = True
     contextSym.setSizeIfUnset(symEntry.size)
 
-def insertSymtabIntoContext(context: common.Context, symbolTable: elf32.Elf32Syms, stringTable: elf32.Elf32StringTable, elfFile: elf32.Elf32File, processedSegments: dict[common.FileSectionType, mips.sections.SectionBase]):
+def addUndefinedSymbol(context: common.Context, symEntry: elf32.Elf32SymEntry, symName: str|None, symAddress: int):
+    if symAddress == 0:
+        return
+
+    if symEntry.stType == elf32.Elf32SymbolTableType.FUNC.value:
+        contextSym = context.globalSegment.addFunction(symAddress)
+    elif symEntry.stType == elf32.Elf32SymbolTableType.OBJECT.value:
+        contextSym = context.globalSegment.addSymbol(symAddress)
+    elif symEntry.stType == elf32.Elf32SymbolTableType.SECTION.value:
+        # print(symEntry)
+        return
+    elif symEntry.stType == elf32.Elf32SymbolTableType.NOTYPE.value:
+        # Is ok to just ignore this?
+        return
+    else:
+        common.Utils.eprint(f"Warning: symbol '{symName}' has an unhandled stType: '{symEntry.stType}'")
+        contextSym = context.globalSegment.addSymbol(symAddress)
+    if symName is not None:
+        contextSym.name = symName
+    contextSym.isUserDeclared = True
+    contextSym.setSizeIfUnset(symEntry.size)
+
+def insertSymtabIntoContext(context: common.Context, symbolTable: elf32.Elf32Syms, stringTable: elf32.Elf32StringTable, elfFile: elf32.Elf32File, processedSegments: dict[common.FileSectionType, list[mips.sections.SectionBase]]):
     # Use the symbol table to replace symbol names present in disassembled sections
     for i, symEntry in enumerate(symbolTable):
         symName = stringTable[symEntry.name]
@@ -166,7 +199,7 @@ def insertSymtabIntoContext(context: common.Context, symbolTable: elf32.Elf32Sym
         sectType = common.FileSectionType.fromStr(sectName)
         if sectType != common.FileSectionType.Invalid:
             subSegment = processedSegments[sectType]
-            symbolOffset = symEntry.value + subSegment.vromStart
+            symbolOffset = symEntry.value + subSegment[0].vromStart
 
             contextOffsetSym = common.ContextOffsetSymbol(symbolOffset, symName, sectType)
             contextOffsetSym.isUserDeclared = True
@@ -180,8 +213,19 @@ def insertDynsymIntoContext(context: common.Context, symbolTable: elf32.Elf32Sym
 
         addRelocatedSymbol(context, symEntry, symName)
 
+def insertGotIntoContext(context: common.Context, got: elf32.Elf32GlobalOffsetTable, stringTable: elf32.Elf32StringTable):
+    for local in got.localsTable:
+        contextSym = context.globalSegment.addSymbol(local)
+        contextSym.isUserDeclared = True
+        contextSym.isGotLocal = True
 
-def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, processedSegments: dict[common.FileSectionType, mips.sections.SectionBase]) -> None:
+    for gotEntry in got.globalsTable:
+        symName = stringTable[gotEntry.symEntry.name]
+
+        addUndefinedSymbol(context, gotEntry.symEntry, symName, gotEntry.getAddress())
+
+
+def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, processedSegments: dict[common.FileSectionType, list[mips.sections.SectionBase]]) -> None:
     if elfFile.symtab is not None and elfFile.strtab is not None:
         # Inject symbols from the reloc table referenced in each section
         if elfFile.header.type == elf32.Elf32ObjectFileType.REL.value:
@@ -193,9 +237,9 @@ def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, proce
                     if symbolName == "":
                         continue
 
-                    contextRelocSym = common.ContextRelocSymbol(rel.offset, symbolName, sectType)
-                    contextRelocSym.isDefined = True
-                    contextRelocSym.relocType = rel.rType
+                    contextRelocSym = common.ContextRelocInfo(rel.offset, symbolName, sectType, rel.rType)
+                    # contextRelocSym.isDefined = True
+                    # contextRelocSym.relocType = rel.rType
                     context.relocSymbols[sectType][rel.offset] = contextRelocSym
 
         # Use the symtab to replace symbol names present in disassembled sections
@@ -204,17 +248,22 @@ def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, proce
     if elfFile.dynsym is not None and elfFile.dynstr is not None:
         # Use the dynsym to replace symbol names present in disassembled sections
         insertDynsymIntoContext(context, elfFile.dynsym, elfFile.dynstr)
+
+    if elfFile.got is not None and elfFile.dynstr is not None:
+        insertGotIntoContext(context, elfFile.got, elfFile.dynstr)
     return
 
 def processGlobalOffsetTable(context: common.Context, elfFile: elf32.Elf32File) -> None:
-    if elfFile.reginfo is not None:
-        common.GlobalConfig.GP_VALUE = elfFile.reginfo.gpValue
+    if elfFile.dynamic is not None:
+        common.GlobalConfig.GP_VALUE = elfFile.dynamic.getGpValue()
 
     if elfFile.got is not None:
         context.got.localsTable = elfFile.got.localsTable
-        context.got.globalsTable = elfFile.got.globalsTable
 
-        for address in context.got.globalsTable:
+        for gotEntry in elfFile.got.globalsTable:
+            address = gotEntry.getAddress()
+
+            context.got.globalsTable.append(address)
             contextSym = context.globalSegment.getSymbol(address)
             if contextSym is not None:
                 contextSym.isGotGlobal = True
@@ -236,8 +285,20 @@ def elfObjDisasmMain():
     array_of_bytes = common.Utils.readFileAsBytearray(inputPath)
     elfFile = elf32.Elf32File(array_of_bytes)
 
-    if elf32.Elf32HeaderFlag.PIC in elfFile.elfFlags or elf32.Elf32HeaderFlag.CPIC in elfFile.elfFlags:
-        common.GlobalConfig.PIC = True
+    elfFile.handleHeaderIdent()
+    elfFile.handleFlags()
+
+    if args.file_header:
+        elfFile.readelf_fileHeader()
+
+    if args.syms:
+        elfFile.readelf_syms()
+
+    if args.relocs:
+        elfFile.readelf_relocs()
+
+    if args.display_got:
+        elfFile.readelf_displayGot()
 
     textOutput = Path(args.output)
     if args.data_output is None:
@@ -251,13 +312,16 @@ def elfObjDisasmMain():
     injectAllElfSymbols(context, elfFile, processedSegments)
     processGlobalOffsetTable(context, elfFile)
 
-    for subSegment in processedSegments.values():
-        subSegment.analyze()
-        subSegment.printAnalyzisResults()
+    processedFilesCount = 0
+    for sect in processedSegments.values():
+        processedFilesCount += len(sect)
 
-    for sectionType, subSegment in processedSegments.items():
-        outputFilePath = segmentPaths[sectionType]
-        mips.FilesHandlers.writeSection(outputFilePath, subSegment)
+    fec.FrontendUtilities.analyzeProcessedFiles(processedSegments, segmentPaths, processedFilesCount)
+
+    fec.FrontendUtilities.writeProcessedFiles(processedSegments, segmentPaths, processedFilesCount)
+
+    if args.split_functions is not None:
+        fec.FrontendUtilities.migrateFunctions(processedSegments, Path(args.split_functions))
 
     if args.save_context is not None:
         contextPath = Path(args.save_context)

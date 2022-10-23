@@ -9,7 +9,7 @@ from typing import Callable
 
 from .. import common
 
-from .Elf32Constants import Elf32HeaderIdentifier, Elf32HeaderFlag, Elf32SectionHeaderType
+from .Elf32Constants import Elf32HeaderIdentifier, Elf32ObjectFileType, Elf32HeaderFlag, Elf32SectionHeaderType, Elf32SymbolTableType, Elf32SymbolTableBinding, Elf32SymbolVisibility, Elf32SectionHeaderNumber, Elf32Relocs
 from .Elf32Dyns import Elf32Dyns
 from .Elf32GlobalOffsetTable import Elf32GlobalOffsetTable
 from .Elf32Header import Elf32Header
@@ -34,9 +34,6 @@ class Elf32File:
         elfFlags, unknownElfFlags = Elf32HeaderFlag.parseFlags(self.header.flags)
         self.elfFlags = elfFlags
         self.unknownElfFlags = unknownElfFlags
-
-        if self.unknownElfFlags != 0:
-            common.Utils.eprint(f"Warning: Elf header has unknown flags: 0x{self.unknownElfFlags:X}")
 
         self.strtab: Elf32StringTable | None = None
         self.symtab: Elf32Syms | None = None
@@ -72,6 +69,49 @@ class Elf32File:
 
         if self.got is not None and self.dynamic is not None and self.dynsym is not None:
             self.got.initTables(self.dynamic, self.dynsym)
+
+
+    def handleHeaderIdent(self) -> None:
+        if self.header.ident.getVersion() != 1:
+            common.Utils.eprint(f"Warning: Elf version '{self.header.ident.getVersion()}' when version '1' was expected.")
+
+
+    def handleFlags(self) -> None:
+        if self.unknownElfFlags != 0:
+            common.Utils.eprint(f"Warning: Elf header has unknown flags: 0x{self.unknownElfFlags:X}")
+
+        if Elf32HeaderFlag.PIC in self.elfFlags or Elf32HeaderFlag.CPIC in self.elfFlags:
+            common.GlobalConfig.PIC = True
+
+        if Elf32HeaderFlag.XGOT in self.elfFlags:
+            common.Utils.eprint(f"Warning: Elf with XGOT flag.")
+            common.Utils.eprint(f"\t This flag is currently not handled in any way, please report this")
+
+        if Elf32HeaderFlag.F_64BIT_WHIRL in self.elfFlags:
+            common.Utils.eprint(f"Warning: Elf with F_64BIT_WHIRL flag.")
+            common.Utils.eprint(f"\t This flag is currently not handled in any way, please report this")
+
+        if Elf32HeaderFlag.ABI_ON32 in self.elfFlags:
+            common.Utils.eprint(f"Warning: Elf with ABI_ON32 flag.")
+            common.Utils.eprint(f"\t This flag is currently not handled in any way, please report this")
+
+        if Elf32HeaderFlag.FP64 in self.elfFlags:
+            common.Utils.eprint(f"Warning: Elf with FP64 flag.")
+            common.Utils.eprint(f"\t This flag is currently not handled in any way, please report this")
+
+        if Elf32HeaderFlag.NAN2008 in self.elfFlags:
+            common.Utils.eprint(f"Warning: Elf with NAN2008 flag.")
+            common.Utils.eprint(f"\t This flag is currently not handled in any way, please report this")
+
+        if Elf32HeaderFlag.ABI2 in self.elfFlags:
+            common.Utils.eprint(f"Warning: Elf compiled with N32 ABI, which is currently unsupported")
+            common.GlobalConfig.ABI = common.Abi.N32
+
+        unkArchLevel = {Elf32HeaderFlag.ARCH_5, Elf32HeaderFlag.ARCH_32, Elf32HeaderFlag.ARCH_64, Elf32HeaderFlag.ARCH_32R2, Elf32HeaderFlag.ARCH_64R2} & set(self.elfFlags)
+        if unkArchLevel:
+            unkArchLevelNames = [x.name for x in unkArchLevel]
+            common.Utils.eprint(f"Warning: Elf uses not supported architecture level: {unkArchLevelNames}")
+            common.Utils.eprint(f"\t This means this elf probably uses an unknown instruction set")
 
 
     def _processSection_NULL(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
@@ -144,7 +184,7 @@ class Elf32File:
         if sectionEntryName.startswith(".rel."):
             fileSecType = common.FileSectionType.fromStr(sectionEntryName[4:])
             if fileSecType != common.FileSectionType.Invalid:
-                self.rel[fileSecType] = Elf32Rels(array_of_bytes, entry.offset, entry.size)
+                self.rel[fileSecType] = Elf32Rels(sectionEntryName, array_of_bytes, entry.offset, entry.size)
             elif common.GlobalConfig.VERBOSE:
                 common.Utils.eprint("Unhandled REL subsection found: ", sectionEntryName, entry, "\n")
         elif common.GlobalConfig.VERBOSE:
@@ -214,3 +254,209 @@ class Elf32File:
         Elf32SectionHeaderType.MIPS_SYMBOL_LIB.value: _processSection_MIPS_SYMBOL_LIB,
         Elf32SectionHeaderType.MIPS_ABIFLAGS.value: _processSection_MIPS_ABIFLAGS,
     }
+
+
+    def readelf_fileHeader(self) -> None:
+        print(f"ELF Header:")
+        print(f"  Magic:  ", end="")
+        for magic in self.header.ident.ident:
+            print(f" {magic:02X}", end="")
+        print(f"\n          ", end="")
+        for magic in self.header.ident.ident:
+            character = chr(magic)
+            if not character.isprintable():
+                character = f"{magic:02X}"
+
+            print(f" {character:>2}", end="")
+        print()
+
+        print(f"  {'Class:':<34} {self.header.ident.getFileClass().name.replace('CLASS', 'ELF')}")
+
+        print(f"  {'Data:':<34} ", end="")
+        dataEncoding = self.header.ident.getDataEncoding()
+        if dataEncoding == Elf32HeaderIdentifier.DataEncoding.DATANONE:
+            print("Invalid data encoding")
+        elif dataEncoding == Elf32HeaderIdentifier.DataEncoding.DATA2LSB:
+            print("2's complement, little endian")
+        elif dataEncoding == Elf32HeaderIdentifier.DataEncoding.DATA2MSB:
+            print("2's complement, big endian")
+        else:
+            print(dataEncoding.name)
+
+        print(f"  {'Version:':<34} ", end="")
+        version = self.header.ident.getVersion()
+        print(f"{version}" + (" (current)" if version == 1 else ""))
+
+        print(f"  {'OS/ABI:':<34} ", end="")
+        osAbi = self.header.ident.getOsAbi()
+        if osAbi == Elf32HeaderIdentifier.OsAbi.NONE:
+            print(f"UNIX - System V")
+        elif osAbi == Elf32HeaderIdentifier.OsAbi.IRIX:
+            print(f"SGI Irix")
+        else:
+            print(osAbi.name)
+
+        print(f"  {'ABI Version:':<34} {self.header.ident.getAbiVersion()}")
+
+        print(f"  {'Type:':<34} ", end="")
+        try:
+            filetype = Elf32ObjectFileType(self.header.type)
+            print(f"{filetype.name}", end="")
+            if filetype == Elf32ObjectFileType.NONE:
+                print(" (No file type)")
+            elif filetype == Elf32ObjectFileType.REL:
+                print(" (Relocatable file)")
+            elif filetype == Elf32ObjectFileType.EXEC:
+                print(" (Executable file)")
+            elif filetype == Elf32ObjectFileType.DYN:
+                print(" (Shared object file)")
+            elif filetype == Elf32ObjectFileType.CORE:
+                print(" (Core file)")
+            else:
+                print(" (Unknown)")
+        except ValueError:
+            print(f"0x{self.header.type:04X}", end="")
+            if 0xFE00 <= self.header.type <= 0xFEFF:
+                print(" (OS-specific)")
+            if 0xFF00 <= self.header.type <= 0xFFFF:
+                print(" (Processor-specific)")
+            else:
+                print(" (Unknown)")
+
+        # TODO: print name
+        # print(f"  Machine:                           MIPS R3000")
+        print(f"  {'Machine:':<34} {self.header.machine}")
+
+        print(f"  {'Version:':<34} 0x{self.header.version:X}")
+
+        print(f"  {'Entry point address:':<34} 0x{self.header.entry:08X}")
+
+        print(f"  {'Start of program headers:':<34} 0x{self.header.phoff:X} (bytes into file)")
+
+        print(f"  {'Start of section headers:':<34} 0x{self.header.shoff:X} (bytes into file)")
+
+        print(f"  {'Flags:':<34} 0x{self.header.flags:X}", end="")
+        for flag in self.elfFlags:
+            print(f", {flag.name.lower().replace('arch_', 'mips')}", end="")
+        if self.unknownElfFlags != 0:
+            print(f", 0x{self.unknownElfFlags:08X}", end="")
+        print()
+
+        print(f"  {'Size of this header:':<34} 0x{self.header.ehsize:X} (bytes)")
+
+        print(f"  {'Size of program headers:':<34} 0x{self.header.phentsize:X} (bytes)")
+
+        print(f"  {'Number of program headers:':<34} {self.header.phnum}")
+
+        print(f"  {'Size of section headers:':<34} 0x{self.header.shentsize:X} (bytes)")
+
+        print(f"  {'Number of section headers:':<34} {self.header.shnum}")
+
+        print(f"  {'Section header string table index:':<34} {self.header.shstrndx}")
+
+
+    def readelf_syms(self) -> None:
+        if self.symtab is not None:
+            print(f"Symbol table '.symtab' contains {len(self.symtab.symbols)} entries:")
+
+            print(f" {'Num':>5}: {'Value':>8} {'Size':>5} {'Type':7} {'Bind':6} {'Vis':7} {'Ndx':>7} {'Name'}")
+
+            for i, sym in enumerate(self.symtab.symbols):
+                entryType = Elf32SymbolTableType(sym.stType)
+
+                bind = sym.stBind
+                stBind = Elf32SymbolTableBinding.fromValue(sym.stBind)
+                if stBind is not None:
+                    bind = stBind.name
+
+                visibility: str|int = sym.other
+                stOther = Elf32SymbolVisibility.fromValue(sym.other)
+                if stOther is not None:
+                    visibility = stOther.name
+
+                ndx: str|int = sym.shndx
+                shndx = Elf32SectionHeaderNumber.fromValue(sym.shndx)
+                if shndx is not None:
+                    ndx = shndx.name
+
+                symName = ""
+                if self.strtab is not None:
+                    symName = self.strtab[sym.name]
+                print(f" {i:>5}: {sym.value:08X} {sym.size:>5} {entryType.name:7} {bind:6} {visibility:7} {ndx:>7} {symName}")
+
+    def readelf_relocs(self) -> None:
+        for relSection in self.rel.values():
+            print(f"Relocation section '{relSection.sectionName}' at offset 0x{relSection.offset:X} contains {len(relSection.relocations)} entries:")
+
+            # Info column is basically useless since this shows the type and sym too
+            print(f" {'Offset':8} {'Info':8} {'Type':12} {'Sym.Value':>9} {'Sym.Name'}")
+            for rel in relSection.relocations:
+                relType = rel.rType
+                rType = Elf32Relocs.fromValue(rel.rType)
+                if rType is not None:
+                    relType = rType.name
+
+                symValue = ""
+                symName = ""
+                if self.symtab is not None:
+                    sym = self.symtab[rel.rSym]
+                    symValue = f"{sym.value:08X}"
+                    if self.strtab is not None:
+                        symName = self.strtab[sym.name]
+                print(f" {rel.offset:08X} {rel.info:08X} {relType:<12} {symValue:>9} {symName}")
+
+            print()
+
+    def readelf_displayGot(self) -> None:
+        print(f"Primary GOT:")
+        gpValue = 0x7FF0
+        entryAddress = 0
+        if self.dynamic is not None and self.dynamic.pltGot is not None:
+            gpValue = self.dynamic.getGpValue() or 0
+            entryAddress = self.dynamic.pltGot
+            print(f" Canonical gp value: {gpValue:X}")
+            print()
+
+        if self.got is not None:
+            print(f" Reserved entries:")
+            print(f"   Address {'Access':>9}  Initial Purpose")
+            access = entryAddress - gpValue
+            if access < 0:
+                accessStr = f"-{-access:X}"
+            else:
+                accessStr = f"{access:X}"
+            print(f"  {entryAddress:8X} {accessStr:5}(gp) {self.got.localsTable[0]:08X} Lazy resolver")
+            entryAddress += 4
+
+            print()
+
+            print(f" Local entries:")
+            print(f"   Address {'Access':>9}  Initial")
+            for x in self.got.localsTable[1:]:
+                access = entryAddress - gpValue
+                if access < 0:
+                    accessStr = f"-{-access:X}"
+                else:
+                    accessStr = f"{access:X}"
+                print(f"  {entryAddress:8X} {accessStr:5}(gp) {x:08X}")
+                entryAddress += 4
+
+            print()
+
+            print(f" Global entries:")
+            print(f"  {'Address':>8} {'Access':>9}  Initial Sym.Val. Type    {'Ndx':12} Name")
+            for gotEntry in self.got.globalsTable:
+                access = entryAddress - gpValue
+                if access < 0:
+                    accessStr = f"-{-access:X}"
+                else:
+                    accessStr = f"{access:X}"
+                entryType = Elf32SymbolTableType(gotEntry.symEntry.stType)
+                ndx = Elf32SectionHeaderNumber(gotEntry.symEntry.shndx)
+                symName = ""
+                if self.dynstr is not None:
+                    symName = self.dynstr[gotEntry.symEntry.name]
+                print(f"  {entryAddress:8X} {accessStr:5}(gp) {gotEntry.getAddress():08X} {gotEntry.symEntry.value:08X} {entryType.name:7} {ndx.name:12} {symName}")
+                entryAddress += 4
+
+            print()

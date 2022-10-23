@@ -175,6 +175,30 @@ class Elf32SymbolTableBinding(enum.Enum):
     LOPROC      = 13
     HIPROC      = 14
 
+    @staticmethod
+    def fromValue(value: int) -> Elf32SymbolTableBinding|None:
+        try:
+            return Elf32SymbolTableBinding(value)
+        except ValueError:
+            return None
+
+
+# Symbol visibility specification encoded in the st_other field.
+class Elf32SymbolVisibility(enum.Enum):
+    DEFAULT         =    0 # Default symbol visibility rules
+    INTERNAL        =    1 # Processor specific hidden class
+    HIDDEN          =    2 # Sym unavailable in other modules
+    PROTECTED       =    3 # Not preemptible, not exported
+    PLT             =    8
+    SC_ALIGN_UNUSED = 0xFF
+
+    @staticmethod
+    def fromValue(value: int) -> Elf32SymbolVisibility|None:
+        try:
+            return Elf32SymbolVisibility(value)
+        except ValueError:
+            return None
+
 
 # a.k.a. SHN (section header number)
 @enum.unique
@@ -184,6 +208,13 @@ class Elf32SectionHeaderNumber(enum.Enum):
     MIPS_ACOMMON    = 0xFF00
     MIPS_TEXT       = 0xFF01
     MIPS_DATA       = 0xFF02
+
+    @staticmethod
+    def fromValue(value: int) -> Elf32SectionHeaderNumber|None:
+        try:
+            return Elf32SectionHeaderNumber(value)
+        except ValueError:
+            return None
 
 
 # a.k.a. DT
@@ -200,3 +231,26 @@ class Elf32DynamicTable(enum.Enum):
     "Number of DYNSYM entries"
     MIPS_GOTSYM         = 0x70000013
     "First GOT entry in DYNSYM"
+
+
+class Elf32Relocs(enum.Enum):
+    MIPS_NONE       = 0 # No reloc
+    MIPS_16         = 1 # Direct 16 bit
+    MIPS_32         = 2 # Direct 32 bit
+    MIPS_REL32      = 3 # PC relative 32 bit
+    MIPS_26         = 4 # Direct 26 bit shifted
+    MIPS_HI16       = 5 # High 16 bit
+    MIPS_LO16       = 6 # Low 16 bit
+    MIPS_GPREL16    = 7 # GP relative 16 bit
+    MIPS_LITERAL    = 8 # 16 bit literal entry
+    MIPS_GOT16      = 9 # 16 bit GOT entry
+    MIPS_PC16       = 10 # PC relative 16 bit
+    MIPS_CALL16     = 11 # 16 bit GOT entry for function
+    MIPS_GPREL32    = 12 # GP relative 32 bit
+
+    @staticmethod
+    def fromValue(value: int) -> Elf32Relocs|None:
+        try:
+            return Elf32Relocs(value)
+        except ValueError:
+            return None

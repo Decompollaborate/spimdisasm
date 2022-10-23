@@ -75,3 +75,8 @@ class Elf32Dyns:
     def __iter__(self):
         for entry in self.dyns:
             yield entry
+
+    def getGpValue(self) -> int|None:
+        if self.pltGot is None:
+            return None
+        return self.pltGot + 0x7FF0

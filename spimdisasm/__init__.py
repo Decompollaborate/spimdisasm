@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-__version_info__ = (1, 7, 0)
+__version_info__ = (1, 7, 1)
 __version__ = ".".join(map(str, __version_info__))
 __author__ = "Decompollaborate"
 
@@ -14,6 +14,7 @@ from . import elf32
 from . import mips
 
 # Front-end scripts
+from . import frontendCommon
 from . import disasmdis
 from . import rspDisasm
 from . import elfObjDisasm

@@ -5,13 +5,25 @@
 
 from __future__ import annotations
 
+import dataclasses
 import struct
 
 from .. import common
 
 from .Elf32Constants import Elf32SymbolTableType, Elf32SectionHeaderNumber
 from .Elf32Dyns import Elf32Dyns
-from .Elf32Syms import Elf32Syms
+from .Elf32Syms import Elf32Syms, Elf32SymEntry
+
+
+@dataclasses.dataclass
+class GotEntry:
+    symEntry: Elf32SymEntry
+    initial: int|None = None
+
+    def getAddress(self) -> int:
+        if self.initial is not None:
+            return self.initial
+        return self.symEntry.value
 
 
 class Elf32GlobalOffsetTable:
@@ -25,7 +37,7 @@ class Elf32GlobalOffsetTable:
 
 
         self.localsTable: list[int] = list()
-        self.globalsTable: list[int] = list()
+        self.globalsTable: list[GotEntry] = list()
 
     def __getitem__(self, key: int) -> int:
         return self.entries[key]
@@ -46,13 +58,10 @@ class Elf32GlobalOffsetTable:
 
         for i in range(dynamic.gotSym, len(dynsym)):
             symEntry = dynsym[i]
-            if symEntry.stType == Elf32SymbolTableType.FUNC.value and symEntry.shndx == Elf32SectionHeaderNumber.MIPS_TEXT.value:
-                self.globalsTable.append(symEntry.value)
-                # print(f"{i - dynamic.gotSym:X} {symEntry.value:X}")
-            elif symEntry.stType == Elf32SymbolTableType.OBJECT.value and (symEntry.shndx == Elf32SectionHeaderNumber.UNDEF.value or symEntry.shndx == Elf32SectionHeaderNumber.COMMON.value):
+            gotEntry = GotEntry(symEntry)
+
+            if symEntry.shndx == Elf32SectionHeaderNumber.UNDEF.value or symEntry.shndx == Elf32SectionHeaderNumber.COMMON.value:
                 gotIndex = dynamic.localGotNo + (i - dynamic.gotSym)
-                self.globalsTable.append(self.entries[gotIndex])
-                # print(f"{i - dynamic.gotSym:X} {self.got[gotIndex]:X}")
-            else:
-                self.globalsTable.append(symEntry.value)
-                # print(f"{i - dynamic.gotSym:X} {symEntry.value:X}")
+                gotEntry.initial = self.entries[gotIndex]
+
+            self.globalsTable.append(gotEntry)
