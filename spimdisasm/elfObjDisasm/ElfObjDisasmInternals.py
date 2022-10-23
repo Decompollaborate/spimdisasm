@@ -61,14 +61,14 @@ def getOutputPath(inputPath: Path, textOutput: Path, dataOutput: Path, sectionTy
         outputPath = textOutput
 
     outputFilePath = outputPath
-    if outputPath != "-":
+    if str(outputPath) != "-":
         outputFilePath = outputFilePath / inputPath.stem
 
     return outputFilePath
 
-def getProcessedSections(context: common.Context, elfFile: elf32.Elf32File, array_of_bytes: bytearray, inputPath: Path, textOutput: Path, dataOutput: Path) -> tuple[dict[common.FileSectionType, list[mips.sections.SectionBase]], dict[common.FileSectionType, Path]]:
+def getProcessedSections(context: common.Context, elfFile: elf32.Elf32File, array_of_bytes: bytearray, inputPath: Path, textOutput: Path, dataOutput: Path) -> tuple[dict[common.FileSectionType, list[mips.sections.SectionBase]], dict[common.FileSectionType, list[Path]]]:
     processedSegments: dict[common.FileSectionType, list[mips.sections.SectionBase]] = dict()
-    segmentPaths: dict[common.FileSectionType, Path] = dict()
+    segmentPaths: dict[common.FileSectionType, list[Path]] = dict()
 
     for sectionType, sectionEntry in elfFile.progbits.items():
         outputFilePath = getOutputPath(inputPath, textOutput, dataOutput, sectionType)
@@ -89,7 +89,7 @@ def getProcessedSections(context: common.Context, elfFile: elf32.Elf32File, arra
             exit(-1)
         mipsSection.setCommentOffset(vromStart)
         processedSegments[sectionType] = [mipsSection]
-        segmentPaths[sectionType] = outputFilePath
+        segmentPaths[sectionType] = [outputFilePath]
 
     if elfFile.nobits is not None:
         outputFilePath = getOutputPath(inputPath, textOutput, dataOutput, common.FileSectionType.Bss)
@@ -102,7 +102,7 @@ def getProcessedSections(context: common.Context, elfFile: elf32.Elf32File, arra
         mipsSection = mips.sections.SectionBss(context, vromStart, vromEnd, bssStart, bssEnd, inputPath.stem, 0, None)
         mipsSection.setCommentOffset(vromStart)
         processedSegments[common.FileSectionType.Bss] = [mipsSection]
-        segmentPaths[common.FileSectionType.Bss] = outputFilePath
+        segmentPaths[common.FileSectionType.Bss] = [outputFilePath]
 
     return processedSegments, segmentPaths
 
@@ -312,15 +312,13 @@ def elfObjDisasmMain():
     injectAllElfSymbols(context, elfFile, processedSegments)
     processGlobalOffsetTable(context, elfFile)
 
-    for _, subSegment in sorted(processedSegments.items()):
-        for section in subSegment:
-            section.analyze()
-            section.printAnalyzisResults()
+    processedFilesCount = 0
+    for sect in processedSegments.values():
+        processedFilesCount += len(sect)
 
-    for sectionType, subSegment in processedSegments.items():
-        for section in subSegment:
-            outputFilePath = segmentPaths[sectionType]
-            mips.FilesHandlers.writeSection(outputFilePath, section)
+    fec.FrontendUtilities.analyzeProcessedFiles(processedSegments, segmentPaths, processedFilesCount)
+
+    fec.FrontendUtilities.writeProcessedFiles(processedSegments, segmentPaths, processedFilesCount)
 
     if args.split_functions is not None:
         fec.FrontendUtilities.migrateFunctions(processedSegments, Path(args.split_functions))

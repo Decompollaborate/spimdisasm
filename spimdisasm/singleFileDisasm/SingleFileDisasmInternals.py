@@ -13,8 +13,6 @@ from .. import mips
 from .. import frontendCommon as fec
 
 
-sLenLastLine = 80
-
 def getArgsParser() -> argparse.ArgumentParser:
     description = "General purpose N64-mips disassembler"
     parser = argparse.ArgumentParser(description=description)
@@ -148,65 +146,6 @@ def changeGlobalSegmentRanges(context: common.Context, processedFiles: dict[comm
     context.changeGlobalSegmentRanges(0, highestVromEnd, lowestVramStart, highestVramEnd)
     return
 
-def analyzeProcessedFiles(processedFiles, processedFilesOutputPaths, processedFilesCount: int):
-    global sLenLastLine
-
-    i = 0
-    for section, filesInSection in processedFiles.items():
-        pathLists = processedFilesOutputPaths[section]
-        for fileIndex, f in enumerate(filesInSection):
-            path = pathLists[fileIndex]
-            common.Utils.printQuietless(sLenLastLine*" " + "\r", end="")
-            progressStr = f"Analyzing: {i/processedFilesCount:%}. File: {path}\r"
-            sLenLastLine = max(len(progressStr), sLenLastLine)
-            common.Utils.printQuietless(progressStr, end="", flush=True)
-            common.Utils.printVerbose("")
-
-            f.analyze()
-            f.printAnalyzisResults()
-
-            i += 1
-    return
-
-def nukePointers(processedFiles, processedFilesCount: int):
-    global sLenLastLine
-
-    common.Utils.printVerbose("Nuking pointers...")
-    i = 0
-    for section, filesInSection in processedFiles.items():
-        for path, f in filesInSection:
-            common.Utils.printVerbose(f"Nuking pointers of {path}")
-            common.Utils.printQuietless(sLenLastLine*" " + "\r", end="")
-            progressStr = f" Nuking pointers: {i/processedFilesCount:%}. File: {path}\r"
-            sLenLastLine = max(len(progressStr), sLenLastLine)
-            common.Utils.printQuietless(progressStr, end="")
-
-            f.removePointers()
-            i += 1
-    return
-
-def writeProcessedFiles(processedFiles, processedFilesOutputPaths, processedFilesCount: int):
-    global sLenLastLine
-
-    common.Utils.printVerbose("Writing files...")
-    i = 0
-    for section, filesInSection in processedFiles.items():
-        pathLists = processedFilesOutputPaths[section]
-        for fileIndex, f in enumerate(filesInSection):
-            path = pathLists[fileIndex]
-            common.Utils.printVerbose(f"Writing {path}")
-            common.Utils.printQuietless(sLenLastLine*" " + "\r", end="")
-            progressStr = f"Writing: {i/processedFilesCount:%}. File: {path}\r"
-            sLenLastLine = max(len(progressStr), sLenLastLine)
-            common.Utils.printQuietless(progressStr, end="")
-
-            if path == "-":
-                common.Utils.printQuietless()
-
-            mips.FilesHandlers.writeSection(Path(path), f)
-            i += 1
-    return
-
 
 def disassemblerMain():
     args = getArgsParser().parse_args()
@@ -243,12 +182,16 @@ def disassemblerMain():
     for sect in processedFiles.values():
         processedFilesCount += len(sect)
 
-    analyzeProcessedFiles(processedFiles, processedFilesOutputPaths, processedFilesCount)
+    progressCallback = fec.FrontendUtilities.progressCallback_analyzeProcessedFiles
+    fec.FrontendUtilities.analyzeProcessedFiles(processedFiles, processedFilesOutputPaths, processedFilesCount, progressCallback)
 
     if args.nuke_pointers:
-        nukePointers(processedFiles, processedFilesCount)
+        common.Utils.printVerbose("Nuking pointers...")
+        progressCallback = fec.FrontendUtilities.progressCallback_nukePointers
+        fec.FrontendUtilities.nukePointers(processedFiles, processedFilesOutputPaths, processedFilesCount, progressCallback)
 
-    writeProcessedFiles(processedFiles, processedFilesOutputPaths, processedFilesCount)
+    progressCallback = fec.FrontendUtilities.progressCallback_writeProcessedFiles
+    fec.FrontendUtilities.writeProcessedFiles(processedFiles, processedFilesOutputPaths, processedFilesCount, progressCallback)
 
     if args.split_functions is not None:
         common.Utils.printVerbose("\nSpliting functions...")
@@ -260,7 +203,7 @@ def disassemblerMain():
         contextPath.parent.mkdir(parents=True, exist_ok=True)
         context.saveContextToFile(contextPath)
 
-    common.Utils.printQuietless(sLenLastLine*" " + "\r", end="")
+    common.Utils.printQuietless(500*" " + "\r", end="")
     common.Utils.printQuietless(f"Done: {args.binary}")
 
     common.Utils.printVerbose()
