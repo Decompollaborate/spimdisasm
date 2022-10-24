@@ -141,7 +141,6 @@ class SectionRodata(SectionBase):
             elif contextSym is not None:
                 contextSym.isMaybeString = self._stringGuesser(contextSym, localOffset)
 
-            # contextSym = self.getSymbol(currentVram, tryPlusOffset=False)
             if contextSym is not None:
                 self.symbolsVRams.add(currentVram)
 

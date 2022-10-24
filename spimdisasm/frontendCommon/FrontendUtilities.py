@@ -20,7 +20,7 @@ _sLenLastLine = 80
 
 def analyzeProcessedFiles(processedFiles: dict[common.FileSectionType, list[mips.sections.SectionBase]], processedFilesOutputPaths: dict[common.FileSectionType, list[Path]], processedFilesCount: int, progressCallback: ProgressCallbackType|None=None):
     i = 0
-    for sectionType, filesInSection in processedFiles.items():
+    for sectionType, filesInSection in sorted(processedFiles.items()):
         pathLists = processedFilesOutputPaths[sectionType]
         for fileIndex, f in enumerate(filesInSection):
             if progressCallback is not None:

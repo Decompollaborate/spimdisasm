@@ -63,7 +63,7 @@ gAccessKinds: dict[rabbitizer.Enum, AccessTypeInfo] = {
     rabbitizer.AccessType.BYTE: AccessTypeInfo(1, "s8", "u8"),
     rabbitizer.AccessType.SHORT: AccessTypeInfo(2, "s16", "u16"),
     # Ignore signed WORD since it tends to not give a proper type
-    rabbitizer.AccessType.WORD: AccessTypeInfo(1, None, "u32"),
+    rabbitizer.AccessType.WORD: AccessTypeInfo(1, None, "u32", {"s32"}),
     rabbitizer.AccessType.DOUBLEWORD: AccessTypeInfo(1, "s64", "u64"),
     rabbitizer.AccessType.FLOAT: AccessTypeInfo(1, "f32", None, {"Vec3f"}),
     rabbitizer.AccessType.DOUBLEFLOAT: AccessTypeInfo(1, "f64", None),
@@ -149,6 +149,8 @@ class ContextSymbol:
         # Type is checked first to favour user-declared type over the autodetected one
         if gAccessKinds[rabbitizer.AccessType.BYTE].typeMatchesAccess(self.type):
             return True
+        if self.type is not None:
+            return False
         if self.accessType == rabbitizer.AccessType.BYTE:
             return True
         return False
@@ -158,6 +160,8 @@ class ContextSymbol:
             return False
         if gAccessKinds[rabbitizer.AccessType.SHORT].typeMatchesAccess(self.type):
             return True
+        if self.type is not None:
+            return False
         if self.accessType == rabbitizer.AccessType.SHORT:
             return True
         return False
@@ -174,6 +178,8 @@ class ContextSymbol:
     def isFloat(self) -> bool:
         if gAccessKinds[rabbitizer.AccessType.FLOAT].typeMatchesAccess(self.type):
             return True
+        if self.type is not None:
+            return False
         if self.accessType == rabbitizer.AccessType.FLOAT:
             return True
         return False
@@ -181,6 +187,8 @@ class ContextSymbol:
     def isDouble(self) -> bool:
         if gAccessKinds[rabbitizer.AccessType.DOUBLEFLOAT].typeMatchesAccess(self.type):
             return True
+        if self.type is not None:
+            return False
         if self.accessType == rabbitizer.AccessType.DOUBLEFLOAT:
             return True
         return False
