@@ -150,8 +150,9 @@ class SymbolRodata(SymbolBase):
 
     def getNthWord(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False) -> tuple[str, int]:
         if self.contextSym.isByte():
-            return self.getNthWordAsBytes(i)
-        if self.contextSym.isShort():
+            if not self.isString():
+                return self.getNthWordAsBytes(i)
+        elif self.contextSym.isShort():
             return self.getNthWordAsShorts(i)
 
         localOffset = 4*i
