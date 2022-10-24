@@ -158,5 +158,5 @@ def writeOtherRodata(path: Path, rodataFileList: list[sections.SectionBase]):
 
             rodataSymbolPath = rodataPath / (rodataSym.getName() + ".s")
             with rodataSymbolPath.open("w") as f:
-                f.write(".section .rdata" + common.GlobalConfig.LINE_ENDS)
+                f.write(".section .rodata" + common.GlobalConfig.LINE_ENDS)
                 f.write(rodataSym.disassemble())
