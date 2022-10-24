@@ -44,6 +44,10 @@ def getArgsParser() -> argparse.ArgumentParser:
     return parser
 
 def applyArgs(args: argparse.Namespace) -> None:
+    if args.libultra_syms is None:
+        args.libultra_syms = False
+    if args.hardware_regs is None:
+        args.hardware_regs = False
     mips.InstructionConfig.parseArgs(args)
     common.GlobalConfig.parseArgs(args)
 

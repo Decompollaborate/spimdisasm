@@ -189,7 +189,7 @@ class Context:
             self.fillDefaultBannedSymbols()
         if args.libultra_syms != False:
             self.globalSegment.fillLibultraSymbols()
-        if not args.hardware_regs != False:
+        if args.hardware_regs != False:
             self.globalSegment.fillHardwareRegs(args.named_hardware_regs)
 
         if args.functions is not None:
