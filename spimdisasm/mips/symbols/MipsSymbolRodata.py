@@ -124,7 +124,9 @@ class SymbolRodata(SymbolBase):
         alignDirective = ""
 
         if self.isDouble(i):
-            if common.GlobalConfig.COMPILER == common.Compiler.SN64:
+            if common.GlobalConfig.COMPILER in {common.Compiler.SN64, common.Compiler.PSYQ}:
+                # This should be harmless in other compilers
+                # TODO: investigate if it is fine to use it unconditionally
                 alignDirective += commentPaddingNum * " "
                 alignDirective += ".align 3"
                 alignDirective += common.GlobalConfig.LINE_ENDS
@@ -140,7 +142,7 @@ class SymbolRodata(SymbolBase):
 
         if self.isString():
             alignDirective += commentPaddingNum * " "
-            if common.GlobalConfig.COMPILER == common.Compiler.SN64:
+            if common.GlobalConfig.COMPILER in {common.Compiler.SN64, common.Compiler.PSYQ}:
                 alignDirective += ".align 2"
             else:
                 alignDirective += ".balign 4"
@@ -150,8 +152,9 @@ class SymbolRodata(SymbolBase):
 
     def getNthWord(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False) -> tuple[str, int]:
         if self.contextSym.isByte():
-            return self.getNthWordAsBytes(i)
-        if self.contextSym.isShort():
+            if not self.isString():
+                return self.getNthWordAsBytes(i)
+        elif self.contextSym.isShort():
             return self.getNthWordAsShorts(i)
 
         localOffset = 4*i

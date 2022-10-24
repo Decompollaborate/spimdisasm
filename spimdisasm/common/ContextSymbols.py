@@ -170,9 +170,14 @@ class ContextSymbol:
     def isString(self) -> bool:
         if self.type == "char" or self.type == "char*":
             return True
-        elif self.hasNoType(): # no type information, let's try to guess
-            if GlobalConfig.STRING_GUESSER and self.isMaybeString:
-                return True
+        if not self.isMaybeString:
+            return False
+        if not GlobalConfig.STRING_GUESSER:
+            return False
+        if self.hasNoType(): # no type information, let's try to guess
+            return True
+        if GlobalConfig.AGGRESSIVE_STRING_GUESSER:
+            return True
         return False
 
     def isFloat(self) -> bool:

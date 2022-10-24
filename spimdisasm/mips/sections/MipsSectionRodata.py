@@ -36,11 +36,13 @@ class SectionRodata(SectionBase):
             return False
 
         if not contextSym.hasNoType() or contextSym.referenceCounter > 1:
-            return False
+            if not common.GlobalConfig.AGGRESSIVE_STRING_GUESSER:
+                return False
 
         # This would mean the string is an empty string, which is not very likely
-        if self.bytes[localOffset] == 0:
-            return False
+        if self.words[localOffset//4] == 0:
+            if not common.GlobalConfig.AGGRESSIVE_STRING_GUESSER:
+                return False
 
         try:
             _, rawStringSize = common.Utils.decodeString(self.bytes, localOffset, self.stringEncoding)

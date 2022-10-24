@@ -77,7 +77,7 @@ def getRdataAndLateRodataForFunctionFromSection(func: symbols.SymbolFunction, ro
 
         # A const variable should not be placed with a function
         if rodataSym.contextSym.isMaybeConstVariable():
-            if common.GlobalConfig.COMPILER != common.Compiler.SN64:
+            if common.GlobalConfig.COMPILER not in {common.Compiler.SN64, common.Compiler.PSYQ}:
                 continue
 
         if rodataSym.contextSym.isLateRodata() and common.GlobalConfig.COMPILER == common.Compiler.IDO:
@@ -158,5 +158,5 @@ def writeOtherRodata(path: Path, rodataFileList: list[sections.SectionBase]):
 
             rodataSymbolPath = rodataPath / (rodataSym.getName() + ".s")
             with rodataSymbolPath.open("w") as f:
-                f.write(".section .rdata" + common.GlobalConfig.LINE_ENDS)
+                f.write(".section .rodata" + common.GlobalConfig.LINE_ENDS)
                 f.write(rodataSym.disassemble())

@@ -55,7 +55,7 @@ NOTE: Installing the development version is not recommended. Proceed at your own
   - Properly handle move to/from coprocessor instructions.
   - Support for numeric, o32, n32 and n64 ABI register names.
 - Some workarounds for some specific compilers/assemblers:
-  - `SN64`:
+  - `SN64`/`PSYQ`:
     - `div`/`divu` fix: tweaks a bit the produced `div`, `divu` and `break` instructions.
 - N64 RSP instruction disassembly support.
   - RSP decoding has been tested to build back to matching assemblies with [armips](https://github.com/Kingcom/armips/).
