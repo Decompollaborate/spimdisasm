@@ -124,7 +124,9 @@ class SymbolRodata(SymbolBase):
         alignDirective = ""
 
         if self.isDouble(i):
-            if common.GlobalConfig.COMPILER == common.Compiler.SN64:
+            if common.GlobalConfig.COMPILER in {common.Compiler.SN64, common.Compiler.PSYQ}:
+                # This should be harmless in other compilers
+                # TODO: investigate if it is fine to use it unconditionally
                 alignDirective += commentPaddingNum * " "
                 alignDirective += ".align 3"
                 alignDirective += common.GlobalConfig.LINE_ENDS
@@ -140,7 +142,7 @@ class SymbolRodata(SymbolBase):
 
         if self.isString():
             alignDirective += commentPaddingNum * " "
-            if common.GlobalConfig.COMPILER == common.Compiler.SN64:
+            if common.GlobalConfig.COMPILER in {common.Compiler.SN64, common.Compiler.PSYQ}:
                 alignDirective += ".align 2"
             else:
                 alignDirective += ".balign 4"
