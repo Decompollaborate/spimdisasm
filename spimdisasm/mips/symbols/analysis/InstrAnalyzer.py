@@ -12,11 +12,28 @@ from .... import common
 
 
 @dataclasses.dataclass
+class SymbolTypeInfo:
+    accessType: rabbitizer.Enum
+    """<rabbitizer.AccessType>"""
+    unsignedMemoryAccess: bool
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, SymbolTypeInfo):
+            return False
+        return self.accessType == other.accessType and self.unsignedMemoryAccess == other.unsignedMemoryAccess
+
+    # https://stackoverflow.com/a/56915493/6292472
+    def __hash__(self):
+        return hash((self.accessType, self.unsignedMemoryAccess))
+
+
+@dataclasses.dataclass
 class CploadInfo:
     hiOffset: int
     loOffset: int
     adduOffset: int|None = None
     reg: rabbitizer.Enum|None = None
+
 
 class InstrAnalyzer:
     def __init__(self, funcVram: int) -> None:
@@ -66,8 +83,8 @@ class InstrAnalyzer:
 
         self.symbolInstrOffset: dict[int, int] = dict()
 
-        self.possibleSymbolTypes: dict[int, tuple[rabbitizer.Enum, bool]] = dict()
-        "key: address, value: (<rabbitizer.AccessType>, unsignedMemoryAccess)"
+        self.possibleSymbolTypes: dict[int, dict[SymbolTypeInfo, int]] = dict()
+        "key: address, value: {<SymbolTypeInfo>: number of times this type appears in code}"
 
         # %hi/%lo pairing
         self.hiToLowDict: dict[int, int] = dict()
@@ -261,12 +278,16 @@ class InstrAnalyzer:
         if accessType == rabbitizer.AccessType.INVALID:
             return
 
-        if accessType == rabbitizer.AccessType.WORD:
-            if not unsignedMemoryAccess:
-                return
+        # if accessType == rabbitizer.AccessType.WORD:
+        #     if not unsignedMemoryAccess:
+        #         return
 
         if address not in self.possibleSymbolTypes:
-            self.possibleSymbolTypes[address] = (accessType, unsignedMemoryAccess)
+            self.possibleSymbolTypes[address] = dict()
+        symAccess = SymbolTypeInfo(accessType, unsignedMemoryAccess)
+        if symAccess not in self.possibleSymbolTypes[address]:
+            self.possibleSymbolTypes[address][symAccess] = 0
+        self.possibleSymbolTypes[address][symAccess] += 1
 
     def processSymbolDereferenceType(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, instrOffset: int) -> None:
         address = regsTracker.getAddressIfCanSetType(instr, instrOffset)
