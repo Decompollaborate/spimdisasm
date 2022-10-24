@@ -238,6 +238,8 @@ class SymbolFunction(SymbolText):
             for instr in self.instructions:
                 instr.inHandwrittenFunction = self.isLikelyHandwritten
 
+        self.contextSym.autodetectedSize = self.sizew*4
+
 
     def countExtraPadding(self) -> int:
         count = 0
