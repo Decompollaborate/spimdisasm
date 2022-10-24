@@ -24,8 +24,6 @@ def getArgsParser() -> argparse.ArgumentParser:
 
     parser.add_argument("--data-output", help="Path to output the data and rodata disassembly")
 
-    parser.add_argument("--save-context", help="Saves the context to a file", metavar="FILENAME")
-
     parser.add_argument("--split-functions", help="Enables the function and rodata splitter. Expects a path to place the splited functions", metavar="PATH")
 
 
@@ -36,6 +34,8 @@ def getArgsParser() -> argparse.ArgumentParser:
     readelfOptions.add_argument("-r", "--relocs", help="Display the relocations (if present)", action="store_true")
     readelfOptions.add_argument("--display-got", help="Shows Global offset table information", action="store_true")
 
+
+    common.Context.addParametersToArgParse(parser)
 
     common.GlobalConfig.addParametersToArgParse(parser)
 
@@ -280,6 +280,7 @@ def elfObjDisasmMain():
     applyGlobalConfigurations()
 
     context = common.Context()
+    context.parseArgs(args)
 
     inputPath = Path(args.binary)
     array_of_bytes = common.Utils.readFileAsBytearray(inputPath)
