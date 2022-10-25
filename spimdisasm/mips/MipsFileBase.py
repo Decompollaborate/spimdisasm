@@ -43,7 +43,8 @@ class FileBase(common.ElementBase):
         output += "# assembler directives" + common.GlobalConfig.LINE_ENDS
         output += ".set noat      # allow manual use of $at" + common.GlobalConfig.LINE_ENDS
         output += ".set noreorder # don't insert nops after branches" + common.GlobalConfig.LINE_ENDS
-        output += ".set gp=64     # allow use of 64-bit general purpose registers" + common.GlobalConfig.LINE_ENDS
+        if common.GlobalConfig.ARCHLEVEL >= common.ArchLevel.MIPS3:
+            output += ".set gp=64     # allow use of 64-bit general purpose registers" + common.GlobalConfig.LINE_ENDS
         output += common.GlobalConfig.LINE_ENDS
         output += f".section {self.sectionType.toSectionName()}" + common.GlobalConfig.LINE_ENDS
         output += common.GlobalConfig.LINE_ENDS

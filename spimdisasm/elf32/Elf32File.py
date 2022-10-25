@@ -113,6 +113,25 @@ class Elf32File:
             common.Utils.eprint(f"Warning: Elf uses not supported architecture level: {unkArchLevelNames}")
             common.Utils.eprint(f"\t This means this elf probably uses an unknown instruction set")
 
+        if Elf32HeaderFlag.ARCH_1 in self.elfFlags:
+            common.GlobalConfig.ARCHLEVEL = common.ArchLevel.MIPS1
+        elif Elf32HeaderFlag.ARCH_2 in self.elfFlags:
+            common.GlobalConfig.ARCHLEVEL = common.ArchLevel.MIPS2
+        elif Elf32HeaderFlag.ARCH_3 in self.elfFlags:
+            common.GlobalConfig.ARCHLEVEL = common.ArchLevel.MIPS3
+        elif Elf32HeaderFlag.ARCH_4 in self.elfFlags:
+            common.GlobalConfig.ARCHLEVEL = common.ArchLevel.MIPS5
+        elif Elf32HeaderFlag.ARCH_5 in self.elfFlags:
+            common.GlobalConfig.ARCHLEVEL = common.ArchLevel.MIPS5
+        elif Elf32HeaderFlag.ARCH_32 in self.elfFlags:
+            common.GlobalConfig.ARCHLEVEL = common.ArchLevel.MIPS32
+        elif Elf32HeaderFlag.ARCH_64 in self.elfFlags:
+            common.GlobalConfig.ARCHLEVEL = common.ArchLevel.MIPS64
+        elif Elf32HeaderFlag.ARCH_32R2 in self.elfFlags:
+            common.GlobalConfig.ARCHLEVEL = common.ArchLevel.MIPS32R2
+        elif Elf32HeaderFlag.ARCH_64R2 in self.elfFlags:
+            common.GlobalConfig.ARCHLEVEL = common.ArchLevel.MIPS64R2
+
 
     def _processSection_NULL(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
         pass

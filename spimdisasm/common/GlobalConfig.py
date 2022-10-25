@@ -9,6 +9,7 @@ import argparse
 import enum
 
 from . import Utils
+from .OrderedEnum import OrderedEnum
 
 
 class InputEndian(enum.Enum):
@@ -45,6 +46,37 @@ class Abi(enum.Enum):
     O32 = "O32"
     N32 = "N32"
     N64 = "N64"
+
+
+archLevelOptions = {
+    "MIPS1",
+    "MIPS2",
+    "MIPS3",
+    "MIPS4",
+    "MIPS5",
+    "MIPS32",
+    "MIPS64",
+    "MIPS32R2",
+    "MIPS64R2",
+}
+
+class ArchLevel(OrderedEnum):
+    MIPS1       = 1
+    MIPS2       = 2
+    MIPS3       = 3
+    MIPS4       = 4
+    MIPS5       = 5
+    MIPS32      = 6
+    MIPS64      = 7
+    MIPS32R2    = 8
+    MIPS64R2    = 9
+
+    @staticmethod
+    def fromValue(value) -> ArchLevel|None:
+        try:
+            return ArchLevel(value)
+        except ValueError:
+            return None
 
 
 class GlobalConfig:
@@ -86,6 +118,8 @@ class GlobalConfig:
 
     Please note this option does not control the register names used by rabbitizer
     """
+
+    ARCHLEVEL: ArchLevel = ArchLevel.MIPS3
 
     GP_VALUE: int|None = None
     """Value used for $gp relocation loads and stores"""
@@ -172,6 +206,8 @@ class GlobalConfig:
         backendConfig.add_argument("--endian", help=f"Set the endianness of input files. Defaults to {GlobalConfig.ENDIAN.name.lower()}", choices=["big", "little", "middle"], default=GlobalConfig.ENDIAN.name.lower())
 
         backendConfig.add_argument("--abi", help=f"Changes the ABI of the disassembly, applying corresponding tweaks. Defaults to {GlobalConfig.ABI.name}", choices=["O32", "N32", "N64"], default=GlobalConfig.ABI.name)
+        backendConfig.add_argument("--arch-level", help=f"Changes the arch level of the disassembly, applying corresponding tweaks. Defaults to {GlobalConfig.ARCHLEVEL.name}", choices=archLevelOptions, default=GlobalConfig.ARCHLEVEL.name)
+
 
         backendConfig.add_argument("--gp", help="Set the value used for loads and stores related to the $gp register. A hex value is expected")
         backendConfig.add_argument("--pic", help=f"Enables PIC analysis and the usage of some rel types, like %%got. Defaults to {GlobalConfig.PIC}", action=Utils.BooleanOptionalAction)
@@ -251,6 +287,10 @@ class GlobalConfig:
         except ValueError:
             Utils.eprint(f"Unknown ABI used: '{args.abi}'. Defaulting to O32")
             GlobalConfig.ABI = Abi.O32
+
+        arch_level = ArchLevel.fromValue(args.arch_level)
+        if arch_level is not None:
+            GlobalConfig.ARCHLEVEL = arch_level
 
         if args.gp is not None:
             GlobalConfig.GP_VALUE = int(args.gp, 16)
