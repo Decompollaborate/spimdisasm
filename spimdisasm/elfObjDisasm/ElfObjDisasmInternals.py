@@ -352,7 +352,11 @@ def elfObjDisasmMain():
 
     if args.split_functions is not None:
         common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Migrating functions and rodata...")
-        fec.FrontendUtilities.migrateFunctions(processedSegments, Path(args.split_functions))
+        functionMigrationPath = Path(args.split_functions)
+        fec.FrontendUtilities.migrateFunctions(processedSegments, functionMigrationPath)
+
+        common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Generating functions list...")
+        mips.FilesHandlers.writeMigratedFunctionsList(processedSegments, functionMigrationPath, inputPath.stem)
 
     if args.save_context is not None:
         common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Writing context...")

@@ -160,3 +160,71 @@ def writeOtherRodata(path: Path, rodataFileList: list[sections.SectionBase]):
             with rodataSymbolPath.open("w") as f:
                 f.write(".section .rodata" + common.GlobalConfig.LINE_ENDS)
                 f.write(rodataSym.disassemble())
+
+
+def writeMigratedFunctionsList(processedSegments: dict[common.FileSectionType, list[sections.SectionBase]], functionMigrationPath: Path, name: str) -> None:
+    funcAndRodataOrderPath = functionMigrationPath / f"{name}_migrated_functions.txt"
+
+    rodataSymbols: list[tuple[symbols.SymbolBase, symbols.SymbolFunction|None]] = []
+    for section in processedSegments[common.FileSectionType.Rodata]:
+        for sym in section.symbolList:
+            rodataSymbols.append((sym, None))
+    rodataSymbolsVrams = {sym.vram for sym, _ in rodataSymbols}
+
+    funcs: list[symbols.SymbolFunction] = []
+    for section in processedSegments[common.FileSectionType.Text]:
+        for func in section.symbolList:
+            assert isinstance(func, symbols.SymbolFunction)
+            funcs.append(func)
+
+            referencedRodata = rodataSymbolsVrams & func.instrAnalyzer.referencedVrams
+            for i in range(len(rodataSymbols)):
+                if len(referencedRodata) == 0:
+                    break
+
+                rodataSym, funcReferencingThisSym = rodataSymbols[i]
+
+                if rodataSym.vram not in referencedRodata:
+                    continue
+
+                referencedRodata.remove(rodataSym.vram)
+
+                if funcReferencingThisSym is not None:
+                    # This rodata sym already has a corresponding function associated
+                    continue
+
+                rodataSymbols[i] = (rodataSym, func)
+
+    resultingList: list[symbols.SymbolBase] = []
+    alreadyAddedFuncs: set[symbols.SymbolFunction] = set()
+
+    lastFunc = None
+    for rodataSym, funcReferencingThisSym in rodataSymbols:
+        if funcReferencingThisSym is None:
+            resultingList.append(rodataSym)
+        elif funcReferencingThisSym not in alreadyAddedFuncs:
+            alreadyAddedFuncs.add(funcReferencingThisSym)
+            lastFunc = funcReferencingThisSym
+
+            for func in funcs:
+                if func.vram >= funcReferencingThisSym.vram:
+                    break
+                if func in alreadyAddedFuncs:
+                    continue
+
+                alreadyAddedFuncs.add(func)
+                resultingList.append(func)
+            resultingList.append(funcReferencingThisSym)
+
+    if lastFunc is None:
+        for func in funcs:
+            resultingList.append(func)
+    else:
+        for func in funcs:
+            if func.vram <= lastFunc.vram:
+                continue
+            resultingList.append(func)
+
+    with funcAndRodataOrderPath.open("w") as f:
+        for sym in resultingList:
+            f.write(sym.getName() + "\n")
