@@ -13,6 +13,8 @@ from .. import elf32
 from .. import mips
 from .. import frontendCommon as fec
 
+PROGNAME = "elfObjDisasm"
+
 
 def getArgsParser() -> argparse.ArgumentParser:
     # TODO
@@ -29,10 +31,13 @@ def getArgsParser() -> argparse.ArgumentParser:
 
     readelfOptions = parser.add_argument_group("readelf-like flags")
 
+    readelfOptions.add_argument("-a", "--all", help="Equivalent to --file-header --syms --relocs --display-got", action="store_true")
     readelfOptions.add_argument("--file-header", help="Display the ELF file header", action="store_true")
     readelfOptions.add_argument("-s", "--syms", help="Display the symbol table", action="store_true")
     readelfOptions.add_argument("-r", "--relocs", help="Display the relocations (if present)", action="store_true")
     readelfOptions.add_argument("--display-got", help="Shows Global offset table information", action="store_true")
+
+    readelfOptions.add_argument("--readelf-only", help="Exit after processing the readelf-like flags, without performing any disassembly", action="store_true")
 
 
     common.Context.addParametersToArgParse(parser)
@@ -57,6 +62,29 @@ def applyGlobalConfigurations() -> None:
     common.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES = False
 
     common.GlobalConfig.ALLOW_UNKSEGMENT = False
+
+
+def applyReadelfLikeFlags(elfFile: elf32.Elf32File, args: argparse.Namespace) -> None:
+    if args.all:
+        elfFile.readelf_fileHeader()
+        elfFile.readelf_syms()
+        elfFile.readelf_relocs()
+        elfFile.readelf_displayGot()
+    else:
+        if args.file_header:
+            elfFile.readelf_fileHeader()
+
+        if args.syms:
+            elfFile.readelf_syms()
+
+        if args.relocs:
+            elfFile.readelf_relocs()
+
+        if args.display_got:
+            elfFile.readelf_displayGot()
+
+    if args.readelf_only:
+        exit(0)
 
 
 def getOutputPath(inputPath: Path, textOutput: Path, dataOutput: Path, sectionType: common.FileSectionType) -> Path:
@@ -293,17 +321,7 @@ def elfObjDisasmMain():
     elfFile.handleHeaderIdent()
     elfFile.handleFlags()
 
-    if args.file_header:
-        elfFile.readelf_fileHeader()
-
-    if args.syms:
-        elfFile.readelf_syms()
-
-    if args.relocs:
-        elfFile.readelf_relocs()
-
-    if args.display_got:
-        elfFile.readelf_displayGot()
+    applyReadelfLikeFlags(elfFile, args)
 
     textOutput = Path(args.output)
     if args.data_output is None:
@@ -311,24 +329,35 @@ def elfObjDisasmMain():
     else:
         dataOutput = Path(args.data_output)
 
+    common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Reading segments...")
     processedSegments, segmentPaths = getProcessedSections(context, elfFile, array_of_bytes, inputPath, textOutput, dataOutput)
 
     changeGlobalSegmentRanges(context, processedSegments)
+
+    common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Injecting elf symbols...")
     injectAllElfSymbols(context, elfFile, processedSegments)
+
+    common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Processing global offset table...")
     processGlobalOffsetTable(context, elfFile)
 
     processedFilesCount = 0
     for sect in processedSegments.values():
         processedFilesCount += len(sect)
 
+    common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Analyzing sections...")
     fec.FrontendUtilities.analyzeProcessedFiles(processedSegments, segmentPaths, processedFilesCount)
 
+    common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Writing files...")
     fec.FrontendUtilities.writeProcessedFiles(processedSegments, segmentPaths, processedFilesCount)
 
     if args.split_functions is not None:
+        common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Migrating functions and rodata...")
         fec.FrontendUtilities.migrateFunctions(processedSegments, Path(args.split_functions))
 
     if args.save_context is not None:
+        common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Writing context...")
         contextPath = Path(args.save_context)
         contextPath.parent.mkdir(parents=True, exist_ok=True)
         context.saveContextToFile(contextPath)
+
+    common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Done!")
