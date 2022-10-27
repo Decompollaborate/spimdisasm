@@ -112,7 +112,7 @@ def writeFunctionRodataToFile(f: TextIO, func: symbols.SymbolFunction, rdataList
         sectionName = ".rodata"
         f.write(f".section {sectionName}" + common.GlobalConfig.LINE_ENDS)
         for sym in rdataList:
-            f.write(sym.disassemble())
+            f.write(sym.disassemble(useGlobalLabel=False))
             f.write(common.GlobalConfig.LINE_ENDS)
 
     if len(lateRodataList) > 0:
@@ -125,7 +125,7 @@ def writeFunctionRodataToFile(f: TextIO, func: symbols.SymbolFunction, rdataList
                 align = 8
             f.write(f".late_rodata_alignment {align}" + common.GlobalConfig.LINE_ENDS)
         for sym in lateRodataList:
-            f.write(sym.disassemble())
+            f.write(sym.disassemble(useGlobalLabel=False))
             f.write(common.GlobalConfig.LINE_ENDS)
 
     if len(rdataList) > 0 or len(lateRodataList) > 0:

@@ -222,10 +222,14 @@ class SymbolBase(common.ElementBase):
     def getPostAlignDirective(self, i: int=0) -> str:
         return ""
 
-    def disassembleAsData(self) -> str:
-        output = self.getPrevAlignDirective(0)
-        output += self.getLabel()
-        if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
+    def disassembleAsData(self, useGlobalLabel: bool=True) -> str:
+        output = ""
+        if useGlobalLabel:
+            output += self.getPrevAlignDirective(0)
+            output += self.getLabel()
+            if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
+                output += f"{self.getName()}:" + common.GlobalConfig.LINE_ENDS
+        else:
             output += f"{self.getName()}:" + common.GlobalConfig.LINE_ENDS
 
         canReferenceSymbolsWithAddends = self.canUseAddendsOnData()
@@ -243,5 +247,5 @@ class SymbolBase(common.ElementBase):
             i += 1
         return output
 
-    def disassemble(self) -> str:
-        return self.disassembleAsData()
+    def disassemble(self, useGlobalLabel: bool=True) -> str:
+        return self.disassembleAsData(useGlobalLabel=useGlobalLabel)

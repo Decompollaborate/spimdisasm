@@ -150,10 +150,10 @@ class FileBase(common.ElementBase):
         return False
 
 
-    def disassemble(self) -> str:
+    def disassemble(self, useGlobalLabel: bool=True) -> str:
         output = ""
         for i, sym in enumerate(self.symbolList):
-            output += sym.disassemble()
+            output += sym.disassemble(useGlobalLabel=useGlobalLabel)
             if i + 1 < len(self.symbolList):
                 output += common.GlobalConfig.LINE_ENDS
         return output
