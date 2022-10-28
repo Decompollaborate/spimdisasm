@@ -130,6 +130,9 @@ class ContextSymbol:
         if self.unknownSegment:
             return False
 
+        if self.isGotLocal:
+            return False
+
         if GlobalConfig.TRUST_USER_FUNCTIONS and self.isUserDeclared:
             if self.type == SymbolSpecialType.branchlabel:
                 return False
