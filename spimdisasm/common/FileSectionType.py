@@ -5,11 +5,10 @@
 
 from __future__ import annotations
 
-import enum
+from .OrderedEnum import OrderedEnum
 
 
-@enum.unique
-class FileSectionType(enum.Enum):
+class FileSectionType(OrderedEnum):
     Unknown = -2
     Invalid = -1
 
@@ -87,9 +86,6 @@ class FileSectionType(enum.Enum):
         if self == FileSectionType.Reloc:
             return ".ovl"
         return ""
-
-    def __lt__(self, other: FileSectionType) -> bool:
-        return self.value < other.value
 
 
 FileSections_ListBasic = [FileSectionType.Text, FileSectionType.Data, FileSectionType.Rodata, FileSectionType.Bss]

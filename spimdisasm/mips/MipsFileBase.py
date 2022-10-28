@@ -43,7 +43,8 @@ class FileBase(common.ElementBase):
         output += "# assembler directives" + common.GlobalConfig.LINE_ENDS
         output += ".set noat      # allow manual use of $at" + common.GlobalConfig.LINE_ENDS
         output += ".set noreorder # don't insert nops after branches" + common.GlobalConfig.LINE_ENDS
-        output += ".set gp=64     # allow use of 64-bit general purpose registers" + common.GlobalConfig.LINE_ENDS
+        if common.GlobalConfig.ARCHLEVEL >= common.ArchLevel.MIPS3:
+            output += ".set gp=64     # allow use of 64-bit general purpose registers" + common.GlobalConfig.LINE_ENDS
         output += common.GlobalConfig.LINE_ENDS
         output += f".section {self.sectionType.toSectionName()}" + common.GlobalConfig.LINE_ENDS
         output += common.GlobalConfig.LINE_ENDS
@@ -149,10 +150,10 @@ class FileBase(common.ElementBase):
         return False
 
 
-    def disassemble(self) -> str:
+    def disassemble(self, useGlobalLabel: bool=True) -> str:
         output = ""
         for i, sym in enumerate(self.symbolList):
-            output += sym.disassemble()
+            output += sym.disassemble(useGlobalLabel=useGlobalLabel)
             if i + 1 < len(self.symbolList):
                 output += common.GlobalConfig.LINE_ENDS
         return output

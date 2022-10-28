@@ -238,6 +238,8 @@ class SymbolFunction(SymbolText):
             for instr in self.instructions:
                 instr.inHandwrittenFunction = self.isLikelyHandwritten
 
+        self.contextSym.autodetectedSize = self.sizew*4
+
 
     def countExtraPadding(self) -> int:
         count = 0
@@ -546,12 +548,12 @@ class SymbolFunction(SymbolText):
             # don't emit the other instructions which are part of .cpload if the directive was emitted
         return output
 
-    def disassemble(self) -> str:
+    def disassemble(self, useGlobalLabel: bool=True) -> str:
         output = ""
 
         if not common.GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS:
             if self.hasUnimplementedIntrs:
-                return self.disassembleAsData()
+                return self.disassembleAsData(useGlobalLabel=useGlobalLabel)
 
         if self.isLikelyHandwritten:
             if not self.isRsp:
@@ -586,6 +588,6 @@ class SymbolFunction(SymbolText):
 
         return output
 
-    def disassembleAsData(self) -> str:
+    def disassembleAsData(self, useGlobalLabel: bool=True) -> str:
         self.words = [instr.getRaw() for instr in self.instructions]
-        return super().disassembleAsData()
+        return super().disassembleAsData(useGlobalLabel=useGlobalLabel)
