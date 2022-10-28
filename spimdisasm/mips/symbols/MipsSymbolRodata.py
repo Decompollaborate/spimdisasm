@@ -212,6 +212,8 @@ class SymbolRodata(SymbolBase):
                 labelSym = self.getSymbol(w, tryPlusOffset=False)
             if labelSym is not None:
                 value = labelSym.getName()
+                if self.contextSym.isJumpTable() and common.GlobalConfig.PIC:
+                    dotType = ".gpword"
             elif self.isString():
                 try:
                     buffer = bytearray(4*len(self.words))
