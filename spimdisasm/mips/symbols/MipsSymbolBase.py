@@ -189,7 +189,7 @@ class SymbolBase(common.ElementBase):
         else:
             # This word could be a reference to a symbol
             symbolRef = self.getSymbol(w, tryPlusOffset=canReferenceSymbolsWithAddends)
-            if symbolRef is not None and not symbolRef.isGotLocal:
+            if symbolRef is not None:
                 value = symbolRef.getSymbolPlusOffset(w)
             elif canReferenceConstants:
                 constant = self.getConstant(w)
