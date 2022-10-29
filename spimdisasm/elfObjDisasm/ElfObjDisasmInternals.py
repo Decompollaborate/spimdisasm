@@ -189,8 +189,11 @@ def addRelocatedSymbol(context: common.Context, symEntry: elf32.Elf32SymEntry, s
     contextSym.isUserDeclared = True
     contextSym.setSizeIfUnset(symEntry.size)
 
-def addUndefinedSymbol(context: common.Context, symEntry: elf32.Elf32SymEntry, symName: str|None, symAddress: int):
+def addUndefinedSymbol(context: common.Context, symEntry: elf32.Elf32SymEntry, symName: str, symAddress: int):
     if symAddress == 0:
+        return
+
+    if symEntry.shndx != elf32.Elf32SectionHeaderNumber.UNDEF.value:
         return
 
     if symEntry.stType == elf32.Elf32SymbolTableType.FUNC.value:
@@ -206,8 +209,8 @@ def addUndefinedSymbol(context: common.Context, symEntry: elf32.Elf32SymEntry, s
     else:
         common.Utils.eprint(f"Warning: symbol '{symName}' has an unhandled stType: '{symEntry.stType}'")
         contextSym = context.globalSegment.addSymbol(symAddress)
-    if symName is not None:
-        contextSym.name = symName
+
+    contextSym.name = symName
     contextSym.isUserDeclared = True
     contextSym.setSizeIfUnset(symEntry.size)
 
@@ -246,11 +249,6 @@ def insertDynsymIntoContext(context: common.Context, symbolTable: elf32.Elf32Sym
         addRelocatedSymbol(context, symEntry, symName)
 
 def insertGotIntoContext(context: common.Context, got: elf32.Elf32GlobalOffsetTable, stringTable: elf32.Elf32StringTable):
-    for local in got.localsTable:
-        contextSym = context.globalSegment.addSymbol(local)
-        contextSym.isUserDeclared = True
-        contextSym.isGotLocal = True
-
     for gotEntry in got.globalsTable:
         symName = stringTable[gotEntry.symEntry.name]
 
@@ -289,24 +287,10 @@ def processGlobalOffsetTable(context: common.Context, elfFile: elf32.Elf32File) 
     if elfFile.dynamic is not None and elfFile.got is not None:
         common.GlobalConfig.GP_VALUE = elfFile.dynamic.getGpValue()
 
+        globalsTable = [gotEntry.getAddress() for gotEntry in elfFile.got.globalsTable]
 
-        # context.got.tableStart = elfFile.dynamic.pltGot
-
-        # context.got.localsTable = elfFile.got.localsTable
-
-        globalsTable = []
-
-        for gotEntry in elfFile.got.globalsTable:
-            address = gotEntry.getAddress()
-            globalsTable.append(address)
-
-            # context.got.globalsTable.append(address)
-            # contextSym = context.globalSegment.getSymbol(address)
-            # if contextSym is not None:
-            #     contextSym.isGotGlobal = True
         assert elfFile.dynamic.pltGot is not None
-        context.got.initTables(elfFile.dynamic.pltGot, elfFile.got.localsTable, globalsTable)
-
+        context.initGotTable(elfFile.dynamic.pltGot, elfFile.got.localsTable, globalsTable)
     return
 
 
@@ -339,11 +323,11 @@ def elfObjDisasmMain():
 
     changeGlobalSegmentRanges(context, processedSegments)
 
-    common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Injecting elf symbols...")
-    injectAllElfSymbols(context, elfFile, processedSegments)
-
     common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Processing global offset table...")
     processGlobalOffsetTable(context, elfFile)
+
+    common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Injecting elf symbols...")
+    injectAllElfSymbols(context, elfFile, processedSegments)
 
     processedFilesCount = 0
     for sect in processedSegments.values():

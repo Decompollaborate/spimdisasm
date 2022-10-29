@@ -144,21 +144,17 @@ class Context:
         return self.offsetJumpTablesLabels[offset]
 
 
-    """
-    def initGotTable(self, pltGot: int):
-        context.got.tableStart = elfFile.dynamic.pltGot
-        context.got.localsTable = elfFile.got.localsTable
+    def initGotTable(self, pltGot: int, localsTable: list[int], globalsTable: list[int]):
+        self.got.initTables(pltGot, localsTable, globalsTable)
 
-        for gotEntry in elfFile.got.globalsTable:
-            address = gotEntry.getAddress()
+        for local in self.got.localsTable:
+            contextSym = ContextSymbol(local, isUserDeclared=True, isGotLocal=True)
+            self.localSymbols[local] = contextSym
 
-            context.got.globalsTable.append(address)
-            contextSym = context.globalSegment.getSymbol(address)
-            if contextSym is not None:
-                contextSym.isGotGlobal = True
-
-        pass
-    """
+        for globalAddress in self.got.globalsTable:
+            contextSym = self.globalSegment.addSymbol(globalAddress)
+            contextSym.isUserDeclared = True
+            contextSym.isGotGlobal = True
 
 
     def fillDefaultBannedSymbols(self):
