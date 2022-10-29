@@ -16,6 +16,12 @@ class GlobalOffsetTable:
         self.tableStart: int|None = None
 
 
+    def initTables(self, pltGot: int, localsTable: list[int], globalsTable: list[int]):
+        self.tableStart = pltGot
+        self.localsTable = localsTable
+        self.globalsTable = globalsTable
+
+
     def getAddress(self, address: int) -> int|None:
         if self.tableStart is None:
             return None

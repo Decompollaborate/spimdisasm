@@ -10,9 +10,10 @@ from pathlib import Path
 
 from . import Utils
 from .FileSectionType import FileSectionType
-from .ContextSymbols import SymbolSpecialType, ContextOffsetSymbol, ContextRelocInfo
+from .ContextSymbols import SymbolSpecialType, ContextOffsetSymbol, ContextRelocInfo, ContextSymbol
 from .SymbolsSegment import SymbolsSegment
 from .GlobalOffsetTable import GlobalOffsetTable
+from .SortedDict import SortedDict
 
 
 class Context:
@@ -61,6 +62,9 @@ class Context:
         self.offsetJumpTablesLabels: dict[int, ContextOffsetSymbol] = dict()
 
         self.got: GlobalOffsetTable = GlobalOffsetTable()
+
+        self.localSymbols: SortedDict[ContextSymbol] = SortedDict()
+        "Local addresses from the GOT table"
 
 
     def changeGlobalSegmentRanges(self, vromStart: int, vromEnd: int, vramStart: int, vramEnd: int):
@@ -138,6 +142,23 @@ class Context:
             self.offsetJumpTablesLabels[offset] = contextOffsetSym
             return contextOffsetSym
         return self.offsetJumpTablesLabels[offset]
+
+
+    """
+    def initGotTable(self, pltGot: int):
+        context.got.tableStart = elfFile.dynamic.pltGot
+        context.got.localsTable = elfFile.got.localsTable
+
+        for gotEntry in elfFile.got.globalsTable:
+            address = gotEntry.getAddress()
+
+            context.got.globalsTable.append(address)
+            contextSym = context.globalSegment.getSymbol(address)
+            if contextSym is not None:
+                contextSym.isGotGlobal = True
+
+        pass
+    """
 
 
     def fillDefaultBannedSymbols(self):
