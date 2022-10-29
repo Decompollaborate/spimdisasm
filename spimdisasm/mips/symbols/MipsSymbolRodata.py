@@ -205,10 +205,11 @@ class SymbolRodata(SymbolBase):
             rodataWord = doubleWord
             skip = 1
         else:
-            if self.contextSym.isJumpTable() and self.contextSym.isGot and common.GlobalConfig.GP_VALUE is not None:
+            if self.contextSym.isJumpTable() and self.contextSym.isGot and common.GlobalConfig.GP_VALUE is not None and w != 0:
                 labelAddr = common.GlobalConfig.GP_VALUE + rabbitizer.Utils.from2Complement(w, 32)
                 labelSym = self.getSymbol(labelAddr, tryPlusOffset=False)
-                dotType = ".gpword"
+                if labelSym is not None:
+                    dotType = ".gpword"
             else:
                 labelSym = self.getSymbol(w, tryPlusOffset=False)
             if labelSym is not None:
