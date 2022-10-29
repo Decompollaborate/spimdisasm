@@ -193,9 +193,6 @@ def addUndefinedSymbol(context: common.Context, symEntry: elf32.Elf32SymEntry, s
     if symAddress == 0:
         return
 
-    if symEntry.shndx != elf32.Elf32SectionHeaderNumber.UNDEF.value:
-        return
-
     if symEntry.stType == elf32.Elf32SymbolTableType.FUNC.value:
         contextSym = context.globalSegment.addFunction(symAddress)
     elif symEntry.stType == elf32.Elf32SymbolTableType.OBJECT.value:

@@ -98,6 +98,8 @@ class InstrAnalyzer:
 
         self.gpLoads: dict[int, rabbitizer.Instruction] = dict()
 
+        self.gotAccessAddresses: dict[int, int] = dict()
+
         self.unpairedCploads: list[CploadInfo] = list()
         "cploads which are not yet fully paired"
         self.cploadOffsets: set[int] = set()
@@ -219,9 +221,6 @@ class InstrAnalyzer:
             assert common.GlobalConfig.GP_VALUE is not None
             upperHalf = common.GlobalConfig.GP_VALUE
 
-            if got.tableStart is not None:
-                return got.getAddress(upperHalf + lowerHalf)
-
         return upperHalf + lowerHalf
 
 
@@ -271,6 +270,31 @@ class InstrAnalyzer:
         self.processSymbolType(address, lowerInstr)
 
         return address
+
+    def processGotSymbol(self, address: int, instr: rabbitizer.Instruction, instrOffset: int, got: common.GlobalOffsetTable) -> int|None:
+        if address <= 0:
+            return None
+
+        """
+        self.referencedVrams.add(address)
+
+        if instrOffset not in self.symbolLoInstrOffset:
+            self.symbolLoInstrOffset[instrOffset] = address
+            self.symbolInstrOffset[instrOffset] = address
+            self.referencedVramsInstrOffset[instrOffset] = address
+
+        self.symbolGpInstrOffset[instrOffset] = address
+        self.symbolInstrOffset[instrOffset] = address
+        self.referencedVramsInstrOffset[instrOffset] = address
+
+        self.processSymbolType(address, instr)
+        """
+        # gotAddress, inGlobalTable = got.getAddress(address)
+        # if gotAddress is None or inGlobalTable is None:
+        #     return
+        self.gotAccessAddresses[instrOffset] = address
+
+        return
 
     def processSymbolType(self, address: int, instr: rabbitizer.Instruction) -> None:
         accessType = instr.getAccessType()
@@ -357,8 +381,16 @@ class InstrAnalyzer:
         if address is None:
             return
 
-        if instrDoesGpLoad:
-            self.gpLoads[instrOffset] = instr
+        if upperHalf is None:
+            if got.tableStart is not None:
+                self.processGotSymbol(address, instr, instrOffset, got)
+                # if address is None:
+                #     return
+
+                # if instrDoesGpLoad:
+                #     self.gpLoads[instrOffset] = instr
+                regsTracker.processLo(instr, address, instrOffset)
+                return
 
         address = self.processSymbol(address, luiOffset, instr, instrOffset)
         if address is not None:
