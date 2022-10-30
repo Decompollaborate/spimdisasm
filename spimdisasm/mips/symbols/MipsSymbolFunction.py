@@ -389,7 +389,7 @@ class SymbolFunction(SymbolText):
         elf32.Elf32Relocs.MIPS_CALL_LO16.value: f"%call_lo",
     }
 
-    def generateHiLoStr(self, instr: rabbitizer.Instruction, symName: str, symbol: common.ContextSymbol|None, relocInfo: common.ContextRelocInfo|None=None) -> str:
+    def generateHiLoStr(self, instr: rabbitizer.Instruction, symName: str, symbol: common.ContextSymbol|None, relocInfo: common.ContextRelocInfo|None=None, gotHiLo: bool=False) -> str:
         if relocInfo is not None:
             percentStr = self._percentRel.get(relocInfo.relocType, None)
             if percentStr is not None:
@@ -397,6 +397,12 @@ class SymbolFunction(SymbolText):
             common.Utils.eprint(f"generateHiLoStr: Warning: Unhandled relocType '{relocInfo.relocType}'")
 
         if instr.canBeHi():
+            if common.GlobalConfig.PIC:
+                if symbol is not None and gotHiLo:
+                    if symbol.isGotGlobal and symbol.type == common.SymbolSpecialType.function:
+                        return f"%call_hi({symName})"
+                    else:
+                        return f"%got_hi({symName})"
             return f"%hi({symName})"
 
         if instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
@@ -409,6 +415,12 @@ class SymbolFunction(SymbolText):
             if not common.GlobalConfig.PIC:
                 return f"%gp_rel({symName})"
 
+        if common.GlobalConfig.PIC:
+            if symbol is not None and gotHiLo:
+                if symbol.isGotGlobal and symbol.type == common.SymbolSpecialType.function:
+                    return f"%call_lo({symName})"
+                else:
+                    return f"%got_lo({symName})"
         return f"%lo({symName})"
 
     def generateHiLoConstantStr(self, constantValue: int, currentInstr: rabbitizer.Instruction, loInstr: rabbitizer.Instruction|None) -> str|None:
@@ -489,13 +501,23 @@ class SymbolFunction(SymbolText):
                 else:
                     symbol = self.getSymbol(address, tryPlusOffset=True)
 
+                gotHiLo = False
+                if symbol is None and address < 0 and common.GlobalConfig.PIC and common.GlobalConfig.GP_VALUE is not None:
+                    # Negative pointer may mean it is a weird GOT access
+                    gotAccess = common.GlobalConfig.GP_VALUE + address
+                    gotAddress, inGlobalTable = self.context.got.getAddress(gotAccess)
+                    if gotAddress is not None:
+                        symbol = self.getSymbol(gotAddress)
+                        gotHiLo = True
+                        address = gotAddress
+
                 if symbol is not None:
                     if symbol.isGotGlobal:
-                        if instructionOffset not in self.instrAnalyzer.gotAccessAddresses:
+                        if instructionOffset not in self.instrAnalyzer.gotAccessAddresses and not gotHiLo:
                             return None
 
                     symName = symbol.getSymbolPlusOffset(address)
-                    return self.generateHiLoStr(instr, symName, symbol)
+                    return self.generateHiLoStr(instr, symName, symbol, gotHiLo=gotHiLo)
                 return self.generateHiLoConstantStr(address, instr, loInstr)
 
             elif instructionOffset in self.instrAnalyzer.constantInstrOffset:
