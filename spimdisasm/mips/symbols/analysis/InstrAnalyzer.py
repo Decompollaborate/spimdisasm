@@ -85,6 +85,7 @@ class InstrAnalyzer:
 
         self.possibleSymbolTypes: dict[int, dict[SymbolTypeInfo, int]] = dict()
         "key: address, value: {<SymbolTypeInfo>: number of times this type appears in code}"
+        self.symbolTypesOffsets: dict[int, SymbolTypeInfo] = dict()
 
         # %hi/%lo pairing
         self.hiToLowDict: dict[int, int] = dict()
@@ -97,6 +98,9 @@ class InstrAnalyzer:
         self.nonLoInstrOffsets: set[int] = set()
 
         self.gotAccessAddresses: dict[int, int] = dict()
+
+        # self.gotSymbolTypes: dict[int, SymbolTypeInfo] = dict()
+        "key: instruction offset, value: <SymbolTypeInfo>"
 
         self.unpairedCploads: list[CploadInfo] = list()
         "cploads which are not yet fully paired"
@@ -263,21 +267,18 @@ class InstrAnalyzer:
             self.symbolInstrOffset[lowerOffset] = address
             self.referencedVramsInstrOffset[lowerOffset] = address
 
-        self.processSymbolType(address, lowerInstr)
+        self.processSymbolType(address, lowerInstr, lowerOffset)
 
         return address
 
     def processGotSymbol(self, address: int, instr: rabbitizer.Instruction, instrOffset: int) -> None:
         if address <= 0:
-            return None
+            return
 
         self.gotAccessAddresses[instrOffset] = address
-
-        self.processSymbolType(address, instr)
-
         return
 
-    def processSymbolType(self, address: int, instr: rabbitizer.Instruction) -> None:
+    def processSymbolType(self, address: int, instr: rabbitizer.Instruction, instrOffset: int) -> None:
         accessType = instr.getAccessType()
         unsignedMemoryAccess = instr.doesUnsignedMemoryAccess()
         if accessType == rabbitizer.AccessType.INVALID:
@@ -290,12 +291,14 @@ class InstrAnalyzer:
             self.possibleSymbolTypes[address][symAccess] = 0
         self.possibleSymbolTypes[address][symAccess] += 1
 
+        self.symbolTypesOffsets[instrOffset] = symAccess
+
     def processSymbolDereferenceType(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, instrOffset: int) -> None:
         address = regsTracker.getAddressIfCanSetType(instr, instrOffset)
         if address is None:
             return
 
-        self.processSymbolType(address, instr)
+        self.processSymbolType(address, instr, instrOffset)
 
 
     def symbolFinder(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction|None, instrOffset: int) -> None:
@@ -307,10 +310,8 @@ class InstrAnalyzer:
             self.luiInstrs[instrOffset] = instr
             return
 
-        instrDoesGpLoad = False
         if instr.doesLoad() and instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
             regsTracker.processGpLoad(instr, instrOffset)
-            instrDoesGpLoad = True
 
         if not instr.canBeLo():
             return
