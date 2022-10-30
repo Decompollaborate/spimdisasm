@@ -16,23 +16,29 @@ class GlobalOffsetTable:
         self.tableStart: int|None = None
 
 
-    def getAddress(self, address: int) -> int|None:
+    def initTables(self, pltGot: int, localsTable: list[int], globalsTable: list[int]):
+        self.tableStart = pltGot
+        self.localsTable = localsTable
+        self.globalsTable = globalsTable
+
+
+    def getAddress(self, address: int) -> tuple[int|None, bool|None]:
         if self.tableStart is None:
-            return None
+            return None, None
 
         index = (address - self.tableStart) // 4
 
         if index < 0:
             common.Utils.eprint(f"Warning: %got address 0x{address:X} not found on local or global table (negative index)")
             common.Utils.eprint(f"\tindex: {index}, len(localsTable):{len(self.localsTable)}, len(globalsTable): {len(self.globalsTable)}")
-            return None
+            return None, None
 
         if index < len(self.localsTable):
-            return self.localsTable[index]
+            return self.localsTable[index], False
 
         index -= len(self.localsTable)
         if index >= len(self.globalsTable):
             common.Utils.eprint(f"Warning: %got address 0x{address:X} not found on local or global table (out of range)")
             common.Utils.eprint(f"\tindex: {index}, len(globalsTable): {len(self.globalsTable)}")
-            return None
-        return self.globalsTable[index]
+            return None, None
+        return self.globalsTable[index], True
