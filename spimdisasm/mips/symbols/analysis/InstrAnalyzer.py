@@ -294,6 +294,8 @@ class InstrAnalyzer:
         #     return
         self.gotAccessAddresses[instrOffset] = address
 
+        self.processSymbolType(address, instr)
+
         return
 
     def processSymbolType(self, address: int, instr: rabbitizer.Instruction) -> None:

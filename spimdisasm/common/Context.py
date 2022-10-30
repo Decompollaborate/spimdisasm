@@ -63,9 +63,6 @@ class Context:
 
         self.got: GlobalOffsetTable = GlobalOffsetTable()
 
-        self.localSymbols: SortedDict[ContextSymbol] = SortedDict()
-        "Local addresses from the GOT table"
-
 
     def changeGlobalSegmentRanges(self, vromStart: int, vromEnd: int, vramStart: int, vramEnd: int):
         self.globalSegment.changeRanges(vromStart, vromEnd, vramStart, vramEnd)
@@ -146,10 +143,6 @@ class Context:
 
     def initGotTable(self, pltGot: int, localsTable: list[int], globalsTable: list[int]):
         self.got.initTables(pltGot, localsTable, globalsTable)
-
-        for local in self.got.localsTable:
-            contextSym = ContextSymbol(local, isUserDeclared=True, isGotLocal=True)
-            self.localSymbols[local] = contextSym
 
         for globalAddress in self.got.globalsTable:
             contextSym = self.globalSegment.addSymbol(globalAddress)
