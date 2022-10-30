@@ -158,7 +158,7 @@ class InstrAnalyzer:
         return constant
 
 
-    def pairHiLo(self, hiValue: int|None, luiOffset: int|None, lowerInstr: rabbitizer.Instruction, lowerOffset: int, got: common.GlobalOffsetTable, otherIsGpGot: bool) -> int|None:
+    def pairHiLo(self, hiValue: int|None, luiOffset: int|None, lowerInstr: rabbitizer.Instruction, lowerOffset: int) -> int|None:
         # lui being None means this symbol is a $gp access
         assert (hiValue is None and luiOffset is None) or (hiValue is not None and luiOffset is not None)
 
@@ -215,8 +215,6 @@ class InstrAnalyzer:
 
         if hiValue is not None:
             upperHalf = hiValue
-            if otherIsGpGot and upperHalf in got.globalsTable:
-                lowerHalf = 0
         else:
             assert common.GlobalConfig.GP_VALUE is not None
             upperHalf = common.GlobalConfig.GP_VALUE
@@ -271,27 +269,10 @@ class InstrAnalyzer:
 
         return address
 
-    def processGotSymbol(self, address: int, instr: rabbitizer.Instruction, instrOffset: int, got: common.GlobalOffsetTable) -> int|None:
+    def processGotSymbol(self, address: int, instr: rabbitizer.Instruction, instrOffset: int) -> int|None:
         if address <= 0:
             return None
 
-        """
-        self.referencedVrams.add(address)
-
-        if instrOffset not in self.symbolLoInstrOffset:
-            self.symbolLoInstrOffset[instrOffset] = address
-            self.symbolInstrOffset[instrOffset] = address
-            self.referencedVramsInstrOffset[instrOffset] = address
-
-        self.symbolGpInstrOffset[instrOffset] = address
-        self.symbolInstrOffset[instrOffset] = address
-        self.referencedVramsInstrOffset[instrOffset] = address
-
-        self.processSymbolType(address, instr)
-        """
-        # gotAddress, inGlobalTable = got.getAddress(address)
-        # if gotAddress is None or inGlobalTable is None:
-        #     return
         self.gotAccessAddresses[instrOffset] = address
 
         self.processSymbolType(address, instr)
@@ -303,10 +284,6 @@ class InstrAnalyzer:
         unsignedMemoryAccess = instr.doesUnsignedMemoryAccess()
         if accessType == rabbitizer.AccessType.INVALID:
             return
-
-        # if accessType == rabbitizer.AccessType.WORD:
-        #     if not unsignedMemoryAccess:
-        #         return
 
         if address not in self.possibleSymbolTypes:
             self.possibleSymbolTypes[address] = dict()
@@ -323,7 +300,7 @@ class InstrAnalyzer:
         self.processSymbolType(address, instr)
 
 
-    def symbolFinder(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction|None, instrOffset: int, got: common.GlobalOffsetTable) -> None:
+    def symbolFinder(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction|None, instrOffset: int) -> None:
         if instr.canBeHi():
             if prevInstr is None:
                 regsTracker.processLui(instr, instrOffset)
@@ -379,18 +356,14 @@ class InstrAnalyzer:
                         # early return to avoid counting this pairing as a symbol
                         return
 
-        address = self.pairHiLo(upperHalf, luiOffset, instr, instrOffset, got, pairingInfo.isGpGot)
+        address = self.pairHiLo(upperHalf, luiOffset, instr, instrOffset)
         if address is None:
             return
 
         if upperHalf is None:
-            if got.tableStart is not None:
-                self.processGotSymbol(address, instr, instrOffset, got)
-                # if address is None:
-                #     return
-
-                # if instrDoesGpLoad:
-                #     self.gpLoads[instrOffset] = instr
+            # if got.tableStart is not None:
+            if common.GlobalConfig.PIC:
+                self.processGotSymbol(address, instr, instrOffset)
                 regsTracker.processLo(instr, address, instrOffset)
                 return
 
@@ -409,7 +382,7 @@ class InstrAnalyzer:
             self.referencedVrams.add(address)
 
 
-    def processInstr(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, instrOffset: int, currentVram: int, prevInstr: rabbitizer.Instruction|None, got: common.GlobalOffsetTable) -> None:
+    def processInstr(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, instrOffset: int, currentVram: int, prevInstr: rabbitizer.Instruction|None) -> None:
         if instr.isBranch() or instr.isUnconditionalBranch():
             self.processBranch(instr, instrOffset, currentVram)
 
@@ -417,7 +390,7 @@ class InstrAnalyzer:
             self.processFuncCall(instr, instrOffset)
 
         elif instr.hasOperandAlias(rabbitizer.OperandType.cpu_immediate):
-            self.symbolFinder(regsTracker, instr, prevInstr, instrOffset, got)
+            self.symbolFinder(regsTracker, instr, prevInstr, instrOffset)
             self.processSymbolDereferenceType(regsTracker, instr, instrOffset)
 
         elif instr.isJrNotRa():
