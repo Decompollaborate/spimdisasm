@@ -34,19 +34,21 @@ def getInstrCategoryFromStr(category: str) -> rabbitizer.Enum:
 
     return rabbitizer.InstrCategory.CPU
 
-def getWordListFromStr(input: str) -> list[int]:
+def getWordListFromStr(inputStr: str) -> list[int]:
     wordList: list[int] = []
 
-    # Count the amount of words and round up to a word boundary
-    wordsCount = (len(input) - 1) // 8 + 1
+    wordStr = ""
+    for character in inputStr:
+        if character not in "0123456789abcdefABCDEF":
+            continue
+        wordStr += character
+        if len(wordStr) == 8:
+            wordList.append(int(wordStr, 16))
+            wordStr = ""
 
-    for i in range(wordsCount):
-        array_of_bytes = bytearray(4)
-        wordStr = input[i*8:(i+1)*8].ljust(8, "0")
-        for j in range(4):
-            array_of_bytes[j] = int(wordStr[j*2:(j+1)*2], 16)
+    if len(wordStr) > 0:
+        wordList.append(int(wordStr, 16))
 
-        wordList.append(common.Utils.bytesToWords(array_of_bytes)[0])
     return wordList
 
 
