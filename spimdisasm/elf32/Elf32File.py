@@ -471,11 +471,14 @@ class Elf32File:
                 else:
                     accessStr = f"{access:X}"
                 entryType = Elf32SymbolTableType(gotEntry.symEntry.stType)
-                ndx = Elf32SectionHeaderNumber(gotEntry.symEntry.shndx)
+                ndx: str = f"0x{gotEntry.symEntry.shndx:X}"
+                shndx = Elf32SectionHeaderNumber.fromValue(gotEntry.symEntry.shndx)
+                if shndx is not None:
+                    ndx = shndx.name
                 symName = ""
                 if self.dynstr is not None:
                     symName = self.dynstr[gotEntry.symEntry.name]
-                print(f"  {entryAddress:8X} {accessStr:5}(gp) {gotEntry.getAddress():08X} {gotEntry.symEntry.value:08X} {entryType.name:7} {ndx.name:12} {symName}")
+                print(f"  {entryAddress:8X} {accessStr:5}(gp) {gotEntry.getAddress():08X} {gotEntry.symEntry.value:08X} {entryType.name:7} {ndx:12} {symName}")
                 entryAddress += 4
 
             print()

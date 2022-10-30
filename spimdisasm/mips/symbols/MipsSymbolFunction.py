@@ -504,7 +504,7 @@ class SymbolFunction(SymbolText):
 
         labelSym.isDefined = True
         labelSym.sectionType = self.sectionType
-        if labelSym.type == common.SymbolSpecialType.function or labelSym.type == common.SymbolSpecialType.jumptablelabel:
+        if labelSym.type == common.SymbolSpecialType.function:
             label = labelSym.getSymbolLabel()
             if label:
                 label += common.GlobalConfig.LINE_ENDS

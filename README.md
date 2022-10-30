@@ -86,3 +86,7 @@ The submodules can be executed with `python3 -m spimdisasm.modulename`, for exam
 TODO
 
 Check `spimdisasm/__main__.py` for a minimal disassembly working example on how to use the API. Checking the front-ends is recommended too.
+
+## References
+
+- <https://techpubs.jurassic.nl/manuals/0620/developer/Cplr_PTG/sgi_html/apa.html>
