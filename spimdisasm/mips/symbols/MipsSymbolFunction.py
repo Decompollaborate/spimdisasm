@@ -377,19 +377,23 @@ class SymbolFunction(SymbolText):
             del self.instructions[first_nop:]
         return was_updated
 
+    _percentRel = {
+        elf32.Elf32Relocs.MIPS_HI16.value:      f"%hi",
+        elf32.Elf32Relocs.MIPS_LO16.value:      f"%lo",
+        elf32.Elf32Relocs.MIPS_GPREL16.value:   f"%gp_rel",
+        elf32.Elf32Relocs.MIPS_GOT16.value:     f"%got",
+        elf32.Elf32Relocs.MIPS_CALL16.value:    f"%call16",
+        elf32.Elf32Relocs.MIPS_GOT_HI16.value:  f"%got_hi",
+        elf32.Elf32Relocs.MIPS_GOT_LO16.value:  f"%got_lo",
+        elf32.Elf32Relocs.MIPS_CALL_HI16.value: f"%call_hi",
+        elf32.Elf32Relocs.MIPS_CALL_LO16.value: f"%call_lo",
+    }
 
     def generateHiLoStr(self, instr: rabbitizer.Instruction, symName: str, symbol: common.ContextSymbol|None, relocInfo: common.ContextRelocInfo|None=None) -> str:
         if relocInfo is not None:
-            if relocInfo.relocType == elf32.Elf32Relocs.MIPS_HI16.value:
-                return f"%hi({symName})"
-            if relocInfo.relocType == elf32.Elf32Relocs.MIPS_LO16.value:
-                return f"%lo({symName})"
-            if relocInfo.relocType == elf32.Elf32Relocs.MIPS_GPREL16.value:
-                return f"%gp_rel({symName})"
-            if relocInfo.relocType == elf32.Elf32Relocs.MIPS_GOT16.value:
-                return f"%got({symName})"
-            if relocInfo.relocType == elf32.Elf32Relocs.MIPS_CALL16.value:
-                return f"%call16({symName})"
+            percentStr = self._percentRel.get(relocInfo.relocType, None)
+            if percentStr is not None:
+                return f"{percentStr}({symName})"
             common.Utils.eprint(f"generateHiLoStr: Warning: Unhandled relocType '{relocInfo.relocType}'")
 
         if instr.canBeHi():

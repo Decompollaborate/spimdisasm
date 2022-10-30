@@ -248,6 +248,11 @@ class Elf32Relocs(enum.Enum):
     MIPS_CALL16     = 11 # 16 bit GOT entry for function
     MIPS_GPREL32    = 12 # GP relative 32 bit
 
+    MIPS_GOT_HI16   = 22
+    MIPS_GOT_LO16   = 23
+    MIPS_CALL_HI16  = 30
+    MIPS_CALL_LO16  = 31
+
     @staticmethod
     def fromValue(value: int) -> Elf32Relocs|None:
         try:
