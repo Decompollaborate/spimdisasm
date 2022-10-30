@@ -451,9 +451,6 @@ class SymbolFunction(SymbolText):
             if instructionOffset in self.instrAnalyzer.cploadOffsets:
                 return self.generateHiLoStr(instr, "_gp_disp", None)
 
-            if instr.vram == 0x00406FD0:
-                dog = 5
-
             if not self.pointersRemoved and instructionOffset in self.instrAnalyzer.symbolInstrOffset:
                 address = self.instrAnalyzer.symbolInstrOffset[instructionOffset]
 
@@ -480,18 +477,8 @@ class SymbolFunction(SymbolText):
                     if symbol.isGotGlobal:
                         if instructionOffset not in self.instrAnalyzer.gotAccessAddresses:
                             return None
-                    symName = symbol.getSymbolPlusOffset(address)
-                    # if common.GlobalConfig.PIC:
-                    #     if instructionOffset not in self.instrAnalyzer.gpLoads:
-                    #         if address in self.context.got.globalsTable:
-                    #             # addend = instr.getProcessedImmediate()
-                    #             # if addend < 0:
-                    #             #     symName = f"{symName} - 0x{-addend:X}"
-                    #             # elif addend > 0:
-                    #             #     symName = f"{symName} + 0x{addend:X}"
-                    #             # # do nothing if addend is zero
-                    #             return None
 
+                    symName = symbol.getSymbolPlusOffset(address)
                     return self.generateHiLoStr(instr, symName, symbol)
                 return self.generateHiLoConstantStr(address, instr, loInstr)
 

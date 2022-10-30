@@ -96,8 +96,6 @@ class InstrAnalyzer:
 
         self.nonLoInstrOffsets: set[int] = set()
 
-        self.gpLoads: dict[int, rabbitizer.Instruction] = dict()
-
         self.gotAccessAddresses: dict[int, int] = dict()
 
         self.unpairedCploads: list[CploadInfo] = list()
@@ -269,7 +267,7 @@ class InstrAnalyzer:
 
         return address
 
-    def processGotSymbol(self, address: int, instr: rabbitizer.Instruction, instrOffset: int) -> int|None:
+    def processGotSymbol(self, address: int, instr: rabbitizer.Instruction, instrOffset: int) -> None:
         if address <= 0:
             return None
 
@@ -361,7 +359,6 @@ class InstrAnalyzer:
             return
 
         if upperHalf is None:
-            # if got.tableStart is not None:
             if common.GlobalConfig.PIC:
                 self.processGotSymbol(address, instr, instrOffset)
                 regsTracker.processLo(instr, address, instrOffset)
