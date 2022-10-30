@@ -247,5 +247,5 @@ class SymbolBase(common.ElementBase):
             i += 1
         return output
 
-    def disassemble(self, useGlobalLabel: bool=True) -> str:
+    def disassemble(self, migrate: bool=False, useGlobalLabel: bool=True) -> str:
         return self.disassembleAsData(useGlobalLabel=useGlobalLabel)

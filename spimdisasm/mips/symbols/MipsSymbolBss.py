@@ -29,5 +29,5 @@ class SymbolBss(SymbolBase):
         output += f" .space 0x{self.spaceSize:02X}" + common.GlobalConfig.LINE_ENDS
         return output
 
-    def disassemble(self, useGlobalLabel: bool=True) -> str:
+    def disassemble(self, migrate: bool=False, useGlobalLabel: bool=True) -> str:
         return self.disassembleAsBss()

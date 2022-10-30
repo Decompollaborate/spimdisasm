@@ -524,7 +524,7 @@ class SymbolFunction(SymbolText):
 
         return None
 
-    def getLabelForOffset(self, instructionOffset: int) -> str:
+    def getLabelForOffset(self, instructionOffset: int, migrate: bool=False) -> str:
         if common.GlobalConfig.IGNORE_BRANCHES or instructionOffset == 0:
             # Skip over this function to avoid duplication
             return ""
@@ -541,7 +541,7 @@ class SymbolFunction(SymbolText):
 
         labelSym.isDefined = True
         labelSym.sectionType = self.sectionType
-        if labelSym.type == common.SymbolSpecialType.function:
+        if labelSym.type == common.SymbolSpecialType.function or (labelSym.type == common.SymbolSpecialType.jumptablelabel and not migrate):
             label = labelSym.getSymbolLabel()
             if label:
                 label += common.GlobalConfig.LINE_ENDS
@@ -585,7 +585,7 @@ class SymbolFunction(SymbolText):
             # don't emit the other instructions which are part of .cpload if the directive was emitted
         return output
 
-    def disassemble(self, useGlobalLabel: bool=True) -> str:
+    def disassemble(self, migrate: bool=False, useGlobalLabel: bool=True) -> str:
         output = ""
 
         if not common.GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS:
@@ -608,7 +608,7 @@ class SymbolFunction(SymbolText):
         wasLastInstABranch = False
         instructionOffset = 0
         for instr in self.instructions:
-            label = self.getLabelForOffset(instructionOffset)
+            label = self.getLabelForOffset(instructionOffset, migrate=migrate)
             output += label
 
             isCpload = instructionOffset in self.instrAnalyzer.cploadOffsets

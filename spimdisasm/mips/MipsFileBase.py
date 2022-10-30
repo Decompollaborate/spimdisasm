@@ -150,7 +150,7 @@ class FileBase(common.ElementBase):
         return False
 
 
-    def disassemble(self, useGlobalLabel: bool=True) -> str:
+    def disassemble(self, migrate: bool=False, useGlobalLabel: bool=True) -> str:
         output = ""
         for i, sym in enumerate(self.symbolList):
             output += sym.disassemble(useGlobalLabel=useGlobalLabel)

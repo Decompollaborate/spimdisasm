@@ -109,7 +109,7 @@ class ElementBase:
         pass
 
 
-    def disassemble(self, useGlobalLabel: bool=True) -> str:
+    def disassemble(self, migrate: bool=False, useGlobalLabel: bool=True) -> str:
         """Produces a disassembly of this element.
 
         Elements assume the `analyze` method was already called at this point.
