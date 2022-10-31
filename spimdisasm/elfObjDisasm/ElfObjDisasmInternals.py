@@ -250,6 +250,12 @@ def insertDynsymIntoContext(context: common.Context, symbolTable: elf32.Elf32Sym
         addRelocatedSymbol(context, symEntry, symName)
 
 def insertGotIntoContext(context: common.Context, got: elf32.Elf32GlobalOffsetTable, stringTable: elf32.Elf32StringTable):
+    lazyResolver = got.localsTable[0]
+    contextSym = context.globalSegment.addSymbol(lazyResolver)
+    contextSym.name = f"$$.LazyResolver"
+    contextSym.isUserDeclared = True
+    contextSym.isGotLocal = True
+
     for gotEntry in got.globalsTable:
         symName = stringTable[gotEntry.symEntry.name]
 
