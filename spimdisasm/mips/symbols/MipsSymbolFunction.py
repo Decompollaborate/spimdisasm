@@ -77,14 +77,14 @@ class SymbolFunction(SymbolText):
             branch += 4
 
     def _processElfRelocSymbols(self):
-        if len(self.context.relocSymbols[common.FileSectionType.Text]) == 0:
+        if len(self.context.relocSymbols[self.sectionType]) == 0:
             return
 
         # Process reloc symbols
         instructionOffset = 0
         vram = self.vram
         for instr in self.instructions:
-            relocInfo = self.context.getRelocInfo(vram, common.FileSectionType.Text)
+            relocInfo = self.context.getRelocInfo(vram, self.sectionType)
             if relocInfo is not None:
                 if relocInfo.vram is not None:
                     # hiOffset = self.instrAnalyzer.lowToHiDict.get(instructionOffset)
