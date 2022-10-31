@@ -240,8 +240,6 @@ def insertSymtabIntoContext(context: common.Context, symbolTable: elf32.Elf32Sym
         symVrom = symEntry.value + sectHeaderEntry.offset
         symAddress = symVrom
 
-        print("asdf")
-
         if symEntry.stType == elf32.Elf32SymbolTableType.FUNC.value:
             contextSym = context.globalSegment.addFunction(symAddress, vromAddress=symVrom)
         elif symEntry.stType == elf32.Elf32SymbolTableType.OBJECT.value:

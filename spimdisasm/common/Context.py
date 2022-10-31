@@ -41,14 +41,6 @@ class Context:
         # Stuff that looks like pointers, but the disassembler shouldn't count it as a pointer
         self.bannedSymbols: set[int] = set()
 
-        # First key is the section type, sub key is offset relative to the start of that section
-        self.offsetSymbols: dict[FileSectionType, dict[int, ContextOffsetSymbol]] = {
-            FileSectionType.Text: dict(),
-            FileSectionType.Data: dict(),
-            FileSectionType.Rodata: dict(),
-            FileSectionType.Bss: dict(),
-        }
-
         self.relocSymbols: dict[FileSectionType, dict[int, ContextRelocInfo]] = {
             FileSectionType.Text: dict(),
             FileSectionType.Data: dict(),
@@ -93,21 +85,9 @@ class Context:
         return segment
 
 
-    def getOffsetSymbol(self, offset: int, sectionType: FileSectionType) -> ContextOffsetSymbol|None:
-        if sectionType in self.offsetSymbols:
-            symbolsInSection = self.offsetSymbols[sectionType]
-            if offset in symbolsInSection:
-                return symbolsInSection[offset]
-        return None
-
     def getOffsetGenericSymbol(self, offset: int, sectionType: FileSectionType) -> ContextOffsetSymbol|None:
         if offset in self.offsetJumpTables:
             return self.offsetJumpTables[offset]
-
-        if sectionType in self.offsetSymbols:
-            symbolsInSection = self.offsetSymbols[sectionType]
-            if offset in symbolsInSection:
-                return symbolsInSection[offset]
 
         return None
 

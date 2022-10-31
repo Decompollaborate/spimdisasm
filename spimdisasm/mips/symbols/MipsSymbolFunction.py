@@ -111,8 +111,6 @@ class SymbolFunction(SymbolText):
                             addressOffset = self.instrAnalyzer.symbolInstrOffset[instructionOffset]
                             relocName = f"{relocSymbol.name}_{addressOffset:06X}"
                             # print(relocName, addressOffset, instr)
-                            contextOffsetSym = common.ContextOffsetSymbol(addressOffset, relocName, sectType)
-                            self.context.offsetSymbols[sectType][addressOffset] = contextOffsetSym
                             relocSymbol.name = relocName
                             self.instrAnalyzer.symbolInstrOffset[instructionOffset] = 0
             inFileOffset += 4
@@ -559,8 +557,6 @@ class SymbolFunction(SymbolText):
         labelSym = self.getSymbol(currentVram, tryPlusOffset=False)
         if labelSym is None and len(self.context.offsetJumpTablesLabels) > 0:
             labelSym = self.context.getOffsetGenericLabel(self.vromStart+instructionOffset, common.FileSectionType.Text)
-        if labelSym is None and len(self.context.offsetSymbols[self.sectionType]) > 0:
-            labelSym = self.context.getOffsetSymbol(self.vromStart+instructionOffset, common.FileSectionType.Text)
 
         if labelSym is None or labelSym.overlayCategory != self.overlayCategory:
             return ""
@@ -623,7 +619,7 @@ class SymbolFunction(SymbolText):
                 # RSP functions are always handwritten, so this is redundant
                 output += "# Handwritten function" + common.GlobalConfig.LINE_ENDS
 
-        output += self.getLabel()
+        output += self.getLabelFromSymbol(self.contextSym)
 
         if common.GlobalConfig.ASM_TEXT_ENT_LABEL:
             output += f"{common.GlobalConfig.ASM_TEXT_ENT_LABEL} {self.getName()}" + common.GlobalConfig.LINE_ENDS
