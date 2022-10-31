@@ -196,8 +196,15 @@ class SymbolRodata(SymbolBase):
 
         relocInfo = self.context.getRelocSymbol(vram, self.sectionType)
         if relocInfo is not None:
-            if relocInfo.relocType == elf32.Elf32Relocs.MIPS_GPREL32:
+            if relocInfo.relocType == elf32.Elf32Relocs.MIPS_GPREL32.value:
                 dotType = ".gpword"
+            if relocInfo.vram is not None:
+                relocVram = relocInfo.vram + w
+                labelSym = self.getSymbol(relocVram, tryPlusOffset=False)
+                if labelSym is not None:
+                    value = labelSym.getName()
+                    comment = self.generateAsmLineComment(localOffset, rodataWord)
+                    return f"{label}{comment} {dotType} {value}{common.GlobalConfig.LINE_ENDS}", skip
 
         if self.isFloat(i):
             dotType = ".float"
