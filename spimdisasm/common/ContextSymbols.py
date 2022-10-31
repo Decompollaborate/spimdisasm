@@ -116,6 +116,8 @@ class ContextSymbol:
     isGotGlobal: bool = False
     isGotLocal: bool = False
 
+    _isStatic: bool = False
+
 
     @property
     def vram(self) -> int:
@@ -220,6 +222,8 @@ class ContextSymbol:
     def isStatic(self) -> bool:
         if self.type == SymbolSpecialType.jumptablelabel:
             return False
+        if self._isStatic:
+            return True
         if self.name is None:
             return False
         return self.name.startswith(".")

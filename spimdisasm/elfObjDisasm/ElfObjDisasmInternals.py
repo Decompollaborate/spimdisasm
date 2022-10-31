@@ -233,15 +233,38 @@ def insertSymtabIntoContext(context: common.Context, symbolTable: elf32.Elf32Sym
 
         sectName = elfFile.shstrtab[sectHeaderEntry.name]
         sectType = common.FileSectionType.fromStr(sectName)
-        if sectType != common.FileSectionType.Invalid:
-            subSegment = processedSegments[sectType]
-            symbolOffset = symEntry.value + subSegment[0].vromStart
-
-            contextOffsetSym = common.ContextOffsetSymbol(symbolOffset, symName, sectType)
-            contextOffsetSym.isUserDeclared = True
-            context.offsetSymbols[sectType][symbolOffset] = contextOffsetSym
-        else:
+        if sectType == common.FileSectionType.Invalid:
             common.Utils.eprint(f"Warning: symbol {i} (name: '{symName}', value: 0x{symEntry.value:X}) is referencing invalid section '{sectName}'")
+            continue
+
+        symVrom = symEntry.value + sectHeaderEntry.offset
+        symAddress = symVrom
+
+        print("asdf")
+
+        if symEntry.stType == elf32.Elf32SymbolTableType.FUNC.value:
+            contextSym = context.globalSegment.addFunction(symAddress, vromAddress=symVrom)
+        elif symEntry.stType == elf32.Elf32SymbolTableType.OBJECT.value:
+            contextSym = context.globalSegment.addSymbol(symAddress, vromAddress=symVrom)
+        elif symEntry.stType == elf32.Elf32SymbolTableType.SECTION.value:
+            # print(symEntry)
+            # return
+            continue
+        elif symEntry.stType == elf32.Elf32SymbolTableType.NOTYPE.value:
+            # Is ok to just ignore this?
+            # return
+            continue
+        else:
+            common.Utils.eprint(f"Warning: symbol '{symName}' has an unhandled stType: '{symEntry.stType}'")
+            contextSym = context.globalSegment.addSymbol(symAddress, vromAddress=symVrom)
+        if symName is not None:
+            if symName.startswith("."):
+                contextSym._isStatic = True
+            else:
+                contextSym.name = symName
+        contextSym.sectionType = sectType
+        contextSym.isUserDeclared = True
+        contextSym.setSizeIfUnset(symEntry.size)
 
 def insertDynsymIntoContext(context: common.Context, symbolTable: elf32.Elf32Syms, stringTable: elf32.Elf32StringTable):
     for symEntry in symbolTable:
