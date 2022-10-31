@@ -112,7 +112,7 @@ def writeFunctionRodataToFile(f: TextIO, func: symbols.SymbolFunction, rdataList
         sectionName = ".rodata"
         f.write(f".section {sectionName}" + common.GlobalConfig.LINE_ENDS)
         for sym in rdataList:
-            f.write(sym.disassemble(useGlobalLabel=True))
+            f.write(sym.disassemble(migrate=True, useGlobalLabel=True))
             f.write(common.GlobalConfig.LINE_ENDS)
 
     if len(lateRodataList) > 0:
@@ -125,7 +125,7 @@ def writeFunctionRodataToFile(f: TextIO, func: symbols.SymbolFunction, rdataList
                 align = 8
             f.write(f".late_rodata_alignment {align}" + common.GlobalConfig.LINE_ENDS)
         for sym in lateRodataList:
-            f.write(sym.disassemble(useGlobalLabel=True))
+            f.write(sym.disassemble(migrate=True, useGlobalLabel=True))
             f.write(common.GlobalConfig.LINE_ENDS)
 
     if len(rdataList) > 0 or len(lateRodataList) > 0:
@@ -140,7 +140,7 @@ def writeSplitedFunction(path: Path, func: symbols.SymbolFunction, rodataFileLis
         writeFunctionRodataToFile(f, func, rdataList, lateRodataList, lateRodataSize)
 
         # Write the function itself
-        f.write(func.disassemble())
+        f.write(func.disassemble(migrate=True))
 
 def writeOtherRodata(path: Path, rodataFileList: list[sections.SectionBase]):
     for rodataSection in rodataFileList:
@@ -156,7 +156,7 @@ def writeOtherRodata(path: Path, rodataFileList: list[sections.SectionBase]):
             rodataSymbolPath = rodataPath / (rodataSym.getName() + ".s")
             with rodataSymbolPath.open("w") as f:
                 f.write(".section .rodata" + common.GlobalConfig.LINE_ENDS)
-                f.write(rodataSym.disassemble())
+                f.write(rodataSym.disassemble(migrate=True))
 
 
 def writeMigratedFunctionsList(processedSegments: dict[common.FileSectionType, list[sections.SectionBase]], functionMigrationPath: Path, name: str) -> None:

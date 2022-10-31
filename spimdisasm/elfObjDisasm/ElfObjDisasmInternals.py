@@ -108,6 +108,8 @@ def getProcessedSections(context: common.Context, elfFile: elf32.Elf32File, arra
         vromStart = sectionEntry.offset
         vromEnd = vromStart + sectionEntry.size
         vramStart = sectionEntry.addr
+        if sectionEntry.addr == 0:
+            vramStart = sectionEntry.offset
 
         mipsSection: mips.sections.SectionBase
         if sectionType == common.FileSectionType.Text:
@@ -129,6 +131,8 @@ def getProcessedSections(context: common.Context, elfFile: elf32.Elf32File, arra
         vromStart = elfFile.nobits.offset
         vromEnd = vromStart + elfFile.nobits.size
         bssStart = elfFile.nobits.addr
+        if elfFile.nobits.addr == 0:
+            bssStart = elfFile.nobits.offset
         bssEnd = bssStart + elfFile.nobits.size
 
         mipsSection = mips.sections.SectionBss(context, vromStart, vromEnd, bssStart, bssEnd, inputPath.stem, 0, None)
@@ -189,7 +193,7 @@ def addRelocatedSymbol(context: common.Context, symEntry: elf32.Elf32SymEntry, s
     contextSym.isUserDeclared = True
     contextSym.setSizeIfUnset(symEntry.size)
 
-def addUndefinedSymbol(context: common.Context, symEntry: elf32.Elf32SymEntry, symName: str|None, symAddress: int):
+def addUndefinedSymbol(context: common.Context, symEntry: elf32.Elf32SymEntry, symName: str, symAddress: int):
     if symAddress == 0:
         return
 
@@ -206,8 +210,8 @@ def addUndefinedSymbol(context: common.Context, symEntry: elf32.Elf32SymEntry, s
     else:
         common.Utils.eprint(f"Warning: symbol '{symName}' has an unhandled stType: '{symEntry.stType}'")
         contextSym = context.globalSegment.addSymbol(symAddress)
-    if symName is not None:
-        contextSym.name = symName
+
+    contextSym.name = symName
     contextSym.isUserDeclared = True
     contextSym.setSizeIfUnset(symEntry.size)
 
@@ -246,10 +250,11 @@ def insertDynsymIntoContext(context: common.Context, symbolTable: elf32.Elf32Sym
         addRelocatedSymbol(context, symEntry, symName)
 
 def insertGotIntoContext(context: common.Context, got: elf32.Elf32GlobalOffsetTable, stringTable: elf32.Elf32StringTable):
-    for local in got.localsTable:
-        contextSym = context.globalSegment.addSymbol(local)
-        contextSym.isUserDeclared = True
-        contextSym.isGotLocal = True
+    lazyResolver = got.localsTable[0]
+    contextSym = context.globalSegment.addSymbol(lazyResolver)
+    contextSym.name = f"$$.LazyResolver"
+    contextSym.isUserDeclared = True
+    contextSym.isGotLocal = True
 
     for gotEntry in got.globalsTable:
         symName = stringTable[gotEntry.symEntry.name]
@@ -286,22 +291,13 @@ def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, proce
     return
 
 def processGlobalOffsetTable(context: common.Context, elfFile: elf32.Elf32File) -> None:
-    if elfFile.dynamic is not None:
+    if elfFile.dynamic is not None and elfFile.got is not None:
         common.GlobalConfig.GP_VALUE = elfFile.dynamic.getGpValue()
 
-    if elfFile.got is not None:
-        context.got.localsTable = elfFile.got.localsTable
+        globalsTable = [gotEntry.getAddress() for gotEntry in elfFile.got.globalsTable]
 
-        for gotEntry in elfFile.got.globalsTable:
-            address = gotEntry.getAddress()
-
-            context.got.globalsTable.append(address)
-            contextSym = context.globalSegment.getSymbol(address)
-            if contextSym is not None:
-                contextSym.isGotGlobal = True
-
-    if elfFile.dynamic is not None:
-        context.got.tableStart = elfFile.dynamic.pltGot
+        assert elfFile.dynamic.pltGot is not None
+        context.initGotTable(elfFile.dynamic.pltGot, elfFile.got.localsTable, globalsTable)
     return
 
 
@@ -334,11 +330,11 @@ def elfObjDisasmMain():
 
     changeGlobalSegmentRanges(context, processedSegments)
 
-    common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Injecting elf symbols...")
-    injectAllElfSymbols(context, elfFile, processedSegments)
-
     common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Processing global offset table...")
     processGlobalOffsetTable(context, elfFile)
+
+    common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Injecting elf symbols...")
+    injectAllElfSymbols(context, elfFile, processedSegments)
 
     processedFilesCount = 0
     for sect in processedSegments.values():

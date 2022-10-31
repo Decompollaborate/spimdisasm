@@ -13,6 +13,7 @@ from .FileSectionType import FileSectionType
 from .ContextSymbols import SymbolSpecialType, ContextOffsetSymbol, ContextRelocInfo
 from .SymbolsSegment import SymbolsSegment
 from .GlobalOffsetTable import GlobalOffsetTable
+from .SortedDict import SortedDict
 
 
 class Context:
@@ -138,6 +139,15 @@ class Context:
             self.offsetJumpTablesLabels[offset] = contextOffsetSym
             return contextOffsetSym
         return self.offsetJumpTablesLabels[offset]
+
+
+    def initGotTable(self, pltGot: int, localsTable: list[int], globalsTable: list[int]):
+        self.got.initTables(pltGot, localsTable, globalsTable)
+
+        for globalAddress in self.got.globalsTable:
+            contextSym = self.globalSegment.addSymbol(globalAddress)
+            contextSym.isUserDeclared = True
+            contextSym.isGotGlobal = True
 
 
     def fillDefaultBannedSymbols(self):
