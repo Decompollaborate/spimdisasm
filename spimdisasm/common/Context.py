@@ -10,10 +10,9 @@ from pathlib import Path
 
 from . import Utils
 from .FileSectionType import FileSectionType
-from .ContextSymbols import SymbolSpecialType, ContextOffsetSymbol, ContextRelocInfo
+from .ContextSymbols import ContextRelocInfo
 from .SymbolsSegment import SymbolsSegment
 from .GlobalOffsetTable import GlobalOffsetTable
-from .SortedDict import SortedDict
 
 
 class Context:
@@ -48,11 +47,6 @@ class Context:
             FileSectionType.Bss: dict(),
         }
 
-        # Where the jump table is
-        # self.offsetJumpTables: dict[int, ContextOffsetSymbol] = dict()
-        # The addresses every jump table has
-        # self.offsetJumpTablesLabels: dict[int, ContextOffsetSymbol] = dict()
-
         self.got: GlobalOffsetTable = GlobalOffsetTable()
 
 
@@ -85,40 +79,11 @@ class Context:
         return segment
 
 
-    # def getOffsetGenericSymbol(self, offset: int, sectionType: FileSectionType) -> ContextOffsetSymbol|None:
-    #     if offset in self.offsetJumpTables:
-    #         return self.offsetJumpTables[offset]
-# 
-    #     return None
-
-    def getRelocSymbol(self, offset: int, sectionType: FileSectionType) -> ContextRelocInfo|None:
+    def getRelocInfo(self, offset: int, sectionType: FileSectionType) -> ContextRelocInfo|None:
         if sectionType in self.relocSymbols:
             relocsInSection = self.relocSymbols[sectionType]
-            if offset in relocsInSection:
-                return relocsInSection[offset]
+            return relocsInSection.get(offset)
         return None
-
-    # def getOffsetGenericLabel(self, offset: int, sectionType: FileSectionType) -> ContextOffsetSymbol|None:
-    #     if offset in self.offsetJumpTablesLabels:
-    #         return self.offsetJumpTablesLabels[offset]
-    #     return None
-
-
-    # def addOffsetJumpTable(self, offset: int, sectionType: FileSectionType) -> ContextOffsetSymbol:
-    #     if offset not in self.offsetJumpTables:
-    #         contextOffsetSym = ContextOffsetSymbol(offset, f"jtbl_{offset:06X}", sectionType)
-    #         contextOffsetSym.type = SymbolSpecialType.jumptable
-    #         self.offsetJumpTables[offset] = contextOffsetSym
-    #         return contextOffsetSym
-    #     return self.offsetJumpTables[offset]
-
-    # def addOffsetJumpTableLabel(self, offset: int, name: str, sectionType: FileSectionType) -> ContextOffsetSymbol:
-    #     if offset not in self.offsetJumpTablesLabels:
-    #         contextOffsetSym = ContextOffsetSymbol(offset, name, sectionType)
-    #         contextOffsetSym.type = SymbolSpecialType.jumptablelabel
-    #         self.offsetJumpTablesLabels[offset] = contextOffsetSym
-    #         return contextOffsetSym
-    #     return self.offsetJumpTablesLabels[offset]
 
 
     def initGotTable(self, pltGot: int, localsTable: list[int], globalsTable: list[int]):

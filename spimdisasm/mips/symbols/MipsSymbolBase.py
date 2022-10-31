@@ -167,9 +167,9 @@ class SymbolBase(common.ElementBase):
 
         # .elf relocated symbol
         if len(self.context.relocSymbols[self.sectionType]) > 0:
-            possibleReference = self.context.getRelocSymbol(self.vram + localOffset, self.sectionType)
-            if possibleReference is not None:
-                value = possibleReference.getNamePlusOffset(w)
+            relocInfo = self.context.getRelocInfo(self.vram + localOffset, self.sectionType)
+            if relocInfo is not None:
+                value = relocInfo.getNamePlusOffset(w)
         else:
             # This word could be a reference to a symbol
             symbolRef = self.getSymbol(w, tryPlusOffset=canReferenceSymbolsWithAddends)

@@ -84,15 +84,15 @@ class SymbolFunction(SymbolText):
         instructionOffset = 0
         vram = self.vram
         for instr in self.instructions:
-            relocSymbol = self.context.getRelocSymbol(vram, common.FileSectionType.Text)
-            if relocSymbol is not None:
-                if relocSymbol.vram is not None:
+            relocInfo = self.context.getRelocInfo(vram, common.FileSectionType.Text)
+            if relocInfo is not None:
+                if relocInfo.vram is not None:
                     # hiOffset = self.instrAnalyzer.lowToHiDict.get(instructionOffset)
                     # if hiOffset is not None:
                     #     self.instrAnalyzer.symbolInstrOffset[hiOffset] = self.instrAnalyzer.symbolInstrOffset[instructionOffset]
 
-                    if relocSymbol.referencedSection == common.FileSectionType.Rodata:
-                        symbolVram = relocSymbol.vram
+                    if relocInfo.referencedSection == common.FileSectionType.Rodata:
+                        symbolVram = relocInfo.vram
                         if instr.hasOperandAlias(rabbitizer.OperandType.cpu_immediate):
                             if instructionOffset in self.instrAnalyzer.symbolInstrOffset:
                                 addressOffset = self.instrAnalyzer.symbolInstrOffset[instructionOffset]
@@ -439,10 +439,9 @@ class SymbolFunction(SymbolText):
 
 
     def getImmOverrideForInstruction(self, instr: rabbitizer.Instruction, instructionOffset: int) -> str|None:
-        # print()
         if len(self.context.relocSymbols[self.sectionType]) > 0:
-            # Check possible symbols using reloc information (probably from a .o elf file)
-            relocInfo = self.context.getRelocSymbol(self.vram + instructionOffset, self.sectionType)
+            # Check possible symbols using reloc information
+            relocInfo = self.context.getRelocInfo(self.vram + instructionOffset, self.sectionType)
             if relocInfo is not None:
                 if relocInfo.vram is not None:
                     relocVram = relocInfo.vram
@@ -453,22 +452,18 @@ class SymbolFunction(SymbolText):
                         else:
                             addend = instr.getProcessedImmediate()
 
-                    # print(f"{relocVram:X} + {addend:X}")
                     contextSym = self.getSymbol(relocVram+addend, checkUpperLimit=False)
                     if contextSym is not None:
                         symName = contextSym.getSymbolPlusOffset(relocVram+addend)
                         return self.generateHiLoStr(instr, symName, contextSym, relocInfo=relocInfo)
 
-                # print(f"{self.vram + instructionOffset:X} {relocInfo}")
                 auxOverride = relocInfo.getName()
                 if instr.hasOperandAlias(rabbitizer.OperandType.cpu_immediate):
                     if instructionOffset in self.instrAnalyzer.symbolInstrOffset:
                         addressOffset = self.instrAnalyzer.symbolInstrOffset[instructionOffset]
                         auxOverride = relocInfo.getNamePlusOffset(addressOffset)
-                        # print(f"\t {addressOffset:X} {auxOverride}")
                     else:
                         auxOverride = relocInfo.getNamePlusOffset(instr.getProcessedImmediate())
-                    # print(auxOverride)
 
                     auxOverride = self.generateHiLoStr(instr, auxOverride, None, relocInfo=relocInfo)
                 return auxOverride
