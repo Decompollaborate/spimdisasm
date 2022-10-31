@@ -10,7 +10,7 @@ from pathlib import Path
 
 from . import Utils
 from .FileSectionType import FileSectionType
-from .ContextSymbols import SymbolSpecialType, ContextOffsetSymbol, ContextRelocInfo, ContextSymbol
+from .ContextSymbols import SymbolSpecialType, ContextOffsetSymbol, ContextRelocInfo
 from .SymbolsSegment import SymbolsSegment
 from .GlobalOffsetTable import GlobalOffsetTable
 from .SortedDict import SortedDict
