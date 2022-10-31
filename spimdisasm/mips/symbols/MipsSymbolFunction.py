@@ -86,6 +86,21 @@ class SymbolFunction(SymbolText):
         for instr in self.instructions:
             relocSymbol = self.context.getRelocSymbol(vram, common.FileSectionType.Text)
             if relocSymbol is not None:
+                if relocSymbol.vram is not None:
+                    if relocSymbol.referencedSection == common.FileSectionType.Rodata:
+
+                        symbolVram = relocSymbol.vram
+                        relocName = relocSymbol.getName()
+                        if instr.hasOperandAlias(rabbitizer.OperandType.cpu_immediate):
+                            if instructionOffset in self.instrAnalyzer.symbolInstrOffset:
+                                addressOffset = self.instrAnalyzer.symbolInstrOffset[instructionOffset]
+                                symbolVram += addressOffset
+                            else:
+                                symbolVram += instr.getProcessedImmediate()
+                        self.addSymbol(symbolVram)
+
+
+                print(f"{vram:X} {relocSymbol}")
                 if relocSymbol.name is not None and relocSymbol.name.startswith("."):
                     sectType = common.FileSectionType.fromStr(relocSymbol.name)
 
@@ -451,15 +466,21 @@ class SymbolFunction(SymbolText):
 
 
     def getImmOverrideForInstruction(self, instr: rabbitizer.Instruction, instructionOffset: int) -> str|None:
+        print()
         if len(self.context.relocSymbols[self.sectionType]) > 0:
             # Check possible symbols using reloc information (probably from a .o elf file)
             possibleImmOverride = self.context.getRelocSymbol(self.vram + instructionOffset, self.sectionType)
             if possibleImmOverride is not None:
+                print(f"{self.vram + instructionOffset:X} {possibleImmOverride}")
                 auxOverride = possibleImmOverride.getName()
                 if instr.hasOperandAlias(rabbitizer.OperandType.cpu_immediate):
                     if instructionOffset in self.instrAnalyzer.symbolInstrOffset:
                         addressOffset = self.instrAnalyzer.symbolInstrOffset[instructionOffset]
                         auxOverride = possibleImmOverride.getNamePlusOffset(addressOffset)
+                        print(f"\t {addressOffset:X} {auxOverride}")
+                    else:
+                        auxOverride = possibleImmOverride.getNamePlusOffset(instr.getProcessedImmediate())
+                    print(auxOverride)
 
                     auxOverride = self.generateHiLoStr(instr, auxOverride, None, relocInfo=possibleImmOverride)
                 return auxOverride

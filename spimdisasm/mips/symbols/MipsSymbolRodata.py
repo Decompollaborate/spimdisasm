@@ -8,6 +8,7 @@ from __future__ import annotations
 import rabbitizer
 
 from ... import common
+from ... import elf32
 
 from . import SymbolBase
 
@@ -159,13 +160,14 @@ class SymbolRodata(SymbolBase):
 
         localOffset = 4*i
         w = self.words[i]
+        vram = self.getVramOffset(localOffset)
 
         # Check for symbols in the middle of this word
-        if self.getSymbol(self.getVramOffset(localOffset+3), tryPlusOffset=False, checkGlobalSegment=False) is not None:
+        if self.getSymbol(vram+3, tryPlusOffset=False, checkGlobalSegment=False) is not None:
             return self.getNthWordAsBytes(i)
-        if self.getSymbol(self.getVramOffset(localOffset+1), tryPlusOffset=False, checkGlobalSegment=False) is not None:
+        if self.getSymbol(vram+1, tryPlusOffset=False, checkGlobalSegment=False) is not None:
             return self.getNthWordAsBytes(i)
-        if self.getSymbol(self.getVramOffset(localOffset+2), tryPlusOffset=False, checkGlobalSegment=False) is not None:
+        if self.getSymbol(vram+2, tryPlusOffset=False, checkGlobalSegment=False) is not None:
             return self.getNthWordAsShorts(i)
 
         label = ""
@@ -191,6 +193,11 @@ class SymbolRodata(SymbolBase):
 
         dotType = ".word"
         skip = 0
+
+        relocInfo = self.context.getRelocSymbol(vram, self.sectionType)
+        if relocInfo is not None:
+            if relocInfo.relocType == elf32.Elf32Relocs.MIPS_GPREL32:
+                dotType = ".gpword"
 
         if self.isFloat(i):
             dotType = ".float"

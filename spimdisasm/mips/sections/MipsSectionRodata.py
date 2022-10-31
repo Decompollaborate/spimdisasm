@@ -74,12 +74,13 @@ class SectionRodata(SectionBase):
         for w in self.words:
             relocSymbol = self.context.getRelocSymbol(vram, self.sectionType)
             if relocSymbol is not None:
+                # print(f"{vram:X}, {relocSymbol}")
                 if relocSymbol.name is not None and relocSymbol.name.startswith("."):
                     sectType = common.FileSectionType.fromStr(relocSymbol.name)
                     # relocSymbol.sectionType = sectType
 
                     relocName = f"{relocSymbol.name}_{w:06X}"
-                    contextOffsetSym = common.ContextOffsetSymbol(w, relocName, sectType)
+                    # contextOffsetSym = common.ContextOffsetSymbol(w, relocName, sectType)
                     if sectType == common.FileSectionType.Text:
                         # jumptable
                         relocName = f"L{w:06X}"
