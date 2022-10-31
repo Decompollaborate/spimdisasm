@@ -558,9 +558,9 @@ class SymbolFunction(SymbolText):
         currentVram = self.getVramOffset(instructionOffset)
         labelSym = self.getSymbol(currentVram, tryPlusOffset=False)
         if labelSym is None and len(self.context.offsetJumpTablesLabels) > 0:
-            labelSym = self.context.getOffsetGenericLabel(self.inFileOffset+instructionOffset, common.FileSectionType.Text)
+            labelSym = self.context.getOffsetGenericLabel(self.vromStart+instructionOffset, common.FileSectionType.Text)
         if labelSym is None and len(self.context.offsetSymbols[self.sectionType]) > 0:
-            labelSym = self.context.getOffsetSymbol(self.inFileOffset+instructionOffset, common.FileSectionType.Text)
+            labelSym = self.context.getOffsetSymbol(self.vromStart+instructionOffset, common.FileSectionType.Text)
 
         if labelSym is None or labelSym.overlayCategory != self.overlayCategory:
             return ""

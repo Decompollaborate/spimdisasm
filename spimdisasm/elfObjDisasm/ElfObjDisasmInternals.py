@@ -108,6 +108,8 @@ def getProcessedSections(context: common.Context, elfFile: elf32.Elf32File, arra
         vromStart = sectionEntry.offset
         vromEnd = vromStart + sectionEntry.size
         vramStart = sectionEntry.addr
+        if sectionEntry.addr == 0:
+            vramStart = sectionEntry.offset
 
         mipsSection: mips.sections.SectionBase
         if sectionType == common.FileSectionType.Text:
@@ -129,6 +131,8 @@ def getProcessedSections(context: common.Context, elfFile: elf32.Elf32File, arra
         vromStart = elfFile.nobits.offset
         vromEnd = vromStart + elfFile.nobits.size
         bssStart = elfFile.nobits.addr
+        if elfFile.nobits.addr == 0:
+            bssStart = elfFile.nobits.offset
         bssEnd = bssStart + elfFile.nobits.size
 
         mipsSection = mips.sections.SectionBss(context, vromStart, vromEnd, bssStart, bssEnd, inputPath.stem, 0, None)
