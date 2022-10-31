@@ -83,9 +83,9 @@ class SectionRodata(SectionBase):
                     if sectType == common.FileSectionType.Text:
                         # jumptable
                         relocName = f"L{w:06X}"
-                        contextOffsetSym = self.context.addOffsetJumpTableLabel(w, relocName, common.FileSectionType.Text)
-                        if contextOffsetSym.type == common.SymbolSpecialType.jumptablelabel:
-                            relocSymbol.jumptableLabel = True
+                        # contextOffsetSym = self.context.addOffsetJumpTableLabel(w, relocName, common.FileSectionType.Text)
+                        # if contextOffsetSym.type == common.SymbolSpecialType.jumptablelabel:
+                        #     relocSymbol.jumptableLabel = True
                     relocSymbol.name = relocName
                     # print(relocSymbol.name, f"{w:X}")
             vram += 4

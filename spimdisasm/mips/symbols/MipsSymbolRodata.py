@@ -173,21 +173,21 @@ class SymbolRodata(SymbolBase):
         value: str = f"0x{w:08X}"
 
         # try to get the symbol name from the offset of the file (possibly from a .o elf file)
-        possibleSymbolName = self.context.getOffsetGenericSymbol(self.vram + localOffset, self.sectionType)
-        if possibleSymbolName is not None:
-            labelName = possibleSymbolName.getSymbolLabel()
-            if labelName:
-                label = labelName + common.GlobalConfig.LINE_ENDS
-                if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
-                    label += f"{possibleSymbolName.getName()}:" + common.GlobalConfig.LINE_ENDS
+        # possibleSymbolName = self.context.getOffsetGenericSymbol(self.vram + localOffset, self.sectionType)
+        # if possibleSymbolName is not None:
+        #     labelName = possibleSymbolName.getSymbolLabel()
+        #     if labelName:
+        #         label = labelName + common.GlobalConfig.LINE_ENDS
+        #         if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
+        #             label += f"{possibleSymbolName.getName()}:" + common.GlobalConfig.LINE_ENDS
 
-        if len(self.context.relocSymbols[self.sectionType]) > 0:
-            possibleReference = self.context.getRelocSymbol(self.vram + localOffset, self.sectionType)
-            if possibleReference is not None:
-                value = possibleReference.getNamePlusOffset(w)
-                if possibleReference.jumptableLabel:
-                    if w in self.context.offsetJumpTablesLabels:
-                        value = self.context.offsetJumpTablesLabels[w].getName()
+        # if len(self.context.relocSymbols[self.sectionType]) > 0:
+        #     possibleReference = self.context.getRelocSymbol(self.vram + localOffset, self.sectionType)
+        #     if possibleReference is not None:
+        #         value = possibleReference.getNamePlusOffset(w)
+        #         if possibleReference.jumptableLabel:
+        #             if w in self.context.offsetJumpTablesLabels:
+        #                 value = self.context.offsetJumpTablesLabels[w].getName()
 
         dotType = ".word"
         skip = 0

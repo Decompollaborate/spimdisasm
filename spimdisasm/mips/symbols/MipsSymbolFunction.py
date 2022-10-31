@@ -95,11 +95,11 @@ class SymbolFunction(SymbolText):
                             addressOffset = self.instrAnalyzer.symbolInstrOffset[instructionOffset]
                             if relocSymbol.name != ".rodata":
                                 common.Utils.eprint(f"Warning. Jumptable referenced in reloc does not have '.rodata' as its name")
-                            contextOffsetSym = self.context.addOffsetJumpTable(addressOffset, sectType)
-                            contextOffsetSym.referenceCounter += 1
-                            contextOffsetSym.referenceFunctions.add(self.contextSym)
-                            if contextOffsetSym.name is not None:
-                                relocSymbol.name = contextOffsetSym.name
+                            # contextOffsetSym = self.context.addOffsetJumpTable(addressOffset, sectType)
+                            # contextOffsetSym.referenceCounter += 1
+                            # contextOffsetSym.referenceFunctions.add(self.contextSym)
+                            # if contextOffsetSym.name is not None:
+                            #     relocSymbol.name = contextOffsetSym.name
                             self.instrAnalyzer.symbolInstrOffset[instructionOffset] = 0
                             if instructionOffset in self.instrAnalyzer.lowToHiDict:
                                 luiOffset = self.instrAnalyzer.lowToHiDict[instructionOffset]
@@ -555,8 +555,8 @@ class SymbolFunction(SymbolText):
 
         currentVram = self.getVramOffset(instructionOffset)
         labelSym = self.getSymbol(currentVram, tryPlusOffset=False)
-        if labelSym is None and len(self.context.offsetJumpTablesLabels) > 0:
-            labelSym = self.context.getOffsetGenericLabel(self.vromStart+instructionOffset, common.FileSectionType.Text)
+        # if labelSym is None and len(self.context.offsetJumpTablesLabels) > 0:
+        #     labelSym = self.context.getOffsetGenericLabel(self.vromStart+instructionOffset, common.FileSectionType.Text)
 
         if labelSym is None or labelSym.overlayCategory != self.overlayCategory:
             return ""
