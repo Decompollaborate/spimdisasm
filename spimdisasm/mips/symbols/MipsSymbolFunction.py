@@ -82,9 +82,9 @@ class SymbolFunction(SymbolText):
 
         # Process reloc symbols (probably from a .elf file)
         instructionOffset = 0
-        inFileOffset = self.inFileOffset
+        vram = self.vram
         for instr in self.instructions:
-            relocSymbol = self.context.getRelocSymbol(inFileOffset, common.FileSectionType.Text)
+            relocSymbol = self.context.getRelocSymbol(vram, common.FileSectionType.Text)
             if relocSymbol is not None:
                 if relocSymbol.name is not None and relocSymbol.name.startswith("."):
                     sectType = common.FileSectionType.fromStr(relocSymbol.name)
@@ -103,7 +103,7 @@ class SymbolFunction(SymbolText):
                             self.instrAnalyzer.symbolInstrOffset[instructionOffset] = 0
                             if instructionOffset in self.instrAnalyzer.lowToHiDict:
                                 luiOffset = self.instrAnalyzer.lowToHiDict[instructionOffset]
-                                otherReloc = self.context.getRelocSymbol(self.inFileOffset+luiOffset, common.FileSectionType.Text)
+                                otherReloc = self.context.getRelocSymbol(self.vram+luiOffset, common.FileSectionType.Text)
                                 if otherReloc is not None:
                                     otherReloc.name = relocSymbol.name
                                     self.instrAnalyzer.symbolInstrOffset[luiOffset] = 0
@@ -113,7 +113,7 @@ class SymbolFunction(SymbolText):
                             # print(relocName, addressOffset, instr)
                             relocSymbol.name = relocName
                             self.instrAnalyzer.symbolInstrOffset[instructionOffset] = 0
-            inFileOffset += 4
+            vram += 4
             instructionOffset += 4
 
 
@@ -453,7 +453,7 @@ class SymbolFunction(SymbolText):
     def getImmOverrideForInstruction(self, instr: rabbitizer.Instruction, instructionOffset: int) -> str|None:
         if len(self.context.relocSymbols[self.sectionType]) > 0:
             # Check possible symbols using reloc information (probably from a .o elf file)
-            possibleImmOverride = self.context.getRelocSymbol(self.inFileOffset + instructionOffset, self.sectionType)
+            possibleImmOverride = self.context.getRelocSymbol(self.vram + instructionOffset, self.sectionType)
             if possibleImmOverride is not None:
                 auxOverride = possibleImmOverride.getName()
                 if instr.hasOperandAlias(rabbitizer.OperandType.cpu_immediate):

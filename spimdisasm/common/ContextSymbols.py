@@ -424,6 +424,7 @@ class ContextOffsetSymbol(ContextSymbol):
 class ContextRelocInfo():
     # Relative to the start of the section
     offset: int
+    vram: int
     name: str
     relocSection: FileSectionType
 

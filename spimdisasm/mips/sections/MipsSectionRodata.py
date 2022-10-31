@@ -70,9 +70,9 @@ class SectionRodata(SectionBase):
             return
 
         # Process reloc symbols (probably from a .elf file)
-        inFileOffset = self.inFileOffset
+        vram = self.vram
         for w in self.words:
-            relocSymbol = self.context.getRelocSymbol(inFileOffset, self.sectionType)
+            relocSymbol = self.context.getRelocSymbol(vram, self.sectionType)
             if relocSymbol is not None:
                 if relocSymbol.name is not None and relocSymbol.name.startswith("."):
                     sectType = common.FileSectionType.fromStr(relocSymbol.name)
@@ -88,7 +88,7 @@ class SectionRodata(SectionBase):
                             relocSymbol.jumptableLabel = True
                     relocSymbol.name = relocName
                     # print(relocSymbol.name, f"{w:X}")
-            inFileOffset += 4
+            vram += 4
 
     def analyze(self):
         self.checkAndCreateFirstSymbol()

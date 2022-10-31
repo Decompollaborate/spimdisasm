@@ -295,10 +295,11 @@ def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, proce
                     if symbolName == "":
                         continue
 
-                    contextRelocSym = common.ContextRelocInfo(rel.offset, symbolName, sectType, rel.rType)
-                    # contextRelocSym.isDefined = True
-                    # contextRelocSym.relocType = rel.rType
-                    context.relocSymbols[sectType][rel.offset] = contextRelocSym
+                    subSegment = processedSegments[sectType][0]
+
+                    relVram = rel.offset+subSegment.vram
+                    contextRelocSym = common.ContextRelocInfo(rel.offset, relVram, symbolName, sectType, rel.rType)
+                    context.relocSymbols[sectType][relVram] = contextRelocSym
 
         # Use the symtab to replace symbol names present in disassembled sections
         insertSymtabIntoContext(context, elfFile.symtab, elfFile.strtab, elfFile, processedSegments)
