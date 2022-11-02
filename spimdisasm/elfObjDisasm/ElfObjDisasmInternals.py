@@ -171,51 +171,36 @@ def changeGlobalSegmentRanges(context: common.Context, processedSegments: dict[c
     return
 
 
-def addRelocatedSymbol(context: common.Context, symEntry: elf32.Elf32SymEntry, symName: str|None):
-    if symEntry.value == 0 or symEntry.shndx == 0:
-        return
-
-    if symEntry.stType == elf32.Elf32SymbolTableType.FUNC.value:
-        contextSym = context.globalSegment.addFunction(symEntry.value)
-    elif symEntry.stType == elf32.Elf32SymbolTableType.OBJECT.value:
-        contextSym = context.globalSegment.addSymbol(symEntry.value)
-    elif symEntry.stType == elf32.Elf32SymbolTableType.SECTION.value:
-        # print(symEntry)
-        return
-    elif symEntry.stType == elf32.Elf32SymbolTableType.NOTYPE.value:
-        # Is ok to just ignore this?
-        return
-    else:
-        common.Utils.eprint(f"Warning: symbol '{symName}' has an unhandled stType: '{symEntry.stType}'")
-        contextSym = context.globalSegment.addSymbol(symEntry.value)
-    if symName is not None:
-        contextSym.name = symName
-    contextSym.isUserDeclared = True
-    contextSym.setSizeIfUnset(symEntry.size)
-
-def addUndefinedSymbol(context: common.Context, symEntry: elf32.Elf32SymEntry, symName: str, symAddress: int):
+def addContextSymFromSymEntry(context: common.Context, symEntry: elf32.Elf32SymEntry, symAddress: int, symName: str|None=None, symVrom: int|None=None) -> common.ContextSymbol|None:
     if symAddress == 0:
-        return
+        return None
 
     if symEntry.stType == elf32.Elf32SymbolTableType.FUNC.value:
-        contextSym = context.globalSegment.addFunction(symAddress)
+        contextSym = context.globalSegment.addFunction(symAddress, vromAddress=symVrom)
     elif symEntry.stType == elf32.Elf32SymbolTableType.OBJECT.value:
-        contextSym = context.globalSegment.addSymbol(symAddress)
+        contextSym = context.globalSegment.addSymbol(symAddress, vromAddress=symVrom)
     elif symEntry.stType == elf32.Elf32SymbolTableType.SECTION.value:
         # print(symEntry)
-        return
+        return None
     elif symEntry.stType == elf32.Elf32SymbolTableType.NOTYPE.value:
         # Is ok to just ignore this?
-        return
+        return None
     else:
         common.Utils.eprint(f"Warning: symbol '{symName}' has an unhandled stType: '{symEntry.stType}'")
-        contextSym = context.globalSegment.addSymbol(symAddress)
+        contextSym = context.globalSegment.addSymbol(symAddress, vromAddress=symVrom)
 
-    contextSym.name = symName
+    if symName is not None:
+        if symName.startswith("."):
+            contextSym._isStatic = True
+        else:
+            contextSym.name = symName
     contextSym.isUserDeclared = True
     contextSym.setSizeIfUnset(symEntry.size)
 
-def insertSymtabIntoContext(context: common.Context, symbolTable: elf32.Elf32Syms, stringTable: elf32.Elf32StringTable, elfFile: elf32.Elf32File, processedSegments: dict[common.FileSectionType, list[mips.sections.SectionBase]]):
+    return contextSym
+
+
+def insertSymtabIntoContext(context: common.Context, symbolTable: elf32.Elf32Syms, stringTable: elf32.Elf32StringTable, elfFile: elf32.Elf32File):
     # Use the symbol table to replace symbol names present in disassembled sections
     for i, symEntry in enumerate(symbolTable):
         symName = stringTable[symEntry.name]
@@ -228,26 +213,30 @@ def insertSymtabIntoContext(context: common.Context, symbolTable: elf32.Elf32Sym
             continue
 
         if elfFile.header.type != elf32.Elf32ObjectFileType.REL.value:
-            addRelocatedSymbol(context, symEntry, symName)
+            if symEntry.value != 0:
+                addContextSymFromSymEntry(context, symEntry, symEntry.value, symName)
             continue
 
         sectName = elfFile.shstrtab[sectHeaderEntry.name]
         sectType = common.FileSectionType.fromStr(sectName)
-        if sectType != common.FileSectionType.Invalid:
-            subSegment = processedSegments[sectType]
-            symbolOffset = symEntry.value + subSegment[0].vromStart
-
-            contextOffsetSym = common.ContextOffsetSymbol(symbolOffset, symName, sectType)
-            contextOffsetSym.isUserDeclared = True
-            context.offsetSymbols[sectType][symbolOffset] = contextOffsetSym
-        else:
+        if sectType == common.FileSectionType.Invalid:
             common.Utils.eprint(f"Warning: symbol {i} (name: '{symName}', value: 0x{symEntry.value:X}) is referencing invalid section '{sectName}'")
+            continue
+
+        symVrom = symEntry.value + sectHeaderEntry.offset
+        symAddress = symVrom
+
+        contextSym = addContextSymFromSymEntry(context, symEntry, symAddress, symName, symVrom)
+        if contextSym is not None:
+            contextSym.sectionType = sectType
 
 def insertDynsymIntoContext(context: common.Context, symbolTable: elf32.Elf32Syms, stringTable: elf32.Elf32StringTable):
     for symEntry in symbolTable:
-        symName = stringTable[symEntry.name]
+        if symEntry.value == 0 or symEntry.shndx == 0:
+            continue
 
-        addRelocatedSymbol(context, symEntry, symName)
+        symName = stringTable[symEntry.name]
+        addContextSymFromSymEntry(context, symEntry, symEntry.value, symName)
 
 def insertGotIntoContext(context: common.Context, got: elf32.Elf32GlobalOffsetTable, stringTable: elf32.Elf32StringTable):
     lazyResolver = got.localsTable[0]
@@ -259,7 +248,7 @@ def insertGotIntoContext(context: common.Context, got: elf32.Elf32GlobalOffsetTa
     for gotEntry in got.globalsTable:
         symName = stringTable[gotEntry.symEntry.name]
 
-        addUndefinedSymbol(context, gotEntry.symEntry, symName, gotEntry.getAddress())
+        addContextSymFromSymEntry(context, gotEntry.symEntry, gotEntry.getAddress(), symName)
 
 
 def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, processedSegments: dict[common.FileSectionType, list[mips.sections.SectionBase]]) -> None:
@@ -267,20 +256,25 @@ def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, proce
         # Inject symbols from the reloc table referenced in each section
         if elfFile.header.type == elf32.Elf32ObjectFileType.REL.value:
             for sectType, relocs in elfFile.rel.items():
-                # subSection = processedFiles[sectType][1]
                 for rel in relocs:
                     symbolEntry = elfFile.symtab[rel.rSym]
                     symbolName = elfFile.strtab[symbolEntry.name]
                     if symbolName == "":
                         continue
 
-                    contextRelocSym = common.ContextRelocInfo(rel.offset, symbolName, sectType, rel.rType)
-                    # contextRelocSym.isDefined = True
-                    # contextRelocSym.relocType = rel.rType
-                    context.relocSymbols[sectType][rel.offset] = contextRelocSym
+                    subSegment = processedSegments[sectType][0]
+
+                    relocInfo = common.ContextRelocInfo(rel.rType, symbolName)
+                    if symbolEntry.stType == elf32.Elf32SymbolTableType.SECTION.value:
+                        relocInfo.referencedSection = common.FileSectionType.fromStr(symbolName)
+                        referencedSegment = processedSegments[relocInfo.referencedSection][0]
+                        relocInfo.referencedSectionVram = referencedSegment.vram
+                        relocInfo.isStatic = True
+
+                    context.relocInfosPerSection[sectType][rel.offset+subSegment.vram] = relocInfo
 
         # Use the symtab to replace symbol names present in disassembled sections
-        insertSymtabIntoContext(context, elfFile.symtab, elfFile.strtab, elfFile, processedSegments)
+        insertSymtabIntoContext(context, elfFile.symtab, elfFile.strtab, elfFile)
 
     if elfFile.dynsym is not None and elfFile.dynstr is not None:
         # Use the dynsym to replace symbol names present in disassembled sections

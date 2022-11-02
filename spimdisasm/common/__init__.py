@@ -6,7 +6,7 @@ from . import Utils
 from .SortedDict import SortedDict
 from .GlobalConfig import GlobalConfig, InputEndian, Compiler, Abi, ArchLevel
 from .FileSectionType import FileSectionType, FileSections_ListBasic, FileSections_ListAll
-from .ContextSymbols import SymbolSpecialType, ContextSymbol, ContextOffsetSymbol, ContextRelocInfo
+from .ContextSymbols import SymbolSpecialType, ContextSymbol, ContextRelocInfo
 from .SymbolsSegment import SymbolsSegment
 from .Context import Context
 from .FileSplitFormat import FileSplitFormat, FileSplitEntry

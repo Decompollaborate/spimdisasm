@@ -8,6 +8,7 @@ from __future__ import annotations
 import rabbitizer
 
 from ... import common
+from ... import elf32
 
 from . import SymbolBase
 
@@ -159,38 +160,34 @@ class SymbolRodata(SymbolBase):
 
         localOffset = 4*i
         w = self.words[i]
+        vram = self.getVramOffset(localOffset)
 
         # Check for symbols in the middle of this word
-        if self.getSymbol(self.getVramOffset(localOffset+3), tryPlusOffset=False, checkGlobalSegment=False) is not None:
+        if self.getSymbol(vram+3, tryPlusOffset=False, checkGlobalSegment=False) is not None:
             return self.getNthWordAsBytes(i)
-        if self.getSymbol(self.getVramOffset(localOffset+1), tryPlusOffset=False, checkGlobalSegment=False) is not None:
+        if self.getSymbol(vram+1, tryPlusOffset=False, checkGlobalSegment=False) is not None:
             return self.getNthWordAsBytes(i)
-        if self.getSymbol(self.getVramOffset(localOffset+2), tryPlusOffset=False, checkGlobalSegment=False) is not None:
+        if self.getSymbol(vram+2, tryPlusOffset=False, checkGlobalSegment=False) is not None:
             return self.getNthWordAsShorts(i)
 
         label = ""
         rodataWord: int|None = w
         value: str = f"0x{w:08X}"
 
-        # try to get the symbol name from the offset of the file (possibly from a .o elf file)
-        possibleSymbolName = self.context.getOffsetGenericSymbol(self.inFileOffset + localOffset, self.sectionType)
-        if possibleSymbolName is not None:
-            labelName = possibleSymbolName.getSymbolLabel()
-            if labelName:
-                label = labelName + common.GlobalConfig.LINE_ENDS
-                if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
-                    label += f"{possibleSymbolName.getName()}:" + common.GlobalConfig.LINE_ENDS
-
-        if len(self.context.relocSymbols[self.sectionType]) > 0:
-            possibleReference = self.context.getRelocSymbol(self.inFileOffset + localOffset, self.sectionType)
-            if possibleReference is not None:
-                value = possibleReference.getNamePlusOffset(w)
-                if possibleReference.jumptableLabel:
-                    if w in self.context.offsetJumpTablesLabels:
-                        value = self.context.offsetJumpTablesLabels[w].getName()
-
         dotType = ".word"
         skip = 0
+
+        relocInfo = self.context.getRelocInfo(vram, self.sectionType)
+        if relocInfo is not None:
+            if relocInfo.relocType == elf32.Elf32Relocs.MIPS_GPREL32.value:
+                dotType = ".gpword"
+            if relocInfo.referencedSectionVram is not None:
+                relocVram = relocInfo.referencedSectionVram + w
+                labelSym = self.getSymbol(relocVram, tryPlusOffset=False)
+                if labelSym is not None:
+                    value = labelSym.getName()
+                    comment = self.generateAsmLineComment(localOffset, rodataWord)
+                    return f"{label}{comment} {dotType} {value}{common.GlobalConfig.LINE_ENDS}", skip
 
         if self.isFloat(i):
             dotType = ".float"
