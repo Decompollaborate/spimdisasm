@@ -40,7 +40,7 @@ class Context:
         # Stuff that looks like pointers, but the disassembler shouldn't count it as a pointer
         self.bannedSymbols: set[int] = set()
 
-        self.relocSymbols: dict[FileSectionType, dict[int, ContextRelocInfo]] = {
+        self.relocInfosPerSection: dict[FileSectionType, dict[int, ContextRelocInfo]] = {
             FileSectionType.Text: dict(),
             FileSectionType.Data: dict(),
             FileSectionType.Rodata: dict(),
@@ -79,11 +79,14 @@ class Context:
         return segment
 
 
-    def getRelocInfo(self, offset: int, sectionType: FileSectionType) -> ContextRelocInfo|None:
-        if sectionType in self.relocSymbols:
-            relocsInSection = self.relocSymbols[sectionType]
-            return relocsInSection.get(offset)
+    def getRelocInfo(self, vram: int, sectionType: FileSectionType) -> ContextRelocInfo|None:
+        relocsInSection = self.relocInfosPerSection.get(sectionType)
+        if relocsInSection is not None:
+            return relocsInSection.get(vram)
         return None
+
+    def doesSectionHasRelocs(self, sectionType: FileSectionType) -> bool:
+        return len(self.relocInfosPerSection[sectionType]) != 0
 
 
     def initGotTable(self, pltGot: int, localsTable: list[int], globalsTable: list[int]):

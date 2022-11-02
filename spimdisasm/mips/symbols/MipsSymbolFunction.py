@@ -77,7 +77,7 @@ class SymbolFunction(SymbolText):
             branch += 4
 
     def _processElfRelocSymbols(self):
-        if len(self.context.relocSymbols[self.sectionType]) == 0:
+        if not self.context.doesSectionHasRelocs(self.sectionType):
             return
 
         # Process reloc symbols
@@ -87,9 +87,9 @@ class SymbolFunction(SymbolText):
             relocInfo = self.context.getRelocInfo(vram, self.sectionType)
             if relocInfo is not None:
                 if relocInfo.vram is not None:
-                    # hiOffset = self.instrAnalyzer.lowToHiDict.get(instructionOffset)
-                    # if hiOffset is not None:
-                    #     self.instrAnalyzer.symbolInstrOffset[hiOffset] = self.instrAnalyzer.symbolInstrOffset[instructionOffset]
+                    hiOffset = self.instrAnalyzer.lowToHiDict.get(instructionOffset)
+                    if hiOffset is not None:
+                        self.instrAnalyzer.symbolInstrOffset[hiOffset] = self.instrAnalyzer.symbolInstrOffset[instructionOffset]
 
                     if relocInfo.referencedSection == common.FileSectionType.Rodata:
                         symbolVram = relocInfo.vram
@@ -206,9 +206,8 @@ class SymbolFunction(SymbolText):
 
         self.instrAnalyzer.printSymbolFinderDebugInfo_UnpairedLuis()
 
-        self._processElfRelocSymbols()
-
         self._postProcessGotAccesses()
+        self._processElfRelocSymbols()
 
         # Branches
         for instrOffset, targetBranchVram in self.instrAnalyzer.branchInstrOffsets.items():
@@ -441,34 +440,33 @@ class SymbolFunction(SymbolText):
 
 
     def getImmOverrideForInstruction(self, instr: rabbitizer.Instruction, instructionOffset: int) -> str|None:
-        if len(self.context.relocSymbols[self.sectionType]) > 0:
-            # Check possible symbols using reloc information
-            relocInfo = self.context.getRelocInfo(self.vram + instructionOffset, self.sectionType)
-            if relocInfo is not None:
-                if relocInfo.vram is not None:
-                    relocVram = relocInfo.vram
-                    addend = 0
-                    if instr.hasOperandAlias(rabbitizer.OperandType.cpu_immediate):
-                        if instructionOffset in self.instrAnalyzer.symbolInstrOffset:
-                            addend = self.instrAnalyzer.symbolInstrOffset[instructionOffset]
-                        else:
-                            addend = instr.getProcessedImmediate()
-
-                    contextSym = self.getSymbol(relocVram+addend, checkUpperLimit=False)
-                    if contextSym is not None:
-                        symName = contextSym.getSymbolPlusOffset(relocVram+addend)
-                        return self.generateHiLoStr(instr, symName, contextSym, relocInfo=relocInfo)
-
-                auxOverride = relocInfo.getName()
+        # Check possible symbols using reloc information
+        relocInfo = self.context.getRelocInfo(self.vram + instructionOffset, self.sectionType)
+        if relocInfo is not None:
+            if relocInfo.referencedSectionVram is not None:
+                relocVram = relocInfo.referencedSectionVram
+                addend = 0
                 if instr.hasOperandAlias(rabbitizer.OperandType.cpu_immediate):
                     if instructionOffset in self.instrAnalyzer.symbolInstrOffset:
-                        addressOffset = self.instrAnalyzer.symbolInstrOffset[instructionOffset]
-                        auxOverride = relocInfo.getNamePlusOffset(addressOffset)
+                        addend = self.instrAnalyzer.symbolInstrOffset[instructionOffset]
                     else:
-                        auxOverride = relocInfo.getNamePlusOffset(instr.getProcessedImmediate())
+                        addend = instr.getProcessedImmediate()
 
-                    auxOverride = self.generateHiLoStr(instr, auxOverride, None, relocInfo=relocInfo)
-                return auxOverride
+                contextSym = self.getSymbol(relocVram+addend, checkUpperLimit=False)
+                if contextSym is not None:
+                    symName = contextSym.getSymbolPlusOffset(relocVram+addend)
+                    return self.generateHiLoStr(instr, symName, contextSym, relocInfo=relocInfo)
+
+            auxOverride = relocInfo.getNamePlusOffset(0)
+            if instr.hasOperandAlias(rabbitizer.OperandType.cpu_immediate):
+                if instructionOffset in self.instrAnalyzer.symbolInstrOffset:
+                    addressOffset = self.instrAnalyzer.symbolInstrOffset[instructionOffset]
+                    auxOverride = relocInfo.getNamePlusOffset(addressOffset)
+                else:
+                    auxOverride = relocInfo.getNamePlusOffset(instr.getProcessedImmediate())
+
+                auxOverride = self.generateHiLoStr(instr, auxOverride, None, relocInfo=relocInfo)
+            return auxOverride
 
         if instr.isBranch() or instr.isUnconditionalBranch():
             if not common.GlobalConfig.IGNORE_BRANCHES:

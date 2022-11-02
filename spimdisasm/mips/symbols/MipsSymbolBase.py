@@ -166,16 +166,15 @@ class SymbolBase(common.ElementBase):
         value = f"0x{w:08X}"
 
         # .elf relocated symbol
-        if len(self.context.relocSymbols[self.sectionType]) > 0:
-            relocInfo = self.context.getRelocInfo(self.vram + localOffset, self.sectionType)
-            if relocInfo is not None:
-                if relocInfo.vram is not None:
-                    relocVram = relocInfo.vram + w
-                    contextSym = self.getSymbol(relocVram, checkUpperLimit=False)
-                    if contextSym is not None:
-                        value = contextSym.getSymbolPlusOffset(relocVram)
-                else:
-                    value = relocInfo.getNamePlusOffset(w)
+        relocInfo = self.context.getRelocInfo(self.vram + localOffset, self.sectionType)
+        if relocInfo is not None:
+            if relocInfo.referencedSectionVram is not None:
+                relocVram = relocInfo.referencedSectionVram + w
+                contextSym = self.getSymbol(relocVram, checkUpperLimit=False)
+                if contextSym is not None:
+                    value = contextSym.getSymbolPlusOffset(relocVram)
+            else:
+                value = relocInfo.getNamePlusOffset(w)
         else:
             # This word could be a reference to a symbol
             symbolRef = self.getSymbol(w, tryPlusOffset=canReferenceSymbolsWithAddends)

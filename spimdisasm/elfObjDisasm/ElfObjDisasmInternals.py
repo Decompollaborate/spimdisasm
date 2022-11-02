@@ -264,19 +264,14 @@ def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, proce
 
                     subSegment = processedSegments[sectType][0]
 
-                    # I have no idea what I'm doing
-                    isStatic = False
-                    referencedSection = None
-                    relVram = None
+                    relocInfo = common.ContextRelocInfo(rel.rType, symbolName)
                     if symbolEntry.stType == elf32.Elf32SymbolTableType.SECTION.value:
-                        isStatic = True
-                        referencedSection = common.FileSectionType.fromStr(symbolName)
-                        referencedSegment = processedSegments[referencedSection][0]
-                        relVram = referencedSegment.vram
+                        relocInfo.referencedSection = common.FileSectionType.fromStr(symbolName)
+                        referencedSegment = processedSegments[relocInfo.referencedSection][0]
+                        relocInfo.referencedSectionVram = referencedSegment.vram
+                        relocInfo.isStatic = True
 
-                    contextRelocSym = common.ContextRelocInfo(relVram, symbolName, sectType, referencedSection, rel.rType)
-                    contextRelocSym.isStatic = isStatic
-                    context.relocSymbols[sectType][rel.offset+subSegment.vram] = contextRelocSym
+                    context.relocInfosPerSection[sectType][rel.offset+subSegment.vram] = relocInfo
 
         # Use the symtab to replace symbol names present in disassembled sections
         insertSymtabIntoContext(context, elfFile.symtab, elfFile.strtab, elfFile)

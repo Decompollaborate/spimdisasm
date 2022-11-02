@@ -22,7 +22,7 @@ class SectionData(SectionBase):
 
 
     def _processElfRelocSymbols(self):
-        if len(self.context.relocSymbols[self.sectionType]) == 0:
+        if not self.context.doesSectionHasRelocs(self.sectionType):
             return
 
         # Process reloc symbols

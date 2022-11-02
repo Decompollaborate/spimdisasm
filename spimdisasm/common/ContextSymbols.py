@@ -404,23 +404,19 @@ class ContextSymbol:
 
 @dataclasses.dataclass
 class ContextRelocInfo():
-    vram: int|None
-    name: str
-    relocSection: FileSectionType
-    referencedSection: FileSectionType|None
-
     # Same number as the .elf specification
     relocType: int
+    name: str
+
+    referencedSection: FileSectionType|None = None
+    referencedSectionVram: int|None = None
 
     isStatic: bool = False
 
 
-    def getName(self) -> str:
-        return self.name
-
     def getNamePlusOffset(self, offset: int) -> str:
         if offset == 0:
-            return self.getName()
+            return self.name
         if offset < 0:
-            return f"{self.getName()} - 0x{-offset:X}"
-        return f"{self.getName()} + 0x{offset:X}"
+            return f"{self.name} - 0x{-offset:X}"
+        return f"{self.name} + 0x{offset:X}"

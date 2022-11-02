@@ -181,8 +181,8 @@ class SymbolRodata(SymbolBase):
         if relocInfo is not None:
             if relocInfo.relocType == elf32.Elf32Relocs.MIPS_GPREL32.value:
                 dotType = ".gpword"
-            if relocInfo.vram is not None:
-                relocVram = relocInfo.vram + w
+            if relocInfo.referencedSectionVram is not None:
+                relocVram = relocInfo.referencedSectionVram + w
                 labelSym = self.getSymbol(relocVram, tryPlusOffset=False)
                 if labelSym is not None:
                     value = labelSym.getName()
