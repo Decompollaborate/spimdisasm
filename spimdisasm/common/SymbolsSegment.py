@@ -46,6 +46,8 @@ class SymbolsSegment:
         self.dataReferencingConstants: set[int] = set()
         "Set of addresses of data symbols which are allowed to reference named constants"
 
+        self._isTheUnknownSegment: bool = False
+
 
     @property
     def vromSize(self) -> int|None:
@@ -102,7 +104,7 @@ class SymbolsSegment:
         if contextSym.vromAddress is None and vromAddress is not None:
             contextSym.vromAddress = vromAddress
 
-        if self.vromStart is None or self.vromEnd is None:
+        if self.vromStart is None or self.vromEnd is None or self._isTheUnknownSegment:
             contextSym.unknownSegment = True
 
         return contextSym

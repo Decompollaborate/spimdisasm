@@ -116,6 +116,8 @@ class ContextSymbol:
     isGotGlobal: bool = False
     isGotLocal: bool = False
 
+    _isStatic: bool = False
+
 
     @property
     def vram(self) -> int:
@@ -220,6 +222,8 @@ class ContextSymbol:
     def isStatic(self) -> bool:
         if self.type == SymbolSpecialType.jumptablelabel:
             return False
+        if self._isStatic:
+            return True
         if self.name is None:
             return False
         return self.name.startswith(".")
@@ -397,44 +401,22 @@ class ContextSymbol:
     def __hash__(self):
         return hash((self.address, self.vromAddress))
 
-class ContextOffsetSymbol(ContextSymbol):
-    def __init__(self, offset: int, name: str, sectionType: FileSectionType, *args, **kwargs):
-        super().__init__(offset, *args, **kwargs)
-        self.name = name
-        self.sectionType = sectionType
-
-    # Relative to the start of the section
-    @property
-    def offset(self) -> int:
-        return self.address
-
-    def getName(self) -> str:
-        if self.name is None:
-            return super().getName()
-        if self.isStatic():
-            return self.name[1:]
-        return self.name
-
 
 @dataclasses.dataclass
 class ContextRelocInfo():
-    # Relative to the start of the section
-    offset: int
-    name: str
-    relocSection: FileSectionType
-
     # Same number as the .elf specification
     relocType: int
+    name: str
 
-    jumptableLabel: bool = False
+    referencedSection: FileSectionType|None = None
+    referencedSectionVram: int|None = None
 
+    isStatic: bool = False
 
-    def getName(self) -> str:
-        return self.name
 
     def getNamePlusOffset(self, offset: int) -> str:
         if offset == 0:
-            return self.getName()
+            return self.name
         if offset < 0:
-            return f"{self.getName()} - 0x{-offset:X}"
-        return f"{self.getName()} + 0x{offset:X}"
+            return f"{self.name} - 0x{-offset:X}"
+        return f"{self.name} + 0x{offset:X}"
