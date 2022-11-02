@@ -86,13 +86,13 @@ class SymbolFunction(SymbolText):
         for instr in self.instructions:
             relocInfo = self.context.getRelocInfo(vram, self.sectionType)
             if relocInfo is not None:
-                if relocInfo.vram is not None:
+                if relocInfo.referencedSectionVram is not None:
                     hiOffset = self.instrAnalyzer.lowToHiDict.get(instructionOffset)
                     if hiOffset is not None:
                         self.instrAnalyzer.symbolInstrOffset[hiOffset] = self.instrAnalyzer.symbolInstrOffset[instructionOffset]
 
                     if relocInfo.referencedSection == common.FileSectionType.Rodata:
-                        symbolVram = relocInfo.vram
+                        symbolVram = relocInfo.referencedSectionVram
                         if instr.hasOperandAlias(rabbitizer.OperandType.cpu_immediate):
                             if instructionOffset in self.instrAnalyzer.symbolInstrOffset:
                                 addressOffset = self.instrAnalyzer.symbolInstrOffset[instructionOffset]
