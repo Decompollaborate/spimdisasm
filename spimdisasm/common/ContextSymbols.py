@@ -404,8 +404,6 @@ class ContextSymbol:
 
 @dataclasses.dataclass
 class ContextRelocInfo():
-    # Relative to the start of the section
-    offset: int
     vram: int|None
     name: str
     relocSection: FileSectionType

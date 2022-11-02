@@ -274,7 +274,7 @@ def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, proce
                         referencedSegment = processedSegments[referencedSection][0]
                         relVram = referencedSegment.vram
 
-                    contextRelocSym = common.ContextRelocInfo(rel.offset, relVram, symbolName, sectType, referencedSection, rel.rType)
+                    contextRelocSym = common.ContextRelocInfo(relVram, symbolName, sectType, referencedSection, rel.rType)
                     contextRelocSym.isStatic = isStatic
                     context.relocSymbols[sectType][rel.offset+subSegment.vram] = contextRelocSym
 
