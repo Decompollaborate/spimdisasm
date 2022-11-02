@@ -69,6 +69,40 @@ class SymbolBase(common.ElementBase):
         return label
 
 
+    def isByte(self, index: int) -> bool:
+        return self.contextSym.isByte() and not self.isString()
+
+    def isShort(self, index: int) -> bool:
+        return self.contextSym.isShort()
+
+    def isString(self) -> bool:
+        return False
+
+    def isFloat(self, index: int) -> bool:
+        if self.contextSym.isFloat():
+            word = self.words[index]
+            # Filter out NaN and infinity
+            if (word & 0x7F800000) != 0x7F800000:
+                return True
+        return False
+
+    def isDouble(self, index: int) -> bool:
+        if self.contextSym.isDouble():
+            if index + 1 < self.sizew:
+                word0 = self.words[index]
+                word1 = self.words[index+1]
+                # Filter out NaN and infinity
+                if (((word0 << 32) | word1) & 0x7FF0000000000000) != 0x7FF0000000000000:
+                    # Prevent accidentally losing symbols
+                    currentVram = self.getVramOffset(index*4)
+                    if self.getSymbol(currentVram+4, tryPlusOffset=False) is None:
+                        return True
+        return False
+
+    def isJumpTable(self) -> bool:
+        return False
+
+
     def isRdata(self) -> bool:
         "Checks if the current symbol is .rdata"
         return False
@@ -193,11 +227,51 @@ class SymbolBase(common.ElementBase):
 
         return output, 0
 
+    def getNthWordAsFloat(self, i: int) -> tuple[str, int]:
+        output = ""
+        localOffset = 4*i
+        w = self.words[i]
+
+        label = ""
+        if i != 0:
+            label = self.getLabelAtOffset(localOffset)
+
+        dotType = ".float"
+        floatValue = common.Utils.wordToFloat(w)
+        value = f"{floatValue:.10g}"
+
+        comment = self.generateAsmLineComment(localOffset, w)
+        output += f"{label}{comment} {dotType} {value}"
+        if i < len(self.endOfLineComment):
+            output += self.endOfLineComment[i]
+        output += common.GlobalConfig.LINE_ENDS
+
+        return output, 0
+
+    def getNthWordAsDouble(self, i: int) -> tuple[str, int]:
+        output = ""
+        localOffset = 4*i
+        w = self.words[i]
+
+        label = ""
+        if i != 0:
+            label = self.getLabelAtOffset(localOffset)
+
+        dotType = ".double"
+        otherHalf = self.words[i+1]
+        doubleWord = (w << 32) | otherHalf
+        doubleValue = common.Utils.qwordToDouble(doubleWord)
+        value = f"{doubleValue:.18g}"
+
+        comment = self.generateAsmLineComment(localOffset, doubleWord)
+        output += f"{label}{comment} {dotType} {value}"
+        if i < len(self.endOfLineComment):
+            output += self.endOfLineComment[i]
+        output += common.GlobalConfig.LINE_ENDS
+
+        return output, 1
+
     def getNthWord(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False) -> tuple[str, int]:
-        if self.contextSym.isByte():
-            return self.getNthWordAsBytes(i)
-        if self.contextSym.isShort():
-            return self.getNthWordAsShorts(i)
         return self.getNthWordAsWords(i, canReferenceSymbolsWithAddends=canReferenceSymbolsWithAddends, canReferenceConstants=canReferenceConstants)
 
 
@@ -226,7 +300,26 @@ class SymbolBase(common.ElementBase):
 
         i = 0
         while i < self.sizew:
-            data, skip = self.getNthWord(i, canReferenceSymbolsWithAddends, canReferenceConstants)
+            vram = self.getVramOffset(i*4)
+
+            # Check for symbols in the middle of this word
+            if self.getSymbol(vram+3, tryPlusOffset=False, checkGlobalSegment=False) is not None:
+                data, skip = self.getNthWordAsBytes(i)
+            elif self.getSymbol(vram+1, tryPlusOffset=False, checkGlobalSegment=False) is not None:
+                data, skip = self.getNthWordAsBytes(i)
+            elif self.getSymbol(vram+2, tryPlusOffset=False, checkGlobalSegment=False) is not None:
+                data, skip = self.getNthWordAsShorts(i)
+            elif self.isByte(i):
+                data, skip = self.getNthWordAsBytes(i)
+            elif self.isShort(i):
+                data, skip = self.getNthWordAsShorts(i)
+            elif self.isFloat(i):
+                data, skip = self.getNthWordAsFloat(i)
+            elif self.isDouble(i):
+                data, skip = self.getNthWordAsDouble(i)
+            else:
+                data, skip = self.getNthWord(i, canReferenceSymbolsWithAddends, canReferenceConstants)
+
             if i != 0:
                 output += self.getPrevAlignDirective(i)
             output += data
