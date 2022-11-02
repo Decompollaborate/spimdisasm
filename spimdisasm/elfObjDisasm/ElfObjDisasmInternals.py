@@ -175,10 +175,14 @@ def addContextSymFromSymEntry(context: common.Context, symEntry: elf32.Elf32SymE
     if symAddress == 0:
         return None
 
+    segment = context.globalSegment
+    if not segment.isVramInRange(symAddress):
+        segment = context.unknownSegment
+
     if symEntry.stType == elf32.Elf32SymbolTableType.FUNC.value:
-        contextSym = context.globalSegment.addFunction(symAddress, vromAddress=symVrom)
+        contextSym = segment.addFunction(symAddress, vromAddress=symVrom)
     elif symEntry.stType == elf32.Elf32SymbolTableType.OBJECT.value:
-        contextSym = context.globalSegment.addSymbol(symAddress, vromAddress=symVrom)
+        contextSym = segment.addSymbol(symAddress, vromAddress=symVrom)
     elif symEntry.stType == elf32.Elf32SymbolTableType.SECTION.value:
         # print(symEntry)
         return None
@@ -187,7 +191,7 @@ def addContextSymFromSymEntry(context: common.Context, symEntry: elf32.Elf32SymE
         return None
     else:
         common.Utils.eprint(f"Warning: symbol '{symName}' has an unhandled stType: '{symEntry.stType}'")
-        contextSym = context.globalSegment.addSymbol(symAddress, vromAddress=symVrom)
+        contextSym = segment.addSymbol(symAddress, vromAddress=symVrom)
 
     if symName is not None:
         if symName.startswith("."):
