@@ -401,24 +401,6 @@ class ContextSymbol:
     def __hash__(self):
         return hash((self.address, self.vromAddress))
 
-class ContextOffsetSymbol(ContextSymbol):
-    def __init__(self, offset: int, name: str, sectionType: FileSectionType, *args, **kwargs):
-        super().__init__(offset, *args, **kwargs)
-        self.name = name
-        self.sectionType = sectionType
-
-    # Relative to the start of the section
-    @property
-    def offset(self) -> int:
-        return self.address
-
-    def getName(self) -> str:
-        if self.name is None:
-            return super().getName()
-        if self.isStatic():
-            return self.name[1:]
-        return self.name
-
 
 @dataclasses.dataclass
 class ContextRelocInfo():
