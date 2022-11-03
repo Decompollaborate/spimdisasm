@@ -163,6 +163,9 @@ class SymbolFunction(SymbolText):
                 if loOffset in self.instrAnalyzer.referencedJumpTableOffsets:
                     self.instrAnalyzer.referencedJumpTableOffsets[loOffset] = symVram
 
+                if loOffset in self.instrAnalyzer.indirectFunctionCallOffsets:
+                    self.instrAnalyzer.indirectFunctionCallOffsets[loOffset] = symVram
+
         return
 
 
@@ -376,7 +379,7 @@ class SymbolFunction(SymbolText):
         elf32.Elf32Relocs.MIPS_CALL_LO16.value: f"%call_lo",
     }
 
-    def generateHiLoStr(self, instr: rabbitizer.Instruction, symName: str, symbol: common.ContextSymbol|None, relocInfo: common.ContextRelocInfo|None=None, gotHiLo: bool=False) -> str:
+    def generateHiLoStr(self, instr: rabbitizer.Instruction, instrOffset: int, symName: str, symbol: common.ContextSymbol|None, relocInfo: common.ContextRelocInfo|None=None, gotHiLo: bool=False) -> str:
         if relocInfo is not None:
             percentStr = self._percentRel.get(relocInfo.relocType, None)
             if percentStr is not None:
@@ -395,7 +398,7 @@ class SymbolFunction(SymbolText):
         if instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
             if common.GlobalConfig.PIC:
                 if symbol is not None:
-                    if symbol.isGotGlobal and symbol.type == common.SymbolSpecialType.function:
+                    if symbol.isGotGlobal and symbol.type == common.SymbolSpecialType.function and instrOffset in self.instrAnalyzer.indirectFunctionCallOffsets:
                         return f"%call16({symName})"
                     elif symbol.isGot:
                         return f"%got({symName})"
@@ -455,7 +458,7 @@ class SymbolFunction(SymbolText):
                 contextSym = self.getSymbol(relocVram+addend, checkUpperLimit=False)
                 if contextSym is not None:
                     symName = contextSym.getSymbolPlusOffset(relocVram+addend)
-                    return self.generateHiLoStr(instr, symName, contextSym, relocInfo=relocInfo)
+                    return self.generateHiLoStr(instr, instructionOffset, symName, contextSym, relocInfo=relocInfo)
 
             auxOverride = relocInfo.getNamePlusOffset(0)
             if instr.hasOperandAlias(rabbitizer.OperandType.cpu_immediate):
@@ -465,7 +468,7 @@ class SymbolFunction(SymbolText):
                 else:
                     auxOverride = relocInfo.getNamePlusOffset(instr.getProcessedImmediate())
 
-                auxOverride = self.generateHiLoStr(instr, auxOverride, None, relocInfo=relocInfo)
+                auxOverride = self.generateHiLoStr(instr, instructionOffset, auxOverride, None, relocInfo=relocInfo)
             return auxOverride
 
         if instr.isBranch() or instr.isUnconditionalBranch():
@@ -479,7 +482,7 @@ class SymbolFunction(SymbolText):
         elif instr.hasOperandAlias(rabbitizer.OperandType.cpu_immediate):
             # .cpload directive is meant to use the `_gp_disp` pseudo-symbol
             if instructionOffset in self.instrAnalyzer.cploadOffsets:
-                return self.generateHiLoStr(instr, "_gp_disp", None)
+                return self.generateHiLoStr(instr, instructionOffset, "_gp_disp", None)
 
             if not self.pointersRemoved and instructionOffset in self.instrAnalyzer.symbolInstrOffset:
                 address = self.instrAnalyzer.symbolInstrOffset[instructionOffset]
@@ -519,7 +522,7 @@ class SymbolFunction(SymbolText):
                             return None
 
                     symName = symbol.getSymbolPlusOffset(address)
-                    return self.generateHiLoStr(instr, symName, symbol, gotHiLo=gotHiLo)
+                    return self.generateHiLoStr(instr, instructionOffset, symName, symbol, gotHiLo=gotHiLo)
                 return self.generateHiLoConstantStr(address, instr, loInstr)
 
             elif instructionOffset in self.instrAnalyzer.constantInstrOffset:
@@ -527,7 +530,7 @@ class SymbolFunction(SymbolText):
 
                 symbol = self.getConstant(constant)
                 if symbol is not None:
-                    return self.generateHiLoStr(instr, symbol.getName(), symbol)
+                    return self.generateHiLoStr(instr, instructionOffset, symbol.getName(), symbol)
 
                 # Pretend this pair is a constant
                 loInstr = instr
@@ -539,7 +542,7 @@ class SymbolFunction(SymbolText):
                     return generatedStr
 
                 if common.GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_HILO:
-                    return self.generateHiLoStr(instr, f"0x{constant:X}", None)
+                    return self.generateHiLoStr(instr, instructionOffset, f"0x{constant:X}", None)
 
             if instr.canBeHi():
                 # Unpaired LUI

@@ -65,6 +65,10 @@ class InstrAnalyzer:
         self.jumpRegisterIntrOffset: dict[int, int] = dict()
         self.referencedJumpTableOffsets: dict[int, int] = dict()
 
+        # Jump register (jumptables)
+        self.indirectFunctionCallIntrOffset: dict[int, int] = dict()
+        self.indirectFunctionCallOffsets: dict[int, int] = dict()
+
         # Constants
         self.constantHiInstrOffset: dict[int, int] = dict()
         "key: offset of instruction which is setting the %hi constant, value: constant"
@@ -380,6 +384,15 @@ class InstrAnalyzer:
             self.jumpRegisterIntrOffset[instrOffset] = address
             self.referencedVrams.add(address)
 
+    def processJumpAndLinkRegister(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, instrOffset: int) -> None:
+        jrInfo = regsTracker.getJrInfo(instr)
+        if jrInfo is not None:
+            offset, address = jrInfo
+
+            self.indirectFunctionCallOffsets[offset] = address
+            self.indirectFunctionCallIntrOffset[instrOffset] = address
+            self.referencedVrams.add(address)
+
 
     def processInstr(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, instrOffset: int, currentVram: int, prevInstr: rabbitizer.Instruction|None) -> None:
         if instr.isBranch() or instr.isUnconditionalBranch():
@@ -394,6 +407,10 @@ class InstrAnalyzer:
 
         elif instr.isJrNotRa():
             self.processJumpRegister(regsTracker, instr, instrOffset)
+
+        elif instr.isJump() and instr.doesLink():
+            # jalr, implicit not isJumpWithAddress
+            self.processJumpAndLinkRegister(regsTracker, instr, instrOffset)
 
         elif instr.uniqueId == rabbitizer.InstrId.cpu_addu:
             # special check for .cpload
