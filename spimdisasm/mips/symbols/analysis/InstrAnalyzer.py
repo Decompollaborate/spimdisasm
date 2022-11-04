@@ -123,7 +123,8 @@ class InstrAnalyzer:
         branch = instrOffset + branchOffset
         targetBranchVram = self.funcVram + branch
 
-        self.referencedVrams.add(targetBranchVram)
+        if not common.GlobalConfig.PIC:
+            self.referencedVrams.add(targetBranchVram)
 
         self.branchLabelOffsets.add(branch)
         self.branchInstrOffsets[instrOffset] = targetBranchVram
@@ -138,7 +139,8 @@ class InstrAnalyzer:
         if target >= 0x84000000 or target < 0x80000000:
             self.funcCallOutsideRangesOffsets[instrOffset] = target
 
-        self.referencedVrams.add(target)
+        if not common.GlobalConfig.PIC:
+            self.referencedVrams.add(target)
         self.referencedVramsInstrOffset[instrOffset] = target
 
         self.funcCallInstrOffsets[instrOffset] = target
@@ -253,7 +255,8 @@ class InstrAnalyzer:
                     self.lowToHiDict[lowerOffset] = luiOffset
             return None
 
-        self.referencedVrams.add(address)
+        if not common.GlobalConfig.PIC:
+            self.referencedVrams.add(address)
 
         if lowerOffset not in self.symbolLoInstrOffset:
             self.symbolLoInstrOffset[lowerOffset] = address
@@ -382,7 +385,8 @@ class InstrAnalyzer:
 
             self.referencedJumpTableOffsets[offset] = address
             self.jumpRegisterIntrOffset[instrOffset] = address
-            self.referencedVrams.add(address)
+            if not common.GlobalConfig.PIC:
+                self.referencedVrams.add(address)
 
     def processJumpAndLinkRegister(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, instrOffset: int) -> None:
         jrInfo = regsTracker.getJrInfo(instr)
@@ -391,7 +395,8 @@ class InstrAnalyzer:
 
             self.indirectFunctionCallOffsets[offset] = address
             self.indirectFunctionCallIntrOffset[instrOffset] = address
-            self.referencedVrams.add(address)
+            if not common.GlobalConfig.PIC:
+                self.referencedVrams.add(address)
 
 
     def processInstr(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, instrOffset: int, currentVram: int, prevInstr: rabbitizer.Instruction|None) -> None:
