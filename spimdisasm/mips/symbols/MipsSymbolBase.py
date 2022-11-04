@@ -217,7 +217,9 @@ class SymbolBase(common.ElementBase):
             # This word could be a reference to a symbol
             symbolRef = self.getSymbol(w, tryPlusOffset=canReferenceSymbolsWithAddends)
             if symbolRef is not None:
-                value = symbolRef.getSymbolPlusOffset(w)
+                if symbolRef.type != common.SymbolSpecialType.function or w == symbolRef.vram:
+                    # Avoid using addends on functions
+                    value = symbolRef.getSymbolPlusOffset(w)
             elif canReferenceConstants:
                 constant = self.getConstant(w)
                 if constant is not None:
