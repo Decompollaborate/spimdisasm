@@ -50,16 +50,10 @@ class SymbolBase(common.ElementBase):
 
         return f"/* {offsetHex} {vramHex} {wordValueHex}*/"
 
-    def getSymbolAtVramOrOffset(self, localOffset: int) -> common.ContextSymbol|None:
-        currentVram = self.getVramOffset(localOffset)
-        return self.getSymbol(currentVram, tryPlusOffset=False)
 
-
-    def getLabelAtOffset(self, localOffset: int) -> str:
+    def getExtraLabelFromSymbol(self, contextSym: common.ContextSymbol|None) -> str:
         label = ""
-        contextSym = self.getSymbolAtVramOrOffset(localOffset)
         if contextSym is not None:
-            # Possible symbols in the middle
             label = common.GlobalConfig.LINE_ENDS
             symLabel = contextSym.getSymbolLabel()
             if symLabel:
@@ -127,7 +121,8 @@ class SymbolBase(common.ElementBase):
                 for j in range(0, 4, byteStep):
                     if i == 0 and j == 0:
                         continue
-                    contextSym = self.getSymbolAtVramOrOffset(localOffset+j)
+                    currentVram = self.getVramOffset(localOffset+j)
+                    contextSym = self.getSymbol(currentVram, tryPlusOffset=False)
                     if contextSym is not None:
                         contextSym.vromAddress = self.getVromOffset(localOffset+j)
                         contextSym.isDefined = True
@@ -136,52 +131,60 @@ class SymbolBase(common.ElementBase):
                             contextSym.type = contextSym.type
 
 
-    def getNthWordAsBytes(self, i: int) -> tuple[str, int]:
-        output = ""
+    def getJByteAsByte(self, i: int, j: int) -> str:
         localOffset = 4*i
         w = self.words[i]
 
         dotType = ".byte"
-        for j in range(0, 4):
-            label = ""
-            if j != 0 or i != 0:
-                label = self.getLabelAtOffset(localOffset + j)
 
-            shiftValue = j * 8
-            if common.GlobalConfig.ENDIAN == common.InputEndian.BIG:
-                shiftValue = 24 - shiftValue
-            subVal = (w & (0xFF << shiftValue)) >> shiftValue
-            value = f"0x{subVal:02X}"
+        shiftValue = j * 8
+        if common.GlobalConfig.ENDIAN == common.InputEndian.BIG:
+            shiftValue = 24 - shiftValue
+        subVal = (w & (0xFF << shiftValue)) >> shiftValue
+        value = f"0x{subVal:02X}"
 
-            comment = self.generateAsmLineComment(localOffset+j)
-            output += f"{label}{comment} {dotType} {value}"
-            if j == 0 and i < len(self.endOfLineComment):
-                output += self.endOfLineComment[i]
-            output += common.GlobalConfig.LINE_ENDS
+        comment = self.generateAsmLineComment(localOffset+j)
+        return f"{comment} {dotType} {value}"
 
-        return output, 0
-
-    def getNthWordAsShorts(self, i: int) -> tuple[str, int]:
-        output = ""
+    def getJByteAsShort(self, i: int, j: int) -> str:
         localOffset = 4*i
         w = self.words[i]
 
         dotType = ".short"
-        for j in range(0, 4, 2):
-            label = ""
-            if j != 0 or i != 0:
-                label = self.getLabelAtOffset(localOffset + j)
 
-            shiftValue = j * 8
-            if common.GlobalConfig.ENDIAN == common.InputEndian.BIG:
-                shiftValue = 16 - shiftValue
-            subVal = (w & (0xFFFF << shiftValue)) >> shiftValue
-            value = f"0x{subVal:04X}"
+        shiftValue = j * 8
+        if common.GlobalConfig.ENDIAN == common.InputEndian.BIG:
+            shiftValue = 16 - shiftValue
+        subVal = (w & (0xFFFF << shiftValue)) >> shiftValue
+        value = f"0x{subVal:04X}"
 
-            comment = self.generateAsmLineComment(localOffset+j)
-            output += f"{label}{comment} {dotType} {value}"
-            if j == 0 and i < len(self.endOfLineComment):
-                output += self.endOfLineComment[i]
+        comment = self.generateAsmLineComment(localOffset+j)
+        return f"{comment} {dotType} {value}"
+
+    def getNthWordAsBytesAndShorts(self, i : int, sym1: common.ContextSymbol|None, sym2: common.ContextSymbol|None, sym3: common.ContextSymbol|None) -> tuple[str, int]:
+        output = ""
+
+        if sym1 is not None or self.isByte(i) or (not self.isShort(i) and sym3 is not None):
+            output += self.getJByteAsByte(i, 0)
+            output += common.GlobalConfig.LINE_ENDS
+
+            output += self.getExtraLabelFromSymbol(sym1)
+            output += self.getJByteAsByte(i, 1)
+            output += common.GlobalConfig.LINE_ENDS
+        else:
+            output += self.getJByteAsShort(i, 0)
+            output += common.GlobalConfig.LINE_ENDS
+
+        output += self.getExtraLabelFromSymbol(sym2)
+        if sym3 is not None or (sym2 is not None and sym2.isByte()) or (self.isByte(i) and (sym2 is None or not sym2.isShort())):
+            output += self.getJByteAsByte(i, 2)
+            output += common.GlobalConfig.LINE_ENDS
+
+            output += self.getExtraLabelFromSymbol(sym3)
+            output += self.getJByteAsByte(i, 3)
+            output += common.GlobalConfig.LINE_ENDS
+        else:
+            output += self.getJByteAsShort(i, 2)
             output += common.GlobalConfig.LINE_ENDS
 
         return output, 0
@@ -189,13 +192,14 @@ class SymbolBase(common.ElementBase):
     def getNthWordAsWords(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False) -> tuple[str, int]:
         output = ""
         localOffset = 4*i
+        vram = self.getVramOffset(localOffset)
         w = self.words[i]
 
         dotType = ".word"
 
         label = ""
         if i != 0:
-            label = self.getLabelAtOffset(localOffset)
+            label = self.getExtraLabelFromSymbol(self.getSymbol(vram, tryPlusOffset=False))
 
         value = f"0x{w:08X}"
 
@@ -230,11 +234,12 @@ class SymbolBase(common.ElementBase):
     def getNthWordAsFloat(self, i: int) -> tuple[str, int]:
         output = ""
         localOffset = 4*i
+        vram = self.getVramOffset(localOffset)
         w = self.words[i]
 
         label = ""
         if i != 0:
-            label = self.getLabelAtOffset(localOffset)
+            label = self.getExtraLabelFromSymbol(self.getSymbol(vram, tryPlusOffset=False))
 
         dotType = ".float"
         floatValue = common.Utils.wordToFloat(w)
@@ -251,11 +256,12 @@ class SymbolBase(common.ElementBase):
     def getNthWordAsDouble(self, i: int) -> tuple[str, int]:
         output = ""
         localOffset = 4*i
+        vram = self.getVramOffset(localOffset)
         w = self.words[i]
 
         label = ""
         if i != 0:
-            label = self.getLabelAtOffset(localOffset)
+            label = self.getExtraLabelFromSymbol(self.getSymbol(vram, tryPlusOffset=False))
 
         dotType = ".double"
         otherHalf = self.words[i+1]
@@ -302,17 +308,13 @@ class SymbolBase(common.ElementBase):
         while i < self.sizew:
             vram = self.getVramOffset(i*4)
 
+            sym1 = self.getSymbol(vram+1, tryPlusOffset=False, checkGlobalSegment=False)
+            sym2 = self.getSymbol(vram+2, tryPlusOffset=False, checkGlobalSegment=False)
+            sym3 = self.getSymbol(vram+3, tryPlusOffset=False, checkGlobalSegment=False)
+
             # Check for symbols in the middle of this word
-            if self.getSymbol(vram+3, tryPlusOffset=False, checkGlobalSegment=False) is not None:
-                data, skip = self.getNthWordAsBytes(i)
-            elif self.getSymbol(vram+1, tryPlusOffset=False, checkGlobalSegment=False) is not None:
-                data, skip = self.getNthWordAsBytes(i)
-            elif self.getSymbol(vram+2, tryPlusOffset=False, checkGlobalSegment=False) is not None:
-                data, skip = self.getNthWordAsShorts(i)
-            elif self.isByte(i):
-                data, skip = self.getNthWordAsBytes(i)
-            elif self.isShort(i):
-                data, skip = self.getNthWordAsShorts(i)
+            if sym1 is not None or sym2 is not None or sym3 is not None or self.isByte(i) or self.isShort(i):
+                data, skip = self.getNthWordAsBytesAndShorts(i, sym1, sym2, sym3)
             elif self.isFloat(i):
                 data, skip = self.getNthWordAsFloat(i)
             elif self.isDouble(i):
