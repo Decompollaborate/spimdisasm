@@ -163,13 +163,13 @@ def writeMigratedFunctionsList(processedSegments: dict[common.FileSectionType, l
     funcAndRodataOrderPath = functionMigrationPath / f"{name}_migrated_functions.txt"
 
     rodataSymbols: list[tuple[symbols.SymbolBase, symbols.SymbolFunction|None]] = []
-    for section in processedSegments[common.FileSectionType.Rodata]:
+    for section in processedSegments.get(common.FileSectionType.Rodata, []):
         for sym in section.symbolList:
             rodataSymbols.append((sym, None))
     rodataSymbolsVrams = {sym.vram for sym, _ in rodataSymbols}
 
     funcs: list[symbols.SymbolFunction] = []
-    for section in processedSegments[common.FileSectionType.Text]:
+    for section in processedSegments.get(common.FileSectionType.Text, []):
         for func in section.symbolList:
             assert isinstance(func, symbols.SymbolFunction)
             funcs.append(func)
