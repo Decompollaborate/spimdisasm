@@ -65,6 +65,10 @@ class InstrAnalyzer:
         self.jumpRegisterIntrOffset: dict[int, int] = dict()
         self.referencedJumpTableOffsets: dict[int, int] = dict()
 
+        # Jump register (jumptables)
+        self.indirectFunctionCallIntrOffset: dict[int, int] = dict()
+        self.indirectFunctionCallOffsets: dict[int, int] = dict()
+
         # Constants
         self.constantHiInstrOffset: dict[int, int] = dict()
         "key: offset of instruction which is setting the %hi constant, value: constant"
@@ -119,7 +123,8 @@ class InstrAnalyzer:
         branch = instrOffset + branchOffset
         targetBranchVram = self.funcVram + branch
 
-        self.referencedVrams.add(targetBranchVram)
+        if not common.GlobalConfig.PIC:
+            self.referencedVrams.add(targetBranchVram)
 
         self.branchLabelOffsets.add(branch)
         self.branchInstrOffsets[instrOffset] = targetBranchVram
@@ -134,7 +139,8 @@ class InstrAnalyzer:
         if target >= 0x84000000 or target < 0x80000000:
             self.funcCallOutsideRangesOffsets[instrOffset] = target
 
-        self.referencedVrams.add(target)
+        if not common.GlobalConfig.PIC:
+            self.referencedVrams.add(target)
         self.referencedVramsInstrOffset[instrOffset] = target
 
         self.funcCallInstrOffsets[instrOffset] = target
@@ -249,7 +255,8 @@ class InstrAnalyzer:
                     self.lowToHiDict[lowerOffset] = luiOffset
             return None
 
-        self.referencedVrams.add(address)
+        if not common.GlobalConfig.PIC:
+            self.referencedVrams.add(address)
 
         if lowerOffset not in self.symbolLoInstrOffset:
             self.symbolLoInstrOffset[lowerOffset] = address
@@ -378,7 +385,18 @@ class InstrAnalyzer:
 
             self.referencedJumpTableOffsets[offset] = address
             self.jumpRegisterIntrOffset[instrOffset] = address
-            self.referencedVrams.add(address)
+            if not common.GlobalConfig.PIC:
+                self.referencedVrams.add(address)
+
+    def processJumpAndLinkRegister(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, instrOffset: int) -> None:
+        jrInfo = regsTracker.getJrInfo(instr)
+        if jrInfo is not None:
+            offset, address = jrInfo
+
+            self.indirectFunctionCallOffsets[offset] = address
+            self.indirectFunctionCallIntrOffset[instrOffset] = address
+            if not common.GlobalConfig.PIC:
+                self.referencedVrams.add(address)
 
 
     def processInstr(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, instrOffset: int, currentVram: int, prevInstr: rabbitizer.Instruction|None) -> None:
@@ -394,6 +412,10 @@ class InstrAnalyzer:
 
         elif instr.isJrNotRa():
             self.processJumpRegister(regsTracker, instr, instrOffset)
+
+        elif instr.isJump() and instr.doesLink():
+            # jalr, implicit not isJumpWithAddress
+            self.processJumpAndLinkRegister(regsTracker, instr, instrOffset)
 
         elif instr.uniqueId == rabbitizer.InstrId.cpu_addu:
             # special check for .cpload

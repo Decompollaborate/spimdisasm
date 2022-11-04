@@ -92,10 +92,10 @@ def progressCallback_writeProcessedFiles(i: int, filePath: str, processedFilesCo
 
 
 def migrateFunctions(processedFiles: dict[common.FileSectionType, list[mips.sections.SectionBase]], functionMigrationPath: Path, progressCallback: ProgressCallbackType|None=None):
-    funcTotal = sum(len(x.symbolList) for x in processedFiles[common.FileSectionType.Text])
-    rodataFileList = processedFiles[common.FileSectionType.Rodata]
+    funcTotal = sum(len(x.symbolList) for x in processedFiles.get(common.FileSectionType.Text, []))
+    rodataFileList = processedFiles.get(common.FileSectionType.Rodata, [])
     i = 0
-    for f in processedFiles[common.FileSectionType.Text]:
+    for f in processedFiles.get(common.FileSectionType.Text, []):
         for func in f.symbolList:
             if progressCallback is not None:
                 progressCallback(i, func.getName(), funcTotal)

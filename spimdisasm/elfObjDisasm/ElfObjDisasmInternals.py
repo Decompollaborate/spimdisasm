@@ -13,6 +13,8 @@ from .. import elf32
 from .. import mips
 from .. import frontendCommon as fec
 
+from .. import __version__
+
 PROGNAME = "elfObjDisasm"
 
 
@@ -307,6 +309,8 @@ def elfObjDisasmMain():
 
     context = common.Context()
     context.parseArgs(args)
+
+    common.Utils.printQuietless(f"{PROGNAME} (spimdisasm {__version__})")
 
     inputPath = Path(args.binary)
     array_of_bytes = common.Utils.readFileAsBytearray(inputPath)
