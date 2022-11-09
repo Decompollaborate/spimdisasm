@@ -251,10 +251,15 @@ def insertGotIntoContext(context: common.Context, got: elf32.Elf32GlobalOffsetTa
     contextSym.isUserDeclared = True
     contextSym.isGotLocal = True
 
+    gotIndex = len(got.localsTable)
+
     for gotEntry in got.globalsTable:
         symName = stringTable[gotEntry.symEntry.name]
 
-        addContextSymFromSymEntry(context, gotEntry.symEntry, gotEntry.getAddress(), symName)
+        contextSym = addContextSymFromSymEntry(context, gotEntry.symEntry, gotEntry.getAddress(), symName)
+        if contextSym is not None:
+            contextSym.gotIndex = gotIndex
+        gotIndex += 1
 
 
 def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, processedSegments: dict[common.FileSectionType, list[mips.sections.SectionBase]]) -> None:
