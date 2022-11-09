@@ -88,6 +88,7 @@ class SectionBss(SectionBase):
             vromEnd = vrom + space
             sym = symbols.SymbolBss(self.context, vrom, vromEnd, symbolOffset + self.inFileOffset, symbolVram, space, self.segmentVromStart, self.overlayCategory)
             sym.parent = self
+            sym.contextSym.autodetectedSize = space
             sym.setCommentOffset(self.commentOffset)
             if symbolOffset in autoCreatedPads:
                 sym.contextSym.isAutoCreatedPad = True
