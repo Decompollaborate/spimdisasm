@@ -108,6 +108,9 @@ class SymbolFunction(SymbolText):
 
 
     def _postProcessGotAccesses(self):
+        if not common.GlobalConfig.PIC:
+            return
+
         globalGotOffsets = set()
 
         for gotAccessOffset, gotAccess in self.instrAnalyzer.gotAccessAddresses.items():
@@ -149,8 +152,8 @@ class SymbolFunction(SymbolText):
             self.instrAnalyzer.referencedVrams.add(gotAddress)
 
         for loOffset, symVram in self.instrAnalyzer.symbolLoInstrOffset.items():
-            hiOffset = self.instrAnalyzer.lowToHiDict[loOffset]
-            if hiOffset in self.instrAnalyzer.gotAccessAddresses:
+            hiOffset = self.instrAnalyzer.lowToHiDict.get(loOffset)
+            if hiOffset is not None and hiOffset in self.instrAnalyzer.gotAccessAddresses:
                 if hiOffset in globalGotOffsets:
                     if loOffset in self.instrAnalyzer.symbolInstrOffset:
                         del self.instrAnalyzer.symbolInstrOffset[loOffset]
