@@ -73,9 +73,14 @@ def endianessBytesToWords(endian: InputEndian, array_of_bytes: bytearray, offset
         return list()
 
     bytesCount = totalBytesCount
+    offsetEndHex = "None"
     if offsetEnd is not None and offsetEnd > 0:
         bytesCount = offsetEnd
+        offsetEndHex = f"{offsetEnd:X}"
     bytesCount -= offset
+
+    assert bytesCount >= 0, f"{offset:X}, {offsetEndHex}, {bytesCount:X}, {totalBytesCount:X}"
+    assert offset + bytesCount <= totalBytesCount, f"{offset:X}, {offsetEndHex}, {bytesCount:X}, {totalBytesCount:X}"
 
     if endian == InputEndian.MIDDLE:
         # Convert middle endian to big endian
