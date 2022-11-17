@@ -246,6 +246,7 @@ def insertDynsymIntoContext(context: common.Context, symbolTable: elf32.Elf32Sym
 
 def insertGotIntoContext(context: common.Context, got: elf32.Elf32GlobalOffsetTable, stringTable: elf32.Elf32StringTable):
     lazyResolver = got.localsTable[0]
+    contextSym: common.ContextSymbol|None
     contextSym = context.globalSegment.addSymbol(lazyResolver)
     contextSym.name = f"$$.LazyResolver"
     contextSym.isUserDeclared = True

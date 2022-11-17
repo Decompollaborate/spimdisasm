@@ -36,17 +36,17 @@ class FileSplitFormat:
         section = FileSectionType.Invalid
 
         for i, row in enumerate(self.splits):
-            offset, vram, fileName = row
+            offsetStr, vramStr, fileName = row
 
             isHandwritten = False
             isRsp = False
-            offset = offset.upper()
-            if offset[-1] == "H":
+            offsetStr = offsetStr.upper()
+            if offsetStr[-1] == "H":
                 isHandwritten = True
-                offset = offset[:-1]
-            elif offset[-1] == "R":
+                offsetStr = offsetStr[:-1]
+            elif offsetStr[-1] == "R":
                 isRsp = True
-                offset = offset[:-1]
+                offsetStr = offsetStr[:-1]
 
             if fileName == ".text":
                 section = FileSectionType.Text
@@ -66,8 +66,8 @@ class FileSplitFormat:
             elif fileName == ".end":
                 break
 
-            vram = int(vram, 16)
-            offset = int(offset, 16)
+            vram = int(vramStr, 16)
+            offset = int(offsetStr, 16)
             nextOffset = 0xFFFFFF
             if i + 1 < len(self.splits):
                 if self.splits[i+1][2] == ".end":
