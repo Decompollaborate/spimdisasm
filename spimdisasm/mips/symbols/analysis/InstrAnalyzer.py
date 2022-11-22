@@ -103,9 +103,6 @@ class InstrAnalyzer:
 
         self.gotAccessAddresses: dict[int, int] = dict()
 
-        # self.gotSymbolTypes: dict[int, SymbolTypeInfo] = dict()
-        "key: instruction offset, value: <SymbolTypeInfo>"
-
         self.unpairedCploads: list[CploadInfo] = list()
         "cploads which are not yet fully paired"
         self.cploadOffsets: set[int] = set()

@@ -5,24 +5,31 @@
 
 from __future__ import annotations
 
+import dataclasses
+
 from .. import common
 
 
+@dataclasses.dataclass
+class GotSymEntry:
+    address: int
+    contextSym: common.ContextSymbol|None = None
+
 class GlobalOffsetTable:
     def __init__(self):
-        self.localsTable: list[int] = list()
-        self.globalsTable: list[int] = list()
+        self.localsTable: list[GotSymEntry] = list()
+        self.globalsTable: list[GotSymEntry] = list()
 
         self.tableStart: int|None = None
 
 
     def initTables(self, pltGot: int, localsTable: list[int], globalsTable: list[int]):
         self.tableStart = pltGot
-        self.localsTable = localsTable
-        self.globalsTable = globalsTable
+        self.localsTable = [GotSymEntry(address) for address in localsTable]
+        self.globalsTable = [GotSymEntry(address) for address in globalsTable]
 
 
-    def getAddress(self, address: int) -> tuple[int|None, bool|None]:
+    def getGotSymEntry(self, address: int) -> tuple[GotSymEntry|None, bool|None]:
         if self.tableStart is None:
             return None, None
 

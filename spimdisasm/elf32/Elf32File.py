@@ -441,23 +441,23 @@ class Elf32File:
             print(f"   Address {'Access':>9}  Initial Purpose")
             access = entryAddress - gpValue
             if access < 0:
-                accessStr = f"-{-access:X}"
+                accessStr = f"-0x{-access:X}"
             else:
-                accessStr = f"{access:X}"
-            print(f"  {entryAddress:8X} {accessStr:5}(gp) {self.got.localsTable[0]:08X} Lazy resolver")
+                accessStr = f"0x{access:X}"
+            print(f"  {entryAddress:8X} {accessStr:5}($gp) {self.got.localsTable[0]:08X} Lazy resolver")
             entryAddress += 4
 
             print()
 
             print(f" Local entries:")
-            print(f"   Address {'Access':>9}  Initial")
+            print(f"   Address {'Access':>12}  Initial")
             for x in self.got.localsTable[1:]:
                 access = entryAddress - gpValue
                 if access < 0:
-                    accessStr = f"-{-access:X}"
+                    accessStr = f"-0x{-access:X}"
                 else:
-                    accessStr = f"{access:X}"
-                print(f"  {entryAddress:8X} {accessStr:5}(gp) {x:08X}")
+                    accessStr = f"0x{access:X}"
+                print(f"  {entryAddress:8X} {accessStr:5}($gp) {x:08X}")
                 entryAddress += 4
 
             print()

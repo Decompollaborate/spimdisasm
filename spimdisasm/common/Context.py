@@ -93,10 +93,10 @@ class Context:
     def initGotTable(self, pltGot: int, localsTable: list[int], globalsTable: list[int]):
         self.got.initTables(pltGot, localsTable, globalsTable)
 
-        for globalAddress in self.got.globalsTable:
-            contextSym = self.globalSegment.addSymbol(globalAddress)
-            contextSym.isUserDeclared = True
-            contextSym.isGotGlobal = True
+        for gotEntry in self.got.globalsTable:
+            gotEntry.contextSym = self.globalSegment.addSymbol(gotEntry.address)
+            gotEntry.contextSym.isUserDeclared = True
+            gotEntry.contextSym.isGotGlobal = True
 
 
     def fillDefaultBannedSymbols(self):
