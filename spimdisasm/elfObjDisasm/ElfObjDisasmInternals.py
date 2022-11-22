@@ -182,6 +182,7 @@ def addContextSymFromSymEntry(context: common.Context, symEntry: elf32.Elf32SymE
         segment = context.unknownSegment
 
     if symEntry.stType == elf32.Elf32SymbolTableType.FUNC.value:
+        segment = context.globalSegment
         contextSym = segment.addFunction(symAddress, vromAddress=symVrom)
     elif symEntry.stType == elf32.Elf32SymbolTableType.OBJECT.value:
         contextSym = segment.addSymbol(symAddress, vromAddress=symVrom)
