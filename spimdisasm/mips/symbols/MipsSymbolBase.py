@@ -219,7 +219,8 @@ class SymbolBase(common.ElementBase):
             if symbolRef is not None:
                 if symbolRef.type != common.SymbolSpecialType.function or w == symbolRef.vram:
                     # Avoid using addends on functions
-                    value = symbolRef.getSymbolPlusOffset(w)
+                    if not symbolRef.isElfNotype:
+                        value = symbolRef.getSymbolPlusOffset(w)
             elif canReferenceConstants:
                 constant = self.getConstant(w)
                 if constant is not None:
