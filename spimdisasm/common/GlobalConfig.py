@@ -151,6 +151,7 @@ class GlobalConfig:
     """Toggle the glabel count comment on functions"""
 
     ASM_TEXT_LABEL: str = "glabel"
+    ASM_JTBL_LABEL: str = "glabel"
     ASM_DATA_LABEL: str = "glabel"
     ASM_USE_SYMBOL_LABEL: bool = True
     ASM_TEXT_ENT_LABEL: str = ""
@@ -230,6 +231,7 @@ class GlobalConfig:
         miscConfig.add_argument("--glabel-count", help=f"Toggle glabel count comment. Defaults to {GlobalConfig.GLABEL_ASM_COUNT}", action=Utils.BooleanOptionalAction)
 
         miscConfig.add_argument("--asm-text-label", help=f"Changes the label used to declare functions. Defaults to {GlobalConfig.ASM_TEXT_LABEL}")
+        miscConfig.add_argument("--asm-jtbl-label", help=f"Changes the label used to declare jumptable labels. Defaults to {GlobalConfig.ASM_JTBL_LABEL}")
         miscConfig.add_argument("--asm-data-label", help=f"Changes the label used to declare data symbols. Defaults to {GlobalConfig.ASM_DATA_LABEL}")
         miscConfig.add_argument("--asm-use-symbol-label", help=f"Toggles the use of labels for symbols. Defaults to {GlobalConfig.ASM_USE_SYMBOL_LABEL}", action=Utils.BooleanOptionalAction)
         miscConfig.add_argument("--asm-ent-label", help=f"Tells the disassembler to start using an ent label for functions")
@@ -324,6 +326,8 @@ class GlobalConfig:
 
         if args.asm_text_label:
             GlobalConfig.ASM_TEXT_LABEL = args.asm_text_label
+        if args.asm_jtbl_label:
+            GlobalConfig.ASM_JTBL_LABEL = args.asm_jtbl_label
         if args.asm_data_label:
             GlobalConfig.ASM_DATA_LABEL = args.asm_data_label
         if args.asm_use_symbol_label is not None:
