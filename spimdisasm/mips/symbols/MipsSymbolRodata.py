@@ -33,6 +33,12 @@ class SymbolRodata(SymbolBase):
 
     def isRdata(self) -> bool:
         "Checks if the current symbol is .rdata"
+        if self.contextSym.forceMigration:
+            return False
+
+        if self.contextSym.forceNotMigration:
+            return True
+
         if self.contextSym.isMaybeConstVariable():
             return True
 

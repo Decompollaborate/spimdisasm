@@ -88,6 +88,8 @@ class SectionRelocZ64(SectionBase):
     def analyze(self):
         localOffset = 0
 
+        sym: symbols.SymbolBase
+
         currentVram = self.getVramOffset(localOffset)
         vrom = self.getVromOffset(localOffset)
         vromEnd = vrom + 4 * 4

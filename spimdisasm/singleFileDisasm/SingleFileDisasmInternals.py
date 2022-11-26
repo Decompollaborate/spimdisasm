@@ -182,6 +182,8 @@ def disassemblerMain():
     for sect in processedFiles.values():
         processedFilesCount += len(sect)
 
+    progressCallback: fec.FrontendUtilities.ProgressCallbackType
+
     progressCallback = fec.FrontendUtilities.progressCallback_analyzeProcessedFiles
     fec.FrontendUtilities.analyzeProcessedFiles(processedFiles, processedFilesOutputPaths, processedFilesCount, progressCallback)
 

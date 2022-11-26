@@ -182,15 +182,17 @@ def addContextSymFromSymEntry(context: common.Context, symEntry: elf32.Elf32SymE
         segment = context.unknownSegment
 
     if symEntry.stType == elf32.Elf32SymbolTableType.FUNC.value:
+        segment = context.globalSegment
         contextSym = segment.addFunction(symAddress, vromAddress=symVrom)
     elif symEntry.stType == elf32.Elf32SymbolTableType.OBJECT.value:
         contextSym = segment.addSymbol(symAddress, vromAddress=symVrom)
     elif symEntry.stType == elf32.Elf32SymbolTableType.SECTION.value:
         # print(symEntry)
         return None
-    elif symEntry.stType == elf32.Elf32SymbolTableType.NOTYPE.value:
-        # Is ok to just ignore this?
-        return None
+    elif symEntry.stType == elf32.Elf32SymbolTableType.NOTYPE.value and symEntry.shndx == elf32.Elf32SectionHeaderNumber.ABS.value:
+        segment = context.globalSegment
+        contextSym = segment.addSymbol(symAddress, vromAddress=symVrom)
+        contextSym.isElfNotype = True
     else:
         common.Utils.eprint(f"Warning: symbol '{symName}' has an unhandled stType: '{symEntry.stType}'")
         contextSym = segment.addSymbol(symAddress, vromAddress=symVrom)
@@ -246,15 +248,21 @@ def insertDynsymIntoContext(context: common.Context, symbolTable: elf32.Elf32Sym
 
 def insertGotIntoContext(context: common.Context, got: elf32.Elf32GlobalOffsetTable, stringTable: elf32.Elf32StringTable):
     lazyResolver = got.localsTable[0]
+    contextSym: common.ContextSymbol|None
     contextSym = context.globalSegment.addSymbol(lazyResolver)
     contextSym.name = f"$$.LazyResolver"
     contextSym.isUserDeclared = True
     contextSym.isGotLocal = True
 
+    gotIndex = len(got.localsTable)
+
     for gotEntry in got.globalsTable:
         symName = stringTable[gotEntry.symEntry.name]
 
-        addContextSymFromSymEntry(context, gotEntry.symEntry, gotEntry.getAddress(), symName)
+        contextSym = addContextSymFromSymEntry(context, gotEntry.symEntry, gotEntry.getAddress(), symName)
+        if contextSym is not None:
+            contextSym.gotIndex = gotIndex
+        gotIndex += 1
 
 
 def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, processedSegments: dict[common.FileSectionType, list[mips.sections.SectionBase]]) -> None:

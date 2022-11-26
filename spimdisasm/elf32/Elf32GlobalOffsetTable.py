@@ -10,7 +10,7 @@ import struct
 
 from .. import common
 
-from .Elf32Constants import Elf32SymbolTableType, Elf32SectionHeaderNumber
+from .Elf32Constants import Elf32SectionHeaderNumber
 from .Elf32Dyns import Elf32Dyns
 from .Elf32Syms import Elf32Syms, Elf32SymEntry
 

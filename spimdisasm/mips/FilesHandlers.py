@@ -68,14 +68,18 @@ def getRdataAndLateRodataForFunctionFromSection(func: symbols.SymbolFunction, ro
         if rodataSym.vram not in intersection:
             continue
 
-        # We only care for rodata that's used only by one function
-        if len(rodataSym.contextSym.referenceFunctions) != 1:
+        if rodataSym.contextSym.forceNotMigration:
             continue
 
-        # A const variable should not be placed with a function when using IDO
-        if rodataSym.contextSym.isMaybeConstVariable():
-            if common.GlobalConfig.COMPILER not in {common.Compiler.SN64, common.Compiler.PSYQ}:
+        if not rodataSym.contextSym.forceMigration:
+            # We only care for rodata that's used only by one function
+            if len(rodataSym.contextSym.referenceFunctions) != 1:
                 continue
+
+            # A const variable should not be placed with a function when using IDO
+            if rodataSym.contextSym.isMaybeConstVariable():
+                if common.GlobalConfig.COMPILER not in {common.Compiler.SN64, common.Compiler.PSYQ}:
+                    continue
 
         if rodataSym.contextSym.isLateRodata() and common.GlobalConfig.COMPILER == common.Compiler.IDO:
             lateRodataList.append(rodataSym)

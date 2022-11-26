@@ -62,7 +62,7 @@ class SectionBss(SectionBase):
                 newSymbolVram = symbolVram + contextSym.size
                 if newSymbolVram != self.bssVramEnd:
                     assert newSymbolVram >= self.bssVramStart
-                    assert newSymbolVram < self.bssVramEnd
+                    assert newSymbolVram < self.bssVramEnd, f"{self.name}, symbolVram={symbolVram:X}, newSymbolVram={newSymbolVram:X}, self.bssVramEnd={self.bssVramEnd:X}"
                     symOffset = symbolVram + contextSym.size - self.bssVramStart
                     bssSymbolOffsets.add(symOffset)
                     autoCreatedPads.add(symOffset)
@@ -88,6 +88,7 @@ class SectionBss(SectionBase):
             vromEnd = vrom + space
             sym = symbols.SymbolBss(self.context, vrom, vromEnd, symbolOffset + self.inFileOffset, symbolVram, space, self.segmentVromStart, self.overlayCategory)
             sym.parent = self
+            sym.contextSym.autodetectedSize = space
             sym.setCommentOffset(self.commentOffset)
             if symbolOffset in autoCreatedPads:
                 sym.contextSym.isAutoCreatedPad = True

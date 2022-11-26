@@ -388,12 +388,12 @@ class Elf32File:
                 if stBind is not None:
                     bind = stBind.name
 
-                visibility: str|int = sym.other
+                visibility: str = f"0x{sym.other:X}"
                 stOther = Elf32SymbolVisibility.fromValue(sym.other)
                 if stOther is not None:
                     visibility = stOther.name
 
-                ndx: str|int = sym.shndx
+                ndx: str = f"0x{sym.shndx:X}"
                 shndx = Elf32SectionHeaderNumber.fromValue(sym.shndx)
                 if shndx is not None:
                     ndx = shndx.name
@@ -441,35 +441,35 @@ class Elf32File:
             print(f"   Address {'Access':>9}  Initial Purpose")
             access = entryAddress - gpValue
             if access < 0:
-                accessStr = f"-{-access:X}"
+                accessStr = f"-0x{-access:X}"
             else:
-                accessStr = f"{access:X}"
-            print(f"  {entryAddress:8X} {accessStr:5}(gp) {self.got.localsTable[0]:08X} Lazy resolver")
+                accessStr = f"0x{access:X}"
+            print(f"  {entryAddress:8X} {accessStr:5}($gp) {self.got.localsTable[0]:08X} Lazy resolver")
             entryAddress += 4
 
             print()
 
             print(f" Local entries:")
-            print(f"   Address {'Access':>9}  Initial")
+            print(f"   Address {'Access':>12}  Initial")
             for x in self.got.localsTable[1:]:
                 access = entryAddress - gpValue
                 if access < 0:
-                    accessStr = f"-{-access:X}"
+                    accessStr = f"-0x{-access:X}"
                 else:
-                    accessStr = f"{access:X}"
-                print(f"  {entryAddress:8X} {accessStr:5}(gp) {x:08X}")
+                    accessStr = f"0x{access:X}"
+                print(f"  {entryAddress:8X} {accessStr:5}($gp) {x:08X}")
                 entryAddress += 4
 
             print()
 
             print(f" Global entries:")
-            print(f"  {'Address':>8} {'Access':>9}  Initial Sym.Val. Type    {'Ndx':12} Name")
+            print(f"  {'Address':>8} {'Access':>12}  Initial Sym.Val. Type    {'Ndx':12} Name")
             for gotEntry in self.got.globalsTable:
                 access = entryAddress - gpValue
                 if access < 0:
-                    accessStr = f"-{-access:X}"
+                    accessStr = f"-0x{-access:X}"
                 else:
-                    accessStr = f"{access:X}"
+                    accessStr = f"0x{access:X}"
                 entryType = Elf32SymbolTableType(gotEntry.symEntry.stType)
                 ndx: str = f"0x{gotEntry.symEntry.shndx:X}"
                 shndx = Elf32SectionHeaderNumber.fromValue(gotEntry.symEntry.shndx)
@@ -478,7 +478,7 @@ class Elf32File:
                 symName = ""
                 if self.dynstr is not None:
                     symName = self.dynstr[gotEntry.symEntry.name]
-                print(f"  {entryAddress:8X} {accessStr:5}(gp) {gotEntry.getAddress():08X} {gotEntry.symEntry.value:08X} {entryType.name:7} {ndx:12} {symName}")
+                print(f"  {entryAddress:8X} {accessStr:5}($gp) {gotEntry.getAddress():08X} {gotEntry.symEntry.value:08X} {entryType.name:7} {ndx:12} {symName}")
                 entryAddress += 4
 
             print()

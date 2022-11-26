@@ -204,6 +204,7 @@ class Elf32SymbolVisibility(enum.Enum):
 @enum.unique
 class Elf32SectionHeaderNumber(enum.Enum):
     UNDEF           = 0
+    ABS             = 0xFFF1
     COMMON          = 0xFFF2
     MIPS_ACOMMON    = 0xFF00
     MIPS_TEXT       = 0xFF01
