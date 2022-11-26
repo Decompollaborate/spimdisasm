@@ -125,6 +125,21 @@ class ContextSymbol:
 
     isElfNotype: bool = False
 
+    forceMigration: bool = False
+    """Ignore rules for migrating rodata and force migration of this symbol to any
+    function which references it.
+
+    Enabling both forceMigration and forceNotMigration on the same symbol is
+    undefined behaviour.
+    """
+    forceNotMigration: bool = False
+    """Ignore rules for migrating rodata and prevent migration of this symbol to any
+    function which references it.
+
+    Enabling both forceMigration and forceNotMigration on the same symbol is
+    undefined behaviour.
+    """
+
 
     @property
     def vram(self) -> int:
