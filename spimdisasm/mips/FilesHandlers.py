@@ -68,18 +68,8 @@ def getRdataAndLateRodataForFunctionFromSection(func: symbols.SymbolFunction, ro
         if rodataSym.vram not in intersection:
             continue
 
-        if rodataSym.contextSym.forceNotMigration:
+        if not rodataSym.shouldMigrate():
             continue
-
-        if not rodataSym.contextSym.forceMigration:
-            # We only care for rodata that's used only by one function
-            if len(rodataSym.contextSym.referenceFunctions) != 1:
-                continue
-
-            # A const variable should not be placed with a function when using IDO
-            if rodataSym.contextSym.isMaybeConstVariable():
-                if common.GlobalConfig.COMPILER not in {common.Compiler.SN64, common.Compiler.PSYQ}:
-                    continue
 
         if rodataSym.contextSym.isLateRodata() and common.GlobalConfig.COMPILER == common.Compiler.IDO:
             lateRodataList.append(rodataSym)
@@ -154,7 +144,7 @@ def writeOtherRodata(path: Path, rodataFileList: list[sections.SectionBase]):
         rodataPath.mkdir(parents=True, exist_ok=True)
 
         for rodataSym in rodataSection.symbolList:
-            if not rodataSym.isRdata():
+            if rodataSym.shouldMigrate():
                 continue
 
             rodataSymbolPath = rodataPath / (rodataSym.getName() + ".s")
