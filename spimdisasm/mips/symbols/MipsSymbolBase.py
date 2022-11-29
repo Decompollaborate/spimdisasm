@@ -101,6 +101,9 @@ class SymbolBase(common.ElementBase):
         "Checks if the current symbol is .rdata"
         return False
 
+    def shouldMigrate(self) -> bool:
+        return False
+
 
     def renameBasedOnType(self):
         pass

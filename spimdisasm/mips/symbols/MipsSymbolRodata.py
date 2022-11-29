@@ -31,21 +31,47 @@ class SymbolRodata(SymbolBase):
         return self.contextSym.isJumpTable()
 
 
+    def isMaybeConstVariable(self) -> bool:
+        if self.isFloat(0):
+            if self.sizew > 1:
+                for w in self.words[1:]:
+                    if w != 0:
+                        return True
+            return False
+        elif self.isDouble(0):
+            if self.sizew > 2:
+                for w in self.words[2:]:
+                    if w != 0:
+                        return True
+            return False
+        elif self.isJumpTable():
+            return False
+        elif self.isString():
+            return False
+        return True
+
     def isRdata(self) -> bool:
         "Checks if the current symbol is .rdata"
-        if self.contextSym.forceMigration:
-            return False
-
-        if self.contextSym.forceNotMigration:
-            return True
-
-        if self.contextSym.isMaybeConstVariable():
+        if self.isMaybeConstVariable():
             return True
 
         # This symbol could be an unreferenced non-const variable
-        if self.contextSym.referenceCounter == 1 or (len(self.contextSym.referenceFunctions) == 1 and common.GlobalConfig.COMPILER != common.Compiler.IDO):
+        if len(self.contextSym.referenceFunctions) == 1:
             # This const variable was already used in a function
             return False
+
+        return True
+
+    def shouldMigrate(self) -> bool:
+        if self.contextSym.forceMigration:
+            return True
+
+        if self.contextSym.forceNotMigration:
+            return False
+
+        if self.isRdata():
+            if common.GlobalConfig.COMPILER not in {common.Compiler.SN64, common.Compiler.PSYQ}:
+                return False
 
         return True
 

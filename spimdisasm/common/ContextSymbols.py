@@ -229,17 +229,6 @@ class ContextSymbol:
     def isJumpTable(self) -> bool:
         return self.type == SymbolSpecialType.jumptable
 
-    def isMaybeConstVariable(self) -> bool:
-        if self.isFloat():
-            return False
-        if self.isDouble():
-            return False
-        elif self.isJumpTable():
-            return False
-        elif self.isString():
-            return False
-        return True
-
 
     def isStatic(self) -> bool:
         if self.type == SymbolSpecialType.jumptablelabel:
