@@ -297,8 +297,20 @@ class SymbolBase(common.ElementBase):
     def getPostAlignDirective(self, i: int=0) -> str:
         return ""
 
+    def getReferenceeSymbols(self) -> str:
+        if not common.GlobalConfig.ASM_COMMENT or not common.GlobalConfig.ASM_REFERENCEE_SYMBOLS:
+            return ""
+
+        if len(self.contextSym.referenceFunctions):
+            output = "# Symbols referencing this symbol:"
+            for sym in self.contextSym.referenceFunctions:
+                output += f" {sym.getName()}"
+            return f"{output}{common.GlobalConfig.LINE_ENDS}"
+        return ""
+
     def disassembleAsData(self, useGlobalLabel: bool=True) -> str:
-        output = ""
+        output = self.getReferenceeSymbols()
+
         if useGlobalLabel:
             output += self.getPrevAlignDirective(0)
             output += self.getLabelFromSymbol(self.contextSym)

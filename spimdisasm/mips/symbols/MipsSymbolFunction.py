@@ -641,6 +641,8 @@ class SymbolFunction(SymbolText):
             if self.hasUnimplementedIntrs:
                 return self.disassembleAsData(useGlobalLabel=useGlobalLabel)
 
+        output += self.getReferenceeSymbols()
+
         if self.isLikelyHandwritten:
             if not self.isRsp:
                 # RSP functions are always handwritten, so this is redundant

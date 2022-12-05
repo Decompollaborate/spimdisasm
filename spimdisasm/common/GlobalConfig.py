@@ -149,6 +149,7 @@ class GlobalConfig:
     ASM_COMMENT_OFFSET_WIDTH: int = 6
     GLABEL_ASM_COUNT: bool = True
     """Toggle the glabel count comment on functions"""
+    ASM_REFERENCEE_SYMBOLS: bool = False
 
     ASM_TEXT_LABEL: str = "glabel"
     ASM_JTBL_LABEL: str = "glabel"
@@ -230,6 +231,7 @@ class GlobalConfig:
         miscConfig.add_argument("--asm-comments", help=f"Toggle the comments in generated assembly code. Defaults to {GlobalConfig.ASM_COMMENT}", action=Utils.BooleanOptionalAction)
         miscConfig.add_argument("--comment-offset-width", help=f"Sets the zeroes width padding for the file offset comment. Defaults to {GlobalConfig.ASM_COMMENT_OFFSET_WIDTH}", action=Utils.BooleanOptionalAction)
         miscConfig.add_argument("--glabel-count", help=f"Toggle glabel count comment. Defaults to {GlobalConfig.GLABEL_ASM_COUNT}", action=Utils.BooleanOptionalAction)
+        miscConfig.add_argument("--asm-referencee-symbols", help=f"Toggle glabel count comment. Defaults to {GlobalConfig.ASM_REFERENCEE_SYMBOLS}", action=Utils.BooleanOptionalAction)
 
         miscConfig.add_argument("--asm-text-label", help=f"Changes the label used to declare functions. Defaults to {GlobalConfig.ASM_TEXT_LABEL}")
         miscConfig.add_argument("--asm-jtbl-label", help=f"Changes the label used to declare jumptable labels. Defaults to {GlobalConfig.ASM_JTBL_LABEL}")
@@ -325,6 +327,8 @@ class GlobalConfig:
             GlobalConfig.ASM_COMMENT_OFFSET_WIDTH = args.comment_offset_width
         if args.glabel_count is not None:
             GlobalConfig.GLABEL_ASM_COUNT = args.glabel_count
+        if args.asm_referencee_symbols is not None:
+            GlobalConfig.ASM_REFERENCEE_SYMBOLS = args.asm_referencee_symbols
 
         if args.asm_text_label:
             GlobalConfig.ASM_TEXT_LABEL = args.asm_text_label
