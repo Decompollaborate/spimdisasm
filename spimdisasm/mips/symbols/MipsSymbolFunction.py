@@ -634,6 +634,9 @@ class SymbolFunction(SymbolText):
     def disassemble(self, migrate: bool=False, useGlobalLabel: bool=True) -> str:
         output = ""
 
+        if migrate:
+            output += self.getSpimdisasmVersionString()
+
         if not common.GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS:
             if self.hasUnimplementedIntrs:
                 return self.disassembleAsData(useGlobalLabel=useGlobalLabel)

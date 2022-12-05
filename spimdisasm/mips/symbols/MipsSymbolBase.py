@@ -338,4 +338,10 @@ class SymbolBase(common.ElementBase):
         return output
 
     def disassemble(self, migrate: bool=False, useGlobalLabel: bool=True) -> str:
-        return self.disassembleAsData(useGlobalLabel=useGlobalLabel)
+        output = ""
+
+        if migrate:
+            output += self.getSpimdisasmVersionString()
+
+        output = self.disassembleAsData(useGlobalLabel=useGlobalLabel)
+        return output

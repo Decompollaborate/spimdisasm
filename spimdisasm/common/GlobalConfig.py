@@ -159,6 +159,7 @@ class GlobalConfig:
     ASM_TEXT_FUNC_AS_LABEL: bool = False
     ASM_DATA_SYM_AS_LABEL: bool = False
     ASM_USE_PRELUDE: bool = True
+    ASM_GENERATED_BY: bool = True
 
     PRINT_NEW_FILE_BOUNDARIES: bool = False
     """Print to stdout every file boundary found in .text and .rodata"""
@@ -239,6 +240,7 @@ class GlobalConfig:
         miscConfig.add_argument("--asm-func-as-label", help=f"Toggle adding the function name as an additional label. Defaults to {GlobalConfig.ASM_TEXT_FUNC_AS_LABEL}", action=Utils.BooleanOptionalAction)
         miscConfig.add_argument("--asm-data-as-label", help=f"Toggle adding the data symbol name as an additional label. Defaults to {GlobalConfig.ASM_DATA_SYM_AS_LABEL}", action=Utils.BooleanOptionalAction)
         miscConfig.add_argument("--asm-use-prelude", help=f"Toggle use of the default prelude for asm files. Defaults to {GlobalConfig.ASM_USE_PRELUDE}", action=Utils.BooleanOptionalAction)
+        miscConfig.add_argument("--asm-generated-by", help=f"Toggle comment indicating the tool and version used to generate the disassembly. Defaults to {GlobalConfig.ASM_GENERATED_BY}", action=Utils.BooleanOptionalAction)
 
         miscConfig.add_argument("--print-new-file-boundaries", help=f"Print to stdout any new file boundary found. Defaults to {GlobalConfig.PRINT_NEW_FILE_BOUNDARIES}", action=Utils.BooleanOptionalAction)
 
@@ -342,6 +344,8 @@ class GlobalConfig:
             GlobalConfig.ASM_DATA_SYM_AS_LABEL = args.asm_data_as_label
         if args.asm_use_prelude is not None:
             GlobalConfig.ASM_USE_PRELUDE = args.asm_use_prelude
+        if args.asm_generated_by is not None:
+            GlobalConfig.ASM_GENERATED_BY = args.asm_generated_by
 
         if args.print_new_file_boundaries is not None:
             GlobalConfig.PRINT_NEW_FILE_BOUNDARIES = args.print_new_file_boundaries
