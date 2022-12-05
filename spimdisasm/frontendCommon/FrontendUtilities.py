@@ -18,6 +18,45 @@ ProgressCallbackType = Callable[[int, str, int], None]
 _sLenLastLine = 80
 
 
+def getSplittedSections(context: common.Context, splits: common.FileSplitFormat, array_of_bytes: bytearray, inputPath: Path, textOutput: Path, dataOutput: Path) -> tuple[dict[common.FileSectionType, list[mips.sections.SectionBase]], dict[common.FileSectionType, list[Path]]]:
+    processedFiles: dict[common.FileSectionType, list[mips.sections.SectionBase]] = {
+        common.FileSectionType.Text: [],
+        common.FileSectionType.Data: [],
+        common.FileSectionType.Rodata: [],
+        common.FileSectionType.Bss: [],
+    }
+    processedFilesOutputPaths: dict[common.FileSectionType, list[Path]] = {k: [] for k in processedFiles}
+
+    for row in splits:
+        if row.section == common.FileSectionType.Text:
+            outputPath = textOutput
+        elif row.section == common.FileSectionType.Data:
+            outputPath = dataOutput
+        elif row.section == common.FileSectionType.Rodata:
+            outputPath = dataOutput
+        elif row.section == common.FileSectionType.Bss:
+            outputPath = dataOutput
+        else:
+            common.Utils.eprint("Error! Section not set!")
+            exit(1)
+
+        outputFilePath = outputPath
+        if str(outputPath) != "-":
+            fileName = row.fileName
+            if row.fileName == "":
+                fileName = f"{inputPath.stem}_{row.vram:08X}"
+
+            outputFilePath = outputPath / fileName
+
+        common.Utils.printVerbose(f"Reading '{row.fileName}'")
+        f = mips.FilesHandlers.createSectionFromSplitEntry(row, array_of_bytes, outputFilePath, context)
+        f.setCommentOffset(row.offset)
+        processedFiles[row.section].append(f)
+        processedFilesOutputPaths[row.section].append(outputFilePath)
+
+    return processedFiles, processedFilesOutputPaths
+
+
 def analyzeProcessedFiles(processedFiles: dict[common.FileSectionType, list[mips.sections.SectionBase]], processedFilesOutputPaths: dict[common.FileSectionType, list[Path]], processedFilesCount: int, progressCallback: ProgressCallbackType|None=None):
     i = 0
     for sectionType, filesInSection in sorted(processedFiles.items()):

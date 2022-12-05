@@ -86,43 +86,6 @@ def getSplits(fileSplitsPath: Path|None, vromStart: int, vromEnd: int, fileVram:
 
     return splits
 
-def getProcessedSections(context: common.Context, splits: common.FileSplitFormat, array_of_bytes: bytearray, inputPath: Path, textOutput: Path, dataOutput: Path):
-    processedFiles: dict[common.FileSectionType, list[mips.sections.SectionBase]] = {
-        common.FileSectionType.Text: [],
-        common.FileSectionType.Data: [],
-        common.FileSectionType.Rodata: [],
-        common.FileSectionType.Bss: [],
-    }
-    processedFilesOutputPaths: dict[common.FileSectionType, list[Path]] = {k: [] for k in processedFiles}
-
-    for row in splits:
-        if row.section == common.FileSectionType.Text:
-            outputPath = textOutput
-        elif row.section == common.FileSectionType.Data:
-            outputPath = dataOutput
-        elif row.section == common.FileSectionType.Rodata:
-            outputPath = dataOutput
-        elif row.section == common.FileSectionType.Bss:
-            outputPath = dataOutput
-        else:
-            common.Utils.eprint("Error! Section not set!")
-            exit(1)
-
-        outputFilePath = outputPath
-        if str(outputPath) != "-":
-            fileName = row.fileName
-            if row.fileName == "":
-                fileName = f"{inputPath.stem}_{row.vram:08X}"
-
-            outputFilePath = outputPath / fileName
-
-        common.Utils.printVerbose(f"Reading '{row.fileName}'")
-        f = mips.FilesHandlers.createSectionFromSplitEntry(row, array_of_bytes, outputFilePath, context)
-        f.setCommentOffset(row.offset)
-        processedFiles[row.section].append(f)
-        processedFilesOutputPaths[row.section].append(outputFilePath)
-
-    return processedFiles, processedFilesOutputPaths
 
 def changeGlobalSegmentRanges(context: common.Context, processedFiles: dict[common.FileSectionType, list[mips.sections.SectionBase]], fileSize: int, fileVram: int) -> None:
     highestVromEnd = fileSize
@@ -175,7 +138,7 @@ def disassemblerMain():
     else:
         dataOutput = Path(args.data_output)
 
-    processedFiles, processedFilesOutputPaths = getProcessedSections(context, splits, array_of_bytes, inputPath, textOutput, dataOutput)
+    processedFiles, processedFilesOutputPaths = fec.FrontendUtilities.getSplittedSections(context, splits, array_of_bytes, inputPath, textOutput, dataOutput)
     changeGlobalSegmentRanges(context, processedFiles, len(array_of_bytes), int(args.vram, 16))
 
     processedFilesCount = 0
