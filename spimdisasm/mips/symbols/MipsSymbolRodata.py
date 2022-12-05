@@ -240,7 +240,7 @@ class SymbolRodata(SymbolBase):
         else:
             labelSym = self.getSymbol(w, tryPlusOffset=canReferenceSymbolsWithAddends)
             if labelSym is not None:
-                value = labelSym.getName()
+                value = labelSym.getSymbolPlusOffset(w)
 
         comment = self.generateAsmLineComment(localOffset, rodataWord)
         return f"{label}{comment} {dotType} {value}{common.GlobalConfig.LINE_ENDS}", skip
