@@ -28,6 +28,8 @@ def getArgsParser() -> argparse.ArgumentParser:
 
     parser.add_argument("--data-output", help="Path to output the data and rodata disassembly")
 
+    parser.add_argument("--file-splits", help="Path to a file splits csv")
+
     parser.add_argument("--split-functions", help="Enables the function and rodata splitter. Expects a path to place the splited functions", metavar="PATH")
 
 
@@ -336,7 +338,12 @@ def elfObjDisasmMain():
         dataOutput = Path(args.data_output)
 
     common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Reading segments...")
-    processedSegments, segmentPaths = getProcessedSections(context, elfFile, array_of_bytes, inputPath, textOutput, dataOutput)
+    if args.file_splits is not None:
+        splits = common.FileSplitFormat()
+        splits.readCsvFile(Path(args.file_splits))
+        processedSegments, segmentPaths = fec.FrontendUtilities.getSplittedSections(context, splits, array_of_bytes, inputPath, textOutput, dataOutput)
+    else:
+        processedSegments, segmentPaths = getProcessedSections(context, elfFile, array_of_bytes, inputPath, textOutput, dataOutput)
 
     changeGlobalSegmentRanges(context, processedSegments)
 

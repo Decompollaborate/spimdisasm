@@ -152,6 +152,10 @@ class FileBase(common.ElementBase):
 
     def disassemble(self, migrate: bool=False, useGlobalLabel: bool=True) -> str:
         output = ""
+
+        if not migrate:
+            output += self.getSpimdisasmVersionString()
+
         for i, sym in enumerate(self.symbolList):
             output += sym.disassemble(useGlobalLabel=useGlobalLabel)
             if i + 1 < len(self.symbolList):

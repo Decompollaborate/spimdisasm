@@ -22,7 +22,9 @@ class SymbolBss(SymbolBase):
         return self.spaceSize // 4
 
     def disassembleAsBss(self) -> str:
-        output = self.getLabelFromSymbol(self.contextSym)
+        output = self.getReferenceeSymbols()
+
+        output += self.getLabelFromSymbol(self.contextSym)
         if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
             output += f"{self.getName()}:" + common.GlobalConfig.LINE_ENDS
         output += self.generateAsmLineComment(0)
@@ -30,4 +32,10 @@ class SymbolBss(SymbolBase):
         return output
 
     def disassemble(self, migrate: bool=False, useGlobalLabel: bool=True) -> str:
-        return self.disassembleAsBss()
+        output = ""
+
+        if migrate:
+            output += self.getSpimdisasmVersionString()
+
+        output = self.disassembleAsBss()
+        return output

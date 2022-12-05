@@ -10,6 +10,19 @@ from ... import common
 from ..MipsFileBase import FileBase
 
 class SectionBase(FileBase):
+    def checkWordIsASymbolReference(self, word: int) -> bool:
+        if word < self.context.totalVramStart or word >= self.context.totalVramEnd:
+            return False
+        if word in self.context.bannedSymbols:
+            return False
+
+        if self.getSymbol(word, tryPlusOffset=True, checkUpperLimit=True) is not None:
+            return False
+
+        self.addPointerInDataReference(word)
+        return True
+
+
     def blankOutDifferences(self, other: FileBase) -> bool:
         if not common.GlobalConfig.REMOVE_POINTERS:
             return False

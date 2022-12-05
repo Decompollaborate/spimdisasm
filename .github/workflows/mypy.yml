@@ -1,0 +1,21 @@
+name: Check mypy
+
+# Build on every branch push, tag push, and pull request change:
+on: [push, pull_request]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    name: mypy
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+    - name: Install Dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install mypy -U
+    - name: mypy
+      run: mypy --show-column-numbers --hide-error-context .

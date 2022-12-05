@@ -143,6 +143,8 @@ class SectionRodata(SectionBase):
                     contextSym.isMaybeString = self._stringGuesser(contextSym, localOffset)
                     lastVramSymbol = contextSym
 
+                self.checkWordIsASymbolReference(w)
+
             if contextSym is not None:
                 self.symbolsVRams.add(currentVram)
                 symbolList.append((localOffset, currentVram))
