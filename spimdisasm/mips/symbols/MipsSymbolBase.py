@@ -124,6 +124,8 @@ class SymbolBase(common.ElementBase):
                 for j in range(0, 4, byteStep):
                     if i == 0 and j == 0:
                         continue
+
+                    # Possible symbols in the middle of words
                     currentVram = self.getVramOffset(localOffset+j)
                     contextSym = self.getSymbol(currentVram, tryPlusOffset=False)
                     if contextSym is not None:
@@ -132,6 +134,12 @@ class SymbolBase(common.ElementBase):
                         contextSym.sectionType = self.sectionType
                         if contextSym.hasNoType():
                             contextSym.type = contextSym.type
+
+                if byteStep == 4:
+                    word = self.words[i]
+                    referencedSym = self.getSymbol(word, tryPlusOffset=False)
+                    if referencedSym is not None:
+                        referencedSym.referenceSymbols.add(self.contextSym)
 
 
     def getJByteAsByte(self, i: int, j: int) -> str:
@@ -302,8 +310,14 @@ class SymbolBase(common.ElementBase):
             return ""
 
         if len(self.contextSym.referenceFunctions):
-            output = "# Symbols referencing this symbol:"
+            output = "# Functions referencing this symbol:"
             for sym in self.contextSym.referenceFunctions:
+                output += f" {sym.getName()}"
+            return f"{output}{common.GlobalConfig.LINE_ENDS}"
+
+        if len(self.contextSym.referenceSymbols):
+            output = "# Symbols referencing this symbol:"
+            for sym in self.contextSym.referenceSymbols:
                 output += f" {sym.getName()}"
             return f"{output}{common.GlobalConfig.LINE_ENDS}"
         return ""

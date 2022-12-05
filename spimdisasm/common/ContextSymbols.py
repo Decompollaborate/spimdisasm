@@ -99,6 +99,8 @@ class ContextSymbol:
 
     referenceFunctions: set[ContextSymbol] = dataclasses.field(default_factory=set)
     "Which functions reference this symbol"
+    referenceSymbols: set[ContextSymbol] = dataclasses.field(default_factory=set)
+    "Which symbols reference this symbol"
 
     overlayCategory: str|None = None
 
