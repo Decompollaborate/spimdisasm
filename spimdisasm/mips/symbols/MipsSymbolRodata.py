@@ -162,7 +162,47 @@ class SymbolRodata(SymbolBase):
 
         return alignDirective
 
+
+    def getNthWordAsString(self, i: int) -> tuple[str, int]:
+        localOffset = 4*i
+
+        buffer = bytearray(4*len(self.words))
+        common.Utils.wordsToBytes(self.words, buffer)
+        decodedStrings, rawStringSize = common.Utils.decodeString(buffer, localOffset, self.stringEncoding)
+
+        # To be a valid aligned string, the next word-aligned bytes needs to be zero
+        checkStartOffset = localOffset + rawStringSize
+        checkEndOffset = min((checkStartOffset & ~3) + 4, len(buffer))
+        while checkStartOffset < checkEndOffset:
+            if buffer[checkStartOffset] != 0:
+                raise RuntimeError()
+            checkStartOffset += 1
+
+        skip = rawStringSize // 4
+        comment = self.generateAsmLineComment(localOffset)
+        result = f"{comment} "
+
+        commentPaddingNum = 22
+        if not common.GlobalConfig.ASM_COMMENT:
+            commentPaddingNum = 1
+
+        if rawStringSize == 0:
+            decodedStrings.append("")
+        for decodedValue in decodedStrings[:-1]:
+            result += f'.ascii "{decodedValue}"'
+            result += common.GlobalConfig.LINE_ENDS + (commentPaddingNum * " ")
+        result += f'.asciz "{decodedStrings[-1]}"{common.GlobalConfig.LINE_ENDS}'
+
+        return result, skip
+
     def getNthWord(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False) -> tuple[str, int]:
+        if self.isString():
+            try:
+                return self.getNthWordAsString(i)
+            except (UnicodeDecodeError, RuntimeError):
+                # Not a string
+                self._failedStringDecoding = True
+
         localOffset = 4*i
         w = self.words[i]
         vram = self.getVramOffset(localOffset)
@@ -186,48 +226,21 @@ class SymbolRodata(SymbolBase):
                     comment = self.generateAsmLineComment(localOffset, rodataWord)
                     return f"{label}{comment} {dotType} {value}{common.GlobalConfig.LINE_ENDS}", skip
 
-        if self.contextSym.isJumpTable() and self.contextSym.isGot and common.GlobalConfig.GP_VALUE is not None:
-            labelAddr = common.GlobalConfig.GP_VALUE + rabbitizer.Utils.from2Complement(w, 32)
-            labelSym = self.getSymbol(labelAddr, tryPlusOffset=False)
+        if self.contextSym.isJumpTable():
+            if self.contextSym.isGot and common.GlobalConfig.GP_VALUE is not None:
+                labelAddr = common.GlobalConfig.GP_VALUE + rabbitizer.Utils.from2Complement(w, 32)
+                labelSym = self.getSymbol(labelAddr, tryPlusOffset=False)
+                if labelSym is not None and labelSym.type == common.SymbolSpecialType.jumptablelabel:
+                    dotType = ".gpword"
+            else:
+                labelSym = self.getSymbol(w, tryPlusOffset=False)
+
             if labelSym is not None and labelSym.type == common.SymbolSpecialType.jumptablelabel:
-                dotType = ".gpword"
+                value = labelSym.getName()
         else:
-            labelSym = self.getSymbol(w, tryPlusOffset=False)
-        if labelSym is not None and labelSym.type == common.SymbolSpecialType.jumptablelabel:
-            value = labelSym.getName()
-        elif self.isString():
-            try:
-                buffer = bytearray(4*len(self.words))
-                common.Utils.wordsToBytes(self.words, buffer)
-                decodedStrings, rawStringSize = common.Utils.decodeString(buffer, localOffset, self.stringEncoding)
-
-                # To be a valid aligned string, the next word-aligned bytes needs to be zero
-                checkStartOffset = localOffset + rawStringSize
-                checkEndOffset = min((checkStartOffset & ~3) + 4, len(buffer))
-                while checkStartOffset < checkEndOffset:
-                    if buffer[checkStartOffset] != 0:
-                        raise RuntimeError()
-                    checkStartOffset += 1
-
-                skip = rawStringSize // 4
-                comment = self.generateAsmLineComment(localOffset)
-                result = f"{label}{comment} "
-
-                commentPaddingNum = 22
-                if not common.GlobalConfig.ASM_COMMENT:
-                    commentPaddingNum = 1
-
-                if rawStringSize == 0:
-                    decodedStrings.append("")
-                for decodedValue in decodedStrings[:-1]:
-                    result += f'.ascii "{decodedValue}"'
-                    result += common.GlobalConfig.LINE_ENDS + (commentPaddingNum * " ")
-                result += f'.asciz "{decodedStrings[-1]}"{common.GlobalConfig.LINE_ENDS}'
-
-                return result, skip
-            except (UnicodeDecodeError, RuntimeError):
-                # Not a string
-                self._failedStringDecoding = True
+            labelSym = self.getSymbol(w, tryPlusOffset=canReferenceSymbolsWithAddends)
+            if labelSym is not None:
+                value = labelSym.getName()
 
         comment = self.generateAsmLineComment(localOffset, rodataWord)
         return f"{label}{comment} {dotType} {value}{common.GlobalConfig.LINE_ENDS}", skip
