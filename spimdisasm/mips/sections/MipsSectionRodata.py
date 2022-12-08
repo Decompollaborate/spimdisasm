@@ -25,8 +25,6 @@ class SectionRodata(SectionBase):
         self.bytes: bytearray = bytearray(self.sizew*4)
         common.Utils.wordsToBytes(self.words, self.bytes)
 
-        self.stringEncoding: str = "EUC-JP"
-
 
     def _stringGuesser(self, contextSym: common.ContextSymbol, localOffset: int) -> bool:
         if contextSym.isMaybeString or contextSym.isString():
