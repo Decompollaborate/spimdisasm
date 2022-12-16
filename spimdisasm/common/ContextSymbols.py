@@ -198,7 +198,7 @@ class ContextSymbol:
 
 
     def isString(self) -> bool:
-        if self.type == "char" or self.type == "char*":
+        if self.type in {"char", "char*", "asciz"}:
             return True
         if not self.isMaybeString:
             return False

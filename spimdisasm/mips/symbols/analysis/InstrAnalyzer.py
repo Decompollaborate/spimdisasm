@@ -407,7 +407,7 @@ class InstrAnalyzer:
             self.symbolFinder(regsTracker, instr, prevInstr, instrOffset)
             self.processSymbolDereferenceType(regsTracker, instr, instrOffset)
 
-        elif instr.isJrNotRa():
+        elif instr.isJumptableJump():
             self.processJumpRegister(regsTracker, instr, instrOffset)
 
         elif instr.isJump() and instr.doesLink():

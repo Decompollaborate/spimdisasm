@@ -366,7 +366,7 @@ class SymbolFunction(SymbolText):
         for i in range(self.nInstr-1, 0-1, -1):
             instr = self.instructions[i]
             if not instr.isNop():
-                if instr.isJrRa():
+                if instr.isReturn():
                     first_nop += 1
                 break
             first_nop = i

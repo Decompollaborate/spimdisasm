@@ -133,10 +133,10 @@ class SectionText(SectionBase):
                     functionEnded = True
             else:
                 if not (farthestBranch > 0) and instr.isJump():
-                    if instr.isJrRa():
+                    if instr.isReturn():
                         # Found a jr $ra and there are no branches outside of this function
                         functionEnded = True
-                    elif instr.isJrNotRa():
+                    elif instr.isJumptableJump():
                         # Usually jumptables, ignore
                         pass
                     elif not instr.doesLink():

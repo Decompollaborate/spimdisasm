@@ -91,6 +91,7 @@ class SectionData(SectionBase):
             sym = symbols.SymbolData(self.context, vrom, vromEnd, offset + self.inFileOffset, contextSym.vram, words, self.segmentVromStart, self.overlayCategory)
             sym.parent = self
             sym.setCommentOffset(self.commentOffset)
+            sym.stringEncoding = self.stringEncoding
             sym.analyze()
             self.symbolList.append(sym)
 
