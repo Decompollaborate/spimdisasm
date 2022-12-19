@@ -242,7 +242,7 @@ class SymbolBase(common.ElementBase):
         else:
             # This word could be a reference to a symbol
             symbolRef = self.getSymbol(w, tryPlusOffset=canReferenceSymbolsWithAddends)
-            if symbolRef is not None:
+            if symbolRef is not None and not self.context.isAddressBanned(symbolRef.vram):
                 if symbolRef.type != common.SymbolSpecialType.function or w == symbolRef.vram:
                     # Avoid using addends on functions
                     if not symbolRef.isElfNotype:
