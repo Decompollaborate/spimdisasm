@@ -22,9 +22,7 @@ class SymbolRange:
     vramEnd: int
 
     def isInRange(self, address: int) -> bool:
-        if address < self.vramStart:
-            return False
-        return address < self.vramEnd
+        return self.vramStart <= address < self.vramEnd
 
 
 class Context:
