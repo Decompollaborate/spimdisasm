@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import argparse
+import dataclasses
 from pathlib import Path
 
 from . import Utils
@@ -13,6 +14,17 @@ from .FileSectionType import FileSectionType
 from .ContextSymbols import ContextRelocInfo
 from .SymbolsSegment import SymbolsSegment
 from .GlobalOffsetTable import GlobalOffsetTable
+
+
+@dataclasses.dataclass
+class SymbolRange:
+    vramStart: int
+    vramEnd: int
+
+    def isInRange(self, address: int) -> bool:
+        if address < self.vramStart:
+            return False
+        return address < self.vramEnd
 
 
 class Context:
@@ -40,6 +52,7 @@ class Context:
 
         # Stuff that looks like pointers, but the disassembler shouldn't count it as a pointer
         self.bannedSymbols: set[int] = set()
+        self.bannedRangedSymbols: list[SymbolRange] = list()
 
         self.relocInfosPerSection: dict[FileSectionType, dict[int, ContextRelocInfo]] = {
             FileSectionType.Text: dict(),
@@ -101,6 +114,20 @@ class Context:
 
     def fillDefaultBannedSymbols(self):
         self.bannedSymbols |= self.N64DefaultBanned
+
+    def addBannedSymbolRange(self, rangeStart: int, rangeEnd: int):
+        self.bannedRangedSymbols.append(SymbolRange(rangeStart, rangeEnd))
+
+    def addBannedSymbolRangeBySize(self, rangeStart: int, size: int):
+        self.bannedRangedSymbols.append(SymbolRange(rangeStart, rangeStart + size))
+
+    def isAddressBanned(self, address: int) -> bool:
+        if address in self.bannedSymbols:
+            return True
+        for ranged in self.bannedRangedSymbols:
+            if ranged.isInRange(address):
+                return True
+        return False
 
 
     def saveContextToFile(self, contextPath: Path):
