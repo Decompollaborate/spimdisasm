@@ -237,7 +237,7 @@ class SymbolFunction(SymbolText):
 
         # Symbols
         for loOffset, symVram in self.instrAnalyzer.symbolLoInstrOffset.items():
-            if symVram in self.context.bannedSymbols:
+            if self.context.isAddressBanned(symVram):
                 continue
 
             # Check for user-defined symbol patches
@@ -496,7 +496,7 @@ class SymbolFunction(SymbolText):
             if not self.pointersRemoved and instructionOffset in self.instrAnalyzer.symbolInstrOffset:
                 address = self.instrAnalyzer.symbolInstrOffset[instructionOffset]
 
-                if address in self.context.bannedSymbols:
+                if self.context.isAddressBanned(address):
                     return None
 
                 symbol: common.ContextSymbol|None = None

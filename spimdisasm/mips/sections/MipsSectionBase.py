@@ -13,7 +13,7 @@ class SectionBase(FileBase):
     def checkWordIsASymbolReference(self, word: int) -> bool:
         if word < self.context.totalVramStart or word >= self.context.totalVramEnd:
             return False
-        if word in self.context.bannedSymbols:
+        if self.context.isAddressBanned(word):
             return False
 
         if self.getSymbol(word, tryPlusOffset=True, checkUpperLimit=True) is not None:
