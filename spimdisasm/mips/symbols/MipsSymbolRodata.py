@@ -144,7 +144,7 @@ class SymbolRodata(SymbolBase):
                 value = labelSym.getName()
         else:
             labelSym = self.getSymbol(w, tryPlusOffset=canReferenceSymbolsWithAddends)
-            if labelSym is not None:
+            if labelSym is not None and not self.context.isAddressBanned(labelSym.vram):
                 value = labelSym.getSymbolPlusOffset(w)
 
         comment = self.generateAsmLineComment(localOffset, rodataWord)
