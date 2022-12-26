@@ -11,8 +11,6 @@ from ... import common
 
 from .. import symbols
 
-from ..MipsRelocTypes import RelocTypes
-
 from . import SectionBase
 
 
@@ -29,13 +27,17 @@ class RelocEntry:
     def getSectionType(self) -> common.FileSectionType:
         return common.FileSectionType.fromId(self.sectionId)
 
-    def getRelocType(self) -> RelocTypes:
-        return RelocTypes.fromValue(self.relocType)
+    def getRelocType(self) -> common.RelocTypes|None:
+        return common.RelocTypes.fromValue(self.relocType)
 
     def __str__(self) -> str:
         section = self.getSectionType().toStr()
-        reloc = self.getRelocType().name
-        return f"{section} {reloc} 0x{self.offset:X}"
+        relocName = "None"
+        reloc = self.getRelocType()
+        if reloc is not None:
+            relocName = reloc.name
+
+        return f"{section} {relocName} 0x{self.offset:X}"
     def __repr__(self) -> str:
         return self.__str__()
 

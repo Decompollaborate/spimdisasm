@@ -13,3 +13,4 @@ from .FileSplitFormat import FileSplitFormat, FileSplitEntry
 from .ElementBase import ElementBase
 from .GlobalOffsetTable import GlobalOffsetTable
 from .OrderedEnum import OrderedEnum
+from .RelocationTypes import RelocTypes

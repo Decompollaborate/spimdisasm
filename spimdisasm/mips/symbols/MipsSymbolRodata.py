@@ -121,7 +121,7 @@ class SymbolRodata(SymbolBase):
 
         relocInfo = self.context.getRelocInfo(vram, self.sectionType)
         if relocInfo is not None:
-            if relocInfo.relocType == elf32.Elf32Relocs.MIPS_GPREL32.value:
+            if relocInfo.relocType == common.RelocTypes.MIPS_GPREL32.value:
                 dotType = ".gpword"
             if relocInfo.referencedSectionVram is not None:
                 relocVram = relocInfo.referencedSectionVram + w
