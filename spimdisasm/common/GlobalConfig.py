@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import enum
+import os
 
 from . import Utils
 from .OrderedEnum import OrderedEnum
@@ -16,6 +17,14 @@ class InputEndian(enum.Enum):
     BIG = "big"
     LITTLE = "little"
     MIDDLE = "middle"
+
+    @staticmethod
+    def fromStr(value: str) -> InputEndian:
+        if value == "little":
+            return InputEndian.LITTLE
+        if value == "middle":
+            return InputEndian.MIDDLE
+        return InputEndian.BIG
 
     def toFormatString(self) -> str:
         if self == InputEndian.BIG:
@@ -46,6 +55,13 @@ class Abi(enum.Enum):
     O32 = "O32"
     N32 = "N32"
     N64 = "N64"
+
+    @staticmethod
+    def fromStr(value: str) -> Abi:
+        try:
+            return Abi(value)
+        except ValueError:
+            return Abi.O32
 
 
 archLevelOptions = {
@@ -263,6 +279,47 @@ class GlobalConfig:
         debugging.add_argument("--debug-unpaired-luis", help="Enables some debug info printing related to the unpaired LUI instructions)", action=Utils.BooleanOptionalAction)
 
 
+    @staticmethod
+    def processEnvironmentVariables():
+        # Allows changing the global configuration by setting a SPIMDISASM_SETTINGNAME environment variable
+        # For example: SPIMDISASM_EMIT_CPLOAD=False
+
+        for attr in dir(GlobalConfig):
+            if attr.startswith("__"):
+                continue
+
+            currentValue = getattr(GlobalConfig, attr)
+
+            environmentValue = os.getenv(f"SPIMDISASM_{attr}", currentValue)
+            if environmentValue == currentValue:
+                continue
+
+            if isinstance(currentValue, bool):
+                if environmentValue.upper() == "TRUE":
+                    environmentValue = True
+                elif environmentValue.upper() == "FALSE":
+                    environmentValue = False
+                elif environmentValue == "0":
+                    environmentValue = False
+                else:
+                    environmentValue = bool(environmentValue)
+            elif isinstance(currentValue, Compiler):
+                environmentValue = Compiler.fromStr(environmentValue)
+            elif isinstance(currentValue, InputEndian):
+                environmentValue = InputEndian.fromStr(environmentValue)
+            elif isinstance(currentValue, Abi):
+                environmentValue = Abi.fromStr(environmentValue)
+            elif isinstance(currentValue, ArchLevel):
+                value = ArchLevel.fromValue(environmentValue)
+                if value is not None:
+                    environmentValue = value
+                else:
+                    environmentValue = currentValue
+            elif isinstance(currentValue, int):
+                environmentValue = int(environmentValue, 16)
+
+            setattr(GlobalConfig, attr, environmentValue)
+
     @classmethod
     def parseArgs(cls, args: argparse.Namespace):
         if args.disasm_unknown is not None:
@@ -281,18 +338,11 @@ class GlobalConfig:
         if args.compiler is not None:
             GlobalConfig.COMPILER = Compiler.fromStr(args.compiler)
 
-        if args.endian == "little":
-            GlobalConfig.ENDIAN = InputEndian.LITTLE
-        elif args.endian == "middle":
-            GlobalConfig.ENDIAN = InputEndian.MIDDLE
-        else:
-            GlobalConfig.ENDIAN = InputEndian.BIG
+        if args.endian is not None:
+            GlobalConfig.ENDIAN = InputEndian.fromStr(args.endian)
 
-        try:
-            GlobalConfig.ABI = Abi(args.abi)
-        except ValueError:
-            Utils.eprint(f"Unknown ABI used: '{args.abi}'. Defaulting to O32")
-            GlobalConfig.ABI = Abi.O32
+        if args.abi is not None:
+            GlobalConfig.ABI = Abi.fromStr(args.abi)
 
         arch_level = ArchLevel.fromValue(args.arch_level)
         if arch_level is not None:
@@ -372,3 +422,5 @@ class GlobalConfig:
             GlobalConfig.PRINT_SYMBOL_FINDER_DEBUG_INFO = args.debug_symbol_finder
         if args.debug_unpaired_luis is not None:
             GlobalConfig.PRINT_UNPAIRED_LUIS_DEBUG_INFO = args.debug_unpaired_luis
+
+GlobalConfig.processEnvironmentVariables()
