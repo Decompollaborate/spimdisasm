@@ -10,10 +10,9 @@ import dataclasses
 from pathlib import Path
 
 from . import Utils
-from .FileSectionType import FileSectionType
-from .ContextSymbols import ContextRelocInfo
 from .SymbolsSegment import SymbolsSegment
 from .GlobalOffsetTable import GlobalOffsetTable
+from .Relocation import RelocationInfo
 
 
 @dataclasses.dataclass
@@ -52,12 +51,8 @@ class Context:
         self.bannedSymbols: set[int] = set()
         self.bannedRangedSymbols: list[SymbolRange] = list()
 
-        self.relocInfosPerSection: dict[FileSectionType, dict[int, ContextRelocInfo]] = {
-            FileSectionType.Text: dict(),
-            FileSectionType.Data: dict(),
-            FileSectionType.Rodata: dict(),
-            FileSectionType.Bss: dict(),
-        }
+        self.globalRelocationOverrides: dict[int, RelocationInfo] = dict()
+        "key: vrom address"
 
         self.got: GlobalOffsetTable = GlobalOffsetTable()
 
@@ -89,16 +84,6 @@ class Context:
             self.totalVramEnd = segmentVramEnd
 
         return segment
-
-
-    def getRelocInfo(self, vram: int, sectionType: FileSectionType) -> ContextRelocInfo|None:
-        relocsInSection = self.relocInfosPerSection.get(sectionType)
-        if relocsInSection is not None:
-            return relocsInSection.get(vram)
-        return None
-
-    def doesSectionHasRelocs(self, sectionType: FileSectionType) -> bool:
-        return len(self.relocInfosPerSection[sectionType]) != 0
 
 
     def initGotTable(self, pltGot: int, localsTable: list[int], globalsTable: list[int]):

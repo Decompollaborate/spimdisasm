@@ -24,6 +24,9 @@ class SymbolBase(common.ElementBase):
         self.stringEncoding: str = "EUC-JP"
         self._failedStringDecoding: bool = False
 
+        self.relocs: dict[int, common.RelocationInfo] = dict()
+        "key: word offset"
+
 
     def getName(self) -> str:
         return self.contextSym.getName()
@@ -219,6 +222,7 @@ class SymbolBase(common.ElementBase):
         output = ""
         localOffset = 4*i
         vram = self.getVramOffset(localOffset)
+        vrom = self.getVromOffset(localOffset)
         w = self.words[i]
 
         dotType = ".word"
@@ -230,15 +234,15 @@ class SymbolBase(common.ElementBase):
         value = f"0x{w:08X}"
 
         # .elf relocated symbol
-        relocInfo = self.context.getRelocInfo(self.vram + localOffset, self.sectionType)
+        relocInfo = self.context.globalRelocationOverrides.get(vrom)
         if relocInfo is not None:
-            if relocInfo.referencedSectionVram is not None:
-                relocVram = relocInfo.referencedSectionVram + w
+            if relocInfo.staticReference is not None:
+                relocVram = relocInfo.staticReference.sectionVram + w
                 contextSym = self.getSymbol(relocVram, checkUpperLimit=False)
                 if contextSym is not None:
                     value = contextSym.getSymbolPlusOffset(relocVram)
             else:
-                value = relocInfo.getNamePlusOffset(w)
+                value = relocInfo.getName()
         else:
             # This word could be a reference to a symbol
             symbolRef = self.getSymbol(w, tryPlusOffset=canReferenceSymbolsWithAddends)

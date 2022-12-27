@@ -427,23 +427,3 @@ class ContextSymbol:
     # https://stackoverflow.com/a/56915493/6292472
     def __hash__(self):
         return hash((self.address, self.vromAddress))
-
-
-@dataclasses.dataclass
-class ContextRelocInfo():
-    # Same number as the .elf specification
-    relocType: int
-    name: str
-
-    referencedSection: FileSectionType|None = None
-    referencedSectionVram: int|None = None
-
-    isStatic: bool = False
-
-
-    def getNamePlusOffset(self, offset: int) -> str:
-        if offset == 0:
-            return self.name
-        if offset < 0:
-            return f"{self.name} - 0x{-offset:X}"
-        return f"{self.name} + 0x{offset:X}"

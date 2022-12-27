@@ -150,7 +150,7 @@ class GlobalConfig:
     """Toggle pointer detection for higher addresses (higher than 0xC0000000)"""
     SYMBOL_FINDER_FILTERED_ADDRESSES_AS_CONSTANTS: bool = True
     """Treat filtered out addresses as constants pairs"""
-    SYMBOL_FINDER_FILTERED_ADDRESSES_AS_HILO: bool = True
+    SYMBOL_FINDER_FILTERED_ADDRESSES_AS_HILO: bool = False
     """Allow using %hi/%lo syntax for filtered out addresses"""
 
     ALLOW_UNKSEGMENT: bool = True
