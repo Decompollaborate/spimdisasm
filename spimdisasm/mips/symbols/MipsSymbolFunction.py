@@ -197,33 +197,33 @@ class SymbolFunction(SymbolText):
                     self.instrAnalyzer.indirectFunctionCallOffsets[loOffset] = symVram
         return
 
-    def _getRelocTypeForInstruction(self, instr: rabbitizer.Instruction, instrOffset: int, contextSym: common.ContextSymbol|None=None, gotHiLo: bool=False) -> common.RelocTypes:
+    def _getRelocTypeForInstruction(self, instr: rabbitizer.Instruction, instrOffset: int, contextSym: common.ContextSymbol|None=None, gotHiLo: bool=False) -> common.RelocType:
         if instr.canBeHi():
             if common.GlobalConfig.PIC:
                 if contextSym is not None and gotHiLo:
                     if contextSym.isGotGlobal and contextSym.type == common.SymbolSpecialType.function:
-                        return common.RelocTypes.MIPS_CALL_HI16
+                        return common.RelocType.MIPS_CALL_HI16
                     else:
-                        return common.RelocTypes.MIPS_GOT_HI16
-            return common.RelocTypes.MIPS_HI16
+                        return common.RelocType.MIPS_GOT_HI16
+            return common.RelocType.MIPS_HI16
 
         if instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
             if not common.GlobalConfig.PIC:
-                return common.RelocTypes.MIPS_GPREL16
+                return common.RelocType.MIPS_GPREL16
 
             if contextSym is not None:
                 if contextSym.isGotGlobal and contextSym.type == common.SymbolSpecialType.function and instrOffset in self.instrAnalyzer.indirectFunctionCallOffsets:
-                    return common.RelocTypes.MIPS_CALL16
+                    return common.RelocType.MIPS_CALL16
                 elif contextSym.isGot:
-                    return common.RelocTypes.MIPS_GOT16
+                    return common.RelocType.MIPS_GOT16
 
         elif common.GlobalConfig.PIC:
             if contextSym is not None and gotHiLo:
                 if contextSym.isGotGlobal and contextSym.type == common.SymbolSpecialType.function:
-                    return common.RelocTypes.MIPS_CALL_LO16
+                    return common.RelocType.MIPS_CALL_LO16
                 else:
-                    return common.RelocTypes.MIPS_GOT_LO16
-        return common.RelocTypes.MIPS_LO16
+                    return common.RelocType.MIPS_GOT_LO16
+        return common.RelocType.MIPS_LO16
 
     def _generateRelocsFromInstructionAnalyzer(self):
         for instrOffset, address in self.instrAnalyzer.symbolInstrOffset.items():
@@ -290,14 +290,14 @@ class SymbolFunction(SymbolText):
                 generatedStr = self.generateHiLoConstantStr(constant, instr, loInstr)
                 if generatedStr is not None:
                     # return generatedStr
-                    self.relocs[instrOffset] = common.RelocationInfo(common.RelocTypes.MIPS_NONE, generatedStr)
+                    self.relocs[instrOffset] = common.RelocationInfo(common.RelocType.MIPS_NONE, generatedStr)
 
 
         for instrOffset, targetVram in self.instrAnalyzer.funcCallInstrOffsets.items():
             funcSym = self.getSymbol(targetVram, tryPlusOffset=False)
             if funcSym is None:
                 continue
-            self.relocs[instrOffset] = common.RelocationInfo(common.RelocTypes.MIPS_26, funcSym)
+            self.relocs[instrOffset] = common.RelocationInfo(common.RelocType.MIPS_26, funcSym)
 
 
     def analyze(self):

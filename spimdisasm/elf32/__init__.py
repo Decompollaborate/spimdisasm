@@ -16,3 +16,6 @@ from .Elf32Syms import Elf32Syms, Elf32SymEntry
 from .Elf32Rels import Elf32Rels, Elf32RelEntry
 
 from .Elf32File import Elf32File
+
+# To avoid breaking backwards compatibility
+from ..common.Relocation import RelocType as Elf32Relocs

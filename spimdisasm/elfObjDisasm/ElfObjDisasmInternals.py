@@ -281,7 +281,7 @@ def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, proce
                     subSegment = processedSegments[sectType][0]
 
                     relocVrom = subSegment.vromStart + rel.offset
-                    relocInfo = common.RelocationInfo(common.RelocTypes(rel.rType), symbolName)
+                    relocInfo = common.RelocationInfo(common.RelocType(rel.rType), symbolName)
                     if symbolEntry.stType == elf32.Elf32SymbolTableType.SECTION.value:
                         sectionType = common.FileSectionType.fromStr(symbolName)
                         sectionVram = processedSegments[sectionType][0].vram

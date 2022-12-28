@@ -27,8 +27,8 @@ class RelocEntry:
     def getSectionType(self) -> common.FileSectionType:
         return common.FileSectionType.fromId(self.sectionId)
 
-    def getRelocType(self) -> common.RelocTypes|None:
-        return common.RelocTypes.fromValue(self.relocType)
+    def getRelocType(self) -> common.RelocType|None:
+        return common.RelocType.fromValue(self.relocType)
 
     def __str__(self) -> str:
         section = self.getSectionType().toStr()

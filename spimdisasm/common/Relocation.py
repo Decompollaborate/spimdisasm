@@ -12,7 +12,7 @@ from .ContextSymbols import ContextSymbol
 from .FileSectionType import FileSectionType
 
 
-class RelocTypes(enum.Enum):
+class RelocType(enum.Enum):
     MIPS_NONE           = 0 # No reloc
     MIPS_16             = 1 # Direct 16 bit
     MIPS_32             = 2 # Direct 32 bit
@@ -32,61 +32,104 @@ class RelocTypes(enum.Enum):
     MIPS_CALL_HI16      = 30
     MIPS_CALL_LO16      = 31
 
-    # Custom values
     CUSTOM_CONSTANT_HI  = -1
     CUSTOM_CONSTANT_LO  = -2
 
     @staticmethod
-    def fromValue(value: int) -> RelocTypes|None:
+    def fromValue(value: int) -> RelocType|None:
         try:
-            return RelocTypes(value)
+            return RelocType(value)
         except ValueError:
             return None
 
-_percentRel = {
-    # RelocTypes.MIPS_NONE:       f"",
-    # RelocTypes.MIPS_16:         f"",
-    # RelocTypes.MIPS_32:         f"",
-    # RelocTypes.MIPS_REL32:      f"",
-    # RelocTypes.MIPS_26:         f"",
-    RelocTypes.MIPS_HI16:       f"%hi",
-    RelocTypes.MIPS_LO16:       f"%lo",
-    RelocTypes.MIPS_GPREL16:    f"%gp_rel",
-    # RelocTypes.MIPS_LITERAL:    f"",
-    RelocTypes.MIPS_GOT16:      f"%got",
-    # RelocTypes.MIPS_PC16:       f"",
-    RelocTypes.MIPS_CALL16:     f"%call16",
-    # RelocTypes.MIPS_GPREL32:    f"",
+    @staticmethod
+    def fromStr(value: str) -> RelocType|None:
+        value = value.upper()
+        if value == "MIPS_NONE":
+            return RelocType.MIPS_NONE
+        if value == "MIPS_16":
+            return RelocType.MIPS_16
+        if value == "MIPS_32":
+            return RelocType.MIPS_32
+        if value == "MIPS_REL32":
+            return RelocType.MIPS_REL32
+        if value == "MIPS_26":
+            return RelocType.MIPS_26
+        if value == "MIPS_HI16":
+            return RelocType.MIPS_HI16
+        if value == "MIPS_LO16":
+            return RelocType.MIPS_LO16
+        if value == "MIPS_GPREL16":
+            return RelocType.MIPS_GPREL16
+        if value == "MIPS_LITERAL":
+            return RelocType.MIPS_LITERAL
+        if value == "MIPS_GOT16":
+            return RelocType.MIPS_GOT16
+        if value == "MIPS_PC16":
+            return RelocType.MIPS_PC16
+        if value == "MIPS_CALL16":
+            return RelocType.MIPS_CALL16
+        if value == "MIPS_GPREL32":
+            return RelocType.MIPS_GPREL32
+        if value == "MIPS_GOT_HI16":
+            return RelocType.MIPS_GOT_HI16
+        if value == "MIPS_GOT_LO16":
+            return RelocType.MIPS_GOT_LO16
+        if value == "MIPS_CALL_HI16":
+            return RelocType.MIPS_CALL_HI16
+        if value == "MIPS_CALL_LO16":
+            return RelocType.MIPS_CALL_LO16
+        if value == "CUSTOM_CONSTANT_HI":
+            return RelocType.CUSTOM_CONSTANT_HI
+        if value == "CUSTOM_CONSTANT_LO":
+            return RelocType.CUSTOM_CONSTANT_LO
+        return None
 
-    RelocTypes.MIPS_GOT_HI16:   f"%got_hi",
-    RelocTypes.MIPS_GOT_LO16:   f"%got_lo",
-    RelocTypes.MIPS_CALL_HI16:  f"%call_hi",
-    RelocTypes.MIPS_CALL_LO16:  f"%call_lo",
+
+_percentRel = {
+    # RelocType.MIPS_NONE:       f"",
+    # RelocType.MIPS_16:         f"",
+    # RelocType.MIPS_32:         f"",
+    # RelocType.MIPS_REL32:      f"",
+    # RelocType.MIPS_26:         f"",
+    RelocType.MIPS_HI16:       f"%hi",
+    RelocType.MIPS_LO16:       f"%lo",
+    RelocType.MIPS_GPREL16:    f"%gp_rel",
+    # RelocType.MIPS_LITERAL:    f"",
+    RelocType.MIPS_GOT16:      f"%got",
+    # RelocType.MIPS_PC16:       f"",
+    RelocType.MIPS_CALL16:     f"%call16",
+    # RelocType.MIPS_GPREL32:    f"",
+
+    RelocType.MIPS_GOT_HI16:   f"%got_hi",
+    RelocType.MIPS_GOT_LO16:   f"%got_lo",
+    RelocType.MIPS_CALL_HI16:  f"%call_hi",
+    RelocType.MIPS_CALL_LO16:  f"%call_lo",
 }
 
 _wordRel = {
-    # RelocTypes.MIPS_NONE:       f"",
-    # RelocTypes.MIPS_16:         f"",
-    RelocTypes.MIPS_32:         f".word",
-    # RelocTypes.MIPS_REL32:      f"",
-    # RelocTypes.MIPS_26:         f"",
-    # RelocTypes.MIPS_HI16:       f"",
-    # RelocTypes.MIPS_LO16:       f"",
-    # RelocTypes.MIPS_GPREL16:    f"",
-    # RelocTypes.MIPS_LITERAL:    f"",
-    # RelocTypes.MIPS_GOT16:      f"",
-    # RelocTypes.MIPS_PC16:       f"",
-    # RelocTypes.MIPS_CALL16:     f"",
-    RelocTypes.MIPS_GPREL32:    f".gpword",
-    # RelocTypes.MIPS_GOT_HI16:   f"",
-    # RelocTypes.MIPS_GOT_LO16:   f"",
-    # RelocTypes.MIPS_CALL_HI16:  f"",
-    # RelocTypes.MIPS_CALL_LO16:  f"",
+    # RelocType.MIPS_NONE:       f"",
+    # RelocType.MIPS_16:         f"",
+    RelocType.MIPS_32:         f".word",
+    # RelocType.MIPS_REL32:      f"",
+    # RelocType.MIPS_26:         f"",
+    # RelocType.MIPS_HI16:       f"",
+    # RelocType.MIPS_LO16:       f"",
+    # RelocType.MIPS_GPREL16:    f"",
+    # RelocType.MIPS_LITERAL:    f"",
+    # RelocType.MIPS_GOT16:      f"",
+    # RelocType.MIPS_PC16:       f"",
+    # RelocType.MIPS_CALL16:     f"",
+    RelocType.MIPS_GPREL32:    f".gpword",
+    # RelocType.MIPS_GOT_HI16:   f"",
+    # RelocType.MIPS_GOT_LO16:   f"",
+    # RelocType.MIPS_CALL_HI16:  f"",
+    # RelocType.MIPS_CALL_LO16:  f"",
 }
 
 _operationRel = {
-    RelocTypes.CUSTOM_CONSTANT_HI:  f">> 16",
-    RelocTypes.CUSTOM_CONSTANT_LO:  f"& 0xFFFF",
+    RelocType.CUSTOM_CONSTANT_HI:  f">> 16",
+    RelocType.CUSTOM_CONSTANT_LO:  f"& 0xFFFF",
 }
 
 @dataclasses.dataclass
@@ -97,7 +140,7 @@ class RelocationStaticReference:
 
 @dataclasses.dataclass
 class RelocationInfo:
-    relocType: RelocTypes
+    relocType: RelocType
     symbol: ContextSymbol|str
 
     addend: int = 0

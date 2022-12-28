@@ -411,7 +411,7 @@ class Elf32File:
             print(f" {'Offset':8} {'Info':8} {'Type':12} {'Sym.Value':>9} {'Sym.Name'}")
             for rel in relSection.relocations:
                 relType = rel.rType
-                rType = common.RelocTypes.fromValue(rel.rType)
+                rType = common.RelocType.fromValue(rel.rType)
                 if rType is not None:
                     relType = rType.name
 

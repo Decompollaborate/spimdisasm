@@ -10,9 +10,10 @@ import dataclasses
 from pathlib import Path
 
 from . import Utils
+from .ContextSymbols import ContextSymbol
 from .SymbolsSegment import SymbolsSegment
 from .GlobalOffsetTable import GlobalOffsetTable
-from .Relocation import RelocationInfo
+from .Relocation import RelocationInfo, RelocType
 
 
 @dataclasses.dataclass
@@ -112,6 +113,10 @@ class Context:
                 return True
         return False
 
+    def addGlobalReloc(self, vromAddres: int, relocType: RelocType, symbol: ContextSymbol|str, addend: int=0) -> RelocationInfo:
+        reloc = RelocationInfo(relocType, symbol, addend)
+        self.globalRelocationOverrides[vromAddres] = reloc
+        return reloc
 
     def saveContextToFile(self, contextPath: Path):
         with contextPath.open("w") as f:
