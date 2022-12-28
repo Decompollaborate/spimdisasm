@@ -4,7 +4,7 @@
 [project]
 name = "spimdisasm"
 # Version should be synced with spimdisasm/__init__.py
-version = "1.8.2"
+version = "1.9.0"
 description = "MIPS disassembler"
 # license = "MIT"
 readme = "README.md"
@@ -24,6 +24,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["."]
+exclude = ["build*"]
 
 [tool.setuptools.dynamic]
 dependencies = {file = "requirements.txt"}

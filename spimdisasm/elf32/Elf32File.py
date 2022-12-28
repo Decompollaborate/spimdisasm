@@ -9,7 +9,7 @@ from typing import Callable
 
 from .. import common
 
-from .Elf32Constants import Elf32HeaderIdentifier, Elf32ObjectFileType, Elf32HeaderFlag, Elf32SectionHeaderType, Elf32SymbolTableType, Elf32SymbolTableBinding, Elf32SymbolVisibility, Elf32SectionHeaderNumber, Elf32Relocs
+from .Elf32Constants import Elf32HeaderIdentifier, Elf32ObjectFileType, Elf32HeaderFlag, Elf32SectionHeaderType, Elf32SymbolTableType, Elf32SymbolTableBinding, Elf32SymbolVisibility, Elf32SectionHeaderNumber
 from .Elf32Dyns import Elf32Dyns
 from .Elf32GlobalOffsetTable import Elf32GlobalOffsetTable
 from .Elf32Header import Elf32Header
@@ -411,7 +411,7 @@ class Elf32File:
             print(f" {'Offset':8} {'Info':8} {'Type':12} {'Sym.Value':>9} {'Sym.Name'}")
             for rel in relSection.relocations:
                 relType = rel.rType
-                rType = Elf32Relocs.fromValue(rel.rType)
+                rType = common.RelocType.fromValue(rel.rType)
                 if rType is not None:
                     relType = rType.name
 

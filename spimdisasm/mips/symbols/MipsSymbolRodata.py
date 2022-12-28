@@ -111,6 +111,7 @@ class SymbolRodata(SymbolBase):
         localOffset = 4*i
         w = self.words[i]
         vram = self.getVramOffset(localOffset)
+        vrom = self.getVromOffset(localOffset)
 
         label = ""
         rodataWord: int|None = w
@@ -119,17 +120,15 @@ class SymbolRodata(SymbolBase):
         dotType = ".word"
         skip = 0
 
-        relocInfo = self.context.getRelocInfo(vram, self.sectionType)
+        relocInfo = self.context.globalRelocationOverrides.get(vrom)
         if relocInfo is not None:
-            if relocInfo.relocType == elf32.Elf32Relocs.MIPS_GPREL32.value:
-                dotType = ".gpword"
-            if relocInfo.referencedSectionVram is not None:
-                relocVram = relocInfo.referencedSectionVram + w
+            if relocInfo.staticReference is not None:
+                relocVram = relocInfo.staticReference.sectionVram + w
                 labelSym = self.getSymbol(relocVram, tryPlusOffset=False)
                 if labelSym is not None:
-                    value = labelSym.getName()
-                    comment = self.generateAsmLineComment(localOffset, rodataWord)
-                    return f"{label}{comment} {dotType} {value}{common.GlobalConfig.LINE_ENDS}", skip
+                    relocInfo.symbol = labelSym.getName()
+            comment = self.generateAsmLineComment(localOffset, rodataWord)
+            return f"{label}{comment} {relocInfo.getNameWithReloc()}{common.GlobalConfig.LINE_ENDS}", skip
 
         if self.contextSym.isJumpTable():
             if self.contextSym.isGot and common.GlobalConfig.GP_VALUE is not None:

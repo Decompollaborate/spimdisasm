@@ -316,12 +316,6 @@ class ElementBase:
         return segment.getAndPopPointerInDataReferencesRange(low, high)
 
 
-    def getLoPatch(self, loInstrVram: int|None) -> int|None:
-        if loInstrVram is None:
-            return None
-        segment = self.getSegmentForVram(loInstrVram)
-        return segment.getLoPatch(loInstrVram)
-
     def canUseAddendsOnData(self) -> bool:
         segment = self.getSegmentForVram(self.vram)
         return GlobalConfig.ALLOW_ALL_ADDENDS_ON_DATA or self.vram in segment.dataSymbolsWithReferencesWithAddends

@@ -37,9 +37,6 @@ class SymbolsSegment:
         self.newPointersInData: SortedDict[int] = SortedDict()
         "Stuff that looks like pointers, found referenced by data"
 
-        self.loPatches: dict[int, int] = dict()
-        "key: address of %lo, value: symbol's vram to use instead"
-
         self.dataSymbolsWithReferencesWithAddends: set[int] = set()
         "Contains the address of data symbols which are allowed to have references to other symbols with addends"
 
@@ -175,12 +172,6 @@ class SymbolsSegment:
     def getAndPopPointerInDataReferencesRange(self, low: int, high: int) -> Generator[int, None, None]:
         for key, _ in self.newPointersInData.getRangeAndPop(low, high, startInclusive=True, endInclusive=False):
             yield key
-
-
-    def getLoPatch(self, loInstrVram: int|None) -> int|None:
-        if loInstrVram is None:
-            return None
-        return self.loPatches.get(loInstrVram, None)
 
 
     def saveContextToFile(self, f: TextIO):
