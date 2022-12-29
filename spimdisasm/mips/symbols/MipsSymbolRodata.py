@@ -106,6 +106,11 @@ class SymbolRodata(SymbolBase):
                 count += 1
         return count
 
+    def getPrevAlignDirective(self, i: int=0) -> str:
+        if self.isJumpTable():
+            if i == 0 and common.GlobalConfig.COMPILER != common.Compiler.IDO:
+                return f".align 3{common.GlobalConfig.LINE_ENDS}"
+        return super().getPrevAlignDirective(i)
 
     def getNthWord(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False) -> tuple[str, int]:
         localOffset = 4*i
