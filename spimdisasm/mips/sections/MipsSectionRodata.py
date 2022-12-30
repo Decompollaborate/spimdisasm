@@ -158,7 +158,7 @@ class SectionRodata(SectionBase):
             if sym.inFileOffset % 16 == 0:
                 # Files are always 0x10 aligned
 
-                if previousSymbolWasLateRodata and not sym.contextSym.isLateRodata() and common.GlobalConfig.COMPILER == common.Compiler.IDO:
+                if previousSymbolWasLateRodata and not sym.contextSym.isLateRodata():
                     # late rodata followed by normal rodata implies a file split
                     self.fileBoundaries.append(sym.inFileOffset)
                 elif previousSymbolExtraPadding > 0:

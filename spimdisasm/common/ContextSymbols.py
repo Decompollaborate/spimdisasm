@@ -10,7 +10,7 @@ import enum
 from typing import Callable
 import rabbitizer
 
-from .GlobalConfig import GlobalConfig
+from .GlobalConfig import GlobalConfig, Compiler
 from .FileSectionType import FileSectionType
 
 
@@ -242,6 +242,9 @@ class ContextSymbol:
         return self.name.startswith(".")
 
     def isLateRodata(self) -> bool:
+        if GlobalConfig.COMPILER != Compiler.IDO:
+            # late rodata only exists in IDO world
+            return False
         # if self.referenceCounter > 1: return False # ?
         return self.isJumpTable() or self.isFloat() or self.isDouble()
 
