@@ -162,8 +162,12 @@ class SectionRodata(SectionBase):
                     # late rodata followed by normal rodata implies a file split
                     self.fileBoundaries.append(sym.inFileOffset)
                 elif previousSymbolExtraPadding > 0:
-                    if sym.contextSym.isDouble():
+                    if sym.isDouble(0):
                         # doubles require a bit extra of alignment
+                        if previousSymbolExtraPadding >= 2:
+                            self.fileBoundaries.append(sym.inFileOffset)
+                    elif sym.isJumpTable() and common.GlobalConfig.COMPILER != common.Compiler.IDO:
+                        # non-IDO compilers emit a directive to align jumptables to 0x8 boundary
                         if previousSymbolExtraPadding >= 2:
                             self.fileBoundaries.append(sym.inFileOffset)
                     else:
