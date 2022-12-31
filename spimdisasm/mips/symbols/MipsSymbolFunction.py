@@ -561,9 +561,10 @@ class SymbolFunction(SymbolText):
         labelSym.isDefined = True
         labelSym.sectionType = self.sectionType
         if labelSym.type == common.SymbolSpecialType.function or (labelSym.type == common.SymbolSpecialType.jumptablelabel and not migrate):
-            label = labelSym.getSymbolLabel()
-            if label:
-                label += common.GlobalConfig.LINE_ENDS
+            label = ""
+            labelMacro = labelSym.getLabelMacro()
+            if labelMacro is not None:
+                label += f"{labelMacro} {labelSym.getName()}{common.GlobalConfig.LINE_ENDS}"
             if common.GlobalConfig.ASM_TEXT_FUNC_AS_LABEL:
                 label += f"{labelSym.getName()}:{common.GlobalConfig.LINE_ENDS}"
             return label
@@ -621,13 +622,7 @@ class SymbolFunction(SymbolText):
                 # RSP functions are always handwritten, so this is redundant
                 output += "# Handwritten function" + common.GlobalConfig.LINE_ENDS
 
-        output += self.getLabelFromSymbol(self.contextSym)
-
-        if common.GlobalConfig.ASM_TEXT_ENT_LABEL:
-            output += f"{common.GlobalConfig.ASM_TEXT_ENT_LABEL} {self.getName()}" + common.GlobalConfig.LINE_ENDS
-
-        if common.GlobalConfig.ASM_TEXT_FUNC_AS_LABEL:
-            output += f"{self.getName()}:" + common.GlobalConfig.LINE_ENDS
+        output += self.getSymbolAsmDeclaration(self.getName(), useGlobalLabel)
 
         wasLastInstABranch = False
         instructionOffset = 0
@@ -646,6 +641,10 @@ class SymbolFunction(SymbolText):
 
         if common.GlobalConfig.ASM_TEXT_END_LABEL:
             output += f"{common.GlobalConfig.ASM_TEXT_END_LABEL} {self.getName()}" + common.GlobalConfig.LINE_ENDS
+
+        nameEnd = self.getNameEnd()
+        if nameEnd is not None:
+            output += self.getSymbolAsmDeclaration(nameEnd, useGlobalLabel)
 
         return output
 

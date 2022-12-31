@@ -31,6 +31,9 @@ class SymbolBase(common.ElementBase):
     def getName(self) -> str:
         return self.contextSym.getName()
 
+    def getNameEnd(self) -> str|None:
+        return self.contextSym.getNameEnd()
+
     def setNameIfUnset(self, name: str) -> None:
         self.contextSym.setNameIfUnset(name)
 
@@ -57,13 +60,30 @@ class SymbolBase(common.ElementBase):
         return f"/* {offsetHex} {vramHex} {wordValueHex}*/"
 
 
+    def getSymbolAsmDeclaration(self, symName: str, useGlobalLabel: bool=True) -> str:
+        if not useGlobalLabel:
+            return f"{symName}:" + common.GlobalConfig.LINE_ENDS
+
+        output = ""
+        output += self.getLabelFromSymbol(self.contextSym, symName)
+        if self.sectionType == common.FileSectionType.Text:
+            if common.GlobalConfig.ASM_TEXT_ENT_LABEL:
+                output += f"{common.GlobalConfig.ASM_TEXT_ENT_LABEL} {symName}{common.GlobalConfig.LINE_ENDS}"
+
+            if common.GlobalConfig.ASM_TEXT_FUNC_AS_LABEL:
+                output += f"{symName}:{common.GlobalConfig.LINE_ENDS}"
+        else:
+            if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
+                output += f"{symName}:{common.GlobalConfig.LINE_ENDS}"
+        return output
+
     def getExtraLabelFromSymbol(self, contextSym: common.ContextSymbol|None) -> str:
         label = ""
         if contextSym is not None:
             label = common.GlobalConfig.LINE_ENDS
-            symLabel = contextSym.getSymbolLabel()
-            if symLabel:
-                label += symLabel + common.GlobalConfig.LINE_ENDS
+            symLabel = contextSym.getLabelMacro()
+            if symLabel is not None:
+                label += f"{symLabel} {contextSym.getName()}{common.GlobalConfig.LINE_ENDS}"
                 if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
                     label += f"{contextSym.getName()}:" + common.GlobalConfig.LINE_ENDS
         return label
@@ -403,14 +423,9 @@ class SymbolBase(common.ElementBase):
 
     def disassembleAsData(self, useGlobalLabel: bool=True) -> str:
         output = self.getReferenceeSymbols()
+        output += self.getPrevAlignDirective(0)
 
-        if useGlobalLabel:
-            output += self.getPrevAlignDirective(0)
-            output += self.getLabelFromSymbol(self.contextSym)
-            if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
-                output += f"{self.getName()}:" + common.GlobalConfig.LINE_ENDS
-        else:
-            output += f"{self.getName()}:" + common.GlobalConfig.LINE_ENDS
+        output += self.getSymbolAsmDeclaration(self.getName(), useGlobalLabel)
 
         canReferenceSymbolsWithAddends = self.canUseAddendsOnData()
         canReferenceConstants = self.canUseConstantsOnData()
@@ -447,6 +462,11 @@ class SymbolBase(common.ElementBase):
 
             i += skip
             i += 1
+
+        nameEnd = self.getNameEnd()
+        if nameEnd is not None:
+            output += self.getSymbolAsmDeclaration(nameEnd, useGlobalLabel)
+
         return output
 
     def disassemble(self, migrate: bool=False, useGlobalLabel: bool=True) -> str:

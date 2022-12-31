@@ -115,7 +115,6 @@ class SymbolRodata(SymbolBase):
     def getNthWord(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False) -> tuple[str, int]:
         localOffset = 4*i
         w = self.words[i]
-        vram = self.getVramOffset(localOffset)
         vrom = self.getVromOffset(localOffset)
 
         label = ""
