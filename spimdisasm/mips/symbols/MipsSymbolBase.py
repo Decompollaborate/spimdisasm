@@ -371,21 +371,16 @@ class SymbolBase(common.ElementBase):
         return 0
 
     def getPrevAlignDirective(self, i: int=0) -> str:
-        commentPaddingNum = 22
-        if not common.GlobalConfig.ASM_COMMENT:
-            commentPaddingNum = 1
-
-        alignDirective = ""
-
         if self.isDouble(i):
             if common.GlobalConfig.COMPILER in {common.Compiler.SN64, common.Compiler.PSYQ}:
                 # This should be harmless in other compilers
                 # TODO: investigate if it is fine to use it unconditionally
-                alignDirective += commentPaddingNum * " "
-                alignDirective += ".align 3"
-                alignDirective += common.GlobalConfig.LINE_ENDS
+                return f".align 3{common.GlobalConfig.LINE_ENDS}"
+        if self.isJumpTable():
+            if i == 0 and common.GlobalConfig.COMPILER != common.Compiler.IDO:
+                return f".align 3{common.GlobalConfig.LINE_ENDS}"
 
-        return alignDirective
+        return ""
 
     def getPostAlignDirective(self, i: int=0) -> str:
         commentPaddingNum = 22
