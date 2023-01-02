@@ -371,14 +371,20 @@ class SymbolBase(common.ElementBase):
         return 0
 
     def getPrevAlignDirective(self, i: int=0) -> str:
+        if self.parent is not None and self.parent.vram % 0x8 != 0:
+            # Can't emit alignment directives if the parent file isn't properly aligned
+            return ""
+
         if self.isDouble(i):
             if common.GlobalConfig.COMPILER in {common.Compiler.SN64, common.Compiler.PSYQ}:
                 # This should be harmless in other compilers
                 # TODO: investigate if it is fine to use it unconditionally
                 return f".align 3{common.GlobalConfig.LINE_ENDS}"
-        if self.isJumpTable():
-            if i == 0 and common.GlobalConfig.COMPILER != common.Compiler.IDO:
-                return f".align 3{common.GlobalConfig.LINE_ENDS}"
+        elif self.isJumpTable():
+            if i == 0 and common.GlobalConfig.COMPILER not in {common.Compiler.IDO, common.Compiler.PSYQ}:
+
+                if self.vram % 0x8 == 0:
+                    return f".align 3{common.GlobalConfig.LINE_ENDS}"
 
         return ""
 
