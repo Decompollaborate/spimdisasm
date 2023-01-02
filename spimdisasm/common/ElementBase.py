@@ -73,6 +73,9 @@ class ElementBase:
     def setCommentOffset(self, commentOffset: int):
         self.commentOffset = commentOffset
 
+    def getName(self) -> str:
+        return self.name
+
     def getVromOffset(self, localOffset: int) -> int:
         return self.vromStart + localOffset
 
@@ -87,12 +90,13 @@ class ElementBase:
         return True
 
 
-    def getLabelFromSymbol(self, sym: ContextSymbol|None) -> str:
+    def getLabelFromSymbol(self, sym: ContextSymbol|None, symName: str|None) -> str:
         "Generates a glabel for the passed symbol, including an optional index value if it was set and it is enabled in the GlobalConfig"
         if sym is not None:
-            label = sym.getSymbolLabel()
-            if not label:
+            label = sym.getLabelMacro()
+            if label is None:
                 return ""
+            label += f" {symName or sym.getName()}"
             if GlobalConfig.GLABEL_ASM_COUNT:
                 if self.index is not None:
                     label += f" # {self.index}"

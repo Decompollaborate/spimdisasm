@@ -71,7 +71,7 @@ def getRdataAndLateRodataForFunctionFromSection(func: symbols.SymbolFunction, ro
         if not rodataSym.shouldMigrate():
             continue
 
-        if rodataSym.contextSym.isLateRodata() and common.GlobalConfig.COMPILER == common.Compiler.IDO:
+        if rodataSym.contextSym.isLateRodata():
             lateRodataList.append(rodataSym)
             lateRodataSize += rodataSym.sizew
         else:

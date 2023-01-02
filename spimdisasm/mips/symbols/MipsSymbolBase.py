@@ -31,6 +31,9 @@ class SymbolBase(common.ElementBase):
     def getName(self) -> str:
         return self.contextSym.getName()
 
+    def getNameEnd(self) -> str|None:
+        return self.contextSym.getNameEnd()
+
     def setNameIfUnset(self, name: str) -> None:
         self.contextSym.setNameIfUnset(name)
 
@@ -57,13 +60,30 @@ class SymbolBase(common.ElementBase):
         return f"/* {offsetHex} {vramHex} {wordValueHex}*/"
 
 
+    def getSymbolAsmDeclaration(self, symName: str, useGlobalLabel: bool=True) -> str:
+        if not useGlobalLabel:
+            return f"{symName}:" + common.GlobalConfig.LINE_ENDS
+
+        output = ""
+        output += self.getLabelFromSymbol(self.contextSym, symName)
+        if self.sectionType == common.FileSectionType.Text:
+            if common.GlobalConfig.ASM_TEXT_ENT_LABEL:
+                output += f"{common.GlobalConfig.ASM_TEXT_ENT_LABEL} {symName}{common.GlobalConfig.LINE_ENDS}"
+
+            if common.GlobalConfig.ASM_TEXT_FUNC_AS_LABEL:
+                output += f"{symName}:{common.GlobalConfig.LINE_ENDS}"
+        else:
+            if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
+                output += f"{symName}:{common.GlobalConfig.LINE_ENDS}"
+        return output
+
     def getExtraLabelFromSymbol(self, contextSym: common.ContextSymbol|None) -> str:
         label = ""
         if contextSym is not None:
             label = common.GlobalConfig.LINE_ENDS
-            symLabel = contextSym.getSymbolLabel()
-            if symLabel:
-                label += symLabel + common.GlobalConfig.LINE_ENDS
+            symLabel = contextSym.getLabelMacro()
+            if symLabel is not None:
+                label += f"{symLabel} {contextSym.getName()}{common.GlobalConfig.LINE_ENDS}"
                 if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
                     label += f"{contextSym.getName()}:" + common.GlobalConfig.LINE_ENDS
         return label
@@ -351,21 +371,22 @@ class SymbolBase(common.ElementBase):
         return 0
 
     def getPrevAlignDirective(self, i: int=0) -> str:
-        commentPaddingNum = 22
-        if not common.GlobalConfig.ASM_COMMENT:
-            commentPaddingNum = 1
-
-        alignDirective = ""
+        if self.parent is not None and self.parent.vram % 0x8 != 0:
+            # Can't emit alignment directives if the parent file isn't properly aligned
+            return ""
 
         if self.isDouble(i):
             if common.GlobalConfig.COMPILER in {common.Compiler.SN64, common.Compiler.PSYQ}:
                 # This should be harmless in other compilers
                 # TODO: investigate if it is fine to use it unconditionally
-                alignDirective += commentPaddingNum * " "
-                alignDirective += ".align 3"
-                alignDirective += common.GlobalConfig.LINE_ENDS
+                return f".align 3{common.GlobalConfig.LINE_ENDS}"
+        elif self.isJumpTable():
+            if i == 0 and common.GlobalConfig.COMPILER not in {common.Compiler.IDO, common.Compiler.PSYQ}:
 
-        return alignDirective
+                if self.vram % 0x8 == 0:
+                    return f".align 3{common.GlobalConfig.LINE_ENDS}"
+
+        return ""
 
     def getPostAlignDirective(self, i: int=0) -> str:
         commentPaddingNum = 22
@@ -403,14 +424,9 @@ class SymbolBase(common.ElementBase):
 
     def disassembleAsData(self, useGlobalLabel: bool=True) -> str:
         output = self.getReferenceeSymbols()
+        output += self.getPrevAlignDirective(0)
 
-        if useGlobalLabel:
-            output += self.getPrevAlignDirective(0)
-            output += self.getLabelFromSymbol(self.contextSym)
-            if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
-                output += f"{self.getName()}:" + common.GlobalConfig.LINE_ENDS
-        else:
-            output += f"{self.getName()}:" + common.GlobalConfig.LINE_ENDS
+        output += self.getSymbolAsmDeclaration(self.getName(), useGlobalLabel)
 
         canReferenceSymbolsWithAddends = self.canUseAddendsOnData()
         canReferenceConstants = self.canUseConstantsOnData()
@@ -447,6 +463,11 @@ class SymbolBase(common.ElementBase):
 
             i += skip
             i += 1
+
+        nameEnd = self.getNameEnd()
+        if nameEnd is not None:
+            output += self.getSymbolAsmDeclaration(nameEnd, useGlobalLabel)
+
         return output
 
     def disassemble(self, migrate: bool=False, useGlobalLabel: bool=True) -> str:

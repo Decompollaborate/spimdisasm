@@ -21,14 +21,18 @@ class SymbolBss(SymbolBase):
     def sizew(self) -> int:
         return self.spaceSize // 4
 
-    def disassembleAsBss(self) -> str:
+    def disassembleAsBss(self, useGlobalLabel: bool=True) -> str:
         output = self.getReferenceeSymbols()
+        output += self.getPrevAlignDirective(0)
 
-        output += self.getLabelFromSymbol(self.contextSym)
-        if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
-            output += f"{self.getName()}:" + common.GlobalConfig.LINE_ENDS
+        output += self.getSymbolAsmDeclaration(self.getName(), useGlobalLabel)
         output += self.generateAsmLineComment(0)
-        output += f" .space 0x{self.spaceSize:02X}" + common.GlobalConfig.LINE_ENDS
+        output += f" .space 0x{self.spaceSize:02X}{common.GlobalConfig.LINE_ENDS}"
+
+        nameEnd = self.getNameEnd()
+        if nameEnd is not None:
+            output += self.getSymbolAsmDeclaration(nameEnd, useGlobalLabel)
+
         return output
 
     def disassemble(self, migrate: bool=False, useGlobalLabel: bool=True) -> str:
