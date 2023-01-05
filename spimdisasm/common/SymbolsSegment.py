@@ -37,12 +37,6 @@ class SymbolsSegment:
         self.newPointersInData: SortedDict[int] = SortedDict()
         "Stuff that looks like pointers, found referenced by data"
 
-        self.dataSymbolsWithReferencesWithAddends: set[int] = set()
-        "Contains the address of data symbols which are allowed to have references to other symbols with addends"
-
-        self.dataReferencingConstants: set[int] = set()
-        "Set of addresses of data symbols which are allowed to reference named constants"
-
         self._isTheUnknownSegment: bool = False
 
 

@@ -143,6 +143,12 @@ class ContextSymbol:
     undefined behaviour.
     """
 
+    allowedToReferenceAddends: bool = False
+    notAllowedToReferenceAddends: bool = False
+
+    allowedToReferenceConstants: bool = False
+    notAllowedToReferenceConstants: bool = False
+
 
     @property
     def vram(self) -> int:

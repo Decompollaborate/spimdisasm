@@ -318,12 +318,3 @@ class ElementBase:
     def getAndPopPointerInDataReferencesRange(self, low: int, high: int) -> Generator[int, None, None]:
         segment = self.getSegmentForVram(low)
         return segment.getAndPopPointerInDataReferencesRange(low, high)
-
-
-    def canUseAddendsOnData(self) -> bool:
-        segment = self.getSegmentForVram(self.vram)
-        return GlobalConfig.ALLOW_ALL_ADDENDS_ON_DATA or self.vram in segment.dataSymbolsWithReferencesWithAddends
-
-    def canUseConstantsOnData(self) -> bool:
-        segment = self.getSegmentForVram(self.vram)
-        return self.vram in segment.dataReferencingConstants

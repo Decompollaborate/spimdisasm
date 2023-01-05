@@ -158,6 +158,8 @@ class GlobalConfig:
 
     ALLOW_ALL_ADDENDS_ON_DATA: bool = True
     """Enable using addends on symbols referenced by data"""
+    ALLOW_ALL_CONSTANTS_ON_DATA: bool = True
+    """Enable referencing constants by data"""
 
 
     ASM_COMMENT: bool = True
@@ -240,6 +242,7 @@ class GlobalConfig:
         backendConfig.add_argument("--allow-unksegment", help=f"Allow using symbols from the unknown segment. Defaults to {GlobalConfig.ALLOW_UNKSEGMENT}", action=Utils.BooleanOptionalAction)
 
         backendConfig.add_argument("--allow-all-addends-on-data", help=f"Enable using addends on symbols referenced by data. Defaults to {GlobalConfig.ALLOW_ALL_ADDENDS_ON_DATA}", action=Utils.BooleanOptionalAction)
+        backendConfig.add_argument("--allow-all-constants-on-data", help=f"Enable referencing constants by data. Defaults to {GlobalConfig.ALLOW_ALL_CONSTANTS_ON_DATA}", action=Utils.BooleanOptionalAction)
 
 
         miscConfig = parser.add_argument_group("Disassembler misc options")
@@ -369,6 +372,8 @@ class GlobalConfig:
 
         if args.allow_all_addends_on_data is not None:
             GlobalConfig.ALLOW_ALL_ADDENDS_ON_DATA = args.allow_all_addends_on_data
+        if args.allow_all_constants_on_data is not None:
+            GlobalConfig.ALLOW_ALL_CONSTANTS_ON_DATA = args.allow_all_constants_on_data
 
 
         if args.asm_comments is not None:
