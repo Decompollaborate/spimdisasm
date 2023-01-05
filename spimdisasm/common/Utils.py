@@ -155,6 +155,41 @@ def readCsv(filepath: Path) -> list[list[str]]:
 
     return data
 
+def parseColonSeparatedPairLine(line: str) -> dict[str, str]:
+    pairs: dict[str, str] = dict()
+
+    # Allow // and # comments
+    line = line.split("//")[0].split("#")[0].strip()
+
+    for info in line.split(" "):
+        if ":" not in info:
+            continue
+
+        key, *vals = info.split(":")
+        pairs[key] = ":".join(vals)
+
+    return pairs
+
+def getMaybeIntFromMaybeStr(number: str|None, base: int=0) -> int|None:
+    if number is None:
+        return None
+
+    return int(number, base)
+
+
+TRUEY_VALS = ["true", "on", "yes", "y"]
+FALSEY_VALS = ["false", "off", "no", "n"]
+
+def getMaybeBooleyFromMaybeStr(booley: str|None) -> bool|None:
+    if booley is None:
+        return None
+
+    if booley in TRUEY_VALS:
+        return True
+    if booley in FALSEY_VALS:
+        return False
+    return None
+
 # Escape characters that are unlikely to be used
 bannedEscapeCharacters = {
     0x01,

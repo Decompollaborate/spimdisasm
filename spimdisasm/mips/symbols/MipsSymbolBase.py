@@ -44,6 +44,25 @@ class SymbolBase(common.ElementBase):
         self.contextSym.setNameGetCallbackIfUnset(callback)
 
 
+    def canUseAddendsOnData(self) -> bool:
+        if self.contextSym.notAllowedToReferenceAddends:
+            return False
+
+        if common.GlobalConfig.ALLOW_ALL_ADDENDS_ON_DATA:
+            return True
+
+        return self.contextSym.allowedToReferenceAddends
+
+    def canUseConstantsOnData(self) -> bool:
+        if self.contextSym.notAllowedToReferenceConstants:
+            return False
+
+        if common.GlobalConfig.ALLOW_ALL_CONSTANTS_ON_DATA:
+            return True
+
+        return self.contextSym.allowedToReferenceConstants
+
+
     def generateAsmLineComment(self, localOffset: int, wordValue: int|None = None) -> str:
         if not common.GlobalConfig.ASM_COMMENT:
             return ""

@@ -5,8 +5,7 @@
 
 from __future__ import annotations
 
-import ast
-from typing import TextIO, Generator
+from typing import TextIO, Generator, TYPE_CHECKING
 from pathlib import Path
 
 from . import Utils
@@ -15,9 +14,11 @@ from .GlobalConfig import GlobalConfig
 from .FileSectionType import FileSectionType
 from .ContextSymbols import SymbolSpecialType, ContextSymbol
 
+if TYPE_CHECKING:
+    from .Context import Context
 
 class SymbolsSegment:
-    def __init__(self, vromStart: int|None, vromEnd: int|None, vramStart: int, vramEnd: int, overlayCategory: str|None=None):
+    def __init__(self, context: "Context", vromStart: int|None, vromEnd: int|None, vramStart: int, vramEnd: int, overlayCategory: str|None=None):
         assert vramStart < vramEnd
         if vromStart is not None and vromEnd is not None:
             assert vromStart < vromEnd
@@ -28,6 +29,8 @@ class SymbolsSegment:
         self.vramStart: int = vramStart
         self.vramEnd: int = vramEnd
 
+        self.context: "Context" = context
+
         self.overlayCategory: str|None = overlayCategory
 
         self.symbols: SortedDict[ContextSymbol] = SortedDict()
@@ -36,12 +39,6 @@ class SymbolsSegment:
 
         self.newPointersInData: SortedDict[int] = SortedDict()
         "Stuff that looks like pointers, found referenced by data"
-
-        self.dataSymbolsWithReferencesWithAddends: set[int] = set()
-        "Contains the address of data symbols which are allowed to have references to other symbols with addends"
-
-        self.dataReferencingConstants: set[int] = set()
-        "Set of addresses of data symbols which are allowed to reference named constants"
 
         self._isTheUnknownSegment: bool = False
 
@@ -320,28 +317,6 @@ class SymbolsSegment:
             contextSym.isUserDeclared = True
 
 
-    def readMMAddressMaps(self, functionsPath: str, variablesPath: str):
-        with open(functionsPath) as infile:
-            functions_ast = ast.literal_eval(infile.read())
-
-        for vram, funcData in functions_ast.items():
-            funcName = funcData[0]
-            contextSym = self.addFunction(vram, funcName)
-            contextSym.isUserDeclared = True
-
-        with open(variablesPath) as infile:
-            variables_ast = ast.literal_eval(infile.read())
-
-        for vram, varData in variables_ast.items():
-            varName, varType, varArrayInfo, varSize = varData
-            if varType == "":
-                varType = None
-
-            contextSym = self.addSymbol(vram, varName)
-            contextSym.type = varType
-            contextSym.size = varSize
-            contextSym.isUserDeclared = True
-
     def readVariablesCsv(self, filepath: Path):
         if not filepath.exists():
             return
@@ -418,3 +393,70 @@ class SymbolsSegment:
             constantValue = int(constantValueStr, 16)
             contextSym = self.addConstant(constantValue, constantName)
             contextSym.isUserDeclared = True
+
+    def readSplatSymbolAddrs(self, filepath: Path):
+        if not filepath.exists():
+            return
+
+        with filepath.open() as f:
+            for line in f:
+                info, *extra = line.strip().split("//")
+                colonSeparatedPairs = "//".join(extra)
+
+                info = info.strip().strip(";")
+
+                if "=" not in info:
+                    continue
+
+                name, addressStr = info.split("=")
+                address = int(addressStr.strip(), 0)
+                name = name.strip()
+
+                pairs = Utils.parseColonSeparatedPairLine(colonSeparatedPairs)
+
+                symSize = Utils.getMaybeIntFromMaybeStr(pairs.get("size"))
+
+                if Utils.getMaybeBooleyFromMaybeStr(pairs.get("ignore")):
+                    if symSize is not None and symSize > 0:
+                        self.context.addBannedSymbolRangeBySize(address, symSize)
+                    else:
+                        self.context.addBannedSymbol(address)
+                    continue
+
+                symType = pairs.get("type")
+                rom = Utils.getMaybeIntFromMaybeStr(pairs.get("rom"))
+                if symType == "func":
+                    contextSym = self.addFunction(address, vromAddress=rom)
+                elif symType == "jtbl":
+                    contextSym = self.addJumpTable(address, vromAddress=rom)
+                elif symType == "jtbl_label":
+                    contextSym = self.addJumpTableLabel(address, vromAddress=rom)
+                elif symType == "label":
+                    contextSym = self.addBranchLabel(address, vromAddress=rom)
+                else:
+                    contextSym = self.addSymbol(address, vromAddress=rom)
+                    if symType is not None:
+                        contextSym.type = symType
+
+                contextSym.name = name
+                contextSym.isUserDeclared = True
+                contextSym.nameEnd = pairs.get("name_end")
+                contextSym.size = Utils.getMaybeIntFromMaybeStr(pairs.get("size"))
+
+                defined = Utils.getMaybeBooleyFromMaybeStr(pairs.get("defined"))
+                if defined is not None:
+                    contextSym.isDefined = defined
+
+                forceMigration = Utils.getMaybeBooleyFromMaybeStr(pairs.get("force_migration"))
+                if forceMigration is not None:
+                    contextSym.forceMigration = forceMigration
+                forceNotMigration = Utils.getMaybeBooleyFromMaybeStr(pairs.get("force_not_migration"))
+                if forceNotMigration is not None:
+                    contextSym.forceNotMigration = forceNotMigration
+
+                allowAddend = Utils.getMaybeBooleyFromMaybeStr(pairs.get("allow_addend"))
+                if allowAddend is not None:
+                    contextSym.allowedToReferenceAddends = allowAddend
+                dontAllowAddend = Utils.getMaybeBooleyFromMaybeStr(pairs.get("dont_allow_addend"))
+                if dontAllowAddend is not None:
+                    contextSym.notAllowedToReferenceAddends = dontAllowAddend

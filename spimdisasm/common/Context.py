@@ -36,9 +36,9 @@ class Context:
 
     def __init__(self):
         # Arbitrary initial range
-        self.globalSegment = SymbolsSegment(0x0, 0x1000, 0x80000000, 0x80001000, overlayCategory=None)
+        self.globalSegment = SymbolsSegment(self, 0x0, 0x1000, 0x80000000, 0x80001000, overlayCategory=None)
         # For symbols that we don't know where they come from
-        self.unknownSegment = SymbolsSegment(None, None, 0x00000000, 0xFFFFFFFF, overlayCategory=None)
+        self.unknownSegment = SymbolsSegment(self, None, None, 0x00000000, 0xFFFFFFFF, overlayCategory=None)
         self._isTheUnknownSegment = True
 
         self.overlaySegments: dict[str, dict[int, SymbolsSegment]] = dict()
@@ -72,7 +72,7 @@ class Context:
     def addOverlaySegment(self, overlayCategory: str, segmentVromStart: int, segmentVromEnd: int, segmentVramStart: int, segmentVramEnd: int) -> SymbolsSegment:
         if overlayCategory not in self.overlaySegments:
             self.overlaySegments[overlayCategory] = dict()
-        segment = SymbolsSegment(segmentVromStart, segmentVromEnd, segmentVramStart, segmentVramEnd, overlayCategory=overlayCategory)
+        segment = SymbolsSegment(self, segmentVromStart, segmentVromEnd, segmentVramStart, segmentVramEnd, overlayCategory=overlayCategory)
         self.overlaySegments[overlayCategory][segmentVromStart] = segment
 
         if self._defaultVramRanges:
@@ -98,6 +98,9 @@ class Context:
 
     def fillDefaultBannedSymbols(self):
         self.bannedSymbols |= self.N64DefaultBanned
+
+    def addBannedSymbol(self, address: int):
+        self.bannedSymbols.add(address)
 
     def addBannedSymbolRange(self, rangeStart: int, rangeEnd: int):
         self.bannedRangedSymbols.append(SymbolRange(rangeStart, rangeEnd))
@@ -148,6 +151,7 @@ class Context:
         csvConfig.add_argument("--functions", help="Path to a functions csv", action="append")
         csvConfig.add_argument("--variables", help="Path to a variables csv", action="append")
         csvConfig.add_argument("--constants", help="Path to a constants csv", action="append")
+        csvConfig.add_argument("--symbol-addrs", help="Path to a splat-compatible symbol_addrs.txt file", action="append")
 
 
         symbolsConfig = parser.add_argument_group("Context default symbols configuration")
@@ -175,3 +179,6 @@ class Context:
         if args.constants is not None:
             for constantsPath in args.constants:
                 self.globalSegment.readConstantsCsv(Path(constantsPath))
+        if args.symbol_addrs is not None:
+            for filepath in args.symbol_addrs:
+                self.globalSegment.readSplatSymbolAddrs(Path(filepath))
