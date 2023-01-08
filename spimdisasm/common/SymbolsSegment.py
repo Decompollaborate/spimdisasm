@@ -193,7 +193,7 @@ class SymbolsSegment:
         0x80000310: ("osCicId",        "u32", 0x4),
         0x80000314: ("osVersion",      "u32", 0x4),
         0x80000318: ("osMemSize",      "u32", 0x4),
-        0x8000031C: ("osAppNmiBuffer", "u8",  0x40),
+        0x8000031C: ("osAppNMIBuffer", "u8",  0x40),
     }
 
     N64HardwareRegs = {
