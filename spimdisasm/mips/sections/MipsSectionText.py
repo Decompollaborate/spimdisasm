@@ -101,11 +101,14 @@ class SectionText(SectionBase):
                 if branchOffset < 0:
                     if branchOffset + instructionOffset < 0:
                         # Whatever we are reading is not a valid instruction
-                        break
+                        if not instr.isJump(): # Make an exception for `j`
+                            break
                     # make sure to not branch outside of the current function
                     if not isLikelyHandwritten:
                         j = len(funcsStartsList) - 1
                         while j >= 0:
+                            if branchOffset + instructionOffset < 0:
+                                break
                             if (branchOffset + instructionOffset) < funcsStartsList[j] * 4:
                                 vram = self.getVramOffset(funcsStartsList[j]*4)
                                 funcSymbol = self.getSymbol(vram, tryPlusOffset=False, checkGlobalSegment=False)
