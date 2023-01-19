@@ -194,6 +194,23 @@ class SymbolsSegment:
         0x80000314: ("osVersion",      "u32", 0x4),
         0x80000318: ("osMemSize",      "u32", 0x4),
         0x8000031C: ("osAppNMIBuffer", "u8",  0x40),
+
+        # iQue specific symbols
+        0x8000035c: ("__osBbEepromAddress", "u32", 0x4),
+        0x80000360: ("__osBbEepromSize", "u32", 0x4),
+        0x80000364: ("__osBbFlashAddress", "u32", 0x4),
+        0x80000368: ("__osBbFlashSize", "u32", 0x4),
+        0x8000036c: ("__osBbSramAddress", "u32", 0x4),
+        0x80000370: ("__osBbSramSize", "u32", 0x4),
+        0x80000374: ("__osBbPakAddress", "u32", 0x4 * 4),
+        0x80000384: ("__osBbPakSize", "u32", 0x4),
+        0x80000388: ("__osBbIsBb", "u32", 0x4),
+        0x8000038c: ("__osBbHackFlags", "u32", 0x4),
+        0x80000390: ("__osBbStashMagic", "u32", 0x4),
+        0x80000394: ("__osBbPakBindings", "s32", 0x4 * 4),
+        0x800003a4: ("__osBbStateName", "char", 0x10),
+        0x800003b4: ("__osBbStateDirty", "u32", 0x4),
+        0x800003b8: ("__osBbAuxDataLimit", "u32", 0x4),
     }
 
     N64HardwareRegs = {
