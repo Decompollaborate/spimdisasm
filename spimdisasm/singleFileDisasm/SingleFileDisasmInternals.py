@@ -24,9 +24,11 @@ def getArgsParser() -> argparse.ArgumentParser:
 
     parser_singleFile = parser.add_argument_group("Single file disassembly options")
 
-    parser_singleFile.add_argument("--start", help="Raw offset of the input binary file to start disassembling. Expects an hex value", default="0")
-    parser_singleFile.add_argument("--end", help="Offset end of the input binary file to start disassembling. Expects an hex value",  default="0xFFFFFF")
+    parser_singleFile.add_argument("--start", help="Raw offset of the input binary file to start disassembling the .text section. Expects an hex value", default="0")
+    parser_singleFile.add_argument("--end", help="Offset end of the input binary file to start disassembling the .text section. Expects an hex value",  default="0xFFFFFF")
     parser_singleFile.add_argument("--vram", help="Set the VRAM address. Expects an hex value", default="0x0")
+    parser_singleFile.add_argument("--data-start", help="Raw offset of the input binary file to start disassembling the .data section. Expects an hex value. Requires --data-end", default=None)
+    parser_singleFile.add_argument("--data-end", help="Offset end of the input binary file to start disassembling the .data section. Expects an hex value. Requires --data-start",  default=None)
 
     parser_singleFile.add_argument("--disasm-rsp", help=f"Experimental. Disassemble this file using rsp ABI instructions. Warning: In its current state the generated asm may not be assemblable to a matching binary. Defaults to False", action="store_true")
 
@@ -67,7 +69,7 @@ def applyGlobalConfigurations() -> None:
     common.GlobalConfig.PRODUCE_SYMBOLS_PLUS_OFFSET = True
     common.GlobalConfig.TRUST_USER_FUNCTIONS = True
 
-def getSplits(fileSplitsPath: Path|None, vromStart: int, vromEnd: int, fileVram: int, disasmRsp: bool) -> common.FileSplitFormat:
+def getSplits(fileSplitsPath: Path|None, vromStart: int, vromEnd: int, fileVram: int, vromDataStart: int|None, vromDataEnd: int|None, disasmRsp: bool) -> common.FileSplitFormat:
     splits = common.FileSplitFormat()
     if fileSplitsPath is not None:
         splits.readCsvFile(fileSplitsPath)
@@ -81,6 +83,13 @@ def getSplits(fileSplitsPath: Path|None, vromStart: int, vromEnd: int, fileVram:
 
         splitEntry = common.FileSplitEntry(vromStart, fileVram, "", common.FileSectionType.Text, vromEnd, False, disasmRsp)
         splits.append(splitEntry)
+
+        if vromDataStart is not None and vromDataEnd is not None:
+            dataVramStart = endVram
+            endVram = dataVramStart + vromDataEnd - vromDataStart
+
+            splitEntry = common.FileSplitEntry(vromDataStart, dataVramStart, "", common.FileSectionType.Data, vromDataEnd, False, disasmRsp)
+            splits.append(splitEntry)
 
         splits.appendEndSection(vromEnd, endVram)
 
@@ -129,8 +138,10 @@ def disassemblerMain():
     vromEnd = int(args.end, 16)
     if vromEnd == 0xFFFFFF:
         vromEnd = len(array_of_bytes)
+    vromDataStart = None if args.data_start is None else int(args.data_start)
+    vromDataEnd = None if args.data_end is None else int(args.data_end)
     fileVram = int(args.vram, 16)
-    splits = getSplits(fileSplitsPath, vromStart, vromEnd, fileVram, args.disasm_rsp)
+    splits = getSplits(fileSplitsPath, vromStart, vromEnd, fileVram, vromDataStart, vromDataEnd, args.disasm_rsp)
 
     textOutput = Path(args.output)
     if args.data_output is None:
