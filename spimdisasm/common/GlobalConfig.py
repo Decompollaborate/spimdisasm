@@ -34,7 +34,7 @@ class InputEndian(enum.Enum):
         raise ValueError(f"No struct format string available for : {self}")
 
 
-compilerOptions = {"IDO", "GCC", "SN64", "PSYQ"}
+compilerOptions = {"IDO", "GCC", "SN64", "PSYQ", "EGCS"}
 
 @enum.unique
 class Compiler(enum.Enum):
@@ -43,6 +43,7 @@ class Compiler(enum.Enum):
     GCC = "GCC"
     SN64 = "SN64"
     PSYQ = "PSYQ"
+    EGCS = "EGCS"
 
     @staticmethod
     def fromStr(value: str) -> Compiler:

@@ -41,11 +41,8 @@ def exampleMain():
     end = int(args.end, 16)
     fileVram = int(args.vram, 16)
 
-    # Truncate binary to the requested range
-    truncatedInputBytes = array_of_bytes[start:end]
-
     # Asume the input is a .text section. Insntance a SectionText and analyze it
-    textSection = spimdisasm.mips.sections.SectionText(context, start, end, fileVram, inputPath.stem, truncatedInputBytes, 0, None)
+    textSection = spimdisasm.mips.sections.SectionText(context, start, end, fileVram, inputPath.stem, array_of_bytes, 0, None)
     textSection.analyze()
     textSection.setCommentOffset(start)
 

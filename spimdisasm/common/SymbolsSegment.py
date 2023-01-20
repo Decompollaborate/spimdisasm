@@ -194,6 +194,23 @@ class SymbolsSegment:
         0x80000314: ("osVersion",      "u32", 0x4),
         0x80000318: ("osMemSize",      "u32", 0x4),
         0x8000031C: ("osAppNMIBuffer", "u8",  0x40),
+
+        # iQue specific symbols
+        0x8000035c: ("__osBbEepromAddress", "u32", 0x4),
+        0x80000360: ("__osBbEepromSize", "u32", 0x4),
+        0x80000364: ("__osBbFlashAddress", "u32", 0x4),
+        0x80000368: ("__osBbFlashSize", "u32", 0x4),
+        0x8000036c: ("__osBbSramAddress", "u32", 0x4),
+        0x80000370: ("__osBbSramSize", "u32", 0x4),
+        0x80000374: ("__osBbPakAddress", "u32", 0x4 * 4),
+        0x80000384: ("__osBbPakSize", "u32", 0x4),
+        0x80000388: ("__osBbIsBb", "u32", 0x4),
+        0x8000038c: ("__osBbHackFlags", "u32", 0x4),
+        0x80000390: ("__osBbStashMagic", "u32", 0x4),
+        0x80000394: ("__osBbPakBindings", "s32", 0x4 * 4),
+        0x800003a4: ("__osBbStateName", "char", 0x10),
+        0x800003b4: ("__osBbStateDirty", "u32", 0x4),
+        0x800003b8: ("__osBbAuxDataLimit", "u32", 0x4),
     }
 
     N64HardwareRegs = {
@@ -230,6 +247,14 @@ class SymbolsSegment:
         0xA4300004: "MI_VERSION_REG",
         0xA4300008: "MI_INTR_REG",
         0xA430000C: "MI_INTR_MASK_REG",
+        0xA4300010: "D_A4300010",
+        0xA4300014: "MI_SK_EXCEPTION_REG",
+        0xA4300018: "MI_SK_WATCHDOG_TIMER",
+        0xA4300028: "D_A4300028",
+        0xA430002C: "MI_RANDOM_BIT",
+        0xA4300030: "D_A4300030",
+        0xA4300038: "MI_HW_INTR_REG",
+        0xA430003C: "MI_HW_INTR_MASK_REG",
 
         # Video Interface Registers
         0xA4400000: "VI_STATUS_REG", # VI_STATUS_REG / VI_CONTROL_REG
@@ -258,9 +283,6 @@ class SymbolsSegment:
         # Peripheral/Parallel Interface Registers
         0xA4600000: "PI_DRAM_ADDR_REG",
         0xA4600004: "PI_CART_ADDR_REG",
-        0xA4600005: "D_A4600005", # TODO: figure out its name
-        0xA4600006: "D_A4600006", # TODO: figure out its name
-        0xA4600007: "D_A4600007", # TODO: figure out its name
         0xA4600008: "PI_RD_LEN_REG",
         0xA460000C: "PI_WR_LEN_REG",
         0xA4600010: "PI_STATUS_REG",
@@ -272,6 +294,28 @@ class SymbolsSegment:
         0xA4600028: "PI_BSD_DOM2_LWD_REG", # PI dom2 pulse width
         0xA460002C: "PI_BSD_DOM2_PGS_REG", # PI dom2 page size
         0xA4600030: "PI_BSD_DOM2_RLS_REG", # PI dom2 release
+        0xA4600038: "PI_CARD_STATUS_REG",
+        0xA4600040: "PI_ATB_NEXT_CONFIG",
+        0xA4600044: "D_A4600044",
+        0xA4600048: "PI_CARD_CNT_REG",
+        0xA460004C: "PI_CARD_CONFIG_REG",
+        0xA4600050: "PI_AES_CNT",
+        0xA4600054: "PI_ALLOWED_IO",
+        0xA4600058: "PI_EX_RD_LEN_REG",
+        0xA460005C: "PI_EX_WR_LEN_REG",
+        0xA4600060: "PI_MISC_REG",
+        0xA4600070: "PI_CARD_BLK_OFFSET_REG",
+        0xA4610000: "PI_EX_DMA_BUF",
+        0xA4610420: "PI_AES_EXPANDED_KEY",
+        0xA46104D0: "PI_AES_IV",
+        0xA4610500: "PI_ATB_ENTRY",
+        0xA4620000: "D_A4620000",
+        0xA46E0000: "PI_RDB_REQ_HI_REG",
+        0xA46E0002: "PI_RDB_REQ_LO_REG",
+        0xA46E0004: "D_A46E0004",
+        0xA46E0400: "D_A46E0400",
+        0xA46E0402: "D_A46E0402",
+        0xA46E8000: "PI_RDB_STATUS_REG",
 
         # RDRAM Interface Registers
         0xA4700000: "RI_MODE_REG",
@@ -291,6 +335,11 @@ class SymbolsSegment:
         0xA4800010: "SI_PIF_ADDR_WR64B_REG",
         0xA4800014: "D_A4800014", # reserved
         0xA4800018: "SI_STATUS_REG",
+
+        0xA4900000: "D_A4900000",
+        0xA4940010: "USB0_STATUS_REG",
+        0xA4A00000: "D_A4A00000",
+        0xA4A40010: "USB1_STATUS_REG",
     }
     "N64 OS hardware registers"
 

@@ -41,6 +41,9 @@ class SectionText(SectionBase):
 
 
     def _findFunctions(self, instrsList: list[rabbitizer.Instruction]):
+        if len(instrsList) == 0:
+            return [0], [False]
+
         functionEnded = False
         farthestBranch = 0
         funcsStartsList = [0]
@@ -55,6 +58,30 @@ class SectionText(SectionBase):
         isInstrImplemented = True
         index = 0
         nInstr = len(instrsList)
+
+        if instrsList[0].isNop():
+            isboundary = False
+            # Loop over until we find a instruction that isn't a nop
+            while index < nInstr:
+                if currentFunctionSym is not None:
+                    break
+
+                instr = instrsList[index]
+                if not instr.isNop():
+                    if isboundary:
+                        self.fileBoundaries.append(self.inFileOffset + index*4)
+                    break
+                index += 1
+                instructionOffset += 4
+                isboundary |= ((instructionOffset % 16) == 0)
+
+                currentInstructionStart = instructionOffset
+                currentFunctionSym = self.getSymbol(self.getVramOffset(instructionOffset), tryPlusOffset=False, checkGlobalSegment=False)
+
+            if index != 0:
+                funcsStartsList.append(index)
+                unimplementedInstructionsFuncList.append(not isInstrImplemented)
+
         while index < nInstr:
             instr = instrsList[index]
             if not instr.isImplemented():
@@ -66,9 +93,15 @@ class SectionText(SectionBase):
                 isLikelyHandwritten = self.isHandwritten
                 index += 1
                 instructionOffset += 4
+
+                auxSym = self.getSymbol(self.getVramOffset(instructionOffset), tryPlusOffset=False, checkGlobalSegment=False)
+
                 isboundary = False
                 # Loop over until we find a instruction that isn't a nop
                 while index < nInstr:
+                    if auxSym is not None:
+                        break
+
                     instr = instrsList[index]
                     if not instr.isNop():
                         if isboundary:
@@ -76,10 +109,12 @@ class SectionText(SectionBase):
                         break
                     index += 1
                     instructionOffset += 4
-                    isboundary = True
+                    isboundary |= ((instructionOffset % 16) == 0)
+
+                    auxSym = self.getSymbol(self.getVramOffset(instructionOffset), tryPlusOffset=False, checkGlobalSegment=False)
 
                 currentInstructionStart = instructionOffset
-                currentFunctionSym = self.getSymbol(self.getVramOffset(instructionOffset), tryPlusOffset=False, checkGlobalSegment=False)
+                currentFunctionSym = auxSym
 
                 funcsStartsList.append(index)
                 unimplementedInstructionsFuncList.append(not isInstrImplemented)
@@ -101,11 +136,14 @@ class SectionText(SectionBase):
                 if branchOffset < 0:
                     if branchOffset + instructionOffset < 0:
                         # Whatever we are reading is not a valid instruction
-                        break
+                        if not instr.isJump(): # Make an exception for `j`
+                            break
                     # make sure to not branch outside of the current function
                     if not isLikelyHandwritten:
                         j = len(funcsStartsList) - 1
                         while j >= 0:
+                            if branchOffset + instructionOffset < 0:
+                                break
                             if (branchOffset + instructionOffset) < funcsStartsList[j] * 4:
                                 vram = self.getVramOffset(funcsStartsList[j]*4)
                                 funcSymbol = self.getSymbol(vram, tryPlusOffset=False, checkGlobalSegment=False)
