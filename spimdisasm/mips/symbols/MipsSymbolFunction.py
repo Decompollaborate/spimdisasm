@@ -596,7 +596,7 @@ class SymbolFunction(SymbolText):
             output += f"# _gp_disp: 0x{gpDisp:X}{common.GlobalConfig.LINE_ENDS}"
             if common.GlobalConfig.EMIT_CPLOAD:
                 assert cpload.reg is not None
-                output += f".set noreorder; .cpload ${cpload.reg.name}; # .set reorder" + common.GlobalConfig.LINE_ENDS
+                output += f".cpload ${cpload.reg.name}" + common.GlobalConfig.LINE_ENDS
             else:
                 output += self._emitInstruction(instr, instructionOffset, wasLastInstABranch)
         else:
