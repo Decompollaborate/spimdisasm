@@ -99,7 +99,7 @@ class SectionRelocZ64(SectionBase):
         sym.contextSym.name = f"{self.name}_OverlayInfo"
         sym.parent = self
         sym.setCommentOffset(self.commentOffset)
-        sym.endOfLineComment = [f" # _{self.name}Segment{sectName.toCapitalizedStr()}Size" for sectName in common.FileSections_ListBasic]
+        sym.endOfLineComment = {i: f" # _{self.name}Segment{sectName.toCapitalizedStr()}Size" for i, sectName in enumerate(common.FileSections_ListBasic)}
         sym.analyze()
         self.symbolList.append(sym)
         localOffset += 4 * 4
@@ -122,7 +122,7 @@ class SectionRelocZ64(SectionBase):
         sym.contextSym.name = f"{self.name}_OverlayRelocations"
         sym.parent = self
         sym.setCommentOffset(self.commentOffset)
-        sym.endOfLineComment = [f" # {str(r)}" for r in self.entries]
+        sym.endOfLineComment = {i: f" # {str(r)}" for i, r in enumerate(self.entries)}
         sym.analyze()
         self.symbolList.append(sym)
         localOffset += 4 * len(self.entries)

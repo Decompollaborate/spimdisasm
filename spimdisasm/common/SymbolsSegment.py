@@ -304,6 +304,7 @@ class SymbolsSegment:
         0xA4600058: "PI_EX_RD_LEN_REG",
         0xA460005C: "PI_EX_WR_LEN_REG",
         0xA4600060: "PI_MISC_REG",
+        0xA4600064: "D_A4600064",
         0xA4600070: "PI_CARD_BLK_OFFSET_REG",
         0xA4610000: "PI_EX_DMA_BUF",
         0xA4610420: "PI_AES_EXPANDED_KEY",
@@ -335,6 +336,7 @@ class SymbolsSegment:
         0xA4800010: "SI_PIF_ADDR_WR64B_REG",
         0xA4800014: "D_A4800014", # reserved
         0xA4800018: "SI_STATUS_REG",
+        0xA480001C: "D_A480001C",
 
         0xA4900000: "D_A4900000",
         0xA4940010: "USB0_STATUS_REG",
