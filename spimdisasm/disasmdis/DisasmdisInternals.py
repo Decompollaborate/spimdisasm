@@ -36,7 +36,18 @@ def getInstrCategoryFromStr(category: str) -> rabbitizer.Enum:
 
     return rabbitizer.InstrCategory.CPU
 
-def getWordListFromStrList(inputlist: list|None) -> Generator[int, None, None]:
+def getWordFromStr(inputStr: str) -> int:
+    arr = bytearray()
+    for index in range(0, len(inputStr), 2):
+        byteStr = inputStr[index:index+2]
+        temp = 0
+        for char in byteStr:
+            temp *= 16
+            temp += int(char, 16)
+        arr.append(temp)
+    return common.Utils.bytesToWords(arr)[0]
+
+def wordGeneratorFromStrList(inputlist: list|None) -> Generator[int, None, None]:
     if inputlist is None:
         return
 
@@ -47,11 +58,11 @@ def getWordListFromStrList(inputlist: list|None) -> Generator[int, None, None]:
                 continue
             wordStr += character
             if len(wordStr) == 8:
-                yield int(wordStr, 16)
+                yield getWordFromStr(wordStr)
                 wordStr = ""
 
     if len(wordStr) > 0:
-        yield int(wordStr, 16)
+        yield getWordFromStr(wordStr)
 
 def getWordListFromStdin():
     if sys.stdin.isatty():
@@ -63,7 +74,7 @@ def getWordListFromStdin():
             lines += line
     except KeyboardInterrupt:
         pass
-    for word in getWordListFromStrList(lines.split(" ")):
+    for word in wordGeneratorFromStrList(lines.split(" ")):
         yield word
 
 
@@ -78,6 +89,6 @@ def disasmdisMain():
         instr = rabbitizer.Instruction(word, category=category)
         print(instr.disassemble())
 
-    for word in getWordListFromStrList(args.input):
+    for word in wordGeneratorFromStrList(args.input):
         instr = rabbitizer.Instruction(word, category=category)
         print(instr.disassemble())
