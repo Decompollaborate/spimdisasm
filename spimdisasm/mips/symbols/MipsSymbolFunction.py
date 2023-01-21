@@ -649,5 +649,10 @@ class SymbolFunction(SymbolText):
         return output
 
     def disassembleAsData(self, useGlobalLabel: bool=True) -> str:
-        self.words = [instr.getRaw() for instr in self.instructions]
+        self.words = []
+        for i, instr in enumerate(self.instructions):
+            if common.GlobalConfig.ASM_COMMENT:
+                if not instr.isImplemented() or not instr.isValid():
+                    self.endOfLineComment[i] = " # invalid instruction"
+            self.words.append(instr.getRaw())
         return super().disassembleAsData(useGlobalLabel=useGlobalLabel)
