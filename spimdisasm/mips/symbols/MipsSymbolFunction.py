@@ -385,8 +385,8 @@ class SymbolFunction(SymbolText):
             instr = self.instructions[i]
             nextInstr = self.instructions[i-1]
 
-            if nextInstr.uniqueId == rabbitizer.InstrId.cpu_jr:
-                return count
+            if nextInstr.isJump():
+                return count - 1
 
             if not instr.isNop():
                 return count
