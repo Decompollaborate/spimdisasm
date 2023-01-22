@@ -385,8 +385,8 @@ class SymbolFunction(SymbolText):
             instr = self.instructions[i]
             nextInstr = self.instructions[i-1]
 
-            if nextInstr.isJump():
-                return count - 1
+            if nextInstr.hasDelaySlot():
+                return count
 
             if not instr.isNop():
                 return count
