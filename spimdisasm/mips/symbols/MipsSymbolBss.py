@@ -21,6 +21,19 @@ class SymbolBss(SymbolBase):
     def sizew(self) -> int:
         return self.spaceSize // 4
 
+    def analyze(self):
+        super().analyze()
+
+        if self.contextSym.size is not None:
+            # Check user declared size matches the size that will be generated
+            contextSymSize = self.contextSym.getSize()
+            if self.spaceSize != contextSymSize:
+                warningMessage = f"Range check triggered: .bss symbol (name: {self.contextSym.getName()}, address: 0x{self.contextSym.vram:X}): User declared size (0x{contextSymSize:X}) does not match the .space that will be generated (0x{self.spaceSize:X}). Try checking the size again or look for symbols which overlaps this region"
+                if common.GlobalConfig.PANIC_RANGE_CHECK:
+                    assert self.spaceSize == contextSymSize, warningMessage
+                else:
+                    common.Utils.eprint(f"\n\n{warningMessage}\n")
+
     def disassembleAsBss(self, useGlobalLabel: bool=True) -> str:
         output = self.getReferenceeSymbols()
         output += self.getPrevAlignDirective(0)
