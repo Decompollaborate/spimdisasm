@@ -367,6 +367,13 @@ class SymbolsSegment:
             contextSym.isDefined = True
             contextSym.isUserDeclared = True
 
+            if useRealNames:
+                contextSym = self.addConstant(vram, name)
+                contextSym.type = SymbolSpecialType.hardwarereg
+                contextSym.size = 4
+                contextSym.isDefined = True
+                contextSym.isUserDeclared = True
+
 
     def readVariablesCsv(self, filepath: Path):
         if not filepath.exists():
