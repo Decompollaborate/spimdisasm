@@ -255,6 +255,9 @@ class ContextSymbol:
         # if self.referenceCounter > 1: return False # ?
         return self.isJumpTable() or self.isFloat() or self.isDouble()
 
+    def hasUserDeclaredSize(self) -> bool:
+        return self.size is not None
+
 
     def getDefaultName(self) -> str:
         suffix = ""

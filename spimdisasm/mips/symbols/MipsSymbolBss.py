@@ -24,7 +24,7 @@ class SymbolBss(SymbolBase):
     def analyze(self):
         super().analyze()
 
-        if self.contextSym.size is not None:
+        if self.contextSym.hasUserDeclaredSize():
             # Check user declared size matches the size that will be generated
             contextSymSize = self.contextSym.getSize()
             if self.spaceSize != contextSymSize:

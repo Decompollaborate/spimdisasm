@@ -58,12 +58,12 @@ class SectionBss(SectionBase):
             bssSymbolOffsets.add(symbolVram - self.bssVramStart)
 
             # If the bss has an explicit size then produce an extra symbol after it, so the generated bss symbol uses the user-declared size
-            if contextSym.size is not None:
-                newSymbolVram = symbolVram + contextSym.size
+            if contextSym.hasUserDeclaredSize():
+                newSymbolVram = symbolVram + contextSym.getSize()
                 if newSymbolVram != self.bssVramEnd:
                     assert newSymbolVram >= self.bssVramStart
                     assert newSymbolVram < self.bssVramEnd, f"{self.name}, symbolVram={symbolVram:X}, newSymbolVram={newSymbolVram:X}, self.bssVramEnd={self.bssVramEnd:X}"
-                    symOffset = symbolVram + contextSym.size - self.bssVramStart
+                    symOffset = symbolVram + contextSym.getSize() - self.bssVramStart
                     bssSymbolOffsets.add(symOffset)
                     autoCreatedPads.add(symOffset)
 
