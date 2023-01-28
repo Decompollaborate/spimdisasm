@@ -191,6 +191,8 @@ class GlobalConfig:
 
     LINE_ENDS: str = "\n"
 
+    PANIC_RANGE_CHECK: bool = False
+    """Produce a fatal error if a range check fails instead of just printing a warning"""
 
     QUIET: bool = False
     VERBOSE: bool = False
@@ -268,6 +270,8 @@ class GlobalConfig:
 
         miscConfig.add_argument("--use-dot-byte", help=f"Disassemble symbols marked as bytes with .byte instead of .word. Defaults to {GlobalConfig.USE_DOT_BYTE}", action=Utils.BooleanOptionalAction)
         miscConfig.add_argument("--use-dot-short", help=f"Disassemble symbols marked as shorts with .short instead of .word. Defaults to {GlobalConfig.USE_DOT_SHORT}", action=Utils.BooleanOptionalAction)
+
+        miscConfig.add_argument("--panic-range-check", help=f"Produce a fatal error if a range check fails instead of just printing a warning. Defaults to {GlobalConfig.PANIC_RANGE_CHECK}", action=Utils.BooleanOptionalAction)
 
 
         verbosityConfig = parser.add_argument_group("Verbosity options")
@@ -414,6 +418,9 @@ class GlobalConfig:
             GlobalConfig.USE_DOT_BYTE = args.use_dot_byte
         if args.use_dot_short is not None:
             GlobalConfig.USE_DOT_SHORT = args.use_dot_short
+
+        if args.panic_range_check is not None:
+            GlobalConfig.PANIC_RANGE_CHECK = args.panic_range_check
 
 
         if args.verbose is not None:

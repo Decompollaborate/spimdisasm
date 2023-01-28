@@ -59,6 +59,10 @@ class Context:
 
 
     def changeGlobalSegmentRanges(self, vromStart: int, vromEnd: int, vramStart: int, vramEnd: int):
+        if vromStart == vromEnd:
+            Utils.eprint(f"Warning: globalSegment's will has its vromStart equal to the vromEnd (0x{vromStart:X})")
+        if vramStart == vramEnd:
+            Utils.eprint(f"Warning: globalSegment's will has its vramStart equal to the vramEnd (0x{vramStart:X})")
         self.globalSegment.changeRanges(vromStart, vromEnd, vramStart, vramEnd)
         if self._defaultVramRanges:
             self.totalVramStart = vramStart

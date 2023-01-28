@@ -95,6 +95,10 @@ class Elf32File:
             common.Utils.eprint(f"Warning: Elf with ABI_ON32 flag.")
             common.Utils.eprint(f"\t This flag is currently not handled in any way, please report this")
 
+        if Elf32HeaderFlag._32BITSMODE in self.elfFlags:
+            common.Utils.eprint(f"Warning: Elf with 32BITSMODE flag.")
+            common.Utils.eprint(f"\t This flag is currently not handled in any way, please report this")
+
         if Elf32HeaderFlag.FP64 in self.elfFlags:
             common.Utils.eprint(f"Warning: Elf with FP64 flag.")
             common.Utils.eprint(f"\t This flag is currently not handled in any way, please report this")
@@ -356,7 +360,10 @@ class Elf32File:
 
         print(f"  {'Flags:':<34} 0x{self.header.flags:X}", end="")
         for flag in self.elfFlags:
-            print(f", {flag.name.lower().replace('arch_', 'mips')}", end="")
+            printableFlagName = flag.name.lower().replace('arch_', 'mips')
+            if len(printableFlagName) > 0 and printableFlagName[0] == "_":
+                printableFlagName = printableFlagName[1:]
+            print(f", {printableFlagName}", end="")
         if self.unknownElfFlags != 0:
             print(f", 0x{self.unknownElfFlags:08X}", end="")
         print()

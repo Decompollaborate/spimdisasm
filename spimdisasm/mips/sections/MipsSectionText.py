@@ -202,6 +202,8 @@ class SectionText(SectionBase):
 
         funcsStartsList, unimplementedInstructionsFuncList = self._findFunctions(instrsList)
 
+        previousSymbolExtraPadding = 0
+
         i = 0
         startsCount = len(funcsStartsList)
         for startIndex in range(startsCount):
@@ -236,6 +238,15 @@ class SectionText(SectionBase):
             func.isRsp = self.instrCat == rabbitizer.InstrCategory.RSP
             func.analyze()
             self.symbolList.append(func)
+
+            # File boundaries detection
+            if func.inFileOffset % 16 == 0:
+                # Files are always 0x10 aligned
+
+                if previousSymbolExtraPadding > 0:
+                    self.fileBoundaries.append(func.inFileOffset)
+
+            previousSymbolExtraPadding = func.countExtraPadding()
             i += 1
 
 

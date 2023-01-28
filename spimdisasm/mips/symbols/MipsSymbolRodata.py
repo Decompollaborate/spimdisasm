@@ -86,6 +86,10 @@ class SymbolRodata(SymbolBase):
 
 
     def countExtraPadding(self) -> int:
+        if self.contextSym.hasUserDeclaredSize():
+            if self.sizew * 4 == self.contextSym.getSize():
+                return 0
+
         count = 0
         if self.isString():
             for i in range(len(self.words)-1, 0, -1):
