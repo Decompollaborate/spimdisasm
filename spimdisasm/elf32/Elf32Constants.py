@@ -70,6 +70,7 @@ class Elf32HeaderFlag(enum.Enum):
     ABI2            = 0x00000020
     ABI_ON32        = 0x00000040
 
+    _32BITSMODE     = 0x00000100
     FP64            = 0x00000200 # Uses FP64 (12 callee-saved).
     NAN2008         = 0x00000400 # Uses IEEE 754-2008 NaN encoding.
 
@@ -93,7 +94,7 @@ class Elf32HeaderFlag(enum.Enum):
             Elf32HeaderFlag.NOREORDER, Elf32HeaderFlag.PIC, Elf32HeaderFlag.CPIC,
             Elf32HeaderFlag.XGOT, Elf32HeaderFlag.F_64BIT_WHIRL, Elf32HeaderFlag.ABI2,
             Elf32HeaderFlag.ABI_ON32,
-            Elf32HeaderFlag.FP64, Elf32HeaderFlag.NAN2008}
+            Elf32HeaderFlag._32BITSMODE, Elf32HeaderFlag.FP64, Elf32HeaderFlag.NAN2008}
         parsedFlags: list[Elf32HeaderFlag] = list()
 
         for flagEnum in flagsToCheck:
