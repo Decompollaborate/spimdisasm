@@ -13,11 +13,10 @@ from .. import common
 from .. import mips
 
 
-def getArgsParser() -> argparse.ArgumentParser:
-    description = "RSP N64 disassembler"
-    parser = argparse.ArgumentParser(description=description)
+def getToolDescription() -> str:
+    return "N64 RSP disassembler"
 
-
+def addOptionsToParser(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     parser.add_argument("binary", help="Path to input binary")
     parser.add_argument("output", help="Path to output. Use '-' to print to stdout instead")
 
@@ -32,6 +31,11 @@ def getArgsParser() -> argparse.ArgumentParser:
     mips.InstructionConfig.addParametersToArgParse(parser)
 
     return parser
+
+def getArgsParser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=getToolDescription())
+    return addOptionsToParser(parser)
+
 
 def applyArgs(args: argparse.Namespace) -> None:
     mips.InstructionConfig.parseArgs(args)
@@ -59,8 +63,7 @@ def initializeContext(args: argparse.Namespace, fileSize: int, fileVram: int) ->
     return context
 
 
-def rspDisasmMain():
-    args = getArgsParser().parse_args()
+def processArguments(args: argparse.Namespace) -> int:
     applyArgs(args)
 
     applyGlobalConfigurations()
@@ -89,3 +92,18 @@ def rspDisasmMain():
         contextPath = Path(args.save_context)
         contextPath.parent.mkdir(parents=True, exist_ok=True)
         context.saveContextToFile(contextPath)
+
+    return 0
+
+def addSubparser(subparser: argparse._SubParsersAction[argparse.ArgumentParser]):
+    parser = subparser.add_parser("rspDisasm", help=getToolDescription())
+
+    addOptionsToParser(parser)
+
+    parser.set_defaults(func=processArguments)
+
+
+def rspDisasmMain():
+    args = getArgsParser().parse_args()
+
+    return processArguments(args)

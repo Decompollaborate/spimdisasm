@@ -5,8 +5,11 @@
 
 from __future__ import annotations
 
+import argparse
 from pathlib import Path
 from typing import Callable
+
+import spimdisasm
 
 from .. import common
 from .. import mips
@@ -155,3 +158,17 @@ def progressCallback_migrateFunctions(i: int, funcName: str, funcTotal: int) -> 
     progressStr = f" Writing: {i/funcTotal:%}. Function: {funcName}\r"
     _sLenLastLine = max(len(progressStr), _sLenLastLine)
     common.Utils.printQuietless(progressStr, end="")
+
+
+def cliMain():
+    parser = argparse.ArgumentParser(description="Interface to call any of the spimdisasm's CLI utilities", prog="spimdisasm")
+
+    subparsers = parser.add_subparsers(description="action", help="The CLI utility to run", required=True)
+
+    spimdisasm.disasmdis.addSubparser(subparsers)
+    spimdisasm.singleFileDisasm.addSubparser(subparsers)
+    spimdisasm.elfObjDisasm.addSubparser(subparsers)
+    spimdisasm.rspDisasm.addSubparser(subparsers)
+
+    args = parser.parse_args()
+    return args.func(args)

@@ -13,16 +13,21 @@ import sys
 from .. import common
 
 
-def getArgsParser() -> argparse.ArgumentParser:
-    description = "CLI tool to disassemble multiples instructions passed as argument"
-    parser = argparse.ArgumentParser(description=description)
+def getToolDescription() -> str:
+    return "CLI tool to disassemble multiples instructions passed as argument"
 
+def addOptionsToParser(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     parser.add_argument("input", help="Hex words to be disassembled. Leading '0x' must be omitted", nargs='+')
 
     parser.add_argument("--endian", help="Set the endianness of input files. Defaults to 'big'", choices=["big", "little", "middle"], default="big")
     parser.add_argument("--category", help="The instruction category to use when disassembling every passed instruction. Defaults to 'cpu'", choices=["cpu", "rsp", "r5900"])
 
     return parser
+
+def getArgsParser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=getToolDescription())
+    return addOptionsToParser(parser)
+
 
 def applyArgs(args: argparse.Namespace) -> None:
     common.GlobalConfig.ENDIAN = common.InputEndian(args.endian)
@@ -78,9 +83,7 @@ def getWordListFromStdin():
         yield word
 
 
-def disasmdisMain():
-    args = getArgsParser().parse_args()
-
+def processArguments(args: argparse.Namespace) -> int:
     applyArgs(args)
 
     category = getInstrCategoryFromStr(args.category)
@@ -92,3 +95,18 @@ def disasmdisMain():
     for word in wordGeneratorFromStrList(args.input):
         instr = rabbitizer.Instruction(word, category=category)
         print(instr.disassemble())
+
+    return 0
+
+def addSubparser(subparser: argparse._SubParsersAction[argparse.ArgumentParser]):
+    parser = subparser.add_parser("disasmdis", help=getToolDescription())
+
+    addOptionsToParser(parser)
+
+    parser.set_defaults(func=processArguments)
+
+
+def disasmdisMain():
+    args = getArgsParser().parse_args()
+
+    return processArguments(args)

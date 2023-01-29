@@ -6,4 +6,4 @@
 from __future__ import annotations
 
 
-from .SingleFileDisasmInternals import getArgsParser, applyArgs, applyGlobalConfigurations, getSplits, changeGlobalSegmentRanges, disassemblerMain
+from .SingleFileDisasmInternals import getToolDescription, addOptionsToParser, getArgsParser, applyArgs, applyGlobalConfigurations, getSplits, changeGlobalSegmentRanges, processArguments, addSubparser, disassemblerMain

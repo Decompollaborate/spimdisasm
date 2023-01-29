@@ -23,6 +23,7 @@ requires = ["setuptools>=65.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project.scripts]
+spimdisasm = "spimdisasm.frontendCommon.FrontendUtilities:cliMain"
 singleFileDisasm = "spimdisasm.singleFileDisasm:disassemblerMain"
 disasmdis = "spimdisasm.disasmdis:disasmdisMain"
 elfObjDisasm = "spimdisasm.elfObjDisasm:elfObjDisasmMain"
