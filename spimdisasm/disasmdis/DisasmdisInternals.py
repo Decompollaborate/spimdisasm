@@ -50,6 +50,8 @@ def getWordFromStr(inputStr: str) -> int:
             temp *= 16
             temp += int(char, 16)
         arr.append(temp)
+    while len(arr) % 4 != 0:
+        arr.append(0)
     return common.Utils.bytesToWords(arr)[0]
 
 def wordGeneratorFromStrList(inputlist: list|None) -> Generator[int, None, None]:
