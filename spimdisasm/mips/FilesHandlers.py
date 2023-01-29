@@ -64,6 +64,9 @@ def getRdataAndLateRodataForFunctionFromSection(func: symbols.SymbolFunction, ro
     lateRodataSize = 0
 
     intersection = func.instrAnalyzer.referencedVrams & rodataSection.symbolsVRams
+    if len(intersection) == 0:
+        return [], [], 0
+
     for rodataSym in rodataSection.symbolList:
         if rodataSym.vram not in intersection:
             continue
@@ -100,7 +103,9 @@ def getRdataAndLateRodataForFunction(func: symbols.SymbolFunction, rodataFileLis
 
     return rdataList, lateRodataList, lateRodataSize
 
-def writeFunctionRodataToFile(f: TextIO, func: symbols.SymbolFunction, rdataList: list[symbols.SymbolBase], lateRodataList: list[symbols.SymbolBase], lateRodataSize: int):
+# Note: the `lateRodataSize` parameter is deprecated and ignored, it has been kept because of compatibility reasons
+def writeFunctionRodataToFile(f: TextIO, func: symbols.SymbolFunction, rdataList: list[symbols.SymbolBase], lateRodataList: list[symbols.SymbolBase], lateRodataSize: int=0):
+
     if len(rdataList) > 0:
         # Write the rdata
         sectionName = ".rodata"
@@ -112,6 +117,11 @@ def writeFunctionRodataToFile(f: TextIO, func: symbols.SymbolFunction, rdataList
     if len(lateRodataList) > 0:
         # Write the late_rodata
         f.write(".section .late_rodata" + common.GlobalConfig.LINE_ENDS)
+
+        lateRodataSize = 0
+        for sym in lateRodataList:
+            lateRodataSize += sym.sizew
+
         if lateRodataSize / len(func.instructions) > 1/3:
             align = 4
             firstLateRodataVram = lateRodataList[0].vram
