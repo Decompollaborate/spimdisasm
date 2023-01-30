@@ -51,15 +51,19 @@ class FunctionRodataEntry:
                 f.write(sym.disassemble(migrate=True, useGlobalLabel=True))
                 f.write(common.GlobalConfig.LINE_ENDS)
 
-        if len(self.rodataSyms) > 0 or len(self.lateRodataSyms) > 0:
-            f.write(f"{common.GlobalConfig.LINE_ENDS}.section .text{common.GlobalConfig.LINE_ENDS}")
+        if self.function is not None:
+            if len(self.rodataSyms) > 0 or len(self.lateRodataSyms) > 0:
+                f.write(f"{common.GlobalConfig.LINE_ENDS}.section .text{common.GlobalConfig.LINE_ENDS}")
 
-        if writeFunction and self.function is not None:
-            # Write the function itself
-            f.write(self.function.disassemble(migrate=True))
+            if writeFunction:
+                # Write the function itself
+                f.write(self.function.disassemble(migrate=True))
 
     @staticmethod
-    def getEntryFromSection(func: symbols.SymbolFunction, rodataSection: sections.SectionRodata) -> FunctionRodataEntry:
+    def getEntryForFuncFromSection(func: symbols.SymbolFunction|None, rodataSection: sections.SectionRodata|None) -> FunctionRodataEntry:
+        if rodataSection is None or func is None:
+            return FunctionRodataEntry(func)
+
         rodataList: list[symbols.SymbolBase] = []
         lateRodataList: list[symbols.SymbolBase] = []
 
@@ -82,36 +86,33 @@ class FunctionRodataEntry:
         return FunctionRodataEntry(func, rodataList, lateRodataList)
 
     @staticmethod
-    def getEntryFromPossibleRodataSections(func: symbols.SymbolFunction, rodataFileList: list[sections.SectionBase]) -> FunctionRodataEntry:
+    def getEntryForFuncFromPossibleRodataSections(func: symbols.SymbolFunction|None, rodataFileList: list[sections.SectionBase]) -> FunctionRodataEntry:
         for rodataSection in rodataFileList:
             assert isinstance(rodataSection, sections.SectionRodata)
 
-            # Skip the file if there's nothing in this file refenced by the current function
-            intersection = func.instrAnalyzer.referencedVrams & rodataSection.symbolsVRams
-            if len(intersection) == 0:
-                continue
-
-            entry = FunctionRodataEntry.getEntryFromSection(func, rodataSection)
+            entry = FunctionRodataEntry.getEntryForFuncFromSection(func, rodataSection)
             if entry.hasRodataSyms():
                 return entry
 
         return FunctionRodataEntry(func)
 
     @staticmethod
-    def getAllEntriesFromSections(textSection: sections.SectionText, rodataSection: sections.SectionRodata) -> list[FunctionRodataEntry]:
+    def getAllEntriesFromSections(textSection: sections.SectionText|None, rodataSection: sections.SectionRodata|None) -> list[FunctionRodataEntry]:
         allUnmigratedRodataSymbols: list[symbols.SymbolBase] = []
 
-        for rodataSym in rodataSection.symbolList:
+        rodataSymbols = rodataSection.symbolList if rodataSection is not None else []
+        for rodataSym in rodataSymbols:
             if not rodataSym.shouldMigrate():
                 # We only care for the symbols which will not be migrated
                 allUnmigratedRodataSymbols.append(rodataSym)
 
         allEntries: list[FunctionRodataEntry] = []
 
-        for func in textSection.symbolList:
+        textSymbols = textSection.symbolList if textSection is not None else []
+        for func in textSymbols:
             assert isinstance(func, symbols.SymbolFunction)
 
-            entry = FunctionRodataEntry.getEntryFromSection(func, rodataSection)
+            entry = FunctionRodataEntry.getEntryForFuncFromSection(func, rodataSection)
 
             if len(entry.rodataSyms) > 0:
                 firstFuncRodataSym = entry.rodataSyms[0]
