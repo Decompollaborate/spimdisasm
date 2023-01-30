@@ -103,6 +103,11 @@ class Context:
     def fillDefaultBannedSymbols(self):
         self.bannedSymbols |= self.N64DefaultBanned
 
+
+    def isAddressInGlobalRange(self, address: int) -> bool:
+        return self.totalVramStart <= address < self.totalVramEnd
+
+
     def addBannedSymbol(self, address: int):
         self.bannedSymbols.add(address)
 

@@ -201,6 +201,12 @@ class SymbolBase(common.ElementBase):
                         referencedSym.referenceSymbols.add(self.contextSym)
 
 
+    def getEndOfLineComment(self, wordIndex: int) -> str:
+        if not common.GlobalConfig.ASM_COMMENT:
+            return ""
+
+        return self.endOfLineComment.get(wordIndex, "")
+
     def getJByteAsByte(self, i: int, j: int) -> str:
         localOffset = 4*i
         w = self.words[i]
@@ -299,9 +305,7 @@ class SymbolBase(common.ElementBase):
 
         comment = self.generateAsmLineComment(localOffset)
         output += f"{label}{comment} {dotType} {value}"
-        endComment = self.endOfLineComment.get(i)
-        if endComment is not None:
-            output += endComment
+        output += self.getEndOfLineComment(i)
         output += common.GlobalConfig.LINE_ENDS
 
         return output, 0
@@ -322,9 +326,7 @@ class SymbolBase(common.ElementBase):
 
         comment = self.generateAsmLineComment(localOffset, w)
         output += f"{label}{comment} {dotType} {value}"
-        endComment = self.endOfLineComment.get(i)
-        if endComment is not None:
-            output += endComment
+        output += self.getEndOfLineComment(i)
         output += common.GlobalConfig.LINE_ENDS
 
         return output, 0
@@ -347,9 +349,7 @@ class SymbolBase(common.ElementBase):
 
         comment = self.generateAsmLineComment(localOffset, doubleWord)
         output += f"{label}{comment} {dotType} {value}"
-        endComment = self.endOfLineComment.get(i)
-        if endComment is not None:
-            output += endComment
+        output += self.getEndOfLineComment(i)
         output += common.GlobalConfig.LINE_ENDS
 
         return output, 1
