@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 from typing import TextIO
 from pathlib import Path
 
@@ -58,29 +59,45 @@ def writeSection(path: Path, fileSection: sections.SectionBase):
     return path
 
 
+@dataclasses.dataclass
+class FunctionRodataEntry:
+    function: symbols.SymbolFunction | None = None
+    rodataSyms: list[symbols.SymbolBase] = dataclasses.field(default_factory=list)
+    lateRodataSyms: list[symbols.SymbolBase] = dataclasses.field(default_factory=list)
+
+    @staticmethod
+    def getEntryFromSections(func: symbols.SymbolFunction, rodataSection: sections.SectionRodata) -> FunctionRodataEntry:
+        rodataList: list[symbols.SymbolBase] = []
+        lateRodataList: list[symbols.SymbolBase] = []
+
+        intersection = func.instrAnalyzer.referencedVrams & rodataSection.symbolsVRams
+        if len(intersection) == 0:
+            return FunctionRodataEntry(func)
+
+        for rodataSym in rodataSection.symbolList:
+            if rodataSym.vram not in intersection:
+                continue
+
+            if not rodataSym.shouldMigrate():
+                continue
+
+            if rodataSym.contextSym.isLateRodata():
+                lateRodataList.append(rodataSym)
+            else:
+                rodataList.append(rodataSym)
+
+        return FunctionRodataEntry(func, rodataList, lateRodataList)
+
+
+#! @deprecated
 def getRdataAndLateRodataForFunctionFromSection(func: symbols.SymbolFunction, rodataSection: sections.SectionRodata) -> tuple[list[symbols.SymbolBase], list[symbols.SymbolBase], int]:
-    rdataList: list[symbols.SymbolBase] = []
-    lateRodataList: list[symbols.SymbolBase] = []
+    entry = FunctionRodataEntry.getEntryFromSections(func, rodataSection)
+
     lateRodataSize = 0
+    for rodataSym in entry.lateRodataSyms:
+        lateRodataSize += rodataSym.sizew
 
-    intersection = func.instrAnalyzer.referencedVrams & rodataSection.symbolsVRams
-    if len(intersection) == 0:
-        return [], [], 0
-
-    for rodataSym in rodataSection.symbolList:
-        if rodataSym.vram not in intersection:
-            continue
-
-        if not rodataSym.shouldMigrate():
-            continue
-
-        if rodataSym.contextSym.isLateRodata():
-            lateRodataList.append(rodataSym)
-            lateRodataSize += rodataSym.sizew
-        else:
-            rdataList.append(rodataSym)
-
-    return rdataList, lateRodataList, lateRodataSize
+    return entry.rodataSyms, entry.lateRodataSyms, lateRodataSize
 
 def getRdataAndLateRodataForFunction(func: symbols.SymbolFunction, rodataFileList: list[sections.SectionBase]) -> tuple[list[symbols.SymbolBase], list[symbols.SymbolBase], int]:
     rdataList: list[symbols.SymbolBase] = []
@@ -161,6 +178,43 @@ def writeOtherRodata(path: Path, rodataFileList: list[sections.SectionBase]):
             with rodataSymbolPath.open("w") as f:
                 f.write(".section .rodata" + common.GlobalConfig.LINE_ENDS)
                 f.write(rodataSym.disassemble(migrate=True))
+
+
+def getFunctionsAndRodataSymsFromSections(textSection: sections.SectionText, rodataSection: sections.SectionRodata) -> list[FunctionRodataEntry]:
+    allUnmigratedRodataSymbols: list[symbols.SymbolBase] = []
+
+    for rodataSym in rodataSection.symbolList:
+        if not rodataSym.shouldMigrate():
+            # We only care for the symbols which will not be migrated
+            allUnmigratedRodataSymbols.append(rodataSym)
+
+    allEntries: list[FunctionRodataEntry] = []
+
+    for func in textSection.symbolList:
+        assert isinstance(func, symbols.SymbolFunction)
+
+        entry = FunctionRodataEntry.getEntryFromSections(func, rodataSection)
+
+        if len(entry.rodataSyms) > 0:
+            firstFuncRodataSym = entry.rodataSyms[0]
+
+            while len(allUnmigratedRodataSymbols) > 0:
+                rodataSym = allUnmigratedRodataSymbols[0]
+
+                if rodataSym.vram >= firstFuncRodataSym.vram:
+                    # Take all the symbols up to the first rodata sym referenced by the current function
+                    break
+
+                allEntries.append(FunctionRodataEntry(rodataSyms=[rodataSym]))
+                del allUnmigratedRodataSymbols[0]
+
+        allEntries.append(entry)
+
+    # Check if there's any rodata symbol remaining and add it to the list
+    for rodataSym in allUnmigratedRodataSymbols:
+        allEntries.append(FunctionRodataEntry(rodataSyms=[rodataSym]))
+
+    return allEntries
 
 
 def writeMigratedFunctionsList(processedSegments: dict[common.FileSectionType, list[sections.SectionBase]], functionMigrationPath: Path, name: str) -> None:
