@@ -51,12 +51,13 @@ class FunctionRodataEntry:
                 f.write(sym.disassemble(migrate=True, useGlobalLabel=True))
                 f.write(common.GlobalConfig.LINE_ENDS)
 
-        if len(self.rodataSyms) > 0 or len(self.lateRodataSyms) > 0:
-            f.write(f"{common.GlobalConfig.LINE_ENDS}.section .text{common.GlobalConfig.LINE_ENDS}")
+        if self.function is not None:
+            if len(self.rodataSyms) > 0 or len(self.lateRodataSyms) > 0:
+                f.write(f"{common.GlobalConfig.LINE_ENDS}.section .text{common.GlobalConfig.LINE_ENDS}")
 
-        if writeFunction and self.function is not None:
-            # Write the function itself
-            f.write(self.function.disassemble(migrate=True))
+            if writeFunction:
+                # Write the function itself
+                f.write(self.function.disassemble(migrate=True))
 
     @staticmethod
     def getEntryForFuncFromSection(func: symbols.SymbolFunction|None, rodataSection: sections.SectionRodata|None) -> FunctionRodataEntry:
