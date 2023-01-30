@@ -5,8 +5,11 @@
 
 from __future__ import annotations
 
+import argparse
 from pathlib import Path
 from typing import Callable
+
+import spimdisasm
 
 from .. import common
 from .. import mips
@@ -134,14 +137,19 @@ def migrateFunctions(processedFiles: dict[common.FileSectionType, list[mips.sect
     funcTotal = sum(len(x.symbolList) for x in processedFiles.get(common.FileSectionType.Text, []))
     rodataFileList = processedFiles.get(common.FileSectionType.Rodata, [])
     i = 0
-    for f in processedFiles.get(common.FileSectionType.Text, []):
-        for func in f.symbolList:
+    for textFile in processedFiles.get(common.FileSectionType.Text, []):
+        filePath = functionMigrationPath / textFile.name
+        filePath.mkdir(parents=True, exist_ok=True)
+        for func in textFile.symbolList:
             if progressCallback is not None:
                 progressCallback(i, func.getName(), funcTotal)
 
             assert isinstance(func, mips.symbols.SymbolFunction)
-            functionPath = functionMigrationPath / f.name
-            mips.FilesHandlers.writeSplitedFunction(functionPath, func, rodataFileList)
+            entry = mips.FunctionRodataEntry.getEntryFromPossibleRodataSections(func, rodataFileList)
+
+            funcPath = filePath / (func.getName()+ ".s")
+            with funcPath.open("w") as f:
+                entry.writeToFile(f, writeFunction=True)
 
             i += 1
     mips.FilesHandlers.writeOtherRodata(functionMigrationPath, rodataFileList)
@@ -155,3 +163,17 @@ def progressCallback_migrateFunctions(i: int, funcName: str, funcTotal: int) -> 
     progressStr = f" Writing: {i/funcTotal:%}. Function: {funcName}\r"
     _sLenLastLine = max(len(progressStr), _sLenLastLine)
     common.Utils.printQuietless(progressStr, end="")
+
+
+def cliMain():
+    parser = argparse.ArgumentParser(description="Interface to call any of the spimdisasm's CLI utilities", prog="spimdisasm")
+
+    subparsers = parser.add_subparsers(description="action", help="The CLI utility to run", required=True)
+
+    spimdisasm.disasmdis.addSubparser(subparsers)
+    spimdisasm.singleFileDisasm.addSubparser(subparsers)
+    spimdisasm.elfObjDisasm.addSubparser(subparsers)
+    spimdisasm.rspDisasm.addSubparser(subparsers)
+
+    args = parser.parse_args()
+    return args.func(args)

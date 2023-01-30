@@ -17,7 +17,7 @@ class SymbolFunction(SymbolText):
         super().__init__(context, vromStart, vromEnd, inFileOffset, vram, list(), segmentVromStart, overlayCategory)
         self.instructions = list(instrsList)
 
-        self.instrAnalyzer = analysis.InstrAnalyzer(self.vram)
+        self.instrAnalyzer = analysis.InstrAnalyzer(self.vram, context)
 
         self.branchesTaken: set[int] = set()
 
@@ -85,8 +85,9 @@ class SymbolFunction(SymbolText):
 
             self.instrAnalyzer.printAnalisisDebugInfo_IterInfo(regsTracker, instr, currentVram)
 
-            if not self.isLikelyHandwritten:
-                self.isLikelyHandwritten = instr.isLikelyHandwritten()
+            if instr.isLikelyHandwritten():
+                self.isLikelyHandwritten = True
+                self.endOfLineComment[instructionOffset//4] = " # handwritten instruction"
 
             if not common.GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS and not instr.isImplemented():
                 # Abort analysis
@@ -330,8 +331,10 @@ class SymbolFunction(SymbolText):
             funcSym.referenceFunctions.add(self.contextSym)
 
 
-        if not self.isRsp and len(self.instrAnalyzer.funcCallOutsideRangesOffsets) > 0:
-            self.isLikelyHandwritten = True
+        # if not self.isRsp and common.GlobalConfig.INPUT_FILE_TYPE != common.InputFileType.ELF:
+        #     for outsideInstrOffset in self.instrAnalyzer.funcCallOutsideRangesOffsets.keys():
+        #         self.isLikelyHandwritten = True
+        #         self.endOfLineComment[outsideInstrOffset//4] = " # function call outside to the known address range"
 
         # Symbols
         for loOffset, symVram in self.instrAnalyzer.symbolLoInstrOffset.items():
@@ -581,7 +584,7 @@ class SymbolFunction(SymbolText):
 
         line = instr.disassemble(immOverride, extraLJust=extraLJust)
 
-        return f"{comment}  {line}{common.GlobalConfig.LINE_ENDS}"
+        return f"{comment}  {line}"
 
 
     def _emitCpload(self, instr: rabbitizer.Instruction, instructionOffset: int, wasLastInstABranch: bool) -> str:
@@ -596,7 +599,7 @@ class SymbolFunction(SymbolText):
             output += f"# _gp_disp: 0x{gpDisp:X}{common.GlobalConfig.LINE_ENDS}"
             if common.GlobalConfig.EMIT_CPLOAD:
                 assert cpload.reg is not None
-                output += f".cpload ${cpload.reg.name}" + common.GlobalConfig.LINE_ENDS
+                output += f".cpload ${cpload.reg.name}"
             else:
                 output += self._emitInstruction(instr, instructionOffset, wasLastInstABranch)
         else:
@@ -636,6 +639,8 @@ class SymbolFunction(SymbolText):
             else:
                 output += self._emitInstruction(instr, instructionOffset, wasLastInstABranch)
 
+            output += f"{self.getEndOfLineComment(instructionOffset//4)}{common.GlobalConfig.LINE_ENDS}"
+
             wasLastInstABranch = instr.hasDelaySlot()
             instructionOffset += 4
 
@@ -651,8 +656,7 @@ class SymbolFunction(SymbolText):
     def disassembleAsData(self, useGlobalLabel: bool=True) -> str:
         self.words = []
         for i, instr in enumerate(self.instructions):
-            if common.GlobalConfig.ASM_COMMENT:
-                if not instr.isImplemented() or not instr.isValid():
-                    self.endOfLineComment[i] = " # invalid instruction"
+            if not instr.isImplemented() or not instr.isValid():
+                self.endOfLineComment[i] = " # invalid instruction"
             self.words.append(instr.getRaw())
         return super().disassembleAsData(useGlobalLabel=useGlobalLabel)

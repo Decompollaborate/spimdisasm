@@ -6,4 +6,4 @@
 from __future__ import annotations
 
 
-from .RspDisasmInternals import getArgsParser, applyArgs, initializeContext, rspDisasmMain
+from .RspDisasmInternals import getToolDescription, addOptionsToParser, getArgsParser, applyArgs, initializeContext, processArguments, addSubparser, rspDisasmMain

@@ -36,8 +36,10 @@ class CploadInfo:
 
 
 class InstrAnalyzer:
-    def __init__(self, funcVram: int) -> None:
+    def __init__(self, funcVram: int, context: common.Context) -> None:
         self.funcVram = funcVram
+        self.context = context
+        "read-only"
 
         self.referencedVrams: set[int] = set()
         "Every referenced vram found"
@@ -59,7 +61,7 @@ class InstrAnalyzer:
         self.funcCallInstrOffsets: dict[int, int] = dict()
         "key: func call instruction offset, value: target vram"
         self.funcCallOutsideRangesOffsets: dict[int, int] = dict()
-        "key: func call instruction offset, value: target vram which is outside the [0x80000000, 0x84000000] range"
+        "key: func call instruction offset, value: target vram which is outside the known vram address range"
 
         # Jump register (jumptables)
         self.jumpRegisterIntrOffset: dict[int, int] = dict()
@@ -133,7 +135,7 @@ class InstrAnalyzer:
             return
 
         target = instr.getInstrIndexAsVram()
-        if target >= 0x84000000 or target < 0x80000000:
+        if not self.context.isAddressInGlobalRange(target):
             self.funcCallOutsideRangesOffsets[instrOffset] = target
 
         if not common.GlobalConfig.PIC:

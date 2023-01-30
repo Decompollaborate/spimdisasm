@@ -69,15 +69,15 @@ This repo can be used either by using the existing front-end scripts or by creat
 
 ### Front-end
 
-Every front-end submodule has its own `--help` screen.
+Every front-end CLI tool has its own `--help` screen.
 
-The submodules can be executed with `python3 -m spimdisasm.modulename`, for example `python3 -m spimdisasm.disasmdis`
+The included tool can be executed with either `spimdisasm modulename` (for example `spimdisasm disasmdis --help`) or directly `modulename` (for example `spimdisasm --help`)
 
 - `singleFileDisasm`: Allows to disassemble a single binary file, producing matching assembly files.
 
 - `disasmdis`: Disassembles raw hex passed to the CLI as a MIPS instruction.
 
-- `elfObjDisasm`: \[EXPERIMENTAL\] Allows to disassemble `.o` elf files. Generated assembly files are not guaranteed to match or be assemblable.
+- `elfObjDisasm`: \[EXPERIMENTAL\] Allows to disassemble elf files. Generated assembly files are not guaranteed to match or even be assemblable.
 
 - `rspDisasm`: Disassemblies RSP binaries.
 
@@ -85,7 +85,7 @@ The submodules can be executed with `python3 -m spimdisasm.modulename`, for exam
 
 TODO
 
-Check `spimdisasm/__main__.py` for a minimal disassembly working example on how to use the API. Checking the front-ends is recommended too.
+Check the already existing front-ends is recommended for now.
 
 ## References
 

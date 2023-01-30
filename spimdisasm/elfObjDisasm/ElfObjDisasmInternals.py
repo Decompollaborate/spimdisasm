@@ -18,11 +18,10 @@ from .. import __version__
 PROGNAME = "elfObjDisasm"
 
 
-def getArgsParser() -> argparse.ArgumentParser:
-    # TODO
-    description = ""
-    parser = argparse.ArgumentParser(description=description)
+def getToolDescription() -> str:
+    return "Experimental MIPS elf disassembler"
 
+def addOptionsToParser(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     parser.add_argument("binary", help="Path to input elf binary file")
     parser.add_argument("output", help="Path to output. Use '-' to print to stdout instead")
 
@@ -52,6 +51,10 @@ def getArgsParser() -> argparse.ArgumentParser:
 
     return parser
 
+def getArgsParser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=getToolDescription(), prog=PROGNAME)
+    return addOptionsToParser(parser)
+
 def applyArgs(args: argparse.Namespace) -> None:
     if args.libultra_syms is None:
         args.libultra_syms = False
@@ -66,6 +69,8 @@ def applyGlobalConfigurations() -> None:
     common.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES = False
 
     common.GlobalConfig.ALLOW_UNKSEGMENT = False
+
+    common.GlobalConfig.INPUT_FILE_TYPE = common.InputFileType.ELF
 
 
 def applyReadelfLikeFlags(elfFile: elf32.Elf32File, args: argparse.Namespace) -> None:
@@ -311,8 +316,7 @@ def processGlobalOffsetTable(context: common.Context, elfFile: elf32.Elf32File) 
     return
 
 
-def elfObjDisasmMain():
-    args = getArgsParser().parse_args()
+def processArguments(args: argparse.Namespace) -> int:
     applyArgs(args)
 
     applyGlobalConfigurations()
@@ -378,3 +382,18 @@ def elfObjDisasmMain():
         context.saveContextToFile(contextPath)
 
     common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Done!")
+
+    return 0
+
+def addSubparser(subparser: argparse._SubParsersAction[argparse.ArgumentParser]):
+    parser = subparser.add_parser(PROGNAME, help=getToolDescription())
+
+    addOptionsToParser(parser)
+
+    parser.set_defaults(func=processArguments)
+
+
+def elfObjDisasmMain():
+    args = getArgsParser().parse_args()
+
+    return processArguments(args)

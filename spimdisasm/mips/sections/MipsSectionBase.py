@@ -11,7 +11,7 @@ from ..MipsFileBase import FileBase
 
 class SectionBase(FileBase):
     def checkWordIsASymbolReference(self, word: int) -> bool:
-        if word < self.context.totalVramStart or word >= self.context.totalVramEnd:
+        if not self.context.totalVramRange.isInRange(word):
             return False
         if self.context.isAddressBanned(word):
             return False
