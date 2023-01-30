@@ -137,14 +137,19 @@ def migrateFunctions(processedFiles: dict[common.FileSectionType, list[mips.sect
     funcTotal = sum(len(x.symbolList) for x in processedFiles.get(common.FileSectionType.Text, []))
     rodataFileList = processedFiles.get(common.FileSectionType.Rodata, [])
     i = 0
-    for f in processedFiles.get(common.FileSectionType.Text, []):
-        for func in f.symbolList:
+    for textFile in processedFiles.get(common.FileSectionType.Text, []):
+        filePath = functionMigrationPath / textFile.name
+        filePath.mkdir(parents=True, exist_ok=True)
+        for func in textFile.symbolList:
             if progressCallback is not None:
                 progressCallback(i, func.getName(), funcTotal)
 
             assert isinstance(func, mips.symbols.SymbolFunction)
-            functionPath = functionMigrationPath / f.name
-            mips.FilesHandlers.writeSplitedFunction(functionPath, func, rodataFileList)
+            entry = mips.FunctionRodataEntry.getEntryFromPossibleRodataSections(func, rodataFileList)
+
+            funcPath = filePath / (func.getName()+ ".s")
+            with funcPath.open("w") as f:
+                entry.writeToFile(f, writeFunction=True)
 
             i += 1
     mips.FilesHandlers.writeOtherRodata(functionMigrationPath, rodataFileList)
