@@ -13,3 +13,5 @@ from . import FilesHandlers
 from .InstructionConfig import InstructionConfig
 from .MipsFileBase import FileBase, createEmptyFile
 from .MipsFileSplits import FileSplits
+
+from .FuncRodataEntry import FunctionRodataEntry
