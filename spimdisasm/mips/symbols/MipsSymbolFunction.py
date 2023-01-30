@@ -331,10 +331,10 @@ class SymbolFunction(SymbolText):
             funcSym.referenceFunctions.add(self.contextSym)
 
 
-        if not self.isRsp:
-            for outsideInstrOffset in self.instrAnalyzer.funcCallOutsideRangesOffsets.keys():
-                self.isLikelyHandwritten = True
-                self.endOfLineComment[outsideInstrOffset//4] = " # function call outside to known address range"
+        # if not self.isRsp and common.GlobalConfig.INPUT_FILE_TYPE != common.InputFileType.ELF:
+        #     for outsideInstrOffset in self.instrAnalyzer.funcCallOutsideRangesOffsets.keys():
+        #         self.isLikelyHandwritten = True
+        #         self.endOfLineComment[outsideInstrOffset//4] = " # function call outside to the known address range"
 
         # Symbols
         for loOffset, symVram in self.instrAnalyzer.symbolLoInstrOffset.items():

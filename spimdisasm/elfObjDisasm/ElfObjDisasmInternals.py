@@ -70,6 +70,8 @@ def applyGlobalConfigurations() -> None:
 
     common.GlobalConfig.ALLOW_UNKSEGMENT = False
 
+    common.GlobalConfig.INPUT_FILE_TYPE = common.InputFileType.ELF
+
 
 def applyReadelfLikeFlags(elfFile: elf32.Elf32File, args: argparse.Namespace) -> None:
     if args.all:

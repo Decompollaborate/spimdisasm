@@ -4,7 +4,7 @@
 from . import Utils
 
 from .SortedDict import SortedDict
-from .GlobalConfig import GlobalConfig, InputEndian, Compiler, Abi, ArchLevel
+from .GlobalConfig import GlobalConfig, InputEndian, Compiler, Abi, ArchLevel, InputFileType
 from .FileSectionType import FileSectionType, FileSections_ListBasic, FileSections_ListAll
 from .ContextSymbols import SymbolSpecialType, ContextSymbol
 from .SymbolsSegment import SymbolsSegment

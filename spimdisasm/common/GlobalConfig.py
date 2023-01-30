@@ -96,6 +96,11 @@ class ArchLevel(OrderedEnum):
             return None
 
 
+class InputFileType(enum.Enum):
+    BINARY = "binary"
+    ELF = "elf"
+
+
 class GlobalConfig:
     DISASSEMBLE_UNKNOWN_INSTRUCTIONS: bool = False
     """Try to disassemble non implemented instructions and functions"""
@@ -137,6 +142,8 @@ class GlobalConfig:
     """
 
     ARCHLEVEL: ArchLevel = ArchLevel.MIPS3
+
+    INPUT_FILE_TYPE: InputFileType = InputFileType.BINARY
 
     GP_VALUE: int|None = None
     """Value used for $gp relocation loads and stores"""

@@ -18,11 +18,21 @@ from .Relocation import RelocationInfo, RelocType
 
 @dataclasses.dataclass
 class SymbolRange:
-    vramStart: int
-    vramEnd: int
+    start: int
+    end: int
 
     def isInRange(self, address: int) -> bool:
-        return self.vramStart <= address < self.vramEnd
+        return self.start <= address < self.end
+
+    def decreaseStart(self, address: int) -> None:
+        if address < self.start:
+            self.start = address
+        return None
+
+    def increaseEnd(self, address: int) -> None:
+        if address > self.end:
+            self.end = address
+        return None
 
 
 class Context:
@@ -44,8 +54,7 @@ class Context:
         self.overlaySegments: dict[str, dict[int, SymbolsSegment]] = dict()
         "Outer key is overlay type, inner key is the vrom of the overlay's segment"
 
-        self.totalVramStart: int = self.globalSegment.vramStart
-        self.totalVramEnd: int = self.globalSegment.vramEnd
+        self.totalVramRange: SymbolRange = SymbolRange(self.globalSegment.vramStart, self.globalSegment.vramEnd)
         self._defaultVramRanges: bool = True
 
         # Stuff that looks like pointers, but the disassembler shouldn't count it as a pointer
@@ -65,13 +74,11 @@ class Context:
             Utils.eprint(f"Warning: globalSegment's will has its vramStart equal to the vramEnd (0x{vramStart:X})")
         self.globalSegment.changeRanges(vromStart, vromEnd, vramStart, vramEnd)
         if self._defaultVramRanges:
-            self.totalVramStart = vramStart
-            self.totalVramEnd = vramEnd
+            self.totalVramRange.start = vramStart
+            self.totalVramRange.end = vramEnd
             self._defaultVramRanges = False
-        if vramStart < self.totalVramStart:
-            self.totalVramStart = vramStart
-        if vramEnd > self.totalVramEnd:
-            self.totalVramEnd = vramEnd
+        self.totalVramRange.decreaseStart(vramStart)
+        self.totalVramRange.increaseEnd(vramEnd)
 
     def addOverlaySegment(self, overlayCategory: str, segmentVromStart: int, segmentVromEnd: int, segmentVramStart: int, segmentVramEnd: int) -> SymbolsSegment:
         if overlayCategory not in self.overlaySegments:
@@ -80,13 +87,11 @@ class Context:
         self.overlaySegments[overlayCategory][segmentVromStart] = segment
 
         if self._defaultVramRanges:
-            self.totalVramStart = segmentVramStart
-            self.totalVramEnd = segmentVramEnd
+            self.totalVramRange.start = segmentVramStart
+            self.totalVramRange.end = segmentVramEnd
             self._defaultVramRanges = False
-        if segmentVramStart < self.totalVramStart:
-            self.totalVramStart = segmentVramStart
-        if segmentVramEnd > self.totalVramEnd:
-            self.totalVramEnd = segmentVramEnd
+        self.totalVramRange.decreaseStart(segmentVramStart)
+        self.totalVramRange.increaseEnd(segmentVramEnd)
 
         return segment
 
@@ -105,7 +110,7 @@ class Context:
 
 
     def isAddressInGlobalRange(self, address: int) -> bool:
-        return self.totalVramStart <= address < self.totalVramEnd
+        return self.totalVramRange.isInRange(address)
 
 
     def addBannedSymbol(self, address: int):
