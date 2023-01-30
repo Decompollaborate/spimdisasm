@@ -145,7 +145,7 @@ def migrateFunctions(processedFiles: dict[common.FileSectionType, list[mips.sect
                 progressCallback(i, func.getName(), funcTotal)
 
             assert isinstance(func, mips.symbols.SymbolFunction)
-            entry = mips.FunctionRodataEntry.getEntryFromPossibleRodataSections(func, rodataFileList)
+            entry = mips.FunctionRodataEntry.getEntryForFuncFromPossibleRodataSections(func, rodataFileList)
 
             funcPath = filePath / (func.getName()+ ".s")
             with funcPath.open("w") as f:
