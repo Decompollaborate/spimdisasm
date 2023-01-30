@@ -8,10 +8,10 @@ from __future__ import annotations
 from . import sections
 from . import symbols
 
+from .FuncRodataEntry import FunctionRodataEntry
+
 from . import FilesHandlers
 
 from .InstructionConfig import InstructionConfig
 from .MipsFileBase import FileBase, createEmptyFile
 from .MipsFileSplits import FileSplits
-
-from .FuncRodataEntry import FunctionRodataEntry
