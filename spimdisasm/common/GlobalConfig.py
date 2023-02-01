@@ -152,6 +152,8 @@ class GlobalConfig:
     EMIT_CPLOAD: bool = True
     """Emits a .cpload directive instead of the corresponding instructions if it were detected"""
 
+    EMIT_INLINE_RELOC: bool = False
+
     SYMBOL_FINDER_FILTER_LOW_ADDRESSES: bool = True
     """Toggle pointer detection for lower addresses (lower than 0x40000000)"""
     SYMBOL_FINDER_FILTER_HIGH_ADDRESSES: bool = True
@@ -243,6 +245,8 @@ class GlobalConfig:
         backendConfig.add_argument("--gp", help="Set the value used for loads and stores related to the $gp register. A hex value is expected")
         backendConfig.add_argument("--pic", help=f"Enables PIC analysis and the usage of some rel types, like %%got. Defaults to {GlobalConfig.PIC}", action=Utils.BooleanOptionalAction)
         backendConfig.add_argument("--emit-cpload", help=f"Emits a .cpload directive instead of the corresponding instructions if it were detected on PIC binaries. Defaults to {GlobalConfig.EMIT_CPLOAD}", action=Utils.BooleanOptionalAction)
+
+        backendConfig.add_argument("--emit-inline-reloc", help=f"Emit a comment indicating the relocation in each instruction/word. Defaults to {GlobalConfig.EMIT_INLINE_RELOC}", action=Utils.BooleanOptionalAction)
 
         backendConfig.add_argument("--filter-low-addresses", help=f"Filter out low addresses (lower than 0x40000000) when searching for pointers. Defaults to {GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES}", action=Utils.BooleanOptionalAction)
         backendConfig.add_argument("--filter-high-addresses", help=f"Filter out high addresses (higher than 0xC0000000) when searching for pointers. Defaults to {GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES}", action=Utils.BooleanOptionalAction)
@@ -369,6 +373,9 @@ class GlobalConfig:
             GlobalConfig.PIC = args.pic
         if args.emit_cpload is not None:
             GlobalConfig.EMIT_CPLOAD = args.emit_cpload
+
+        if args.emit_inline_reloc is not None:
+            GlobalConfig.EMIT_INLINE_RELOC = args.emit_inline_reloc
 
         if args.filter_low_addresses is not None:
             GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES = args.filter_low_addresses

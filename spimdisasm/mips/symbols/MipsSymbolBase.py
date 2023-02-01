@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from typing import Callable
+import rabbitizer
 
 from ... import common
 
@@ -107,6 +108,14 @@ class SymbolBase(common.ElementBase):
                 if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
                     label += f"{contextSym.getName()}:" + common.GlobalConfig.LINE_ENDS
         return label
+
+    def getReloc(self, wordOffset: int, instr: rabbitizer.Instruction|None) -> common.RelocationInfo | None:
+        relocInfo = self.context.globalRelocationOverrides.get(self.getVromOffset(wordOffset))
+
+        if relocInfo is None:
+            relocInfo = self.relocs.get(wordOffset)
+
+        return relocInfo
 
 
     def isByte(self, index: int) -> bool:
