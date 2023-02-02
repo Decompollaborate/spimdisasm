@@ -159,6 +159,11 @@ class ContextSymbol:
     def size(self) -> int|None:
         return self.userDeclaredSize
 
+    #! @deprecated
+    @size.setter
+    def size(self, value: int|None):
+        self.userDeclaredSize = value
+
     def hasNoType(self) -> bool:
         return (self.type is None or self.type == "") and self.accessType is None
 
