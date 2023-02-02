@@ -37,7 +37,9 @@ class SymbolFunction(SymbolText):
         return self.nInstr
 
 
-    def getReloc(self, wordOffset: int, instr: rabbitizer.Instruction) -> common.RelocationInfo | None:
+    def getReloc(self, wordOffset: int, instr: rabbitizer.Instruction|None) -> common.RelocationInfo | None:
+        assert instr is not None
+
         relocInfo = super().getReloc(wordOffset, instr)
 
         if relocInfo is not None:
