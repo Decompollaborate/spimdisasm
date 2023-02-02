@@ -404,6 +404,9 @@ class SymbolFunction(SymbolText):
 
     def countExtraPadding(self) -> int:
         count = 0
+        if self.contextSym.size == self.sizew * 4:
+            return 0
+
         for i in range(len(self.instructions)-1, 0, -1):
             instr = self.instructions[i]
             nextInstr = self.instructions[i-1]
