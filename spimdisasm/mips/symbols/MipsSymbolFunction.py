@@ -378,7 +378,7 @@ class SymbolFunction(SymbolText):
                     if contextSym.address % 4 != 0 or symVram % 4 != 0:
                         if contextSym.getType() in {"u16", "s16", "u8", "u8"} or (symAccess is not None and symAccess.accessType in {rabbitizer.AccessType.BYTE, rabbitizer.AccessType.SHORT}):
                             if not (contextSym.getSize() > 4):
-                                if contextSym.size is None or symVram >= contextSym.address + contextSym.size:
+                                if contextSym.userDeclaredSize is None or symVram >= contextSym.address + contextSym.userDeclaredSize:
                                     if symAccess is not None:
                                         contextSym.setAccessTypeIfUnset(symAccess.accessType, symAccess.unsignedMemoryAccess)
                                     contextSym.setFirstLoAccessIfUnset(loOffset)
@@ -406,7 +406,7 @@ class SymbolFunction(SymbolText):
 
     def countExtraPadding(self) -> int:
         count = 0
-        if self.contextSym.size == self.sizew * 4:
+        if self.contextSym.userDeclaredSize == self.sizew * 4:
             return 0
 
         for i in range(len(self.instructions)-1, 0, -1):

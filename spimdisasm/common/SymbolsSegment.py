@@ -351,7 +351,7 @@ class SymbolsSegment:
             contextSym = self.addSymbol(vram)
             contextSym.name = name
             contextSym.type = type
-            contextSym.size = size
+            contextSym.userDeclaredSize = size
             contextSym.isDefined = True
             contextSym.isUserDeclared = True
 
@@ -363,14 +363,14 @@ class SymbolsSegment:
             contextSym = self.addSymbol(vram)
             contextSym.name = nameToUse
             contextSym.type = SymbolSpecialType.hardwarereg
-            contextSym.size = 4
+            contextSym.userDeclaredSize = 4
             contextSym.isDefined = True
             contextSym.isUserDeclared = True
 
             if useRealNames:
                 contextSym = self.addConstant(vram, name)
                 contextSym.type = SymbolSpecialType.hardwarereg
-                contextSym.size = 4
+                contextSym.userDeclaredSize = 4
                 contextSym.isDefined = True
                 contextSym.isUserDeclared = True
 
@@ -414,7 +414,7 @@ class SymbolsSegment:
 
             contextSym.name = varName
             contextSym.type = varType
-            contextSym.size = varSize
+            contextSym.userDeclaredSize = varSize
             contextSym.isUserDeclared = True
 
     def readFunctionsCsv(self, filepath: Path):
@@ -499,7 +499,7 @@ class SymbolsSegment:
                 contextSym.name = name
                 contextSym.isUserDeclared = True
                 contextSym.nameEnd = pairs.get("name_end")
-                contextSym.size = Utils.getMaybeIntFromMaybeStr(pairs.get("size"))
+                contextSym.userDeclaredSize = Utils.getMaybeIntFromMaybeStr(pairs.get("size"))
 
                 defined = Utils.getMaybeBooleyFromMaybeStr(pairs.get("defined"))
                 if defined is not None:
