@@ -41,6 +41,8 @@ def addOptionsToParser(parser: argparse.ArgumentParser) -> argparse.ArgumentPars
 
     parser.add_argument("--write-binary", help=f"Produce a binary from the processed file. Defaults to {common.GlobalConfig.WRITE_BINARY}", action=common.Utils.BooleanOptionalAction)
 
+    parser.add_argument("--function-info", help="Specifies a path where to output a csvs sumary file of every analyzed function", metavar="PATH")
+
 
     common.Context.addParametersToArgParse(parser)
 
@@ -181,6 +183,9 @@ def processArguments(args: argparse.Namespace) -> int:
         contextPath = Path(args.save_context)
         contextPath.parent.mkdir(parents=True, exist_ok=True)
         context.saveContextToFile(contextPath)
+
+    if args.function_info is not None:
+        fec.FrontendUtilities.writeFunctionInfoCsv(processedFiles, Path(args.function_info))
 
     common.Utils.printQuietless(500*" " + "\r", end="")
     common.Utils.printQuietless(f"Done: {args.binary}")

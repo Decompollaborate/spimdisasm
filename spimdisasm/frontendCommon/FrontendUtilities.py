@@ -165,6 +165,36 @@ def progressCallback_migrateFunctions(i: int, funcName: str, funcTotal: int) -> 
     common.Utils.printQuietless(progressStr, end="")
 
 
+def writeFunctionInfoCsv(processedFiles: dict[common.FileSectionType, list[mips.sections.SectionBase]], csvPath: Path):
+    csvPath.parent.mkdir(parents=True, exist_ok=True)
+
+    with csvPath.open("w") as f:
+        f.write("address,name,file,length,top bits of words,functions called by this function\n")
+        for textFile in processedFiles.get(common.FileSectionType.Text, []):
+            for func in textFile.symbolList:
+                assert isinstance(func, mips.symbols.SymbolFunction)
+                f.write(f"0x{func.vram:08X},{func.getName()},{textFile.getName()},0x{func.sizew*4:X},")
+
+                bitslist = []
+                for instr in func.instructions:
+                    topbits = instr.getRaw() & 0xFC000000
+                    bitslist.append(f"{topbits:08X}")
+
+                f.write(";".join(bitslist))
+                f.write(",")
+
+                calledFuncs = []
+                for instrOffset, targetVram in func.instrAnalyzer.funcCallInstrOffsets.items():
+                    funcSym = func.getSymbol(targetVram, tryPlusOffset=False)
+                    if funcSym is None:
+                        continue
+
+                    calledFuncs.append(funcSym.getName())
+                f.write(";".join(calledFuncs))
+
+                f.write("\n")
+
+
 def cliMain():
     parser = argparse.ArgumentParser(description="Interface to call any of the spimdisasm's CLI utilities", prog="spimdisasm")
 
