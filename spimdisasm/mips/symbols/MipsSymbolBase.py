@@ -117,6 +117,14 @@ class SymbolBase(common.ElementBase):
 
         return relocInfo
 
+    def relocToInlineStr(self, relocInfo: common.RelocationInfo | None) -> str:
+        if relocInfo is None:
+            return ""
+        output = f"    # {relocInfo.relocType.name} '{relocInfo.getName()}'"
+        if relocInfo.staticReference is not None:
+            output += f" (static)"
+        output += f"{common.GlobalConfig.LINE_ENDS}"
+        return output
 
     def isByte(self, index: int) -> bool:
         return self.contextSym.isByte() and not self.isString()
@@ -492,6 +500,9 @@ class SymbolBase(common.ElementBase):
             if i != 0:
                 output += self.getPrevAlignDirective(i)
             output += data
+            if common.GlobalConfig.EMIT_INLINE_RELOC:
+                relocInfo = self.getReloc(i*4, None)
+                output += self.relocToInlineStr(relocInfo)
             output += self.getPostAlignDirective(i)
 
             i += skip

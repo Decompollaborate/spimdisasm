@@ -38,8 +38,6 @@ class SymbolFunction(SymbolText):
 
 
     def getReloc(self, wordOffset: int, instr: rabbitizer.Instruction|None) -> common.RelocationInfo | None:
-        assert instr is not None
-
         relocInfo = super().getReloc(wordOffset, instr)
 
         if relocInfo is not None:
@@ -47,11 +45,12 @@ class SymbolFunction(SymbolText):
                 relocVram = relocInfo.staticReference.sectionVram
                 addend = 0
 
-                if instr.hasOperandAlias(rabbitizer.OperandType.cpu_immediate):
-                    if wordOffset in self.instrAnalyzer.symbolInstrOffset:
-                        addend = self.instrAnalyzer.symbolInstrOffset[wordOffset]
-                    else:
-                        addend = instr.getProcessedImmediate()
+                if instr is not None:
+                    if instr.hasOperandAlias(rabbitizer.OperandType.cpu_immediate):
+                        if wordOffset in self.instrAnalyzer.symbolInstrOffset:
+                            addend = self.instrAnalyzer.symbolInstrOffset[wordOffset]
+                        else:
+                            addend = instr.getProcessedImmediate()
                 labelSym = self.getSymbol(relocVram + addend, checkUpperLimit=False)
                 if labelSym is not None:
                     relocInfo.symbol = labelSym
@@ -650,11 +649,7 @@ class SymbolFunction(SymbolText):
 
             if common.GlobalConfig.EMIT_INLINE_RELOC:
                 relocInfo = self.getReloc(instructionOffset, instr)
-                if relocInfo is not None:
-                    output += f"    # {relocInfo.relocType.name} '{relocInfo.getName()}'"
-                    if relocInfo.staticReference is not None:
-                        output += f" (static)"
-                    output += f"{common.GlobalConfig.LINE_ENDS}"
+                output += self.relocToInlineStr(relocInfo)
 
             wasLastInstABranch = instr.hasDelaySlot()
             instructionOffset += 4
