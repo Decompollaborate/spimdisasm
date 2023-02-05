@@ -67,7 +67,7 @@ class InstrAnalyzer:
         self.jumpRegisterIntrOffset: dict[int, int] = dict()
         self.referencedJumpTableOffsets: dict[int, int] = dict()
 
-        # Jump register (jumptables)
+        # Jump and link (functions)
         self.indirectFunctionCallIntrOffset: dict[int, int] = dict()
         self.indirectFunctionCallOffsets: dict[int, int] = dict()
 

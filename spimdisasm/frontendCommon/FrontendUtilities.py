@@ -169,18 +169,21 @@ def writeFunctionInfoCsv(processedFiles: dict[common.FileSectionType, list[mips.
     csvPath.parent.mkdir(parents=True, exist_ok=True)
 
     with csvPath.open("w") as f:
-        f.write("address,name,file,length,top bits of words,functions called by this function\n")
+        f.write("address,name,file,length,hash of top bits of words,functions called by this function,non-jal function calls\n")
         for textFile in processedFiles.get(common.FileSectionType.Text, []):
             for func in textFile.symbolList:
                 assert isinstance(func, mips.symbols.SymbolFunction)
                 f.write(f"0x{func.vram:08X},{func.getName()},{textFile.getName()},0x{func.sizew*4:X},")
 
-                bitslist = []
+                bitswordlist = []
                 for instr in func.instructions:
                     topbits = instr.getRaw() & 0xFC000000
-                    bitslist.append(f"{topbits:08X}")
 
-                f.write(";".join(bitslist))
+                    bitswordlist.append(topbits)
+                bitbytelist = bytearray([0]*len(bitswordlist)*4)
+                common.Utils.endianessWordsToBytes(common.Utils.InputEndian.BIG, bitswordlist, bitbytelist)
+
+                f.write(common.Utils.getStrHash(bitbytelist))
                 f.write(",")
 
                 calledFuncs = []
@@ -190,7 +193,17 @@ def writeFunctionInfoCsv(processedFiles: dict[common.FileSectionType, list[mips.
                         continue
 
                     calledFuncs.append(funcSym.getName())
-                f.write(";".join(calledFuncs))
+                f.write("[" + ";".join(calledFuncs) + "]")
+                f.write(",")
+
+                nonJalCalls = []
+                for loOffset, targetVram in func.instrAnalyzer.indirectFunctionCallOffsets.items():
+                    funcSym = func.getSymbol(targetVram, tryPlusOffset=False)
+                    if funcSym is None:
+                        continue
+
+                    nonJalCalls.append(funcSym.getName())
+                f.write("[" + ";".join(nonJalCalls) + "]")
 
                 f.write("\n")
 
