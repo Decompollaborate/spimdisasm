@@ -276,6 +276,9 @@ class ContextSymbol:
             if self.vromAddress is not None:
                 suffix += f"{self.vromAddress:06X}"
 
+        if GlobalConfig.CUSTOM_SUFFIX:
+            suffix += GlobalConfig.CUSTOM_SUFFIX
+
         if self.type is not None:
             if self.type == SymbolSpecialType.function:
                 return f"func_{self.address:08X}{suffix}"
