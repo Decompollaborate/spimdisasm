@@ -57,7 +57,7 @@ class FunctionRodataEntry:
 
             if writeFunction:
                 # Write the function itself
-                f.write(self.function.disassemble(migrate=True))
+                f.write(self.function.disassemble(migrate=self.hasRodataSyms()))
 
     @staticmethod
     def getEntryForFuncFromSection(func: symbols.SymbolFunction|None, rodataSection: sections.SectionRodata|None) -> FunctionRodataEntry:
