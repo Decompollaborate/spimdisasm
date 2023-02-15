@@ -204,6 +204,7 @@ def writeFunctionInfoCsv(processedFiles: dict[common.FileSectionType, list[mips.
 
                     nonJalCalls.append(funcSym.getName())
                 f.write("[" + ";".join(nonJalCalls) + "]")
+                f.write(",")
 
                 referencedFunctions = []
                 for loOffset, symVram in func.instrAnalyzer.symbolLoInstrOffset.items():
