@@ -169,7 +169,7 @@ def writeFunctionInfoCsv(processedFiles: dict[common.FileSectionType, list[mips.
     csvPath.parent.mkdir(parents=True, exist_ok=True)
 
     with csvPath.open("w") as f:
-        f.write("address,name,file,length,hash of top bits of words,functions called by this function,non-jal function calls\n")
+        f.write("address,name,file,length,hash of top bits of words,functions called by this function,non-jal function calls,referenced functions\n")
         for textFile in processedFiles.get(common.FileSectionType.Text, []):
             for func in textFile.symbolList:
                 assert isinstance(func, mips.symbols.SymbolFunction)
@@ -204,6 +204,19 @@ def writeFunctionInfoCsv(processedFiles: dict[common.FileSectionType, list[mips.
 
                     nonJalCalls.append(funcSym.getName())
                 f.write("[" + ";".join(nonJalCalls) + "]")
+                f.write(",")
+
+                referencedFunctions = []
+                for loOffset, symVram in func.instrAnalyzer.symbolLoInstrOffset.items():
+                    funcSym = func.getSymbol(symVram, tryPlusOffset=False)
+                    if funcSym is None:
+                        continue
+
+                    if funcSym.type != common.SymbolSpecialType.function:
+                        continue
+
+                    referencedFunctions.append(funcSym.getName())
+                f.write("[" + ";".join(referencedFunctions) + "]")
 
                 f.write("\n")
 
