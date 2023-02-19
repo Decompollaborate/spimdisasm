@@ -169,11 +169,11 @@ def writeFunctionInfoCsv(processedFiles: dict[common.FileSectionType, list[mips.
     csvPath.parent.mkdir(parents=True, exist_ok=True)
 
     with csvPath.open("w") as f:
-        f.write("address,name,file,length,hash of top bits of words,functions called by this function,non-jal function calls,referenced functions\n")
+        f.write("address,name,vrom,file,file vrom,length,hash of top bits of words,functions called by this function,non-jal function calls,referenced functions\n")
         for textFile in processedFiles.get(common.FileSectionType.Text, []):
             for func in textFile.symbolList:
                 assert isinstance(func, mips.symbols.SymbolFunction)
-                f.write(f"0x{func.vram:08X},{func.getName()},{textFile.getName()},0x{func.sizew*4:X},")
+                f.write(f"0x{func.vram:08X},{func.getName()},0x{func.vromStart:06X},{textFile.getName()},0x{textFile.vromStart:06X},0x{func.sizew*4:X},")
 
                 bitswordlist = []
                 for instr in func.instructions:
@@ -219,6 +219,9 @@ def writeFunctionInfoCsv(processedFiles: dict[common.FileSectionType, list[mips.
                 f.write("[" + ";".join(referencedFunctions) + "]")
 
                 f.write("\n")
+
+            # For adding new lines at the end of each file
+            # f.write("\n")
 
 
 def cliMain():
