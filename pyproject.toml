@@ -1,10 +1,10 @@
-# SPDX-FileCopyrightText: © 2022 Decompollaborate
+# SPDX-FileCopyrightText: © 2022-2023 Decompollaborate
 # SPDX-License-Identifier: MIT
 
 [project]
 name = "spimdisasm"
 # Version should be synced with spimdisasm/__init__.py
-version = "1.11.3"
+version = "1.11.4"
 description = "MIPS disassembler"
 # license = "MIT"
 readme = "README.md"
