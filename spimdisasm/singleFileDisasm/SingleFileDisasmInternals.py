@@ -143,8 +143,8 @@ def processArguments(args: argparse.Namespace) -> int:
     vromEnd = int(args.end, 16)
     if vromEnd == 0xFFFFFF:
         vromEnd = len(array_of_bytes)
-    vromDataStart = None if args.data_start is None else int(args.data_start)
-    vromDataEnd = None if args.data_end is None else int(args.data_end)
+    vromDataStart = None if args.data_start is None else int(args.data_start, 16)
+    vromDataEnd = None if args.data_end is None else int(args.data_end, 16)
     fileVram = int(args.vram, 16)
     splits = getSplits(fileSplitsPath, vromStart, vromEnd, fileVram, vromDataStart, vromDataEnd, args.disasm_rsp)
 
