@@ -249,6 +249,9 @@ class SectionText(SectionBase):
             previousSymbolExtraPadding = func.countExtraPadding()
             i += 1
 
+        # Filter out repeated values and sort
+        self.fileBoundaries = sorted(set(self.fileBoundaries))
+
 
     def compareToFile(self, other: FileBase):
         result = super().compareToFile(other)

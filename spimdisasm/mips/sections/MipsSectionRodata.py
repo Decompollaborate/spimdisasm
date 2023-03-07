@@ -178,6 +178,9 @@ class SectionRodata(SectionBase):
 
         self.processStaticRelocs()
 
+        # Filter out repeated values and sort
+        self.fileBoundaries = sorted(set(self.fileBoundaries))
+
 
     def removePointers(self) -> bool:
         if not common.GlobalConfig.REMOVE_POINTERS:
