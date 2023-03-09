@@ -223,7 +223,7 @@ class SymbolFunction(SymbolText):
         if instr.canBeHi():
             if common.GlobalConfig.PIC:
                 if contextSym is not None and gotHiLo:
-                    if contextSym.isGotGlobal and contextSym.type == common.SymbolSpecialType.function:
+                    if contextSym.isGotGlobal and contextSym.getTypeSpecial() == common.SymbolSpecialType.function:
                         return common.RelocType.MIPS_CALL_HI16
                     else:
                         return common.RelocType.MIPS_GOT_HI16
@@ -234,14 +234,14 @@ class SymbolFunction(SymbolText):
                 return common.RelocType.MIPS_GPREL16
 
             if contextSym is not None:
-                if contextSym.isGotGlobal and contextSym.type == common.SymbolSpecialType.function and instrOffset in self.instrAnalyzer.indirectFunctionCallOffsets:
+                if contextSym.isGotGlobal and contextSym.getTypeSpecial() == common.SymbolSpecialType.function and instrOffset in self.instrAnalyzer.indirectFunctionCallOffsets:
                     return common.RelocType.MIPS_CALL16
                 elif contextSym.isGot:
                     return common.RelocType.MIPS_GOT16
 
         elif common.GlobalConfig.PIC:
             if contextSym is not None and gotHiLo:
-                if contextSym.isGotGlobal and contextSym.type == common.SymbolSpecialType.function:
+                if contextSym.isGotGlobal and contextSym.getTypeSpecial() == common.SymbolSpecialType.function:
                     return common.RelocType.MIPS_CALL_LO16
                 else:
                     return common.RelocType.MIPS_GOT_LO16
@@ -569,7 +569,8 @@ class SymbolFunction(SymbolText):
 
         labelSym.isDefined = True
         labelSym.sectionType = self.sectionType
-        if labelSym.type == common.SymbolSpecialType.function or (labelSym.type == common.SymbolSpecialType.jumptablelabel and not migrate):
+        labelSymType = labelSym.getTypeSpecial()
+        if labelSymType == common.SymbolSpecialType.function or (labelSymType == common.SymbolSpecialType.jumptablelabel and not migrate):
             label = ""
             labelMacro = labelSym.getLabelMacro()
             if labelMacro is not None:

@@ -212,7 +212,7 @@ def writeFunctionInfoCsv(processedFiles: dict[common.FileSectionType, list[mips.
                     if funcSym is None:
                         continue
 
-                    if funcSym.type != common.SymbolSpecialType.function:
+                    if funcSym.getTypeSpecial() != common.SymbolSpecialType.function:
                         continue
 
                     referencedFunctions.append(funcSym.getName())
