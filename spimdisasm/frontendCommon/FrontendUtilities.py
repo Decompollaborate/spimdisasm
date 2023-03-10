@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Callable
 
 import spimdisasm
+import rabbitizer
 
 from .. import common
 from .. import mips
@@ -58,6 +59,25 @@ def getSplittedSections(context: common.Context, splits: common.FileSplitFormat,
         processedFilesOutputPaths[row.section].append(outputFilePath)
 
     return processedFiles, processedFilesOutputPaths
+
+
+def getInstrCategoryFromStr(category: str) -> rabbitizer.Enum:
+    # TODO: consider moving this logic to rabbitizer
+    if category == "rsp":
+        return rabbitizer.InstrCategory.RSP
+    elif category == "r5900":
+        return rabbitizer.InstrCategory.R5900
+
+    return rabbitizer.InstrCategory.CPU
+
+
+def configureProcessedFiles(processedFiles: dict[common.FileSectionType, list[mips.sections.SectionBase]], category: str) -> None:
+    instrCat = getInstrCategoryFromStr(category)
+
+    for textFile in processedFiles.get(common.FileSectionType.Text, []):
+        assert isinstance(textFile, mips.sections.SectionText)
+
+        textFile.instrCat = instrCat
 
 
 def analyzeProcessedFiles(processedFiles: dict[common.FileSectionType, list[mips.sections.SectionBase]], processedFilesOutputPaths: dict[common.FileSectionType, list[Path]], processedFilesCount: int, progressCallback: ProgressCallbackType|None=None):
@@ -212,7 +232,7 @@ def writeFunctionInfoCsv(processedFiles: dict[common.FileSectionType, list[mips.
                     if funcSym is None:
                         continue
 
-                    if funcSym.type != common.SymbolSpecialType.function:
+                    if funcSym.getTypeSpecial() != common.SymbolSpecialType.function:
                         continue
 
                     referencedFunctions.append(funcSym.getName())

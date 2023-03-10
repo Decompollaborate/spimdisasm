@@ -6,4 +6,4 @@
 from __future__ import annotations
 
 
-from .DisasmdisInternals import getToolDescription, addOptionsToParser, getArgsParser, applyArgs, getInstrCategoryFromStr, wordGeneratorFromStrList, processArguments, addSubparser, disasmdisMain
+from .DisasmdisInternals import getToolDescription, addOptionsToParser, getArgsParser, applyArgs, wordGeneratorFromStrList, processArguments, addSubparser, disasmdisMain
