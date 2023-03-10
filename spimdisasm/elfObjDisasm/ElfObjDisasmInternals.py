@@ -31,6 +31,8 @@ def addOptionsToParser(parser: argparse.ArgumentParser) -> argparse.ArgumentPars
 
     parser.add_argument("--split-functions", help="Enables the function and rodata splitter. Expects a path to place the splited functions", metavar="PATH")
 
+    parser.add_argument("--instr-category", help="The instruction category to use when disassembling every passed instruction. Defaults to 'cpu'", choices=["cpu", "rsp", "r5900"])
+
 
     readelfOptions = parser.add_argument_group("readelf-like flags")
 
@@ -350,6 +352,8 @@ def processArguments(args: argparse.Namespace) -> int:
         processedSegments, segmentPaths = getProcessedSections(context, elfFile, array_of_bytes, inputPath, textOutput, dataOutput)
 
     changeGlobalSegmentRanges(context, processedSegments)
+
+    fec.FrontendUtilities.configureProcessedFiles(processedSegments, args.instr_category)
 
     common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Processing global offset table...")
     processGlobalOffsetTable(context, elfFile)

@@ -11,6 +11,7 @@ import rabbitizer
 import sys
 
 from .. import common
+from .. import frontendCommon as fec
 
 
 def getToolDescription() -> str:
@@ -20,7 +21,7 @@ def addOptionsToParser(parser: argparse.ArgumentParser) -> argparse.ArgumentPars
     parser.add_argument("input", help="Hex words to be disassembled. Leading '0x' must be omitted", nargs='+')
 
     parser.add_argument("--endian", help="Set the endianness of input files. Defaults to 'big'", choices=["big", "little", "middle"], default="big")
-    parser.add_argument("--category", help="The instruction category to use when disassembling every passed instruction. Defaults to 'cpu'", choices=["cpu", "rsp", "r5900"])
+    parser.add_argument("--instr-category", help="The instruction category to use when disassembling every passed instruction. Defaults to 'cpu'", choices=["cpu", "rsp", "r5900"])
 
     return parser
 
@@ -31,15 +32,6 @@ def getArgsParser() -> argparse.ArgumentParser:
 
 def applyArgs(args: argparse.Namespace) -> None:
     common.GlobalConfig.ENDIAN = common.InputEndian(args.endian)
-
-def getInstrCategoryFromStr(category: str) -> rabbitizer.Enum:
-    # TODO: consider moving this logic to rabbitizer
-    if category == "rsp":
-        return rabbitizer.InstrCategory.RSP
-    elif category == "r5900":
-        return rabbitizer.InstrCategory.R5900
-
-    return rabbitizer.InstrCategory.CPU
 
 def getWordFromStr(inputStr: str) -> int:
     arr = bytearray()
@@ -88,7 +80,7 @@ def getWordListFromStdin():
 def processArguments(args: argparse.Namespace) -> int:
     applyArgs(args)
 
-    category = getInstrCategoryFromStr(args.category)
+    category = fec.FrontendUtilities.getInstrCategoryFromStr(args.instr_category)
 
     for word in getWordListFromStdin():
         instr = rabbitizer.Instruction(word, category=category)
