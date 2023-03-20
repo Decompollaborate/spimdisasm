@@ -66,6 +66,17 @@ class AccessTypeInfo:
             return True
         return typename in self.typeNameAliases
 
+    def getAllTypes(self) -> set[str]:
+        types: set[str] = set()
+
+        if self.typeSigned is not None:
+            types.add(self.typeSigned)
+        if self.typeUnsigned is not None:
+            types.add(self.typeUnsigned)
+
+        types |= self.typeNameAliases
+        return types
+
 gAccessKinds: dict[rabbitizer.Enum, AccessTypeInfo] = {
     rabbitizer.AccessType.BYTE: AccessTypeInfo(1, "s8", "u8"),
     rabbitizer.AccessType.SHORT: AccessTypeInfo(2, "s16", "u16"),
@@ -75,6 +86,14 @@ gAccessKinds: dict[rabbitizer.Enum, AccessTypeInfo] = {
     rabbitizer.AccessType.FLOAT: AccessTypeInfo(1, "f32", None, {"Vec3f"}),
     rabbitizer.AccessType.DOUBLEFLOAT: AccessTypeInfo(1, "f64", None),
 }
+
+
+gKnownTypes: set[str] = {
+    "asciz", "char", "char*"
+}
+
+for kind in gAccessKinds.values():
+    gKnownTypes |= kind.getAllTypes()
 
 
 @dataclasses.dataclass
