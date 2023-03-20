@@ -466,25 +466,8 @@ class SymbolBase(common.ElementBase):
 
         return alignDirective
 
-    def getReferenceeSymbols(self) -> str:
-        if not common.GlobalConfig.ASM_COMMENT or not common.GlobalConfig.ASM_REFERENCEE_SYMBOLS:
-            return ""
-
-        if len(self.contextSym.referenceFunctions):
-            output = "# Functions referencing this symbol:"
-            for sym in self.contextSym.referenceFunctions:
-                output += f" {sym.getName()}"
-            return f"{output}{common.GlobalConfig.LINE_ENDS}"
-
-        if len(self.contextSym.referenceSymbols):
-            output = "# Symbols referencing this symbol:"
-            for sym in self.contextSym.referenceSymbols:
-                output += f" {sym.getName()}"
-            return f"{output}{common.GlobalConfig.LINE_ENDS}"
-        return ""
-
     def disassembleAsData(self, useGlobalLabel: bool=True) -> str:
-        output = self.getReferenceeSymbols()
+        output = self.contextSym.getReferenceeSymbols()
         output += self.getPrevAlignDirective(0)
 
         output += self.getSymbolAsmDeclaration(self.getName(), useGlobalLabel)

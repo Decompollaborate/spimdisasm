@@ -557,7 +557,7 @@ class SymbolFunction(SymbolText):
         labelSym.sectionType = self.sectionType
         labelSymType = labelSym.getTypeSpecial()
         if labelSymType == common.SymbolSpecialType.function or (labelSymType == common.SymbolSpecialType.jumptablelabel and not migrate):
-            label = ""
+            label = labelSym.getReferenceeSymbols()
             labelMacro = labelSym.getLabelMacro()
             if labelMacro is not None:
                 label += f"{labelMacro} {labelSym.getName()}{common.GlobalConfig.LINE_ENDS}"
@@ -611,7 +611,7 @@ class SymbolFunction(SymbolText):
             if self.hasUnimplementedIntrs:
                 return self.disassembleAsData(useGlobalLabel=useGlobalLabel)
 
-        output += self.getReferenceeSymbols()
+        output += self.contextSym.getReferenceeSymbols()
 
         if self.isLikelyHandwritten:
             if not self.isRsp:
