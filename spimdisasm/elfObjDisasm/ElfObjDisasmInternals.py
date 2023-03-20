@@ -282,17 +282,21 @@ def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, proce
                 for rel in relocs:
                     symbolEntry = elfFile.symtab[rel.rSym]
                     symbolName = elfFile.strtab[symbolEntry.name]
-                    if symbolName == "":
-                        continue
 
                     subSegment = processedSegments[sectType][0]
 
                     relocVrom = subSegment.vromStart + rel.offset
                     relocInfo = common.RelocationInfo(common.RelocType(rel.rType), symbolName)
                     if symbolEntry.stType == elf32.Elf32SymbolTableType.SECTION.value:
-                        sectionType = common.FileSectionType.fromStr(symbolName)
-                        sectionVram = processedSegments[sectionType][0].vram
-                        relocInfo.staticReference = common.RelocationStaticReference(sectionType, sectionVram)
+                        sectionEntry = elfFile.sectionHeaders[symbolEntry.shndx]
+                        assert sectionEntry is not None, rel
+
+                        sectionType = common.FileSectionType.fromStr(elfFile.shstrtab[sectionEntry.name])
+                        if sectionType != common.FileSectionType.Invalid:
+                            sectionVram = processedSegments[sectionType][0].vram
+                            relocInfo.staticReference = common.RelocationStaticReference(sectionType, sectionVram)
+                    elif symbolName == "":
+                        continue
 
                     context.globalRelocationOverrides[relocVrom] = relocInfo
 
