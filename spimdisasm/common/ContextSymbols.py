@@ -23,6 +23,13 @@ class SymbolSpecialType(enum.Enum):
     constant        = enum.auto()
 
 
+    def isTargetLabel(self) -> bool:
+        if self == SymbolSpecialType.branchlabel:
+            return True
+        if self == SymbolSpecialType.jumptablelabel:
+            return True
+        return False
+
     def toStr(self) -> str:
         return "@" + self.name
 

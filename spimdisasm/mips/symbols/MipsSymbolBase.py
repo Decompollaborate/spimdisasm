@@ -281,6 +281,29 @@ class SymbolBase(common.ElementBase):
 
         return output, 0
 
+
+    def _allowWordSymbolReference(self, symbolRef: common.ContextSymbol, word: int) -> bool:
+        if symbolRef.isElfNotype:
+            return False
+
+        symType = symbolRef.getTypeSpecial()
+        if isinstance(symType, common.SymbolSpecialType):
+            if symType == common.SymbolSpecialType.function:
+                if word != symbolRef.vram:
+                    # Avoid using addends on functions
+                    return False
+
+            if symType.isTargetLabel():
+                if word != symbolRef.vram:
+                    # Avoid using addends on labels
+                    return False
+
+                if not self.contextSym.isJumpTable():
+                    # Non jumptables should not reference labels
+                    return False
+
+        return True
+
     def getNthWordAsWords(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False) -> tuple[str, int]:
         output = ""
         localOffset = 4*i
@@ -310,10 +333,8 @@ class SymbolBase(common.ElementBase):
             # This word could be a reference to a symbol
             symbolRef = self.getSymbol(w, tryPlusOffset=canReferenceSymbolsWithAddends)
             if symbolRef is not None and not self.context.isAddressBanned(symbolRef.vram):
-                if symbolRef.getTypeSpecial() != common.SymbolSpecialType.function or w == symbolRef.vram:
-                    # Avoid using addends on functions
-                    if not symbolRef.isElfNotype:
-                        value = symbolRef.getSymbolPlusOffset(w)
+                if self._allowWordSymbolReference(symbolRef, w):
+                    value = symbolRef.getSymbolPlusOffset(w)
             elif canReferenceConstants:
                 constant = self.getConstant(w)
                 if constant is not None:
