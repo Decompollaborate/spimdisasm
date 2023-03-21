@@ -35,7 +35,7 @@ class SymbolBss(SymbolBase):
                     common.Utils.eprint(f"\n\n{warningMessage}\n")
 
     def disassembleAsBss(self, useGlobalLabel: bool=True) -> str:
-        output = self.getReferenceeSymbols()
+        output = self.contextSym.getReferenceeSymbols()
         output += self.getPrevAlignDirective(0)
 
         output += self.getSymbolAsmDeclaration(self.getName(), useGlobalLabel)
