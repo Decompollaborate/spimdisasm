@@ -196,6 +196,15 @@ class SectionText(SectionBase):
 
         previousSymbolExtraPadding = 0
 
+        class GpRelativeVariable:
+            def __init__(self, var_address : int, earliest_gp_relative_instr_address : int, latest__gp_relative_instr_address : int) -> None:
+                self.var_address =var_address
+                self.first_gp_access = earliest_gp_relative_instr_address
+                self.last_gp_access = latest__gp_relative_instr_address
+                pass
+        
+        var_dict : dict[int, GpRelativeVariable] = {}
+
         i = 0
         startsCount = len(funcsStartsList)
         for startIndex in range(startsCount):
@@ -231,7 +240,18 @@ class SectionText(SectionBase):
             func.analyze()
             self.symbolList.append(func)
 
-            # File boundaries detection
+            for reloc_key in func.relocs:
+                reloc_info = func.relocs[reloc_key]
+                instr = func.instructions[reloc_key//4]
+                if reloc_info.relocType == common.RelocType.MIPS_GPREL16:
+                    address = reloc_info.symbol.address
+                    if address not in var_dict:
+                        var_dict[address] = GpRelativeVariable(address, func.vram, func.vram + (func.sizew * 4))
+                    else:
+                        var_dict[address].last_gp_access = func.vram + (func.sizew * 4)
+
+
+            # File boundaries detection via padding detection
             if func.inFileOffset % 16 == 0:
                 # Files are always 0x10 aligned
 
@@ -240,7 +260,52 @@ class SectionText(SectionBase):
 
             previousSymbolExtraPadding = func.countExtraPadding()
             i += 1
+        def overlaps(a, b):
+            return a.first_gp_access <= b.last_gp_access and b.first_gp_access <= a.last_gp_access
+        
+        def find_overlaps(var, global_var_list, ret_list) -> list[GpRelativeVariable]:
+            for global_var in global_var_list:
+                if overlaps(var, global_var):
+                    ret_list.append(global_var)
+            
+            return ret_list
+        overlapping_vars = []      
+        for var in var_dict.values():
+            # find overlapping address ranges between variables
 
+
+            overlapping_vars = find_overlaps(var, var_dict.values(), overlapping_vars)
+            
+
+        # remove duplicates in overlapping_vars
+        overlapping_vars = list(set(overlapping_vars))
+
+        # sort by address
+        overlapping_vars.sort(key=lambda x: x.first_gp_access)
+
+        for var in overlapping_vars:
+            print(f"Found small-data variable at {hex(var.var_address)} accessed between {hex(var.first_gp_access)} and {hex(var.last_gp_access)}")
+
+        # merge overlapping address ranges in text section
+        addressRanges = []
+        for var in overlapping_vars:
+            addressRanges.append((var.first_gp_access, var.last_gp_access))
+        addressRanges = sorted(addressRanges, key=lambda x: x[0])
+        mergedRanges = []
+        for addressRange in addressRanges:
+            if not mergedRanges:
+                mergedRanges.append(addressRange)
+            else:
+                lastRange = mergedRanges[-1]
+                if addressRange[0] <= lastRange[1]:
+                    mergedRanges[-1] = (lastRange[0], max(lastRange[1], addressRange[1]))
+                else:
+                    mergedRanges.append(addressRange)
+                    
+        for addressRange in mergedRanges:
+            print(f"Found possible file boundary at {hex(addressRange[0])}")
+            
+            
         # Filter out repeated values and sort
         self.fileBoundaries = sorted(set(self.fileBoundaries))
 
