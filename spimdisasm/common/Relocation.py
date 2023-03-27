@@ -156,16 +156,10 @@ class RelocationInfo:
         if self.addend == 0:
             return name
 
-        if self.addend < -0x8000:
-            if self.relocType == RelocType.MIPS_HI16:
-                return f"{name} - (0x{-self.addend:X} & 0xFFFF0000)"
-            if self.relocType == RelocType.MIPS_LO16:
+        if self.relocType == RelocType.MIPS_LO16:
+            if self.addend < -0x8000:
                 return f"{name} - (0x{-self.addend:X} & 0xFFFF)"
-
-        if self.addend > 0x7FFF:
-            if self.relocType == RelocType.MIPS_HI16:
-                return f"{name} + (0x{self.addend:X} & 0xFFFF0000)"
-            if self.relocType == RelocType.MIPS_LO16:
+            if self.addend > 0x7FFF:
                 return f"{name} + (0x{self.addend:X} & 0xFFFF)"
 
         if self.addend < 0:
