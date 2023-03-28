@@ -308,7 +308,6 @@ class SymbolBase(common.ElementBase):
         output = ""
         localOffset = 4*i
         vram = self.getVramOffset(localOffset)
-        vrom = self.getVromOffset(localOffset)
         w = self.words[i]
 
         dotType = ".word"
@@ -320,7 +319,7 @@ class SymbolBase(common.ElementBase):
         value = f"0x{w:08X}"
 
         # .elf relocated symbol
-        relocInfo = self.context.globalRelocationOverrides.get(vrom)
+        relocInfo = self.getReloc(localOffset, None)
         if relocInfo is not None:
             if relocInfo.staticReference is not None:
                 relocVram = relocInfo.staticReference.sectionVram + w
