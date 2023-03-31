@@ -294,6 +294,10 @@ class SectionText(SectionBase):
                 localOffset = func.inFileOffset - self.inFileOffset
                 for wordOffset, instr in enumerate(func.instructions):
                     self.words[localOffset // 4 + wordOffset] = instr.getRaw()
+
+                localOffset = other_func.inFileOffset - other_file.inFileOffset
+                for wordOffset, instr in enumerate(other_func.instructions):
+                    other_file.words[localOffset // 4 + wordOffset] = instr.getRaw()
             was_updated = func_updated or was_updated
 
         return was_updated
