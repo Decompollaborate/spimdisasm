@@ -247,6 +247,8 @@ def writeFunctionInfoCsv(processedFiles: dict[common.FileSectionType, list[mips.
 def cliMain():
     parser = argparse.ArgumentParser(description="Interface to call any of the spimdisasm's CLI utilities", prog="spimdisasm")
 
+    parser.add_argument("-V", "--version", action="version", version=f"%(prog)s {spimdisasm.__version__}")
+
     subparsers = parser.add_subparsers(description="action", help="The CLI utility to run", required=True)
 
     spimdisasm.disasmdis.addSubparser(subparsers)
