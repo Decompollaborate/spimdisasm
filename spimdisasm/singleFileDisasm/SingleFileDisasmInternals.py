@@ -95,6 +95,7 @@ def getSplits(fileSplitsPath: Path|None, vromStart: int, vromEnd: int, fileVram:
         if vromDataStart is not None and vromDataEnd is not None:
             dataVramStart = endVram
             endVram = dataVramStart + vromDataEnd - vromDataStart
+            vromEnd = vromDataEnd
 
             splitEntry = common.FileSplitEntry(vromDataStart, dataVramStart, "", common.FileSectionType.Data, vromDataEnd, False, disasmRsp)
             splits.append(splitEntry)
