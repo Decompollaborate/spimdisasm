@@ -289,7 +289,12 @@ class SectionText(SectionBase):
             other_func = other_file.symbolList[i]
             assert isinstance(func, symbols.SymbolFunction)
             assert isinstance(other_func, symbols.SymbolFunction)
-            was_updated = func.blankOutDifferences(other_func) or was_updated
+            func_updated = func.blankOutDifferences(other_func)
+            if func_updated:
+                localOffset = func.inFileOffset - self.inFileOffset
+                for wordOffset, instr in enumerate(func.instructions):
+                    self.words[localOffset // 4 + wordOffset] = instr.getRaw()
+            was_updated = func_updated or was_updated
 
         return was_updated
 
@@ -300,7 +305,12 @@ class SectionText(SectionBase):
         was_updated = False
         for func in self.symbolList:
             assert isinstance(func, symbols.SymbolFunction)
-            was_updated = func.removePointers() or was_updated
+            func_updated = func.removePointers()
+            if func_updated:
+                localOffset = func.inFileOffset - self.inFileOffset
+                for wordOffset, instr in enumerate(func.instructions):
+                    self.words[localOffset // 4 + wordOffset] = instr.getRaw()
+            was_updated = func_updated or was_updated
 
         return was_updated
 
