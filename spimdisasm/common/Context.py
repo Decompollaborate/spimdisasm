@@ -131,7 +131,7 @@ class Context:
         return False
 
     def addGlobalReloc(self, vromAddres: int, relocType: RelocType, symbol: ContextSymbol|str, addend: int=0) -> RelocationInfo:
-        reloc = RelocationInfo(relocType, symbol, addend)
+        reloc = RelocationInfo(relocType, symbol, addend, globalReloc=True)
         self.globalRelocationOverrides[vromAddres] = reloc
         return reloc
 

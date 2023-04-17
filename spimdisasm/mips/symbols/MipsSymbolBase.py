@@ -120,11 +120,7 @@ class SymbolBase(common.ElementBase):
     def relocToInlineStr(self, relocInfo: common.RelocationInfo | None) -> str:
         if relocInfo is None:
             return ""
-        output = f"    # {relocInfo.relocType.name} '{relocInfo.getName()}'"
-        if relocInfo.staticReference is not None:
-            output += f" (static)"
-        output += f"{common.GlobalConfig.LINE_ENDS}"
-        return output
+        return relocInfo.getInlineStr()
 
     def isByte(self, index: int) -> bool:
         return self.contextSym.isByte() and not self.isString()
