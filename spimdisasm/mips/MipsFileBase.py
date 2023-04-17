@@ -183,7 +183,7 @@ class FileBase(common.ElementBase):
                     buffer = bytearray(4*len(self.words))
                     common.Utils.wordsToBytes(self.words, buffer)
                     common.Utils.writeBytearrayToFile(Path(filepath + self.sectionType.toStr()), buffer)
-            with open(filepath + self.sectionType.toStr() + ".s", "w") as f:
+            with open(filepath + self.sectionType.toStr() + ".s", "w", encoding="utf-8") as f:
                 self.disassembleToFile(f)
 
 
