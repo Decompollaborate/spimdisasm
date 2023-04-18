@@ -201,11 +201,11 @@ class SymbolFunction(SymbolText):
         # Aditional lookup for unpaired GOT-locals
         if len(self.instrAnalyzer.gotAccessAddresses) > 0:
             for loOffset, gotAccessOffset in self.instrAnalyzer.lowToHiDict.items():
-                gotAccess = self.instrAnalyzer.gotAccessAddresses.get(gotAccessOffset)
-                if gotAccess is None:
+                gotAccess_ = self.instrAnalyzer.gotAccessAddresses.get(gotAccessOffset)
+                if gotAccess_ is None:
                     continue
 
-                gotEntry, inGlobalTable = self.context.got.getGotSymEntry(gotAccess)
+                gotEntry, inGlobalTable = self.context.got.getGotSymEntry(gotAccess_)
                 if gotEntry is None or inGlobalTable is None:
                     continue
 
