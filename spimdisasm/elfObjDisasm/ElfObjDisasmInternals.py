@@ -22,6 +22,8 @@ def getToolDescription() -> str:
     return "Experimental MIPS elf disassembler"
 
 def addOptionsToParser(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+    parser.add_argument("-V", "--version", action="version", version=f"%(prog)s {__version__}")
+
     parser.add_argument("binary", help="Path to input elf binary file")
     parser.add_argument("output", help="Path to output. Use '-' to print to stdout instead")
 

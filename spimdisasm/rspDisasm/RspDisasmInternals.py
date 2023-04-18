@@ -12,11 +12,17 @@ from pathlib import Path
 from .. import common
 from .. import mips
 
+from .. import __version__
+
+PROGNAME = "rspDisasm"
+
 
 def getToolDescription() -> str:
     return "N64 RSP disassembler"
 
 def addOptionsToParser(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+    parser.add_argument("-V", "--version", action="version", version=f"%(prog)s {__version__}")
+
     parser.add_argument("binary", help="Path to input binary")
     parser.add_argument("output", help="Path to output. Use '-' to print to stdout instead")
 
@@ -33,7 +39,7 @@ def addOptionsToParser(parser: argparse.ArgumentParser) -> argparse.ArgumentPars
     return parser
 
 def getArgsParser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=getToolDescription())
+    parser = argparse.ArgumentParser(description=getToolDescription(), prog=PROGNAME)
     return addOptionsToParser(parser)
 
 
