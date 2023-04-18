@@ -81,10 +81,10 @@ gAccessKinds: dict[rabbitizer.Enum, AccessTypeInfo] = {
     rabbitizer.AccessType.BYTE: AccessTypeInfo(1, "s8", "u8"),
     rabbitizer.AccessType.SHORT: AccessTypeInfo(2, "s16", "u16"),
     # Ignore signed WORD since it tends to not give a proper type
-    rabbitizer.AccessType.WORD: AccessTypeInfo(1, None, "u32", {"s32"}),
-    rabbitizer.AccessType.DOUBLEWORD: AccessTypeInfo(1, "s64", "u64"),
-    rabbitizer.AccessType.FLOAT: AccessTypeInfo(1, "f32", None, {"Vec3f"}),
-    rabbitizer.AccessType.DOUBLEFLOAT: AccessTypeInfo(1, "f64", None),
+    rabbitizer.AccessType.WORD: AccessTypeInfo(4, None, "u32", {"s32"}),
+    rabbitizer.AccessType.DOUBLEWORD: AccessTypeInfo(8, "s64", "u64"),
+    rabbitizer.AccessType.FLOAT: AccessTypeInfo(4, "f32", None, {"Vec3f"}),
+    rabbitizer.AccessType.DOUBLEFLOAT: AccessTypeInfo(8, "f64", None),
 }
 
 
