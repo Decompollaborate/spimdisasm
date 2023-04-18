@@ -22,6 +22,8 @@ def getToolDescription() -> str:
     return "Experimental MIPS elf disassembler"
 
 def addOptionsToParser(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+    parser.add_argument("-V", "--version", action="version", version=f"%(prog)s {__version__}")
+
     parser.add_argument("binary", help="Path to input elf binary file")
     parser.add_argument("output", help="Path to output. Use '-' to print to stdout instead")
 
@@ -283,10 +285,14 @@ def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, proce
                     symbolEntry = elfFile.symtab[rel.rSym]
                     symbolName = elfFile.strtab[symbolEntry.name]
 
+                    if symbolEntry.stType != elf32.Elf32SymbolTableType.SECTION.value:
+                        if symbolName == "":
+                            continue
+
                     subSegment = processedSegments[sectType][0]
 
                     relocVrom = subSegment.vromStart + rel.offset
-                    relocInfo = common.RelocationInfo(common.RelocType(rel.rType), symbolName)
+                    relocInfo = context.addGlobalReloc(relocVrom, common.RelocType(rel.rType), symbolName)
                     if symbolEntry.stType == elf32.Elf32SymbolTableType.SECTION.value:
                         sectionEntry = elfFile.sectionHeaders[symbolEntry.shndx]
                         assert sectionEntry is not None, rel
@@ -295,10 +301,6 @@ def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, proce
                         if sectionType != common.FileSectionType.Invalid:
                             sectionVram = processedSegments[sectionType][0].vram
                             relocInfo.staticReference = common.RelocationStaticReference(sectionType, sectionVram)
-                    elif symbolName == "":
-                        continue
-
-                    context.globalRelocationOverrides[relocVrom] = relocInfo
 
         # Use the symtab to replace symbol names present in disassembled sections
         insertSymtabIntoContext(context, elfFile.symtab, elfFile.strtab, elfFile)

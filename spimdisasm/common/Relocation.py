@@ -10,6 +10,7 @@ import enum
 
 from .ContextSymbols import ContextSymbol
 from .FileSectionType import FileSectionType
+from .GlobalConfig import GlobalConfig
 
 
 class RelocType(enum.Enum):
@@ -146,6 +147,7 @@ class RelocationInfo:
     addend: int = 0
 
     staticReference: RelocationStaticReference|None = None
+    globalReloc: bool = False
 
     def getName(self) -> str:
         if isinstance(self.symbol, ContextSymbol):
@@ -182,3 +184,12 @@ class RelocationInfo:
             return f"({name} {operationRel})"
 
         return name
+
+    def getInlineStr(self) -> str:
+        output = f"    # {self.relocType.name} '{self.getName()}'"
+        if self.staticReference is not None:
+            output += f" (static)"
+        if self.globalReloc:
+            output += f" (global reloc)"
+        output += f"{GlobalConfig.LINE_ENDS}"
+        return output

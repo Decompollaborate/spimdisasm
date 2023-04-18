@@ -13,11 +13,17 @@ import sys
 from .. import common
 from .. import frontendCommon as fec
 
+from .. import __version__
+
+PROGNAME = "disasmdis"
+
 
 def getToolDescription() -> str:
     return "CLI tool to disassemble multiples instructions passed as argument"
 
 def addOptionsToParser(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+    parser.add_argument("-V", "--version", action="version", version=f"%(prog)s {__version__}")
+
     parser.add_argument("input", help="Hex words to be disassembled. Leading '0x' must be omitted", nargs='+')
 
     parser.add_argument("--endian", help="Set the endianness of input files. Defaults to 'big'", choices=["big", "little", "middle"], default="big")
@@ -26,7 +32,7 @@ def addOptionsToParser(parser: argparse.ArgumentParser) -> argparse.ArgumentPars
     return parser
 
 def getArgsParser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=getToolDescription())
+    parser = argparse.ArgumentParser(description=getToolDescription(), prog=PROGNAME)
     return addOptionsToParser(parser)
 
 

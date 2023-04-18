@@ -12,11 +12,17 @@ from .. import common
 from .. import mips
 from .. import frontendCommon as fec
 
+from .. import __version__
+
+PROGNAME = "singleFileDisasm"
+
 
 def getToolDescription() -> str:
     return "General purpose N64-mips disassembler"
 
 def addOptionsToParser(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+    parser.add_argument("-V", "--version", action="version", version=f"%(prog)s {__version__}")
+
     parser.add_argument("binary", help="Path to input binary")
     parser.add_argument("output", help="Path to output. Use '-' to print to stdout instead")
 
@@ -55,7 +61,7 @@ def addOptionsToParser(parser: argparse.ArgumentParser) -> argparse.ArgumentPars
     return parser
 
 def getArgsParser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=getToolDescription())
+    parser = argparse.ArgumentParser(description=getToolDescription(), prog=PROGNAME)
     return addOptionsToParser(parser)
 
 def applyArgs(args: argparse.Namespace) -> None:
@@ -95,6 +101,7 @@ def getSplits(fileSplitsPath: Path|None, vromStart: int, vromEnd: int, fileVram:
         if vromDataStart is not None and vromDataEnd is not None:
             dataVramStart = endVram
             endVram = dataVramStart + vromDataEnd - vromDataStart
+            vromEnd = vromDataEnd
 
             splitEntry = common.FileSplitEntry(vromDataStart, dataVramStart, "", common.FileSectionType.Data, vromDataEnd, False, disasmRsp)
             splits.append(splitEntry)

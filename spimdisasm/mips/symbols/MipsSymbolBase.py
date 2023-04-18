@@ -120,11 +120,7 @@ class SymbolBase(common.ElementBase):
     def relocToInlineStr(self, relocInfo: common.RelocationInfo | None) -> str:
         if relocInfo is None:
             return ""
-        output = f"    # {relocInfo.relocType.name} '{relocInfo.getName()}'"
-        if relocInfo.staticReference is not None:
-            output += f" (static)"
-        output += f"{common.GlobalConfig.LINE_ENDS}"
-        return output
+        return relocInfo.getInlineStr()
 
     def isByte(self, index: int) -> bool:
         return self.contextSym.isByte() and not self.isString()
@@ -308,7 +304,6 @@ class SymbolBase(common.ElementBase):
         output = ""
         localOffset = 4*i
         vram = self.getVramOffset(localOffset)
-        vrom = self.getVromOffset(localOffset)
         w = self.words[i]
 
         dotType = ".word"
@@ -320,7 +315,7 @@ class SymbolBase(common.ElementBase):
         value = f"0x{w:08X}"
 
         # .elf relocated symbol
-        relocInfo = self.context.globalRelocationOverrides.get(vrom)
+        relocInfo = self.getReloc(localOffset, None)
         if relocInfo is not None:
             if relocInfo.staticReference is not None:
                 relocVram = relocInfo.staticReference.sectionVram + w
