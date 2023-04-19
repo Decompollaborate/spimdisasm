@@ -110,6 +110,9 @@ class SymbolFunction(SymbolText):
         if len(self.context.globalRelocationOverrides) == 0:
             return
 
+        if common.GlobalConfig.INPUT_FILE_TYPE != common.InputFileType.ELF:
+            return
+
         instructionOffset = 0
         vrom = self.vromStart
         for instr in self.instructions:
