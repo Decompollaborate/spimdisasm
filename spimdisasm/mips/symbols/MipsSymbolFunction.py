@@ -85,7 +85,7 @@ class SymbolFunction(SymbolText):
 
             self.instrAnalyzer.printAnalisisDebugInfo_IterInfo(regsTracker, instr, currentVram)
 
-            if instr.isLikelyHandwritten():
+            if instr.isLikelyHandwritten() and not self.isRsp:
                 self.isLikelyHandwritten = True
                 self.endOfLineComment[instructionOffset//4] = " # handwritten instruction"
 
