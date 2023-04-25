@@ -706,7 +706,8 @@ class SymbolFunction(SymbolText):
                 # RSP functions are always handwritten, so this is redundant
                 output += "# Handwritten function" + common.GlobalConfig.LINE_ENDS
 
-        output += self.getSymbolAsmDeclaration(self.getName(), useGlobalLabel)
+        symName = self.getName()
+        output += self.getSymbolAsmDeclaration(symName, useGlobalLabel)
 
         wasLastInstABranch = False
         instructionOffset = 0
@@ -728,6 +729,9 @@ class SymbolFunction(SymbolText):
 
             wasLastInstABranch = instr.hasDelaySlot()
             instructionOffset += 4
+
+        if common.GlobalConfig.ASM_EMIT_SIZE_DIRECTIVE:
+            output += f".size {symName}, . - {symName}{common.GlobalConfig.LINE_ENDS}"
 
         if common.GlobalConfig.ASM_TEXT_END_LABEL:
             output += f"{common.GlobalConfig.ASM_TEXT_END_LABEL} {self.getName()}" + common.GlobalConfig.LINE_ENDS

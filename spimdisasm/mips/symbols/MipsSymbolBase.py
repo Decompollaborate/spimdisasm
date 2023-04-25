@@ -465,7 +465,8 @@ class SymbolBase(common.ElementBase):
         output = self.contextSym.getReferenceeSymbols()
         output += self.getPrevAlignDirective(0)
 
-        output += self.getSymbolAsmDeclaration(self.getName(), useGlobalLabel)
+        symName = self.getName()
+        output += self.getSymbolAsmDeclaration(symName, useGlobalLabel)
 
         canReferenceSymbolsWithAddends = self.canUseAddendsOnData()
         canReferenceConstants = self.canUseConstantsOnData()
@@ -505,6 +506,9 @@ class SymbolBase(common.ElementBase):
 
             i += skip
             i += 1
+
+        if common.GlobalConfig.ASM_EMIT_SIZE_DIRECTIVE:
+            output += f".size {symName}, . - {symName}{common.GlobalConfig.LINE_ENDS}"
 
         nameEnd = self.getNameEnd()
         if nameEnd is not None:
