@@ -35,6 +35,8 @@ def addOptionsToParser(parser: argparse.ArgumentParser) -> argparse.ArgumentPars
 
     parser.add_argument("--instr-category", help="The instruction category to use when disassembling every passed instruction. Defaults to 'cpu'", choices=["cpu", "rsp", "r5900"])
 
+    parser.add_argument("--function-info", help="Specifies a path where to output a csvs sumary file of every analyzed function", metavar="PATH")
+
 
     readelfOptions = parser.add_argument_group("readelf-like flags")
 
@@ -390,6 +392,9 @@ def processArguments(args: argparse.Namespace) -> int:
         contextPath = Path(args.save_context)
         contextPath.parent.mkdir(parents=True, exist_ok=True)
         context.saveContextToFile(contextPath)
+
+    if args.function_info is not None:
+        fec.FrontendUtilities.writeFunctionInfoCsv(processedSegments, Path(args.function_info))
 
     common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Done!")
 
