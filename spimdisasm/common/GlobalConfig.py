@@ -279,6 +279,7 @@ class GlobalConfig:
         miscConfig.add_argument("--asm-end-label", help=f"Tells the disassembler to start using an end label for functions")
         miscConfig.add_argument("--asm-func-as-label", help=f"Toggle adding the function name as an additional label. Defaults to {GlobalConfig.ASM_TEXT_FUNC_AS_LABEL}", action=Utils.BooleanOptionalAction)
         miscConfig.add_argument("--asm-data-as-label", help=f"Toggle adding the data symbol name as an additional label. Defaults to {GlobalConfig.ASM_DATA_SYM_AS_LABEL}", action=Utils.BooleanOptionalAction)
+        miscConfig.add_argument("--asm-emit-size-directive", help=f"Toggles emitting a size directive to generated symbols. Defaults to {GlobalConfig.ASM_EMIT_SIZE_DIRECTIVE}", action=Utils.BooleanOptionalAction)
         miscConfig.add_argument("--asm-use-prelude", help=f"Toggle use of the default prelude for asm files. Defaults to {GlobalConfig.ASM_USE_PRELUDE}", action=Utils.BooleanOptionalAction)
         miscConfig.add_argument("--asm-generated-by", help=f"Toggle comment indicating the tool and version used to generate the disassembly. Defaults to {GlobalConfig.ASM_GENERATED_BY}", action=Utils.BooleanOptionalAction)
 
@@ -428,6 +429,8 @@ class GlobalConfig:
             GlobalConfig.ASM_TEXT_FUNC_AS_LABEL = args.asm_func_as_label
         if args.asm_data_as_label is not None:
             GlobalConfig.ASM_DATA_SYM_AS_LABEL = args.asm_data_as_label
+        if args.asm_emit_size_directive is not None:
+            GlobalConfig.ASM_EMIT_SIZE_DIRECTIVE = args.asm_emit_size_directive
         if args.asm_use_prelude is not None:
             GlobalConfig.ASM_USE_PRELUDE = args.asm_use_prelude
         if args.asm_generated_by is not None:
