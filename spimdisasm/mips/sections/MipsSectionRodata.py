@@ -73,6 +73,8 @@ class SectionRodata(SectionBase):
         lastVramSymbol: common.ContextSymbol | None = None
 
         partOfJumpTable = False
+        firstJumptableWord = -1
+
         for w in self.words:
             currentVram = self.getVramOffset(localOffset)
             contextSym = self.getSymbol(currentVram, tryPlusOffset=False)
@@ -83,6 +85,7 @@ class SectionRodata(SectionBase):
 
             if contextSym is not None and contextSym.isJumpTable():
                 partOfJumpTable = True
+                firstJumptableWord = w
 
             elif partOfJumpTable:
                 # The last symbol found was part of a jumptable, check if this word still is part of the jumptable
@@ -96,7 +99,7 @@ class SectionRodata(SectionBase):
                 elif contextSym is not None:
                     partOfJumpTable = False
 
-                elif ((w >> 24) & 0xFF) != 0x80:
+                elif ((w >> 24) & 0xFF) != ((firstJumptableWord >> 24) & 0xFF):
                     partOfJumpTable = False
                     if lastVramSymbol is not None and lastVramSymbol.isJumpTable() and lastVramSymbol.isGot and common.GlobalConfig.GP_VALUE is not None:
                         partOfJumpTable = True

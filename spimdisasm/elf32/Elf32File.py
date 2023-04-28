@@ -408,7 +408,7 @@ class Elf32File:
                 symName = ""
                 if self.strtab is not None:
                     symName = self.strtab[sym.name]
-                print(f" {i:>5}: {sym.value:08X} {sym.size:>5} {entryType.name:7} {bind:6} {visibility:7} {ndx:>7} {symName}")
+                print(f" {i:>5}: {sym.value:08X} {sym.size:>5X} {entryType.name:7} {bind:6} {visibility:7} {ndx:>7} {symName}")
 
     def readelf_relocs(self) -> None:
         for relSection in self.rel.values():
