@@ -70,8 +70,10 @@ gInstrCategoriesNameMap = {
     "r5900": rabbitizer.InstrCategory.R5900,
 }
 
-def getInstrCategoryFromStr(category: str) -> rabbitizer.Enum:
+def getInstrCategoryFromStr(category: str|None) -> rabbitizer.Enum:
     # TODO: consider moving this logic to rabbitizer
+    if category is None:
+        category = "cpu"
     return gInstrCategoriesNameMap.get(category.lower(), rabbitizer.InstrCategory.CPU)
 
 
