@@ -63,14 +63,16 @@ def getSplittedSections(context: common.Context, splits: common.FileSplitFormat,
     return processedFiles, processedFilesOutputPaths
 
 
+gInstrCategoriesNameMap = {
+    "cpu": rabbitizer.InstrCategory.CPU,
+    "rsp": rabbitizer.InstrCategory.RSP,
+    "r3000gte": rabbitizer.InstrCategory.R3000GTE,
+    "r5900": rabbitizer.InstrCategory.R5900,
+}
+
 def getInstrCategoryFromStr(category: str) -> rabbitizer.Enum:
     # TODO: consider moving this logic to rabbitizer
-    if category == "rsp":
-        return rabbitizer.InstrCategory.RSP
-    elif category == "r5900":
-        return rabbitizer.InstrCategory.R5900
-
-    return rabbitizer.InstrCategory.CPU
+    return gInstrCategoriesNameMap.get(category.lower(), rabbitizer.InstrCategory.CPU)
 
 
 def configureProcessedFiles(processedFiles: dict[common.FileSectionType, list[mips.sections.SectionBase]], category: str) -> None:
