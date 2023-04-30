@@ -57,8 +57,11 @@ NOTE: Installing the development version is not recommended. Proceed at your own
 - Some workarounds for some specific compilers/assemblers:
   - `SN64`/`PSYQ`:
     - `div`/`divu` fix: tweaks a bit the produced `div`, `divu` and `break` instructions.
-- N64 RSP instruction disassembly support.
-  - RSP decoding has been tested to build back to matching assemblies with [armips](https://github.com/Kingcom/armips/).
+- Support for specific MIPS instruction sets:
+  - N64's RSP instruction disassembly support.
+    - RSP decoding has been tested to build back to matching assemblies with [armips](https://github.com/Kingcom/armips/).
+  - PS1's R3000 GTE instruction set support.
+  - PS2's R5900 EE instruction set support.
 - (Experimental) Same VRAM overlay support.
   - Overlays which are able to reference symbols from other overlays in other categories/types is supported too.
   - NOTE: This feature lacks lots of testing and probably has many bugs.
