@@ -5,7 +5,10 @@
 
 from __future__ import annotations
 
-from .Elf32Constants import Elf32HeaderIdentifier, Elf32ObjectFileType, Elf32HeaderFlag, Elf32SectionHeaderType, Elf32SymbolTableType, Elf32SymbolTableBinding, Elf32SymbolVisibility, Elf32SectionHeaderNumber, Elf32DynamicTable
+from .Elf32Constants import Elf32HeaderIdentifier, Elf32ObjectFileType
+from .Elf32Constants import Elf32HeaderFlag, Elf32SectionHeaderType, Elf32SectionHeaderFlag
+from .Elf32Constants import Elf32SymbolTableType, Elf32SymbolTableBinding, Elf32SymbolVisibility, Elf32SectionHeaderNumber
+from .Elf32Constants import Elf32DynamicTable
 from .Elf32Dyns import Elf32Dyns, Elf32DynEntry
 from .Elf32GlobalOffsetTable import Elf32GlobalOffsetTable
 from .Elf32Header import Elf32Header

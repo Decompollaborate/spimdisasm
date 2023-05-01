@@ -9,7 +9,7 @@ from typing import Callable
 
 from .. import common
 
-from .Elf32Constants import Elf32HeaderIdentifier, Elf32ObjectFileType, Elf32HeaderFlag, Elf32SectionHeaderType, Elf32SymbolTableType, Elf32SymbolTableBinding, Elf32SymbolVisibility, Elf32SectionHeaderNumber
+from .Elf32Constants import Elf32HeaderIdentifier, Elf32ObjectFileType, Elf32HeaderFlag, Elf32SectionHeaderType, Elf32SectionHeaderFlag, Elf32SymbolTableType, Elf32SymbolTableBinding, Elf32SymbolVisibility, Elf32SectionHeaderNumber
 from .Elf32Dyns import Elf32Dyns
 from .Elf32GlobalOffsetTable import Elf32GlobalOffsetTable
 from .Elf32Header import Elf32Header
@@ -228,6 +228,10 @@ class Elf32File:
         # ?
         pass
 
+    def _processSection_MIPS_CONFLICT(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
+        # ?
+        pass
+
     def _processSection_MIPS_GPTAB(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
         # ?
         pass
@@ -270,6 +274,7 @@ class Elf32File:
 
         Elf32SectionHeaderType.MIPS_LIBLIST.value: _processSection_MIPS_LIBLIST,
         Elf32SectionHeaderType.MIPS_MSYM.value: _processSection_MIPS_MSYM,
+        Elf32SectionHeaderType.MIPS_CONFLICT.value: _processSection_MIPS_CONFLICT,
         Elf32SectionHeaderType.MIPS_GPTAB.value: _processSection_MIPS_GPTAB,
         Elf32SectionHeaderType.MIPS_DEBUG.value: _processSection_MIPS_DEBUG,
         Elf32SectionHeaderType.MIPS_REGINFO.value: _processSection_MIPS_REGINFO,
@@ -379,6 +384,63 @@ class Elf32File:
         print(f"  {'Number of section headers:':<34} {self.header.shnum}")
 
         print(f"  {'Section header string table index:':<34} {self.header.shstrndx}")
+
+
+    def readelf_sectionHeaders(self) -> None:
+        flagsKeys = {
+            Elf32SectionHeaderFlag.WRITE:               "W",
+            Elf32SectionHeaderFlag.ALLOC:               "A",
+            Elf32SectionHeaderFlag.EXECINSTR:           "X",
+            Elf32SectionHeaderFlag.MERGE:               "M",
+            Elf32SectionHeaderFlag.STRINGS:             "S",
+            Elf32SectionHeaderFlag.INFO_LINK:           "I",
+            Elf32SectionHeaderFlag.LINK_ORDER:          "L",
+            Elf32SectionHeaderFlag.OS_NONCONFORMING:    "O",
+            Elf32SectionHeaderFlag.GROUP:               "G",
+            Elf32SectionHeaderFlag.TLS:                 "T",
+            Elf32SectionHeaderFlag.COMPRESSED:          "C",
+            Elf32SectionHeaderFlag.EXCLUDE:             "E",
+        }
+
+        print(f"There are {len(self.sectionHeaders)} section headers, starting at offset 0x{self.sectionHeaders.shoff:X}:")
+        print()
+
+        print(f"Section Headers:")
+
+        print(f"  [{'Nr':>2}] {'Name':<17} {'Type':<15} {'Addr':<8} {'Off':<6} {'Size':<6} ES Flg Lk Inf Al")
+
+        i = 0
+        for header in self.sectionHeaders:
+            name = self.shstrtab[header.name]
+
+            headerType = Elf32SectionHeaderType.fromValue(header.type)
+            headerTypeStr = f"<0x{header.type:X}>"
+            if headerType is not None:
+                headerTypeStr = headerType.name
+
+            flags, unknownFlags = Elf32SectionHeaderFlag.parseFlags(header.flags)
+            flagsStr: str = ""
+            for flag in flags:
+                flagsStr += flagsKeys[flag]
+
+            if unknownFlags & 0x0FF00000:
+                flagsStr += 'o'
+            unknownFlags &= ~0x0FF00000
+            if unknownFlags & 0xF0000000:
+                flagsStr += 'p'
+            unknownFlags &= ~0xF0000000
+
+            print(f"  [{i:>2}] {name:<17} {headerTypeStr:<15} {header.addr:08X} {header.offset:06X} {header.size:06X} {header.entsize:02X} {flagsStr:>3} {header.link:> 2X} {header.info:> 3X} {header.addralign:>2X}")
+            if unknownFlags:
+                print(f"Warning unknown flags: 0x{unknownFlags:X}")
+
+            i += 1
+
+        print(f"Key to Flags:")
+        print(f"  W (write), A (alloc), X (execute), M (merge), S (strings), I (info),")
+        print(f"  L (link order), O (extra OS processing required), G (group), T (TLS),")
+        print(f"  C (compressed), x (unknown), o (OS specific), E (exclude),")
+        print(f"  D (mbind), p (processor specific)")
 
 
     def readelf_syms(self) -> None:

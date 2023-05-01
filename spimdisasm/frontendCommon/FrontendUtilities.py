@@ -42,6 +42,9 @@ def getSplittedSections(context: common.Context, splits: common.FileSplitFormat,
             outputPath = dataOutput
         elif row.section == common.FileSectionType.Bss:
             outputPath = dataOutput
+        elif row.section == common.FileSectionType.Dummy:
+            # Ignore dummy sections
+            continue
         else:
             common.Utils.eprint("Error! Section not set!")
             exit(1)

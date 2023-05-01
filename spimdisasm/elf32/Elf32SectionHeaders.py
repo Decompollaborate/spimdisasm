@@ -70,3 +70,6 @@ class Elf32SectionHeaders:
     def __iter__(self):
         for entry in self.sections:
             yield entry
+
+    def __len__(self) -> int:
+        return len(self.sections)

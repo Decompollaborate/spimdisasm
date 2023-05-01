@@ -48,23 +48,13 @@ class FileSplitFormat:
                 isRsp = True
                 offsetStr = offsetStr[:-1]
 
-            if fileName == ".text":
-                section = FileSectionType.Text
-                continue
-            elif fileName == ".data":
-                section = FileSectionType.Data
-                continue
-            elif fileName == ".rodata":
-                section = FileSectionType.Rodata
-                continue
-            elif fileName == ".rdata":
-                section = FileSectionType.Rodata
-                continue
-            elif fileName == ".bss":
-                section = FileSectionType.Bss
-                continue
-            elif fileName == ".end":
-                break
+            possibleSection = FileSectionType.fromStr(fileName)
+            if possibleSection != FileSectionType.Invalid:
+                if possibleSection == FileSectionType.End:
+                    break
+                else:
+                    section = possibleSection
+                    continue
 
             vram = int(vramStr, 16)
             offset = int(offsetStr, 16)
