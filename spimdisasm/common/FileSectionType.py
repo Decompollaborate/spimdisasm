@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# SPDX-FileCopyrightText: © 2022 Decompollaborate
+# SPDX-FileCopyrightText: © 2022-2023 Decompollaborate
 # SPDX-License-Identifier: MIT
 
 from __future__ import annotations
@@ -9,6 +9,8 @@ from .OrderedEnum import OrderedEnum
 
 
 class FileSectionType(OrderedEnum):
+    Dummy   = -4
+    End     = -3
     Unknown = -2
     Invalid = -1
 
@@ -20,33 +22,14 @@ class FileSectionType(OrderedEnum):
 
     @staticmethod
     def fromId(sectionId: int) -> FileSectionType:
-        if sectionId == 1:
-            return FileSectionType.Text
-        if sectionId == 2:
-            return FileSectionType.Data
-        if sectionId == 3:
-            return FileSectionType.Rodata
-        if sectionId == 4:
-            return FileSectionType.Bss
-        if sectionId == 5:
-            return FileSectionType.Reloc
-        return FileSectionType.Invalid
+        try:
+            return FileSectionType(sectionId)
+        except:
+            return FileSectionType.Invalid
 
     @staticmethod
     def fromStr(x: str) -> FileSectionType:
-        if x == ".text":
-            return FileSectionType.Text
-        if x == ".data":
-            return FileSectionType.Data
-        if x == ".rodata":
-            return FileSectionType.Rodata
-        if x == ".rdata":
-            return FileSectionType.Rodata
-        if x == ".bss":
-            return FileSectionType.Bss
-        if x == ".reloc":
-            return FileSectionType.Reloc
-        return FileSectionType.Invalid
+        return gNameToSectionType.get(x, FileSectionType.Invalid)
 
     def toStr(self) -> str:
         if self == FileSectionType.Text:
@@ -86,6 +69,17 @@ class FileSectionType(OrderedEnum):
         if self == FileSectionType.Reloc:
             return ".ovl"
         return ""
+
+gNameToSectionType = {
+    ".text":    FileSectionType.Text,
+    ".data":    FileSectionType.Data,
+    ".rodata":  FileSectionType.Rodata,
+    ".rdata":   FileSectionType.Rodata,
+    ".bss":     FileSectionType.Bss,
+    ".reloc":   FileSectionType.Reloc,
+    ".end":     FileSectionType.End,
+    ".dummy":   FileSectionType.Dummy,
+}
 
 
 FileSections_ListBasic = [FileSectionType.Text, FileSectionType.Data, FileSectionType.Rodata, FileSectionType.Bss]
