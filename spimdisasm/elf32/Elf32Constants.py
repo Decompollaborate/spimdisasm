@@ -12,7 +12,7 @@ import enum
 class Elf32HeaderIdentifier:
     @enum.unique
     class FileClass(enum.Enum):
-        # EI_CLASS    4        /* File class byte index */
+        # EI_CLASS    4        # File class byte index
         CLASSNONE   = 0 # Invalid class
         CLASS32     = 1 # 32-bit objects
         CLASS64     = 2 # 64-bit objects
@@ -20,14 +20,14 @@ class Elf32HeaderIdentifier:
 
     @enum.unique
     class DataEncoding(enum.Enum):
-        # EI_DATA        5        /* Data encoding byte index */
+        # EI_DATA        5        # Data encoding byte index
         DATANONE    = 0 # Invalid data encoding
         DATA2LSB    = 1 # 2's complement, little endian
         DATA2MSB    = 2 # 2's complement, big endian
         DATANUM     = 3 #
 
     class OsAbi(enum.Enum):
-        # EI_OSABI    7        /* OS ABI identification */
+        # EI_OSABI    7        # OS ABI identification
         NONE        =   0 # UNIX System V ABI
         SYSV        =   0 # Alias.
         HPUX        =   1 # HP-UX
@@ -54,10 +54,10 @@ class Elf32ObjectFileType(enum.Enum):
     DYN             = 3 # Shared object file
     CORE            = 4 # Core file
     NUM             = 5 # Number of defined types
-    # LOOS		0xfe00		/* OS-specific range start */
-    # HIOS		0xfeff		/* OS-specific range end */
-    # LOPROC	0xff00		/* Processor-specific range start */
-    # HIPROC	0xffff		/* Processor-specific range end */
+    # LOOS        0xfe00        # OS-specific range start
+    # HIOS        0xfeff        # OS-specific range end
+    # LOPROC      0xff00        # Processor-specific range start
+    # HIPROC      0xffff        # Processor-specific range end
 
 
 # Legal values for e_flags field of Elf32_Ehdr
@@ -90,11 +90,12 @@ class Elf32HeaderFlag(enum.Enum):
 
     @staticmethod
     def parseFlags(rawFlags: int) -> tuple[list[Elf32HeaderFlag], int]:
-        flagsToCheck = {
+        flagsToCheck = [
             Elf32HeaderFlag.NOREORDER, Elf32HeaderFlag.PIC, Elf32HeaderFlag.CPIC,
             Elf32HeaderFlag.XGOT, Elf32HeaderFlag.F_64BIT_WHIRL, Elf32HeaderFlag.ABI2,
             Elf32HeaderFlag.ABI_ON32,
-            Elf32HeaderFlag._32BITSMODE, Elf32HeaderFlag.FP64, Elf32HeaderFlag.NAN2008}
+            Elf32HeaderFlag._32BITSMODE, Elf32HeaderFlag.FP64, Elf32HeaderFlag.NAN2008,
+        ]
         parsedFlags: list[Elf32HeaderFlag] = list()
 
         for flagEnum in flagsToCheck:
@@ -145,12 +146,67 @@ class Elf32SectionHeaderType(enum.Enum):
 
     MIPS_LIBLIST    = 0x70000000
     MIPS_MSYM       = 0x70000001
+    MIPS_CONFLICT   = 0x70000002
     MIPS_GPTAB      = 0x70000003
     MIPS_DEBUG      = 0x70000005
     MIPS_REGINFO    = 0x70000006
     MIPS_OPTIONS    = 0x7000000D
     MIPS_SYMBOL_LIB = 0x70000020
     MIPS_ABIFLAGS   = 0x7000002A
+
+    @staticmethod
+    def fromValue(value: int) -> Elf32SectionHeaderType|None:
+        try:
+            return Elf32SectionHeaderType(value)
+        except ValueError:
+            return None
+
+# Values for section header, sh_flags field.
+@enum.unique
+class Elf32SectionHeaderFlag(enum.Enum):
+    WRITE               = 0x00000001    # Writable data during execution
+    ALLOC               = 0x00000002    # Occupies memory during execution
+    EXECINSTR           = 0x00000004    # Executable machine instructions
+    MERGE               = 0x00000010    # Data in this section can be merged
+    STRINGS             = 0x00000020    # Contains null terminated character strings
+    INFO_LINK           = 0x00000040    # sh_info holds section header table index
+    LINK_ORDER          = 0x00000080    # Preserve section ordering when linking
+    OS_NONCONFORMING    = 0x00000100    # OS specific processing required
+    GROUP               = 0x00000200    # Member of a section group
+    TLS                 = 0x00000400    # Thread local storage section
+    COMPRESSED          = 0x00000800    # Section with compressed data
+
+    EXCLUDE             = 0x80000000    # Link editor is to exclude
+                                        # this section from executable
+                                        # and shared library that it
+                                        # builds when those objects
+                                        # are not to be further
+                                        # relocated.
+
+    @staticmethod
+    def parseFlags(rawFlags: int) -> tuple[list[Elf32SectionHeaderFlag], int]:
+        flagsToCheck = [
+            Elf32SectionHeaderFlag.WRITE,
+            Elf32SectionHeaderFlag.ALLOC,
+            Elf32SectionHeaderFlag.EXECINSTR,
+            Elf32SectionHeaderFlag.MERGE,
+            Elf32SectionHeaderFlag.STRINGS,
+            Elf32SectionHeaderFlag.INFO_LINK,
+            Elf32SectionHeaderFlag.LINK_ORDER,
+            Elf32SectionHeaderFlag.OS_NONCONFORMING,
+            Elf32SectionHeaderFlag.GROUP,
+            Elf32SectionHeaderFlag.TLS,
+            Elf32SectionHeaderFlag.COMPRESSED,
+            Elf32SectionHeaderFlag.EXCLUDE,
+        ]
+        parsedFlags: list[Elf32SectionHeaderFlag] = list()
+
+        for flagEnum in flagsToCheck:
+            if rawFlags & flagEnum.value:
+                parsedFlags.append(flagEnum)
+                rawFlags &= ~flagEnum.value
+
+        return parsedFlags, rawFlags
 
 
 # a.k.a. STT (symbol table type)
