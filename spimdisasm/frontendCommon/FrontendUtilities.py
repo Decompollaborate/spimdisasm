@@ -58,7 +58,7 @@ def getSplittedSections(context: common.Context, splits: common.FileSplitFormat,
             outputFilePath = outputPath / fileName
 
         common.Utils.printVerbose(f"Reading '{row.fileName}'")
-        f = mips.FilesHandlers.createSectionFromSplitEntry(row, array_of_bytes, outputFilePath, context)
+        f = mips.FilesHandlers.createSectionFromSplitEntry(row, array_of_bytes, context)
         f.setCommentOffset(row.offset)
         processedFiles[row.section].append(f)
         processedFilesOutputPaths[row.section].append(outputFilePath)
@@ -145,6 +145,7 @@ def writeProcessedFiles(processedFiles: dict[common.FileSectionType, list[mips.s
             if progressCallback is not None:
                 progressCallback(i, str(filePath), processedFilesCount)
 
+            common.Utils.printVerbose(f"Writing {filePath}")
             mips.FilesHandlers.writeSection(filePath, f)
             i += 1
     return
@@ -167,7 +168,7 @@ def migrateFunctions(processedFiles: dict[common.FileSectionType, list[mips.sect
     rodataFileList = processedFiles.get(common.FileSectionType.Rodata, [])
     i = 0
     for textFile in processedFiles.get(common.FileSectionType.Text, []):
-        filePath = functionMigrationPath / textFile.name
+        filePath = functionMigrationPath / textFile.getName()
         filePath.mkdir(parents=True, exist_ok=True)
         for func in textFile.symbolList:
             if progressCallback is not None:
@@ -177,6 +178,7 @@ def migrateFunctions(processedFiles: dict[common.FileSectionType, list[mips.sect
             entry = mips.FunctionRodataEntry.getEntryForFuncFromPossibleRodataSections(func, rodataFileList)
 
             funcPath = filePath / (func.getName()+ ".s")
+            common.Utils.printVerbose(f"Writing function {funcPath}")
             with funcPath.open("w") as f:
                 entry.writeToFile(f, writeFunction=True)
 
