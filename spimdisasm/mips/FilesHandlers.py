@@ -17,7 +17,7 @@ from . import symbols
 from . import FunctionRodataEntry
 
 
-def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_bytes: bytearray, outputPath: Path, context: common.Context) -> sections.SectionBase:
+def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_bytes: bytearray, context: common.Context) -> sections.SectionBase:
     offsetStart = splitEntry.offset
     offsetEnd = splitEntry.nextOffset
 
@@ -36,15 +36,16 @@ def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_byte
 
     f: sections.SectionBase
     if splitEntry.section == common.FileSectionType.Text:
-        f = sections.SectionText(context, offsetStart, offsetEnd, vram, outputPath.stem, array_of_bytes, 0, None)
+        f = sections.SectionText(context, offsetStart, offsetEnd, vram, splitEntry.fileName, array_of_bytes, 0, None)
         if splitEntry.isRsp:
             f.instrCat = rabbitizer.InstrCategory.RSP
     elif splitEntry.section == common.FileSectionType.Data:
-        f = sections.SectionData(context, offsetStart, offsetEnd, vram, outputPath.stem, array_of_bytes, 0, None)
+        f = sections.SectionData(context, offsetStart, offsetEnd, vram, splitEntry.fileName, array_of_bytes, 0, None)
     elif splitEntry.section == common.FileSectionType.Rodata:
-        f = sections.SectionRodata(context, offsetStart, offsetEnd, vram, outputPath.stem, array_of_bytes, 0, None)
+        f = sections.SectionRodata(context, offsetStart, offsetEnd, vram, splitEntry.fileName, array_of_bytes, 0, None)
     elif splitEntry.section == common.FileSectionType.Bss:
-        f = sections.SectionBss(context, offsetStart, offsetEnd, splitEntry.vram, splitEntry.vram + offsetEnd - offsetStart, outputPath.stem, 0, None)
+        bssVramEnd = splitEntry.vram + offsetEnd - offsetStart
+        f = sections.SectionBss(context, offsetStart, offsetEnd, splitEntry.vram, bssVramEnd, splitEntry.fileName, 0, None)
     else:
         common.Utils.eprint("Error! Section not set!")
         exit(-1)
@@ -105,6 +106,8 @@ def writeOtherRodata(path: Path, rodataFileList: list[sections.SectionBase]):
                 continue
 
             rodataSymbolPath = rodataPath / (rodataSym.getName() + ".s")
+            common.Utils.printVerbose(f"Writing unmigrated rodata {rodataSymbolPath}")
+
             with rodataSymbolPath.open("w") as f:
                 f.write(".section .rodata" + common.GlobalConfig.LINE_ENDS)
                 f.write(rodataSym.disassemble(migrate=True))
