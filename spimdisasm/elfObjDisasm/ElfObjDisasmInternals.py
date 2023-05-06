@@ -207,10 +207,14 @@ def addContextSymFromSymEntry(context: common.Context, symEntry: elf32.Elf32SymE
     elif symEntry.stType == elf32.Elf32SymbolTableType.SECTION.value:
         # print(symEntry)
         return None
-    elif symEntry.stType == elf32.Elf32SymbolTableType.NOTYPE.value and symEntry.shndx == elf32.Elf32SectionHeaderNumber.ABS.value:
-        segment = context.globalSegment
-        contextSym = segment.addSymbol(symAddress, vromAddress=symVrom)
-        contextSym.isElfNotype = True
+    elif symEntry.stType == elf32.Elf32SymbolTableType.NOTYPE.value:
+        if symEntry.shndx == elf32.Elf32SectionHeaderNumber.ABS.value:
+            segment = context.globalSegment
+            contextSym = segment.addSymbol(symAddress, vromAddress=symVrom)
+            contextSym.isElfNotype = True
+        else:
+            common.Utils.eprint(f"Warning: NOTYPE symbol '{symName}' has an unhandled shndx value: '0x{symEntry.shndx:X}'")
+            contextSym = segment.addSymbol(symAddress, vromAddress=symVrom)
     else:
         common.Utils.eprint(f"Warning: symbol '{symName}' has an unhandled stType: '{symEntry.stType}'")
         contextSym = segment.addSymbol(symAddress, vromAddress=symVrom)
