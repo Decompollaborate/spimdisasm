@@ -45,6 +45,9 @@ class Elf32File:
         self.progbits: dict[common.FileSectionType, Elf32SectionHeaderEntry] = dict()
         self.nobits: Elf32SectionHeaderEntry | None = None
 
+        self.progbitsSmall: dict[common.FileSectionType, Elf32SectionHeaderEntry] = dict()
+        self.nobitsSmall: Elf32SectionHeaderEntry | None = None
+
         self.rel: dict[common.FileSectionType, Elf32Rels] = dict()
 
         self.reginfo: Elf32RegInfo | None = None
@@ -142,6 +145,7 @@ class Elf32File:
 
     def _processSection_PROGBITS(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
         fileSecType = common.FileSectionType.fromStr(sectionEntryName)
+        smallFileSecType = common.FileSectionType.fromSmallStr(sectionEntryName)
 
         if fileSecType != common.FileSectionType.Invalid:
             self.progbits[fileSecType] = entry
@@ -149,6 +153,8 @@ class Elf32File:
                 self.sectionHeaders.mipsText = entry
             elif fileSecType == common.FileSectionType.Data:
                 self.sectionHeaders.mipsData = entry
+        elif smallFileSecType != common.FileSectionType.Invalid:
+            self.progbitsSmall[smallFileSecType] = entry
         elif sectionEntryName == ".got":
             self.got = Elf32GlobalOffsetTable(array_of_bytes, entry.offset, entry.size)
         elif sectionEntryName == ".interp":
@@ -200,6 +206,8 @@ class Elf32File:
     def _processSection_NOBITS(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
         if sectionEntryName == ".bss":
             self.nobits = entry
+        if sectionEntryName == ".sbss":
+            self.nobitsSmall = entry
         elif common.GlobalConfig.VERBOSE:
             common.Utils.eprint("Unhandled NOBITS found: ", sectionEntryName, entry, "\n")
 
@@ -533,6 +541,8 @@ class Elf32File:
         entryAddress = 0
         if self.dynamic is not None and self.dynamic.pltGot is not None:
             gpValue = self.dynamic.getGpValue() or 0
+            if common.GlobalConfig.GP_VALUE is not None:
+                gpValue = common.GlobalConfig.GP_VALUE
             entryAddress = self.dynamic.pltGot
             print(f" Canonical gp value: {gpValue:X}")
             print()

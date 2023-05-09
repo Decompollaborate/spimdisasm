@@ -332,11 +332,20 @@ def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, proce
 def processGlobalOffsetTable(context: common.Context, elfFile: elf32.Elf32File) -> None:
     if elfFile.dynamic is not None and elfFile.got is not None:
         common.GlobalConfig.GP_VALUE = elfFile.dynamic.getGpValue()
+        if elfFile.reginfo is not None:
+            common.GlobalConfig.GP_VALUE = elfFile.reginfo.gpValue
+        print(f"common.GlobalConfig.GP_VALUE: {common.GlobalConfig.GP_VALUE:X}\n")
 
         globalsTable = [gotEntry.getAddress() for gotEntry in elfFile.got.globalsTable]
 
         assert elfFile.dynamic.pltGot is not None
         context.initGotTable(elfFile.dynamic.pltGot, elfFile.got.localsTable, globalsTable)
+
+        for small in elfFile.progbitsSmall.values():
+            context.addSmallSection(small.addr, small.size)
+
+        if elfFile.nobitsSmall is not None:
+            context.addSmallSection(elfFile.nobitsSmall.addr, elfFile.nobitsSmall.size)
     return
 
 
@@ -357,6 +366,9 @@ def processArguments(args: argparse.Namespace) -> int:
     elfFile.handleHeaderIdent()
     elfFile.handleFlags()
 
+    common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Processing global offset table...")
+    processGlobalOffsetTable(context, elfFile)
+
     applyReadelfLikeFlags(elfFile, args)
 
     textOutput = Path(args.output)
@@ -376,9 +388,6 @@ def processArguments(args: argparse.Namespace) -> int:
     changeGlobalSegmentRanges(context, processedSegments)
 
     fec.FrontendUtilities.configureProcessedFiles(processedSegments, args.instr_category)
-
-    common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Processing global offset table...")
-    processGlobalOffsetTable(context, elfFile)
 
     common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Injecting elf symbols...")
     injectAllElfSymbols(context, elfFile, processedSegments)
