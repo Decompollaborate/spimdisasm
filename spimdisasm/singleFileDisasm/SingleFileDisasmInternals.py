@@ -65,9 +65,9 @@ def getArgsParser() -> argparse.ArgumentParser:
     return addOptionsToParser(parser)
 
 def applyArgs(args: argparse.Namespace) -> None:
-    mips.InstructionConfig.parseArgs(args)
-
     common.GlobalConfig.parseArgs(args)
+
+    mips.InstructionConfig.parseArgs(args)
 
     common.GlobalConfig.REMOVE_POINTERS = args.nuke_pointers
     common.GlobalConfig.IGNORE_BRANCHES = args.nuke_pointers

@@ -68,8 +68,8 @@ def applyArgs(args: argparse.Namespace) -> None:
         args.libultra_syms = False
     if args.hardware_regs is None:
         args.hardware_regs = False
-    mips.InstructionConfig.parseArgs(args)
     common.GlobalConfig.parseArgs(args)
+    mips.InstructionConfig.parseArgs(args)
 
 def applyGlobalConfigurations() -> None:
     common.GlobalConfig.REMOVE_POINTERS = False
