@@ -37,7 +37,7 @@ class GlobalOffsetTable:
 
         if index < 0:
             common.Utils.eprint(f"Warning: %got address 0x{address:X} not found on local or global table (negative index)")
-            common.Utils.eprint(f"\tindex: {index}, len(localsTable):{len(self.localsTable)}, len(globalsTable): {len(self.globalsTable)}")
+            common.Utils.eprint(f"    index: {index}, len(localsTable):{len(self.localsTable)}, len(globalsTable): {len(self.globalsTable)}")
             return None, None
 
         if index < len(self.localsTable):
@@ -46,6 +46,6 @@ class GlobalOffsetTable:
         index -= len(self.localsTable)
         if index >= len(self.globalsTable):
             common.Utils.eprint(f"Warning: %got address 0x{address:X} not found on local or global table (out of range)")
-            common.Utils.eprint(f"\tindex: {index}, len(globalsTable): {len(self.globalsTable)}")
+            common.Utils.eprint(f"    index: {index}, len(globalsTable): {len(self.globalsTable)}")
             return None, None
         return self.globalsTable[index], True
