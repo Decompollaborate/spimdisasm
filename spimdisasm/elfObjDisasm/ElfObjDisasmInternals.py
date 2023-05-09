@@ -40,7 +40,7 @@ def addOptionsToParser(parser: argparse.ArgumentParser) -> argparse.ArgumentPars
 
     readelfOptions = parser.add_argument_group("readelf-like flags")
 
-    readelfOptions.add_argument("-a", "--all", help="Equivalent to --file-header --syms --relocs --display-got", action="store_true")
+    readelfOptions.add_argument("-a", "--all", help="Equivalent to --file-header --section-headers --syms --relocs --display-got", action="store_true")
     readelfOptions.add_argument("--file-header", help="Display the ELF file header", action="store_true")
     readelfOptions.add_argument("-S", "--section-headers", help="Display the sections' header", action="store_true")
     readelfOptions.add_argument("-s", "--syms", help="Display the symbol table", action="store_true")

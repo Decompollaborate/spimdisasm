@@ -385,6 +385,8 @@ class Elf32File:
 
         print(f"  {'Section header string table index:':<34} {self.header.shstrndx}")
 
+        print()
+
 
     def readelf_sectionHeaders(self) -> None:
         flagsKeys = {
@@ -407,7 +409,14 @@ class Elf32File:
 
         print(f"Section Headers:")
 
-        print(f"  [{'Nr':>2}] {'Name':<17} {'Type':<15} {'Addr':<8} {'Off':<6} {'Size':<6} ES Flg Lk Inf Al")
+        largestSectionHeaderName = 17
+        for header in self.sectionHeaders:
+            name = self.shstrtab[header.name]
+
+            if len(name) > largestSectionHeaderName:
+                largestSectionHeaderName = len(name)
+
+        print(f"  [{'Nr':>2}] {'Name':<{largestSectionHeaderName}}  {'Type':<15} {'Addr':<8} {'Off':<6} {'Size':<6} ES Flg Lk Inf Al")
 
         i = 0
         for header in self.sectionHeaders:
@@ -430,7 +439,7 @@ class Elf32File:
                 flagsStr += 'p'
             unknownFlags &= ~0xF0000000
 
-            print(f"  [{i:>2}] {name:<17} {headerTypeStr:<15} {header.addr:08X} {header.offset:06X} {header.size:06X} {header.entsize:02X} {flagsStr:>3} {header.link:> 2X} {header.info:> 3X} {header.addralign:>2X}")
+            print(f"  [{i:>2}] {name:<{largestSectionHeaderName}}  {headerTypeStr:<15} {header.addr:08X} {header.offset:06X} {header.size:06X} {header.entsize:02X} {flagsStr:>3} {header.link:> 2X} {header.info:> 3X} {header.addralign:>2X}")
             if unknownFlags:
                 print(f"Warning unknown flags: 0x{unknownFlags:X}")
 
@@ -441,6 +450,8 @@ class Elf32File:
         print(f"  L (link order), O (extra OS processing required), G (group), T (TLS),")
         print(f"  C (compressed), x (unknown), o (OS specific), E (exclude),")
         print(f"  D (mbind), p (processor specific)")
+
+        print()
 
 
     def readelf_syms(self) -> None:
@@ -472,6 +483,8 @@ class Elf32File:
                     symName = self.strtab[sym.name]
                 print(f" {i:>5}: {sym.value:08X} {sym.size:>5X} {entryType.name:7} {bind:6} {visibility:7} {ndx:>7} {symName}")
 
+        print()
+
     def readelf_relocs(self) -> None:
         for relSection in self.rel.values():
             print(f"Relocation section '{relSection.sectionName}' at offset 0x{relSection.offset:X} contains {len(relSection.relocations)} entries:")
@@ -494,6 +507,8 @@ class Elf32File:
                 print(f" {rel.offset:08X} {rel.info:08X} {relType:<12} {symValue:>9} {symName}")
 
             print()
+
+        print()
 
     def readelf_displayGot(self) -> None:
         print(f"Primary GOT:")
@@ -551,3 +566,5 @@ class Elf32File:
                 entryAddress += 4
 
             print()
+
+        print()
