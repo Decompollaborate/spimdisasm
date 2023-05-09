@@ -40,10 +40,11 @@ def addOptionsToParser(parser: argparse.ArgumentParser) -> argparse.ArgumentPars
 
     readelfOptions = parser.add_argument_group("readelf-like flags")
 
-    readelfOptions.add_argument("-a", "--all", help="Equivalent to --file-header --section-headers --syms --relocs --display-got", action="store_true")
+    readelfOptions.add_argument("-a", "--all", help="Equivalent to --file-header --section-headers --syms --dyn-syms --relocs --display-got", action="store_true")
     readelfOptions.add_argument("--file-header", help="Display the ELF file header", action="store_true")
     readelfOptions.add_argument("-S", "--section-headers", help="Display the sections' header", action="store_true")
     readelfOptions.add_argument("-s", "--syms", help="Display the symbol table", action="store_true")
+    readelfOptions.add_argument("--dyn-syms", help="Display the dynamic symbol table", action="store_true")
     readelfOptions.add_argument("-r", "--relocs", help="Display the relocations (if present)", action="store_true")
     readelfOptions.add_argument("--display-got", help="Shows Global offset table information", action="store_true")
 
@@ -85,6 +86,7 @@ def applyReadelfLikeFlags(elfFile: elf32.Elf32File, args: argparse.Namespace) ->
         elfFile.readelf_fileHeader()
         elfFile.readelf_sectionHeaders()
         elfFile.readelf_syms()
+        elfFile.readelf_dyn_syms()
         elfFile.readelf_relocs()
         elfFile.readelf_displayGot()
     else:
@@ -96,6 +98,9 @@ def applyReadelfLikeFlags(elfFile: elf32.Elf32File, args: argparse.Namespace) ->
 
         if args.syms:
             elfFile.readelf_syms()
+
+        if args.dyn_syms:
+            elfFile.readelf_dyn_syms()
 
         if args.relocs:
             elfFile.readelf_relocs()

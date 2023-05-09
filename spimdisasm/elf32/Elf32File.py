@@ -454,36 +454,53 @@ class Elf32File:
         print()
 
 
-    def readelf_syms(self) -> None:
-        if self.symtab is not None:
-            print(f"Symbol table '.symtab' contains {len(self.symtab.symbols)} entries:")
+    def _readelf_symbol_table(self, symbolTable: Elf32Syms, stringTable: Elf32StringTable|None) -> None:
+        symbolTableName = ""
 
-            print(f" {'Num':>5}: {'Value':>8} {'Size':>5} {'Type':7} {'Bind':6} {'Vis':7} {'Ndx':>7} {'Name'}")
+        for header in self.sectionHeaders:
+            if header.offset == symbolTable.offset:
+                symbolTableName = self.shstrtab[header.name]
 
-            for i, sym in enumerate(self.symtab.symbols):
-                entryType = Elf32SymbolTableType(sym.stType)
+        print(f"Symbol table '{symbolTableName}' contains {len(symbolTable.symbols)} entries:")
 
-                bind = sym.stBind
-                stBind = Elf32SymbolTableBinding.fromValue(sym.stBind)
-                if stBind is not None:
-                    bind = stBind.name
+        print(f" {'Num':>5}: {'Value':>8} {'Size':>5} {'Type':7} {'Bind':6} {'Vis':9} {'Ndx':>12} {'Name'}")
 
-                visibility: str = f"0x{sym.other:X}"
-                stOther = Elf32SymbolVisibility.fromValue(sym.other)
-                if stOther is not None:
-                    visibility = stOther.name
+        for i, sym in enumerate(symbolTable.symbols):
+            entryType = Elf32SymbolTableType(sym.stType)
 
-                ndx: str = f"0x{sym.shndx:X}"
-                shndx = Elf32SectionHeaderNumber.fromValue(sym.shndx)
-                if shndx is not None:
-                    ndx = shndx.name
+            bind = sym.stBind
+            stBind = Elf32SymbolTableBinding.fromValue(sym.stBind)
+            if stBind is not None:
+                bind = stBind.name
 
-                symName = ""
-                if self.strtab is not None:
-                    symName = self.strtab[sym.name]
-                print(f" {i:>5}: {sym.value:08X} {sym.size:>5X} {entryType.name:7} {bind:6} {visibility:7} {ndx:>7} {symName}")
+            visibility: str = f"0x{sym.other:X}"
+            stOther = Elf32SymbolVisibility.fromValue(sym.other)
+            if stOther is not None:
+                visibility = stOther.name
+
+            ndx: str = f"0x{sym.shndx:X}"
+            shndx = Elf32SectionHeaderNumber.fromValue(sym.shndx)
+            if shndx is not None:
+                ndx = shndx.name
+
+            symName = ""
+            if stringTable is not None:
+                symName = stringTable[sym.name]
+            print(f" {i:>5}: {sym.value:08X} {sym.size:>5X} {entryType.name:7} {bind:6} {visibility:9} {ndx:>12} {symName}")
 
         print()
+
+    def readelf_syms(self) -> None:
+        if self.symtab is None:
+            return
+
+        self._readelf_symbol_table(self.symtab, self.strtab)
+
+    def readelf_dyn_syms(self) -> None:
+        if self.dynsym is None:
+            return
+
+        self._readelf_symbol_table(self.dynsym, self.dynstr)
 
     def readelf_relocs(self) -> None:
         for relSection in self.rel.values():
@@ -522,7 +539,7 @@ class Elf32File:
 
         if self.got is not None:
             print(f" Reserved entries:")
-            print(f"   Address {'Access':>9}  Initial Purpose")
+            print(f"   Address {'Access':>12}  Initial Purpose")
             access = entryAddress - gpValue
             if access < 0:
                 accessStr = f"-0x{-access:X}"
