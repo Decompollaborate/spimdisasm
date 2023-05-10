@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import rabbitizer
 
+from .. import common
 from ..common import Utils
 
 
@@ -46,6 +47,10 @@ class InstructionConfig:
     def parseArgs(args: argparse.Namespace):
         if args.named_registers is not None:
             rabbitizer.config.regNames_namedRegisters = args.named_registers
+
+        if common.GlobalConfig.ABI != common.Abi.O32:
+            rabbitizer.config.regNames_gprAbiNames = rabbitizer.Abi.fromStr(common.GlobalConfig.ABI.name)
+            rabbitizer.config.regNames_fprAbiNames = rabbitizer.Abi.fromStr(common.GlobalConfig.ABI.name)
 
         if args.Mgpr_names:
             rabbitizer.config.regNames_gprAbiNames = rabbitizer.Abi.fromStr(args.Mgpr_names)

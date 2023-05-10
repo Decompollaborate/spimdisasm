@@ -40,10 +40,11 @@ def addOptionsToParser(parser: argparse.ArgumentParser) -> argparse.ArgumentPars
 
     readelfOptions = parser.add_argument_group("readelf-like flags")
 
-    readelfOptions.add_argument("-a", "--all", help="Equivalent to --file-header --syms --relocs --display-got", action="store_true")
+    readelfOptions.add_argument("-a", "--all", help="Equivalent to --file-header --section-headers --syms --dyn-syms --relocs --display-got", action="store_true")
     readelfOptions.add_argument("--file-header", help="Display the ELF file header", action="store_true")
     readelfOptions.add_argument("-S", "--section-headers", help="Display the sections' header", action="store_true")
     readelfOptions.add_argument("-s", "--syms", help="Display the symbol table", action="store_true")
+    readelfOptions.add_argument("--dyn-syms", help="Display the dynamic symbol table", action="store_true")
     readelfOptions.add_argument("-r", "--relocs", help="Display the relocations (if present)", action="store_true")
     readelfOptions.add_argument("--display-got", help="Shows Global offset table information", action="store_true")
 
@@ -67,8 +68,8 @@ def applyArgs(args: argparse.Namespace) -> None:
         args.libultra_syms = False
     if args.hardware_regs is None:
         args.hardware_regs = False
-    mips.InstructionConfig.parseArgs(args)
     common.GlobalConfig.parseArgs(args)
+    mips.InstructionConfig.parseArgs(args)
 
 def applyGlobalConfigurations() -> None:
     common.GlobalConfig.REMOVE_POINTERS = False
@@ -85,6 +86,7 @@ def applyReadelfLikeFlags(elfFile: elf32.Elf32File, args: argparse.Namespace) ->
         elfFile.readelf_fileHeader()
         elfFile.readelf_sectionHeaders()
         elfFile.readelf_syms()
+        elfFile.readelf_dyn_syms()
         elfFile.readelf_relocs()
         elfFile.readelf_displayGot()
     else:
@@ -96,6 +98,9 @@ def applyReadelfLikeFlags(elfFile: elf32.Elf32File, args: argparse.Namespace) ->
 
         if args.syms:
             elfFile.readelf_syms()
+
+        if args.dyn_syms:
+            elfFile.readelf_dyn_syms()
 
         if args.relocs:
             elfFile.readelf_relocs()
@@ -207,10 +212,14 @@ def addContextSymFromSymEntry(context: common.Context, symEntry: elf32.Elf32SymE
     elif symEntry.stType == elf32.Elf32SymbolTableType.SECTION.value:
         # print(symEntry)
         return None
-    elif symEntry.stType == elf32.Elf32SymbolTableType.NOTYPE.value and symEntry.shndx == elf32.Elf32SectionHeaderNumber.ABS.value:
-        segment = context.globalSegment
-        contextSym = segment.addSymbol(symAddress, vromAddress=symVrom)
-        contextSym.isElfNotype = True
+    elif symEntry.stType == elf32.Elf32SymbolTableType.NOTYPE.value:
+        if symEntry.shndx == elf32.Elf32SectionHeaderNumber.ABS.value:
+            segment = context.globalSegment
+            contextSym = segment.addSymbol(symAddress, vromAddress=symVrom)
+            contextSym.isElfNotype = True
+        else:
+            common.Utils.eprint(f"Warning: NOTYPE symbol '{symName}' has an unhandled shndx value: '0x{symEntry.shndx:X}'")
+            contextSym = segment.addSymbol(symAddress, vromAddress=symVrom)
     else:
         common.Utils.eprint(f"Warning: symbol '{symName}' has an unhandled stType: '{symEntry.stType}'")
         contextSym = segment.addSymbol(symAddress, vromAddress=symVrom)
@@ -323,11 +332,19 @@ def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, proce
 def processGlobalOffsetTable(context: common.Context, elfFile: elf32.Elf32File) -> None:
     if elfFile.dynamic is not None and elfFile.got is not None:
         common.GlobalConfig.GP_VALUE = elfFile.dynamic.getGpValue()
+        if elfFile.reginfo is not None:
+            common.GlobalConfig.GP_VALUE = elfFile.reginfo.gpValue
 
         globalsTable = [gotEntry.getAddress() for gotEntry in elfFile.got.globalsTable]
 
         assert elfFile.dynamic.pltGot is not None
         context.initGotTable(elfFile.dynamic.pltGot, elfFile.got.localsTable, globalsTable)
+
+        for small in elfFile.progbitsSmall.values():
+            context.addSmallSection(small.addr, small.size)
+
+        if elfFile.nobitsSmall is not None:
+            context.addSmallSection(elfFile.nobitsSmall.addr, elfFile.nobitsSmall.size)
     return
 
 
@@ -348,6 +365,9 @@ def processArguments(args: argparse.Namespace) -> int:
     elfFile.handleHeaderIdent()
     elfFile.handleFlags()
 
+    common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Processing global offset table...")
+    processGlobalOffsetTable(context, elfFile)
+
     applyReadelfLikeFlags(elfFile, args)
 
     textOutput = Path(args.output)
@@ -367,9 +387,6 @@ def processArguments(args: argparse.Namespace) -> int:
     changeGlobalSegmentRanges(context, processedSegments)
 
     fec.FrontendUtilities.configureProcessedFiles(processedSegments, args.instr_category)
-
-    common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Processing global offset table...")
-    processGlobalOffsetTable(context, elfFile)
 
     common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Injecting elf symbols...")
     injectAllElfSymbols(context, elfFile, processedSegments)

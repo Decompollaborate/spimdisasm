@@ -80,7 +80,7 @@ class FileBase(common.ElementBase):
             print(f"Found {len(self.symbolList)} symbols.")
             print(f"Found {len(self.fileBoundaries)} file boundaries.")
 
-            print("\t offset, size,     vram, symbols")
+            print("    offset, size,       vram, symbols")
 
             boundaries = list(self.fileBoundaries)
             boundaries.append(self.sizew*4 + self.inFileOffset)
@@ -97,7 +97,7 @@ class FileBase(common.ElementBase):
                 fileVram = 0
                 if self.vram is not None:
                     fileVram = start + self.vram
-                print(f"\t {start+self.commentOffset:06X}, {end-start:04X}, {fileVram:08X}, {symbolsInBoundary:7}")
+                print(f"    {start+self.commentOffset:06X}, {end-start:06X}, {fileVram:08X}, {symbolsInBoundary:7}")
 
             print()
 

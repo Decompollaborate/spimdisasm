@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# SPDX-FileCopyrightText: © 2022 Decompollaborate
+# SPDX-FileCopyrightText: © 2022-2023 Decompollaborate
 # SPDX-License-Identifier: MIT
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from pathlib import Path
 from . import Utils
 from .ContextSymbols import ContextSymbol
 from .SymbolsSegment import SymbolsSegment
-from .GlobalOffsetTable import GlobalOffsetTable
+from .GpAccesses import GpAccessContainer
 from .Relocation import RelocationInfo, RelocType
 
 
@@ -64,7 +64,7 @@ class Context:
         self.globalRelocationOverrides: dict[int, RelocationInfo] = dict()
         "key: vrom address"
 
-        self.got: GlobalOffsetTable = GlobalOffsetTable()
+        self.gpAccesses = GpAccessContainer()
 
 
     def changeGlobalSegmentRanges(self, vromStart: int, vromEnd: int, vramStart: int, vramEnd: int):
@@ -97,12 +97,15 @@ class Context:
 
 
     def initGotTable(self, pltGot: int, localsTable: list[int], globalsTable: list[int]):
-        self.got.initTables(pltGot, localsTable, globalsTable)
+        self.gpAccesses.initGotTable(pltGot, localsTable, globalsTable)
 
-        for gotEntry in self.got.globalsTable:
-            gotEntry.contextSym = self.globalSegment.addSymbol(gotEntry.address)
-            gotEntry.contextSym.isUserDeclared = True
-            gotEntry.contextSym.isGotGlobal = True
+        for gotEntry in self.gpAccesses.got.globalsTable:
+            contextSym = self.globalSegment.addSymbol(gotEntry)
+            contextSym.isUserDeclared = True
+            contextSym.isGotGlobal = True
+
+    def addSmallSection(self, address: int, size: int):
+        self.gpAccesses.addSmallSection(address, size)
 
 
     def fillDefaultBannedSymbols(self):

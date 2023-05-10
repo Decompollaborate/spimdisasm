@@ -31,6 +31,10 @@ class FileSectionType(OrderedEnum):
     def fromStr(x: str) -> FileSectionType:
         return gNameToSectionType.get(x, FileSectionType.Invalid)
 
+    @staticmethod
+    def fromSmallStr(x: str) -> FileSectionType:
+        return gSmallNameToSectionType.get(x, FileSectionType.Invalid)
+
     def toStr(self) -> str:
         if self == FileSectionType.Text:
             return ".text"
@@ -79,6 +83,12 @@ gNameToSectionType = {
     ".reloc":   FileSectionType.Reloc,
     ".end":     FileSectionType.End,
     ".dummy":   FileSectionType.Dummy,
+}
+gSmallNameToSectionType = {
+    ".sdata":    FileSectionType.Data,
+    ".srodata":  FileSectionType.Rodata,
+    ".srdata":   FileSectionType.Rodata,
+    ".sbss":     FileSectionType.Bss,
 }
 
 

@@ -45,6 +45,9 @@ class Elf32File:
         self.progbits: dict[common.FileSectionType, Elf32SectionHeaderEntry] = dict()
         self.nobits: Elf32SectionHeaderEntry | None = None
 
+        self.progbitsSmall: dict[common.FileSectionType, Elf32SectionHeaderEntry] = dict()
+        self.nobitsSmall: Elf32SectionHeaderEntry | None = None
+
         self.rel: dict[common.FileSectionType, Elf32Rels] = dict()
 
         self.reginfo: Elf32RegInfo | None = None
@@ -108,7 +111,7 @@ class Elf32File:
             common.Utils.eprint(f"\t This flag is currently not handled in any way, please report this")
 
         if Elf32HeaderFlag.ABI2 in self.elfFlags:
-            common.Utils.eprint(f"Warning: Elf compiled with N32 ABI, which is currently unsupported")
+            common.Utils.eprint(f"Warning: Elf compiled using N32 ABI. Support is in experimental state")
             common.GlobalConfig.ABI = common.Abi.N32
 
         unkArchLevel = {Elf32HeaderFlag.ARCH_5, Elf32HeaderFlag.ARCH_32, Elf32HeaderFlag.ARCH_64, Elf32HeaderFlag.ARCH_32R2, Elf32HeaderFlag.ARCH_64R2} & set(self.elfFlags)
@@ -142,6 +145,7 @@ class Elf32File:
 
     def _processSection_PROGBITS(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
         fileSecType = common.FileSectionType.fromStr(sectionEntryName)
+        smallFileSecType = common.FileSectionType.fromSmallStr(sectionEntryName)
 
         if fileSecType != common.FileSectionType.Invalid:
             self.progbits[fileSecType] = entry
@@ -149,6 +153,8 @@ class Elf32File:
                 self.sectionHeaders.mipsText = entry
             elif fileSecType == common.FileSectionType.Data:
                 self.sectionHeaders.mipsData = entry
+        elif smallFileSecType != common.FileSectionType.Invalid:
+            self.progbitsSmall[smallFileSecType] = entry
         elif sectionEntryName == ".got":
             self.got = Elf32GlobalOffsetTable(array_of_bytes, entry.offset, entry.size)
         elif sectionEntryName == ".interp":
@@ -200,6 +206,8 @@ class Elf32File:
     def _processSection_NOBITS(self, array_of_bytes: bytearray, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
         if sectionEntryName == ".bss":
             self.nobits = entry
+        if sectionEntryName == ".sbss":
+            self.nobitsSmall = entry
         elif common.GlobalConfig.VERBOSE:
             common.Utils.eprint("Unhandled NOBITS found: ", sectionEntryName, entry, "\n")
 
@@ -385,6 +393,8 @@ class Elf32File:
 
         print(f"  {'Section header string table index:':<34} {self.header.shstrndx}")
 
+        print()
+
 
     def readelf_sectionHeaders(self) -> None:
         flagsKeys = {
@@ -407,7 +417,14 @@ class Elf32File:
 
         print(f"Section Headers:")
 
-        print(f"  [{'Nr':>2}] {'Name':<17} {'Type':<15} {'Addr':<8} {'Off':<6} {'Size':<6} ES Flg Lk Inf Al")
+        largestSectionHeaderName = 17
+        for header in self.sectionHeaders:
+            name = self.shstrtab[header.name]
+
+            if len(name) > largestSectionHeaderName:
+                largestSectionHeaderName = len(name)
+
+        print(f"  [{'Nr':>2}] {'Name':<{largestSectionHeaderName}}  {'Type':<15} {'Addr':<8} {'Off':<6} {'Size':<6} ES Flg Lk Inf Al")
 
         i = 0
         for header in self.sectionHeaders:
@@ -430,7 +447,7 @@ class Elf32File:
                 flagsStr += 'p'
             unknownFlags &= ~0xF0000000
 
-            print(f"  [{i:>2}] {name:<17} {headerTypeStr:<15} {header.addr:08X} {header.offset:06X} {header.size:06X} {header.entsize:02X} {flagsStr:>3} {header.link:> 2X} {header.info:> 3X} {header.addralign:>2X}")
+            print(f"  [{i:>2}] {name:<{largestSectionHeaderName}}  {headerTypeStr:<15} {header.addr:08X} {header.offset:06X} {header.size:06X} {header.entsize:02X} {flagsStr:>3} {header.link:> 2X} {header.info:> 3X} {header.addralign:>2X}")
             if unknownFlags:
                 print(f"Warning unknown flags: 0x{unknownFlags:X}")
 
@@ -442,35 +459,56 @@ class Elf32File:
         print(f"  C (compressed), x (unknown), o (OS specific), E (exclude),")
         print(f"  D (mbind), p (processor specific)")
 
+        print()
+
+
+    def _readelf_symbol_table(self, symbolTable: Elf32Syms, stringTable: Elf32StringTable|None) -> None:
+        symbolTableName = ""
+
+        for header in self.sectionHeaders:
+            if header.offset == symbolTable.offset:
+                symbolTableName = self.shstrtab[header.name]
+
+        print(f"Symbol table '{symbolTableName}' contains {len(symbolTable.symbols)} entries:")
+
+        print(f" {'Num':>5}: {'Value':>8} {'Size':>5} {'Type':7} {'Bind':6} {'Vis':9} {'Ndx':>12} {'Name'}")
+
+        for i, sym in enumerate(symbolTable.symbols):
+            entryType = Elf32SymbolTableType(sym.stType)
+
+            bind = sym.stBind
+            stBind = Elf32SymbolTableBinding.fromValue(sym.stBind)
+            if stBind is not None:
+                bind = stBind.name
+
+            visibility: str = f"0x{sym.other:X}"
+            stOther = Elf32SymbolVisibility.fromValue(sym.other)
+            if stOther is not None:
+                visibility = stOther.name
+
+            ndx: str = f"0x{sym.shndx:X}"
+            shndx = Elf32SectionHeaderNumber.fromValue(sym.shndx)
+            if shndx is not None:
+                ndx = shndx.name
+
+            symName = ""
+            if stringTable is not None:
+                symName = stringTable[sym.name]
+            print(f" {i:>5}: {sym.value:08X} {sym.size:>5X} {entryType.name:7} {bind:6} {visibility:9} {ndx:>12} {symName}")
+
+        print()
 
     def readelf_syms(self) -> None:
-        if self.symtab is not None:
-            print(f"Symbol table '.symtab' contains {len(self.symtab.symbols)} entries:")
+        if self.symtab is None:
+            return
 
-            print(f" {'Num':>5}: {'Value':>8} {'Size':>5} {'Type':7} {'Bind':6} {'Vis':7} {'Ndx':>7} {'Name'}")
+        self._readelf_symbol_table(self.symtab, self.strtab)
 
-            for i, sym in enumerate(self.symtab.symbols):
-                entryType = Elf32SymbolTableType(sym.stType)
+    def readelf_dyn_syms(self) -> None:
+        if self.dynsym is None:
+            return
 
-                bind = sym.stBind
-                stBind = Elf32SymbolTableBinding.fromValue(sym.stBind)
-                if stBind is not None:
-                    bind = stBind.name
-
-                visibility: str = f"0x{sym.other:X}"
-                stOther = Elf32SymbolVisibility.fromValue(sym.other)
-                if stOther is not None:
-                    visibility = stOther.name
-
-                ndx: str = f"0x{sym.shndx:X}"
-                shndx = Elf32SectionHeaderNumber.fromValue(sym.shndx)
-                if shndx is not None:
-                    ndx = shndx.name
-
-                symName = ""
-                if self.strtab is not None:
-                    symName = self.strtab[sym.name]
-                print(f" {i:>5}: {sym.value:08X} {sym.size:>5X} {entryType.name:7} {bind:6} {visibility:7} {ndx:>7} {symName}")
+        self._readelf_symbol_table(self.dynsym, self.dynstr)
 
     def readelf_relocs(self) -> None:
         for relSection in self.rel.values():
@@ -495,19 +533,23 @@ class Elf32File:
 
             print()
 
+        print()
+
     def readelf_displayGot(self) -> None:
         print(f"Primary GOT:")
         gpValue = 0x7FF0
         entryAddress = 0
         if self.dynamic is not None and self.dynamic.pltGot is not None:
             gpValue = self.dynamic.getGpValue() or 0
+            if common.GlobalConfig.GP_VALUE is not None:
+                gpValue = common.GlobalConfig.GP_VALUE
             entryAddress = self.dynamic.pltGot
             print(f" Canonical gp value: {gpValue:X}")
             print()
 
         if self.got is not None:
             print(f" Reserved entries:")
-            print(f"   Address {'Access':>9}  Initial Purpose")
+            print(f"   Address {'Access':>12}  Initial Purpose")
             access = entryAddress - gpValue
             if access < 0:
                 accessStr = f"-0x{-access:X}"
@@ -551,3 +593,5 @@ class Elf32File:
                 entryAddress += 4
 
             print()
+
+        print()

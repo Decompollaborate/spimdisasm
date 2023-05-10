@@ -44,8 +44,8 @@ def getArgsParser() -> argparse.ArgumentParser:
 
 
 def applyArgs(args: argparse.Namespace) -> None:
-    mips.InstructionConfig.parseArgs(args)
     common.GlobalConfig.parseArgs(args)
+    mips.InstructionConfig.parseArgs(args)
 
 def applyGlobalConfigurations() -> None:
     common.GlobalConfig.GLABEL_ASM_COUNT = False
