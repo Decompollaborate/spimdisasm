@@ -294,14 +294,6 @@ class SymbolFunction(SymbolText):
 
             contextSym = self.getSymbol(address)
 
-            gotAccess = self.instrAnalyzer.gotAccessAddresses.get(instrOffset)
-            if gotAccess is not None:
-                gotEntry = self.context.gpAccesses.requestAddress(gotAccess)
-                if gotEntry is not None:
-                    contextSym = self.getSymbol(gotEntry.address)
-                else:
-                    common.Utils.eprint(3, f"0x{self.instructions[instrOffset//4].vram:08X}", f"0x{gotAccess:08X}", self.instructions[instrOffset//4].disassemble())
-                    pass
             # if contextSym is None:
             #     contextSym = self.getSymbol(address, tryPlusOffset=True)
 
