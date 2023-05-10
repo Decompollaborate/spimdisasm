@@ -111,7 +111,7 @@ class Elf32File:
             common.Utils.eprint(f"\t This flag is currently not handled in any way, please report this")
 
         if Elf32HeaderFlag.ABI2 in self.elfFlags:
-            common.Utils.eprint(f"Warning: Elf compiled with N32 ABI, which is currently unsupported")
+            common.Utils.eprint(f"Warning: Elf compiled using N32 ABI. Support is in experimental state")
             common.GlobalConfig.ABI = common.Abi.N32
 
         unkArchLevel = {Elf32HeaderFlag.ARCH_5, Elf32HeaderFlag.ARCH_32, Elf32HeaderFlag.ARCH_64, Elf32HeaderFlag.ARCH_32R2, Elf32HeaderFlag.ARCH_64R2} & set(self.elfFlags)
