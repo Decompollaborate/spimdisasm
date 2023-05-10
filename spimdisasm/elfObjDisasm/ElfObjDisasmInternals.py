@@ -334,7 +334,6 @@ def processGlobalOffsetTable(context: common.Context, elfFile: elf32.Elf32File) 
         common.GlobalConfig.GP_VALUE = elfFile.dynamic.getGpValue()
         if elfFile.reginfo is not None:
             common.GlobalConfig.GP_VALUE = elfFile.reginfo.gpValue
-        print(f"common.GlobalConfig.GP_VALUE: {common.GlobalConfig.GP_VALUE:X}\n")
 
         globalsTable = [gotEntry.getAddress() for gotEntry in elfFile.got.globalsTable]
 

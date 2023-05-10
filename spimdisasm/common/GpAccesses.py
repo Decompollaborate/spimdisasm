@@ -86,12 +86,14 @@ class GpAccessContainer:
     def requestAddress(self, address: int) -> GpAccess|None:
         small = self.smallSections.getKeyRight(address)
         if small is None:
+            common.Utils.eprint(f"Warning: No section found for $gp access at address 0x{address:08X}")
             return None
 
         sectionAddr, sectionData = small
 
         if sectionAddr != self.got.tableAddress:
             if not sectionData.isInRange(address):
+                common.Utils.eprint(f"Warning: No section found for $gp access at address 0x{address:08X}")
                 return None
 
             # small section
