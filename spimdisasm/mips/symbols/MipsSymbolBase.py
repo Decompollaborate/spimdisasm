@@ -438,9 +438,11 @@ class SymbolBase(common.ElementBase):
                 return f".align 3{common.GlobalConfig.LINE_ENDS}"
         elif self.isJumpTable():
             if i == 0 and common.GlobalConfig.COMPILER not in {common.Compiler.IDO, common.Compiler.PSYQ}:
-
                 if self.vram % 0x8 == 0:
                     return f".align 3{common.GlobalConfig.LINE_ENDS}"
+        elif self.isString():
+            if self.vram % 0x4 == 0:
+                return f".align 2{common.GlobalConfig.LINE_ENDS}"
 
         return ""
 
