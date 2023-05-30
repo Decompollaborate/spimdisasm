@@ -447,21 +447,10 @@ class SymbolBase(common.ElementBase):
         return ""
 
     def getPostAlignDirective(self, i: int=0) -> str:
-        commentPaddingNum = 22
-        if not common.GlobalConfig.ASM_COMMENT:
-            commentPaddingNum = 1
-
-        alignDirective = ""
-
         if self.isString():
-            alignDirective += commentPaddingNum * " "
-            if common.GlobalConfig.COMPILER in {common.Compiler.SN64, common.Compiler.PSYQ}:
-                alignDirective += ".align 2"
-            else:
-                alignDirective += ".balign 4"
-            alignDirective += common.GlobalConfig.LINE_ENDS
+            return f".align 2{common.GlobalConfig.LINE_ENDS}"
 
-        return alignDirective
+        return ""
 
     def disassembleAsData(self, useGlobalLabel: bool=True) -> str:
         output = self.contextSym.getReferenceeSymbols()
