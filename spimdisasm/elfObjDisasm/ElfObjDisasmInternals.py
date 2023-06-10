@@ -123,7 +123,7 @@ def getOutputPath(inputPath: Path, textOutput: Path, dataOutput: Path, sectionTy
 
     return outputFilePath
 
-def getProcessedSections(context: common.Context, elfFile: elf32.Elf32File, array_of_bytes: bytearray, inputPath: Path, textOutput: Path, dataOutput: Path) -> tuple[dict[common.FileSectionType, list[mips.sections.SectionBase]], dict[common.FileSectionType, list[Path]]]:
+def getProcessedSections(context: common.Context, elfFile: elf32.Elf32File, array_of_bytes: bytes, inputPath: Path, textOutput: Path, dataOutput: Path) -> tuple[dict[common.FileSectionType, list[mips.sections.SectionBase]], dict[common.FileSectionType, list[Path]]]:
     processedSegments: dict[common.FileSectionType, list[mips.sections.SectionBase]] = dict()
     segmentPaths: dict[common.FileSectionType, list[Path]] = dict()
 

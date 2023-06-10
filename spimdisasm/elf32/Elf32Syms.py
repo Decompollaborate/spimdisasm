@@ -31,7 +31,7 @@ class Elf32SymEntry:
         return self.info & 0xF
 
     @staticmethod
-    def fromBytearray(array_of_bytes: bytearray, offset: int = 0) -> Elf32SymEntry:
+    def fromBytearray(array_of_bytes: bytes, offset: int = 0) -> Elf32SymEntry:
         entryFormat = common.GlobalConfig.ENDIAN.toFormatString() + "IIIBBH"
         unpacked = struct.unpack_from(entryFormat, array_of_bytes, offset)
 
@@ -43,7 +43,7 @@ class Elf32SymEntry:
 
 
 class Elf32Syms:
-    def __init__(self, array_of_bytes: bytearray, offset: int, rawSize: int):
+    def __init__(self, array_of_bytes: bytes, offset: int, rawSize: int):
         self.symbols: list[Elf32SymEntry] = list()
         self.offset: int = offset
         self.rawSize: int = rawSize

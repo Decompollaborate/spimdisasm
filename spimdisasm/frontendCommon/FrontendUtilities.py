@@ -24,7 +24,7 @@ ProgressCallbackType = Callable[[int, str, int], None]
 _sLenLastLine = 80
 
 
-def getSplittedSections(context: common.Context, splits: common.FileSplitFormat, array_of_bytes: bytearray, inputPath: Path, textOutput: Path, dataOutput: Path) -> tuple[dict[common.FileSectionType, list[mips.sections.SectionBase]], dict[common.FileSectionType, list[Path]]]:
+def getSplittedSections(context: common.Context, splits: common.FileSplitFormat, array_of_bytes: bytes, inputPath: Path, textOutput: Path, dataOutput: Path) -> tuple[dict[common.FileSectionType, list[mips.sections.SectionBase]], dict[common.FileSectionType, list[Path]]]:
     processedFiles: dict[common.FileSectionType, list[mips.sections.SectionBase]] = {
         common.FileSectionType.Text: [],
         common.FileSectionType.Data: [],
@@ -211,8 +211,7 @@ def writeFunctionInfoCsv(processedFiles: dict[common.FileSectionType, list[mips.
                     topbits = instr.getRaw() & 0xFC000000
 
                     bitswordlist.append(topbits)
-                bitbytelist = bytearray([0]*len(bitswordlist)*4)
-                common.Utils.endianessWordsToBytes(common.Utils.InputEndian.BIG, bitswordlist, bitbytelist)
+                bitbytelist = common.Utils.endianessWordsToBytes(common.Utils.InputEndian.BIG, bitswordlist)
 
                 f.write(common.Utils.getStrHash(bitbytelist))
                 f.write(",")

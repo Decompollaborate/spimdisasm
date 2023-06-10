@@ -42,19 +42,19 @@ def eprintVerbose(*args, **kwargs):
 def isStdoutRedirected() -> bool:
     return not sys.stdout.isatty()
 
-# Returns the md5 hash of a bytearray
-def getStrHash(byte_array: bytearray) -> str:
+# Returns the md5 hash of a bytes
+def getStrHash(byte_array: bytes) -> str:
     return str(hashlib.md5(byte_array).hexdigest())
 
-def writeBytearrayToFile(filepath: Path, array_of_bytes: bytearray):
+def writeBytearrayToFile(filepath: Path, array_of_bytes: bytes):
     with filepath.open(mode="wb") as f:
         f.write(array_of_bytes)
 
-def readFileAsBytearray(filepath: Path) -> bytearray:
+def readFileAsBytearray(filepath: Path) -> bytes:
     if not filepath.exists():
-        return bytearray(0)
+        return bytes(0)
     with filepath.open(mode="rb") as f:
-        return bytearray(f.read())
+        return bytes(f.read())
 
 def readFile(filepath: Path) -> list[str]:
     with filepath.open() as f:
@@ -67,7 +67,7 @@ def readJson(filepath: Path):
 def removeExtraWhitespace(line: str) -> str:
     return " ".join(line.split())
 
-def endianessBytesToWords(endian: InputEndian, array_of_bytes: bytearray, offset: int=0, offsetEnd: int|None=None) -> list[int]:
+def endianessBytesToWords(endian: InputEndian, array_of_bytes: bytes, offset: int=0, offsetEnd: int|None=None) -> list[int]:
     totalBytesCount = len(array_of_bytes)
     if totalBytesCount == 0:
         return list()
@@ -88,7 +88,9 @@ def endianessBytesToWords(endian: InputEndian, array_of_bytes: bytearray, offset
         little_byte_format = f"<{halfwords}H"
         big_byte_format = f">{halfwords}H"
         tmp = struct.unpack_from(little_byte_format, array_of_bytes, offset)
-        struct.pack_into(big_byte_format, array_of_bytes, offset, *tmp)
+        newBytes = bytearray(array_of_bytes)
+        struct.pack_into(big_byte_format, newBytes, offset, *tmp)
+        array_of_bytes = bytes(newBytes)
 
     words = bytesCount//4
     endian_format = f">{words}I"
@@ -96,13 +98,13 @@ def endianessBytesToWords(endian: InputEndian, array_of_bytes: bytearray, offset
         endian_format = f"<{words}I"
     return list(struct.unpack_from(endian_format, array_of_bytes, offset))
 
-def bytesToWords(array_of_bytes: bytearray, offset: int=0, offsetEnd: int|None=None) -> list[int]:
+def bytesToWords(array_of_bytes: bytes, offset: int=0, offsetEnd: int|None=None) -> list[int]:
     return endianessBytesToWords(GlobalConfig.ENDIAN, array_of_bytes, offset, offsetEnd)
 
 #! deprecated
 bytesToBEWords = bytesToWords
 
-def endianessWordsToBytes(endian: InputEndian, words_list: list[int], buffer: bytearray) -> bytearray:
+def endianessWordsToBytes(endian: InputEndian, words_list: list[int]) -> bytes:
     if endian == InputEndian.MIDDLE:
         raise BufferError("TODO: wordsToBytesEndianess: GlobalConfig.ENDIAN == InputEndian.MIDDLE")
 
@@ -110,11 +112,10 @@ def endianessWordsToBytes(endian: InputEndian, words_list: list[int], buffer: by
     endian_format = f">{words}I"
     if endian == InputEndian.LITTLE:
         endian_format = f"<{words}I"
-    struct.pack_into(endian_format, buffer, 0, *words_list)
-    return buffer
+    return struct.pack(endian_format, *words_list)
 
-def wordsToBytes(words_list: list[int], buffer: bytearray) -> bytearray:
-    return endianessWordsToBytes(GlobalConfig.ENDIAN, words_list, buffer)
+def wordsToBytes(words_list: list[int]) -> bytes:
+    return endianessWordsToBytes(GlobalConfig.ENDIAN, words_list)
 
 #! deprecated
 beWordsToBytes = wordsToBytes
@@ -227,7 +228,7 @@ bannedEscapeCharacters = {
 
 escapeCharactersSpecialCases = {0x1B, 0x8C, 0x8D}
 
-def decodeString(buf: bytearray, offset: int, stringEncoding: str) -> tuple[list[str], int]:
+def decodeString(buf: bytes, offset: int, stringEncoding: str) -> tuple[list[str], int]:
     result = []
 
     dst = bytearray()

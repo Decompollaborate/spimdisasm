@@ -19,7 +19,7 @@ class Elf32RegInfo:
                                          # 0x18
 
     @staticmethod
-    def fromBytearray(array_of_bytes: bytearray, offset: int = 0) -> Elf32RegInfo:
+    def fromBytearray(array_of_bytes: bytes, offset: int = 0) -> Elf32RegInfo:
         gprFormat = common.GlobalConfig.ENDIAN.toFormatString() + "I"
         gpr = struct.unpack_from(gprFormat, array_of_bytes, 0 + offset)[0]
         # print(gpr)

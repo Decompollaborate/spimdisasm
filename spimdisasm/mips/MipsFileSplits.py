@@ -16,7 +16,7 @@ from . import FileBase, createEmptyFile
 
 
 class FileSplits(FileBase):
-    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytearray, segmentVromStart: int, overlayCategory: str|None, splitsData: common.FileSplitFormat|None=None, relocSection: sections.SectionRelocZ64|None=None):
+    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytes, segmentVromStart: int, overlayCategory: str|None, splitsData: common.FileSplitFormat|None=None, relocSection: sections.SectionRelocZ64|None=None):
         super().__init__(context, vromStart, vromEnd, vram, filename, common.Utils.bytesToWords(array_of_bytes, vromStart, vromEnd), common.FileSectionType.Unknown, segmentVromStart, overlayCategory)
 
         self.sectionsDict: dict[common.FileSectionType, dict[str, sections.SectionBase]] = {
@@ -100,8 +100,7 @@ class FileSplits(FileBase):
         for sectDict in self.sectionsDict.values():
             for section in sectDict.values():
                 words += section.words
-        buffer = bytearray(4*len(words))
-        common.Utils.wordsToBytes(words, buffer)
+        buffer = common.Utils.wordsToBytes(words)
         return common.Utils.getStrHash(buffer)
 
     def analyze(self):
