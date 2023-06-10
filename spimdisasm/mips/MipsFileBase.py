@@ -180,7 +180,7 @@ class FileBase(common.ElementBase):
             if common.GlobalConfig.WRITE_BINARY:
                 if self.sizew > 0:
                     buffer = common.Utils.wordsToBytes(self.words)
-                    common.Utils.writeBytearrayToFile(Path(filepath + self.sectionType.toStr()), buffer)
+                    common.Utils.writeBytesToFile(Path(filepath + self.sectionType.toStr()), buffer)
             with open(filepath + self.sectionType.toStr() + ".s", "w", encoding="utf-8") as f:
                 self.disassembleToFile(f)
 

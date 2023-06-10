@@ -46,15 +46,18 @@ def isStdoutRedirected() -> bool:
 def getStrHash(byte_array: bytes) -> str:
     return str(hashlib.md5(byte_array).hexdigest())
 
-def writeBytearrayToFile(filepath: Path, array_of_bytes: bytes):
+def writeBytesToFile(filepath: Path, array_of_bytes: bytes):
     with filepath.open(mode="wb") as f:
         f.write(array_of_bytes)
 
-def readFileAsBytearray(filepath: Path) -> bytes:
+#! deprecated
+writeBytearrayToFile = writeBytesToFile
+
+def readFileAsBytearray(filepath: Path) -> bytearray:
     if not filepath.exists():
-        return bytes(0)
+        return bytearray(0)
     with filepath.open(mode="rb") as f:
-        return bytes(f.read())
+        return bytearray(f.read())
 
 def readFile(filepath: Path) -> list[str]:
     with filepath.open() as f:
