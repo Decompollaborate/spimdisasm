@@ -50,7 +50,7 @@ class FileBase(common.ElementBase):
         output += common.GlobalConfig.LINE_ENDS
         output += f".section {self.sectionType.toSectionName()}" + common.GlobalConfig.LINE_ENDS
         output += common.GlobalConfig.LINE_ENDS
-        output += ".balign 16" + common.GlobalConfig.LINE_ENDS
+        output += ".align 4" + common.GlobalConfig.LINE_ENDS
 
         return output
 

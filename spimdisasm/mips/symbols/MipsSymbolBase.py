@@ -438,28 +438,19 @@ class SymbolBase(common.ElementBase):
                 return f".align 3{common.GlobalConfig.LINE_ENDS}"
         elif self.isJumpTable():
             if i == 0 and common.GlobalConfig.COMPILER not in {common.Compiler.IDO, common.Compiler.PSYQ}:
-
                 if self.vram % 0x8 == 0:
                     return f".align 3{common.GlobalConfig.LINE_ENDS}"
+        elif self.isString():
+            if self.vram % 0x4 == 0:
+                return f".align 2{common.GlobalConfig.LINE_ENDS}"
 
         return ""
 
     def getPostAlignDirective(self, i: int=0) -> str:
-        commentPaddingNum = 22
-        if not common.GlobalConfig.ASM_COMMENT:
-            commentPaddingNum = 1
-
-        alignDirective = ""
-
         if self.isString():
-            alignDirective += commentPaddingNum * " "
-            if common.GlobalConfig.COMPILER in {common.Compiler.SN64, common.Compiler.PSYQ}:
-                alignDirective += ".align 2"
-            else:
-                alignDirective += ".balign 4"
-            alignDirective += common.GlobalConfig.LINE_ENDS
+            return f".align 2{common.GlobalConfig.LINE_ENDS}"
 
-        return alignDirective
+        return ""
 
     def disassembleAsData(self, useGlobalLabel: bool=True) -> str:
         output = self.contextSym.getReferenceeSymbols()
