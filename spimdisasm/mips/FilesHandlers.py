@@ -17,7 +17,7 @@ from . import symbols
 from . import FunctionRodataEntry
 
 
-def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_bytes: bytearray, context: common.Context) -> sections.SectionBase:
+def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_bytes: bytes, context: common.Context) -> sections.SectionBase:
     offsetStart = splitEntry.offset
     offsetEnd = splitEntry.nextOffset
 

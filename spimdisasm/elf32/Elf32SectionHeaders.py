@@ -29,7 +29,7 @@ class Elf32SectionHeaderEntry:
                                 # 0x28
 
     @staticmethod
-    def fromBytearray(array_of_bytes: bytearray, offset: int = 0) -> Elf32SectionHeaderEntry:
+    def fromBytearray(array_of_bytes: bytes, offset: int = 0) -> Elf32SectionHeaderEntry:
         headerFormat = common.GlobalConfig.ENDIAN.toFormatString() + "10I"
         unpacked = struct.unpack_from(headerFormat, array_of_bytes, offset)
 
@@ -37,7 +37,7 @@ class Elf32SectionHeaderEntry:
 
 
 class Elf32SectionHeaders:
-    def __init__(self, array_of_bytes: bytearray, shoff: int, shnum: int):
+    def __init__(self, array_of_bytes: bytes, shoff: int, shnum: int):
         self.sections: list[Elf32SectionHeaderEntry] = list()
         self.shoff: int = shoff
         self.shnum: int = shnum

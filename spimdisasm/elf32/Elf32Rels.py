@@ -26,7 +26,7 @@ class Elf32RelEntry:
         return self.info & 0xFF
 
     @staticmethod
-    def fromBytearray(array_of_bytes: bytearray, offset: int = 0) -> Elf32RelEntry:
+    def fromBytearray(array_of_bytes: bytes, offset: int = 0) -> Elf32RelEntry:
         entryFormat = common.GlobalConfig.ENDIAN.toFormatString() + "II"
         unpacked = struct.unpack_from(entryFormat, array_of_bytes, offset)
 
@@ -34,7 +34,7 @@ class Elf32RelEntry:
 
 
 class Elf32Rels:
-    def __init__(self, sectionName: str, array_of_bytes: bytearray, offset: int, rawSize: int):
+    def __init__(self, sectionName: str, array_of_bytes: bytes, offset: int, rawSize: int):
         self.sectionName = sectionName
         self.relocations: list[Elf32RelEntry] = list()
         self.offset: int = offset

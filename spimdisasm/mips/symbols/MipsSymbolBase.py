@@ -389,8 +389,7 @@ class SymbolBase(common.ElementBase):
     def getNthWordAsString(self, i: int) -> tuple[str, int]:
         localOffset = 4*i
 
-        buffer = bytearray(4*len(self.words))
-        common.Utils.wordsToBytes(self.words, buffer)
+        buffer = common.Utils.wordsToBytes(self.words)
         decodedStrings, rawStringSize = common.Utils.decodeString(buffer, localOffset, self.stringEncoding)
 
         # To be a valid aligned string, the next word-aligned bytes needs to be zero

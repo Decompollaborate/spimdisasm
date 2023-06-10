@@ -29,7 +29,7 @@ class Elf32DynEntry:
         return self.val
 
     @staticmethod
-    def fromBytearray(array_of_bytes: bytearray, offset: int = 0) -> Elf32DynEntry:
+    def fromBytearray(array_of_bytes: bytes, offset: int = 0) -> Elf32DynEntry:
         entryFormat = common.GlobalConfig.ENDIAN.toFormatString() + "II"
         unpacked = struct.unpack_from(entryFormat, array_of_bytes, offset)
 
@@ -41,7 +41,7 @@ class Elf32DynEntry:
 
 
 class Elf32Dyns:
-    def __init__(self, array_of_bytes: bytearray, offset: int, rawSize: int):
+    def __init__(self, array_of_bytes: bytes, offset: int, rawSize: int):
         self.dyns: list[Elf32DynEntry] = list()
         self.offset: int = offset
         self.rawSize: int = rawSize

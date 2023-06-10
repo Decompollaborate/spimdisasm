@@ -55,8 +55,7 @@ class FileBase(common.ElementBase):
         return output
 
     def getHash(self) -> str:
-        buffer = bytearray(4*len(self.words))
-        common.Utils.wordsToBytes(self.words, buffer)
+        buffer = common.Utils.wordsToBytes(self.words)
         return common.Utils.getStrHash(buffer)
 
 
@@ -180,9 +179,8 @@ class FileBase(common.ElementBase):
         else:
             if common.GlobalConfig.WRITE_BINARY:
                 if self.sizew > 0:
-                    buffer = bytearray(4*len(self.words))
-                    common.Utils.wordsToBytes(self.words, buffer)
-                    common.Utils.writeBytearrayToFile(Path(filepath + self.sectionType.toStr()), buffer)
+                    buffer = common.Utils.wordsToBytes(self.words)
+                    common.Utils.writeBytesToFile(Path(filepath + self.sectionType.toStr()), buffer)
             with open(filepath + self.sectionType.toStr() + ".s", "w", encoding="utf-8") as f:
                 self.disassembleToFile(f)
 

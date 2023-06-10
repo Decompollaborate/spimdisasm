@@ -8,8 +8,8 @@ from __future__ import annotations
 
 # a.k.a. strtab (string table)
 class Elf32StringTable:
-    def __init__(self, array_of_bytes: bytearray, offset: int, rawsize: int):
-        self.strings: bytearray = array_of_bytes[offset:offset+rawsize]
+    def __init__(self, array_of_bytes: bytes, offset: int, rawsize: int):
+        self.strings: bytes = array_of_bytes[offset:offset+rawsize]
         self.offset: int = offset
         self.rawsize: int = rawsize
 

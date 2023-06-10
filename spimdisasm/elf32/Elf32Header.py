@@ -48,7 +48,7 @@ class Elf32Identifier:
 
 
     @staticmethod
-    def fromBytearray(array_of_bytes: bytearray, offset: int = 0) -> Elf32Identifier:
+    def fromBytearray(array_of_bytes: bytes, offset: int = 0) -> Elf32Identifier:
         identFormat = "16B"
         ident = list(struct.unpack_from(identFormat, array_of_bytes, 0 + offset))
 
@@ -90,7 +90,7 @@ class Elf32Header:
                                             # 0x34
 
     @staticmethod
-    def fromBytearray(array_of_bytes: bytearray, offset: int = 0) -> Elf32Header:
+    def fromBytearray(array_of_bytes: bytes, offset: int = 0) -> Elf32Header:
         identifier = Elf32Identifier.fromBytearray(array_of_bytes, offset)
 
         dataEncoding = identifier.getDataEncoding()

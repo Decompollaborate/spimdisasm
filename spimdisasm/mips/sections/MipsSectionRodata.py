@@ -15,15 +15,14 @@ from . import SectionBase
 
 
 class SectionRodata(SectionBase):
-    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytearray, segmentVromStart: int, overlayCategory: str|None):
+    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytes, segmentVromStart: int, overlayCategory: str|None):
         if common.GlobalConfig.ENDIAN_RODATA is not None:
             words = common.Utils.endianessBytesToWords(common.GlobalConfig.ENDIAN_RODATA, array_of_bytes, vromStart, vromEnd)
         else:
             words = common.Utils.bytesToWords(array_of_bytes, vromStart, vromEnd)
         super().__init__(context, vromStart, vromEnd, vram, filename, words, common.FileSectionType.Rodata, segmentVromStart, overlayCategory)
 
-        self.bytes: bytearray = bytearray(self.sizew*4)
-        common.Utils.wordsToBytes(self.words, self.bytes)
+        self.bytes: bytes = common.Utils.wordsToBytes(self.words)
 
 
     def _stringGuesser(self, contextSym: common.ContextSymbol, localOffset: int) -> bool:
