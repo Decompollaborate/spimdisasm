@@ -4,7 +4,7 @@
 [project]
 name = "spimdisasm"
 # Version should be synced with spimdisasm/__init__.py
-version = "1.14.1"
+version = "1.14.2.dev0"
 description = "MIPS disassembler"
 # license = "MIT"
 readme = "README.md"
@@ -35,6 +35,9 @@ exclude = ["build*"]
 
 [tool.setuptools.dynamic]
 dependencies = {file = "requirements.txt"}
+
+[tool.setuptools.package-data]
+spimdisasm = ["py.typed"]
 
 [tool.cibuildwheel]
 skip = ["cp36-*"]

@@ -159,13 +159,13 @@ class Elf32File:
             self.got = Elf32GlobalOffsetTable(array_of_bytes, entry.offset, entry.size)
         elif sectionEntryName == ".interp":
             # strings with names of dynamic libraries
-            common.Utils.printVerbose(f"Unhandled SYMTAB found: '{sectionEntryName}'")
+            common.Utils.printVerbose(f"Unhandled PROGBITS found: '{sectionEntryName}'")
         elif sectionEntryName == ".MIPS.stubs":
             # ?
-            common.Utils.printVerbose(f"Unhandled SYMTAB found: '{sectionEntryName}'")
+            common.Utils.printVerbose(f"Unhandled PROGBITS found: '{sectionEntryName}'")
         elif sectionEntryName == ".init":
             # ?
-            common.Utils.printVerbose(f"Unhandled SYMTAB found: '{sectionEntryName}'")
+            common.Utils.printVerbose(f"Unhandled PROGBITS found: '{sectionEntryName}'")
         elif common.GlobalConfig.VERBOSE:
             common.Utils.eprint(f"Unhandled PROGBITS found: '{sectionEntryName}'", entry, "\n")
 
