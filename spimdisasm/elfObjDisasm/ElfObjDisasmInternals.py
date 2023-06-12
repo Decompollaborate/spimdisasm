@@ -112,60 +112,79 @@ def applyReadelfLikeFlags(elfFile: elf32.Elf32File, args: argparse.Namespace) ->
         exit(0)
 
 
-def getOutputPath(inputPath: Path, textOutput: Path, dataOutput: Path, sectionType: common.FileSectionType) -> Path:
+def getOutputPath(inputPath: Path, textOutput: Path, dataOutput: Path, sectionType: common.FileSectionType, sectionName: str) -> Path:
     outputPath = dataOutput
     if sectionType == common.FileSectionType.Text:
         outputPath = textOutput
 
     outputFilePath = outputPath
     if str(outputPath) != "-":
-        outputFilePath = outputFilePath / inputPath.stem
+        outputFilePath = outputFilePath / (f"{inputPath.stem}_{sectionName}")
 
     return outputFilePath
 
-def getProcessedSections(context: common.Context, elfFile: elf32.Elf32File, array_of_bytes: bytes, inputPath: Path, textOutput: Path, dataOutput: Path) -> tuple[dict[common.FileSectionType, list[mips.sections.SectionBase]], dict[common.FileSectionType, list[Path]]]:
-    processedSegments: dict[common.FileSectionType, list[mips.sections.SectionBase]] = dict()
-    segmentPaths: dict[common.FileSectionType, list[Path]] = dict()
+def processSection(
+        context: common.Context, array_of_bytes: bytes,
+        processedSections: dict[common.FileSectionType, list[mips.sections.SectionBase]],
+        segmentPaths: dict[common.FileSectionType, list[Path]],
+        sectionsPerName: dict[str, mips.sections.SectionBase],
+        inputPath: Path, textOutput: Path, dataOutput: Path,
+        sectionName: str, sectionEntry: elf32.Elf32SectionHeaderEntry,
+        sectionType: common.FileSectionType,
+        sectionClass: type[mips.sections.SectionText]|type[mips.sections.SectionData]|type[mips.sections.SectionRodata]|type[mips.sections.SectionBss]
+    ):
+    outputFilePath = getOutputPath(inputPath, textOutput, dataOutput, sectionType, sectionName)
 
-    for sectionType, sectionEntry in elfFile.progbits.items():
-        outputFilePath = getOutputPath(inputPath, textOutput, dataOutput, sectionType)
+    vromStart = sectionEntry.offset
+    vromEnd = vromStart + sectionEntry.size
+    vramStart = sectionEntry.addr
+    if sectionEntry.addr == 0:
+        vramStart = sectionEntry.offset
 
-        vromStart = sectionEntry.offset
-        vromEnd = vromStart + sectionEntry.size
-        vramStart = sectionEntry.addr
-        if sectionEntry.addr == 0:
-            vramStart = sectionEntry.offset
+    mipsSection: mips.sections.SectionBase
 
-        mipsSection: mips.sections.SectionBase
-        if sectionType == common.FileSectionType.Text:
-            mipsSection = mips.sections.SectionText(context, vromStart, vromEnd, vramStart, inputPath.stem, array_of_bytes, 0, None)
-        elif sectionType == common.FileSectionType.Data:
-            mipsSection = mips.sections.SectionData(context, vromStart, vromEnd, vramStart, inputPath.stem, array_of_bytes, 0, None)
-        elif sectionType == common.FileSectionType.Rodata:
-            mipsSection = mips.sections.SectionRodata(context, vromStart, vromEnd, vramStart, inputPath.stem, array_of_bytes, 0, None)
-        else:
-            common.Utils.eprint(f"Error! Invalid section type '{sectionType}'")
-            exit(-1)
-        mipsSection.setCommentOffset(vromStart)
-        processedSegments[sectionType] = [mipsSection]
-        segmentPaths[sectionType] = [outputFilePath]
+    if issubclass(sectionClass, mips.sections.SectionBss):
+        bssStart = vramStart
+        bssEnd = bssStart + sectionEntry.size
+        mipsSection = sectionClass(context, vromStart, vromEnd, bssStart, bssEnd, f"{inputPath.stem}_{sectionName}", 0, None)
+    else:
+        mipsSection = sectionClass(context, vromStart, vromEnd, vramStart, f"{inputPath.stem}_{sectionName}", array_of_bytes, 0, None)
 
-    if elfFile.nobits is not None:
-        outputFilePath = getOutputPath(inputPath, textOutput, dataOutput, common.FileSectionType.Bss)
+    mipsSection.setCommentOffset(vromStart)
+    mipsSection.customSectionName = sectionName
+    processedSections[sectionType].append(mipsSection)
+    segmentPaths[sectionType].append(outputFilePath)
+    sectionsPerName[sectionName] = mipsSection
 
-        vromStart = elfFile.nobits.offset
-        vromEnd = vromStart + elfFile.nobits.size
-        bssStart = elfFile.nobits.addr
-        if elfFile.nobits.addr == 0:
-            bssStart = elfFile.nobits.offset
-        bssEnd = bssStart + elfFile.nobits.size
 
-        mipsSection = mips.sections.SectionBss(context, vromStart, vromEnd, bssStart, bssEnd, inputPath.stem, 0, None)
-        mipsSection.setCommentOffset(vromStart)
-        processedSegments[common.FileSectionType.Bss] = [mipsSection]
-        segmentPaths[common.FileSectionType.Bss] = [outputFilePath]
+def getProcessedSections(context: common.Context, elfFile: elf32.Elf32File, array_of_bytes: bytes, inputPath: Path, textOutput: Path, dataOutput: Path) -> tuple[dict[common.FileSectionType, list[mips.sections.SectionBase]], dict[common.FileSectionType, list[Path]], dict[str, mips.sections.SectionBase]]:
+    processedSections: dict[common.FileSectionType, list[mips.sections.SectionBase]] = {
+        common.FileSectionType.Text: [],
+        common.FileSectionType.Data: [],
+        common.FileSectionType.Rodata: [],
+        common.FileSectionType.Bss: [],
+    }
+    segmentPaths: dict[common.FileSectionType, list[Path]] = {
+        common.FileSectionType.Text: [],
+        common.FileSectionType.Data: [],
+        common.FileSectionType.Rodata: [],
+        common.FileSectionType.Bss: [],
+    }
+    sectionsPerName: dict[str, mips.sections.SectionBase] = dict()
 
-    return processedSegments, segmentPaths
+    for sectionName, sectionEntry in elfFile.progbitsExecute.items():
+        processSection(context, array_of_bytes, processedSections, segmentPaths, sectionsPerName, inputPath, textOutput, dataOutput, sectionName, sectionEntry, common.FileSectionType.Text, mips.sections.SectionText)
+
+    for sectionName, sectionEntry in elfFile.progbitsWrite.items():
+        processSection(context, array_of_bytes, processedSections, segmentPaths, sectionsPerName, inputPath, textOutput, dataOutput, sectionName, sectionEntry, common.FileSectionType.Data, mips.sections.SectionData)
+
+    for sectionName, sectionEntry in elfFile.progbitsNoWrite.items():
+        processSection(context, array_of_bytes, processedSections, segmentPaths, sectionsPerName, inputPath, textOutput, dataOutput, sectionName, sectionEntry, common.FileSectionType.Rodata, mips.sections.SectionRodata)
+
+    for sectionName, sectionEntry in elfFile.nobitsPerName.items():
+        processSection(context, array_of_bytes, processedSections, segmentPaths, sectionsPerName, inputPath, textOutput, dataOutput, sectionName, sectionEntry, common.FileSectionType.Bss, mips.sections.SectionBss)
+
+    return processedSections, segmentPaths, sectionsPerName
 
 def changeGlobalSegmentRanges(context: common.Context, processedSegments: dict[common.FileSectionType, list[mips.sections.SectionBase]]) -> None:
     lowestVromStart = None
@@ -292,11 +311,11 @@ def insertGotIntoContext(context: common.Context, got: elf32.Elf32GlobalOffsetTa
         gotIndex += 1
 
 
-def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, processedSegments: dict[common.FileSectionType, list[mips.sections.SectionBase]]) -> None:
+def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, processedSegments: dict[common.FileSectionType, list[mips.sections.SectionBase]], sectionsPerName: dict[str, mips.sections.SectionBase]) -> None:
     if elfFile.symtab is not None and elfFile.strtab is not None:
         # Inject symbols from the reloc table referenced in each section
         if elfFile.header.type == elf32.Elf32ObjectFileType.REL.value:
-            for sectType, relocs in elfFile.rel.items():
+            for sectionName, relocs in elfFile.relPerName.items():
                 for rel in relocs:
                     symbolEntry = elfFile.symtab[rel.rSym]
                     symbolName = elfFile.strtab[symbolEntry.name]
@@ -305,7 +324,7 @@ def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, proce
                         if symbolName == "":
                             continue
 
-                    subSegment = processedSegments[sectType][0]
+                    subSegment = sectionsPerName[sectionName]
 
                     relocVrom = subSegment.vromStart + rel.offset
                     relocInfo = context.addGlobalReloc(relocVrom, common.RelocType(rel.rType), symbolName)
@@ -378,15 +397,27 @@ def processArguments(args: argparse.Namespace) -> int:
         splits = common.FileSplitFormat()
         splits.readCsvFile(Path(args.file_splits))
         processedSegments, segmentPaths = fec.FrontendUtilities.getSplittedSections(context, splits, array_of_bytes, inputPath, textOutput, dataOutput)
+        sectionsPerName: dict[str, mips.sections.SectionBase] = dict()
+        for sectType, subSection in processedSegments.items():
+            if len(subSection) < 1:
+                continue
+            if sectType == common.FileSectionType.Text:
+                sectionsPerName[".text"] = subSection[0]
+            elif sectType == common.FileSectionType.Data:
+                sectionsPerName[".data"] = subSection[0]
+            elif sectType == common.FileSectionType.Rodata:
+                sectionsPerName[".rodata"] = subSection[0]
+            elif sectType == common.FileSectionType.Bss:
+                sectionsPerName[".bss"] = subSection[0]
     else:
-        processedSegments, segmentPaths = getProcessedSections(context, elfFile, array_of_bytes, inputPath, textOutput, dataOutput)
+        processedSegments, segmentPaths, sectionsPerName = getProcessedSections(context, elfFile, array_of_bytes, inputPath, textOutput, dataOutput)
 
     changeGlobalSegmentRanges(context, processedSegments)
 
     fec.FrontendUtilities.configureProcessedFiles(processedSegments, args.instr_category)
 
     common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Injecting elf symbols...")
-    injectAllElfSymbols(context, elfFile, processedSegments)
+    injectAllElfSymbols(context, elfFile, processedSegments, sectionsPerName)
 
     processedFilesCount = 0
     for sect in processedSegments.values():
