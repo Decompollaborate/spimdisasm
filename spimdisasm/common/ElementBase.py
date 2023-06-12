@@ -40,6 +40,7 @@ class ElementBase:
         self.name: str = name
         self.words: list[int] = words
         self.sectionType: FileSectionType = sectionType
+        self.customSectionName: str|None = None
 
         self.commentOffset: int = 0
         "This value is added to the first column of the disassembled line comment, allowing to change this value without messing inFileOffset"
@@ -326,3 +327,9 @@ class ElementBase:
     def getAndPopPointerInDataReferencesRange(self, low: int, high: int) -> Generator[int, None, None]:
         segment = self.getSegmentForVram(low)
         return segment.getAndPopPointerInDataReferencesRange(low, high)
+
+
+    def getSectionName(self) -> str:
+        if self.customSectionName is not None:
+            return self.customSectionName
+        return self.sectionType.toSectionName()

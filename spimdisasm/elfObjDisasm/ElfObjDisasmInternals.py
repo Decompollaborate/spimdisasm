@@ -340,11 +340,8 @@ def processGlobalOffsetTable(context: common.Context, elfFile: elf32.Elf32File) 
         assert elfFile.dynamic.pltGot is not None
         context.initGotTable(elfFile.dynamic.pltGot, elfFile.got.localsTable, globalsTable)
 
-        for small in elfFile.progbitsSmall.values():
+        for small in elfFile.smallSections.values():
             context.addSmallSection(small.addr, small.size)
-
-        if elfFile.nobitsSmall is not None:
-            context.addSmallSection(elfFile.nobitsSmall.addr, elfFile.nobitsSmall.size)
     return
 
 

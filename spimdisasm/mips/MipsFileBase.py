@@ -48,7 +48,7 @@ class FileBase(common.ElementBase):
         if common.GlobalConfig.ARCHLEVEL >= common.ArchLevel.MIPS3:
             output += ".set gp=64     # allow use of 64-bit general purpose registers" + common.GlobalConfig.LINE_ENDS
         output += common.GlobalConfig.LINE_ENDS
-        output += f".section {self.sectionType.toSectionName()}" + common.GlobalConfig.LINE_ENDS
+        output += f".section {self.getSectionName()}" + common.GlobalConfig.LINE_ENDS
         output += common.GlobalConfig.LINE_ENDS
         output += ".align 4" + common.GlobalConfig.LINE_ENDS
 
