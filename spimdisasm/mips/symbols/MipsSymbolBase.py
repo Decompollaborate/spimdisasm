@@ -142,6 +142,10 @@ class SymbolBase(common.ElementBase):
         return False
 
     def isDouble(self, index: int) -> bool:
+        if index % 2 != 0:
+            # Must be doubleword aligned
+            return False
+
         if self.contextSym.isDouble():
             if index + 1 < len(self.words):
                 word0 = self.words[index]
