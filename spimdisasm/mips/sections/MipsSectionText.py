@@ -51,7 +51,7 @@ class SectionText(SectionBase):
 
         instructionOffset = 0
         currentInstructionStart = 0
-        currentFunctionSym = self.getSymbol(self.getVramOffset(instructionOffset), tryPlusOffset=False, checkGlobalSegment=False)
+        currentFunctionSym = self.getSymbol(self.getVramOffset(instructionOffset), vromAddress=self.getVromOffset(instructionOffset), tryPlusOffset=False, checkGlobalSegment=False)
 
         isLikelyHandwritten = self.isHandwritten
 
@@ -76,7 +76,7 @@ class SectionText(SectionBase):
                 isboundary |= ((instructionOffset % 16) == 0)
 
                 currentInstructionStart = instructionOffset
-                currentFunctionSym = self.getSymbol(self.getVramOffset(instructionOffset), tryPlusOffset=False, checkGlobalSegment=False)
+                currentFunctionSym = self.getSymbol(self.getVramOffset(instructionOffset), vromAddress=self.getVromOffset(instructionOffset), tryPlusOffset=False, checkGlobalSegment=False)
 
             if index != 0:
                 funcsStartsList.append(index)
@@ -94,7 +94,7 @@ class SectionText(SectionBase):
                 index += 1
                 instructionOffset += 4
 
-                auxSym = self.getSymbol(self.getVramOffset(instructionOffset), tryPlusOffset=False, checkGlobalSegment=False)
+                auxSym = self.getSymbol(self.getVramOffset(instructionOffset), vromAddress=self.getVromOffset(instructionOffset), tryPlusOffset=False, checkGlobalSegment=False)
 
                 isboundary = False
                 # Loop over until we find a instruction that isn't a nop
@@ -111,7 +111,7 @@ class SectionText(SectionBase):
                     instructionOffset += 4
                     isboundary |= ((instructionOffset % 16) == 0)
 
-                    auxSym = self.getSymbol(self.getVramOffset(instructionOffset), tryPlusOffset=False, checkGlobalSegment=False)
+                    auxSym = self.getSymbol(self.getVramOffset(instructionOffset), vromAddress=self.getVromOffset(instructionOffset), tryPlusOffset=False, checkGlobalSegment=False)
 
                 currentInstructionStart = instructionOffset
                 currentFunctionSym = auxSym
@@ -124,6 +124,7 @@ class SectionText(SectionBase):
                 isInstrImplemented = instr.isImplemented()
 
             currentVram = self.getVramOffset(instructionOffset)
+            currentVrom = self.getVromOffset(instructionOffset)
 
             if self.instrCat != rabbitizer.InstrCategory.RSP and not isLikelyHandwritten:
                 isLikelyHandwritten = instr.isLikelyHandwritten()
@@ -146,7 +147,8 @@ class SectionText(SectionBase):
                                 break
                             if (branchOffset + instructionOffset) < funcsStartsList[j] * 4:
                                 vram = self.getVramOffset(funcsStartsList[j]*4)
-                                funcSymbol = self.getSymbol(vram, tryPlusOffset=False, checkGlobalSegment=False)
+                                vromAddress = self.getVromOffset(funcsStartsList[j]*4)
+                                funcSymbol = self.getSymbol(vram, vromAddress=vromAddress, tryPlusOffset=False, checkGlobalSegment=False)
                                 if funcSymbol is not None and funcSymbol.isTrustableFunction(self.instrCat == rabbitizer.InstrCategory.RSP):
                                     j -= 1
                                     continue
@@ -175,9 +177,9 @@ class SectionText(SectionBase):
                             functionEnded = True
 
                 # If there's another function after this then the current function has ended
-                funcSymbol = self.getSymbol(currentVram + 8, tryPlusOffset=False, checkGlobalSegment=False)
+                funcSymbol = self.getSymbol(currentVram + 8, vromAddress=currentVrom + 8, tryPlusOffset=False, checkGlobalSegment=False)
                 if funcSymbol is not None and funcSymbol.isTrustableFunction(self.instrCat == rabbitizer.InstrCategory.RSP):
-                    if funcSymbol.vromAddress is None or self.getVromOffset(instructionOffset+8) == funcSymbol.vromAddress:
+                    if funcSymbol.vromAddress is None or currentVrom + 8 == funcSymbol.vromAddress:
                         functionEnded = True
 
             index += 1

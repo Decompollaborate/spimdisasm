@@ -356,7 +356,8 @@ class SymbolFunction(SymbolText):
             offset = 0
             for instr in self.instructions:
                 currentVram = self.getVramOffset(offset)
-                contextSym = self.getSymbol(currentVram, False)
+                currentVrom = self.getVromOffset(offset)
+                contextSym = self.getSymbol(currentVram, vromAddress=currentVrom, tryPlusOffset=False)
                 if contextSym is not None:
                     contextSym.isDefined = True
                 offset += 4
@@ -629,7 +630,8 @@ class SymbolFunction(SymbolText):
             return ""
 
         currentVram = self.getVramOffset(instructionOffset)
-        labelSym = self.getSymbol(currentVram, tryPlusOffset=False)
+        currentVrom = self.getVromOffset(instructionOffset)
+        labelSym = self.getSymbol(currentVram, vromAddress=currentVrom, tryPlusOffset=False)
 
         if labelSym is None or labelSym.overlayCategory != self.overlayCategory:
             return ""
