@@ -42,13 +42,28 @@ class Elf32File:
         self.dynstr: Elf32StringTable | None = None
         self.dynsym: Elf32Syms | None = None
 
+        #! deprecated
         self.progbits: dict[common.FileSectionType, Elf32SectionHeaderEntry] = dict()
+        #! deprecated
         self.nobits: Elf32SectionHeaderEntry | None = None
 
+        #! deprecated
         self.progbitsSmall: dict[common.FileSectionType, Elf32SectionHeaderEntry] = dict()
+        #! deprecated
         self.nobitsSmall: Elf32SectionHeaderEntry | None = None
 
+        #! deprecated
         self.rel: dict[common.FileSectionType, Elf32Rels] = dict()
+
+        self.progbitsExecute: dict[str, Elf32SectionHeaderEntry] = dict()
+        self.progbitsWrite: dict[str, Elf32SectionHeaderEntry] = dict()
+        self.progbitsNoWrite: dict[str, Elf32SectionHeaderEntry] = dict()
+
+        self.nobitsPerName: dict[str, Elf32SectionHeaderEntry] = dict()
+
+        self.smallSections: dict[str, Elf32SectionHeaderEntry] = dict()
+
+        self.relPerName: dict[str, Elf32Rels] = dict()
 
         self.reginfo: Elf32RegInfo | None = None
 
@@ -146,6 +161,7 @@ class Elf32File:
     def _processSection_PROGBITS(self, array_of_bytes: bytes, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
         fileSecType = common.FileSectionType.fromStr(sectionEntryName)
         smallFileSecType = common.FileSectionType.fromSmallStr(sectionEntryName)
+        flags, unknownFlags = Elf32SectionHeaderFlag.parseFlags(entry.flags)
 
         if fileSecType != common.FileSectionType.Invalid:
             self.progbits[fileSecType] = entry
@@ -168,6 +184,28 @@ class Elf32File:
             common.Utils.printVerbose(f"Unhandled PROGBITS found: '{sectionEntryName}'")
         elif common.GlobalConfig.VERBOSE:
             common.Utils.eprint(f"Unhandled PROGBITS found: '{sectionEntryName}'", entry, "\n")
+
+        if smallFileSecType != common.FileSectionType.Invalid:
+            self.smallSections[sectionEntryName] = entry
+
+        if sectionEntryName == ".got":
+            self.got = Elf32GlobalOffsetTable(array_of_bytes, entry.offset, entry.size)
+        elif Elf32SectionHeaderFlag.EXECINSTR in flags:
+            self.progbitsExecute[sectionEntryName] = entry
+        elif sectionEntryName in {".rodata", ".rdata"}:
+            # Some compilers set the Write flag on .rodata sections, so we need to hardcode
+            # a special check to distinguish it properly
+            self.progbitsNoWrite[sectionEntryName] = entry
+        elif Elf32SectionHeaderFlag.WRITE in flags:
+            self.progbitsWrite[sectionEntryName] = entry
+        elif Elf32SectionHeaderFlag.ALLOC in flags:
+            # Allocated on runtime but not executable nor writeable
+            self.progbitsNoWrite[sectionEntryName] = entry
+        elif Elf32SectionHeaderFlag.STRINGS in flags:
+            # Why not?
+            self.progbitsNoWrite[sectionEntryName] = entry
+        else:
+            common.Utils.eprint(f"Unhandled PROGBITS found: '{sectionEntryName}', flags: {flags}\n")
 
     def _processSection_SYMTAB(self, array_of_bytes: bytes, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
         if sectionEntryName == ".symtab":
@@ -211,14 +249,28 @@ class Elf32File:
         elif common.GlobalConfig.VERBOSE:
             common.Utils.eprint("Unhandled NOBITS found: ", sectionEntryName, entry, "\n")
 
+
+        smallFileSecType = common.FileSectionType.fromSmallStr(sectionEntryName)
+        if smallFileSecType != common.FileSectionType.Invalid:
+            self.smallSections[sectionEntryName] = entry
+
+        self.nobitsPerName[sectionEntryName] = entry
+
     def _processSection_REL(self, array_of_bytes: bytes, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
-        if sectionEntryName.startswith(".rel."):
-            fileSecType = common.FileSectionType.fromStr(sectionEntryName[4:])
+        sectName = sectionEntryName[4:]
+
+        if sectionEntryName.startswith(".rel"):
+            fileSecType = common.FileSectionType.fromStr(sectName)
             if fileSecType != common.FileSectionType.Invalid:
                 self.rel[fileSecType] = Elf32Rels(sectionEntryName, array_of_bytes, entry.offset, entry.size)
             elif common.GlobalConfig.VERBOSE:
                 common.Utils.eprint("Unhandled REL subsection found: ", sectionEntryName, entry, "\n")
         elif common.GlobalConfig.VERBOSE:
+            common.Utils.eprint("Unhandled REL found: ", sectionEntryName, entry, "\n")
+
+        if sectionEntryName.startswith(".rel"):
+            self.relPerName[sectName] = Elf32Rels(sectionEntryName, array_of_bytes, entry.offset, entry.size)
+        else:
             common.Utils.eprint("Unhandled REL found: ", sectionEntryName, entry, "\n")
 
     def _processSection_DYNSYM(self, array_of_bytes: bytes, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:

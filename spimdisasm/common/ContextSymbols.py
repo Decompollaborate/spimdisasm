@@ -287,6 +287,10 @@ class ContextSymbol:
         return False
 
     def isDouble(self) -> bool:
+        if self.vram % 8 != 0:
+            # Double needs to be 8 aligned
+            return False
+
         currentType = self.getTypeSpecial()
 
         if gAccessKinds[rabbitizer.AccessType.DOUBLEFLOAT].typeMatchesAccess(currentType):

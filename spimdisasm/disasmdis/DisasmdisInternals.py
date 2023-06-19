@@ -28,6 +28,7 @@ def addOptionsToParser(parser: argparse.ArgumentParser) -> argparse.ArgumentPars
 
     parser.add_argument("--endian", help="Set the endianness of input files. Defaults to 'big'", choices=["big", "little", "middle"], default="big")
     parser.add_argument("--instr-category", help="The instruction category to use when disassembling every passed instruction. Defaults to 'cpu'", choices=["cpu", "rsp", "r3000gte", "r5900"])
+    parser.add_argument("--pseudos", help="Enables all pseudo-instructions supported by rabbitizer", action="store_true")
 
     return parser
 
@@ -38,6 +39,10 @@ def getArgsParser() -> argparse.ArgumentParser:
 
 def applyArgs(args: argparse.Namespace) -> None:
     common.GlobalConfig.ENDIAN = common.InputEndian(args.endian)
+    if args.pseudos:
+        rabbitizer.config.pseudos_enablePseudos = True
+    else:
+        rabbitizer.config.pseudos_enablePseudos = False
 
 def getWordFromStr(inputStr: str) -> int:
     arr = bytearray()
