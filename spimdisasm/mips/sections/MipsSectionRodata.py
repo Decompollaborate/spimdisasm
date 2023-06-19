@@ -42,11 +42,13 @@ class SectionRodata(SectionBase):
                 return False
 
         try:
+            currentVram = self.getVramOffset(localOffset)
+            currentVrom = self.getVromOffset(localOffset)
             _, rawStringSize = common.Utils.decodeString(self.bytes, localOffset, self.stringEncoding)
 
             # Check if there is already another symbol after the current one and before the end of the string,
             # in which case we say this symbol should not be a string
-            otherSym = self.getSymbol(self.getVramOffset(localOffset) + rawStringSize, checkUpperLimit=False, checkGlobalSegment=False)
+            otherSym = self.getSymbol(currentVram + rawStringSize, vromAddress=currentVrom + rawStringSize, checkUpperLimit=False, checkGlobalSegment=False)
             if otherSym != contextSym:
                 return False
 
@@ -76,7 +78,8 @@ class SectionRodata(SectionBase):
 
         for w in self.words:
             currentVram = self.getVramOffset(localOffset)
-            contextSym = self.getSymbol(currentVram, tryPlusOffset=False)
+            currentVrom = self.getVromOffset(localOffset)
+            contextSym = self.getSymbol(currentVram, vromAddress=currentVrom, tryPlusOffset=False)
 
             if contextSym is not None:
                 lastVramSymbol = contextSym

@@ -211,8 +211,11 @@ class ElementBase:
         return self.context.unknownSegment
 
 
-    def getSymbol(self, vramAddress: int, tryPlusOffset: bool = True, checkUpperLimit: bool = True, checkGlobalSegment: bool = True) -> ContextSymbol|None:
+    def getSymbol(self, vramAddress: int, vromAddress: int|None=None, tryPlusOffset: bool=True, checkUpperLimit: bool=True, checkGlobalSegment: bool=True) -> ContextSymbol|None:
         "Searches symbol or a symbol with an addend if `tryPlusOffset` is True"
+
+        if vromAddress is not None:
+            return self.getSegmentForVrom(vromAddress).getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
 
         if not self.context.totalVramRange.isInRange(vramAddress):
             contextSym = self.context.nonDefinedSegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)

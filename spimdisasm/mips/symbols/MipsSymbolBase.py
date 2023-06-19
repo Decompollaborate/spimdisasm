@@ -154,7 +154,8 @@ class SymbolBase(common.ElementBase):
                 if (((word0 << 32) | word1) & 0x7FF0000000000000) != 0x7FF0000000000000:
                     # Prevent accidentally losing symbols
                     currentVram = self.getVramOffset(index*4)
-                    if self.getSymbol(currentVram+4, tryPlusOffset=False) is None:
+                    currentVrom = self.getVromOffset(index*4)
+                    if self.getSymbol(currentVram+4, vromAddress=currentVrom, tryPlusOffset=False) is None:
                         return True
         return False
 
@@ -203,7 +204,8 @@ class SymbolBase(common.ElementBase):
 
                     # Possible symbols in the middle of words
                     currentVram = self.getVramOffset(localOffset+j)
-                    contextSym = self.getSymbol(currentVram, tryPlusOffset=False)
+                    currentVrom = self.getVromOffset(localOffset+j)
+                    contextSym = self.getSymbol(currentVram, vromAddress=currentVrom, tryPlusOffset=False)
                     if contextSym is not None:
                         contextSym.vromAddress = self.getVromOffset(localOffset+j)
                         contextSym.isDefined = True
@@ -307,14 +309,15 @@ class SymbolBase(common.ElementBase):
     def getNthWordAsWords(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False) -> tuple[str, int]:
         output = ""
         localOffset = 4*i
-        vram = self.getVramOffset(localOffset)
+        currentVram = self.getVramOffset(localOffset)
+        currentVrom = self.getVromOffset(localOffset)
         w = self.words[i]
 
         dotType = ".word"
 
         label = ""
         if i != 0:
-            label = self.getExtraLabelFromSymbol(self.getSymbol(vram, tryPlusOffset=False))
+            label = self.getExtraLabelFromSymbol(self.getSymbol(currentVram, vromAddress=currentVrom, tryPlusOffset=False))
 
         value = f"0x{w:08X}"
 
@@ -349,12 +352,13 @@ class SymbolBase(common.ElementBase):
     def getNthWordAsFloat(self, i: int) -> tuple[str, int]:
         output = ""
         localOffset = 4*i
-        vram = self.getVramOffset(localOffset)
+        currentVram = self.getVramOffset(localOffset)
+        currentVrom = self.getVromOffset(localOffset)
         w = self.words[i]
 
         label = ""
         if i != 0:
-            label = self.getExtraLabelFromSymbol(self.getSymbol(vram, tryPlusOffset=False))
+            label = self.getExtraLabelFromSymbol(self.getSymbol(currentVram, vromAddress=currentVrom, tryPlusOffset=False))
 
         dotType = ".float"
         floatValue = common.Utils.wordToFloat(w)
@@ -370,12 +374,13 @@ class SymbolBase(common.ElementBase):
     def getNthWordAsDouble(self, i: int) -> tuple[str, int]:
         output = ""
         localOffset = 4*i
-        vram = self.getVramOffset(localOffset)
+        currentVram = self.getVramOffset(localOffset)
+        currentVrom = self.getVromOffset(localOffset)
         w = self.words[i]
 
         label = ""
         if i != 0:
-            label = self.getExtraLabelFromSymbol(self.getSymbol(vram, tryPlusOffset=False))
+            label = self.getExtraLabelFromSymbol(self.getSymbol(currentVram, vromAddress=currentVrom, tryPlusOffset=False))
 
         dotType = ".double"
         otherHalf = self.words[i+1]
@@ -467,11 +472,12 @@ class SymbolBase(common.ElementBase):
 
         i = 0
         while i < self.sizew:
-            vram = self.getVramOffset(i*4)
+            currentVram = self.getVramOffset(i*4)
+            currentVrom = self.getVromOffset(i*4)
 
-            sym1 = self.getSymbol(vram+1, tryPlusOffset=False, checkGlobalSegment=False)
-            sym2 = self.getSymbol(vram+2, tryPlusOffset=False, checkGlobalSegment=False)
-            sym3 = self.getSymbol(vram+3, tryPlusOffset=False, checkGlobalSegment=False)
+            sym1 = self.getSymbol(currentVram+1, vromAddress=currentVrom, tryPlusOffset=False, checkGlobalSegment=False)
+            sym2 = self.getSymbol(currentVram+2, vromAddress=currentVrom, tryPlusOffset=False, checkGlobalSegment=False)
+            sym3 = self.getSymbol(currentVram+3, vromAddress=currentVrom, tryPlusOffset=False, checkGlobalSegment=False)
 
             # Check for symbols in the middle of this word
             if sym1 is not None or sym2 is not None or sym3 is not None or self.isByte(i) or self.isShort(i):
