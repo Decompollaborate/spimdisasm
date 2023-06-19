@@ -701,6 +701,8 @@ class SymbolFunction(SymbolText):
                 # RSP functions are always handwritten, so this is redundant
                 output += "# Handwritten function" + common.GlobalConfig.LINE_ENDS
 
+        self._generateRelocsFromInstructionAnalyzer()
+
         symName = self.getName()
         output += self.getSymbolAsmDeclaration(symName, useGlobalLabel)
 
