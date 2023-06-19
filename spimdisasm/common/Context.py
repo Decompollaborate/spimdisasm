@@ -47,8 +47,6 @@ class Context:
     def __init__(self):
         # Arbitrary initial range
         self.globalSegment = SymbolsSegment(self, 0x0, 0x1000, 0x80000000, 0x80001000, overlayCategory=None)
-        # Symbols that are outside the ranges of defined segments (both globalSegment and overlaySegments)
-        self.nonDefinedSegment = SymbolsSegment(self, None, None, 0x80000000, 0x80001000, overlayCategory=None)
         # For symbols that we don't know where they come from
         self.unknownSegment = SymbolsSegment(self, None, None, 0x00000000, 0xFFFFFFFF, overlayCategory=None)
         self._isTheUnknownSegment = True
@@ -144,10 +142,7 @@ class Context:
         with contextPath.open("w") as f:
             self.globalSegment.saveContextToFile(f)
 
-        nonDefinedPath = contextPath.with_name(f"{contextPath.stem}_nondefinedsegment" + contextPath.suffix)
-        with nonDefinedPath.open("w") as f:
-            self.nonDefinedSegment.saveContextToFile(f)
-
+        # unknownPath = contextPath.with_stem(f"{contextPath.stem}_unksegment")
         unknownPath = contextPath.with_name(f"{contextPath.stem}_unksegment" + contextPath.suffix)
         with unknownPath.open("w") as f:
             self.unknownSegment.saveContextToFile(f)

@@ -155,10 +155,6 @@ class ElementBase:
         if self._ownSegmentReference is None:
             if self.context.globalSegment.isVromInRange(self.vromStart):
                 self._ownSegmentReference = self.context.globalSegment
-
-        if not self.context.totalVramRange.isInRange(vram):
-            return self.context.nonDefinedSegment
-
         if self.context.globalSegment.isVramInRange(vram):
             return self.context.globalSegment
 
@@ -216,11 +212,6 @@ class ElementBase:
 
         if vromAddress is not None:
             return self.getSegmentForVrom(vromAddress).getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
-
-        if not self.context.totalVramRange.isInRange(vramAddress):
-            contextSym = self.context.nonDefinedSegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
-            if contextSym is not None:
-                return contextSym
 
         if self.overlayCategory is None or checkGlobalSegment:
             contextSym = self.context.globalSegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
