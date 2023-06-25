@@ -39,7 +39,7 @@ def addOptionsToParser(parser: argparse.ArgumentParser) -> argparse.ArgumentPars
     return parser
 
 def getArgsParser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=getToolDescription(), prog=PROGNAME)
+    parser = argparse.ArgumentParser(description=getToolDescription(), prog=PROGNAME, formatter_class=common.Utils.PreserveWhiteSpaceWrapRawTextHelpFormatter)
     return addOptionsToParser(parser)
 
 
@@ -102,7 +102,7 @@ def processArguments(args: argparse.Namespace) -> int:
     return 0
 
 def addSubparser(subparser: argparse._SubParsersAction[argparse.ArgumentParser]):
-    parser = subparser.add_parser("rspDisasm", help=getToolDescription())
+    parser = subparser.add_parser("rspDisasm", help=getToolDescription(), formatter_class=common.Utils.PreserveWhiteSpaceWrapRawTextHelpFormatter)
 
     addOptionsToParser(parser)
 
