@@ -205,6 +205,11 @@ class ContextSymbol:
         currentType = self.getTypeSpecial()
         return (currentType is None or currentType == "") and self.accessType is None
 
+    def hasOnlyAutodetectedType(self) -> bool:
+        if self.userDeclaredType is not None and self.userDeclaredType != "":
+            return False
+        return (self.autodetectedType is not None and self.autodetectedType != "") and self.accessType is not None
+
 
     def isTrustableFunction(self, rsp: bool=False) -> bool:
         """Checks if the function symbol should be trusted based on the current disassembler settings"""
@@ -267,12 +272,16 @@ class ContextSymbol:
             return True
         if not self.isMaybeString:
             return False
-        if not GlobalConfig.STRING_GUESSER:
+        if GlobalConfig.RODATA_STRING_GUESSER_LEVEL < 1:
             return False
-        if self.hasNoType(): # no type information, let's try to guess
+        if self.hasNoType():
+            # no type information, let's try to guess
             return True
-        if GlobalConfig.AGGRESSIVE_STRING_GUESSER:
-            return True
+
+        if self.hasOnlyAutodetectedType():
+            if GlobalConfig.RODATA_STRING_GUESSER_LEVEL >= 4:
+                # There's autodetected type information, but we are going to ignore it and try to guess
+                return True
         return False
 
     def isFloat(self) -> bool:

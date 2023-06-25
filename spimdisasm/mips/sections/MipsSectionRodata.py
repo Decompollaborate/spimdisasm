@@ -29,16 +29,20 @@ class SectionRodata(SectionBase):
         if contextSym.isMaybeString or contextSym.isString():
             return True
 
-        if not common.GlobalConfig.STRING_GUESSER:
+        if common.GlobalConfig.RODATA_STRING_GUESSER_LEVEL < 1:
             return False
 
-        if not contextSym.hasNoType() or contextSym.referenceCounter > 1:
-            if not common.GlobalConfig.AGGRESSIVE_STRING_GUESSER:
+        if contextSym.referenceCounter > 1:
+            if common.GlobalConfig.RODATA_STRING_GUESSER_LEVEL < 2:
                 return False
 
         # This would mean the string is an empty string, which is not very likely
         if self.words[localOffset//4] == 0:
-            if not common.GlobalConfig.AGGRESSIVE_STRING_GUESSER:
+            if common.GlobalConfig.RODATA_STRING_GUESSER_LEVEL < 3:
+                return False
+
+        if contextSym.hasOnlyAutodetectedType():
+            if common.GlobalConfig.RODATA_STRING_GUESSER_LEVEL < 4:
                 return False
 
         try:

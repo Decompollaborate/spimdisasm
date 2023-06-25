@@ -299,3 +299,25 @@ class BooleanOptionalAction(argparse.Action):
 
     def format_usage(self):
         return ' | '.join(self.option_strings)
+
+# https://stackoverflow.com/a/35925919/6292472
+class PreserveWhiteSpaceWrapRawTextHelpFormatter(argparse.RawDescriptionHelpFormatter):
+    def __add_whitespace(self, idx, iWSpace, text):
+        if idx is 0:
+            return text
+        return (" " * iWSpace) + text
+
+    def _split_lines(self, text, width):
+        import textwrap
+        import re
+        textRows = text.splitlines()
+        for idx, line in enumerate(textRows):
+            search = re.search('\s*[0-9\-]{0,}\.?\s*', line)
+            if line.strip() is "":
+                textRows[idx] = " "
+            elif search:
+                lWSpace = search.end()
+                lines = [self.__add_whitespace(i,lWSpace,x) for i,x in enumerate(textwrap.wrap(line, width))]
+                textRows[idx] = lines
+
+        return [item for sublist in textRows for item in sublist]
