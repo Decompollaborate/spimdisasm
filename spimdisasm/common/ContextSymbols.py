@@ -208,7 +208,7 @@ class ContextSymbol:
     def hasOnlyAutodetectedType(self) -> bool:
         if self.userDeclaredType is not None and self.userDeclaredType != "":
             return False
-        return (self.autodetectedType is not None and self.autodetectedType != "") and self.accessType is not None
+        return (self.autodetectedType is not None and self.autodetectedType != "") or self.accessType is not None
 
 
     def isTrustableFunction(self, rsp: bool=False) -> bool:

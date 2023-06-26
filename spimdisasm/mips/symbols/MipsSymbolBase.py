@@ -399,15 +399,9 @@ class SymbolBase(common.ElementBase):
         localOffset = 4*i
 
         buffer = common.Utils.wordsToBytes(self.words)
-        decodedStrings, rawStringSize = common.Utils.decodeString(buffer, localOffset, self.stringEncoding)
-
-        # To be a valid aligned string, the next word-aligned bytes needs to be zero
-        checkStartOffset = localOffset + rawStringSize
-        checkEndOffset = min((checkStartOffset & ~3) + 4, len(buffer))
-        while checkStartOffset < checkEndOffset:
-            if buffer[checkStartOffset] != 0:
-                raise RuntimeError()
-            checkStartOffset += 1
+        decodedStrings, rawStringSize = common.Utils.decodeBytesToStrings(buffer, localOffset, self.stringEncoding)
+        if rawStringSize < 0:
+            return "", -1
 
         skip = rawStringSize // 4
         comment = self.generateAsmLineComment(localOffset)
@@ -487,9 +481,8 @@ class SymbolBase(common.ElementBase):
             elif self.isDouble(i):
                 data, skip = self.getNthWordAsDouble(i)
             elif self.isString():
-                try:
-                    data, skip = self.getNthWordAsString(i)
-                except (UnicodeDecodeError, RuntimeError):
+                data, skip = self.getNthWordAsString(i)
+                if skip < 0:
                     # Not a string
                     self._failedStringDecoding = True
                     data, skip = self.getNthWord(i, canReferenceSymbolsWithAddends, canReferenceConstants)

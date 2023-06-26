@@ -231,7 +231,7 @@ bannedEscapeCharacters = {
 
 escapeCharactersSpecialCases = {0x1B, 0x8C, 0x8D}
 
-def decodeWordsToStrings(buf: bytes, offset: int, stringEncoding: str, terminator: int=0) -> tuple[list[str], int]:
+def decodeBytesToStrings(buf: bytes, offset: int, stringEncoding: str, terminator: int=0) -> tuple[list[str], int]:
     result = []
 
     dst = bytearray()
@@ -239,13 +239,13 @@ def decodeWordsToStrings(buf: bytes, offset: int, stringEncoding: str, terminato
     while offset + i < len(buf) and buf[offset + i] != terminator:
         char = buf[offset + i]
         if char in bannedEscapeCharacters:
-            return [], 0
+            return [], -1
         elif char in escapeCharactersSpecialCases:
             if dst:
                 try:
                     decoded = rabbitizer.Utils.escapeString(dst.decode(stringEncoding))
                 except UnicodeDecodeError:
-                    return [], 0
+                    return [], -1
                 result.append(decoded)
                 dst.clear()
             result.append(f"\\x{char:02X}")
@@ -253,15 +253,15 @@ def decodeWordsToStrings(buf: bytes, offset: int, stringEncoding: str, terminato
             dst.append(char)
         i += 1
 
-    if offset + i > len(buf):
+    if offset + i >= len(buf):
         # Reached the end of the buffer without finding an 0
-        return [], 0
+        return [], -1
 
     if dst:
         try:
             decoded = rabbitizer.Utils.escapeString(dst.decode(stringEncoding))
         except UnicodeDecodeError:
-            return [], 0
+            return [], -1
         result.append(decoded)
 
     # To be a valid aligned string, the next word-aligned bytes needs to be zero
@@ -269,7 +269,7 @@ def decodeWordsToStrings(buf: bytes, offset: int, stringEncoding: str, terminato
     checkEndOffset = min((checkStartOffset & ~3) + 4, len(buf))
     while checkStartOffset < checkEndOffset:
         if buf[checkStartOffset] != terminator:
-            return [], 0
+            return [], -1
         checkStartOffset += 1
 
     return result, i
@@ -347,7 +347,7 @@ class BooleanOptionalAction(argparse.Action):
 # https://stackoverflow.com/a/35925919/6292472
 class PreserveWhiteSpaceWrapRawTextHelpFormatter(argparse.RawDescriptionHelpFormatter):
     def __add_whitespace(self, idx, iWSpace, text):
-        if idx is 0:
+        if idx == 0:
             return text
         return (" " * iWSpace) + text
 
@@ -357,7 +357,7 @@ class PreserveWhiteSpaceWrapRawTextHelpFormatter(argparse.RawDescriptionHelpForm
         textRows = text.splitlines()
         for idx, line in enumerate(textRows):
             search = re.search('\s*[0-9\-]{0,}\.?\s*', line)
-            if line.strip() is "":
+            if line.strip() == "":
                 textRows[idx] = " "
             elif search:
                 lWSpace = search.end()
