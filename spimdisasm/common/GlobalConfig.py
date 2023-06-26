@@ -117,6 +117,10 @@ class GlobalConfigType:
     DATA_STRING_GUESSER_LEVEL: int = 2
     """Data string guesser"""
 
+    PASCAL_RODATA_STRING_GUESSER_LEVEL: int = 0
+
+    PASCAL_DATA_STRING_GUESSER_LEVEL: int = 0
+
     #! @deprecated
     @property
     def STRING_GUESSER(self) -> bool:
@@ -277,6 +281,9 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
         backendConfig.add_argument("--rodata-string-guesser", help=rodataStringGuesserHelp, type=int, metavar="level")
         backendConfig.add_argument("--data-string-guesser", help=f"Sets the level for the data C string guesser. See the explanation of `--rodata-string-guesser`. Defaults to {self.DATA_STRING_GUESSER_LEVEL}.", type=int, metavar="level")
 
+        backendConfig.add_argument("--pascal-rodata-string-guesser", help=f"EXPERIMENTAL, this feature may change or be removed in the future. Sets the level for the data Pascal string guesser. See the explanation of `--rodata-string-guesser`. Defaults to {self.PASCAL_RODATA_STRING_GUESSER_LEVEL}.", type=int, metavar="level")
+        backendConfig.add_argument("--pascal-data-string-guesser", help=f"EXPERIMENTAL, this feature may change or be removed in the future. Sets the level for the data Pascal string guesser. See the explanation of `--rodata-string-guesser`. Defaults to {self.PASCAL_DATA_STRING_GUESSER_LEVEL}.", type=int, metavar="level")
+
         backendConfig.add_argument("--string-guesser", help=f"DEPRECATED, prefer `--rodata-string-guesser`. Toggles the string guesser feature. Defaults to {self.STRING_GUESSER}", action=Utils.BooleanOptionalAction)
         backendConfig.add_argument("--aggressive-string-guesser", help=f"DEPRECATED, prefer `--rodata-string-guesser`. Makes the string guesser feature to be more aggressive when trying to detect strings. Requires `--string-guesser` to be enabled. Defaults to {self.AGGRESSIVE_STRING_GUESSER}", action=Utils.BooleanOptionalAction)
 
@@ -399,6 +406,11 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
             self.RODATA_STRING_GUESSER_LEVEL = args.rodata_string_guesser
         if args.data_string_guesser is not None:
             self.DATA_STRING_GUESSER_LEVEL = args.data_string_guesser
+
+        if args.pascal_rodata_string_guesser is not None:
+            self.PASCAL_RODATA_STRING_GUESSER_LEVEL = args.pascal_rodata_string_guesser
+        if args.pascal_data_string_guesser is not None:
+            self.PASCAL_DATA_STRING_GUESSER_LEVEL = args.pascal_data_string_guesser
 
         if args.string_guesser is not None:
             self.STRING_GUESSER = args.string_guesser

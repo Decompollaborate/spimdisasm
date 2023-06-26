@@ -196,6 +196,7 @@ def getMaybeBooleyFromMaybeStr(booley: str|None) -> bool|None:
 
 # Escape characters that are unlikely to be used
 bannedEscapeCharacters = {
+    0x00, # '\0'
     0x01,
     0x02,
     0x03,
