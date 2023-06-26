@@ -22,52 +22,6 @@ class SectionRodata(SectionBase):
             words = common.Utils.bytesToWords(array_of_bytes, vromStart, vromEnd)
         super().__init__(context, vromStart, vromEnd, vram, filename, words, common.FileSectionType.Rodata, segmentVromStart, overlayCategory)
 
-        self.bytes: bytes = common.Utils.wordsToBytes(self.words)
-
-
-    def _stringGuesser(self, contextSym: common.ContextSymbol, localOffset: int) -> bool:
-        if contextSym.isMaybeString or contextSym.isString():
-            return True
-
-        if common.GlobalConfig.RODATA_STRING_GUESSER_LEVEL < 1:
-            return False
-
-        if contextSym.referenceCounter > 1:
-            if common.GlobalConfig.RODATA_STRING_GUESSER_LEVEL < 2:
-                return False
-
-        # This would mean the string is an empty string, which is not very likely
-        if self.words[localOffset//4] == 0:
-            if common.GlobalConfig.RODATA_STRING_GUESSER_LEVEL < 3:
-                return False
-
-        if contextSym.hasOnlyAutodetectedType():
-            if common.GlobalConfig.RODATA_STRING_GUESSER_LEVEL < 4:
-                return False
-
-        try:
-            currentVram = self.getVramOffset(localOffset)
-            currentVrom = self.getVromOffset(localOffset)
-            _, rawStringSize = common.Utils.decodeString(self.bytes, localOffset, self.stringEncoding)
-
-            # Check if there is already another symbol after the current one and before the end of the string,
-            # in which case we say this symbol should not be a string
-            otherSym = self.getSymbol(currentVram + rawStringSize, vromAddress=currentVrom + rawStringSize, checkUpperLimit=False, checkGlobalSegment=False)
-            if otherSym != contextSym:
-                return False
-
-            # To be a valid aligned string, the next word-aligned bytes needs to be zero
-            checkStartOffset = localOffset + rawStringSize
-            checkEndOffset = min((checkStartOffset & ~3) + 4, len(self.bytes))
-            while checkStartOffset < checkEndOffset:
-                if self.bytes[checkStartOffset] != 0:
-                    return False
-                checkStartOffset += 1
-        except (UnicodeDecodeError, RuntimeError):
-            # String can't be decoded
-            return False
-        return True
-
 
     def analyze(self):
         self.checkAndCreateFirstSymbol()

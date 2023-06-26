@@ -268,18 +268,25 @@ class ContextSymbol:
     def isString(self) -> bool:
         currentType = self.getTypeSpecial()
 
+        if self.sectionType == FileSectionType.Rodata:
+            stringGuesserLevel = GlobalConfig.RODATA_STRING_GUESSER_LEVEL
+        else:
+            stringGuesserLevel = GlobalConfig.DATA_STRING_GUESSER_LEVEL
+
         if currentType in {"char", "char*", "asciz"}:
             return True
         if not self.isMaybeString:
             return False
-        if GlobalConfig.RODATA_STRING_GUESSER_LEVEL < 1:
+
+        if stringGuesserLevel < 1:
             return False
+
         if self.hasNoType():
             # no type information, let's try to guess
             return True
 
         if self.hasOnlyAutodetectedType():
-            if GlobalConfig.RODATA_STRING_GUESSER_LEVEL >= 4:
+            if stringGuesserLevel >= 4:
                 # There's autodetected type information, but we are going to ignore it and try to guess
                 return True
         return False

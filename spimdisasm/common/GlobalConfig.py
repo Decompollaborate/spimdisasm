@@ -114,6 +114,9 @@ class GlobalConfigType:
     RODATA_STRING_GUESSER_LEVEL: int = 1
     """Rodata string guesser"""
 
+    DATA_STRING_GUESSER_LEVEL: int = 2
+    """Data string guesser"""
+
     #! @deprecated
     @property
     def STRING_GUESSER(self) -> bool:
@@ -273,6 +276,7 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
 - level 4: Symbols with autodetected type information but no user type information can still be guessed as strings.
 """
         backendConfig.add_argument("--rodata-string-guesser", help=rodataStringGuesserHelp, type=int, metavar="level")
+        backendConfig.add_argument("--data-string-guesser", help=f"Sets the level for the data C string guesser. See the explanation of `--rodata-string-guesser`. Defaults to {self.DATA_STRING_GUESSER_LEVEL}.", type=int, metavar="level")
 
         backendConfig.add_argument("--string-guesser", help=f"DEPRECATED, prefer `--rodata-string-guesser`. Toggles the string guesser feature. Defaults to {self.STRING_GUESSER}", action=Utils.BooleanOptionalAction)
         backendConfig.add_argument("--aggressive-string-guesser", help=f"DEPRECATED, prefer `--rodata-string-guesser`. Makes the string guesser feature to be more aggressive when trying to detect strings. Requires `--string-guesser` to be enabled. Defaults to {self.AGGRESSIVE_STRING_GUESSER}", action=Utils.BooleanOptionalAction)
@@ -391,6 +395,11 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
     def parseArgs(self, args: argparse.Namespace):
         if args.disasm_unknown is not None:
             self.DISASSEMBLE_UNKNOWN_INSTRUCTIONS = args.disasm_unknown
+
+        if args.rodata_string_guesser is not None:
+            self.RODATA_STRING_GUESSER_LEVEL = args.rodata_string_guesser
+        if args.data_string_guesser is not None:
+            self.DATA_STRING_GUESSER_LEVEL = args.data_string_guesser
 
         if args.string_guesser is not None:
             self.STRING_GUESSER = args.string_guesser

@@ -231,6 +231,50 @@ bannedEscapeCharacters = {
 
 escapeCharactersSpecialCases = {0x1B, 0x8C, 0x8D}
 
+def decodeWordsToStrings(buf: bytes, offset: int, stringEncoding: str, terminator: int=0) -> tuple[list[str], int]:
+    result = []
+
+    dst = bytearray()
+    i = 0
+    while offset + i < len(buf) and buf[offset + i] != terminator:
+        char = buf[offset + i]
+        if char in bannedEscapeCharacters:
+            return [], 0
+        elif char in escapeCharactersSpecialCases:
+            if dst:
+                try:
+                    decoded = rabbitizer.Utils.escapeString(dst.decode(stringEncoding))
+                except UnicodeDecodeError:
+                    return [], 0
+                result.append(decoded)
+                dst.clear()
+            result.append(f"\\x{char:02X}")
+        else:
+            dst.append(char)
+        i += 1
+
+    if offset + i > len(buf):
+        # Reached the end of the buffer without finding an 0
+        return [], 0
+
+    if dst:
+        try:
+            decoded = rabbitizer.Utils.escapeString(dst.decode(stringEncoding))
+        except UnicodeDecodeError:
+            return [], 0
+        result.append(decoded)
+
+    # To be a valid aligned string, the next word-aligned bytes needs to be zero
+    checkStartOffset = offset + i
+    checkEndOffset = min((checkStartOffset & ~3) + 4, len(buf))
+    while checkStartOffset < checkEndOffset:
+        if buf[checkStartOffset] != terminator:
+            return [], 0
+        checkStartOffset += 1
+
+    return result, i
+
+#! @deprecated
 def decodeString(buf: bytes, offset: int, stringEncoding: str) -> tuple[list[str], int]:
     result = []
 

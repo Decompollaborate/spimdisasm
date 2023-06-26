@@ -31,6 +31,8 @@ class FileBase(common.ElementBase):
 
         self.stringEncoding: str = "EUC-JP"
 
+        self.bytes: bytes = common.Utils.wordsToBytes(self.words)
+
 
     def setCommentOffset(self, commentOffset: int):
         self.commentOffset = commentOffset
