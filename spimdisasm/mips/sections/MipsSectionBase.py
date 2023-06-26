@@ -105,7 +105,7 @@ class SectionBase(FileBase):
 
         currentVram = self.getVramOffset(localOffset)
         currentVrom = self.getVromOffset(localOffset)
-        _, rawStringSize = common.Utils.decodeBytesToStrings(self.bytes, localOffset, self.stringEncoding, terminator=0x20)
+        _, rawStringSize = common.Utils.decodeBytesToPascalStrings(self.bytes, localOffset, self.stringEncoding, terminator=0x20)
         if rawStringSize < 0:
             # String can't be decoded
             return False

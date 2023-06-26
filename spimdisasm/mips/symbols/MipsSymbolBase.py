@@ -134,10 +134,14 @@ class SymbolBase(common.ElementBase):
     def isString(self) -> bool:
         if self._failedStringDecoding:
             return False
+        if self.contextSym.isPascalString():
+            return False
         return self.contextSym.isString()
 
     def isPascalString(self) -> bool:
         if self._failedStringDecoding:
+            return False
+        if self.contextSym.isString():
             return False
         return self.contextSym.isPascalString()
 
@@ -436,7 +440,7 @@ class SymbolBase(common.ElementBase):
         localOffset = 4*i
 
         buffer = common.Utils.wordsToBytes(self.words)
-        decodedStrings, rawStringSize = common.Utils.decodeBytesToStrings(buffer, localOffset, self.stringEncoding, terminator=0x20)
+        decodedStrings, rawStringSize = common.Utils.decodeBytesToPascalStrings(buffer, localOffset, self.stringEncoding, terminator=0x20)
         if rawStringSize < 0:
             return "", -1
 

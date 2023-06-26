@@ -275,6 +275,72 @@ def decodeBytesToStrings(buf: bytes, offset: int, stringEncoding: str, terminato
 
     return result, i
 
+def decodeBytesToPascalStrings(buf: bytes, offset: int, stringEncoding: str, terminator: int=0x20) -> tuple[list[str], int]:
+    result = []
+
+    dst = bytearray()
+    i = 0
+    while offset + i < len(buf):
+        if buf[offset + i] != terminator:
+            if offset + i + 1 < len(buf) and buf[offset + i + 1] != terminator:
+                # Require at least 2 terminators next to each other to actually consider the string has ended
+                break
+        char = buf[offset + i]
+        if char in bannedEscapeCharacters:
+            return [], -1
+        elif char in escapeCharactersSpecialCases:
+            if dst:
+                try:
+                    decoded = rabbitizer.Utils.escapeString(dst.decode(stringEncoding))
+                except UnicodeDecodeError:
+                    return [], -1
+                result.append(decoded)
+                dst.clear()
+            result.append(f"\\x{char:02X}")
+        else:
+            dst.append(char)
+        i += 1
+
+    if offset + i >= len(buf):
+        # Reached the end of the buffer without finding an 0
+        return [], -1
+
+    # To be a valid aligned string, the next word-aligned bytes needs to be the terminator value
+    checkStartOffset = offset + i
+    checkEndOffset = min((checkStartOffset & ~3) + 4, len(buf))
+    while checkStartOffset < checkEndOffset:
+        if buf[checkStartOffset] != terminator:
+            return [], -1
+        dst.append(buf[checkStartOffset])
+        checkStartOffset += 1
+        i += 1
+
+    while offset + i < len(buf):
+        # Check in chunks of 4 bytes for the terminator value
+        j = 0
+        onlyTerminator = True
+        while j < 4 and offset + i + j < len(buf):
+            char = buf[offset + i + j]
+            if char != terminator:
+                onlyTerminator = False
+                break
+            j += 1
+
+        if not onlyTerminator:
+            break
+        dst.extend([terminator] * 4)
+        i += 4
+
+    if dst:
+        try:
+            decoded = rabbitizer.Utils.escapeString(dst.decode(stringEncoding))
+        except UnicodeDecodeError:
+            return [], -1
+        result.append(decoded)
+
+    return result, i
+
+
 #! @deprecated
 def decodeString(buf: bytes, offset: int, stringEncoding: str) -> tuple[list[str], int]:
     result = []
