@@ -22,6 +22,8 @@ class SectionRodata(SectionBase):
             words = common.Utils.bytesToWords(array_of_bytes, vromStart, vromEnd)
         super().__init__(context, vromStart, vromEnd, vram, filename, words, common.FileSectionType.Rodata, segmentVromStart, overlayCategory)
 
+        self.stringEncoding = "EUC-JP"
+
 
     def analyze(self):
         self.checkAndCreateFirstSymbol()

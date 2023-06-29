@@ -23,7 +23,7 @@ class SymbolBase(common.ElementBase):
         self.contextSym.isDefined = True
         self.contextSym.sectionType = self.sectionType
 
-        self.stringEncoding: str = "EUC-JP"
+        self.stringEncoding: str = "ASCII"
         self._failedStringDecoding: bool = False
         self._failedPascalStringDecoding: bool = False
 

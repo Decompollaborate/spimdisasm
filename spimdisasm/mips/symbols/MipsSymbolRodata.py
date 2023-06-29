@@ -17,6 +17,7 @@ class SymbolRodata(SymbolBase):
     def __init__(self, context: common.Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, words: list[int], segmentVromStart: int, overlayCategory: str|None):
         super().__init__(context, vromStart, vromEnd, inFileOffset, vram, words, common.FileSectionType.Rodata, segmentVromStart, overlayCategory)
 
+        self.stringEncoding = "EUC-JP"
 
     def isJumpTable(self) -> bool:
         # jumptables must have at least 3 labels
