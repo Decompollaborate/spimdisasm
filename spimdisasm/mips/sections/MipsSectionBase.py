@@ -112,7 +112,7 @@ class SectionBase(FileBase):
 
         # Check if there is already another symbol after the current one and before the end of the string,
         # in which case we say this symbol should not be a string
-        otherSym = self.getSymbol(currentVram + rawStringSize, vromAddress=currentVrom + rawStringSize, checkUpperLimit=False, checkGlobalSegment=False)
+        otherSym = self.getSymbol(currentVram + rawStringSize - 1, vromAddress=currentVrom + rawStringSize, checkUpperLimit=False, checkGlobalSegment=False)
         if otherSym != contextSym:
             return False
 

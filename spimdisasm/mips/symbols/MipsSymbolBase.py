@@ -444,7 +444,7 @@ class SymbolBase(common.ElementBase):
         if rawStringSize < 0:
             return "", -1
 
-        skip = rawStringSize // 4
+        skip = (rawStringSize - 1) // 4
         comment = self.generateAsmLineComment(localOffset)
         result = f"{comment} "
 
