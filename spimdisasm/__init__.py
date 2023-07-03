@@ -5,17 +5,17 @@
 
 from __future__ import annotations
 
-__version_info__ = (1, 14, 3)
+__version_info__ = (1, 15, 0)
 __version__ = ".".join(map(str, __version_info__))
 __author__ = "Decompollaborate"
 
-from . import common
-from . import elf32
-from . import mips
+from . import common as common
+from . import elf32 as elf32
+from . import mips as mips
 
 # Front-end scripts
-from . import frontendCommon
-from . import disasmdis
-from . import rspDisasm
-from . import elfObjDisasm
-from . import singleFileDisasm
+from . import frontendCommon as frontendCommon
+from . import disasmdis as disasmdis
+from . import rspDisasm as rspDisasm
+from . import elfObjDisasm as elfObjDisasm
+from . import singleFileDisasm as singleFileDisasm

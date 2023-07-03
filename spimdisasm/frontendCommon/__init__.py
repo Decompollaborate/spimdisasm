@@ -6,4 +6,4 @@
 from __future__ import annotations
 
 
-from . import FrontendUtilities
+from . import FrontendUtilities as FrontendUtilities

@@ -23,8 +23,9 @@ class SymbolBase(common.ElementBase):
         self.contextSym.isDefined = True
         self.contextSym.sectionType = self.sectionType
 
-        self.stringEncoding: str = "EUC-JP"
+        self.stringEncoding: str = "ASCII"
         self._failedStringDecoding: bool = False
+        self._failedPascalStringDecoding: bool = False
 
         self.relocs: dict[int, common.RelocationInfo] = dict()
         "key: word offset"
@@ -123,13 +124,26 @@ class SymbolBase(common.ElementBase):
         return relocInfo.getInlineStr()
 
     def isByte(self, index: int) -> bool:
-        return self.contextSym.isByte() and not self.isString()
+        if self.isString() or self.isPascalString():
+            return False
+        return self.contextSym.isByte()
 
     def isShort(self, index: int) -> bool:
         return self.contextSym.isShort()
 
     def isString(self) -> bool:
-        return self.contextSym.isString() and not self._failedStringDecoding
+        if self._failedStringDecoding:
+            return False
+        if self.contextSym.isPascalString():
+            return False
+        return self.contextSym.isString()
+
+    def isPascalString(self) -> bool:
+        if self._failedStringDecoding:
+            return False
+        if self.contextSym.isString():
+            return False
+        return self.contextSym.isPascalString()
 
     def isFloat(self, index: int) -> bool:
         if self.contextSym.isFloat():
@@ -184,6 +198,8 @@ class SymbolBase(common.ElementBase):
             self.contextSym.name = f"DBL_{self.vram:08X}"
         elif self.isString():
             self.contextSym.name = f"STR_{self.vram:08X}"
+        elif self.isPascalString():
+            self.contextSym.name = f"PSTR_{self.vram:08X}"
 
 
     def analyze(self):
@@ -399,15 +415,9 @@ class SymbolBase(common.ElementBase):
         localOffset = 4*i
 
         buffer = common.Utils.wordsToBytes(self.words)
-        decodedStrings, rawStringSize = common.Utils.decodeString(buffer, localOffset, self.stringEncoding)
-
-        # To be a valid aligned string, the next word-aligned bytes needs to be zero
-        checkStartOffset = localOffset + rawStringSize
-        checkEndOffset = min((checkStartOffset & ~3) + 4, len(buffer))
-        while checkStartOffset < checkEndOffset:
-            if buffer[checkStartOffset] != 0:
-                raise RuntimeError()
-            checkStartOffset += 1
+        decodedStrings, rawStringSize = common.Utils.decodeBytesToStrings(buffer, localOffset, self.stringEncoding)
+        if rawStringSize < 0:
+            return "", -1
 
         skip = rawStringSize // 4
         comment = self.generateAsmLineComment(localOffset)
@@ -423,6 +433,31 @@ class SymbolBase(common.ElementBase):
             result += f'.ascii "{decodedValue}"'
             result += common.GlobalConfig.LINE_ENDS + (commentPaddingNum * " ")
         result += f'.asciz "{decodedStrings[-1]}"{common.GlobalConfig.LINE_ENDS}'
+
+        return result, skip
+
+    def getNthWordAsPascalString(self, i: int) -> tuple[str, int]:
+        localOffset = 4*i
+
+        buffer = common.Utils.wordsToBytes(self.words)
+        decodedStrings, rawStringSize = common.Utils.decodeBytesToPascalStrings(buffer, localOffset, self.stringEncoding, terminator=0x20)
+        if rawStringSize < 0:
+            return "", -1
+
+        skip = (rawStringSize - 1) // 4
+        comment = self.generateAsmLineComment(localOffset)
+        result = f"{comment} "
+
+        commentPaddingNum = 22
+        if not common.GlobalConfig.ASM_COMMENT:
+            commentPaddingNum = 1
+
+        if rawStringSize == 0:
+            decodedStrings.append("")
+        for decodedValue in decodedStrings[:-1]:
+            result += f'.ascii "{decodedValue}"'
+            result += common.GlobalConfig.LINE_ENDS + (commentPaddingNum * " ")
+        result += f'.ascii "{decodedStrings[-1]}"{common.GlobalConfig.LINE_ENDS}'
 
         return result, skip
 
@@ -448,14 +483,18 @@ class SymbolBase(common.ElementBase):
             if i == 0 and common.GlobalConfig.COMPILER not in {common.Compiler.IDO, common.Compiler.PSYQ}:
                 if self.vram % 0x8 == 0:
                     return f".align 3{common.GlobalConfig.LINE_ENDS}"
-        elif self.isString():
+        elif self.isString() or self.isPascalString():
             if self.vram % 0x4 == 0:
                 return f".align 2{common.GlobalConfig.LINE_ENDS}"
 
         return ""
 
     def getPostAlignDirective(self, i: int=0) -> str:
-        if self.isString():
+        if self.parent is not None and self.parent.vram % 0x8 != 0:
+            # Can't emit alignment directives if the parent file isn't properly aligned
+            return ""
+
+        if self.isString() or self.isPascalString():
             return f".align 2{common.GlobalConfig.LINE_ENDS}"
 
         return ""
@@ -487,11 +526,16 @@ class SymbolBase(common.ElementBase):
             elif self.isDouble(i):
                 data, skip = self.getNthWordAsDouble(i)
             elif self.isString():
-                try:
-                    data, skip = self.getNthWordAsString(i)
-                except (UnicodeDecodeError, RuntimeError):
+                data, skip = self.getNthWordAsString(i)
+                if skip < 0:
                     # Not a string
                     self._failedStringDecoding = True
+                    data, skip = self.getNthWord(i, canReferenceSymbolsWithAddends, canReferenceConstants)
+            elif self.isPascalString():
+                data, skip = self.getNthWordAsPascalString(i)
+                if skip < 0:
+                    # Not a string
+                    self._failedPascalStringDecoding = True
                     data, skip = self.getNthWord(i, canReferenceSymbolsWithAddends, canReferenceConstants)
             else:
                 data, skip = self.getNthWord(i, canReferenceSymbolsWithAddends, canReferenceConstants)

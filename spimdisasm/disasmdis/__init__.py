@@ -6,4 +6,11 @@
 from __future__ import annotations
 
 
-from .DisasmdisInternals import getToolDescription, addOptionsToParser, getArgsParser, applyArgs, wordGeneratorFromStrList, processArguments, addSubparser, disasmdisMain
+from .DisasmdisInternals import getToolDescription as getToolDescription
+from .DisasmdisInternals import addOptionsToParser as addOptionsToParser
+from .DisasmdisInternals import getArgsParser as getArgsParser
+from .DisasmdisInternals import applyArgs as applyArgs
+from .DisasmdisInternals import wordGeneratorFromStrList as wordGeneratorFromStrList
+from .DisasmdisInternals import processArguments as processArguments
+from .DisasmdisInternals import addSubparser as addSubparser
+from .DisasmdisInternals import disasmdisMain as disasmdisMain

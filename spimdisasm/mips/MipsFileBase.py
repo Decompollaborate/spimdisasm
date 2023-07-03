@@ -29,7 +29,9 @@ class FileBase(common.ElementBase):
         self.symbolsVRams: set[int] = set()
         "addresses of symbols in this section"
 
-        self.stringEncoding: str = "EUC-JP"
+        self.stringEncoding: str = "ASCII"
+
+        self.bytes: bytes = common.Utils.wordsToBytes(self.words)
 
 
     def setCommentOffset(self, commentOffset: int):
