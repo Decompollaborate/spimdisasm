@@ -5,8 +5,8 @@
 
 from __future__ import annotations
 
-__version_info__ = (1, 14, 4)
-__version__ = ".".join(map(str, __version_info__)) + ".dev0"
+__version_info__ = (1, 15, 0)
+__version__ = ".".join(map(str, __version_info__))
 __author__ = "Decompollaborate"
 
 from . import common as common
