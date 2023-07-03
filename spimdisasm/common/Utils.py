@@ -281,8 +281,8 @@ def decodeBytesToPascalStrings(buf: bytes, offset: int, stringEncoding: str, ter
     dst = bytearray()
     i = 0
     while offset + i < len(buf):
-        if buf[offset + i] != terminator:
-            if offset + i + 1 < len(buf) and buf[offset + i + 1] != terminator:
+        if buf[offset + i] == terminator:
+            if offset + i + 1 < len(buf) and buf[offset + i + 1] == terminator:
                 # Require at least 2 terminators next to each other to actually consider the string has ended
                 break
         char = buf[offset + i]
