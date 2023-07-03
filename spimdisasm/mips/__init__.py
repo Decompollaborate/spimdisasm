@@ -5,13 +5,14 @@
 
 from __future__ import annotations
 
-from . import sections
-from . import symbols
+from . import sections as sections
+from . import symbols as symbols
 
-from .FuncRodataEntry import FunctionRodataEntry
+from .FuncRodataEntry import FunctionRodataEntry as FunctionRodataEntry
 
-from . import FilesHandlers
+from . import FilesHandlers as FilesHandlers
 
-from .InstructionConfig import InstructionConfig
-from .MipsFileBase import FileBase, createEmptyFile
-from .MipsFileSplits import FileSplits
+from .InstructionConfig import InstructionConfig as InstructionConfig
+from .MipsFileBase import FileBase as FileBase
+from .MipsFileBase import createEmptyFile as createEmptyFile
+from .MipsFileSplits import FileSplits as FileSplits

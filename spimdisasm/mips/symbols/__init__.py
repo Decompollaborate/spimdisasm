@@ -7,11 +7,11 @@ from __future__ import annotations
 
 from . import analysis
 
-from .MipsSymbolBase import SymbolBase
+from .MipsSymbolBase import SymbolBase as SymbolBase
 
-from .MipsSymbolText import SymbolText
-from .MipsSymbolData import SymbolData
-from .MipsSymbolRodata import SymbolRodata
-from .MipsSymbolBss import SymbolBss
+from .MipsSymbolText import SymbolText as SymbolText
+from .MipsSymbolData import SymbolData as SymbolData
+from .MipsSymbolRodata import SymbolRodata as SymbolRodata
+from .MipsSymbolBss import SymbolBss as SymbolBss
 
-from .MipsSymbolFunction import SymbolFunction
+from .MipsSymbolFunction import SymbolFunction as SymbolFunction

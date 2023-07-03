@@ -5,4 +5,4 @@
 
 from __future__ import annotations
 
-from .InstrAnalyzer import InstrAnalyzer
+from .InstrAnalyzer import InstrAnalyzer as InstrAnalyzer

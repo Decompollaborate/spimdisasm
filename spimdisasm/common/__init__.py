@@ -3,14 +3,26 @@
 
 from . import Utils
 
-from .SortedDict import SortedDict
-from .GlobalConfig import GlobalConfig, InputEndian, Compiler, Abi, ArchLevel, InputFileType
-from .FileSectionType import FileSectionType, FileSections_ListBasic, FileSections_ListAll
-from .ContextSymbols import SymbolSpecialType, ContextSymbol, gKnownTypes
-from .SymbolsSegment import SymbolsSegment
-from .Context import Context
-from .FileSplitFormat import FileSplitFormat, FileSplitEntry
-from .ElementBase import ElementBase
-from .GpAccesses import GlobalOffsetTable
-from .OrderedEnum import OrderedEnum
-from .Relocation import RelocType, RelocationInfo, RelocationStaticReference
+from .SortedDict import SortedDict as SortedDict
+from .GlobalConfig import GlobalConfig as GlobalConfig
+from .GlobalConfig import InputEndian as InputEndian
+from .GlobalConfig import Compiler as Compiler
+from .GlobalConfig import Abi as Abi
+from .GlobalConfig import ArchLevel as ArchLevel
+from .GlobalConfig import InputFileType as InputFileType
+from .FileSectionType import FileSectionType as FileSectionType
+from .FileSectionType import FileSections_ListBasic as FileSections_ListBasic
+from .FileSectionType import FileSections_ListAll as FileSections_ListAll
+from .ContextSymbols import SymbolSpecialType as SymbolSpecialType
+from .ContextSymbols import ContextSymbol as ContextSymbol
+from .ContextSymbols import gKnownTypes as gKnownTypes
+from .SymbolsSegment import SymbolsSegment as SymbolsSegment
+from .Context import Context as Context
+from .FileSplitFormat import FileSplitFormat as FileSplitFormat
+from .FileSplitFormat import FileSplitEntry as FileSplitEntry
+from .ElementBase import ElementBase as ElementBase
+from .GpAccesses import GlobalOffsetTable as GlobalOffsetTable
+from .OrderedEnum import OrderedEnum as OrderedEnum
+from .Relocation import RelocType as RelocType
+from .Relocation import RelocationInfo as RelocationInfo
+from .Relocation import RelocationStaticReference as RelocationStaticReference
