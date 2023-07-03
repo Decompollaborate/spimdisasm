@@ -216,8 +216,8 @@ class GlobalConfigType:
     ASM_REFERENCEE_SYMBOLS: bool = False
 
     ASM_TEXT_LABEL: str = "glabel"
-    ASM_JTBL_LABEL: str = "glabel"
-    ASM_DATA_LABEL: str = "glabel"
+    ASM_JTBL_LABEL: str = "jlabel"
+    ASM_DATA_LABEL: str = "dlabel"
     ASM_USE_SYMBOL_LABEL: bool = True
     ASM_TEXT_ENT_LABEL: str = ""
     ASM_TEXT_END_LABEL: str = ""
