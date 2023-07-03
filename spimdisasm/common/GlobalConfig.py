@@ -274,7 +274,7 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
     - Do no try to guess if type information for the symbol can be inferred by other means.
     - A string symbol must be referenced only once.
     - Strings must not be empty.
-- level 2: A string no longer needs to be referenced only once to be considered a possible strings. This can happen because of a deduplication optimization.
+- level 2: A string no longer needs to be referenced only once to be considered a possible string. This can happen because of a deduplication optimization.
 - level 3: Empty strings are allowed.
 - level 4: Symbols with autodetected type information but no user type information can still be guessed as strings.
 """

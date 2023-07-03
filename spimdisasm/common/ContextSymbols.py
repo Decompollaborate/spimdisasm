@@ -89,7 +89,7 @@ gAccessKinds: dict[rabbitizer.Enum, AccessTypeInfo] = {
 
 
 gKnownTypes: set[str] = {
-    "asciz", "char", "char*"
+    "asciz", "char", "char*", "String", "Char"
 }
 
 for kind in gAccessKinds.values():
@@ -301,7 +301,7 @@ class ContextSymbol:
         else:
             stringGuesserLevel = GlobalConfig.PASCAL_DATA_STRING_GUESSER_LEVEL
 
-        if currentType in {"String", "Char", "ascii"}:
+        if currentType in {"String", "Char"}:
             return True
         if not self.isMaybePascalString:
             return False
