@@ -223,7 +223,7 @@ class GlobalConfigType:
     ASM_TEXT_END_LABEL: str = ""
     ASM_TEXT_FUNC_AS_LABEL: bool = False
     ASM_DATA_SYM_AS_LABEL: bool = False
-    ASM_EMIT_SIZE_DIRECTIVE: bool = False
+    ASM_EMIT_SIZE_DIRECTIVE: bool = True
     ASM_USE_PRELUDE: bool = True
     ASM_GENERATED_BY: bool = True
 
