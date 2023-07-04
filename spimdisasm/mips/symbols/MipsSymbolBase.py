@@ -480,7 +480,7 @@ class SymbolBase(common.ElementBase):
             # If the symbol itself isn't already aligned to the desired alignment then the directive would break matching
             return ""
 
-        return f".align {2}{common.GlobalConfig.LINE_ENDS}"
+        return f".align {shiftValue}{common.GlobalConfig.LINE_ENDS}"
 
     def getPrevAlignDirective(self, i: int=0) -> str:
         if self.isDouble(i):
