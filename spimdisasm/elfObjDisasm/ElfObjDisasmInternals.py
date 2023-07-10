@@ -111,6 +111,7 @@ def applyReadelfLikeFlags(elfFile: elf32.Elf32File, args: argparse.Namespace) ->
     if args.readelf_only:
         exit(0)
 
+SpecialSectionNames = {".text", ".data", ".rodata", ".bss"}
 
 def getOutputPath(inputPath: Path, textOutput: Path, dataOutput: Path, sectionType: common.FileSectionType, sectionName: str) -> Path:
     outputPath = dataOutput
@@ -119,7 +120,10 @@ def getOutputPath(inputPath: Path, textOutput: Path, dataOutput: Path, sectionTy
 
     outputFilePath = outputPath
     if str(outputPath) != "-":
-        outputFilePath = outputFilePath / (f"{inputPath.stem}_{sectionName}")
+        outname = f"{inputPath.stem}"
+        if sectionName not in SpecialSectionNames:
+            outname += f"_{sectionName}"
+        outputFilePath = outputFilePath / outname
 
     return outputFilePath
 
@@ -143,12 +147,17 @@ def processSection(
 
     mipsSection: mips.sections.SectionBase
 
+
+    inname = f"{inputPath.stem}"
+    if sectionName not in SpecialSectionNames:
+        inname += f"_{sectionName}"
+
     if issubclass(sectionClass, mips.sections.SectionBss):
         bssStart = vramStart
         bssEnd = bssStart + sectionEntry.size
-        mipsSection = sectionClass(context, vromStart, vromEnd, bssStart, bssEnd, f"{inputPath.stem}_{sectionName}", 0, None)
+        mipsSection = sectionClass(context, vromStart, vromEnd, bssStart, bssEnd, inname, 0, None)
     else:
-        mipsSection = sectionClass(context, vromStart, vromEnd, vramStart, f"{inputPath.stem}_{sectionName}", array_of_bytes, 0, None)
+        mipsSection = sectionClass(context, vromStart, vromEnd, vramStart, inname, array_of_bytes, 0, None)
 
     mipsSection.setCommentOffset(vromStart)
     mipsSection.customSectionName = sectionName
