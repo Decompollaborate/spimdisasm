@@ -84,7 +84,7 @@ class SectionText(SectionBase):
 
         while index < nInstr:
             instr = instrsList[index]
-            if not instr.isImplemented():
+            if not instr.isImplemented() or not instr.isValid():
                 isInstrImplemented = False
 
             if functionEnded:
@@ -121,7 +121,7 @@ class SectionText(SectionBase):
                 if index >= len(instrsList):
                     break
                 instr = instrsList[index]
-                isInstrImplemented = instr.isImplemented()
+                isInstrImplemented = instr.isImplemented() and instr.isValid()
 
             currentVram = self.getVramOffset(instructionOffset)
             currentVrom = self.getVromOffset(instructionOffset)
@@ -140,7 +140,7 @@ class SectionText(SectionBase):
                         if not instr.isJump(): # Make an exception for `j`
                             break
                     # make sure to not branch outside of the current function
-                    if not isLikelyHandwritten:
+                    if not isLikelyHandwritten and isInstrImplemented:
                         j = len(funcsStartsList) - 1
                         while j >= 0:
                             if branchOffset + instructionOffset < 0:
