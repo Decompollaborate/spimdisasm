@@ -20,6 +20,7 @@ class SectionText(SectionBase):
         super().__init__(context, vromStart, vromEnd, vram, filename, common.Utils.bytesToWords(array_of_bytes, vromStart, vromEnd), common.FileSectionType.Text, segmentVromStart, overlayCategory)
 
         self.instrCat: rabbitizer.Enum = rabbitizer.InstrCategory.CPU
+        self.detectRedundantFunctionEnd: bool|None = None
 
 
     @property
@@ -39,6 +40,14 @@ class SectionText(SectionBase):
             instrsList.append(instr)
         return instrsList
 
+
+    def tryDetectRedundantFunctionEnd(self) -> bool:
+        if common.GlobalConfig.COMPILER != common.Compiler.IDO:
+            return False
+
+        if self.detectRedundantFunctionEnd is None:
+            return common.GlobalConfig.DETECT_REDUNDANT_FUNCTION_END
+        return self.detectRedundantFunctionEnd
 
     def _findFunctions(self, instrsList: list[rabbitizer.Instruction]):
         if len(instrsList) == 0:
@@ -164,10 +173,35 @@ class SectionText(SectionBase):
                 if instructionOffset + 8 == currentInstructionStart + currentFunctionSym.getSize():
                     functionEnded = True
             else:
-                if not (farthestBranch > 0) and instr.isJump():
+                funcSymbol = self.getSymbol(currentVram + 8, vromAddress=currentVrom + 8, tryPlusOffset=False, checkGlobalSegment=False)
+                # If there's another function after this then the current function has ended
+                if funcSymbol is not None and funcSymbol.isTrustableFunction(self.instrCat == rabbitizer.InstrCategory.RSP):
+                    if funcSymbol.vromAddress is None or currentVrom + 8 == funcSymbol.vromAddress:
+                        functionEnded = True
+
+                if not functionEnded and not (farthestBranch > 0) and instr.isJump():
                     if instr.isReturn():
                         # Found a jr $ra and there are no branches outside of this function
-                        functionEnded = True
+                        if self.tryDetectRedundantFunctionEnd():
+                            # IDO -g, -g1 and -g2 can generate a redundant and unused `jr $ra; nop`. In normal conditions this would be detected
+                            # as its own separate empty function, which would cause issues on a decompilation project.
+                            # In other words, we try to detect the following pattern, and the last two instructions not being a function
+                            # already referenced or user-declared.
+                            # jr         $ra
+                            #  nop
+                            # jr         $ra
+                            #  nop
+                            redundantPatternDetected = False
+                            if index + 3 < nInstr:
+                                instr1 = instrsList[index+1]
+                                instr2 = instrsList[index+2]
+                                instr3 = instrsList[index+3]
+                                if funcSymbol is None and instr1.isNop() and instr2.isReturn() and instr3.isNop():
+                                    redundantPatternDetected = True
+                            if not redundantPatternDetected:
+                                functionEnded = True
+                        else:
+                            functionEnded = True
                     elif instr.isJumptableJump():
                         # Usually jumptables, ignore
                         pass
@@ -175,12 +209,6 @@ class SectionText(SectionBase):
                         if isLikelyHandwritten or self.instrCat == rabbitizer.InstrCategory.RSP:
                             # I don't remember the reasoning of this condition...
                             functionEnded = True
-
-                # If there's another function after this then the current function has ended
-                funcSymbol = self.getSymbol(currentVram + 8, vromAddress=currentVrom + 8, tryPlusOffset=False, checkGlobalSegment=False)
-                if funcSymbol is not None and funcSymbol.isTrustableFunction(self.instrCat == rabbitizer.InstrCategory.RSP):
-                    if funcSymbol.vromAddress is None or currentVrom + 8 == funcSymbol.vromAddress:
-                        functionEnded = True
 
             index += 1
             farthestBranch -= 4

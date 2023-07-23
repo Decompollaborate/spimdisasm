@@ -161,6 +161,10 @@ class GlobalConfigType:
 
     COMPILER: Compiler = Compiler.IDO
 
+    DETECT_REDUNDANT_FUNCTION_END: bool = False
+    """Tries to detect redundant and unreferenced functions ends and merge them together.
+    This option is ignored if the compiler is not set to IDO"""
+
     ENDIAN: InputEndian = InputEndian.BIG
     """Endian for input binary files"""
     ENDIAN_DATA: InputEndian|None = None
@@ -294,6 +298,7 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
         backendConfig.add_argument("--custom-suffix", help="Set a custom suffix for automatically generated symbols")
 
         backendConfig.add_argument("--compiler", help=f"Enables some tweaks for the selected compiler. Defaults to {self.COMPILER.name}", choices=compilerOptions)
+        backendConfig.add_argument("--detect-redundant-function-end", help=f"Tries to detect redundant and unreferenced function ends (jr $ra; nop), and merge it into the previous function. Currently it only is applied when the compiler is set to IDO. Defaults to {self.DETECT_REDUNDANT_FUNCTION_END}", action=Utils.BooleanOptionalAction)
 
         backendConfig.add_argument("--endian", help=f"Set the endianness of input files. Defaults to {self.ENDIAN.name.lower()}", choices=["big", "little", "middle"], default=self.ENDIAN.name.lower())
 
@@ -427,6 +432,9 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
 
         if args.compiler is not None:
             self.COMPILER = Compiler.fromStr(args.compiler)
+
+        if args.detect_redundant_function_end is not None:
+            self.DETECT_REDUNDANT_FUNCTION_END = args.detect_redundant_function_end
 
         if args.endian is not None:
             self.ENDIAN = InputEndian.fromStr(args.endian)
