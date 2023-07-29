@@ -276,12 +276,24 @@ class SymbolBase(common.ElementBase):
         comment = self.generateAsmLineComment(localOffset+j)
         return f"{comment} {dotType} {value}"
 
-    def getNthWordAsBytesAndShorts(self, i : int, sym1: common.ContextSymbol|None, sym2: common.ContextSymbol|None, sym3: common.ContextSymbol|None) -> tuple[str, int]:
+    def getNthWordAsBytesAndShorts(self, i: int, sym1: common.ContextSymbol|None, sym2: common.ContextSymbol|None, sym3: common.ContextSymbol|None, lastSymName: str) -> tuple[str, int]:
         output = ""
 
+        # Check the 4 bytes of this word to determine if each pair of bytes should be disassembled as `.short`s or a pair of `.byte`s
+
         if sym1 is not None or self.isByte(i) or (not self.isShort(i) and sym3 is not None):
+            # Disassemble this first pair of bytes as two bytes if either:
+            # - There's a symbol at (word's address + 1)
+            # - The type of the parent symbol is byte
+            # - The type of the parent symbol isn't short and there's a symbol at (word's address + 3)
+            # Otherwise, disassemble as short
+
             output += self.getJByteAsByte(i, 0)
             output += common.GlobalConfig.LINE_ENDS
+
+            if sym1 is not None:
+                output += self.getSizeDirective(lastSymName)
+                lastSymName = sym1.getName()
 
             output += self.getExtraLabelFromSymbol(sym1)
             output += self.getJByteAsByte(i, 1)
@@ -290,10 +302,24 @@ class SymbolBase(common.ElementBase):
             output += self.getJByteAsShort(i, 0)
             output += common.GlobalConfig.LINE_ENDS
 
+        if sym2 is not None:
+            output += self.getSizeDirective(lastSymName)
+            lastSymName = sym2.getName()
+
         output += self.getExtraLabelFromSymbol(sym2)
         if sym3 is not None or (sym2 is not None and sym2.isByte()) or (self.isByte(i) and (sym2 is None or not sym2.isShort())):
+            # Disassemble this second pair of bytes as two bytes if either:
+            # - There's a symbol at (word's address + 3)
+            # - There's a symbol at (word's address + 2) and it has type byte
+            # - The type of the parent symbol is byte, and if there's a symbol at (word's address + 2) it doesn't have type short
+            # Otherwise, disassemble as short
+
             output += self.getJByteAsByte(i, 2)
             output += common.GlobalConfig.LINE_ENDS
+
+            if sym3 is not None:
+                output += self.getSizeDirective(lastSymName)
+                lastSymName = sym3.getName()
 
             output += self.getExtraLabelFromSymbol(sym3)
             output += self.getJByteAsByte(i, 3)
@@ -530,7 +556,7 @@ class SymbolBase(common.ElementBase):
 
             # Check for symbols in the middle of this word
             if sym1 is not None or sym2 is not None or sym3 is not None or self.isByte(i) or self.isShort(i):
-                data, skip = self.getNthWordAsBytesAndShorts(i, sym1, sym2, sym3)
+                data, skip = self.getNthWordAsBytesAndShorts(i, sym1, sym2, sym3, lastSymName)
 
                 if sym3 is not None:
                     lastSymName = sym3.getName()
