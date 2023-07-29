@@ -123,6 +123,11 @@ class SymbolBase(common.ElementBase):
             return ""
         return relocInfo.getInlineStr()
 
+    def getSizeDirective(self, symName: str) -> str:
+        if common.GlobalConfig.ASM_EMIT_SIZE_DIRECTIVE:
+            return f".size {symName}, . - {symName}{common.GlobalConfig.LINE_ENDS}"
+        return ""
+
     def isByte(self, index: int) -> bool:
         if self.isString() or self.isPascalString():
             return False
@@ -509,6 +514,8 @@ class SymbolBase(common.ElementBase):
         symName = self.getName()
         output += self.getSymbolAsmDeclaration(symName, useGlobalLabel)
 
+        lastSymName = symName
+
         canReferenceSymbolsWithAddends = self.canUseAddendsOnData()
         canReferenceConstants = self.canUseConstantsOnData()
 
@@ -524,6 +531,13 @@ class SymbolBase(common.ElementBase):
             # Check for symbols in the middle of this word
             if sym1 is not None or sym2 is not None or sym3 is not None or self.isByte(i) or self.isShort(i):
                 data, skip = self.getNthWordAsBytesAndShorts(i, sym1, sym2, sym3)
+
+                if sym3 is not None:
+                    lastSymName = sym3.getName()
+                elif sym2 is not None:
+                    lastSymName = sym2.getName()
+                elif sym1 is not None:
+                    lastSymName = sym1.getName()
             elif self.isFloat(i):
                 data, skip = self.getNthWordAsFloat(i)
             elif self.isDouble(i):
@@ -554,8 +568,7 @@ class SymbolBase(common.ElementBase):
             i += skip
             i += 1
 
-        if common.GlobalConfig.ASM_EMIT_SIZE_DIRECTIVE:
-            output += f".size {symName}, . - {symName}{common.GlobalConfig.LINE_ENDS}"
+        output += self.getSizeDirective(lastSymName)
 
         nameEnd = self.getNameEnd()
         if nameEnd is not None:
