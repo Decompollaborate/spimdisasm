@@ -222,7 +222,7 @@ bannedEscapeCharacters = {
     0x17,
     0x18,
     0x19,
-    0x1A,
+    # 0x1A, # Some games use this char as an escape sequence
     # 0x1B, # VT escape sequences
     0x1C,
     0x1D,
@@ -230,7 +230,12 @@ bannedEscapeCharacters = {
     0x1F,
 }
 
-escapeCharactersSpecialCases = {0x1B, 0x8C, 0x8D}
+escapeCharactersSpecialCases = {
+    0x1A,
+    0x1B,
+    0x8C,
+    0x8D,
+}
 
 def decodeBytesToStrings(buf: bytes, offset: int, stringEncoding: str, terminator: int=0) -> tuple[list[str], int]:
     result = []
