@@ -66,7 +66,7 @@ class SymbolBase(common.ElementBase):
         return self.contextSym.allowedToReferenceConstants
 
 
-    def generateAsmLineComment(self, localOffset: int, wordValue: int|None = None) -> str:
+    def generateAsmLineComment(self, localOffset: int, wordValue: int|None=None, *, isDouble: bool=False) -> str:
         if not common.GlobalConfig.ASM_COMMENT:
             return ""
 
@@ -77,7 +77,10 @@ class SymbolBase(common.ElementBase):
 
         wordValueHex = ""
         if wordValue is not None:
-            wordValueHex = f"{common.Utils.wordToCurrenEndian(wordValue):08X} "
+            if isDouble:
+                wordValueHex = f"{common.Utils.qwordToCurrenEndian(wordValue):016X} "
+            else:
+                wordValueHex = f"{common.Utils.wordToCurrenEndian(wordValue):08X} "
 
         return f"/* {offsetHex} {vramHex} {wordValueHex}*/"
 
@@ -435,7 +438,7 @@ class SymbolBase(common.ElementBase):
         doubleValue = common.Utils.qwordToDouble(doubleWord)
         value = f"{doubleValue:.18g}"
 
-        comment = self.generateAsmLineComment(localOffset, doubleWord)
+        comment = self.generateAsmLineComment(localOffset, doubleWord, isDouble=True)
         output += f"{label}{comment} {dotType} {value}"
         output += self.getEndOfLineComment(i)
         output += common.GlobalConfig.LINE_ENDS
