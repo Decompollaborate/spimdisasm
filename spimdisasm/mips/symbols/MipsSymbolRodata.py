@@ -101,13 +101,6 @@ class SymbolRodata(SymbolBase):
                 if (self.words[i-1] & 0x000000FF) != 0:
                     break
                 count += 1
-        if self.isPascalString():
-            for i in range(len(self.words)-1, 0, -1):
-                if self.words[i] != 0x20:
-                    break
-                if (self.words[i-1] & 0x000000FF) != 0x20:
-                    break
-                count += 1
         elif self.isDouble(0):
             for i in range(len(self.words)-1, 0, -2):
                 if self.words[i] != 0 or self.words[i-1] != 0:
