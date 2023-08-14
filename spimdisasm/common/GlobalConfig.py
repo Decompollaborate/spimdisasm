@@ -244,6 +244,15 @@ class GlobalConfigType:
     PANIC_RANGE_CHECK: bool = False
     """Produce a fatal error if a range check fails instead of just printing a warning"""
 
+    CREATE_DATA_PADS: bool = True
+    """Create dummy and unreferenced data symbols after another symbol which has non-zero user-declared size.
+
+    The generated pad symbols may have non-zero data"""
+    CREATE_RODATA_PADS: bool = False
+    """Create dummy and unreferenced rodata symbols after another symbol which has non-zero user-declared size.
+
+    The generated pad symbols may have non-zero data"""
+
     QUIET: bool = False
     VERBOSE: bool = False
 
@@ -348,6 +357,9 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
         miscConfig.add_argument("--use-dot-short", help=f"Disassemble symbols marked as shorts with .short instead of .word. Defaults to {self.USE_DOT_SHORT}", action=Utils.BooleanOptionalAction)
 
         miscConfig.add_argument("--panic-range-check", help=f"Produce a fatal error if a range check fails instead of just printing a warning. Defaults to {self.PANIC_RANGE_CHECK}", action=Utils.BooleanOptionalAction)
+
+        miscConfig.add_argument("--create-data-pads", help=f"Create dummy and unreferenced data symbols after another symbol which has non-zero user-declared size.\nThe generated pad symbols may have non-zero data. Defaults to {self.CREATE_DATA_PADS}", action=Utils.BooleanOptionalAction)
+        miscConfig.add_argument("--create-rodata-pads", help=f"Create dummy and unreferenced rodata symbols after another symbol which has non-zero user-declared size.\nThe generated pad symbols may have non-zero data. Defaults to {self.CREATE_RODATA_PADS}", action=Utils.BooleanOptionalAction)
 
 
         verbosityConfig = parser.add_argument_group("Verbosity options")
@@ -516,6 +528,11 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
 
         if args.panic_range_check is not None:
             self.PANIC_RANGE_CHECK = args.panic_range_check
+
+        if args.create_data_pads is not None:
+            self.CREATE_DATA_PADS = args.create_data_pads
+        if args.create_rodata_pads is not None:
+            self.CREATE_RODATA_PADS = args.create_rodata_pads
 
 
         if args.verbose is not None:

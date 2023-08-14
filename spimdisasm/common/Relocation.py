@@ -11,6 +11,7 @@ import enum
 from .ContextSymbols import ContextSymbol
 from .FileSectionType import FileSectionType
 from .GlobalConfig import GlobalConfig
+from .GlobalConfig import Compiler
 
 
 class RelocType(enum.Enum):
@@ -149,7 +150,7 @@ class RelocationInfo:
     staticReference: RelocationStaticReference|None = None
     globalReloc: bool = False
 
-    def getName(self) -> str:
+    def getName(self, isSplittedSymbol: bool=False) -> str:
         if isinstance(self.symbol, ContextSymbol):
             name = self.symbol.getName()
         else:
@@ -158,18 +159,27 @@ class RelocationInfo:
         if self.addend == 0:
             return name
 
-        if self.relocType == RelocType.MIPS_LO16:
-            if self.addend < -0x8000:
-                return f"{name} - (0x{-self.addend:X} & 0xFFFF)"
-            if self.addend > 0x7FFF:
-                return f"{name} + (0x{self.addend:X} & 0xFFFF)"
+        # IDO always compiles assembly using modern GAS, for both whole files
+        # and splitted symbols. Using the workaround for addends outside the
+        # range of an s16 has different behavior in modern GAS.
+        if GlobalConfig.COMPILER == Compiler.IDO:
+            if self.addend < 0:
+                return f"{name} - 0x{-self.addend:X}"
+            return f"{name} + 0x{self.addend:X}"
+
+        if isSplittedSymbol:
+            if self.relocType == RelocType.MIPS_LO16:
+                if self.addend < -0x8000:
+                    return f"{name} - (0x{-self.addend:X} & 0xFFFF)"
+                if self.addend > 0x7FFF:
+                    return f"{name} + (0x{self.addend:X} & 0xFFFF)"
 
         if self.addend < 0:
             return f"{name} - 0x{-self.addend:X}"
         return f"{name} + 0x{self.addend:X}"
 
-    def getNameWithReloc(self) -> str:
-        name = self.getName()
+    def getNameWithReloc(self, isSplittedSymbol: bool=False) -> str:
+        name = self.getName(isSplittedSymbol=isSplittedSymbol)
 
         percentRel = _percentRel.get(self.relocType)
         if percentRel is not None:
@@ -185,8 +195,8 @@ class RelocationInfo:
 
         return name
 
-    def getInlineStr(self) -> str:
-        output = f"    # {self.relocType.name} '{self.getName()}'"
+    def getInlineStr(self, isSplittedSymbol: bool=False) -> str:
+        output = f"    # {self.relocType.name} '{self.getName(isSplittedSymbol=isSplittedSymbol)}'"
         if self.staticReference is not None:
             output += f" (static)"
         if self.globalReloc:

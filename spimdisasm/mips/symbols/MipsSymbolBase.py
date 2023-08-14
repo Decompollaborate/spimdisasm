@@ -118,10 +118,15 @@ class SymbolBase(common.ElementBase):
 
         return relocInfo
 
-    def relocToInlineStr(self, relocInfo: common.RelocationInfo | None) -> str:
+    def relocToInlineStr(self, relocInfo: common.RelocationInfo|None, isSplittedSymbol: bool=False) -> str:
         if relocInfo is None:
             return ""
-        return relocInfo.getInlineStr()
+        return relocInfo.getInlineStr(isSplittedSymbol=isSplittedSymbol)
+
+    def getSizeDirective(self, symName: str) -> str:
+        if common.GlobalConfig.ASM_EMIT_SIZE_DIRECTIVE:
+            return f".size {symName}, . - {symName}{common.GlobalConfig.LINE_ENDS}"
+        return ""
 
     def isByte(self, index: int) -> bool:
         if self.isString() or self.isPascalString():
@@ -271,12 +276,24 @@ class SymbolBase(common.ElementBase):
         comment = self.generateAsmLineComment(localOffset+j)
         return f"{comment} {dotType} {value}"
 
-    def getNthWordAsBytesAndShorts(self, i : int, sym1: common.ContextSymbol|None, sym2: common.ContextSymbol|None, sym3: common.ContextSymbol|None) -> tuple[str, int]:
+    def getNthWordAsBytesAndShorts(self, i: int, sym1: common.ContextSymbol|None, sym2: common.ContextSymbol|None, sym3: common.ContextSymbol|None, lastSymName: str) -> tuple[str, int]:
         output = ""
 
+        # Check the 4 bytes of this word to determine if each pair of bytes should be disassembled as `.short`s or a pair of `.byte`s
+
         if sym1 is not None or self.isByte(i) or (not self.isShort(i) and sym3 is not None):
+            # Disassemble this first pair of bytes as two bytes if either:
+            # - There's a symbol at (word's address + 1)
+            # - The type of the parent symbol is byte
+            # - The type of the parent symbol isn't short and there's a symbol at (word's address + 3)
+            # Otherwise, disassemble as short
+
             output += self.getJByteAsByte(i, 0)
             output += common.GlobalConfig.LINE_ENDS
+
+            if sym1 is not None:
+                output += self.getSizeDirective(lastSymName)
+                lastSymName = sym1.getName()
 
             output += self.getExtraLabelFromSymbol(sym1)
             output += self.getJByteAsByte(i, 1)
@@ -285,10 +302,24 @@ class SymbolBase(common.ElementBase):
             output += self.getJByteAsShort(i, 0)
             output += common.GlobalConfig.LINE_ENDS
 
+        if sym2 is not None:
+            output += self.getSizeDirective(lastSymName)
+            lastSymName = sym2.getName()
+
         output += self.getExtraLabelFromSymbol(sym2)
         if sym3 is not None or (sym2 is not None and sym2.isByte()) or (self.isByte(i) and (sym2 is None or not sym2.isShort())):
+            # Disassemble this second pair of bytes as two bytes if either:
+            # - There's a symbol at (word's address + 3)
+            # - There's a symbol at (word's address + 2) and it has type byte
+            # - The type of the parent symbol is byte, and if there's a symbol at (word's address + 2) it doesn't have type short
+            # Otherwise, disassemble as short
+
             output += self.getJByteAsByte(i, 2)
             output += common.GlobalConfig.LINE_ENDS
+
+            if sym3 is not None:
+                output += self.getSizeDirective(lastSymName)
+                lastSymName = sym3.getName()
 
             output += self.getExtraLabelFromSymbol(sym3)
             output += self.getJByteAsByte(i, 3)
@@ -322,7 +353,7 @@ class SymbolBase(common.ElementBase):
 
         return True
 
-    def getNthWordAsWords(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False) -> tuple[str, int]:
+    def getNthWordAsWords(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False, isSplittedSymbol: bool=False) -> tuple[str, int]:
         output = ""
         localOffset = 4*i
         currentVram = self.getVramOffset(localOffset)
@@ -346,7 +377,7 @@ class SymbolBase(common.ElementBase):
                 if contextSym is not None:
                     value = contextSym.getSymbolPlusOffset(relocVram)
             else:
-                value = relocInfo.getName()
+                value = relocInfo.getName(isSplittedSymbol=isSplittedSymbol)
         else:
             # This word could be a reference to a symbol
             symbolRef = self.getSymbol(w, tryPlusOffset=canReferenceSymbolsWithAddends)
@@ -461,8 +492,8 @@ class SymbolBase(common.ElementBase):
 
         return result, skip
 
-    def getNthWord(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False) -> tuple[str, int]:
-        return self.getNthWordAsWords(i, canReferenceSymbolsWithAddends=canReferenceSymbolsWithAddends, canReferenceConstants=canReferenceConstants)
+    def getNthWord(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False, isSplittedSymbol: bool=False) -> tuple[str, int]:
+        return self.getNthWordAsWords(i, canReferenceSymbolsWithAddends=canReferenceSymbolsWithAddends, canReferenceConstants=canReferenceConstants, isSplittedSymbol=isSplittedSymbol)
 
 
     def countExtraPadding(self) -> int:
@@ -502,12 +533,14 @@ class SymbolBase(common.ElementBase):
 
         return ""
 
-    def disassembleAsData(self, useGlobalLabel: bool=True) -> str:
+    def disassembleAsData(self, useGlobalLabel: bool=True, isSplittedSymbol: bool=False) -> str:
         output = self.contextSym.getReferenceeSymbols()
         output += self.getPrevAlignDirective(0)
 
         symName = self.getName()
         output += self.getSymbolAsmDeclaration(symName, useGlobalLabel)
+
+        lastSymName = symName
 
         canReferenceSymbolsWithAddends = self.canUseAddendsOnData()
         canReferenceConstants = self.canUseConstantsOnData()
@@ -523,7 +556,14 @@ class SymbolBase(common.ElementBase):
 
             # Check for symbols in the middle of this word
             if sym1 is not None or sym2 is not None or sym3 is not None or self.isByte(i) or self.isShort(i):
-                data, skip = self.getNthWordAsBytesAndShorts(i, sym1, sym2, sym3)
+                data, skip = self.getNthWordAsBytesAndShorts(i, sym1, sym2, sym3, lastSymName)
+
+                if sym3 is not None:
+                    lastSymName = sym3.getName()
+                elif sym2 is not None:
+                    lastSymName = sym2.getName()
+                elif sym1 is not None:
+                    lastSymName = sym1.getName()
             elif self.isFloat(i):
                 data, skip = self.getNthWordAsFloat(i)
             elif self.isDouble(i):
@@ -533,29 +573,28 @@ class SymbolBase(common.ElementBase):
                 if skip < 0:
                     # Not a string
                     self._failedStringDecoding = True
-                    data, skip = self.getNthWord(i, canReferenceSymbolsWithAddends, canReferenceConstants)
+                    data, skip = self.getNthWord(i, isSplittedSymbol=isSplittedSymbol, canReferenceSymbolsWithAddends=canReferenceSymbolsWithAddends, canReferenceConstants=canReferenceConstants)
             elif self.isPascalString():
                 data, skip = self.getNthWordAsPascalString(i)
                 if skip < 0:
                     # Not a string
                     self._failedPascalStringDecoding = True
-                    data, skip = self.getNthWord(i, canReferenceSymbolsWithAddends, canReferenceConstants)
+                    data, skip = self.getNthWord(i, isSplittedSymbol=isSplittedSymbol, canReferenceSymbolsWithAddends=canReferenceSymbolsWithAddends, canReferenceConstants=canReferenceConstants)
             else:
-                data, skip = self.getNthWord(i, canReferenceSymbolsWithAddends, canReferenceConstants)
+                data, skip = self.getNthWord(i, isSplittedSymbol=isSplittedSymbol, canReferenceSymbolsWithAddends=canReferenceSymbolsWithAddends, canReferenceConstants=canReferenceConstants)
 
             if i != 0:
                 output += self.getPrevAlignDirective(i)
             output += data
             if common.GlobalConfig.EMIT_INLINE_RELOC:
                 relocInfo = self.getReloc(i*4, None)
-                output += self.relocToInlineStr(relocInfo)
+                output += self.relocToInlineStr(relocInfo, isSplittedSymbol)
             output += self.getPostAlignDirective(i)
 
             i += skip
             i += 1
 
-        if common.GlobalConfig.ASM_EMIT_SIZE_DIRECTIVE:
-            output += f".size {symName}, . - {symName}{common.GlobalConfig.LINE_ENDS}"
+        output += self.getSizeDirective(lastSymName)
 
         nameEnd = self.getNameEnd()
         if nameEnd is not None:
@@ -563,11 +602,11 @@ class SymbolBase(common.ElementBase):
 
         return output
 
-    def disassemble(self, migrate: bool=False, useGlobalLabel: bool=True) -> str:
+    def disassemble(self, migrate: bool=False, useGlobalLabel: bool=True, isSplittedSymbol: bool=False) -> str:
         output = ""
 
         if migrate:
             output += self.getSpimdisasmVersionString()
 
-        output = self.disassembleAsData(useGlobalLabel=useGlobalLabel)
+        output = self.disassembleAsData(useGlobalLabel=useGlobalLabel, isSplittedSymbol=isSplittedSymbol)
         return output
