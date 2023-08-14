@@ -29,7 +29,7 @@ class FunctionRodataEntry:
             # Write the rdata
             f.write(f".section .rodata{common.GlobalConfig.LINE_ENDS}")
             for sym in self.rodataSyms:
-                f.write(sym.disassemble(migrate=True, useGlobalLabel=True))
+                f.write(sym.disassemble(migrate=True, useGlobalLabel=True, isSplittedSymbol=True))
                 f.write(common.GlobalConfig.LINE_ENDS)
 
         if len(self.lateRodataSyms) > 0:
@@ -48,7 +48,7 @@ class FunctionRodataEntry:
                     align = 8
                 f.write(f".late_rodata_alignment {align}{common.GlobalConfig.LINE_ENDS}")
             for sym in self.lateRodataSyms:
-                f.write(sym.disassemble(migrate=True, useGlobalLabel=True))
+                f.write(sym.disassemble(migrate=True, useGlobalLabel=True, isSplittedSymbol=True))
                 f.write(common.GlobalConfig.LINE_ENDS)
 
         if self.function is not None:
@@ -57,7 +57,7 @@ class FunctionRodataEntry:
 
             if writeFunction:
                 # Write the function itself
-                f.write(self.function.disassemble(migrate=self.hasRodataSyms()))
+                f.write(self.function.disassemble(migrate=self.hasRodataSyms(), isSplittedSymbol=True))
 
     @staticmethod
     def getEntryForFuncFromSection(func: symbols.SymbolFunction|None, rodataSection: sections.SectionRodata|None) -> FunctionRodataEntry:

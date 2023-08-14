@@ -163,7 +163,7 @@ class FileBase(common.ElementBase):
             output += self.getSpimdisasmVersionString()
 
         for i, sym in enumerate(self.symbolList):
-            output += sym.disassemble(useGlobalLabel=useGlobalLabel)
+            output += sym.disassemble(migrate=migrate, useGlobalLabel=useGlobalLabel, isSplittedSymbol=False)
             if i + 1 < len(self.symbolList):
                 output += common.GlobalConfig.LINE_ENDS
         return output

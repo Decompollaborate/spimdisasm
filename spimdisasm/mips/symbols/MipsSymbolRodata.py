@@ -113,7 +113,7 @@ class SymbolRodata(SymbolBase):
                 count += 1
         return count
 
-    def getNthWord(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False) -> tuple[str, int]:
+    def getNthWord(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False, isSplittedSymbol: bool=False) -> tuple[str, int]:
         localOffset = 4*i
         w = self.words[i]
         vrom = self.getVromOffset(localOffset)
@@ -133,7 +133,7 @@ class SymbolRodata(SymbolBase):
                 if labelSym is not None:
                     relocInfo.symbol = labelSym.getName()
             comment = self.generateAsmLineComment(localOffset, rodataWord)
-            return f"{label}{comment} {relocInfo.getNameWithReloc()}{common.GlobalConfig.LINE_ENDS}", skip
+            return f"{label}{comment} {relocInfo.getNameWithReloc(isSplittedSymbol=isSplittedSymbol)}{common.GlobalConfig.LINE_ENDS}", skip
 
         if self.contextSym.isJumpTable():
             if self.contextSym.isGot and common.GlobalConfig.GP_VALUE is not None:

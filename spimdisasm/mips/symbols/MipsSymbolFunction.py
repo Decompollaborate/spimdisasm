@@ -599,13 +599,13 @@ class SymbolFunction(SymbolText):
         return None
 
 
-    def getImmOverrideForInstruction(self, instr: rabbitizer.Instruction, instrOffset: int) -> str|None:
+    def getImmOverrideForInstruction(self, instr: rabbitizer.Instruction, instrOffset: int, isSplittedSymbol: bool=False) -> str|None:
         if self.pointersRemoved:
             return None
 
         relocInfo = self.getReloc(instrOffset, instr)
         if relocInfo is not None:
-            return relocInfo.getNameWithReloc()
+            return relocInfo.getNameWithReloc(isSplittedSymbol=isSplittedSymbol)
 
         if instr.isBranch() or instr.isUnconditionalBranch():
             if common.GlobalConfig.IGNORE_BRANCHES:
@@ -653,8 +653,8 @@ class SymbolFunction(SymbolText):
             return label
         return labelSym.getName() + ":" + common.GlobalConfig.LINE_ENDS
 
-    def _emitInstruction(self, instr: rabbitizer.Instruction, instructionOffset: int, wasLastInstABranch: bool) -> str:
-        immOverride = self.getImmOverrideForInstruction(instr, instructionOffset)
+    def _emitInstruction(self, instr: rabbitizer.Instruction, instructionOffset: int, wasLastInstABranch: bool, isSplittedSymbol: bool=False) -> str:
+        immOverride = self.getImmOverrideForInstruction(instr, instructionOffset, isSplittedSymbol=isSplittedSymbol)
         comment = self.generateAsmLineComment(instructionOffset, instr.getRaw())
         extraLJust = 0
 
@@ -667,7 +667,7 @@ class SymbolFunction(SymbolText):
         return f"{comment}  {line}"
 
 
-    def _emitCpload(self, instr: rabbitizer.Instruction, instructionOffset: int, wasLastInstABranch: bool) -> str:
+    def _emitCpload(self, instr: rabbitizer.Instruction, instructionOffset: int, wasLastInstABranch: bool, isSplittedSymbol: bool=False) -> str:
         output = ""
 
         cpload = self.instrAnalyzer.cploads.get(instructionOffset)
@@ -681,14 +681,14 @@ class SymbolFunction(SymbolText):
                 assert cpload.reg is not None
                 output += f".cpload ${cpload.reg.name}"
             else:
-                output += self._emitInstruction(instr, instructionOffset, wasLastInstABranch)
+                output += self._emitInstruction(instr, instructionOffset, wasLastInstABranch, isSplittedSymbol=isSplittedSymbol)
         else:
             if not common.GlobalConfig.EMIT_CPLOAD:
-                output += self._emitInstruction(instr, instructionOffset, wasLastInstABranch)
+                output += self._emitInstruction(instr, instructionOffset, wasLastInstABranch, isSplittedSymbol=isSplittedSymbol)
             # don't emit the other instructions which are part of .cpload if the directive was emitted
         return output
 
-    def disassemble(self, migrate: bool=False, useGlobalLabel: bool=True) -> str:
+    def disassemble(self, migrate: bool=False, useGlobalLabel: bool=True, isSplittedSymbol: bool=False) -> str:
         output = ""
 
         if migrate:
@@ -696,7 +696,7 @@ class SymbolFunction(SymbolText):
 
         if not common.GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS:
             if self.hasUnimplementedIntrs:
-                return self.disassembleAsData(useGlobalLabel=useGlobalLabel)
+                return self.disassembleAsData(useGlobalLabel=useGlobalLabel, isSplittedSymbol=isSplittedSymbol)
 
         output += self.contextSym.getReferenceeSymbols()
 
@@ -717,9 +717,9 @@ class SymbolFunction(SymbolText):
 
             isCpload = instructionOffset in self.instrAnalyzer.cploadOffsets
             if isCpload:
-                currentLine += self._emitCpload(instr, instructionOffset, wasLastInstABranch)
+                currentLine += self._emitCpload(instr, instructionOffset, wasLastInstABranch, isSplittedSymbol=isSplittedSymbol)
             else:
-                currentLine += self._emitInstruction(instr, instructionOffset, wasLastInstABranch)
+                currentLine += self._emitInstruction(instr, instructionOffset, wasLastInstABranch, isSplittedSymbol=isSplittedSymbol)
 
             currentLine += self.getEndOfLineComment(instructionOffset//4)
             if currentLine != "":
@@ -727,7 +727,7 @@ class SymbolFunction(SymbolText):
 
             if common.GlobalConfig.EMIT_INLINE_RELOC:
                 relocInfo = self.getReloc(instructionOffset, instr)
-                currentLine += self.relocToInlineStr(relocInfo)
+                currentLine += self.relocToInlineStr(relocInfo, isSplittedSymbol=isSplittedSymbol)
 
             output += currentLine
 
@@ -746,10 +746,10 @@ class SymbolFunction(SymbolText):
 
         return output
 
-    def disassembleAsData(self, useGlobalLabel: bool=True) -> str:
+    def disassembleAsData(self, useGlobalLabel: bool=True, isSplittedSymbol: bool=False) -> str:
         self.words = []
         for i, instr in enumerate(self.instructions):
             if not instr.isImplemented() or not instr.isValid():
                 self.endOfLineComment[i] = " # invalid instruction"
             self.words.append(instr.getRaw())
-        return super().disassembleAsData(useGlobalLabel=useGlobalLabel)
+        return super().disassembleAsData(useGlobalLabel=useGlobalLabel, isSplittedSymbol=isSplittedSymbol)

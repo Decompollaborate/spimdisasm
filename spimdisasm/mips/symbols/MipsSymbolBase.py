@@ -118,10 +118,10 @@ class SymbolBase(common.ElementBase):
 
         return relocInfo
 
-    def relocToInlineStr(self, relocInfo: common.RelocationInfo | None) -> str:
+    def relocToInlineStr(self, relocInfo: common.RelocationInfo|None, isSplittedSymbol: bool=False) -> str:
         if relocInfo is None:
             return ""
-        return relocInfo.getInlineStr()
+        return relocInfo.getInlineStr(isSplittedSymbol=isSplittedSymbol)
 
     def getSizeDirective(self, symName: str) -> str:
         if common.GlobalConfig.ASM_EMIT_SIZE_DIRECTIVE:
@@ -353,7 +353,7 @@ class SymbolBase(common.ElementBase):
 
         return True
 
-    def getNthWordAsWords(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False) -> tuple[str, int]:
+    def getNthWordAsWords(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False, isSplittedSymbol: bool=False) -> tuple[str, int]:
         output = ""
         localOffset = 4*i
         currentVram = self.getVramOffset(localOffset)
@@ -377,7 +377,7 @@ class SymbolBase(common.ElementBase):
                 if contextSym is not None:
                     value = contextSym.getSymbolPlusOffset(relocVram)
             else:
-                value = relocInfo.getName()
+                value = relocInfo.getName(isSplittedSymbol=isSplittedSymbol)
         else:
             # This word could be a reference to a symbol
             symbolRef = self.getSymbol(w, tryPlusOffset=canReferenceSymbolsWithAddends)
@@ -492,8 +492,8 @@ class SymbolBase(common.ElementBase):
 
         return result, skip
 
-    def getNthWord(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False) -> tuple[str, int]:
-        return self.getNthWordAsWords(i, canReferenceSymbolsWithAddends=canReferenceSymbolsWithAddends, canReferenceConstants=canReferenceConstants)
+    def getNthWord(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False, isSplittedSymbol: bool=False) -> tuple[str, int]:
+        return self.getNthWordAsWords(i, canReferenceSymbolsWithAddends=canReferenceSymbolsWithAddends, canReferenceConstants=canReferenceConstants, isSplittedSymbol=isSplittedSymbol)
 
 
     def countExtraPadding(self) -> int:
@@ -533,7 +533,7 @@ class SymbolBase(common.ElementBase):
 
         return ""
 
-    def disassembleAsData(self, useGlobalLabel: bool=True) -> str:
+    def disassembleAsData(self, useGlobalLabel: bool=True, isSplittedSymbol: bool=False) -> str:
         output = self.contextSym.getReferenceeSymbols()
         output += self.getPrevAlignDirective(0)
 
@@ -573,22 +573,22 @@ class SymbolBase(common.ElementBase):
                 if skip < 0:
                     # Not a string
                     self._failedStringDecoding = True
-                    data, skip = self.getNthWord(i, canReferenceSymbolsWithAddends, canReferenceConstants)
+                    data, skip = self.getNthWord(i, isSplittedSymbol=isSplittedSymbol, canReferenceSymbolsWithAddends=canReferenceSymbolsWithAddends, canReferenceConstants=canReferenceConstants)
             elif self.isPascalString():
                 data, skip = self.getNthWordAsPascalString(i)
                 if skip < 0:
                     # Not a string
                     self._failedPascalStringDecoding = True
-                    data, skip = self.getNthWord(i, canReferenceSymbolsWithAddends, canReferenceConstants)
+                    data, skip = self.getNthWord(i, isSplittedSymbol=isSplittedSymbol, canReferenceSymbolsWithAddends=canReferenceSymbolsWithAddends, canReferenceConstants=canReferenceConstants)
             else:
-                data, skip = self.getNthWord(i, canReferenceSymbolsWithAddends, canReferenceConstants)
+                data, skip = self.getNthWord(i, isSplittedSymbol=isSplittedSymbol, canReferenceSymbolsWithAddends=canReferenceSymbolsWithAddends, canReferenceConstants=canReferenceConstants)
 
             if i != 0:
                 output += self.getPrevAlignDirective(i)
             output += data
             if common.GlobalConfig.EMIT_INLINE_RELOC:
                 relocInfo = self.getReloc(i*4, None)
-                output += self.relocToInlineStr(relocInfo)
+                output += self.relocToInlineStr(relocInfo, isSplittedSymbol)
             output += self.getPostAlignDirective(i)
 
             i += skip
@@ -602,11 +602,11 @@ class SymbolBase(common.ElementBase):
 
         return output
 
-    def disassemble(self, migrate: bool=False, useGlobalLabel: bool=True) -> str:
+    def disassemble(self, migrate: bool=False, useGlobalLabel: bool=True, isSplittedSymbol: bool=False) -> str:
         output = ""
 
         if migrate:
             output += self.getSpimdisasmVersionString()
 
-        output = self.disassembleAsData(useGlobalLabel=useGlobalLabel)
+        output = self.disassembleAsData(useGlobalLabel=useGlobalLabel, isSplittedSymbol=isSplittedSymbol)
         return output
