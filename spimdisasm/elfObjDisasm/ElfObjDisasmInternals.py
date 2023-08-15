@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import rabbitizer
 
 from .. import common
 from .. import elf32
@@ -392,6 +393,11 @@ def processArguments(args: argparse.Namespace) -> int:
     elfFile.handleHeaderIdent()
     elfFile.handleFlags()
 
+    instrCategory = args.instr_category
+    if instrCategory is None:
+        if elf32.Elf32Constants.Elf32HeaderFlag._5900 in elfFile.elfFlags:
+            instrCategory = "r5900"
+
     common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Processing global offset table...")
     processGlobalOffsetTable(context, elfFile)
 
@@ -425,7 +431,7 @@ def processArguments(args: argparse.Namespace) -> int:
 
     changeGlobalSegmentRanges(context, processedSegments)
 
-    fec.FrontendUtilities.configureProcessedFiles(processedSegments, args.instr_category)
+    fec.FrontendUtilities.configureProcessedFiles(processedSegments, instrCategory)
 
     common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Injecting elf symbols...")
     injectAllElfSymbols(context, elfFile, processedSegments, sectionsPerName)
