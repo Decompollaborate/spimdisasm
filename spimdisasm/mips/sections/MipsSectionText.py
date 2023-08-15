@@ -60,7 +60,7 @@ class SectionText(SectionBase):
             targetVram = instr.getInstrIndexAsVram()
             auxSym = self.getSymbol(targetVram, tryPlusOffset=False, checkGlobalSegment=False)
 
-            if auxSym is not None:
+            if auxSym is not None and auxSym.isTrustableFunction(self.instrCat == rabbitizer.InstrCategory.RSP):
                 return farthestBranch, haltFunctionSearching
 
         branchOffset = instr.getBranchOffsetGeneric()
@@ -140,6 +140,14 @@ class SectionText(SectionBase):
                     if isLikelyHandwritten or self.instrCat == rabbitizer.InstrCategory.RSP:
                         # I don't remember the reasoning of this condition...
                         functionEnded = True
+                    elif instr.isJumpWithAddress():
+                        # If this instruction is a jump and it is jumping to a function then
+                        # we can consider this as a function end. This can happen as a
+                        # tail-optimization in modern compilers
+                        targetVram = instr.getInstrIndexAsVram()
+                        auxSym = self.getSymbol(targetVram, tryPlusOffset=False, checkGlobalSegment=False)
+                        if auxSym is not None and auxSym.isTrustableFunction(self.instrCat == rabbitizer.InstrCategory.RSP):
+                            functionEnded = True
 
         return functionEnded, prevFuncHadUserDeclaredSize
 
