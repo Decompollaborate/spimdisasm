@@ -49,14 +49,48 @@ class SectionText(SectionBase):
             return common.GlobalConfig.DETECT_REDUNDANT_FUNCTION_END
         return self.detectRedundantFunctionEnd
 
-    def _findFunctions(self, instrsList: list[rabbitizer.Instruction]):
+
+    def _findFunctions_branchChecker(self, instructionOffset: int, instr: rabbitizer.Instruction, funcsStartsList: list[int], unimplementedInstructionsFuncList: list[bool], farthestBranch: int, isLikelyHandwritten: bool, isInstrImplemented: bool) -> tuple[int, bool]:
+        haltFunctionSearching = False
+
+        branchOffset = instr.getBranchOffsetGeneric()
+        if branchOffset > farthestBranch:
+            # keep track of the farthest branch target
+            farthestBranch = branchOffset
+        if branchOffset < 0:
+            if branchOffset + instructionOffset < 0:
+                # Whatever we are reading is not a valid instruction
+                if not instr.isJump(): # Make an exception for `j`
+                    haltFunctionSearching = True
+            # make sure to not branch outside of the current function
+            if not isLikelyHandwritten and isInstrImplemented:
+                j = len(funcsStartsList) - 1
+                while j >= 0:
+                    if branchOffset + instructionOffset < 0:
+                        break
+                    otherFuncStartOffset = funcsStartsList[j] * 4
+                    if (branchOffset + instructionOffset) < otherFuncStartOffset:
+                        vram = self.getVramOffset(otherFuncStartOffset)
+                        vromAddress = self.getVromOffset(otherFuncStartOffset)
+                        funcSymbol = self.getSymbol(vram, vromAddress=vromAddress, tryPlusOffset=False, checkGlobalSegment=False)
+                        if funcSymbol is not None and funcSymbol.isTrustableFunction(self.instrCat == rabbitizer.InstrCategory.RSP):
+                            j -= 1
+                            continue
+                        del funcsStartsList[j]
+                        del unimplementedInstructionsFuncList[j-1]
+                    else:
+                        break
+                    j -= 1
+        return farthestBranch, haltFunctionSearching
+
+    def _findFunctions(self, instrsList: list[rabbitizer.Instruction]) -> tuple[list[int], list[bool]]:
         if len(instrsList) == 0:
             return [0], [False]
 
         functionEnded = False
         farthestBranch = 0
-        funcsStartsList = [0]
-        unimplementedInstructionsFuncList = []
+        funcsStartsList: list[int] = [0]
+        unimplementedInstructionsFuncList: list[bool] = []
 
         instructionOffset = 0
         currentInstructionStart = 0
@@ -145,34 +179,9 @@ class SectionText(SectionBase):
                 isLikelyHandwritten = instr.isLikelyHandwritten()
 
             if instr.isBranch() or instr.isUnconditionalBranch():
-                branchOffset = instr.getBranchOffsetGeneric()
-                if branchOffset > farthestBranch:
-                    # keep track of the farthest branch target
-                    farthestBranch = branchOffset
-                if branchOffset < 0:
-                    if branchOffset + instructionOffset < 0:
-                        # Whatever we are reading is not a valid instruction
-                        if not instr.isJump(): # Make an exception for `j`
-                            break
-                    # make sure to not branch outside of the current function
-                    if not isLikelyHandwritten and isInstrImplemented:
-                        j = len(funcsStartsList) - 1
-                        while j >= 0:
-                            if branchOffset + instructionOffset < 0:
-                                break
-                            otherFuncStartOffset = funcsStartsList[j] * 4
-                            if (branchOffset + instructionOffset) < otherFuncStartOffset:
-                                vram = self.getVramOffset(otherFuncStartOffset)
-                                vromAddress = self.getVromOffset(otherFuncStartOffset)
-                                funcSymbol = self.getSymbol(vram, vromAddress=vromAddress, tryPlusOffset=False, checkGlobalSegment=False)
-                                if funcSymbol is not None and funcSymbol.isTrustableFunction(self.instrCat == rabbitizer.InstrCategory.RSP):
-                                    j -= 1
-                                    continue
-                                del funcsStartsList[j]
-                                del unimplementedInstructionsFuncList[j-1]
-                            else:
-                                break
-                            j -= 1
+                farthestBranch, haltFunctionSearching = self._findFunctions_branchChecker(instructionOffset, instr, funcsStartsList, unimplementedInstructionsFuncList, farthestBranch, isLikelyHandwritten, isInstrImplemented)
+                if haltFunctionSearching:
+                    break
 
             # Try to find the end of the function
             if currentFunctionSym is not None and currentFunctionSym.userDeclaredSize is not None:
