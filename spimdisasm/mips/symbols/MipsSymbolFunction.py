@@ -708,6 +708,7 @@ class SymbolFunction(SymbolText):
         self._generateRelocsFromInstructionAnalyzer()
 
         symName = self.getName()
+        symSize = self.contextSym.getSize()
         output += self.getSymbolAsmDeclaration(symName, useGlobalLabel)
 
         wasLastInstABranch = False
@@ -734,8 +735,8 @@ class SymbolFunction(SymbolText):
             wasLastInstABranch = instr.hasDelaySlot()
             instructionOffset += 4
 
-        if common.GlobalConfig.ASM_EMIT_SIZE_DIRECTIVE:
-            output += f".size {symName}, . - {symName}{common.GlobalConfig.LINE_ENDS}"
+            if instructionOffset == symSize:
+                output += self.getSizeDirective(symName)
 
         if common.GlobalConfig.ASM_TEXT_END_LABEL:
             output += f"{common.GlobalConfig.ASM_TEXT_END_LABEL} {self.getName()}" + common.GlobalConfig.LINE_ENDS
