@@ -53,6 +53,16 @@ class SectionText(SectionBase):
     def _findFunctions_branchChecker(self, instructionOffset: int, instr: rabbitizer.Instruction, funcsStartsList: list[int], unimplementedInstructionsFuncList: list[bool], farthestBranch: int, isLikelyHandwritten: bool, isInstrImplemented: bool) -> tuple[int, bool]:
         haltFunctionSearching = False
 
+        if instr.isJumpWithAddress():
+            # If this instruction is a jump and it is jumping to a function then
+            # don't treat it as a branch, it is probably actually being used as
+            # a jump
+            targetVram = instr.getInstrIndexAsVram()
+            auxSym = self.getSymbol(targetVram, tryPlusOffset=False, checkGlobalSegment=False)
+
+            if auxSym is not None:
+                return farthestBranch, haltFunctionSearching
+
         branchOffset = instr.getBranchOffsetGeneric()
         if branchOffset > farthestBranch:
             # keep track of the farthest branch target
