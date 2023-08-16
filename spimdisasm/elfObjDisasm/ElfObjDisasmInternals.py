@@ -247,7 +247,9 @@ def addContextSymFromSymEntry(context: common.Context, symEntry: elf32.Elf32SymE
             contextSym = segment.addSymbol(symAddress, vromAddress=symVrom)
             contextSym.isElfNotype = True
         else:
-            common.Utils.eprint(f"Warning: NOTYPE symbol '{symName}' has an unhandled shndx value: '0x{symEntry.shndx:X}'")
+            bind = elf32.Elf32SymbolTableBinding.fromValue(symEntry.stBind)
+            if bind != elf32.Elf32SymbolTableBinding.LOCAL:
+                common.Utils.eprint(f"Warning: Non-LOCAL ({bind}) NOTYPE symbol '{symName}' has an unhandled shndx value: '0x{symEntry.shndx:X}'")
             contextSym = segment.addSymbol(symAddress, vromAddress=symVrom)
     else:
         common.Utils.eprint(f"Warning: symbol '{symName}' has an unhandled stType: '{symEntry.stType}'")
