@@ -80,7 +80,7 @@ def getInstrCategoryFromStr(category: str|None) -> rabbitizer.Enum:
     return gInstrCategoriesNameMap.get(category.lower(), rabbitizer.InstrCategory.CPU)
 
 
-def configureProcessedFiles(processedFiles: dict[common.FileSectionType, list[mips.sections.SectionBase]], category: str) -> None:
+def configureProcessedFiles(processedFiles: dict[common.FileSectionType, list[mips.sections.SectionBase]], category: str|None) -> None:
     instrCat = getInstrCategoryFromStr(category)
 
     for textFile in processedFiles.get(common.FileSectionType.Text, []):

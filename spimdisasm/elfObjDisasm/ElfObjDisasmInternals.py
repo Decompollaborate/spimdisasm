@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import rabbitizer
 
 from .. import common
 from .. import elf32
@@ -246,7 +247,9 @@ def addContextSymFromSymEntry(context: common.Context, symEntry: elf32.Elf32SymE
             contextSym = segment.addSymbol(symAddress, vromAddress=symVrom)
             contextSym.isElfNotype = True
         else:
-            common.Utils.eprint(f"Warning: NOTYPE symbol '{symName}' has an unhandled shndx value: '0x{symEntry.shndx:X}'")
+            bind = elf32.Elf32SymbolTableBinding.fromValue(symEntry.stBind)
+            if bind != elf32.Elf32SymbolTableBinding.LOCAL:
+                common.Utils.eprint(f"Warning: Non-LOCAL ({bind}) NOTYPE symbol '{symName}' has an unhandled shndx value: '0x{symEntry.shndx:X}'")
             contextSym = segment.addSymbol(symAddress, vromAddress=symVrom)
     else:
         common.Utils.eprint(f"Warning: symbol '{symName}' has an unhandled stType: '{symEntry.stType}'")
@@ -358,11 +361,13 @@ def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, proce
     return
 
 def processGlobalOffsetTable(context: common.Context, elfFile: elf32.Elf32File) -> None:
-    if elfFile.dynamic is not None and elfFile.got is not None:
+    if elfFile.dynamic is not None:
         common.GlobalConfig.GP_VALUE = elfFile.dynamic.getGpValue()
-        if elfFile.reginfo is not None:
-            common.GlobalConfig.GP_VALUE = elfFile.reginfo.gpValue
 
+    if elfFile.reginfo is not None:
+        common.GlobalConfig.GP_VALUE = elfFile.reginfo.gpValue
+
+    if elfFile.dynamic is not None and elfFile.got is not None:
         globalsTable = [gotEntry.getAddress() for gotEntry in elfFile.got.globalsTable]
 
         assert elfFile.dynamic.pltGot is not None
@@ -389,6 +394,11 @@ def processArguments(args: argparse.Namespace) -> int:
 
     elfFile.handleHeaderIdent()
     elfFile.handleFlags()
+
+    instrCategory = args.instr_category
+    if instrCategory is None:
+        if elf32.Elf32Constants.Elf32HeaderFlag._5900 in elfFile.elfFlags:
+            instrCategory = "r5900"
 
     common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Processing global offset table...")
     processGlobalOffsetTable(context, elfFile)
@@ -423,7 +433,7 @@ def processArguments(args: argparse.Namespace) -> int:
 
     changeGlobalSegmentRanges(context, processedSegments)
 
-    fec.FrontendUtilities.configureProcessedFiles(processedSegments, args.instr_category)
+    fec.FrontendUtilities.configureProcessedFiles(processedSegments, instrCategory)
 
     common.Utils.printQuietless(f"{PROGNAME} {inputPath}: Injecting elf symbols...")
     injectAllElfSymbols(context, elfFile, processedSegments, sectionsPerName)

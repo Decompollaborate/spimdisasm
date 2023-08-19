@@ -54,9 +54,12 @@ class Compiler(enum.Enum):
 
 
 class Abi(enum.Enum):
-    O32 = "O32"
-    N32 = "N32"
-    N64 = "N64"
+    O32    = "O32"
+    N32    = "N32"
+    O64    = "O64"
+    N64    = "N64"
+    EABI32 = "EABI32"
+    EABI64 = "EABI64"
 
     @staticmethod
     def fromStr(value: str) -> Abi:
@@ -311,7 +314,7 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
 
         backendConfig.add_argument("--endian", help=f"Set the endianness of input files. Defaults to {self.ENDIAN.name.lower()}", choices=["big", "little", "middle"], default=self.ENDIAN.name.lower())
 
-        backendConfig.add_argument("--abi", help=f"Changes the ABI of the disassembly, applying corresponding tweaks. Defaults to {self.ABI.name}", choices=["O32", "N32", "N64"], default=self.ABI.name)
+        backendConfig.add_argument("--abi", help=f"Changes the ABI of the disassembly, applying corresponding tweaks. Defaults to {self.ABI.name}", choices=["O32", "N32", "O64", "N64", "EABI32", "EABI64"], default=self.ABI.name)
         backendConfig.add_argument("--arch-level", help=f"Changes the arch level of the disassembly, applying corresponding tweaks. Defaults to {self.ARCHLEVEL.name}", choices=archLevelOptions, default=self.ARCHLEVEL.name)
 
 

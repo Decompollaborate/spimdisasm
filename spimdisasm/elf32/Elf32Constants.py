@@ -74,6 +74,41 @@ class Elf32HeaderFlag(enum.Enum):
     FP64            = 0x00000200 # Uses FP64 (12 callee-saved).
     NAN2008         = 0x00000400 # Uses IEEE 754-2008 NaN encoding.
 
+
+    # ABI
+    O32             = 0x00001000 # The original o32 abi.
+    O64             = 0x00002000 # O32 extended to work on 64 bit architectures
+    EABI32          = 0x00003000 # EABI in 32 bit mode
+    EABI64          = 0x00004000 # EABI in 64 bit mode
+
+
+    # CPU
+    CPU             = 0x00FF0000
+
+    _3900           = 0x00810000
+    _4010           = 0x00820000
+    _4100           = 0x00830000
+    _4650           = 0x00850000
+    _4120           = 0x00870000
+    _4111           = 0x00880000
+    SB1             = 0x008a0000
+    OCTEON          = 0x008b0000
+    XLR             = 0x008c0000
+    OCTEON2         = 0x008d0000
+    OCTEON3         = 0x008e0000
+    _5400           = 0x00910000
+    _5900           = 0x00920000
+    IAMR2           = 0x00930000
+    _5500           = 0x00980000
+    _9000           = 0x00990000
+    LS2E            = 0x00A00000
+    LS2F            = 0x00A10000
+    GS464           = 0x00A20000
+    GS464E          = 0x00A30000
+    GS264E          = 0x00A40000
+
+
+    # arch level
     ARCH            = 0xF0000000 # MIPS architecture level.
 
     # Legal values for MIPS architecture level
@@ -95,6 +130,7 @@ class Elf32HeaderFlag(enum.Enum):
             Elf32HeaderFlag.XGOT, Elf32HeaderFlag.F_64BIT_WHIRL, Elf32HeaderFlag.ABI2,
             Elf32HeaderFlag.ABI_ON32,
             Elf32HeaderFlag._32BITSMODE, Elf32HeaderFlag.FP64, Elf32HeaderFlag.NAN2008,
+            Elf32HeaderFlag.O32, Elf32HeaderFlag.O64, Elf32HeaderFlag.EABI32, Elf32HeaderFlag.EABI64
         ]
         parsedFlags: list[Elf32HeaderFlag] = list()
 
@@ -102,6 +138,53 @@ class Elf32HeaderFlag(enum.Enum):
             if rawFlags & flagEnum.value:
                 parsedFlags.append(flagEnum)
                 rawFlags &= ~flagEnum.value
+
+        cpu = rawFlags & Elf32HeaderFlag.CPU.value
+        rawFlags &= ~Elf32HeaderFlag.CPU.value
+        if cpu == Elf32HeaderFlag._3900.value:
+            parsedFlags.append(Elf32HeaderFlag._3900)
+        elif cpu == Elf32HeaderFlag._4010.value:
+            parsedFlags.append(Elf32HeaderFlag._4010)
+        elif cpu == Elf32HeaderFlag._4100.value:
+            parsedFlags.append(Elf32HeaderFlag._4100)
+        elif cpu == Elf32HeaderFlag._4650.value:
+            parsedFlags.append(Elf32HeaderFlag._4650)
+        elif cpu == Elf32HeaderFlag._4120.value:
+            parsedFlags.append(Elf32HeaderFlag._4120)
+        elif cpu == Elf32HeaderFlag._4111.value:
+            parsedFlags.append(Elf32HeaderFlag._4111)
+        elif cpu == Elf32HeaderFlag.SB1.value:
+            parsedFlags.append(Elf32HeaderFlag.SB1)
+        elif cpu == Elf32HeaderFlag.OCTEON.value:
+            parsedFlags.append(Elf32HeaderFlag.OCTEON)
+        elif cpu == Elf32HeaderFlag.XLR.value:
+            parsedFlags.append(Elf32HeaderFlag.XLR)
+        elif cpu == Elf32HeaderFlag.OCTEON2.value:
+            parsedFlags.append(Elf32HeaderFlag.OCTEON2)
+        elif cpu == Elf32HeaderFlag.OCTEON3.value:
+            parsedFlags.append(Elf32HeaderFlag.OCTEON3)
+        elif cpu == Elf32HeaderFlag._5400.value:
+            parsedFlags.append(Elf32HeaderFlag._5400)
+        elif cpu == Elf32HeaderFlag._5900.value:
+            parsedFlags.append(Elf32HeaderFlag._5900)
+        elif cpu == Elf32HeaderFlag.IAMR2.value:
+            parsedFlags.append(Elf32HeaderFlag.IAMR2)
+        elif cpu == Elf32HeaderFlag._5500.value:
+            parsedFlags.append(Elf32HeaderFlag._5500)
+        elif cpu == Elf32HeaderFlag._9000.value:
+            parsedFlags.append(Elf32HeaderFlag._9000)
+        elif cpu == Elf32HeaderFlag.LS2E.value:
+            parsedFlags.append(Elf32HeaderFlag.LS2E)
+        elif cpu == Elf32HeaderFlag.LS2F.value:
+            parsedFlags.append(Elf32HeaderFlag.LS2F)
+        elif cpu == Elf32HeaderFlag.GS464.value:
+            parsedFlags.append(Elf32HeaderFlag.GS464)
+        elif cpu == Elf32HeaderFlag.GS464E.value:
+            parsedFlags.append(Elf32HeaderFlag.GS464E)
+        elif cpu == Elf32HeaderFlag.GS264E.value:
+            parsedFlags.append(Elf32HeaderFlag.GS264E)
+        else:
+            rawFlags |= cpu
 
         archLevel = rawFlags & Elf32HeaderFlag.ARCH.value
         rawFlags &= ~Elf32HeaderFlag.ARCH.value
