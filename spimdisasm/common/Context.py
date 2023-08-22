@@ -175,6 +175,7 @@ class Context:
 
         symbolsConfig.add_argument("--default-banned", help="Toggles filling the list of default banned symbols. Defaults to True", action=Utils.BooleanOptionalAction)
         symbolsConfig.add_argument("--libultra-syms", help="Toggles using the built-in libultra symbols. Defaults to True", action=Utils.BooleanOptionalAction)
+        symbolsConfig.add_argument("--ique-syms", help="Toggles using the built-in iQue libultra symbols. Defaults to True", action=Utils.BooleanOptionalAction)
         symbolsConfig.add_argument("--hardware-regs", help="Toggles using the built-in hardware registers symbols. Defaults to True", action=Utils.BooleanOptionalAction)
         symbolsConfig.add_argument("--named-hardware-regs", help="Use actual names for the hardware registers", action=Utils.BooleanOptionalAction)
 
@@ -184,6 +185,8 @@ class Context:
             self.fillDefaultBannedSymbols()
         if args.libultra_syms != False:
             self.globalSegment.fillLibultraSymbols()
+        if args.ique_syms != False:
+            self.globalSegment.fillIQueSymbols()
         if args.hardware_regs != False:
             self.globalSegment.fillHardwareRegs(args.named_hardware_regs)
 
