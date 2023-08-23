@@ -375,9 +375,9 @@ class SymbolBase(common.ElementBase):
         relocInfo = self.getReloc(localOffset, None)
         if relocInfo is not None:
             if relocInfo.isRelocNone():
-                # 
+                # If the reloc type is none then use the raw number instead
                 pass
-            if relocInfo.staticReference is not None:
+            elif relocInfo.staticReference is not None:
                 relocVram = relocInfo.staticReference.sectionVram + w
                 contextSym = self.getSymbol(relocVram, checkUpperLimit=False)
                 if contextSym is not None:
