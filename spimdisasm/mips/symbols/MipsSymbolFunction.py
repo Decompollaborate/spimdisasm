@@ -604,7 +604,7 @@ class SymbolFunction(SymbolText):
             return None
 
         relocInfo = self.getReloc(instrOffset, instr)
-        if relocInfo is not None:
+        if relocInfo is not None and not relocInfo.isRelocNone():
             return relocInfo.getNameWithReloc(isSplittedSymbol=isSplittedSymbol)
 
         if instr.isBranch() or instr.isUnconditionalBranch():

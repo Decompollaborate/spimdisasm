@@ -374,6 +374,9 @@ class SymbolBase(common.ElementBase):
         # .elf relocated symbol
         relocInfo = self.getReloc(localOffset, None)
         if relocInfo is not None:
+            if relocInfo.isRelocNone():
+                # 
+                pass
             if relocInfo.staticReference is not None:
                 relocVram = relocInfo.staticReference.sectionVram + w
                 contextSym = self.getSymbol(relocVram, checkUpperLimit=False)
