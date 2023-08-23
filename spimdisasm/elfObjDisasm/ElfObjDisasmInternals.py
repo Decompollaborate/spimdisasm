@@ -328,6 +328,7 @@ def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, proce
         # Inject symbols from the reloc table referenced in each section
         if elfFile.header.type == elf32.Elf32ObjectFileType.REL.value:
             for sectionName, relocs in elfFile.relPerName.items():
+                subSegment = sectionsPerName.get(sectionName, None)
                 for rel in relocs:
                     symbolEntry = elfFile.symtab[rel.rSym]
                     symbolName = elfFile.strtab[symbolEntry.name]
@@ -336,7 +337,9 @@ def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, proce
                         if symbolName == "":
                             continue
 
-                    subSegment = sectionsPerName[sectionName]
+                    if subSegment is None:
+                        common.Utils.eprint(f"Warning: reloc '{rel}' references unhandled section '{sectionName}'")
+                        continue
 
                     relocVrom = subSegment.vromStart + rel.offset
                     relocInfo = context.addGlobalReloc(relocVrom, common.RelocType(rel.rType), symbolName)
