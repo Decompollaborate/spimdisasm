@@ -94,7 +94,7 @@ class ElementBase:
     def getLabelFromSymbol(self, sym: ContextSymbol|None, symName: str|None) -> str:
         "Generates a glabel for the passed symbol, including an optional index value if it was set and it is enabled in the GlobalConfig"
         if sym is not None:
-            label = sym.getLabelMacro()
+            label = sym.getLabelMacro(isInMiddleLabel=False)
             if label is None:
                 return ""
             label += f" {symName or sym.getName()}"

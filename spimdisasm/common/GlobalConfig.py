@@ -223,6 +223,7 @@ class GlobalConfigType:
     ASM_REFERENCEE_SYMBOLS: bool = False
 
     ASM_TEXT_LABEL: str = "glabel"
+    ASM_TEXT_ALT_LABEL: str = "glabel"
     ASM_JTBL_LABEL: str = "jlabel"
     ASM_DATA_LABEL: str = "dlabel"
     ASM_USE_SYMBOL_LABEL: bool = True
@@ -343,6 +344,7 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
         miscConfig.add_argument("--asm-referencee-symbols", help=f"Toggle glabel count comment. Defaults to {self.ASM_REFERENCEE_SYMBOLS}", action=Utils.BooleanOptionalAction)
 
         miscConfig.add_argument("--asm-text-label", help=f"Changes the label used to declare functions. Defaults to {self.ASM_TEXT_LABEL}")
+        miscConfig.add_argument("--asm-text-alt-label", help=f"Changes the label used to declare symbols in the middle of functions. Defaults to {self.ASM_TEXT_ALT_LABEL}")
         miscConfig.add_argument("--asm-jtbl-label", help=f"Changes the label used to declare jumptable labels. Defaults to {self.ASM_JTBL_LABEL}")
         miscConfig.add_argument("--asm-data-label", help=f"Changes the label used to declare data symbols. Defaults to {self.ASM_DATA_LABEL}")
         miscConfig.add_argument("--asm-use-symbol-label", help=f"Toggles the use of labels for symbols. Defaults to {self.ASM_USE_SYMBOL_LABEL}", action=Utils.BooleanOptionalAction)
@@ -500,6 +502,8 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
 
         if args.asm_text_label:
             self.ASM_TEXT_LABEL = args.asm_text_label
+        if args.asm_text_alt_label:
+            self.ASM_TEXT_ALT_LABEL = args.asm_text_alt_label
         if args.asm_jtbl_label:
             self.ASM_JTBL_LABEL = args.asm_jtbl_label
         if args.asm_data_label:

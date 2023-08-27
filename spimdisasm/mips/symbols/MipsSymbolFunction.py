@@ -649,7 +649,7 @@ class SymbolFunction(SymbolText):
         labelSymType = labelSym.getTypeSpecial()
         if labelSymType == common.SymbolSpecialType.function or (labelSymType == common.SymbolSpecialType.jumptablelabel and not migrate):
             label = labelSym.getReferenceeSymbols()
-            labelMacro = labelSym.getLabelMacro()
+            labelMacro = labelSym.getLabelMacro(isInMiddleLabel=True)
             if labelMacro is not None:
                 label += f"{labelMacro} {labelSym.getName()}{common.GlobalConfig.LINE_ENDS}"
             if common.GlobalConfig.ASM_TEXT_FUNC_AS_LABEL:

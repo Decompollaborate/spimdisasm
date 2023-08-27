@@ -106,7 +106,7 @@ class SymbolBase(common.ElementBase):
         label = ""
         if contextSym is not None:
             label = common.GlobalConfig.LINE_ENDS
-            symLabel = contextSym.getLabelMacro()
+            symLabel = contextSym.getLabelMacro(isInMiddleLabel=True)
             if symLabel is not None:
                 label += f"{symLabel} {contextSym.getName()}{common.GlobalConfig.LINE_ENDS}"
                 if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
