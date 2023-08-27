@@ -344,9 +344,9 @@ class SymbolFunction(SymbolText):
                 if instr.canBeHi():
                     loInstr = self.instructions[self.instrAnalyzer.hiToLowDict[instrOffset] // 4]
 
-                generatedStr = self.generateHiLoConstantStr(constant, instr, loInstr)
-                if generatedStr is not None:
-                    self.relocs[instrOffset] = common.RelocationInfo(common.RelocType.MIPS_NONE, generatedStr)
+                generatedReloc = self._generateHiLoConstantReloc(constant, instr, loInstr)
+                if generatedReloc is not None:
+                    self.relocs[instrOffset] = generatedReloc
 
         for instrOffset, targetVram in self.instrAnalyzer.funcCallInstrOffsets.items():
             funcSym = self.getSymbol(targetVram, tryPlusOffset=False)
@@ -570,18 +570,18 @@ class SymbolFunction(SymbolText):
             del self.instructions[first_nop:]
         return was_updated
 
-    def generateHiLoConstantStr(self, constantValue: int, currentInstr: rabbitizer.Instruction, loInstr: rabbitizer.Instruction|None) -> str|None:
+    def _generateHiLoConstantReloc(self, constantValue: int, currentInstr: rabbitizer.Instruction, loInstr: rabbitizer.Instruction|None) -> common.RelocationInfo|None:
         if loInstr is None:
             if currentInstr.canBeHi():
-                return f"(0x{constantValue:X} >> 16)"
+                return common.RelocationInfo(common.RelocType.CUSTOM_CONSTANT_HI, f"0x{constantValue:X}")
             return None
 
         if loInstr.canBeLo():
             if loInstr.isUnsigned():
                 if currentInstr.canBeHi():
-                    return f"(0x{constantValue:X} >> 16)"
+                    return common.RelocationInfo(common.RelocType.CUSTOM_CONSTANT_HI, f"0x{constantValue:X}")
                 if currentInstr.canBeLo():
-                    return f"(0x{constantValue:X} & 0xFFFF)"
+                    return common.RelocationInfo(common.RelocType.CUSTOM_CONSTANT_LO, f"0x{constantValue:X}")
                 return None
             else:
                 hiHalf = constantValue >> 16
@@ -589,9 +589,9 @@ class SymbolFunction(SymbolText):
                 if loHalf < 0x8000:
                     # positive lo half
                     if currentInstr.canBeHi():
-                        return f"(0x{constantValue:X} >> 16)"
+                        return common.RelocationInfo(common.RelocType.CUSTOM_CONSTANT_HI, f"0x{constantValue:X}")
                     if currentInstr.canBeLo():
-                        return f"(0x{constantValue:X} & 0xFFFF)"
+                        return common.RelocationInfo(common.RelocType.CUSTOM_CONSTANT_LO, f"0x{constantValue:X}")
                 else:
                     # negative lo half
                     # loHalf = rabbitizer.Utils.from2Complement(loHalf, 16)
@@ -604,7 +604,7 @@ class SymbolFunction(SymbolText):
             return None
 
         relocInfo = self.getReloc(instrOffset, instr)
-        if relocInfo is not None:
+        if relocInfo is not None and not relocInfo.isRelocNone():
             return relocInfo.getNameWithReloc(isSplittedSymbol=isSplittedSymbol)
 
         if instr.isBranch() or instr.isUnconditionalBranch():
@@ -620,11 +620,15 @@ class SymbolFunction(SymbolText):
         if instr.hasOperandAlias(rabbitizer.OperandType.cpu_immediate):
             if instrOffset in self.instrAnalyzer.symbolInstrOffset:
                 address = self.instrAnalyzer.symbolInstrOffset[instrOffset]
-                return self.generateHiLoConstantStr(address, instr, instr)
+                relocInfo = self._generateHiLoConstantReloc(address, instr, instr)
+                if relocInfo is not None:
+                    return relocInfo.getNameWithReloc(isSplittedSymbol=isSplittedSymbol)
 
-            if instr.canBeHi():
+            elif instr.canBeHi():
                 # Unpaired LUI
-                return self.generateHiLoConstantStr(instr.getProcessedImmediate()<<16, instr, None)
+                relocInfo = self._generateHiLoConstantReloc(instr.getProcessedImmediate()<<16, instr, None)
+                if relocInfo is not None:
+                    return relocInfo.getNameWithReloc(isSplittedSymbol=isSplittedSymbol)
 
         return None
 
@@ -645,7 +649,7 @@ class SymbolFunction(SymbolText):
         labelSymType = labelSym.getTypeSpecial()
         if labelSymType == common.SymbolSpecialType.function or (labelSymType == common.SymbolSpecialType.jumptablelabel and not migrate):
             label = labelSym.getReferenceeSymbols()
-            labelMacro = labelSym.getLabelMacro()
+            labelMacro = labelSym.getLabelMacro(isInMiddleLabel=True)
             if labelMacro is not None:
                 label += f"{labelMacro} {labelSym.getName()}{common.GlobalConfig.LINE_ENDS}"
             if common.GlobalConfig.ASM_TEXT_FUNC_AS_LABEL:

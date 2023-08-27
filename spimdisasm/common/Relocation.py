@@ -203,3 +203,6 @@ class RelocationInfo:
             output += f" (global reloc)"
         output += f"{GlobalConfig.LINE_ENDS}"
         return output
+
+    def isRelocNone(self) -> bool:
+        return self.relocType == RelocType.MIPS_NONE

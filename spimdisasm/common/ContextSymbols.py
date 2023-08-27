@@ -516,7 +516,7 @@ class ContextSymbol:
             return f"{self.getName()} - 0x{self.address - address:X}"
         return f"{self.getName()} + 0x{address - self.address:X}"
 
-    def getLabelMacro(self) -> str|None:
+    def getLabelMacro(self, isInMiddleLabel: bool=False) -> str|None:
         if not GlobalConfig.ASM_USE_SYMBOL_LABEL:
             return None
         label = ""
@@ -530,7 +530,10 @@ class ContextSymbol:
         if currentType == SymbolSpecialType.jumptablelabel:
             label += GlobalConfig.ASM_JTBL_LABEL
         elif self.sectionType == FileSectionType.Text:
-            label += GlobalConfig.ASM_TEXT_LABEL
+            if isInMiddleLabel:
+                label += GlobalConfig.ASM_TEXT_ALT_LABEL
+            else:
+                label += GlobalConfig.ASM_TEXT_LABEL
         else:
             label += GlobalConfig.ASM_DATA_LABEL
         return label

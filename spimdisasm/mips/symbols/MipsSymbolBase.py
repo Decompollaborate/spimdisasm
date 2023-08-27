@@ -106,7 +106,7 @@ class SymbolBase(common.ElementBase):
         label = ""
         if contextSym is not None:
             label = common.GlobalConfig.LINE_ENDS
-            symLabel = contextSym.getLabelMacro()
+            symLabel = contextSym.getLabelMacro(isInMiddleLabel=True)
             if symLabel is not None:
                 label += f"{symLabel} {contextSym.getName()}{common.GlobalConfig.LINE_ENDS}"
                 if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
@@ -374,7 +374,10 @@ class SymbolBase(common.ElementBase):
         # .elf relocated symbol
         relocInfo = self.getReloc(localOffset, None)
         if relocInfo is not None:
-            if relocInfo.staticReference is not None:
+            if relocInfo.isRelocNone():
+                # If the reloc type is none then use the raw number instead
+                pass
+            elif relocInfo.staticReference is not None:
                 relocVram = relocInfo.staticReference.sectionVram + w
                 contextSym = self.getSymbol(relocVram, checkUpperLimit=False)
                 if contextSym is not None:
