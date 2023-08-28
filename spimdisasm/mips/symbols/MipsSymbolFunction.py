@@ -740,10 +740,10 @@ class SymbolFunction(SymbolText):
             instructionOffset += 4
 
             if instructionOffset == symSize:
-                output += self.getSizeDirective(symName)
+                if common.GlobalConfig.ASM_TEXT_END_LABEL:
+                    output += f"{common.GlobalConfig.ASM_TEXT_END_LABEL} {self.getName()}" + common.GlobalConfig.LINE_ENDS
 
-        if common.GlobalConfig.ASM_TEXT_END_LABEL:
-            output += f"{common.GlobalConfig.ASM_TEXT_END_LABEL} {self.getName()}" + common.GlobalConfig.LINE_ENDS
+                output += self.getSizeDirective(symName)
 
         nameEnd = self.getNameEnd()
         if nameEnd is not None:
