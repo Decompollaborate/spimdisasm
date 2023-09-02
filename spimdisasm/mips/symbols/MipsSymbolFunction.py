@@ -647,7 +647,7 @@ class SymbolFunction(SymbolText):
         labelSym.isDefined = True
         labelSym.sectionType = self.sectionType
         labelSymType = labelSym.getTypeSpecial()
-        if labelSymType == common.SymbolSpecialType.function or (labelSymType == common.SymbolSpecialType.jumptablelabel and not migrate):
+        if labelSymType is None or labelSymType == common.SymbolSpecialType.function or (labelSymType == common.SymbolSpecialType.jumptablelabel and not migrate):
             label = labelSym.getReferenceeSymbols()
             labelMacro = labelSym.getLabelMacro(isInMiddleLabel=True)
             if labelMacro is not None:
