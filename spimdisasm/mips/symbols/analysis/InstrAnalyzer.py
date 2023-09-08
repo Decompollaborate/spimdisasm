@@ -356,7 +356,7 @@ class InstrAnalyzer:
             luiInstr = self.luiInstrs.get(luiOffset)
             if luiInstr is not None:
                 if luiInstr.rt in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
-                    if instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp} and instr.rt in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
+                    if instr.readsRs() and instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp} and instr.modifiesRt() and instr.rt in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
                         # cpload
                         self.unpairedCploads.append(CploadInfo(luiOffset, instrOffset))
                         # early return to avoid counting this pairing as a symbol
