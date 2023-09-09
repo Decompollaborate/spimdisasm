@@ -17,7 +17,7 @@ from .Relocation import RelocationInfo, RelocType
 
 
 @dataclasses.dataclass
-class SymbolRange:
+class AddressRange:
     start: int
     end: int
 
@@ -34,6 +34,34 @@ class SymbolRange:
             self.end = address
         return None
 
+class SymbolsRanges:
+    def __init__(self, start: int, end: int):
+        self.mainAddressRange = AddressRange(start, end)
+        self.specialRanges: list[AddressRange] = list()
+
+    def isInRange(self, address: int) -> bool:
+        if self.mainAddressRange.isInRange(address):
+            return True
+
+        for spRange in self.specialRanges:
+            if spRange.isInRange(address):
+                return True
+
+        return False
+
+    def decreaseStart(self, address: int) -> None:
+        self.mainAddressRange.decreaseStart(address)
+
+    def increaseEnd(self, address: int) -> None:
+        self.mainAddressRange.increaseEnd(address)
+
+    def addSpecialRange(self, start: int, end: int) -> AddressRange|None:
+        # print(f"addSpecialRange: {start:X} {end:X}")
+        if end <= start:
+            return None
+        addrRange = AddressRange(start, end)
+        self.specialRanges.append(addrRange)
+        return addrRange
 
 class Context:
     N64DefaultBanned = {
@@ -54,12 +82,12 @@ class Context:
         self.overlaySegments: dict[str, dict[int, SymbolsSegment]] = dict()
         "Outer key is overlay type, inner key is the vrom of the overlay's segment"
 
-        self.totalVramRange: SymbolRange = SymbolRange(self.globalSegment.vramStart, self.globalSegment.vramEnd)
+        self.totalVramRange: SymbolsRanges = SymbolsRanges(self.globalSegment.vramStart, self.globalSegment.vramEnd)
         self._defaultVramRanges: bool = True
 
         # Stuff that looks like pointers, but the disassembler shouldn't count it as a pointer
         self.bannedSymbols: set[int] = set()
-        self.bannedRangedSymbols: list[SymbolRange] = list()
+        self.bannedRangedSymbols: list[AddressRange] = list()
 
         self.globalRelocationOverrides: dict[int, RelocationInfo] = dict()
         "key: vrom address"
@@ -74,8 +102,8 @@ class Context:
             Utils.eprint(f"Warning: globalSegment's will has its vramStart equal to the vramEnd (0x{vramStart:X})")
         self.globalSegment.changeRanges(vromStart, vromEnd, vramStart, vramEnd)
         if self._defaultVramRanges:
-            self.totalVramRange.start = vramStart
-            self.totalVramRange.end = vramEnd
+            self.totalVramRange.mainAddressRange.start = vramStart
+            self.totalVramRange.mainAddressRange.end = vramEnd
             self._defaultVramRanges = False
         self.totalVramRange.decreaseStart(vramStart)
         self.totalVramRange.increaseEnd(vramEnd)
@@ -87,8 +115,8 @@ class Context:
         self.overlaySegments[overlayCategory][segmentVromStart] = segment
 
         if self._defaultVramRanges:
-            self.totalVramRange.start = segmentVramStart
-            self.totalVramRange.end = segmentVramEnd
+            self.totalVramRange.mainAddressRange.start = segmentVramStart
+            self.totalVramRange.mainAddressRange.end = segmentVramEnd
             self._defaultVramRanges = False
         self.totalVramRange.decreaseStart(segmentVramStart)
         self.totalVramRange.increaseEnd(segmentVramEnd)
@@ -120,10 +148,10 @@ class Context:
         self.bannedSymbols.add(address)
 
     def addBannedSymbolRange(self, rangeStart: int, rangeEnd: int):
-        self.bannedRangedSymbols.append(SymbolRange(rangeStart, rangeEnd))
+        self.bannedRangedSymbols.append(AddressRange(rangeStart, rangeEnd))
 
     def addBannedSymbolRangeBySize(self, rangeStart: int, size: int):
-        self.bannedRangedSymbols.append(SymbolRange(rangeStart, rangeStart + size))
+        self.bannedRangedSymbols.append(AddressRange(rangeStart, rangeStart + size))
 
     def isAddressBanned(self, address: int) -> bool:
         if address in self.bannedSymbols:
