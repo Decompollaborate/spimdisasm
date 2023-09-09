@@ -123,6 +123,12 @@ class Context:
 
         return segment
 
+    def isInTotalVramRange(self, address: int) -> bool:
+        return self.totalVramRange.isInRange(address)
+
+    def addSpecialVramRange(self, start: int, end: int) -> AddressRange|None:
+        return self.totalVramRange.addSpecialRange(start, end)
+
 
     def initGotTable(self, pltGot: int, localsTable: list[int], globalsTable: list[int]):
         self.gpAccesses.initGotTable(pltGot, localsTable, globalsTable)
