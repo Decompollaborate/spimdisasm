@@ -460,6 +460,7 @@ class SymbolFunction(SymbolText):
                                     contextSym.isGotGlobal = gotGlobal
                                 contextSym.accessType = rabbitizer.AccessType.DOUBLEFLOAT
                                 contextSym.unsignedAccessType = False
+                                contextSym.isMips1Double = True
 
         self._generateRelocsFromInstructionAnalyzer()
 

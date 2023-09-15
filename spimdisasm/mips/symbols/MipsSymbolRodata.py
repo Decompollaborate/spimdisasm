@@ -66,6 +66,9 @@ class SymbolRodata(SymbolBase):
         if self.contextSym.forceNotMigration:
             return False
 
+        if self.contextSym.isMips1Double:
+            return True
+
         if self.isRdata():
             if common.GlobalConfig.COMPILER not in {common.Compiler.SN64, common.Compiler.PSYQ}:
                 return False
