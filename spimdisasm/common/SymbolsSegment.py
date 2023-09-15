@@ -357,6 +357,8 @@ class SymbolsSegment:
 
 
     def fillLibultraSymbols(self):
+        lowestVram = 0xFFFFFFFF
+        highestVram = 0x00000000
         for vram, (name, type, size) in self.N64LibultraSyms.items():
             contextSym = self.addSymbol(vram)
             contextSym.name = name
@@ -364,8 +366,15 @@ class SymbolsSegment:
             contextSym.userDeclaredSize = size
             contextSym.isDefined = True
             contextSym.isUserDeclared = True
+            if vram > highestVram:
+                highestVram = vram
+            if vram < lowestVram:
+                lowestVram = vram
+        self.context.totalVramRange.addSpecialRange(lowestVram, highestVram)
 
     def fillIQueSymbols(self):
+        lowestVram = 0xFFFFFFFF
+        highestVram = 0x00000000
         for vram, (name, type, size) in self.iQueLibultraSyms.items():
             contextSym = self.addSymbol(vram)
             contextSym.name = name
@@ -373,8 +382,15 @@ class SymbolsSegment:
             contextSym.userDeclaredSize = size
             contextSym.isDefined = True
             contextSym.isUserDeclared = True
+            if vram > highestVram:
+                highestVram = vram
+            if vram < lowestVram:
+                lowestVram = vram
+        self.context.totalVramRange.addSpecialRange(lowestVram, highestVram)
 
     def fillHardwareRegs(self, useRealNames: bool=False):
+        lowestVram = 0xFFFFFFFF
+        highestVram = 0x00000000
         for vram, name in self.N64HardwareRegs.items():
             nameToUse = None
             if useRealNames:
@@ -392,6 +408,11 @@ class SymbolsSegment:
                 contextSym.userDeclaredSize = 4
                 contextSym.isDefined = True
                 contextSym.isUserDeclared = True
+            if vram > highestVram:
+                highestVram = vram
+            if vram < lowestVram:
+                lowestVram = vram
+        self.context.totalVramRange.addSpecialRange(lowestVram, highestVram)
 
 
     def readVariablesCsv(self, filepath: Path):

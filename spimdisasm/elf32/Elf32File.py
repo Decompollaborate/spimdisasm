@@ -218,8 +218,8 @@ class Elf32File:
         elif Elf32SectionHeaderFlag.STRINGS in flags:
             # Why not?
             self.progbitsNoWrite[sectionEntryName] = entry
-        else:
-            common.Utils.eprint(f"Unhandled PROGBITS found: '{sectionEntryName}', flags: {flags}\n")
+        elif not common.GlobalConfig.QUIET:
+            common.Utils.eprint(f"Unhandled PROGBITS found: '{sectionEntryName}', flags: {flags}, unknownFlags: {unknownFlags}\n")
 
     def _processSection_SYMTAB(self, array_of_bytes: bytes, entry: Elf32SectionHeaderEntry, sectionEntryName: str) -> None:
         if sectionEntryName == ".symtab":

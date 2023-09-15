@@ -236,9 +236,15 @@ class InstrAnalyzer:
                 return None
 
         # filter out stuff that may not be a real symbol
-        filterOut = common.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES and address < 0x80000000
-        filterOut |= common.GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES and address >= 0xC0000000
-        if filterOut and lowerInstr.uniqueId != rabbitizer.InstrId.cpu_addiu:
+        filterOut = False
+        if not self.context.totalVramRange.isInRange(address):
+            if common.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES or common.GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES:
+                filterOut |= common.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES and address < common.GlobalConfig.SYMBOL_FINDER_FILTER_ADDRESSES_ADDR_LOW
+                filterOut |= common.GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES and address >= common.GlobalConfig.SYMBOL_FINDER_FILTER_ADDRESSES_ADDR_HIGH
+            else:
+                filterOut |= True
+
+        if address > 0 and filterOut and lowerInstr.uniqueId != rabbitizer.InstrId.cpu_addiu:
             if common.GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_CONSTANTS:
                 # Let's pretend this value is a constant
                 constant = address
@@ -356,7 +362,7 @@ class InstrAnalyzer:
             luiInstr = self.luiInstrs.get(luiOffset)
             if luiInstr is not None:
                 if luiInstr.rt in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
-                    if instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp} and instr.rt in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
+                    if instr.readsRs() and instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp} and instr.modifiesRt() and instr.rt in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
                         # cpload
                         self.unpairedCploads.append(CploadInfo(luiOffset, instrOffset))
                         # early return to avoid counting this pairing as a symbol

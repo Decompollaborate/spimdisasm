@@ -16,8 +16,16 @@ class SectionBase(FileBase):
         if self.context.isAddressBanned(word):
             return False
 
-        if self.getSymbol(word, tryPlusOffset=True, checkUpperLimit=True) is not None:
-            return False
+        contextSym = self.getSymbol(word, tryPlusOffset=True, checkUpperLimit=False)
+        if contextSym is not None:
+            symType = contextSym.getTypeSpecial()
+            if symType in {common.SymbolSpecialType.function, common.SymbolSpecialType.branchlabel, common.SymbolSpecialType.jumptablelabel}:
+                # Avoid generating extra symbols in the middle of functions
+                return False
+
+            if word < contextSym.vram + contextSym.getSize():
+                # Avoid generating symbols in the middle of other symbols with known sizes
+                return False
 
         self.addPointerInDataReference(word)
         return True

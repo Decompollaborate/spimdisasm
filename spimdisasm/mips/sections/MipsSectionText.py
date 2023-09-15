@@ -144,10 +144,13 @@ class SectionText(SectionBase):
                         # If this instruction is a jump and it is jumping to a function then
                         # we can consider this as a function end. This can happen as a
                         # tail-optimization in modern compilers
-                        targetVram = instr.getInstrIndexAsVram()
-                        auxSym = self.getSymbol(targetVram, tryPlusOffset=False, checkGlobalSegment=False)
-                        if auxSym is not None and auxSym.isTrustableFunction(self.instrCat == rabbitizer.InstrCategory.RSP):
+                        if not rabbitizer.config.toolchainTweaks_treatJAsUnconditionalBranch:
                             functionEnded = True
+                        else:
+                            targetVram = instr.getInstrIndexAsVram()
+                            auxSym = self.getSymbol(targetVram, tryPlusOffset=False, checkGlobalSegment=False)
+                            if auxSym is not None and auxSym.isTrustableFunction(self.instrCat == rabbitizer.InstrCategory.RSP):
+                                functionEnded = True
 
         return functionEnded, prevFuncHadUserDeclaredSize
 

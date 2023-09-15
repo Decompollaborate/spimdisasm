@@ -460,6 +460,7 @@ class SymbolFunction(SymbolText):
                                     contextSym.isGotGlobal = gotGlobal
                                 contextSym.accessType = rabbitizer.AccessType.DOUBLEFLOAT
                                 contextSym.unsignedAccessType = False
+                                contextSym.isMips1Double = True
 
         self._generateRelocsFromInstructionAnalyzer()
 
@@ -647,7 +648,7 @@ class SymbolFunction(SymbolText):
         labelSym.isDefined = True
         labelSym.sectionType = self.sectionType
         labelSymType = labelSym.getTypeSpecial()
-        if labelSymType == common.SymbolSpecialType.function or (labelSymType == common.SymbolSpecialType.jumptablelabel and not migrate):
+        if labelSymType is None or labelSymType == common.SymbolSpecialType.function or (labelSymType == common.SymbolSpecialType.jumptablelabel and not migrate):
             label = labelSym.getReferenceeSymbols()
             labelMacro = labelSym.getLabelMacro(isInMiddleLabel=True)
             if labelMacro is not None:
@@ -740,10 +741,10 @@ class SymbolFunction(SymbolText):
             instructionOffset += 4
 
             if instructionOffset == symSize:
-                output += self.getSizeDirective(symName)
+                if common.GlobalConfig.ASM_TEXT_END_LABEL:
+                    output += f"{common.GlobalConfig.ASM_TEXT_END_LABEL} {self.getName()}" + common.GlobalConfig.LINE_ENDS
 
-        if common.GlobalConfig.ASM_TEXT_END_LABEL:
-            output += f"{common.GlobalConfig.ASM_TEXT_END_LABEL} {self.getName()}" + common.GlobalConfig.LINE_ENDS
+                output += self.getSizeDirective(symName)
 
         nameEnd = self.getNameEnd()
         if nameEnd is not None:

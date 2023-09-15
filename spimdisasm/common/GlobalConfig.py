@@ -198,9 +198,11 @@ class GlobalConfigType:
     EMIT_INLINE_RELOC: bool = False
 
     SYMBOL_FINDER_FILTER_LOW_ADDRESSES: bool = True
-    """Toggle pointer detection for lower addresses (lower than 0x40000000)"""
+    """Toggle pointer detection for lower addresses (lower than SYMBOL_FINDER_FILTER_ADDRESSES_ADDR_LOW)"""
+    SYMBOL_FINDER_FILTER_ADDRESSES_ADDR_LOW: int = 0x80000000
     SYMBOL_FINDER_FILTER_HIGH_ADDRESSES: bool = True
-    """Toggle pointer detection for higher addresses (higher than 0xC0000000)"""
+    """Toggle pointer detection for higher addresses (higher than SYMBOL_FINDER_FILTER_ADDRESSES_ADDR_HIGH)"""
+    SYMBOL_FINDER_FILTER_ADDRESSES_ADDR_HIGH: int = 0xC0000000
     SYMBOL_FINDER_FILTERED_ADDRESSES_AS_CONSTANTS: bool = True
     """Treat filtered out addresses as constants pairs"""
     SYMBOL_FINDER_FILTERED_ADDRESSES_AS_HILO: bool = False
