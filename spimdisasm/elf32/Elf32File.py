@@ -204,7 +204,7 @@ class Elf32File:
 
         if sectionEntryName == ".got":
             self.got = Elf32GlobalOffsetTable(array_of_bytes, entry.offset, entry.size)
-        elif Elf32SectionHeaderFlag.EXECINSTR in flags:
+        elif Elf32SectionHeaderFlag.EXECINSTR in flags and sectionEntryName != ".vutext":
             self.progbitsExecute[sectionEntryName] = entry
         elif sectionEntryName in {".rodata", ".rdata"}:
             # Some compilers set the Write flag on .rodata sections, so we need to hardcode

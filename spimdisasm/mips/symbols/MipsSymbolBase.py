@@ -436,8 +436,12 @@ class SymbolBase(common.ElementBase):
             label = self.getExtraLabelFromSymbol(self.getSymbol(currentVram, vromAddress=currentVrom, tryPlusOffset=False))
 
         dotType = ".double"
-        otherHalf = self.words[i+1]
-        doubleWord = (w << 32) | otherHalf
+        if common.GlobalConfig.ENDIAN == common.InputEndian.LITTLE:
+            otherHalf = self.words[i+1]
+            doubleWord = (otherHalf << 32) | w
+        else:
+            otherHalf = self.words[i+1]
+            doubleWord = (w << 32) | otherHalf
         doubleValue = common.Utils.qwordToDouble(doubleWord)
         value = f"{doubleValue:.18g}"
 
