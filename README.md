@@ -13,25 +13,6 @@ Currently supports all the CPU instructions for MIPS I, II, III and IV.
 Mainly focused on supporting Nintendo 64 binaries, but it should work with other
 MIPS platforms too.
 
-## Installing
-
-The recommended way to install is using from the PyPi release, via `pip`:
-
-```bash
-pip install spimdisasm
-```
-
-In case you want to mess with the latest development version without wanting to
-clone the repository, then you could use the following command:
-
-```bash
-pip uninstall spimdisasm
-pip install git+https://github.com/Decompollaborate/spimdisasm.git@develop
-```
-
-NOTE: Installing the development version is not recommended. Proceed at your own
-risk.
-
 ## Features
 
 - Produces matching assembly.
@@ -74,6 +55,55 @@ risk.
   - Overlays which are able to reference symbols from other overlays in other
     categories/types is supported too.
   - NOTE: This feature lacks lots of testing and probably has many bugs.
+
+## Installing
+
+The recommended way to install is using from the PyPi release, via `pip`:
+
+```bash
+python3 -m pip install -U spimdisasm
+```
+
+If you use a `requirements.txt` file in your repository, then you can add
+this library with the following line:
+
+```txt
+ipl3checksum>=1.17.4,<2.0.0
+``````
+
+### Development version
+
+The unstable development version is located at the [develop](https://github.com/Decompollaborate/spimdisasm/tree/develop)
+branch. PRs should be made into that branch instead of the main one.
+
+The recommended way to install a locally cloned repo is by passing the `-e`
+(editable) flag to `pip`.
+
+```bash
+python3 -m pip install -e .
+```
+
+In case you want to mess with the latest development version without wanting to
+clone the repository, then you could use the following command:
+
+```bash
+pip uninstall spimdisasm
+pip install git+https://github.com/Decompollaborate/spimdisasm.git@develop
+```
+
+NOTE: Installing the development version is not recommended unless you know what
+you are doing. Proceed at your own risk.
+
+## Versioning and changelog
+
+This library follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+We try to always keep backwards compatibility, so no breaking changes should
+happen until a major release (i.e. jumping from 1.X.X to 2.0.0).
+
+To see what changed on each release check either the [CHANGELOG.md](CHANGELOG.md)
+file or check the [releases page on Github](https://github.com/Decompollaborate/spimdisasm/releases).
+You can also use [this link](https://github.com/Decompollaborate/spimdisasm/releases/latest)
+to check the latest release.
 
 ## How to use
 
