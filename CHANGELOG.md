@@ -862,7 +862,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix unhashable type crash
   - Fixes #55
 
-## [1.6.1] - 2022-10-03
+## [1.6.1] - 2022-10-03 [YANKED]
 
 1.6.1: SN64 strikes again
 
@@ -1069,7 +1069,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Hopefully fixes a packaging problem on PyPi
 
-## [1.2.0] - 2022-06-10
+## [1.2.0] - 2022-06-10 [YANKED]
 
 1.2.0: Faster disassembly from rabbitizer
 
@@ -1212,13 +1212,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix CI builds (2)
 
-## [1.0.4] - 2022-05-26
+## [1.0.4] - 2022-05-26 [YANKED]
 
 ### Fixed
 
 - Fix the CI wheel
 
-## [1.0.3] - 2022-05-26
+## [1.0.3] - 2022-05-26 [YANKED]
 
 ### Changed
 
