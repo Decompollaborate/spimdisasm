@@ -691,28 +691,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.7.5] - 2022-10-30
 
-### Uncategorized
+### Changed
 
 - Use `.gpword` on PIC jumptables
-- Fix showing the got table in a few niche cases
 - Use `glabel` on migrated rodata again until we figure out why it messes matching
 - Do not use `glabel` on jumptable labels
+
+### Fixed
+
+- Fix showing the got table in a few niche cases
 
 ## [1.7.4] - 2022-10-28
 
 1.7.4: GOT fixes
 
-### Uncategorized
-
-GOT fixes:
-
-- Fix using GOT local addresses as functions
-- Fix `.data` symbols incorrectly referencing GOT local addresses
-- Fix `elfObjDisasm` using N64 specific symbols by default
-- Migrated rodata will no longer use glabels
-  - This change was made to accommodate GOT global/local references
-
-New features:
+### Added
 
 - The autodetected size of functions can now be queried from a `ContextSymbol`
   with `getSize()`
@@ -724,7 +717,7 @@ New features:
   - This can be useful to bootstrap newly generated C files so the rodata order
     is easier to preserve
 
-Misc changes:
+### Changed
 
 - `elfObjDisasm` now display progress to stdout when disassembling
   - This behavior can be disabled with `-q`
@@ -733,25 +726,39 @@ Misc changes:
   reference in the whole codebase must reference the symbol"
   - Seems to be a common pattern on PIC programs compiled with IDO
 
+### Fixed
+
+- Fix using GOT local addresses as functions
+- Fix `.data` symbols incorrectly referencing GOT local addresses
+- Fix `elfObjDisasm` using N64 specific symbols by default
+- Migrated rodata will no longer use glabels
+  - This change was made to accommodate GOT global/local references
+
 ## [1.7.3] - 2022-10-24
 
 1.7.3: `--aggressive-string-guesser`
 
-### Uncategorized
+### Added
 
-- Do not infer the type of a variable if the access types are heterogeneous,
-  which may imply a struct
 - New `--aggressive-string-guesser` flag
   - Tries to decode string even if the string is empty, the symbol may have type
     information or it is referenced more than once
 - Add `PSYQ` compiler option
   - Currently it enables the same options as `SN64`
 
+### Changed
+
+- Do not try to infer the type of a variable if the access types are heterogeneous,
+  which may imply a struct
+
 ## [1.7.2] - 2022-10-24
 
-### Uncategorized
+### Added
 
 - Allow passing context flags to `elfObjDisasm`
+
+### Fixed
+
 - Fix type inference if the user declared a type for the variable
 - Fix some strings not being properly detected on elf files (again)
 
@@ -759,56 +766,67 @@ Misc changes:
 
 1.7.1: elf fixing: got and dynamic programs
 
-### Uncategorized
+### Added
 
-- New flags in `elfObjDisasm`:
-  - Flags which try to mimic `readelf`: `--file-header`, `--syms`, `--relocs`
-    and `-display-got`
-  - `--split-functions`, has the same behavior as `singleFileDisasm`
-- `elfObjDisasm` changes:
-  - Fix undefined symbols handling in
-  - Fix addends of got global symbols
-  - Use rel types types from the elf file if they are available instead of
-    trying to infer them
-  - Warn when trying to disassemble an `abi2` (N32) elf
-  - Warn for negative GOT accesses instead of crashing
-  - Warn if unhandled flags are found in an elf file
-  - Fix gp value on N32 abi
-  - `$gp` access are no longer symbolized if the address is not found in the got
-    table
+- `elfObjDisasm`: Flags which try to mimic `readelf`: `--file-header`, `--syms`,
+  `--relocs` and `-display-got`
+- `elfObjDisasm`: Add `--split-functions`. It has the same behavior as `singleFileDisasm`
+- `elfObjDisasm`: Warn when trying to disassemble an `abi2` (N32) elf
+- `elfObjDisasm`: Warn for negative GOT accesses instead of crashing
+- `elfObjDisasm`: Warn if unhandled flags are found in an elf file
+
+### Fixed
+
+- `elfObjDisasm`. Fix undefined symbols handling in
+- `elfObjDisasm`. Fix addends of got global symbols
+- `elfObjDisasm`. Use rel types types from the elf file if they are available
+  instead of trying to infer them
+- `elfObjDisasm`: Fix gp value detection on N32 abi
+- `elfObjDisasm`: `$gp` access are no longer symbolized if the address is not
+  found in the got table
 - Fix rodata pointer detection in data on elf files (fixes #63)
 
 ## [1.7.0] - 2022-10-18
 
-### Uncategorized
+### Added
 
 - Add `leoBootID` to libultra syms
-- Fix `--help` screen. whoops
 - `--no-emit-cpload` flag to disable emitting the `.cpload` directive in PIC programs
   - `_gp_disp` is emitted instead of the raw immediate values
   - The `_gp_disp` value is emitted as a comment
+
+### Changed
+
 - Updates `rabbitizer` requirement to 1.3.1
-- Fix `.byte` and `.short` in little endian
-  - Thanks @Xeeynamo (#62)
-- Fix boundaries detection reporting in `elfObjDisasm`
-  - The output of this report is csv-friendly. Thanks @EllipticEllipsis (#65)
 - Tweak string disassembly
   - If a symbol is in the middle of a string then the string is aborted and
     disassembled as `.word`s
   - Check the next bytes (until a word boundary) after the nul terminator of a
     string are zero. Thanks @Xeeynamo (#64)
   - Strings with '\a' are no longer treated as real strings
-- Fix labels not being emitted in rodata if they were not being word-aligned.
-  - Fixes #59
-- Remove `GlobalConfig.ADD_NEW_SYMBOLS`
 - Avoid pairing `%gp_got` symbols on non PIC code
 - General cleanups
+
+### Removed
+
+- Remove `GlobalConfig.ADD_NEW_SYMBOLS`
+
+### Fixed
+
+- Fix `--help` screen. whoops
+- Fix `.byte` and `.short` in little endian (#62)
+  - Thanks @Xeeynamo
+- Fix boundaries detection reporting in `elfObjDisasm` (#65)
+  - The output of this report is csv-friendly.
+  - Thanks @EllipticEllipsis
+- Fix labels not being emitted in rodata if they were not being word-aligned.
+  - Fixes #59
 
 ## [1.6.5] - 2022-10-07
 
 1.6.5: elf fixes
 
-### Uncategorized
+### Fixed
 
 - Avoid crashing if a `%got` access' address is not in the global table. Prints
   a warning instead.
@@ -818,15 +836,17 @@ Misc changes:
 
 ## [1.6.4] - 2022-10-06
 
- 1.6.4: Fix symtab parsing from relocated elfs
+1.6.4: Fix symtab parsing from relocated elfs
 
-### Uncategorized
+### Fixed
+
+- Fix symtab parsing from relocated elfs
 
 ## [1.6.3] - 2022-10-04
 
 1.6.3: Speedup for overlay disassembly
 
-### Uncategorized
+### Changed
 
 - Moves the `globalSegment` check above all the other checks in `getSymbol`,
   providing a faster lookup since most of the time overlays usually reference a
@@ -837,29 +857,31 @@ Misc changes:
 
 1.6.2: hotfix
 
-### Uncategorized
+### Fixed
 
-Should address issue #55
+- Fix unhashable type crash
+  - Fixes #55
 
 ## [1.6.1] - 2022-10-03
 
 1.6.1: SN64 strikes again
 
-### Uncategorized
+### Added
 
 - Add align directive for doubles for SN64
 - Track which functions references each symbol
   - Used to improve rodata migration on non-IDO compilers
+
+### Changed
+
 - Use `g` format specifier when formatting disassembled floats and doubles
 
 ## [1.6.0] - 2022-10-01
 
 1.6.0: Refactor front-end scripts
 
-### Uncategorized
+### Changed
 
-- Deleted `singleFileDisasm.py`, `simpleFileDisasm.py`, `disasmdis.py`,
-  `rspDisasm.py`, `elfObjDisasm.py`
 - The frontend scripts were converted to submodules, now those can be executed
   with the `python3 -m spimdisasm.submodulename` syntax, allowing to execute
   them even in the pip installations of spimdisasm.
@@ -870,11 +892,16 @@ Should address issue #55
   - Migrate const variables to functions on SN64
   - Remove `.rdata` check on migrated rodata for SN64
 
+### Removed
+
+- Deleted `singleFileDisasm.py`, `simpleFileDisasm.py`, `disasmdis.py`,
+  `rspDisasm.py`, `elfObjDisasm.py`
+
 ## [1.5.7] - 2022-09-30
 
 1.5.7: Fix 0 size bss variables
 
-### Uncategorized
+### Fixed
 
 - Fixes an issue where 0 size bss variables where being outputted if the last
   bss variable of a file had a size which filled its size up until the file boundary
@@ -883,22 +910,29 @@ Should address issue #55
 
 1.5.6: More SN64 tweaks and data/rodata endianess
 
-### Uncategorized
+### Added
 
-- Fixes data analyzis. It was ignoring banned symbols
-- Use `.rdata` on rodata migration for SN64
-- Fix `ASM_DATA_SYM_AS_LABEL` on bss generation
-- Fix rodata symbols searching during migration
 - Add option to disassemble data/rodata with different endianess than the global
   one
 - Allow changing the string encoding per rodata segment
+
+### Changed
+
+- Use `.rdata` on rodata migration for SN64
+
+### Fixed
+
+- Fixes data analyzis.
+  - It was ignoring banned symbols
+- Fix `ASM_DATA_SYM_AS_LABEL` on bss generation
+- Fix rodata symbols searching during migration
 - Return the created segment by `addOverlaySegment`
 
 ## [1.5.5] - 2022-09-24
 
 1.5.5: Fix `ASM_DATA_SYM_AS_LABEL`
 
-### Uncategorized
+### Fixed
 
 - Fix `ASM_DATA_SYM_AS_LABEL`: It was outputing the data label
 
@@ -906,20 +940,26 @@ Should address issue #55
 
 1.5.4: More SN64 tweaks
 
-### Uncategorized
+### Added
 
 - `ASM_DATA_SYM_AS_LABEL`: Allow adding a data symbol as a simple label.
-- `late_rodata` logic has been tweaked to only be applied when compiler is set
-  to IDO
 - Allow range checks on symbols referenced by data symbols
 - Add option to allow all addends referenced by data symbols
+
+### Changed
+
+- `late_rodata` logic has been tweaked to only be applied when compiler is set
+  to IDO
+
+### Fixed
+
 - Fix use of user-declared sizes on functions and bss symbols
 
 ## [1.5.3] - 2022-09-23
 
 1.5.3: More default banned symbols
 
-### Uncategorized
+### Changed
 
 - Add `0x7FFFFFFF` to the list of default banned symbols
 
@@ -927,7 +967,7 @@ Should address issue #55
 
 1.5.2: elf endianess fixes and rodata migration fixes
 
-### Uncategorized
+### Changed
 
 - Read endianess from elf file
 - Use `.section` directive on migrated rodata
@@ -936,7 +976,7 @@ Should address issue #55
 
 1.5.1: symbol detection fixes
 
-### Uncategorized
+### Changed
 
 - Check for data pointers in data itself and do a recheck in case the pointer is
   in the same section but behind the current symbol
@@ -946,88 +986,94 @@ Should address issue #55
 
 1.5.0: dynamic elfs
 
-### Uncategorized
+### Added
 
 - Add compatibility for dynamic elf files
   - `.dynsym`, `.dynstr` and `.dynamic` section parsing
   - `.got` table parsing
   - Use `%got` and `%call16` syntax for `$gp` relative symbols.
   - `.cpload REG` detection
+
+### Changed
+
 - Minor changes on string splitting functions to improve its use as an api
 
 ## [1.4.2] - 2022-09-09
 
 1.4.2: PS2 addresses hotfix
 
-### Uncategorized
+### Fixed
 
-Fix 0 and negative addresses being treated as real symbols
+- Fix 0 and negative addresses being treated as real symbols
 
 ## [1.4.1] - 2022-09-03
 
 1.4.1: Overlay function start bugfix
 
-### Uncategorized
+### Fixed
 
-Fixes a bug in which a function start was wrongly detected on an overlay because
-the symbol existed for said address on the global segment
+- Fixes a bug in which a function start was wrongly detected on an overlay because
+  the symbol existed for said address on the global segment
 
 ## [1.4.0] - 2022-08-27
 
 1.4.0: RSP and R5900 support
 
-### Uncategorized
+### Added
 
 - Adds proper support for N64's RSP
 - Allows passing any `rabbitizer.InstrCategory` to SectionText to allow using
-  any instruction set supported by rabbitizer
+  any instruction set supported by `rabbitizer`
 
 ## [1.3.0] - 2022-07-08
 
 1.3.0: rabbitizer 1.0.0
 
-### Uncategorized
+### Added
+
+- Rodata boundaries detection
+
+### Changed
 
 - Updated to use rabbitizer 1.0.0
-- Rodata boundaries detection
 
 ## [1.2.4] - 2022-07-05
 
-### Uncategorized
+### Changed
 
-- Explicitly require a `rabbitizer` version minor than the next major version to
+- Explicitly require a `rabbitizer` version smaller than the next major version to
   avoid possible compatibility issues.
-- Set up automatic discovery on setup.cfg
+- Set up automatic discovery on `setup.cfg`
 
 ## [1.2.3] - 2022-06-11
 
 1.2.3: Fix Python 3.7 compatibility (again)
 
-### Uncategorized
+### Fixed
 
-This time really fixes 3.7 compat, hopefully
+- This time really fixes 3.7 compat, hopefully
 
 ## [1.2.2] - 2022-06-11
 
 1.2.2: %hi/%lo symbol filtering fix
 
-### Uncategorized
+### Fixed
 
-Prevents filtering out LUI/ADDIU combos from being real symbols
+- Prevents filtering out `lui`/`addiu` combos from being real symbols
 
 ## [1.2.1] - 2022-06-10
 
 1.2.1: Packaging fix
 
-### Uncategorized
+### Fixed
 
-Hopefully fixes a packaging problem on PyPi
+- Hopefully fixes a packaging problem on PyPi
 
 ## [1.2.0] - 2022-06-10
 
 1.2.0: Faster disassembly from rabbitizer
 
-### Uncategorized
+### Changed
 
 - Use [rabbitizer](https://pypi.org/project/rabbitizer/) as the instruction
   decoder to speed up instruction analysis and disassembly
@@ -1035,7 +1081,7 @@ Hopefully fixes a packaging problem on PyPi
 
 ## [1.1.7] - 2022-06-08
 
-### Uncategorized
+### Changed
 
 - Allow changing the file offset width comment
 - `SortedDict`: New class which abstracts away the logic for keeping a sorted dictionary
@@ -1044,16 +1090,19 @@ Hopefully fixes a packaging problem on PyPi
 
 1.1.6: %hi reuse fix
 
-### Uncategorized
+### Fixed
+
+- Fix `%hi` reuse with wrong values
 
 ## [1.1.5] - 2022-06-03
 
 1.1.5: More overlay fixes
 
-### Uncategorized
+### Changed
 
 - Move most of the instruction analyzing code to a new independent class
-- Try to track instructions which are likely to not be a %lo and avoid pairing it.
+- Try to track instructions which are likely to not be a `%lo` and avoid pairing
+  it.
 - Extra checks to avoid using labels from other overlay segments
 - Only stop a look ahead search until we find either an unconditional branch or
   a `jr` instruction
@@ -1062,7 +1111,7 @@ Hopefully fixes a packaging problem on PyPi
 
 1.1.4: Overlay handling fixes
 
-### Uncategorized
+### Changed
 
 - Overall adds more vrom checks for handling shared-vram overlays.
 - The autogenerated symbol size now adjusts itself considering the symbol type
@@ -1070,115 +1119,134 @@ Hopefully fixes a packaging problem on PyPi
 
 ## [1.1.3] - 2022-06-01
 
- 1.1.3: Minor patch
+1.1.3: Minor patch
 
-### Uncategorized
+### Added
 
-Adds a way to register a name getter callback for symbols
+- Adds a way to register a name getter callback for symbols
 
 ## [1.1.2] - 2022-06-01
 
 1.1.2: More symbol finding cleanups
 
-### Uncategorized
+### Added
 
-- General cleanups and fixes related to symbol finding.
 - New `COMPILER` option in `GlobalConfig`, used to enable some compiler
   specific tweaks
+
+### Fixed
+
+- General cleanups and fixes related to symbol finding.
 
 ## [1.1.1] - 2022-05-30
 
 1.1.1: Symbol finding fixes
 
-### Uncategorized
-
-Various fixes:
+### Fixed
 
 - Multiples workarounds for pairing multiples %hi to the same %lo
-- Fix `J` target calculation for the look ahead symbol finder
-- Special cases for `LUI`s on delay slots
-- Track moving registers by using `MOVE`, `OR` and `ADDU`
+- Fix `j` target calculation for the look ahead symbol finder
+- Special cases for `lui`s on delay slots
+- Track moving registers by using `move`, `or` and `addu`
 - Invalidate some registers after function calls
 - Check negative branches
 - Fix jump table detector for SN64
 
 ## [1.1.0] - 2022-05-29
 
- 1.1.0: Overlay support (hopefully)
+1.1.0: Overlay support (hopefully)
 
-### Uncategorized
+### Added
 
 - Add support for overlays which share VRAMs and overlays which may communicate
   to overlays from other categories.
   - Each new category and overlay segment must be registered in `Context`
-- `ElementBase#vram` is now just an `int` as opposed to old `int|None`.
 - The `vrom` of elements is tracked and stored. It is mainly used to
   autogenerate overlay's names.
-- The differentiation in symbol categories (labels, functions, symbols, etc) is
+- The categorization in symbol categories (labels, functions, symbols, etc) is
   removed. Everything now is stored in only one big dictionary to avoid
   duplication and lower memory usage.
-- Remove the concept of "fake functions"
+
+### Changed
+
+- `ElementBase#vram` is now just an `int` as opposed to old `int|None`.
 - `addSymbol`, `getSymbol` and similar methods were moved to `ElementBase`
   because of the need for the respective element overlay info.
 - Symbol name generation is delayed as much as possible and autogenerated on
   the fly.
-- Some minor symbol finder fixes
-- Bugfix symbols disappearing for no reason
 - General cleanups
+
+### Removed
+
+- Remove the concept of "fake functions"
+
+### Fixed
+
+- Some minor symbol finder fixes
+- Gix symbols disappearing for no reason
 
 ## [1.0.6] - 2022-05-26
 
 1.0.6: Even more SN64 fixes
 
-### Uncategorized
+### Added
 
-- Add more checks for J as unconditional branch
-- Allow disabling %hi/%lo syntax for constants
+- Add more checks for `j` as unconditional branch
+- Allow disabling `%hi`/`%lo` syntax for constants
 - Add extra global label for other symbols (usually labels) in functions when
   `GlobalConfig.ASM_TEXT_FUNC_AS_LABEL` is enabled.
 
 ## [1.0.5] - 2022-05-26
 
-### Uncategorized
+### Added
 
-- Allow setting a .ent and the function name as a label
+- Allow setting a `.ent` and the function name as a label
 - Float register `$31` fix for `NAMED_REGISTERS=False`
-- Fix CI builds (2)
+
+### Changed
+
 - Only apply the SN64 DIV fix for non handwritten functions
 - Finer control over pseudo instructions
 
+### Fixed
+
+- Fix CI builds (2)
+
 ## [1.0.4] - 2022-05-26
 
-### Uncategorized
+### Fixed
 
-Fix the CI wheel
+- Fix the CI wheel
 
 ## [1.0.3] - 2022-05-26
 
-### Uncategorized
+### Changed
 
-Add CI which builds a wheel and publishes it to PyPI
+- Add CI which builds a wheel and publishes it to PyPI
 
 ## [1.0.2] - 2022-05-26
 
-### Uncategorized
+### Added
+
+- Allow changing the line ends to anything via `GlobalConfig.LINE_ENDS`
+
+### Fixed
 
 - Fix missing `f` on float registers when `GlobalConfig.NAMED_REGISTERS` was set
   to `False`
-- Allow changing the line ends to anything via `GlobalConfig.LINE_ENDS`
 
 ## [1.0.1] - 2022-05-26
 
-### Uncategorized
-
-Changes:
+### Changed
 
 - Improve RAM usage by removing an almost unused dictionary from the Instruction
   classes
 
 ## [1.0.0] - 2022-05-26
 
-### Uncategorized
+### Added
+
+- Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
 [1.17.3]: https://github.com/Decompollaborate/spimdisasm/compare/1.17.2...1.17.3
