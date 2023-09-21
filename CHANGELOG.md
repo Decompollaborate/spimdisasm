@@ -1,3 +1,10 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
 ## [Unreleased]
 
 ## [1.17.3] - 2023-09-18
@@ -21,18 +28,21 @@
 - Emit global labels for symbols with no type in the middle of functions
 - Add checks for rs and rt registers instead of assuming they are used to avoid crashes
 - Option to set the filtering addresses for the symbol finder
-- Consider the `j` instruction as a function end if rabbitizer's `--j-branch` option is turned off
+- Consider the `j` instruction as a function end if rabbitizer's `--j-branch`
+  option is turned off
 - Always migrate mips1 doubles when migrating rodata
 
 ## [1.17.0] - 2023-08-27
 
 ### Uncategorized
 
-- Allow using `MIPS_NONE` reloc type as a way to avoid symbolizing a reference and use the raw value instead.
+- Allow using `MIPS_NONE` reloc type as a way to avoid symbolizing a reference
+  and use the raw value instead.
 - Allow using a different label for symbols in the middle of functions.
   - Useful for setting alternative entry points for handwritten functions.
   - It can be used by setting the `ASM_TEXT_ALT_LABEL`.
-- Fix `elfObjDisasm` crashing if a reloc section references an unhandled section like `.pdr`.
+- Fix `elfObjDisasm` crashing if a reloc section references an unhandled section
+  like `.pdr`.
 
 ## [1.16.5] - 2023-08-22
 
@@ -45,8 +55,10 @@
 ### Uncategorized
 
 - Try to gather the `$gp` register value from non-PIP elfs too
-- Various bugfixes related to `j` instructions being used as a way to call another function.
-- Fix size directive not being properly emitted for functions with user-declared size that has dangling nops.
+- Various bugfixes related to `j` instructions being used as a way to call
+  another function.
+- Fix size directive not being properly emitted for functions with user-declared
+  size that has dangling nops.
 - Detect ABI and cpu flags from elf header.
 - Do not use mips1 double detection heuristic on non o32 abis
 - Avoid warning about LOCAL NOTYPE symbols in elf files
@@ -62,22 +74,26 @@
 ### Uncategorized
 
 - Fix size directive not using the right label when symbols are smaller than a word
-- Fix size directive not being properly emitted for symbols with a size smaller than a word
+- Fix size directive not being properly emitted for symbols with a size smaller
+  than a word
 - Generate pad symbols to honor user declared sizes
-  - Symbols will be automatically splitted if the user-declared size is smaller than the symbol size (usually due to size not being a multiple of 4, file splits, other symbols not being referenced, etc)
+  - Symbols will be automatically splitted if the user-declared size is smaller
+  than the symbol size (usually due to size not being a multiple of 4, file
+  splits, other symbols not being referenced, etc)
 - Add the character `0x1A` to set of special cases for string decoding.
-- Fix bug which produced reporting incorrect file splits on strings which their last word was a zero.
+- Fix bug which produced reporting incorrect file splits on strings which their
+  last word was a zero.
 - Workaround for big addends when building with modern GAS
-
 
 ## [1.16.0] - 2023-07-23
 
 ### Uncategorized
 
-- Add a detector for the redundant function end produced by IDO with some specific flag combinations.
-  - It is turned off by default, but it can be turned on globally with `--detect-redundant-function-end`, or globally and per file via the API.
+- Add a detector for the redundant function end produced by IDO with some
+  specific flag combinations.
+  - It is turned off by default, but it can be turned on globally with
+    `--detect-redundant-function-end`, or globally and per file via the API.
 - Fix BSS sections not emitting a first symbol if it isn't referenced anywhere.
-
 
 ## [1.15.4] - 2023-07-14
 
@@ -104,31 +120,44 @@
 
 ### Uncategorized
 
-- Emit string alignment directives even when the section isn't aligned to a multiple of 8.
-  - Some projects can have rodata sections aligned to just a multiple of 4, and not emitting the directive in those cases can break their builds
+- Emit string alignment directives even when the section isn't aligned to a
+  multiple of 8.
+  - Some projects can have rodata sections aligned to just a multiple of 4, and
+    not emitting the directive in those cases can break their builds
 
 ## [1.15.0] - 2023-07-03
 
 ### Uncategorized
 
-- Change the string guesser to work with multiple levels instead of plainly enabled/disabled and the aggressive toggle.
-  - The new option is used via the API `GlobalConfig.RODATA_STRING_GUESSER_LEVEL` or via the CLI `--rodata-string-guesser level`.
-  - The old `GlobalConfig.STRING_GUESSER` and `GlobalConfig.AGGRESSIVE_STRING_GUESSER` options are now deprecated, same as the CLI options `--string-guesser` and `--aggressive-string-guesser`.
-    - The old `GlobalConfig.STRING_GUESSER = True` is equivalent to the new `GlobalConfig.RODATA_STRING_GUESSER_LEVEL = 1`
-    - The old `GlobalConfig.AGGRESSIVE_STRING_GUESSER = True` is equivalent to the new `GlobalConfig.RODATA_STRING_GUESSER_LEVEL = 4`
+- Change the string guesser to work with multiple levels instead of plainly
+  enabled/disabled and the aggressive toggle.
+  - The new option is used via the API
+    `GlobalConfig.RODATA_STRING_GUESSER_LEVEL` or via the CLI
+    `--rodata-string-guesser level`.
+  - The old `GlobalConfig.STRING_GUESSER` and
+    `GlobalConfig.AGGRESSIVE_STRING_GUESSER` options are now deprecated, same as
+    the CLI options `--string-guesser` and `--aggressive-string-guesser`.
+    - The old `GlobalConfig.STRING_GUESSER = True` is equivalent to the new
+      `GlobalConfig.RODATA_STRING_GUESSER_LEVEL = 1`
+    - The old `GlobalConfig.AGGRESSIVE_STRING_GUESSER = True` is equivalent to
+      the new `GlobalConfig.RODATA_STRING_GUESSER_LEVEL = 4`
   - Meaning of the new levels:
     - level 0: Completely disable the guessing feature.
     - level 1: The most conservative guessing level. Imposes the following restrictions:
       - Do not try to guess if the user provided a type for the symbol.
-      - Do no try to guess if type information for the symbol can be inferred by other means.
+      - Do no try to guess if type information for the symbol can be inferred by
+        other means.
       - A string symbol must be referenced only once.
       - Strings must not be empty.
-    - level 2: A string no longer needs to be referenced only once to be considered a possible string. This can happen because of a deduplication optimization.
+    - level 2: A string no longer needs to be referenced only once to be
+      considered a possible string. This can happen because of a deduplication optimization.
     - level 3: Empty strings are allowed.
-    - level 4: Symbols with autodetected type information but no user type information can still be guessed as strings.
+    - level 4: Symbols with autodetected type information but no user type
+      information can still be guessed as strings.
   - The level defaults to 1.
 - Implement string guesser for the data section.
-  - Controlled by the API `GlobalConfig.DATA_STRING_GUESSER_LEVEL` or via the CLI `--data-string-guesser level`.
+  - Controlled by the API `GlobalConfig.DATA_STRING_GUESSER_LEVEL` or via the
+    CLI `--data-string-guesser level`.
   - Decodes strings with the `ASCII` encoding by default.
   - The meaning of each level are the same as the rodata string guesser.
   - The level defaults to 2.
@@ -171,9 +200,11 @@
 ### Uncategorized
 
 - Try to support better N32 PIC programs.
-  - The current issue was spimdisasm was not able to properly generate symbol references for `$gp` accesses.
+  - The current issue was spimdisasm was not able to properly generate symbol
+    references for `$gp` accesses.
   - GOT table now gets its own address from the reginfo instead of the dynamic table.
-  - Accesses pointing outside the GOT table are tried to be redirected to `sdata`, `srdata` and `sbss` sections.
+  - Accesses pointing outside the GOT table are tried to be redirected to
+    `sdata`, `srdata` and `sbss` sections.
 - Implement `--dyn-syms` on readelf-like mode.
 - Minor improvements to readelf output format
 
@@ -181,7 +212,8 @@
 
 ### Uncategorized
 
-- Fix not writing to subfolders properly when a csv filesplit entry has a slash on its name.
+- Fix not writing to subfolders properly when a csv filesplit entry has a slash
+  on its name.
 
 ## [1.13.2] - 2023-05-01
 
@@ -194,16 +226,14 @@
 
 ### Uncategorized
 
-- Fix a possible `None` case in ` getInstrCategoryFromStr`
+- Fix a possible `None` case in `getInstrCategoryFromStr`
 - Add note about R3000GTE and R5900 instruction set support in the README
-
 
 ## [1.13.0] - 2023-04-30
 
 ### Uncategorized
 
 - Add support for R3000GTE
-
 
 ## [1.12.5] - 2023-04-28
 
@@ -236,14 +266,15 @@
 - Add `--version` flag to every cli tool
 - Fix data not being properly disassembled on `singleFileDisasm`
 - Enforce UTF-8 encoding on generated asm files (PR #111)
-  - Thanks to @1superchip 
+  - Thanks to @1superchip
 - Emit a comment saying if a reloc is a global one when the emit relocs flag is passed
 - Fix incorrect addends on non static symbols from elf files.
-  - Fixes issue #110 
-- Fix a regression where some `%lo` symbols weren't being properly paired because of the `%got` being reused on PIC code
+  - Fixes issue #110
+- Fix a regression where some `%lo` symbols weren't being properly paired
+  because of the `%got` being reused on PIC code
 - Fix sizes for inferred types
 - Properly detect `-mips1` `double` literals
-  - Fixes issue #57 
+  - Fixes issue #57
 
 ## [1.12.1] - 2023-03-28
 
@@ -294,7 +325,8 @@
 ### Uncategorized
 
 - Add flag to emit inline relocs
-- Do not report extra padding in functions if user declared size matches the size of the function
+- Do not report extra padding in functions if user declared size matches the
+  size of the function
 - Rename `ContextSymbol.size` to `ContextSymbol.userDeclaredSize`
 - Add `--function-info` flag
 - `FuncRodataEntry`: Fix migrate parameter if function has no rodata to be migrated
@@ -313,13 +345,17 @@
 - CLI changes:
   - Install CLI tools as actual terminal programs
   - Allow invoking the CLI tools from spimdisasm as subparsers
-  - The old way of invoking the CLI tools (`python3 -m spimdisasm.clitool`) is now deprecated, but still works
+  - The old way of invoking the CLI tools (`python3 -m spimdisasm.clitool`) is
+    now deprecated, but still works
 - `disasmdis`: Fix crash if the input isn't a multiple of a word
-- Report with a comment which instruction made spimdisasm detected as a handwritten instruction
+- Report with a comment which instruction made spimdisasm detected as a
+  handwritten instruction
 - New in the API: `FunctionRodataEntry`
   - Cleaner interface for rodata migration and similar functions
-  - Provides method for intermixing functions and non-migrated rodata symbols in a way the correct order is still preserved
-  - Old functions from `FileHandlers` which provided rodata migration functionalities are now deprecated
+  - Provides method for intermixing functions and non-migrated rodata symbols in
+    a way the correct order is still preserved
+  - Old functions from `FileHandlers` which provided rodata migration
+    functionalities are now deprecated
 
 ## [1.10.6] - 2023-01-28
 
@@ -330,7 +366,8 @@
 - Check for bss symbol size to match user declared size
 - Warn if the globalsegment vrom start and end is the same
 - Identify 32bitsmode elf flag
-- Avoid reporting leading zeroes as padding in rodata symbols if the size of the symbol matches the user declared one
+- Avoid reporting leading zeroes as padding in rodata symbols if the size of the
+  symbol matches the user declared one
 
 ## [1.10.5] - 2023-01-28
 
@@ -382,7 +419,8 @@
 
 - Fix emitting `.align` directives on unnaligned jumptables
 - Fix rodata split detection not properly considering special jumptable alignment
-- Add `nameEnd` member to `ContextSymbol` to allow emitting a closing user-declared label
+- Add `nameEnd` member to `ContextSymbol` to allow emitting a closing
+  user-declared label
 
 ## [1.9.1] - 2022-12-29
 
@@ -394,12 +432,13 @@
 
 ### Uncategorized
 
-- Reloc system re-worked. Users can now provide their own relocs to improve the automatic disassembly
+- Reloc system re-worked. Users can now provide their own relocs to improve the
+  automatic disassembly
 - loPatch system has been removed and superseded by the global reloc system
-- `GlobalConfig` variables can now be set via environment variables. 
+- `GlobalConfig` variables can now be set via environment variables.
   - Parameters passed by cli take priority over environment variables.
-  - Options configured via code (when using this as a library) take priority over environment variables.
-
+  - Options configured via code (when using this as a library) take priority
+    over environment variables.
 
 ## [1.8.2] - 2022-12-19
 
@@ -411,7 +450,8 @@
 
 ### Uncategorized
 
-- New interface for allowing banning ranges of symbols, instead of having to add them one by one
+- New interface for allowing banning ranges of symbols, instead of having to add
+  them one by one
 
 ## [1.8.0] - 2022-12-16
 
@@ -420,10 +460,12 @@
 - Require [`rabbitizer` 1.4.0](https://github.com/Decompollaborate/rabbitizer/releases/tag/1.4.0)
 - Allow to type-hint strings with `asciz`
 - Allow disassembling `.data` symbols as strings
-  - This won't be automatically guessed as with `.rodata`, this only will happen with type-hints
+  - This won't be automatically guessed as with `.rodata`, this only will happen
+    with type-hints
 - `disasmdis` now accepts spaces and input from `stdin`
 
 Meta:
+
 - `setup.cfg` was removed and all its info was moved to `pyproject.toml`
 
 ## [1.7.12] - 2022-12-05
@@ -451,9 +493,8 @@ Check size of floats and doubles before migrating them
 - Elf fixes:
   - Reference `NOTYPE` symbols
   - Various GOT fixes
-  - Show isAutogeneratedPad in the context file #79 
-  - [Show the first %lo reference for each symbol in the context #80
-  
+  - Show isAutogeneratedPad in the context file #79
+  - Show the first %lo reference for each symbol in the context #80
 
 ## [1.7.9] - 2022-11-09
 
@@ -461,7 +502,8 @@ Check size of floats and doubles before migrating them
 
 - Fix an OoB issue when trying to post-process the GOT analyzis on non-PIC mode
 - Emit a comment for automatically generated bss pads.
-  - Those pads are created mainly to properly adjust the `.space` of a bss symbol if said symbol had an user-declared size
+  - Those pads are created mainly to properly adjust the `.space` of a bss
+    symbol if said symbol had an user-declared size
 
 ## [1.7.8] - 2022-11-04
 
@@ -481,9 +523,9 @@ Check size of floats and doubles before migrating them
 - Improve detection of the end of jumptables
 - Refactor REL handling. It has been simplified
   - This should improve disassembling `.o` files
-- Symbols from elfs are checked to be in the correct vram range before adding them to the context.
+- Symbols from elfs are checked to be in the correct vram range before adding
+  them to the context.
 - Allow disassembling data symbols as floats and doubles
-
 
 ## [1.7.6] - 2022-10-31
 
@@ -491,8 +533,9 @@ Check size of floats and doubles before migrating them
 
 - Refactor GOT handling
   - Should fix IDO 5.3 disassembly
--  Use glabels for jumptable labels when the functions are not being migrated
-- Support `MIPS_GOT_HI16`, `MIPS_GOT_LO16`, `MIPS_CALL_HI16` and `MIPS_CALL_LO16` reloc types from `.rel` elf sections
+- Use glabels for jumptable labels when the functions are not being migrated
+- Support `MIPS_GOT_HI16`, `MIPS_GOT_LO16`, `MIPS_CALL_HI16` and
+  `MIPS_CALL_LO16` reloc types from `.rel` elf sections
 - `disasmdis` now ignores non hex characters
 - Negative addresses are considered as GOT accesses in PIC mode
 - Add special handling for the GOT lazy resolver
@@ -513,6 +556,7 @@ Check size of floats and doubles before migrating them
 ### Uncategorized
 
 GOT fixes:
+
 - Fix using GOT local addresses as functions
 - Fix `.data` symbols incorrectly referencing GOT local addresses
 - Fix `elfObjDisasm` using N64 specific symbols by default
@@ -520,19 +564,25 @@ GOT fixes:
   - This change was made to accommodate GOT global/local references
 
 New features:
-- The autodetected size of functions can now be queried from a `ContextSymbol` with `getSize()`
+
+- The autodetected size of functions can now be queried from a `ContextSymbol`
+  with `getSize()`
 - The arch level can now be specified when disassembling
   - It is detected automatically when parsing an elf file
   - `.set gp=64` is disabled on MIPS1 and MIPS2 arch levels
-- `elfObjDisasm` will now produce a list of functions and non migrated rodata when requesting to migrate functions.
-  - This can be useful to bootstrap newly generated C files so the rodata order is easier to preserve
+- `elfObjDisasm` will now produce a list of functions and non migrated rodata
+  when requesting to migrate functions.
+  - This can be useful to bootstrap newly generated C files so the rodata order
+    is easier to preserve
 
 Misc changes:
+
 - `elfObjDisasm` now display progress to stdout when disassembling
   - This behavior can be disabled with `-q`
-- Rodata migration has been slightly tweaked: migration will be performed if only one function references the symbol, contrary to the old "only one reference in the whole codebase must reference the symbol"
+- Rodata migration has been slightly tweaked: migration will be performed if
+  only one function references the symbol, contrary to the old "only one
+  reference in the whole codebase must reference the symbol"
   - Seems to be a common pattern on PIC programs compiled with IDO
-
 
 ## [1.7.3] - 2022-10-24
 
@@ -540,9 +590,11 @@ Misc changes:
 
 ### Uncategorized
 
-- Do not infer the type of a variable if the access types are heterogeneous, which may imply a struct
+- Do not infer the type of a variable if the access types are heterogeneous,
+  which may imply a struct
 - New `--aggressive-string-guesser` flag
-  - Tries to decode string even if the string is empty, the symbol may have type information or it is referenced more than once
+  - Tries to decode string even if the string is empty, the symbol may have type
+    information or it is referenced more than once
 - Add `PSYQ` compiler option
   - Currently it enables the same options as `SN64`
 
@@ -561,17 +613,20 @@ Misc changes:
 ### Uncategorized
 
 - New flags in `elfObjDisasm`:
-  - Flags which try to mimic `readelf`: `--file-header`, `--syms`, `--relocs` and `-display-got`
+  - Flags which try to mimic `readelf`: `--file-header`, `--syms`, `--relocs`
+    and `-display-got`
   - `--split-functions`, has the same behavior as `singleFileDisasm`
 - `elfObjDisasm` changes:
-  - Fix undefined symbols handling in 
+  - Fix undefined symbols handling in
   - Fix addends of got global symbols
-  - Use rel types types from the elf file if they are available instead of trying to infer them
-  - Warn when trying to disassemble an `abi2` (N32) elf 
-  - Warn for negative GOT accesses instead of crashing 
+  - Use rel types types from the elf file if they are available instead of
+    trying to infer them
+  - Warn when trying to disassemble an `abi2` (N32) elf
+  - Warn for negative GOT accesses instead of crashing
   - Warn if unhandled flags are found in an elf file
   - Fix gp value on N32 abi
-  - `$gp` access are no longer symbolized if the address is not found in the got table
+  - `$gp` access are no longer symbolized if the address is not found in the got
+    table
 - Fix rodata pointer detection in data on elf files (fixes #63)
 
 ## [1.7.0] - 2022-10-18
@@ -589,11 +644,13 @@ Misc changes:
 - Fix boundaries detection reporting in `elfObjDisasm`
   - The output of this report is csv-friendly. Thanks @EllipticEllipsis (#65)
 - Tweak string disassembly
-  - If a symbol is in the middle of a string then the string is aborted and disassembled as `.word`s
-  - Check the next bytes (until a word boundary) after the nul terminator of a string are zero. Thanks @Xeeynamo (#64)
+  - If a symbol is in the middle of a string then the string is aborted and
+    disassembled as `.word`s
+  - Check the next bytes (until a word boundary) after the nul terminator of a
+    string are zero. Thanks @Xeeynamo (#64)
   - Strings with '\a' are no longer treated as real strings
 - Fix labels not being emitted in rodata if they were not being word-aligned.
-  - Fixes #59 
+  - Fixes #59
 - Remove `GlobalConfig.ADD_NEW_SYMBOLS`
 - Avoid pairing `%gp_got` symbols on non PIC code
 - General cleanups
@@ -604,7 +661,8 @@ Misc changes:
 
 ### Uncategorized
 
-- Avoid crashing if a `%got` access' address is not in the global table. Prints a warning instead.
+- Avoid crashing if a `%got` access' address is not in the global table. Prints
+  a warning instead.
 - Fix symbol usage on relocatable files, kinda
 - Ignore `.rel` sections if the file is not of REL type
 - Avoid emitting `%got` rels for non PIC disassemblies
@@ -615,15 +673,16 @@ Misc changes:
 
 ### Uncategorized
 
-
-
 ## [1.6.3] - 2022-10-04
 
 1.6.3: Speedup for overlay disassembly
 
 ### Uncategorized
 
-- Moves the `globalSegment` check above all the other checks in `getSymbol`, providing a faster lookup since most of the time overlays usually reference a symbol from the `globalSegment` over a symbol from another overlay segment from a different category 
+- Moves the `globalSegment` check above all the other checks in `getSymbol`,
+  providing a faster lookup since most of the time overlays usually reference a
+  symbol from the `globalSegment` over a symbol from another overlay segment
+  from a different category
 
 ## [1.6.2] - 2022-10-03
 
@@ -631,7 +690,7 @@ Misc changes:
 
 ### Uncategorized
 
-Should address issue #55 
+Should address issue #55
 
 ## [1.6.1] - 2022-10-03
 
@@ -650,9 +709,12 @@ Should address issue #55
 
 ### Uncategorized
 
-- Deleted `singleFileDisasm.py`, `simpleFileDisasm.py`, `disasmdis.py`, `rspDisasm.py`, `elfObjDisasm.py`
-- The frontend scripts were converted to submodules, now those can be executed with the `python3 -m spimdisasm.submodulename` syntax, allowing to execute them even in the pip installations of spimdisasm.
-- Refactored raw path handling to use `pathlib`. 
+- Deleted `singleFileDisasm.py`, `simpleFileDisasm.py`, `disasmdis.py`,
+  `rspDisasm.py`, `elfObjDisasm.py`
+- The frontend scripts were converted to submodules, now those can be executed
+  with the `python3 -m spimdisasm.submodulename` syntax, allowing to execute
+  them even in the pip installations of spimdisasm.
+- Refactored raw path handling to use `pathlib`.
 - Add installation instructions to readme.
 - SN64 tweaks:
   - Use `.align` directive for string disassembly on SN64
@@ -665,9 +727,8 @@ Should address issue #55
 
 ### Uncategorized
 
-- Fixes an issue where 0 size bss variables where being outputted if the last bss variable of a file had a size which filled its size up until the file boundary
-
-
+- Fixes an issue where 0 size bss variables where being outputted if the last
+  bss variable of a file had a size which filled its size up until the file boundary
 
 ## [1.5.6] - 2022-09-27
 
@@ -679,7 +740,8 @@ Should address issue #55
 - Use `.rdata` on rodata migration for SN64
 - Fix `ASM_DATA_SYM_AS_LABEL` on bss generation
 - Fix rodata symbols searching during migration
-- Add option to disassemble data/rodata with different endianess than the global one
+- Add option to disassemble data/rodata with different endianess than the global
+  one
 - Allow changing the string encoding per rodata segment
 - Return the created segment by `addOverlaySegment`
 
@@ -698,7 +760,8 @@ Should address issue #55
 ### Uncategorized
 
 - `ASM_DATA_SYM_AS_LABEL`: Allow adding a data symbol as a simple label.
-- `late_rodata` logic has been tweaked to only be applied when compiler is set to IDO
+- `late_rodata` logic has been tweaked to only be applied when compiler is set
+  to IDO
 - Allow range checks on symbols referenced by data symbols
 - Add option to allow all addends referenced by data symbols
 - Fix use of user-declared sizes on functions and bss symbols
@@ -726,7 +789,8 @@ Should address issue #55
 
 ### Uncategorized
 
-- Check for data pointers in data itself and do a recheck in case the pointer is in the same section but behind the current symbol
+- Check for data pointers in data itself and do a recheck in case the pointer is
+  in the same section but behind the current symbol
 - Properly update original symbol type when creating symbols for sub-4 sizes
 
 ## [1.5.0] - 2022-09-17
@@ -756,7 +820,8 @@ Fix 0 and negative addresses being treated as real symbols
 
 ### Uncategorized
 
-Fixes a bug in which a function start was wrongly detected on an overlay because the symbol existed for said address on the global segment
+Fixes a bug in which a function start was wrongly detected on an overlay because
+the symbol existed for said address on the global segment
 
 ## [1.4.0] - 2022-08-27
 
@@ -765,7 +830,8 @@ Fixes a bug in which a function start was wrongly detected on an overlay because
 ### Uncategorized
 
 - Adds proper support for N64's RSP
-- Allows passing any `rabbitizer.InstrCategory` to SectionText to allow using any instruction set supported by rabbitizer
+- Allows passing any `rabbitizer.InstrCategory` to SectionText to allow using
+  any instruction set supported by rabbitizer
 
 ## [1.3.0] - 2022-07-08
 
@@ -780,9 +846,9 @@ Fixes a bug in which a function start was wrongly detected on an overlay because
 
 ### Uncategorized
 
-- Explicitly require a `rabbitizer` version minor than the next major version to avoid possible compatibility issues.
+- Explicitly require a `rabbitizer` version minor than the next major version to
+  avoid possible compatibility issues.
 - Set up automatic discovery on setup.cfg
-
 
 ## [1.2.3] - 2022-06-11
 
@@ -814,7 +880,8 @@ Hopefully fixes a packaging problem on PyPi
 
 ### Uncategorized
 
-- Use [rabbitizer](https://pypi.org/project/rabbitizer/) as the instruction decoder to speed up instruction analysis  and disassembly
+- Use [rabbitizer](https://pypi.org/project/rabbitizer/) as the instruction
+  decoder to speed up instruction analysis and disassembly
 - Other minor changes to try to be compatible with Python 3.7
 
 ## [1.1.7] - 2022-06-08
@@ -830,8 +897,6 @@ Hopefully fixes a packaging problem on PyPi
 
 ### Uncategorized
 
-
-
 ## [1.1.5] - 2022-06-03
 
 1.1.5: More overlay fixes
@@ -841,7 +906,8 @@ Hopefully fixes a packaging problem on PyPi
 - Move most of the instruction analyzing code to a new independent class
 - Try to track instructions which are likely to not be a %lo and avoid pairing it.
 - Extra checks to avoid using labels from other overlay segments
-- Only stop a look ahead search until we find either an unconditional branch or a `jr` instruction
+- Only stop a look ahead search until we find either an unconditional branch or
+  a `jr` instruction
 
 ## [1.1.4] - 2022-06-02
 
@@ -850,7 +916,8 @@ Hopefully fixes a packaging problem on PyPi
 ### Uncategorized
 
 - Overall adds more vrom checks for handling shared-vram overlays.
-- The autogenerated symbol size now adjusts itself considering the symbol type and the address alignment
+- The autogenerated symbol size now adjusts itself considering the symbol type
+  and the address alignment
 
 ## [1.1.3] - 2022-06-01
 
@@ -867,7 +934,8 @@ Adds a way to register a name getter callback for symbols
 ### Uncategorized
 
 - General cleanups and fixes related to symbol finding.
-- New `COMPILER` option in `GlobalConfig`, used to enable some compiler specific tweaks
+- New `COMPILER` option in `GlobalConfig`, used to enable some compiler
+  specific tweaks
 
 ## [1.1.1] - 2022-05-30
 
@@ -876,6 +944,7 @@ Adds a way to register a name getter callback for symbols
 ### Uncategorized
 
 Various fixes:
+
 - Multiples workarounds for pairing multiples %hi to the same %lo
 - Fix `J` target calculation for the look ahead symbol finder
 - Special cases for `LUI`s on delay slots
@@ -890,14 +959,20 @@ Various fixes:
 
 ### Uncategorized
 
-- Add support for overlays which share VRAMs and overlays which may communicate to overlays from other categories.
+- Add support for overlays which share VRAMs and overlays which may communicate
+  to overlays from other categories.
   - Each new category and overlay segment must be registered in `Context`
 - `ElementBase#vram` is now just an `int` as opposed to old `int|None`.
-- The `vrom` of elements is tracked and stored. It is mainly used to autogenerate overlay's names.
-- The differentiation in symbol categories (labels, functions, symbols, etc) is removed. Everything now is stored in only one big dictionary to avoid duplication and lower memory usage.
+- The `vrom` of elements is tracked and stored. It is mainly used to
+  autogenerate overlay's names.
+- The differentiation in symbol categories (labels, functions, symbols, etc) is
+  removed. Everything now is stored in only one big dictionary to avoid
+  duplication and lower memory usage.
 - Remove the concept of "fake functions"
-- `addSymbol`, `getSymbol` and similar methods were moved to `ElementBase` because of the need for the respective element overlay info.
-- Symbol name generation is delayed as much as possible and autogenerated on the fly.
+- `addSymbol`, `getSymbol` and similar methods were moved to `ElementBase`
+  because of the need for the respective element overlay info.
+- Symbol name generation is delayed as much as possible and autogenerated on
+  the fly.
 - Some minor symbol finder fixes
 - Bugfix symbols disappearing for no reason
 - General cleanups
@@ -910,7 +985,8 @@ Various fixes:
 
 - Add more checks for J as unconditional branch
 - Allow disabling %hi/%lo syntax for constants
-- Add extra global label for other symbols (usually labels) in functions when `GlobalConfig.ASM_TEXT_FUNC_AS_LABEL` is enabled.
+- Add extra global label for other symbols (usually labels) in functions when
+  `GlobalConfig.ASM_TEXT_FUNC_AS_LABEL` is enabled.
 
 ## [1.0.5] - 2022-05-26
 
@@ -921,7 +997,6 @@ Various fixes:
 - Fix CI builds (2)
 - Only apply the SN64 DIV fix for non handwritten functions
 - Finer control over pseudo instructions
-
 
 ## [1.0.4] - 2022-05-26
 
@@ -939,7 +1014,8 @@ Add CI which builds a wheel and publishes it to PyPI
 
 ### Uncategorized
 
-- Fix missing `f` on float registers when `GlobalConfig.NAMED_REGISTERS` was set to `False`
+- Fix missing `f` on float registers when `GlobalConfig.NAMED_REGISTERS` was set
+  to `False`
 - Allow changing the line ends to anything via `GlobalConfig.LINE_ENDS`
 
 ## [1.0.1] - 2022-05-26
@@ -947,13 +1023,13 @@ Add CI which builds a wheel and publishes it to PyPI
 ### Uncategorized
 
 Changes:
-- Improve RAM usage by removing an almost unused dictionary from the Instruction classes
+
+- Improve RAM usage by removing an almost unused dictionary from the Instruction
+  classes
 
 ## [1.0.0] - 2022-05-26
 
 ### Uncategorized
-
-
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
 [1.17.3]: https://github.com/Decompollaborate/spimdisasm/compare/1.17.2...1.17.3
