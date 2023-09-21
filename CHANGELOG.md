@@ -7,11 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `CHANGELOG.md`
+
 ## [1.17.3] - 2023-09-18
 
-### Uncategorized
+### Changed
 
-- Hardcode a check to avoid disassembling `.vutext`
+- Hardcodes a check to avoid disassembling `.vutext`. This will be changed in a
+  future release.
+  - Fixes `.vutext` sections from PS2 elfs messing with symbol analyzis
+
+### Fixed
+
 - Fix `.double` disassembly for little endian
 
 ## [1.17.2] - 2023-09-18
@@ -22,103 +31,133 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.17.1] - 2023-09-15
 
-### Uncategorized
+### Added
+
+- Option to set the filtering addresses for the symbol finder
+
+### Changed
 
 - Tweak endlabel to be emitted in the same place as the size directive does
 - Emit global labels for symbols with no type in the middle of functions
-- Add checks for rs and rt registers instead of assuming they are used to avoid crashes
-- Option to set the filtering addresses for the symbol finder
 - Consider the `j` instruction as a function end if rabbitizer's `--j-branch`
   option is turned off
 - Always migrate mips1 doubles when migrating rodata
 
+### Fixed
+
+- Add checks for `$rs` and `$rt` registers instead of assuming they are used to
+  avoid crashing during runtime.
+
 ## [1.17.0] - 2023-08-27
 
-### Uncategorized
+### Changed
 
 - Allow using `MIPS_NONE` reloc type as a way to avoid symbolizing a reference
   and use the raw value instead.
 - Allow using a different label for symbols in the middle of functions.
   - Useful for setting alternative entry points for handwritten functions.
   - It can be used by setting the `ASM_TEXT_ALT_LABEL`.
+
+### Fixed
+
 - Fix `elfObjDisasm` crashing if a reloc section references an unhandled section
   like `.pdr`.
 
 ## [1.16.5] - 2023-08-22
 
-### Uncategorized
+### Changed
 
-- Do not use iQue symbols by default if user asked for libultra symbols
+- Do not use iQue symbols by default if user asked only for libultra symbols
 
 ## [1.16.4] - 2023-08-19
 
-### Uncategorized
+### Added
 
 - Try to gather the `$gp` register value from non-PIP elfs too
+- Detect ABI and cpu flags from elf header.
+
+### Changed
+
+- Do not use mips1 double detection heuristic on non o32 abis
+
+### Fixed
+
 - Various bugfixes related to `j` instructions being used as a way to call
   another function.
 - Fix size directive not being properly emitted for functions with user-declared
   size that has dangling nops.
-- Detect ABI and cpu flags from elf header.
-- Do not use mips1 double detection heuristic on non o32 abis
-- Avoid warning about LOCAL NOTYPE symbols in elf files
+- Avoid warning about `LOCAL` `NOTYPE` symbols in elf files
 
 ## [1.16.3] - 2023-08-15
 
-### Uncategorized
+### Fixed
 
 - Fix hex comment crashing because of doubles when parsing little endian binaries
 
 ## [1.16.2] - 2023-08-14
 
-### Uncategorized
+### Added
 
-- Fix size directive not using the right label when symbols are smaller than a word
-- Fix size directive not being properly emitted for symbols with a size smaller
-  than a word
 - Generate pad symbols to honor user declared sizes
   - Symbols will be automatically splitted if the user-declared size is smaller
   than the symbol size (usually due to size not being a multiple of 4, file
   splits, other symbols not being referenced, etc)
 - Add the character `0x1A` to set of special cases for string decoding.
+
+### Changed
+
+- Workaround for big addends when building with modern GAS
+
+### Fixed
+
+- Fix size directive not using the right label when symbols are smaller than a word
+- Fix size directive not being properly emitted for symbols with a size smaller
+  than a word
 - Fix bug which produced reporting incorrect file splits on strings which their
   last word was a zero.
-- Workaround for big addends when building with modern GAS
 
 ## [1.16.0] - 2023-07-23
 
-### Uncategorized
+### Added
 
 - Add a detector for the redundant function end produced by IDO with some
   specific flag combinations.
   - It is turned off by default, but it can be turned on globally with
     `--detect-redundant-function-end`, or globally and per file via the API.
+
+### Fixed
+
 - Fix BSS sections not emitting a first symbol if it isn't referenced anywhere.
 
 ## [1.15.4] - 2023-07-14
 
 ### Uncategorized
 
+### Changed
+
 - Avoid taking into account invalid instructions when trying to find function boundaries.
+
+### Fixed
+
 - Properly honor size of user-declared symbols for elf static symbols.
 
 ## [1.15.3] - 2023-07-10
 
-### Uncategorized
+### Changed
 
-- Don't use append the section name if it is known when disassembling elfs
+- Don't append the section name if it is known when disassembling elfs
   - This special cases the sections `.text`, `.data`, `.rodata` and `.bss`.
   - Avoids the redundant `filename_.text/` naming scheme
 
 ## [1.15.2] - 2023-07-04
 
-### Uncategorized
+### Fixed
 
 - Fix hardcoded shift value in alignment directive
 
 ## [1.15.1] - 2023-07-04
 
-### Uncategorized
+### Changed
 
 - Emit string alignment directives even when the section isn't aligned to a
   multiple of 8.
@@ -127,7 +166,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.15.0] - 2023-07-03
 
-### Uncategorized
+### Added
+
+- Implement string guesser for the data section.
+  - Controlled by the API `GlobalConfig.DATA_STRING_GUESSER_LEVEL` or via the
+    CLI `--data-string-guesser level`.
+  - Decodes strings with the `ASCII` encoding by default.
+  - The meaning of each level are the same as the rodata string guesser.
+  - The level defaults to 2.
+- Add experimental Pascal string guesser.
+  - Works for both rodata and data sections.
+  - Follows the same level logic as the C string guesser.
+  - It is disabled by default.
+
+### Changed
 
 - Change the string guesser to work with multiple levels instead of plainly
   enabled/disabled and the aggressive toggle.
@@ -155,69 +207,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - level 4: Symbols with autodetected type information but no user type
       information can still be guessed as strings.
   - The level defaults to 1.
-- Implement string guesser for the data section.
-  - Controlled by the API `GlobalConfig.DATA_STRING_GUESSER_LEVEL` or via the
-    CLI `--data-string-guesser level`.
-  - Decodes strings with the `ASCII` encoding by default.
-  - The meaning of each level are the same as the rodata string guesser.
-  - The level defaults to 2.
-- Add experimental Pascal string guesser.
-  - Works for both rodata and data sections.
-  - Follows the same level logic as the C string guesser.
-  - It is disabled by default.
 - Start emitting `.size` directives by default.
 - Emit `jlabel` instead of `dlabel` for jumptable labels by default
 - Emit `dlabel` instead of `dlabel` for data, rodata and bss symbols by default
 
 ## [1.14.3] - 2023-06-19
 
-### Uncategorized
+### Added
 
 - Failcheck for non aligned doubles
-- (Hopefully) Fix same-vram overlays using symbols from other overlays
+
+### Changed
+
 - `elfObjDisasm`: Can now disassemble sections with arbitrary names
 - `disasmdis`: Disable pseudo instructions by default
 
+### Fixed
+
+- (Hopefully) Fix same-vram overlays using symbols from other overlays
+
 ## [1.14.2] - 2023-06-10
 
-### Uncategorized
+### Changed
 
 - Actually add `py.typed` to `pyproject.toml`
 - Use `bytearray` as little as possible
+
+### Deprecated
+
 - `writeBytearrayToFile` is now deprecated, use `writeBytesToFile` instead
 
 ## [1.14.1] - 2023-06-10
 
-### Uncategorized
+### Added
 
 - Emit a previous alignment directive for strings.
   - Ensures strings are always word aligned
-- Purge `.balign` directive in favor of `.align` directive
 - Add `py.typed` file. Whoops
+
+### Changed
+
+- Purge `.balign` directive in favor of `.align` directive
 
 ## [1.14.0] - 2023-05-10
 
-### Uncategorized
+### Added
 
-- Try to support better N32 PIC programs.
+- Implement `--dyn-syms` on readelf-like mode.
+
+### Changed
+
+- Improve a bit support for N32 PIC programs.
   - The current issue was spimdisasm was not able to properly generate symbol
     references for `$gp` accesses.
   - GOT table now gets its own address from the reginfo instead of the dynamic table.
   - Accesses pointing outside the GOT table are tried to be redirected to
     `sdata`, `srdata` and `sbss` sections.
-- Implement `--dyn-syms` on readelf-like mode.
 - Minor improvements to readelf output format
 
 ## [1.13.3] - 2023-05-05
 
-### Uncategorized
+### Fixed
 
 - Fix not writing to subfolders properly when a csv filesplit entry has a slash
   on its name.
 
 ## [1.13.2] - 2023-05-01
 
-### Uncategorized
+### Added
 
 - Add support for `.dummy` section in csv file split format
 - Add readelf's `--section-headers` flag to elfObjDisasm
@@ -226,319 +283,411 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Uncategorized
 
-- Fix a possible `None` case in `getInstrCategoryFromStr`
+### Added
+
 - Add note about R3000GTE and R5900 instruction set support in the README
+
+### Fixed
+
+- Fix a possible `None` case in `getInstrCategoryFromStr`
 
 ## [1.13.0] - 2023-04-30
 
-### Uncategorized
+### Added
 
 - Add support for R3000GTE
 
 ## [1.12.5] - 2023-04-28
 
-### Uncategorized
+### Added
+
+- Add `--function-info` flag to `elfObjDisasm`
+- Option for emitting `.size`` directives in the generated assembly
+  - Add `--asm-emit-size-directive` flag to emit size directives on generated assembly
+
+### Fixed
 
 - Fix jumptable end detection algorithm on vram ranges different than `0x80XXXXXX`
-- Add `--function-info` flag to `elfObjDisasm`
-- Option for emitting size directives in the generated assembly
-- Add `--asm-emit-size-directive` flag to emit size directives on generated assembly
 
 ## [1.12.4] - 2023-04-19
 
-### Uncategorized
+### Fixed
 
 - Fix user-declared relocs having an incorrect addend
 
 ## [1.12.3] - 2023-04-18
 
-### Uncategorized
+### Fixed
 
 - Fix conflicting `-V` flag
 
 ## [1.12.2] - 2023-04-18
 
-### Uncategorized
+### Added
+
+- Add `--version` flag to every cli tool
+- Properly detect `-mips1` `double` literals
+  - Fixes issue #57
+
+### Changed
+
+- Emit a comment saying if a reloc is a global one when the emit relocs flag is passed
+
+### Fixed
 
 - Fix data symbols not using local reloc overrides
 - Fix `.word`s not being updated after clearing pointers
 - Some pointer clearing fixes
-- Add `--version` flag to every cli tool
 - Fix data not being properly disassembled on `singleFileDisasm`
 - Enforce UTF-8 encoding on generated asm files (PR #111)
   - Thanks to @1superchip
-- Emit a comment saying if a reloc is a global one when the emit relocs flag is passed
 - Fix incorrect addends on non static symbols from elf files.
   - Fixes issue #110
 - Fix a regression where some `%lo` symbols weren't being properly paired
   because of the `%got` being reused on PIC code
 - Fix sizes for inferred types
-- Properly detect `-mips1` `double` literals
-  - Fixes issue #57
 
 ## [1.12.1] - 2023-03-28
 
-### Uncategorized
+### Fixed
 
 - Fix addends bigger than `0x7FFF` and smaller than `0x10000`
 
 ## [1.12.0] - 2023-03-21
 
-### Uncategorized
+### Added
 
-- Now exposes known types to spimdisasm via `common.gKnownTypes`
+- Expose known types to spimdisasm via `common.gKnownTypes`
+
+### Changed
+
+- Improve handling `static` (local) symbols for non relocated elf object files
+- Fake/non used symbols are not longer emitted when disassembling elf `.o` files
+
+### Fixed
+
 - Prevents referencing labels and jumptable labels with addends
 - Prevents referencing labels and jumptable labels in non jumptable symbols
-- `static` (local) symbol handling of non relocated elf object files were improved
-- Fake/non used symbols are not longer being emitted when disassembling elf .o files
 
 ## [1.11.6] - 2023-03-10
 
-### Uncategorized
+### Added
 
 - Add flag to specify instruction category in `elfObjDisasm` and `singleFileDisasm`
-- Remove `ContextSymbol.type` and add `ContextSymbol.userDeclaredType` and `ContextSymbol.autodetectedType`
-  - A property named `.type` is available to provide backwards compatibility
+- Add `ContextSymbol.userDeclaredType` and `ContextSymbol.autodetectedType`
+
+### Deprecated
+
+- Deprecate `ContextSymbol.type`
+  - `.type` is kept as a property to provide backwards compatibility
 
 ## [1.11.5] - 2023-03-07
 
-### Uncategorized
+### Changed
 
 - Sort detected file boundaries and remove duplicates
 
 ## [1.11.4] - 2023-02-20
 
-### Uncategorized
+### Changed
+
+- Add function vrom to `--function-info` and tweak its input a bit
+
+### Fixed
 
 - Fix `--data-start` not processing hex correctly
-- Add function vrom to `--function-info` and tweak its input a bit
 
 ## [1.11.3] - 2023-02-15
 
-### Uncategorized
+### Added
 
 - Allow specifying a custom suffix to every autogenerated symbol with `--custom-suffix`
 - Add "referenced functions" information to the `--function-info` flag
 
 ## [1.11.2] - 2023-02-13
 
-### Uncategorized
+### Added
 
 - Add flag to emit inline relocs
+- Add `ContextSymbol.userDeclaredSize`
+- Add `--function-info` flag
+
+### Changed
+
 - Do not report extra padding in functions if user declared size matches the
   size of the function
-- Rename `ContextSymbol.size` to `ContextSymbol.userDeclaredSize`
-- Add `--function-info` flag
 - `FuncRodataEntry`: Fix migrate parameter if function has no rodata to be migrated
+
+### Deprecated
+
+- Deprecate `ContextSymbol.size`
+  - It is kept as a property that wraps `ContextSymbol.userDeclaredSize`
 
 ## [1.11.1] - 2023-01-30
 
-### Uncategorized
+### Changed
 
 - Allow `None` in `FunctionRodataEntry` methods
 - `FuncRodataEntry`: Do not write `.section .text` if the function is `None`
 
 ## [1.11.0] - 2023-01-30
 
-### Uncategorized
+### Added
 
-- CLI changes:
-  - Install CLI tools as actual terminal programs
-  - Allow invoking the CLI tools from spimdisasm as subparsers
-  - The old way of invoking the CLI tools (`python3 -m spimdisasm.clitool`) is
-    now deprecated, but still works
-- `disasmdis`: Fix crash if the input isn't a multiple of a word
-- Report with a comment which instruction made spimdisasm detected as a
-  handwritten instruction
+- Install CLI tools as actual terminal programs
+- Allow invoking the CLI tools from spimdisasm as subparsers
+- Report, with a comment, which instruction made spimdisasm detect a function as
+  handwritten function
 - New in the API: `FunctionRodataEntry`
   - Cleaner interface for rodata migration and similar functions
   - Provides method for intermixing functions and non-migrated rodata symbols in
     a way the correct order is still preserved
-  - Old functions from `FileHandlers` which provided rodata migration
-    functionalities are now deprecated
+
+### Deprecated
+
+- The old way of invoking the CLI tools (`python3 -m spimdisasm.clitool`) is now
+  deprecated, but still works
+- Old functions from `FileHandlers` which provided rodata migration
+  functionalities are now deprecated in favour of the new `FunctionRodataEntry`.
+
+### Fixed
+
+- `disasmdis`: Fix crash if the input isn't a multiple of a word
 
 ## [1.10.6] - 2023-01-28
 
-### Uncategorized
+### Added
 
-- Fix some `.text` boundaries not being properly detected.
 - Add hardware registers as constants so they are used by `lui`/`ori` pairs
 - Check for bss symbol size to match user declared size
-- Warn if the globalsegment vrom start and end is the same
+  - If the size doesn't match then a warning is printed to `stderr`
+- Warn if the globalsegment's vrom start and end is the same
 - Identify 32bitsmode elf flag
+
+### Changed
+
 - Avoid reporting leading zeroes as padding in rodata symbols if the size of the
   symbol matches the user declared one
 
+### Fixed
+
+- Fix some `.text` boundaries not being properly detected.
+
 ## [1.10.5] - 2023-01-28
 
-### Uncategorized
+### Added
 
 - Emit a comment on invalid instructions disassembled as words
+
+### Removed
+
 - Remove redundant `.noreorder`
+
+### Fixed
+
 - Fix `disasmdis` ignoring endian parameter
 
 ## [1.10.4] - 2023-01-20
 
-### Uncategorized
+### Added
 
-- Avoid trashing function analysis for `j` jumps outside of the function
 - Add `EGCS` compiler
-- `nop`s at the beginning of the files are now skipped.
-- Fix `disasmdis` not properly accepting spaces
 - Add iQue-specific libultra syms and hardware regs
 - Add `--data-start` and `--data-end` flags to `singleFileDisasm`
 
+### Changed
+
+- `nop`s at the beginning of the files are now skipped.
+
+### Fixed
+
+- Avoid trashing function analysis for `j` jumps outside of the function
+- Fix `disasmdis` not properly accepting spaces
+
 ## [1.10.3] - 2023-01-08
 
-### Uncategorized
+### Fixed
 
 - Fix OoB for automatic type-based naming
 
 ## [1.10.2] - 2023-01-08
 
-### Uncategorized
+### Fixed
 
 - Fix a small typo on `osAppNMIBuffer`
 
 ## [1.10.1] - 2023-01-05
 
-### Uncategorized
+### Added
 
-- Adds a workaround for addends which does not fit on a 16 bits value
+- Add a workaround for addends which does not fit on a 16 bits value
 
 ## [1.10.0] - 2023-01-05
 
-### Uncategorized
+### Added
+
+- Add support for splat's symbol_addrs format for standalone invocations
+
+### Changed
 
 - Rework system to allow/disallow addend references on data
-- Add support for splat's symbol_addrs format for standalone invocations
 
 ## [1.9.2] - 2023-01-02
 
-### Uncategorized
+### Added
 
-- Fix emitting `.align` directives on unnaligned jumptables
-- Fix rodata split detection not properly considering special jumptable alignment
 - Add `nameEnd` member to `ContextSymbol` to allow emitting a closing
   user-declared label
 
+### Fixed
+
+- Fix emitting `.align` directives on unnaligned jumptables
+- Fix rodata split detection not properly considering special jumptable alignment
+
 ## [1.9.1] - 2022-12-29
 
-### Uncategorized
+### Changed
 
 - Emit a `.align 3` directive for every jumptable on non-IDO compilers
 
 ## [1.9.0] - 2022-12-28
 
-### Uncategorized
+### Added
 
-- Reloc system re-worked. Users can now provide their own relocs to improve the
-  automatic disassembly
-- loPatch system has been removed and superseded by the global reloc system
 - `GlobalConfig` variables can now be set via environment variables.
   - Parameters passed by cli take priority over environment variables.
   - Options configured via code (when using this as a library) take priority
     over environment variables.
 
+### Changed
+
+- Reloc system re-worked. Users can now provide their own relocs to improve the
+  automatic disassembly
+
+### Removed
+
+- loPatch system has been removed and superseded by the global reloc system
+
 ## [1.8.2] - 2022-12-19
 
-### Uncategorized
+### Added
 
 - Check for banned symbols on addends references
 
 ## [1.8.1] - 2022-12-19
 
-### Uncategorized
+### Added
 
 - New interface for allowing banning ranges of symbols, instead of having to add
   them one by one
 
 ## [1.8.0] - 2022-12-16
 
-### Uncategorized
+### Added
 
-- Require [`rabbitizer` 1.4.0](https://github.com/Decompollaborate/rabbitizer/releases/tag/1.4.0)
 - Allow to type-hint strings with `asciz`
 - Allow disassembling `.data` symbols as strings
   - This won't be automatically guessed as with `.rodata`, this only will happen
     with type-hints
+
+### Changed
+
+- Require [`rabbitizer` 1.4.0](https://github.com/Decompollaborate/rabbitizer/releases/tag/1.4.0)
 - `disasmdis` now accepts spaces and input from `stdin`
 
-Meta:
+### Removed
 
 - `setup.cfg` was removed and all its info was moved to `pyproject.toml`
 
 ## [1.7.12] - 2022-12-05
 
-### Uncategorized
+### Added
 
-- Allow symbol references on rodata (for non jump-tables)
 - Output version on disassembled files
 - Add option to show which symbols reference the disassembled symbol
 - Add `--file-splits` option to `elfObjDisasm`
 
+### Changed
+
+- Allow symbol references on rodata (for non jump-tables)
+
 ## [1.7.11] - 2022-11-29
 
-### Uncategorized
+### Changed
 
-Check size of floats and doubles before migrating them
+- Check size of floats and doubles before migrating them
 
 ## [1.7.10] - 2022-11-26
 
-### Uncategorized
+### Added
 
 - Allow changing the label used for jumptables labels with `GlobalConfig.ASM_JTBL_LABEL`
-- Allow forcing (and forcing not to) migrate  a symbol on rodata migration
+- Allow forcing (and forcing not to) migrate a symbol on rodata migration
+- Show `isAutogeneratedPad` in the context file (#79)
+  - Thanks @simonlindholm
+- Show the first `%lo` reference for each symbol in the context (#80)
+  - Thanks @simonlindholm
 
-- Elf fixes:
-  - Reference `NOTYPE` symbols
-  - Various GOT fixes
-  - Show isAutogeneratedPad in the context file #79
-  - Show the first %lo reference for each symbol in the context #80
+### Fixed
+
+- Reference `NOTYPE` symbols
+- Various GOT fixes
 
 ## [1.7.9] - 2022-11-09
 
-### Uncategorized
+### Added
 
-- Fix an OoB issue when trying to post-process the GOT analyzis on non-PIC mode
 - Emit a comment for automatically generated bss pads.
   - Those pads are created mainly to properly adjust the `.space` of a bss
     symbol if said symbol had an user-declared size
 
+### Fixed
+
+- Fix an OoB issue when trying to post-process the GOT analyzis on non-PIC mode
+
 ## [1.7.8] - 2022-11-04
 
-### Uncategorized
+### Changed
+
+- Improve logic to disassemble `.byte`s and `.short`s
+- Improve logic to find the jumptable ends (again)
+
+### Fixed
 
 - Fix function pointers being incorrectly tagged as `%call16` instead of `%got`
 - Avoid crashing when trying to migrate functions when there's no rodata section
-- Improve logic to disassemble `.byte`s and `.short`s
 - Fix wrong migrated rodata on PIC programs
 - Avoid using addends on function references
-- Improve logic to find the jumptable ends (again)
 
 ## [1.7.7] - 2022-11-02
 
-### Uncategorized
+### Added
+
+- Allow disassembling data symbols as floats and doubles
+
+### Changed
 
 - Improve detection of the end of jumptables
 - Refactor REL handling. It has been simplified
   - This should improve disassembling `.o` files
 - Symbols from elfs are checked to be in the correct vram range before adding
   them to the context.
-- Allow disassembling data symbols as floats and doubles
 
 ## [1.7.6] - 2022-10-31
 
-### Uncategorized
+### Added
+
+- Add special handling for the GOT lazy resolver
+
+### Changed
 
 - Refactor GOT handling
   - Should fix IDO 5.3 disassembly
-- Use glabels for jumptable labels when the functions are not being migrated
+- Use `glabel`s for jumptable labels when the functions are not being migrated
 - Support `MIPS_GOT_HI16`, `MIPS_GOT_LO16`, `MIPS_CALL_HI16` and
   `MIPS_CALL_LO16` reloc types from `.rel` elf sections
 - `disasmdis` now ignores non hex characters
 - Negative addresses are considered as GOT accesses in PIC mode
-- Add special handling for the GOT lazy resolver
 
 ## [1.7.5] - 2022-10-30
 
