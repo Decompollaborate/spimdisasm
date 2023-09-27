@@ -274,7 +274,9 @@ def decodeBytesToStrings(buf: bytes, offset: int, stringEncoding: str, terminato
             if dst:
                 try:
                     decoded = dst.decode(stringEncoding)
+                    correctFirstdecode = True
                 except UnicodeDecodeError:
+                    correctFirstdecode = False
                     if char not in escapeCharactersMaybeReal:
                         return [], -1
                     try:
@@ -283,8 +285,9 @@ def decodeBytesToStrings(buf: bytes, offset: int, stringEncoding: str, terminato
                         decoded = dst.decode(stringEncoding)
                     except UnicodeDecodeError:
                         return [], -1
-                result.append(rabbitizer.Utils.escapeString(decoded))
-                dst.clear()
+                if correctFirstdecode:
+                    result.append(rabbitizer.Utils.escapeString(decoded))
+                    dst.clear()
             if not usedChar:
                 result.append(f"\\x{char:02X}")
         else:

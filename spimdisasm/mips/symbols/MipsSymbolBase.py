@@ -464,7 +464,7 @@ class SymbolBase(common.ElementBase):
         comment = self.generateAsmLineComment(localOffset)
         result = f"{comment} "
 
-        commentPaddingNum = 22
+        commentPaddingNum = 16 + common.GlobalConfig.ASM_COMMENT_OFFSET_WIDTH
         if not common.GlobalConfig.ASM_COMMENT:
             commentPaddingNum = 1
 

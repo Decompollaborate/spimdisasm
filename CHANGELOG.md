@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fix not decoding some valid Japense strings on `decodeBytesToStrings`
+  - Specifically SHIFT-JIS ones with raw characters `0x8C` and `0x8D`
 
 ## [1.17.3] - 2023-09-18
 
