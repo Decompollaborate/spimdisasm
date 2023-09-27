@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `CHANGELOG.md`
 
+### Fixed
+
+- Fix not decoding some valid Japense strings on `decodeBytesToStrings`
+
 ## [1.17.3] - 2023-09-18
 
 ### Changed
@@ -130,8 +134,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix BSS sections not emitting a first symbol if it isn't referenced anywhere.
 
 ## [1.15.4] - 2023-07-14
-
-### Uncategorized
 
 ### Changed
 
@@ -280,8 +282,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add readelf's `--section-headers` flag to elfObjDisasm
 
 ## [1.13.1] - 2023-04-30
-
-### Uncategorized
 
 ### Added
 

@@ -254,6 +254,11 @@ escapeCharactersSpecialCases = {
     0x8D,
 }
 
+escapeCharactersMaybeReal = {
+    0x8C,
+    0x8D,
+}
+
 def decodeBytesToStrings(buf: bytes, offset: int, stringEncoding: str, terminator: int=0) -> tuple[list[str], int]:
     result = []
 
@@ -263,15 +268,25 @@ def decodeBytesToStrings(buf: bytes, offset: int, stringEncoding: str, terminato
         char = buf[offset + i]
         if char in bannedEscapeCharacters:
             return [], -1
-        elif char in escapeCharactersSpecialCases:
+
+        if char in escapeCharactersSpecialCases:
+            usedChar = False
             if dst:
                 try:
-                    decoded = rabbitizer.Utils.escapeString(dst.decode(stringEncoding))
+                    decoded = dst.decode(stringEncoding)
                 except UnicodeDecodeError:
-                    return [], -1
-                result.append(decoded)
+                    if char not in escapeCharactersMaybeReal:
+                        return [], -1
+                    try:
+                        dst.append(char)
+                        usedChar = True
+                        decoded = dst.decode(stringEncoding)
+                    except UnicodeDecodeError:
+                        return [], -1
+                result.append(rabbitizer.Utils.escapeString(decoded))
                 dst.clear()
-            result.append(f"\\x{char:02X}")
+            if not usedChar:
+                result.append(f"\\x{char:02X}")
         else:
             dst.append(char)
         i += 1
