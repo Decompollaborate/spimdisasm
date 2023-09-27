@@ -254,7 +254,7 @@ escapeCharactersSpecialCases = {
     0x8D,
 }
 
-escapeCharactersMaybeReal = {
+escapeCharactersMaybeRealLookAhead = {
     0x8C,
     0x8D,
 }
@@ -270,13 +270,21 @@ def decodeBytesToStrings(buf: bytes, offset: int, stringEncoding: str, terminato
             return [], -1
 
         theEscapeCharacterWasARealChar = False
-        if char in escapeCharactersMaybeReal:
+        if char in escapeCharactersMaybeRealLookAhead:
             dst.append(char)
             try:
                 decoded = dst.decode(stringEncoding)
                 theEscapeCharacterWasARealChar = True
             except UnicodeDecodeError:
-                pass
+                if offset + i + 1 < len(buf):
+                    nextChar = buf[offset + i + 1]
+                    dst.append(nextChar)
+                    try:
+                        decoded = dst.decode(stringEncoding)
+                        theEscapeCharacterWasARealChar = True
+                    except UnicodeDecodeError:
+                        pass
+                    dst.pop()
             dst.pop()
 
         if not theEscapeCharacterWasARealChar and char in escapeCharactersSpecialCases:
@@ -284,7 +292,7 @@ def decodeBytesToStrings(buf: bytes, offset: int, stringEncoding: str, terminato
                 try:
                     decoded = dst.decode(stringEncoding)
                 except UnicodeDecodeError:
-                    return [], -1
+                    return [], -2
                 result.append(rabbitizer.Utils.escapeString(decoded))
                 dst.clear()
             result.append(f"\\x{char:02X}")
@@ -294,21 +302,21 @@ def decodeBytesToStrings(buf: bytes, offset: int, stringEncoding: str, terminato
 
     if offset + i >= len(buf):
         # Reached the end of the buffer without finding an 0
-        return [], -1
+        return [], -3
 
     if dst:
         try:
-            decoded = rabbitizer.Utils.escapeString(dst.decode(stringEncoding))
+            decoded = dst.decode(stringEncoding)
         except UnicodeDecodeError:
-            return [], -1
-        result.append(decoded)
+            return [], -4
+        result.append(rabbitizer.Utils.escapeString(decoded))
 
     # To be a valid aligned string, the next word-aligned bytes needs to be zero
     checkStartOffset = offset + i
     checkEndOffset = min((checkStartOffset & ~3) + 4, len(buf))
     while checkStartOffset < checkEndOffset:
         if buf[checkStartOffset] != terminator:
-            return [], -1
+            return [], -5
         checkStartOffset += 1
 
     return result, i
