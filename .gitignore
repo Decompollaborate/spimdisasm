@@ -162,7 +162,8 @@ cython_debug/
 #.idea/
 
 # Text editor remnants
-.vscode/
+.vscode/*
+!.vscode/extensions.json
 .vs/
 .idea/
 CMakeLists.txt

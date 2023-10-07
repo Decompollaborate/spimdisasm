@@ -254,6 +254,11 @@ escapeCharactersSpecialCases = {
     0x8D,
 }
 
+escapeCharactersMaybeRealLookAhead = {
+    0x8C,
+    0x8D,
+}
+
 def decodeBytesToStrings(buf: bytes, offset: int, stringEncoding: str, terminator: int=0) -> tuple[list[str], int]:
     result = []
 
@@ -262,14 +267,56 @@ def decodeBytesToStrings(buf: bytes, offset: int, stringEncoding: str, terminato
     while offset + i < len(buf) and buf[offset + i] != terminator:
         char = buf[offset + i]
         if char in bannedEscapeCharacters:
-            return [], -1
-        elif char in escapeCharactersSpecialCases:
+            return [], -10
+
+        # Some of the escape characters are real Japanese characters, so we need to properly check them
+        theEscapeCharacterWasARealChar = False
+        if char in escapeCharactersMaybeRealLookAhead:
+            dst.append(char)
+            try:
+                decoded = dst.decode(stringEncoding)
+                theEscapeCharacterWasARealChar = True
+            except UnicodeDecodeError:
+                if offset + i + 1 < len(buf):
+                    nextChar = buf[offset + i + 1]
+                    dst.append(nextChar)
+                    try:
+                        decoded = dst.decode(stringEncoding)
+                        theEscapeCharacterWasARealChar = True
+                    except UnicodeDecodeError:
+                        pass
+                    dst.pop()
+            dst.pop()
+
+        if char > 0x7F and offset + i + 1 < len(buf):
+            nextChar = buf[offset + i + 1]
+            if nextChar == 0x5C: # '\\'
+                # If the second part of a Japanese character is the 0x5C value ('\\') then we need to
+                # special handle it. Otherwise when it gets iconv'd then the compiler will get confused
+                # and think it should try to escape the next character instead.
+                # So we break down the string here, add this two characters as individual characters and
+                # we skip them
+
+                if dst:
+                    try:
+                        decoded = dst.decode(stringEncoding)
+                    except UnicodeDecodeError:
+                        return [], -60
+                    result.append(rabbitizer.Utils.escapeString(decoded))
+                    dst.clear()
+                result.append(f"\\x{char:02X}")
+                result.append(f"\\x{nextChar:02X}")
+
+                i += 2
+                continue
+
+        if not theEscapeCharacterWasARealChar and char in escapeCharactersSpecialCases:
             if dst:
                 try:
-                    decoded = rabbitizer.Utils.escapeString(dst.decode(stringEncoding))
+                    decoded = dst.decode(stringEncoding)
                 except UnicodeDecodeError:
-                    return [], -1
-                result.append(decoded)
+                    return [], -70
+                result.append(rabbitizer.Utils.escapeString(decoded))
                 dst.clear()
             result.append(f"\\x{char:02X}")
         else:
@@ -278,21 +325,21 @@ def decodeBytesToStrings(buf: bytes, offset: int, stringEncoding: str, terminato
 
     if offset + i >= len(buf):
         # Reached the end of the buffer without finding an 0
-        return [], -1
+        return [], -80
 
     if dst:
         try:
-            decoded = rabbitizer.Utils.escapeString(dst.decode(stringEncoding))
+            decoded = dst.decode(stringEncoding)
         except UnicodeDecodeError:
-            return [], -1
-        result.append(decoded)
+            return [], -90
+        result.append(rabbitizer.Utils.escapeString(decoded))
 
     # To be a valid aligned string, the next word-aligned bytes needs to be zero
     checkStartOffset = offset + i
     checkEndOffset = min((checkStartOffset & ~3) + 4, len(buf))
     while checkStartOffset < checkEndOffset:
         if buf[checkStartOffset] != terminator:
-            return [], -1
+            return [], -100
         checkStartOffset += 1
 
     return result, i
