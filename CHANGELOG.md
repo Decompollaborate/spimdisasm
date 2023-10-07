@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.4] - 2023-10-07
+
 ### Added
 
 - Add `CHANGELOG.md`
@@ -1250,6 +1252,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.17.4]: https://github.com/Decompollaborate/spimdisasm/compare/1.17.3...1.17.4
 [1.17.3]: https://github.com/Decompollaborate/spimdisasm/compare/1.17.2...1.17.3
 [1.17.2]: https://github.com/Decompollaborate/spimdisasm/compare/1.17.1...1.17.2
 [1.17.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.17.0...1.17.1
