@@ -20,6 +20,9 @@ class FunctionRodataEntry:
     function: symbols.SymbolFunction | None = None
     rodataSyms: list[symbols.SymbolBase] = dataclasses.field(default_factory=list)
     lateRodataSyms: list[symbols.SymbolBase] = dataclasses.field(default_factory=list)
+    sectionText: str = ".text"
+    sectionRodata: str = ".rodata"
+    sectionLateRodata: str = ".late_rodata"
 
     def hasRodataSyms(self) -> bool:
         return len(self.rodataSyms) > 0 or len(self.lateRodataSyms) > 0
@@ -27,7 +30,7 @@ class FunctionRodataEntry:
     def writeToFile(self, f: TextIO, writeFunction: bool=True):
         if len(self.rodataSyms) > 0:
             # Write the rdata
-            f.write(f".section .rodata{common.GlobalConfig.LINE_ENDS}")
+            f.write(f".section {self.sectionRodata}{common.GlobalConfig.LINE_ENDS}")
             for sym in self.rodataSyms:
                 f.write(sym.disassemble(migrate=True, useGlobalLabel=True, isSplittedSymbol=True))
                 f.write(common.GlobalConfig.LINE_ENDS)
@@ -35,7 +38,7 @@ class FunctionRodataEntry:
         if len(self.lateRodataSyms) > 0:
             assert self.function is not None
             # Write the late_rodata
-            f.write(f".section .late_rodata{common.GlobalConfig.LINE_ENDS}")
+            f.write(f".section {self.sectionLateRodata}{common.GlobalConfig.LINE_ENDS}")
 
             lateRodataSize = 0
             for sym in self.lateRodataSyms:
@@ -53,7 +56,7 @@ class FunctionRodataEntry:
 
         if self.function is not None:
             if len(self.rodataSyms) > 0 or len(self.lateRodataSyms) > 0:
-                f.write(f"{common.GlobalConfig.LINE_ENDS}.section .text{common.GlobalConfig.LINE_ENDS}")
+                f.write(f"{common.GlobalConfig.LINE_ENDS}.section {self.sectionText}{common.GlobalConfig.LINE_ENDS}")
 
             if writeFunction:
                 # Write the function itself
