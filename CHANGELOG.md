@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Try to detect when instructions are setting the `$gp` register with the
+  passed `GP_VALUE` and use the `_gp` symbol instead of symbolizing an
+  unrelated symbol.
+  - This check is only applied on non PIC mode.
+
+### Fixed
+
+- Avoid using the wrong immediate for gp-relative references if the address
+  could not be symbolized.
+  - In example, if said address is outside of the known address range.
+
 ## [1.18.0] - 2023-10-29
 
 ### Added

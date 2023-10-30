@@ -270,6 +270,9 @@ class SymbolFunction(SymbolText):
 
         if instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
             if not common.GlobalConfig.PIC or gotSmall:
+                if instr.modifiesRt() and instr.rt in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
+                    # Shouldn't make a gprel access if the dst register is $gp too
+                    return common.RelocType.MIPS_LO16
                 return common.RelocType.MIPS_GPREL16
 
             if contextSym is not None:
@@ -328,6 +331,29 @@ class SymbolFunction(SymbolText):
 
             relocType = self._getRelocTypeForInstruction(instr, instrOffset)
             self.relocs[instrOffset] = common.RelocationInfo(relocType, "_gp_disp")
+
+        for instrOffset, gpInfo in self.instrAnalyzer.gpSets.items():
+            hiInstrOffset = gpInfo.hiOffset
+            hiInstr = self.instructions[hiInstrOffset//4]
+            instr = self.instructions[instrOffset//4]
+
+            hiRelocType = self._getRelocTypeForInstruction(hiInstr, hiInstrOffset)
+            relocType = self._getRelocTypeForInstruction(instr, instrOffset)
+            if not common.GlobalConfig.PIC and gpInfo.value == common.GlobalConfig.GP_VALUE:
+                self.relocs[hiInstrOffset] = common.RelocationInfo(hiRelocType, "_gp")
+                self.relocs[instrOffset] = common.RelocationInfo(relocType, "_gp")
+            else:
+                # TODO: consider reusing the logic of the self.instrAnalyzer.symbolInstrOffset loop
+                address = gpInfo.value
+                if self.context.isAddressBanned(address):
+                    continue
+
+                contextSym = self.getSymbol(address)
+                if contextSym is None:
+                    continue
+
+                self.relocs[hiInstrOffset] = common.RelocationInfo(hiRelocType, contextSym)
+                self.relocs[instrOffset] = common.RelocationInfo(relocType, contextSym)
 
         for instrOffset, constant in self.instrAnalyzer.constantInstrOffset.items():
             instr = self.instructions[instrOffset//4]
