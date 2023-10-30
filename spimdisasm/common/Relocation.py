@@ -37,6 +37,12 @@ class RelocType(enum.Enum):
     CUSTOM_CONSTANT_HI  = -1
     CUSTOM_CONSTANT_LO  = -2
 
+    def getPercentRel(self) -> str|None:
+        return _percentRel.get(self)
+
+    def getWordRel(self) -> str|None:
+        return _wordRel.get(self)
+
     @staticmethod
     def fromValue(value: int) -> RelocType|None:
         try:
@@ -181,11 +187,11 @@ class RelocationInfo:
     def getNameWithReloc(self, isSplittedSymbol: bool=False) -> str:
         name = self.getName(isSplittedSymbol=isSplittedSymbol)
 
-        percentRel = _percentRel.get(self.relocType)
+        percentRel = self.relocType.getPercentRel()
         if percentRel is not None:
             return f"{percentRel}({name})"
 
-        wordRel = _wordRel.get(self.relocType)
+        wordRel = self.relocType.getWordRel()
         if wordRel is not None:
             return f"{wordRel} {name}"
 

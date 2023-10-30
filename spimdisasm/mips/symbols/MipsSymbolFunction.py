@@ -333,20 +333,25 @@ class SymbolFunction(SymbolText):
             instr = self.instructions[instrOffset//4]
             relocType = self._getRelocTypeForInstruction(instr, instrOffset)
 
-            symbol = self.getConstant(constant)
-            if symbol is not None:
-                self.relocs[instrOffset] = common.RelocationInfo(relocType, symbol.getName())
-            elif common.GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_HILO:
-                self.relocs[instrOffset] = common.RelocationInfo(relocType, f"0x{constant:X}")
-            else:
-                # Pretend this pair is a constant
-                loInstr = instr
-                if instr.canBeHi():
-                    loInstr = self.instructions[self.instrAnalyzer.hiToLowDict[instrOffset] // 4]
+            if relocType in {common.RelocType.MIPS_HI16, common.RelocType.MIPS_LO16}:
+                # We can only do this kind of shenanigans for normal %hi/%lo relocs
 
-                generatedReloc = self._generateHiLoConstantReloc(constant, instr, loInstr)
-                if generatedReloc is not None:
-                    self.relocs[instrOffset] = generatedReloc
+                symbol = self.getConstant(constant)
+                if symbol is not None:
+                    self.relocs[instrOffset] = common.RelocationInfo(relocType, symbol.getName())
+                elif common.GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_HILO:
+                    self.relocs[instrOffset] = common.RelocationInfo(relocType, f"0x{constant:X}")
+                else:
+                    # Pretend this pair is a constant
+                    loInstr = instr
+                    if instr.canBeHi():
+                        loInstr = self.instructions[self.instrAnalyzer.hiToLowDict[instrOffset] // 4]
+
+                    generatedReloc = self._generateHiLoConstantReloc(constant, instr, loInstr)
+                    if generatedReloc is not None:
+                        self.relocs[instrOffset] = generatedReloc
+            else:
+                self.endOfLineComment[instrOffset//4] = f" # Failed to symbolize address 0x{constant:08X} for {relocType.getPercentRel()}"
 
         for instrOffset, targetVram in self.instrAnalyzer.funcCallInstrOffsets.items():
             funcSym = self.getSymbol(targetVram, tryPlusOffset=False)
