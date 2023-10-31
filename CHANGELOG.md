@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   passed `GP_VALUE` and use the `_gp` symbol instead of symbolizing an
   unrelated symbol.
   - This check is only applied on non PIC mode.
+- Track if a symbol is accessed with a `%gp_rel`.
 
 ### Fixed
 

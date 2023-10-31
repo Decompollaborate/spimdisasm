@@ -323,6 +323,8 @@ class SymbolFunction(SymbolText):
             instr = self.instructions[instrOffset//4]
 
             relocType = self._getRelocTypeForInstruction(instr, instrOffset, contextSym, gotHiLo, gotSmall)
+            if relocType == common.RelocType.MIPS_GPREL16:
+                contextSym.accessedAsGpRel = True
             self.relocs[instrOffset] = common.RelocationInfo(relocType, contextSym, address - contextSym.vram)
 
         for instrOffset in self.instrAnalyzer.cploadOffsets:
