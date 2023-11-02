@@ -218,6 +218,12 @@ class Elf32File:
         elif Elf32SectionHeaderFlag.STRINGS in flags:
             # Why not?
             self.progbitsNoWrite[sectionEntryName] = entry
+        elif sectionEntryName == ".comment":
+            # Usually strings specifying the compiler used to build
+            pass
+        elif sectionEntryName == ".pdr":
+            # Debugging section, dunno what it actually has
+            pass
         elif not common.GlobalConfig.QUIET:
             common.Utils.eprint(f"Unhandled PROGBITS found: '{sectionEntryName}', flags: {flags}, unknownFlags: {unknownFlags}\n")
 
