@@ -618,5 +618,5 @@ class SymbolBase(common.ElementBase):
         if migrate:
             output += self.getSpimdisasmVersionString()
 
-        output = self.disassembleAsData(useGlobalLabel=useGlobalLabel, isSplittedSymbol=isSplittedSymbol)
+        output += self.disassembleAsData(useGlobalLabel=useGlobalLabel, isSplittedSymbol=isSplittedSymbol)
         return output

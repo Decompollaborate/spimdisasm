@@ -54,5 +54,5 @@ class SymbolBss(SymbolBase):
         if migrate:
             output += self.getSpimdisasmVersionString()
 
-        output = self.disassembleAsBss()
+        output += self.disassembleAsBss()
         return output
