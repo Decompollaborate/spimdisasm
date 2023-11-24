@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - This check is only applied on non PIC mode.
 - Track if a symbol is accessed with a `%gp_rel`.
 
+### Changed
+
+- Emit which symbol produced the generation of an automatically generated and
+  unused pad.
+
 ### Fixed
 
 - Avoid using the wrong immediate for gp-relative references if the address
