@@ -132,6 +132,11 @@ class ContextSymbol:
     referenceSymbols: set[ContextSymbol] = dataclasses.field(default_factory=set)
     "Which symbols reference this symbol"
 
+    branchLabelFunction: ContextSymbol|None = None
+    "For branch labels, the function which contains this label"
+    branchLabelIndex: int|None = None
+    "For branch labels, the index of this label in the containing function"
+
     overlayCategory: str|None = None
 
     nameGetCallback: Callable[[ContextSymbol], str]|None = None
@@ -396,7 +401,12 @@ class ContextSymbol:
         if currentType is not None:
             if currentType == SymbolSpecialType.function:
                 return f"func_{self.address:08X}{suffix}"
-            if currentType in {SymbolSpecialType.branchlabel, SymbolSpecialType.jumptablelabel}:
+            if currentType == SymbolSpecialType.branchlabel:
+                if GlobalConfig.SEQUENTIAL_BRANCH_LABELS:
+                    return f".L{self.branchLabelFunction.getName()}_{self.branchLabelIndex + 1}"
+                else:
+                    return f".L{self.address:08X}{suffix}"
+            if currentType == SymbolSpecialType.jumptablelabel:
                 return f".L{self.address:08X}{suffix}"
             if currentType == SymbolSpecialType.jumptable:
                 return f"jtbl_{self.address:08X}{suffix}"

@@ -419,7 +419,9 @@ class SymbolFunction(SymbolText):
             labelSyms[labelSym.vram] = labelSym
 
         for i, vram in enumerate(sorted(labelSyms)):
-            labelSyms[vram].name = f".L{self.contextSym.name}_{i + 1}"
+            labelSym = labelSyms[vram]
+            labelSym.branchLabelFunction = self.contextSym
+            labelSym.branchLabelIndex = i
 
         # Function calls
         for instrOffset, targetVram in self.instrAnalyzer.funcCallInstrOffsets.items():
