@@ -402,7 +402,11 @@ class ContextSymbol:
             if currentType == SymbolSpecialType.function:
                 return f"func_{self.address:08X}{suffix}"
             if currentType == SymbolSpecialType.branchlabel:
-                if GlobalConfig.SEQUENTIAL_BRANCH_LABELS:
+                if (
+                    GlobalConfig.SEQUENTIAL_BRANCH_LABELS
+                    and self.branchLabelFunction is not None
+                    and self.branchLabelIndex is not None
+                ):
                     return f".L{self.branchLabelFunction.getName()}_{self.branchLabelIndex + 1}"
                 else:
                     return f".L{self.address:08X}{suffix}"
