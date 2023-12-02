@@ -34,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `FunctionRodataEntry.sectionText` to rename the `.text` section
   - `FunctionRodataEntry.sectionRodata` to rename the `.rodata` section
   - `FunctionRodataEntry.sectionLateRodata` to rename the `.late_rodata` section
+- Add `--sequential-label-names` option to rename branch and jump table labels
+  after their containing function.
 
 ## [1.17.4] - 2023-10-07
 
