@@ -389,7 +389,7 @@ class ContextSymbol:
         return self.userDeclaredSize is not None
 
     def getBranchLabelName(self, suffix: str) -> str:
-        if GlobalConfig.SEQUENTIAL_BRANCH_LABEL_NAMES and self.parentFunction is not None:
+        if GlobalConfig.SEQUENTIAL_LABEL_NAMES and self.parentFunction is not None:
             index = self.parentFunction.branchLabels.index(self.vram)
             if index is not None:
                 return f".L{self.parentFunction.getName()}_{index + 1}"
@@ -397,7 +397,7 @@ class ContextSymbol:
         return f".L{self.address:08X}{suffix}"
 
     def getJumpTableName(self, suffix: str) -> str:
-        if GlobalConfig.SEQUENTIAL_JUMP_TABLE_NAMES and self.parentFunction is not None:
+        if GlobalConfig.SEQUENTIAL_LABEL_NAMES and self.parentFunction is not None:
             index = self.parentFunction.jumpTables.index(self.vram)
             if index is not None:
                 return f"jtbl_{self.parentFunction.getName()}_{index + 1}"
