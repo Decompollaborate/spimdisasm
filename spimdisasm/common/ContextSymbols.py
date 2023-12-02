@@ -12,6 +12,7 @@ import rabbitizer
 
 from .GlobalConfig import GlobalConfig, Compiler
 from .FileSectionType import FileSectionType
+from .SortedDict import SortedDict
 
 
 class SymbolSpecialType(enum.Enum):
@@ -132,10 +133,10 @@ class ContextSymbol:
     referenceSymbols: set[ContextSymbol] = dataclasses.field(default_factory=set)
     "Which symbols reference this symbol"
 
-    branchLabelFunction: ContextSymbol|None = None
-    "For branch labels, the function which contains this label"
-    branchLabelIndex: int|None = None
-    "For branch labels, the index of this label in the containing function"
+    parentFunction: ContextSymbol|None = None
+    "Parent function for branch labels, jump tables, and jump table labels"
+    branchLabels: SortedDict[ContextSymbol] = dataclasses.field(default_factory=SortedDict)
+    "For functions, the branch and jump table labels which are contained in this function"
 
     overlayCategory: str|None = None
 
@@ -385,6 +386,13 @@ class ContextSymbol:
     def hasUserDeclaredSize(self) -> bool:
         return self.userDeclaredSize is not None
 
+    def getBranchLabelName(self, suffix: str) -> str:
+        if GlobalConfig.SEQUENTIAL_BRANCH_LABELS and self.parentFunction is not None:
+            index = self.parentFunction.branchLabels.index(self.vram)
+            if index is not None:
+                return f".L{self.parentFunction.getName()}_{index + 1}"
+
+        return f".L{self.address:08X}{suffix}"
 
     def getDefaultName(self) -> str:
         suffix = ""
@@ -401,17 +409,8 @@ class ContextSymbol:
         if currentType is not None:
             if currentType == SymbolSpecialType.function:
                 return f"func_{self.address:08X}{suffix}"
-            if currentType == SymbolSpecialType.branchlabel:
-                if (
-                    GlobalConfig.SEQUENTIAL_BRANCH_LABELS
-                    and self.branchLabelFunction is not None
-                    and self.branchLabelIndex is not None
-                ):
-                    return f".L{self.branchLabelFunction.getName()}_{self.branchLabelIndex + 1}"
-                else:
-                    return f".L{self.address:08X}{suffix}"
-            if currentType == SymbolSpecialType.jumptablelabel:
-                return f".L{self.address:08X}{suffix}"
+            if currentType in {SymbolSpecialType.branchlabel, SymbolSpecialType.jumptablelabel}:
+                return self.getBranchLabelName(suffix)
             if currentType == SymbolSpecialType.jumptable:
                 return f"jtbl_{self.address:08X}{suffix}"
 
