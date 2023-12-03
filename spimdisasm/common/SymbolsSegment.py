@@ -21,7 +21,7 @@ class SymbolsSegment:
     def __init__(self, context: "Context", vromStart: int|None, vromEnd: int|None, vramStart: int, vramEnd: int, overlayCategory: str|None=None):
         assert vramStart < vramEnd
         if vromStart is not None and vromEnd is not None:
-            assert vromStart <= vromEnd, f"0x{vromStart:X} <= 0x{vromEnd:X}"
+            assert vromStart <= vromEnd, f"0x{vromStart:06X} <= 0x{vromEnd:06X}"
 
         self.vromStart: int|None = vromStart
         self.vromEnd: int|None = vromEnd
@@ -67,8 +67,8 @@ class SymbolsSegment:
         return self.vramStart <= vram < self.vramEnd
 
     def changeRanges(self, vromStart: int, vromEnd: int, vramStart: int, vramEnd: int) -> None:
-        assert vromStart <= vromEnd, f"0x{vromStart:X} <= 0x{vromEnd:X}"
-        assert vramStart <= vramEnd, f"0x{vramStart:X} <= 0x{vramEnd:X}"
+        assert vromStart <= vromEnd, f"0x{vromStart:06X} <= 0x{vromEnd:06X}"
+        assert vramStart <= vramEnd, f"0x{vramStart:08X} <= 0x{vramEnd:08X}"
 
         self.vromStart = vromStart
         self.vromEnd = vromEnd

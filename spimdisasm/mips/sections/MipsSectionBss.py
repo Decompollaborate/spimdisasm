@@ -62,7 +62,7 @@ class SectionBss(SectionBase):
                 newSymbolVram = symbolVram + contextSym.getSize()
                 if newSymbolVram != self.bssVramEnd:
                     assert newSymbolVram >= self.bssVramStart
-                    assert newSymbolVram < self.bssVramEnd, f"{self.name}, symbolVram={symbolVram:X}, newSymbolVram={newSymbolVram:X}, self.bssVramEnd={self.bssVramEnd:X}"
+                    assert newSymbolVram < self.bssVramEnd, f"{self.name}, symbolVram={symbolVram:08X}, newSymbolVram={newSymbolVram:08X}, self.bssVramEnd={self.bssVramEnd:08X}"
                     symOffset = symbolVram + contextSym.getSize() - self.bssVramStart
                     bssSymbolOffsets.add(symOffset)
                     autoCreatedPads.add(symOffset)
