@@ -49,10 +49,4 @@ class SymbolBss(SymbolBase):
         return output
 
     def disassemble(self, migrate: bool=False, useGlobalLabel: bool=True, isSplittedSymbol: bool=False) -> str:
-        output = ""
-
-        if migrate:
-            output += self.getSpimdisasmVersionString()
-
-        output += self.disassembleAsBss()
-        return output
+        return self.disassembleAsBss()
