@@ -430,8 +430,12 @@ class SymbolsSegment:
                 continue
 
             vram = int(vramStr, 16)
-            varSize = int(varSizeStr, 16)
-            if varType == "":
+            varSize = None
+            if varSizeStr not in {"", "-"}:
+                varSize = int(varSizeStr, 16)
+                if varSize == 0:
+                    varSize = None
+            if varType in {"", "-"}:
                 varType = None
 
             specialType = SymbolSpecialType.fromStr(varType)

@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Emit which symbol produced the generation of an automatically generated and
   unused pad.
+- Change how the variables csv file is parsed: If the size column is either
+  empty, a dash (`-`) or zero then that column is ignored.
 
 ### Fixed
 
