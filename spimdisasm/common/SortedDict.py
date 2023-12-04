@@ -111,6 +111,12 @@ class SortedDict(MutableMapping[int, ValueType]):
             self.remove(key)
             yield (key, value)
 
+    def index(self, key: int) -> int|None:
+        """Returns the index of the passed `key` in the sorted dictionary, or None if the key is not present."""
+        if key not in self.map:
+            return None
+        return bisect.bisect_left(self.sortedKeys, key)
+
     def __getitem__(self, key: int) -> ValueType:
         return self.map[key]
 

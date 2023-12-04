@@ -613,10 +613,4 @@ class SymbolBase(common.ElementBase):
         return output
 
     def disassemble(self, migrate: bool=False, useGlobalLabel: bool=True, isSplittedSymbol: bool=False) -> str:
-        output = ""
-
-        if migrate:
-            output += self.getSpimdisasmVersionString()
-
-        output = self.disassembleAsData(useGlobalLabel=useGlobalLabel, isSplittedSymbol=isSplittedSymbol)
-        return output
+        return self.disassembleAsData(useGlobalLabel=useGlobalLabel, isSplittedSymbol=isSplittedSymbol)

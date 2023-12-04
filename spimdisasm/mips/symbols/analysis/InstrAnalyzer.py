@@ -34,6 +34,13 @@ class CploadInfo:
     adduOffset: int|None = None
     reg: rabbitizer.Enum|None = None
 
+@dataclasses.dataclass
+class GpSetInfo:
+    """Info for tracking when a $gp register is set"""
+    hiOffset: int
+    loOffset: int
+    value: int
+
 
 class InstrAnalyzer:
     def __init__(self, funcVram: int, context: common.Context) -> None:
@@ -111,6 +118,11 @@ class InstrAnalyzer:
         "Offset of every cpload instruction"
         self.cploads: dict[int, CploadInfo] = dict()
         "Completed cpload, key: offset of last instruction of the cpload"
+
+        self.gpSetsOffsets: set[int] = set()
+        "Offsets of every instruction that set the $gp register"
+        self.gpSets: dict[int, GpSetInfo] = dict()
+        "Instructions setting the $gp register, key: offset of the low instruction"
 
 
     def processBranch(self, instr: rabbitizer.Instruction, instrOffset: int, currentVram: int) -> None:
@@ -360,13 +372,19 @@ class InstrAnalyzer:
 
         if luiOffset is not None:
             luiInstr = self.luiInstrs.get(luiOffset)
-            if luiInstr is not None:
-                if luiInstr.rt in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
-                    if instr.readsRs() and instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp} and instr.modifiesRt() and instr.rt in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
+            if luiInstr is not None and luiInstr.rt in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
+                if instr.readsRs() and instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp} and instr.modifiesRt() and instr.rt in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
+                    if common.GlobalConfig.PIC:
                         # cpload
                         self.unpairedCploads.append(CploadInfo(luiOffset, instrOffset))
-                        # early return to avoid counting this pairing as a symbol
-                        return
+                    else:
+                        hiGpValue = luiInstr.getProcessedImmediate() << 16
+                        loGpValue = instr.getProcessedImmediate()
+                        self.gpSets[instrOffset] = GpSetInfo(luiOffset, instrOffset, hiGpValue+loGpValue)
+                        self.gpSetsOffsets.add(luiOffset)
+                        self.gpSetsOffsets.add(instrOffset)
+                    # early return to avoid counting this pairing as a normal symbol
+                    return
 
         address = self.pairHiLo(upperHalf, luiOffset, instr, instrOffset)
         if address is None:

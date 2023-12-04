@@ -270,6 +270,9 @@ class SymbolFunction(SymbolText):
 
         if instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
             if not common.GlobalConfig.PIC or gotSmall:
+                if instr.modifiesRt() and instr.rt in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
+                    # Shouldn't make a gprel access if the dst register is $gp too
+                    return common.RelocType.MIPS_LO16
                 return common.RelocType.MIPS_GPREL16
 
             if contextSym is not None:
@@ -320,6 +323,8 @@ class SymbolFunction(SymbolText):
             instr = self.instructions[instrOffset//4]
 
             relocType = self._getRelocTypeForInstruction(instr, instrOffset, contextSym, gotHiLo, gotSmall)
+            if relocType == common.RelocType.MIPS_GPREL16:
+                contextSym.accessedAsGpRel = True
             self.relocs[instrOffset] = common.RelocationInfo(relocType, contextSym, address - contextSym.vram)
 
         for instrOffset in self.instrAnalyzer.cploadOffsets:
@@ -329,24 +334,52 @@ class SymbolFunction(SymbolText):
             relocType = self._getRelocTypeForInstruction(instr, instrOffset)
             self.relocs[instrOffset] = common.RelocationInfo(relocType, "_gp_disp")
 
+        for instrOffset, gpInfo in self.instrAnalyzer.gpSets.items():
+            hiInstrOffset = gpInfo.hiOffset
+            hiInstr = self.instructions[hiInstrOffset//4]
+            instr = self.instructions[instrOffset//4]
+
+            hiRelocType = self._getRelocTypeForInstruction(hiInstr, hiInstrOffset)
+            relocType = self._getRelocTypeForInstruction(instr, instrOffset)
+            if not common.GlobalConfig.PIC and gpInfo.value == common.GlobalConfig.GP_VALUE:
+                self.relocs[hiInstrOffset] = common.RelocationInfo(hiRelocType, "_gp")
+                self.relocs[instrOffset] = common.RelocationInfo(relocType, "_gp")
+            else:
+                # TODO: consider reusing the logic of the self.instrAnalyzer.symbolInstrOffset loop
+                address = gpInfo.value
+                if self.context.isAddressBanned(address):
+                    continue
+
+                contextSym = self.getSymbol(address)
+                if contextSym is None:
+                    continue
+
+                self.relocs[hiInstrOffset] = common.RelocationInfo(hiRelocType, contextSym)
+                self.relocs[instrOffset] = common.RelocationInfo(relocType, contextSym)
+
         for instrOffset, constant in self.instrAnalyzer.constantInstrOffset.items():
             instr = self.instructions[instrOffset//4]
             relocType = self._getRelocTypeForInstruction(instr, instrOffset)
 
-            symbol = self.getConstant(constant)
-            if symbol is not None:
-                self.relocs[instrOffset] = common.RelocationInfo(relocType, symbol.getName())
-            elif common.GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_HILO:
-                self.relocs[instrOffset] = common.RelocationInfo(relocType, f"0x{constant:X}")
-            else:
-                # Pretend this pair is a constant
-                loInstr = instr
-                if instr.canBeHi():
-                    loInstr = self.instructions[self.instrAnalyzer.hiToLowDict[instrOffset] // 4]
+            if relocType in {common.RelocType.MIPS_HI16, common.RelocType.MIPS_LO16}:
+                # We can only do this kind of shenanigans for normal %hi/%lo relocs
 
-                generatedReloc = self._generateHiLoConstantReloc(constant, instr, loInstr)
-                if generatedReloc is not None:
-                    self.relocs[instrOffset] = generatedReloc
+                symbol = self.getConstant(constant)
+                if symbol is not None:
+                    self.relocs[instrOffset] = common.RelocationInfo(relocType, symbol.getName())
+                elif common.GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_HILO:
+                    self.relocs[instrOffset] = common.RelocationInfo(relocType, f"0x{constant:X}")
+                else:
+                    # Pretend this pair is a constant
+                    loInstr = instr
+                    if instr.canBeHi():
+                        loInstr = self.instructions[self.instrAnalyzer.hiToLowDict[instrOffset] // 4]
+
+                    generatedReloc = self._generateHiLoConstantReloc(constant, instr, loInstr)
+                    if generatedReloc is not None:
+                        self.relocs[instrOffset] = generatedReloc
+            else:
+                self.endOfLineComment[instrOffset//4] = f" # Failed to symbolize address 0x{constant:08X} for {relocType.getPercentRel()}"
 
         for instrOffset, targetVram in self.instrAnalyzer.funcCallInstrOffsets.items():
             funcSym = self.getSymbol(targetVram, tryPlusOffset=False)
@@ -373,6 +406,7 @@ class SymbolFunction(SymbolText):
         self._processElfRelocSymbols()
 
         # Branches
+        labelSyms = {}
         for instrOffset, targetBranchVram in self.instrAnalyzer.branchInstrOffsets.items():
             if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
                 if self.getVromOffset(instrOffset) in self.context.globalRelocationOverrides:
@@ -382,6 +416,8 @@ class SymbolFunction(SymbolText):
             labelSym = self.addBranchLabel(targetBranchVram, isAutogenerated=True, symbolVrom=self.getVromOffset(branch))
             labelSym.referenceCounter += 1
             labelSym.referenceFunctions.add(self.contextSym)
+            labelSym.parentFunction = self.contextSym
+            self.contextSym.branchLabels.add(labelSym.vram, labelSym)
 
         # Function calls
         for instrOffset, targetVram in self.instrAnalyzer.funcCallInstrOffsets.items():
@@ -466,7 +502,9 @@ class SymbolFunction(SymbolText):
 
         # Jump tables
         for targetVram in self.instrAnalyzer.referencedJumpTableOffsets.values():
-            self.addJumpTable(targetVram, isAutogenerated=True)
+            jumpTable = self.addJumpTable(targetVram, isAutogenerated=True)
+            jumpTable.parentFunction = self.contextSym
+            self.contextSym.jumpTables.add(jumpTable.vram, jumpTable)
 
 
         if self.isLikelyHandwritten:

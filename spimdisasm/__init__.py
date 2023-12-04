@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-__version_info__: tuple[int, int, int] = (1, 18, 0)
+__version_info__: tuple[int, int, int] = (1, 19, 0)
 __version__ = ".".join(map(str, __version_info__))
 __author__ = "Decompollaborate"
 
