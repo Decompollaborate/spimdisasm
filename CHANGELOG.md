@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   unrelated symbol.
   - This check is only applied on non PIC mode.
 - Track if a symbol is accessed with a `%gp_rel`.
+- Add `--sequential-label-names` option to rename branch and jump table labels
+  after their containing function.
 
 ### Changed
 
@@ -39,6 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Avoid using the wrong immediate for gp-relative references if the address
   could not be symbolized.
   - In example, if said address is outside of the known address range.
+- Fix some niche cases where spimdisasm may emit duplicated data symbol labels
+  but without their data.
 
 ## [1.18.0] - 2023-10-29
 
@@ -48,8 +52,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `FunctionRodataEntry.sectionText` to rename the `.text` section
   - `FunctionRodataEntry.sectionRodata` to rename the `.rodata` section
   - `FunctionRodataEntry.sectionLateRodata` to rename the `.late_rodata` section
-- Add `--sequential-label-names` option to rename branch and jump table labels
-  after their containing function.
 
 ## [1.17.4] - 2023-10-07
 

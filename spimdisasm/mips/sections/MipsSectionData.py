@@ -85,6 +85,8 @@ class SectionData(SectionBase):
                 words = self.words[offset//4:]
             else:
                 nextOffset = symbolList[i+1][0]
+                if offset == nextOffset:
+                    continue
                 words = self.words[offset//4:nextOffset//4]
 
             vrom = self.getVromOffset(offset)
