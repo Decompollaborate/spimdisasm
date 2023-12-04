@@ -17,7 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - This check is only applied on non PIC mode.
 - Track if a symbol is accessed with a `%gp_rel`.
 - Add `--sequential-label-names` option to rename branch and jump table labels
-  after their containing function.
+  after their containing function (#142).
+  - Thanks @cadmic 
 
 ### Changed
 
