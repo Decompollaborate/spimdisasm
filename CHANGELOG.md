@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `--name-vars-by-file` option to rename data symbols based on their offset
+  in their containing file.
+
 ## [1.19.0] - 2023-12-04
 
 ### Added
