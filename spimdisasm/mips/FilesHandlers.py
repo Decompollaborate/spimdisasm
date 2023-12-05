@@ -46,6 +46,8 @@ def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_byte
     elif splitEntry.section == common.FileSectionType.Bss:
         bssVramEnd = splitEntry.vram + offsetEnd - offsetStart
         f = sections.SectionBss(context, offsetStart, offsetEnd, splitEntry.vram, bssVramEnd, splitEntry.fileName, 0, None)
+    elif splitEntry.section == common.FileSectionType.Reloc:
+        f = sections.SectionRelocZ64(context, offsetStart, offsetEnd, vram, splitEntry.fileName, array_of_bytes, 0, None)
     else:
         common.Utils.eprint("Error! Section not set!")
         exit(-1)

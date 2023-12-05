@@ -80,6 +80,7 @@ gNameToSectionType = {
     ".rodata":  FileSectionType.Rodata,
     ".rdata":   FileSectionType.Rodata,
     ".bss":     FileSectionType.Bss,
+    ".ovl":     FileSectionType.Reloc,
     ".reloc":   FileSectionType.Reloc,
     ".end":     FileSectionType.End,
     ".dummy":   FileSectionType.Dummy,
