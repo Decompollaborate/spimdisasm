@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `--name-vars-by-file` option to rename data symbols based on their offset
+  in their containing file.
+
 ### Changed
 
 - File splits can now contain reloc sections (`.ovl` or `.reloc`).
