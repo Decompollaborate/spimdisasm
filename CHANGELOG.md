@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `--name-vars-by-file` option to rename data symbols based on their offset
   in their containing file.
+- Add `--name-vars-by-section` considers the `.text` and `.ovl`/`.reloc` sections.
+  - For unknown `.text` symbols (that are not functions, or any kind of label)
+    the `T_` prefix will be used.
+  - For `.ovl`/`.reloc` symbols the `REL_` prefix will be used
 
 ### Changed
 
