@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - File splits can now contain reloc sections (`.ovl` or `.reloc`).
+- Type-based name generation (`--name-vars-by-type`) can now be mixed with
+  other kinds of name generations, allowing to give extra information on the
+  symbol name.
 
 ## [1.19.0] - 2023-12-04
 
