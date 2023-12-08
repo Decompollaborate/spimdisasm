@@ -17,7 +17,7 @@ from . import symbols
 from . import FunctionRodataEntry
 
 
-def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_bytes: bytes, context: common.Context) -> sections.SectionBase:
+def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_bytes: bytes, context: common.Context, vromStart: int = 0) -> sections.SectionBase:
     offsetStart = splitEntry.offset
     offsetEnd = splitEntry.nextOffset
 
@@ -31,23 +31,26 @@ def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_byte
     elif offsetStart >= 0:
         common.Utils.printVerbose(f"Parsing since offset 0x{offsetStart:02X}")
 
+    sectionStart = vromStart + offsetStart
+    sectionEnd = vromStart + offsetEnd
+
     common.Utils.printVerbose(f"Using VRAM {splitEntry.vram:08X}")
     vram = splitEntry.vram
 
     f: sections.SectionBase
     if splitEntry.section == common.FileSectionType.Text:
-        f = sections.SectionText(context, offsetStart, offsetEnd, vram, splitEntry.fileName, array_of_bytes, 0, None)
+        f = sections.SectionText(context, sectionStart, sectionEnd, vram, splitEntry.fileName, array_of_bytes, 0, None)
         if splitEntry.isRsp:
             f.instrCat = rabbitizer.InstrCategory.RSP
     elif splitEntry.section == common.FileSectionType.Data:
-        f = sections.SectionData(context, offsetStart, offsetEnd, vram, splitEntry.fileName, array_of_bytes, 0, None)
+        f = sections.SectionData(context, sectionStart, sectionEnd, vram, splitEntry.fileName, array_of_bytes, 0, None)
     elif splitEntry.section == common.FileSectionType.Rodata:
-        f = sections.SectionRodata(context, offsetStart, offsetEnd, vram, splitEntry.fileName, array_of_bytes, 0, None)
+        f = sections.SectionRodata(context, sectionStart, sectionEnd, vram, splitEntry.fileName, array_of_bytes, 0, None)
     elif splitEntry.section == common.FileSectionType.Bss:
         bssVramEnd = splitEntry.vram + offsetEnd - offsetStart
-        f = sections.SectionBss(context, offsetStart, offsetEnd, splitEntry.vram, bssVramEnd, splitEntry.fileName, 0, None)
+        f = sections.SectionBss(context, sectionStart, sectionEnd, splitEntry.vram, bssVramEnd, splitEntry.fileName, 0, None)
     elif splitEntry.section == common.FileSectionType.Reloc:
-        f = sections.SectionRelocZ64(context, offsetStart, offsetEnd, vram, splitEntry.fileName, array_of_bytes, 0, None)
+        f = sections.SectionRelocZ64(context, sectionStart, sectionEnd, vram, splitEntry.fileName, array_of_bytes, 0, None)
     else:
         common.Utils.eprint("Error! Section not set!")
         exit(-1)

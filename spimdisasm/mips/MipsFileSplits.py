@@ -74,7 +74,7 @@ class FileSplits(FileBase):
             # if self.vram is None:
             #     self.vram = splitEntry.vram
 
-            f = FilesHandlers.createSectionFromSplitEntry(splitEntry, array_of_bytes, context)
+            f = FilesHandlers.createSectionFromSplitEntry(splitEntry, array_of_bytes, context, vromStart)
             f.parent = self
             f.setCommentOffset(splitEntry.offset)
 
