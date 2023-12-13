@@ -431,10 +431,12 @@ class ContextSymbol:
                 sectionName = self.sectionType.toStr().replace(".", "_")
                 return f"{self.parentFileName}{sectionName}_{self.inFileOffset:06X}"
 
+        suffix = self._defaultName_suffix()
+
         # Stringify the address
         if GlobalConfig.LEGACY_SYM_ADDR_ZERO_PADDING:
-            return f"{self.address:06X}"
-        return f"{self.address:08X}"
+            return f"{self.address:06X}{suffix}"
+        return f"{self.address:08X}{suffix}"
 
     def _defaultName_sectionPrefix(self, symType: SymbolSpecialType|str|None) -> str:
         # Functions, labels and jumptables don't get a section prefix because most of the time they are in their respective sections
@@ -474,11 +476,11 @@ class ContextSymbol:
 
     def getDefaultName(self) -> str:
         currentType = self.getTypeSpecial()
-        suffix = self._defaultName_suffix()
+
         uniqueIdentifier = self._defaultName_uniqueIdentifier(currentType)
         sectionPrefix = self._defaultName_sectionPrefix(currentType)
         typePrefix = self._defaultName_typePrefix(currentType)
-        return f"{sectionPrefix}{typePrefix}{uniqueIdentifier}{suffix}"
+        return f"{sectionPrefix}{typePrefix}{uniqueIdentifier}"
 
     def getName(self) -> str:
         if self.nameGetCallback is not None:
