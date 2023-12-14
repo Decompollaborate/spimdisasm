@@ -363,14 +363,15 @@ class SymbolBase(common.ElementBase):
                 value = relocInfo.getName(isSplittedSymbol=isSplittedSymbol)
         else:
             # This word could be a reference to a symbol
-            symbolRef = self.getSymbol(w, tryPlusOffset=canReferenceSymbolsWithAddends)
-            if symbolRef is not None and not self.context.isAddressBanned(symbolRef.vram):
-                if self._allowWordSymbolReference(symbolRef, w):
-                    value = symbolRef.getSymbolPlusOffset(w)
-            elif canReferenceConstants:
-                constant = self.getConstant(w)
-                if constant is not None:
-                    value = constant.getName()
+            if not self.context.isAddressBanned(w):
+                symbolRef = self.getSymbol(w, tryPlusOffset=canReferenceSymbolsWithAddends)
+                if symbolRef is not None and not self.context.isAddressBanned(symbolRef.vram):
+                    if self._allowWordSymbolReference(symbolRef, w):
+                        value = symbolRef.getSymbolPlusOffset(w)
+                elif canReferenceConstants:
+                    constant = self.getConstant(w)
+                    if constant is not None:
+                        value = constant.getName()
 
         comment = self.generateAsmLineComment(localOffset)
         output += f"{label}{comment} {dotType} {value}"
