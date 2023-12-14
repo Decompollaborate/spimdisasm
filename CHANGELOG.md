@@ -26,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   after another symbol or file.
 - Do not try to symbolize an address as a symbol plus addend if the original
   address is a banned address.
+- Recognize `volatile` type variants as aliases for the non `volatile`
+  versions.
+  - For example, `vs16` is recognized as a `.short`.
 
 ## [1.19.0] - 2023-12-04
 
