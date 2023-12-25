@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.0] - 2023-12-25
+
 ### Added
 
 - Add `--name-vars-by-file` option to rename data symbols based on their offset
@@ -1329,6 +1331,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.20.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.19.0...1.20.0
 [1.19.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.18.0...1.19.0
 [1.18.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.17.4...1.18.0
 [1.17.4]: https://github.com/Decompollaborate/spimdisasm/compare/1.17.3...1.17.4
