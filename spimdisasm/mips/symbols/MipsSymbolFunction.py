@@ -87,7 +87,7 @@ class SymbolFunction(SymbolText):
 
             if instr.isLikelyHandwritten() and not self.isRsp:
                 self.isLikelyHandwritten = True
-                self.endOfLineComment[instructionOffset//4] = " # handwritten instruction"
+                self.endOfLineComment[instructionOffset//4] = " /* handwritten instruction */"
 
             if not common.GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS and not instr.isImplemented():
                 # Abort analysis
@@ -379,7 +379,7 @@ class SymbolFunction(SymbolText):
                     if generatedReloc is not None:
                         self.relocs[instrOffset] = generatedReloc
             else:
-                self.endOfLineComment[instrOffset//4] = f" # Failed to symbolize address 0x{constant:08X} for {relocType.getPercentRel()}"
+                self.endOfLineComment[instrOffset//4] = f" /* Failed to symbolize address 0x{constant:08X} for {relocType.getPercentRel()} */"
 
         for instrOffset, targetVram in self.instrAnalyzer.funcCallInstrOffsets.items():
             funcSym = self.getSymbol(targetVram, tryPlusOffset=False)
@@ -433,7 +433,7 @@ class SymbolFunction(SymbolText):
         # if not self.isRsp and common.GlobalConfig.INPUT_FILE_TYPE != common.InputFileType.ELF:
         #     for outsideInstrOffset in self.instrAnalyzer.funcCallOutsideRangesOffsets.keys():
         #         self.isLikelyHandwritten = True
-        #         self.endOfLineComment[outsideInstrOffset//4] = " # function call outside to the known address range"
+        #         self.endOfLineComment[outsideInstrOffset//4] = " /* function call outside to the known address range */"
 
         # Symbols
         for loOffset, symVram in self.instrAnalyzer.symbolLoInstrOffset.items():
@@ -719,7 +719,7 @@ class SymbolFunction(SymbolText):
             loInstr = self.instructions[cpload.loOffset//4]
             gpDisp = hiInstr.getProcessedImmediate() << 16
             gpDisp += loInstr.getProcessedImmediate()
-            output += f"# _gp_disp: 0x{gpDisp:X}{common.GlobalConfig.LINE_ENDS}"
+            output += f"/* _gp_disp: 0x{gpDisp:X} */{common.GlobalConfig.LINE_ENDS}"
             if common.GlobalConfig.EMIT_CPLOAD:
                 assert cpload.reg is not None
                 output += f".cpload ${cpload.reg.name}"
@@ -746,7 +746,7 @@ class SymbolFunction(SymbolText):
         if self.isLikelyHandwritten:
             if not self.isRsp:
                 # RSP functions are always handwritten, so this is redundant
-                output += "# Handwritten function" + common.GlobalConfig.LINE_ENDS
+                output += "/* Handwritten function */" + common.GlobalConfig.LINE_ENDS
 
         self._generateRelocsFromInstructionAnalyzer()
 
@@ -794,6 +794,6 @@ class SymbolFunction(SymbolText):
         self.words = []
         for i, instr in enumerate(self.instructions):
             if not instr.isImplemented() or not instr.isValid():
-                self.endOfLineComment[i] = " # invalid instruction"
+                self.endOfLineComment[i] = " /* invalid instruction */"
             self.words.append(instr.getRaw())
         return super().disassembleAsData(useGlobalLabel=useGlobalLabel, isSplittedSymbol=isSplittedSymbol)

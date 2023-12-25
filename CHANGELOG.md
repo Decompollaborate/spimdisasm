@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Recognize `volatile` type variants as aliases for the non `volatile`
   versions.
   - For example, `vs16` is recognized as a `.short`.
+- Use C style comments over `#` since that is more widely supperted.
+  - For example Clang doesn't seem to support `#` comments.
 
 ## [1.19.0] - 2023-12-04
 
