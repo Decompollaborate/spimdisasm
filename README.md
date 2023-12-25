@@ -68,7 +68,7 @@ If you use a `requirements.txt` file in your repository, then you can add
 this library with the following line:
 
 ```txt
-spimdisasm>=1.17.4,<2.0.0
+spimdisasm>=1.20.0,<2.0.0
 ```
 
 ### Development version
@@ -87,8 +87,8 @@ In case you want to mess with the latest development version without wanting to
 clone the repository, then you could use the following command:
 
 ```bash
-pip uninstall spimdisasm
-pip install git+https://github.com/Decompollaborate/spimdisasm.git@develop
+python3 -m pip uninstall spimdisasm
+python3 -m pip install git+https://github.com/Decompollaborate/spimdisasm.git@develop
 ```
 
 NOTE: Installing the development version is not recommended unless you know what

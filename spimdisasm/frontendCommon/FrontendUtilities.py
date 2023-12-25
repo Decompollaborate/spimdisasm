@@ -42,6 +42,8 @@ def getSplittedSections(context: common.Context, splits: common.FileSplitFormat,
             outputPath = dataOutput
         elif row.section == common.FileSectionType.Bss:
             outputPath = dataOutput
+        elif row.section == common.FileSectionType.Reloc:
+            outputPath = dataOutput
         elif row.section == common.FileSectionType.Dummy:
             # Ignore dummy sections
             continue
