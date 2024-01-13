@@ -4,19 +4,32 @@
 [project]
 name = "spimdisasm"
 # Version should be synced with spimdisasm/__init__.py
-version = "1.20.0"
+version = "1.20.1.dev0"
 description = "MIPS disassembler"
-# license = "MIT"
 readme = "README.md"
+license = {file = "LICENSE"}
 requires-python = ">=3.7"
 authors = [
     { name="Anghelo Carvajal", email="angheloalf95@gmail.com" },
 ]
+classifiers = [
+    "Programming Language :: Python :: 3",
+
+    "License :: OSI Approved :: MIT License",
+
+    "Topic :: Software Development :: Disassemblers",
+
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+
+    "Typing :: Typed",
+]
 dynamic = ["dependencies"]
 
 [project.urls]
-"Homepage" = "https://github.com/Decompollaborate/spimdisasm"
-"Bug Tracker" = "https://github.com/Decompollaborate/spimdisasm/issues"
+Repository = "https://github.com/Decompollaborate/spimdisasm"
+Issues = "https://github.com/Decompollaborate/spimdisasm/issues"
+Changelog = "https://github.com/Decompollaborate/spimdisasm/blob/master/CHANGELOG.md"
 
 [build-system]
 requires = ["setuptools>=65.0", "wheel"]
