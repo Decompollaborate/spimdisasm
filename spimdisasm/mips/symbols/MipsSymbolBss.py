@@ -11,11 +11,30 @@ from . import SymbolBase
 
 
 class SymbolBss(SymbolBase):
-    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, spaceSize: int, segmentVromStart: int, overlayCategory: str|None):
-        super().__init__(context, vromStart, vromEnd, inFileOffset, vram, list(), common.FileSectionType.Bss, segmentVromStart, overlayCategory)
+    def __init__(
+        self,
+        context: common.Context,
+        vromStart: int,
+        vromEnd: int,
+        inFileOffset: int,
+        vram: int,
+        spaceSize: int,
+        segmentVromStart: int,
+        overlayCategory: str | None,
+    ):
+        super().__init__(
+            context,
+            vromStart,
+            vromEnd,
+            inFileOffset,
+            vram,
+            list(),
+            common.FileSectionType.Bss,
+            segmentVromStart,
+            overlayCategory,
+        )
 
         self.spaceSize: int = spaceSize
-
 
     @property
     def sizew(self) -> int:
@@ -28,13 +47,16 @@ class SymbolBss(SymbolBase):
             # Check user declared size matches the size that will be generated
             contextSymSize = self.contextSym.getSize()
             if self.spaceSize != contextSymSize:
-                warningMessage = f"Range check triggered: .bss symbol (name: {self.contextSym.getName()}, address: 0x{self.contextSym.vram:08X}): User declared size (0x{contextSymSize:X}) does not match the .space that will be generated (0x{self.spaceSize:X}). Try checking the size again or look for symbols which overlaps this region"
+                warningMessage = f"""
+Range check triggered: .bss symbol (name: {self.getName()}, address: 0x{self.contextSym.vram:08X}):
+    User declared size (0x{contextSymSize:X}) does not match the .space that will be emitted (0x{self.spaceSize:X}).
+    Try checking the size again or look for symbols which overlaps this region"""
                 if common.GlobalConfig.PANIC_RANGE_CHECK:
                     assert self.spaceSize == contextSymSize, warningMessage
                 else:
-                    common.Utils.eprint(f"\n\n{warningMessage}\n")
+                    common.Utils.eprint(f"\n{warningMessage}\n")
 
-    def disassembleAsBss(self, useGlobalLabel: bool=True) -> str:
+    def disassembleAsBss(self, useGlobalLabel: bool = True) -> str:
         output = self.contextSym.getReferenceeSymbols()
         output += self.getPrevAlignDirective(0)
 
@@ -48,5 +70,10 @@ class SymbolBss(SymbolBase):
 
         return output
 
-    def disassemble(self, migrate: bool=False, useGlobalLabel: bool=True, isSplittedSymbol: bool=False) -> str:
+    def disassemble(
+        self,
+        migrate: bool = False,
+        useGlobalLabel: bool = True,
+        isSplittedSymbol: bool = False,
+    ) -> str:
         return self.disassembleAsBss()

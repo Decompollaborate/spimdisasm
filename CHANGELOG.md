@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Perform a range check on all `.data` symbols that have a user declared size.
+  - This checks for the size of the symbol to not be smaller than the user
+    declared size.
+  - If the size doesn't match then a warning is printed to `stderr` or halt
+    execution if `GlobalConfig.PANIC_RANGE_CHECK` is turned on.
+
+### Changed
+
+- Format the range check message of `.bss` symbols similarly to how the `.data`
+  range check is formatted.
+
 ## [1.20.0] - 2023-12-25
 
 ### Added
