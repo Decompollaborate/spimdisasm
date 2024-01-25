@@ -23,7 +23,7 @@ class SymbolBase(common.ElementBase):
         self.contextSym.isDefined = True
         self.contextSym.sectionType = self.sectionType
 
-        self.stringEncoding: str = "ASCII"
+        self.stringEncoding: str = common.GlobalConfig.DATA_STRING_ENCODING
 
         self.relocs: dict[int, common.RelocationInfo] = dict()
         "key: word offset"

@@ -14,7 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     declared size.
   - If the size doesn't match then a warning is printed to `stderr` or halt
     execution if `GlobalConfig.PANIC_RANGE_CHECK` is turned on.
-- Add issue templates for bug reports and feature suggestions
+- Add issue templates for bug reports and feature suggestions.
+- Add `--rodata-string-encoding` and `--data-string-encoding` CLI options.
 
 ### Changed
 

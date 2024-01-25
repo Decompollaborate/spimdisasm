@@ -114,6 +114,9 @@ class GlobalConfigType:
     TRUST_USER_FUNCTIONS: bool = True
     TRUST_JAL_FUNCTIONS: bool = True
 
+    RODATA_STRING_ENCODING: str = "EUC-JP"
+    DATA_STRING_ENCODING: str = "EUC-JP"
+
     RODATA_STRING_GUESSER_LEVEL: int = 1
     """Rodata string guesser"""
 
@@ -296,6 +299,9 @@ class GlobalConfigType:
 
         backendConfig.add_argument("--disasm-unknown", help=f"Force disassembling functions with unknown instructions. Defaults to {self.DISASSEMBLE_UNKNOWN_INSTRUCTIONS}", action=Utils.BooleanOptionalAction)
 
+        backendConfig.add_argument("--rodata-string-encoding", help=f"Specify the encoding used for decoding all rodata strings. Defaults to {self.RODATA_STRING_ENCODING}")
+        backendConfig.add_argument("--data-string-encoding", help=f"Specify the encoding used for decoding all rodata strings. Defaults to {self.DATA_STRING_ENCODING}")
+
         rodataStringGuesserHelp = f"""\
 Sets the level for the rodata C string guesser. Smaller values mean more conservative methods to guess a string, while higher values are more agressive. Level 0 (and negative) completely disables the guessing feature. Defaults to {self.RODATA_STRING_GUESSER_LEVEL}.
 
@@ -443,6 +449,11 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
     def parseArgs(self, args: argparse.Namespace):
         if args.disasm_unknown is not None:
             self.DISASSEMBLE_UNKNOWN_INSTRUCTIONS = args.disasm_unknown
+
+        if args.rodata_string_encoding is not None:
+            self.RODATA_STRING_ENCODING = args.rodata_string_encoding
+        if args.data_string_encoding is not None:
+            self.DATA_STRING_ENCODING = args.data_string_encoding
 
         if args.rodata_string_guesser is not None:
             self.RODATA_STRING_GUESSER_LEVEL = args.rodata_string_guesser
