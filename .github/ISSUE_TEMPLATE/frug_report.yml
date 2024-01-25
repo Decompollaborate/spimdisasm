@@ -34,14 +34,14 @@ body:
   - type: input
     id: splat-version
     attributes:
-      label: [Optional] splat version
+      label: "Optional: splat version"
       description: What version of splat are you running?
     validations:
       required: false
   - type: textarea
     id: other-version
     attributes:
-      label: [Optional] Version of other stuff
+      label: "Optional: Version of other stuff"
       description: Here you can put the version of whatever other software you think may be relevant, like Python, rabbitizer, binutils, OS, etc.
       placeholder: |
         Python: 4.18
