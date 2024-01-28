@@ -44,7 +44,7 @@ class FileBase(common.ElementBase):
 
         output += ".include \"macro.inc\"" + common.GlobalConfig.LINE_ENDS
         output += common.GlobalConfig.LINE_ENDS
-        output += "/* assembler directives" + common.GlobalConfig.LINE_ENDS
+        output += "/* assembler directives */" + common.GlobalConfig.LINE_ENDS
         output += ".set noat      /* allow manual use of $at */" + common.GlobalConfig.LINE_ENDS
         output += ".set noreorder /* do not insert nops after branches */" + common.GlobalConfig.LINE_ENDS
         if common.GlobalConfig.ARCHLEVEL >= common.ArchLevel.MIPS3:

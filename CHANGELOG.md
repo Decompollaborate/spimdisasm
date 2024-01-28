@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Format the range check message of `.bss` symbols similarly to how the `.data`
   range check is formatted.
 
+### Fixed
+
+- Fix missing comment terminator on assembly prelude.
+
 ## [1.20.0] - 2023-12-25
 
 ### Added
