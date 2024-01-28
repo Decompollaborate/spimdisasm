@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# SPDX-FileCopyrightText: © 2022 Decompollaborate
+# SPDX-FileCopyrightText: © 2022-2024 Decompollaborate
 # SPDX-License-Identifier: MIT
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ class SymbolBase(common.ElementBase):
         self.contextSym.isDefined = True
         self.contextSym.sectionType = self.sectionType
 
-        self.stringEncoding: str = "ASCII"
+        self.stringEncoding: str = common.GlobalConfig.DATA_STRING_ENCODING
 
         self.relocs: dict[int, common.RelocationInfo] = dict()
         "key: word offset"

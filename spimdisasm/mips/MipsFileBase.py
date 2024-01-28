@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# SPDX-FileCopyrightText: © 2022 Decompollaborate
+# SPDX-FileCopyrightText: © 2022-2024 Decompollaborate
 # SPDX-License-Identifier: MIT
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ class FileBase(common.ElementBase):
         self.symbolsVRams: set[int] = set()
         "addresses of symbols in this section"
 
-        self.stringEncoding: str = "ASCII"
+        self.stringEncoding: str = common.GlobalConfig.DATA_STRING_ENCODING
 
         self.bytes: bytes = common.Utils.wordsToBytes(self.words)
 
@@ -44,7 +44,7 @@ class FileBase(common.ElementBase):
 
         output += ".include \"macro.inc\"" + common.GlobalConfig.LINE_ENDS
         output += common.GlobalConfig.LINE_ENDS
-        output += "/* assembler directives" + common.GlobalConfig.LINE_ENDS
+        output += "/* assembler directives */" + common.GlobalConfig.LINE_ENDS
         output += ".set noat      /* allow manual use of $at */" + common.GlobalConfig.LINE_ENDS
         output += ".set noreorder /* do not insert nops after branches */" + common.GlobalConfig.LINE_ENDS
         if common.GlobalConfig.ARCHLEVEL >= common.ArchLevel.MIPS3:

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# SPDX-FileCopyrightText: © 2022 Decompollaborate
+# SPDX-FileCopyrightText: © 2022-2024 Decompollaborate
 # SPDX-License-Identifier: MIT
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ class SectionRodata(SectionBase):
             words = common.Utils.bytesToWords(array_of_bytes, vromStart, vromEnd)
         super().__init__(context, vromStart, vromEnd, vram, filename, words, common.FileSectionType.Rodata, segmentVromStart, overlayCategory)
 
-        self.stringEncoding = "EUC-JP"
+        self.stringEncoding = common.GlobalConfig.RODATA_STRING_ENCODING
 
 
     def analyze(self):

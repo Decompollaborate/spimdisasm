@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
-# SPDX-FileCopyrightText: © 2022-2023 Decompollaborate
+# SPDX-FileCopyrightText: © 2022-2024 Decompollaborate
 # SPDX-License-Identifier: MIT
 
 from __future__ import annotations
 
-__version_info__: tuple[int, int, int] = (1, 20, 0)
+__version_info__: tuple[int, int, int] = (1, 20, 1)
 __version__ = ".".join(map(str, __version_info__))
 __author__ = "Decompollaborate"
 
