@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `--output-undecoded-strings` to output strings in a format that can be
+  reassembled into the original object. The decoded string will be placed in a
+  comment alongside the raw bytes.
+
 ## [1.20.1] - 2024-01-28
 
 ### Added

@@ -211,6 +211,25 @@ def getMaybeBooleyFromMaybeStr(booley: str|None) -> bool|None:
         return False
     return None
 
+def escapeBytes(buf: bytes) -> str:
+    escapeSequences = {
+        ord('\t'): '\\t',
+        ord('\n'): '\\n',
+        ord('\r'): '\\r',
+        ord('\"'): '\\"',
+        ord('\\'): '\\\\',
+    }
+
+    escaped = []
+    for b in buf:
+        if b in escapeSequences:
+            escaped.append(escapeSequences[b])
+        elif 0x20 <= b < 0x7F:
+            escaped.append(chr(b))
+        else:
+            escaped.append(f"\\x{b:02X}")
+    return "".join(escaped)
+
 # Escape characters that are unlikely to be used
 bannedEscapeCharacters = {
     0x00, # '\0'

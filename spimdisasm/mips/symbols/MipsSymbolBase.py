@@ -446,12 +446,22 @@ class SymbolBase(common.ElementBase):
         if not common.GlobalConfig.ASM_COMMENT:
             commentPaddingNum = 1
 
-        if rawStringSize == 0:
-            decodedStrings.append("")
-        for decodedValue in decodedStrings[:-1]:
-            result += f'.ascii "{decodedValue}"'
-            result += common.GlobalConfig.LINE_ENDS + (commentPaddingNum * " ")
-        result += f'.asciz "{decodedStrings[-1]}"{common.GlobalConfig.LINE_ENDS}'
+        if common.GlobalConfig.OUTPUT_UNDECODED_STRINGS:
+            rawString = buffer[localOffset:localOffset+rawStringSize]
+            escapedRawString = common.Utils.escapeBytes(rawString)
+            isAscii = all(c < 0x80 for c in rawString)
+            if isAscii:
+                result += f'.asciz "{escapedRawString}"{common.GlobalConfig.LINE_ENDS}'
+            else:
+                decodedString = "".join(decodedStrings)
+                result += f'.asciz /* "{decodedString}" */ "{escapedRawString}"{common.GlobalConfig.LINE_ENDS}'
+        else:
+            if rawStringSize == 0:
+                decodedStrings.append("")
+            for decodedValue in decodedStrings[:-1]:
+                result += f'.ascii "{decodedValue}"'
+                result += common.GlobalConfig.LINE_ENDS + (commentPaddingNum * " ")
+            result += f'.asciz "{decodedStrings[-1]}"{common.GlobalConfig.LINE_ENDS}'
 
         return result, skip
 
