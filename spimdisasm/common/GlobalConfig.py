@@ -115,7 +115,7 @@ class GlobalConfigType:
     TRUST_JAL_FUNCTIONS: bool = True
 
     RODATA_STRING_ENCODING: str = "EUC-JP"
-    DATA_STRING_ENCODING: str = "EUC-JP"
+    DATA_STRING_ENCODING: str = "ASCII"
 
     RODATA_STRING_GUESSER_LEVEL: int = 1
     """Rodata string guesser"""
