@@ -97,6 +97,7 @@ class SectionRelocZ64(SectionBase):
         vromEnd = vrom + 4 * 4
         sym = symbols.SymbolData(self.context, vrom, vromEnd, localOffset + self.inFileOffset, currentVram, self.words[0:4], self.segmentVromStart, self.overlayCategory)
         sym.contextSym.name = f"{self.name}_OverlayInfo"
+        sym.contextSym.userDeclaredType = "s32"
         sym.parent = self
         sym.setCommentOffset(self.commentOffset)
         sym.endOfLineComment = {i: f" /* _{self.name}Segment{sectName.toCapitalizedStr()}Size */" for i, sectName in enumerate(common.FileSections_ListBasic)}
@@ -109,6 +110,7 @@ class SectionRelocZ64(SectionBase):
         vromEnd = vrom + 4
         sym = symbols.SymbolData(self.context, vrom, vromEnd, localOffset + self.inFileOffset, currentVram, [self.relocCount], self.segmentVromStart, self.overlayCategory)
         sym.contextSym.name = f"{self.name}_RelocCount"
+        sym.contextSym.userDeclaredType = "s32"
         sym.parent = self
         sym.setCommentOffset(self.commentOffset)
         sym.analyze()
@@ -120,6 +122,7 @@ class SectionRelocZ64(SectionBase):
         vromEnd = vrom + 4 * len(self.entries)
         sym = symbols.SymbolData(self.context, vrom, vromEnd, localOffset + self.inFileOffset, currentVram, [r.reloc for r in self.entries], self.segmentVromStart, self.overlayCategory)
         sym.contextSym.name = f"{self.name}_OverlayRelocations"
+        sym.contextSym.userDeclaredType = "s32"
         sym.parent = self
         sym.setCommentOffset(self.commentOffset)
         sym.endOfLineComment = {i: f" /* {str(r)} */" for i, r in enumerate(self.entries)}
@@ -132,6 +135,7 @@ class SectionRelocZ64(SectionBase):
             vrom = self.getVromOffset(localOffset)
             vromEnd = vrom + 4 * len(self.tail)
             sym = symbols.SymbolData(self.context, vrom, vromEnd, localOffset + self.inFileOffset, currentVram, self.tail, self.segmentVromStart, self.overlayCategory)
+            sym.contextSym.userDeclaredType = "s32"
             sym.contextSym.name = f"{self.name}_Padding"
             sym.parent = self
             sym.setCommentOffset(self.commentOffset)
@@ -144,6 +148,7 @@ class SectionRelocZ64(SectionBase):
         vromEnd = vrom + 4
         sym = symbols.SymbolData(self.context, vrom, vromEnd, localOffset + self.inFileOffset, currentVram, [self.seekup], self.segmentVromStart, self.overlayCategory)
         sym.contextSym.name = f"{self.name}_OverlayInfoOffset"
+        sym.contextSym.userDeclaredType = "s32"
         sym.parent = self
         sym.setCommentOffset(self.commentOffset)
         sym.analyze()
