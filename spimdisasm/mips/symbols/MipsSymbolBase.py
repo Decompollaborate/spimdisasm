@@ -315,6 +315,9 @@ class SymbolBase(common.ElementBase):
         if symbolRef.isElfNotype:
             return False
 
+        if not self.contextSym.allowedToReferenceSymbols:
+            return False
+
         symType = symbolRef.getTypeSpecial()
         if isinstance(symType, common.SymbolSpecialType):
             if symType == common.SymbolSpecialType.function:

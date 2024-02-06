@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `ContextSymbol.allowedToReferenceSymbols`.
+  - Allow or prohibit this symbol to reference other symbols.
+
 ### Changed
 
 - Force `SectionRelocZ64`'s generated symbols to always be disassembled as
