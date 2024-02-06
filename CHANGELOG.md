@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Force `SectionRelocZ64`'s generated symbols to always be disassembled as
   `.word`s.
+- Disallow `SectionRelocZ64`'s generated symbols to reference other symbols.
 
 ## [1.20.1] - 2024-01-28
 
