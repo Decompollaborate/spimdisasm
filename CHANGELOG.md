@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Data symbols: Emit the original word inside the emitted comment.
 - Force `SectionRelocZ64`'s generated symbols to always be disassembled as
   `.word`s.
 - Disallow `SectionRelocZ64`'s generated symbols to reference other symbols or

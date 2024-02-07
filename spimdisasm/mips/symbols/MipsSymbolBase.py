@@ -382,7 +382,7 @@ class SymbolBase(common.ElementBase):
                     if constant is not None:
                         value = constant.getName()
 
-        comment = self.generateAsmLineComment(localOffset)
+        comment = self.generateAsmLineComment(localOffset, w)
         output += f"{label}{comment} {dotType} {value}"
         output += self.getEndOfLineComment(i)
         output += common.GlobalConfig.LINE_ENDS
