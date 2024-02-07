@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `ContextSymbol.allowedToBeReferenced`
   - Allow or prohibit this symbol to be referenced by other symbols.
 - Add `FunctionRodataEntry.getName` method.
+- Add `FileBase.sectionAlignment`.
+  - Allows to customize the alignment of the section.
 
 ### Changed
 
