@@ -104,6 +104,7 @@ class SectionRelocZ64(SectionBase):
         sym.contextSym.name = f"{relocName}_OverlayInfo"
         sym.contextSym.userDeclaredType = "s32"
         sym.contextSym.allowedToReferenceSymbols = False
+        sym.contextSym.allowedToBeReferenced = False
         sym.parent = self
         sym.setCommentOffset(self.commentOffset)
         sym.endOfLineComment = {i: f" /* _{relocName}Segment{sectName.toCapitalizedStr()}Size */" for i, sectName in enumerate(common.FileSections_ListBasic)}
@@ -118,6 +119,7 @@ class SectionRelocZ64(SectionBase):
         sym.contextSym.name = f"{relocName}_RelocCount"
         sym.contextSym.userDeclaredType = "s32"
         sym.contextSym.allowedToReferenceSymbols = False
+        sym.contextSym.allowedToBeReferenced = False
         sym.parent = self
         sym.setCommentOffset(self.commentOffset)
         sym.analyze()
@@ -131,6 +133,7 @@ class SectionRelocZ64(SectionBase):
         sym.contextSym.name = f"{relocName}_OverlayRelocations"
         sym.contextSym.userDeclaredType = "s32"
         sym.contextSym.allowedToReferenceSymbols = False
+        sym.contextSym.allowedToBeReferenced = False
         sym.parent = self
         sym.setCommentOffset(self.commentOffset)
         sym.endOfLineComment = {i: f" /* {str(r)} */" for i, r in enumerate(self.entries)}
@@ -146,6 +149,7 @@ class SectionRelocZ64(SectionBase):
             sym.contextSym.name = f"{relocName}_Padding"
             sym.contextSym.userDeclaredType = "s32"
             sym.contextSym.allowedToReferenceSymbols = False
+            sym.contextSym.allowedToBeReferenced = False
             sym.parent = self
             sym.setCommentOffset(self.commentOffset)
             sym.analyze()
@@ -159,6 +163,7 @@ class SectionRelocZ64(SectionBase):
         sym.contextSym.name = f"{relocName}_OverlayInfoOffset"
         sym.contextSym.userDeclaredType = "s32"
         sym.contextSym.allowedToReferenceSymbols = False
+        sym.contextSym.allowedToBeReferenced = False
         sym.parent = self
         sym.setCommentOffset(self.commentOffset)
         sym.analyze()

@@ -315,7 +315,13 @@ class SymbolBase(common.ElementBase):
         if symbolRef.isElfNotype:
             return False
 
+        if symbolRef.vram < 0:
+            return False
+
         if not self.contextSym.allowedToReferenceSymbols:
+            return False
+
+        if not symbolRef.allowedToBeReferenced:
             return False
 
         symType = symbolRef.getTypeSpecial()
