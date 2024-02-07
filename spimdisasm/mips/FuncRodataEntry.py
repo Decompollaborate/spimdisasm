@@ -62,6 +62,21 @@ class FunctionRodataEntry:
                 # Write the function itself
                 f.write(self.function.disassemble(migrate=self.hasRodataSyms(), isSplittedSymbol=True))
 
+    def getName(self) -> str:
+        assert self.function is not None or self.hasRodataSyms()
+
+        if self.function is not None:
+            return self.function.getName()
+
+        rodataSymsLen = len(self.rodataSyms)
+        if rodataSymsLen > 0:
+            assert rodataSymsLen == 1, rodataSymsLen
+            return self.rodataSyms[0].getName()
+
+        lateRodataSyms = len(self.lateRodataSyms)
+        assert lateRodataSyms == 1, lateRodataSyms
+        return self.lateRodataSyms[0].getName()
+
     @staticmethod
     def getEntryForFuncFromSection(func: symbols.SymbolFunction|None, rodataSection: sections.SectionRodata|None) -> FunctionRodataEntry:
         if rodataSection is None or func is None:

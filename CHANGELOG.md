@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Allow or prohibit this symbol to reference other symbols.
 - Add `ContextSymbol.allowedToBeReferenced`
   - Allow or prohibit this symbol to be referenced by other symbols.
+- Add `FunctionRodataEntry.getName` method.
 
 ### Changed
 
