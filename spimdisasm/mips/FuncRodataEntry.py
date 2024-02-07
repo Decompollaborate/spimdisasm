@@ -17,6 +17,24 @@ from . import symbols
 
 @dataclasses.dataclass
 class FunctionRodataEntry:
+    """
+    Class to facilitate rodata migration.
+
+    The algorithm aims to pair zero or more migrable rodata symbols from a
+    rodata section to a function.
+
+    This class assumes at least one of the following is true for any given
+    instance:
+    - `FunctionRodataEntry.function` is not `None`.
+    - `FunctionRodataEntry.rodataSyms` has at least one element.
+
+    If `FunctionRodataEntry.lateRodataSyms` has elements then
+    `FunctionRodataEntry.function` is not `None`.
+
+    The recommended way to instance this class is by using
+    `FunctionRodataEntry.getAllEntriesFromSections`.
+    """
+
     function: symbols.SymbolFunction | None = None
     rodataSyms: list[symbols.SymbolBase] = dataclasses.field(default_factory=list)
     lateRodataSyms: list[symbols.SymbolBase] = dataclasses.field(default_factory=list)
@@ -78,8 +96,17 @@ class FunctionRodataEntry:
         return self.lateRodataSyms[0].getName()
 
     @staticmethod
-    def getEntryForFuncFromSection(func: symbols.SymbolFunction|None, rodataSection: sections.SectionRodata|None) -> FunctionRodataEntry:
-        if rodataSection is None or func is None:
+    def getEntryForFuncFromSection(func: symbols.SymbolFunction, rodataSection: sections.SectionRodata|None) -> FunctionRodataEntry:
+        """
+        Pairs the given function to the migrable rodata symbols of the given
+        rodata section.
+
+        If `rodataSection` is `None` or if the function does not reference any
+        of the symbols from the given `rodataSection` then a
+        `FunctionRodataEntry` containing the given function.
+        """
+
+        if rodataSection is None:
             return FunctionRodataEntry(func)
 
         rodataList: list[symbols.SymbolBase] = []
@@ -104,7 +131,14 @@ class FunctionRodataEntry:
         return FunctionRodataEntry(func, rodataList, lateRodataList)
 
     @staticmethod
-    def getEntryForFuncFromPossibleRodataSections(func: symbols.SymbolFunction|None, rodataFileList: list[sections.SectionBase]) -> FunctionRodataEntry:
+    def getEntryForFuncFromPossibleRodataSections(func: symbols.SymbolFunction, rodataFileList: list[sections.SectionBase]) -> FunctionRodataEntry:
+        """
+        Searches and try to pair migrable rodata symbols to the given function.
+
+        If no migrable rodata symbols are found then a `FunctionRodataEntry`
+        containing only the passed function will be returned.
+        """
+
         for rodataSection in rodataFileList:
             assert isinstance(rodataSection, sections.SectionRodata)
 
@@ -116,6 +150,20 @@ class FunctionRodataEntry:
 
     @staticmethod
     def getAllEntriesFromSections(textSection: sections.SectionText|None, rodataSection: sections.SectionRodata|None) -> list[FunctionRodataEntry]:
+        """
+        Return all functions to rodata symbols pairings from the given
+        sections.
+
+        The returned list preserves original ordering of both the text and
+        rodata sections.
+
+        Either a function or a rodata symbol may be orphaned. This means the
+        said symbol is paired to zero symbols of the other section. In these
+        cases an entry containing the specific symbol is created and inserted
+        in corresponding place of the list so it preserves the ordering of both
+        sections.
+        """
+
         allUnmigratedRodataSymbols: list[symbols.SymbolBase] = []
 
         rodataSymbols = rodataSection.symbolList if rodataSection is not None else []
@@ -132,6 +180,7 @@ class FunctionRodataEntry:
 
             entry = FunctionRodataEntry.getEntryForFuncFromSection(func, rodataSection)
 
+            # Preserve the order of rodata symbols
             if len(entry.rodataSyms) > 0:
                 firstFuncRodataSym = entry.rodataSyms[0]
 
