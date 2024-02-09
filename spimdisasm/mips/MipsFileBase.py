@@ -54,16 +54,8 @@ class FileBase(common.ElementBase):
         output += common.GlobalConfig.LINE_ENDS
         return output
 
-    def getAsmPrelude_assemblerDirectives(self) -> str:
-        output = ""
-
-        output += f"/* assembler directives */{common.GlobalConfig.LINE_ENDS}"
-        output += f".set noat      /* allow manual use of $at */{common.GlobalConfig.LINE_ENDS}"
-        output += f".set noreorder /* do not insert nops after branches */{common.GlobalConfig.LINE_ENDS}"
-        if common.GlobalConfig.ARCHLEVEL >= common.ArchLevel.MIPS3:
-            output += f".set gp=64     /* allow use of 64-bit general purpose registers */{common.GlobalConfig.LINE_ENDS}"
-        output += common.GlobalConfig.LINE_ENDS
-        return output
+    def getAsmPrelude_instructionDirectives(self) -> str:
+        return ""
 
     def getAsmPrelude_sectionStart(self) -> str:
         output = ""
@@ -78,9 +70,12 @@ class FileBase(common.ElementBase):
     def getAsmPrelude(self) -> str:
         output = ""
 
-        output += self.getAsmPrelude_includes()
-        output += self.getAsmPrelude_assemblerDirectives()
-        output += self.getAsmPrelude_sectionStart()
+        if common.GlobalConfig.ASM_PRELUDE_USE_INCLUDES:
+            output += self.getAsmPrelude_includes()
+        if common.GlobalConfig.ASM_PRELUDE_USE_INSTRUCTION_DIRECTIVES:
+            output += self.getAsmPrelude_instructionDirectives()
+        if common.GlobalConfig.ASM_PRELUDE_USE_SECTION_START:
+            output += self.getAsmPrelude_sectionStart()
 
         return output
 

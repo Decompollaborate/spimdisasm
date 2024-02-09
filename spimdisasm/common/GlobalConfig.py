@@ -252,6 +252,9 @@ class GlobalConfigType:
     ASM_DATA_SYM_AS_LABEL: bool = False
     ASM_EMIT_SIZE_DIRECTIVE: bool = True
     ASM_USE_PRELUDE: bool = True
+    ASM_PRELUDE_USE_INCLUDES: bool = True
+    ASM_PRELUDE_USE_INSTRUCTION_DIRECTIVES: bool = True
+    ASM_PRELUDE_USE_SECTION_START: bool = True
     ASM_GENERATED_BY: bool = True
 
     PRINT_NEW_FILE_BOUNDARIES: bool = False
@@ -380,6 +383,9 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
         miscConfig.add_argument("--asm-data-as-label", help=f"Toggle adding the data symbol name as an additional label. Defaults to {self.ASM_DATA_SYM_AS_LABEL}", action=Utils.BooleanOptionalAction)
         miscConfig.add_argument("--asm-emit-size-directive", help=f"Toggles emitting a size directive to generated symbols. Defaults to {self.ASM_EMIT_SIZE_DIRECTIVE}", action=Utils.BooleanOptionalAction)
         miscConfig.add_argument("--asm-use-prelude", help=f"Toggle use of the default prelude for asm files. Defaults to {self.ASM_USE_PRELUDE}", action=Utils.BooleanOptionalAction)
+        miscConfig.add_argument("--asm-prelude-use-includes", help=f"Toggle use of the asm includes on the default prelude. Has no effect if `--asm-use-prelude` is turned off. Defaults to {self.ASM_PRELUDE_USE_INCLUDES}", action=Utils.BooleanOptionalAction)
+        miscConfig.add_argument("--asm-prelude-use-instruction-directives", help=f"Toggle use of the instruction directives on the default prelude. Has no effect if `--asm-use-prelude` is turned off. Defaults to {self.ASM_PRELUDE_USE_INSTRUCTION_DIRECTIVES}", action=Utils.BooleanOptionalAction)
+        miscConfig.add_argument("--asm-prelude-use-section-start", help=f"Toggle use of the section start directive on the default prelude. Has no effect if `--asm-use-prelude` is turned off. Defaults to {self.ASM_PRELUDE_USE_SECTION_START}", action=Utils.BooleanOptionalAction)
         miscConfig.add_argument("--asm-generated-by", help=f"Toggle comment indicating the tool and version used to generate the disassembly. Defaults to {self.ASM_GENERATED_BY}", action=Utils.BooleanOptionalAction)
 
         miscConfig.add_argument("--print-new-file-boundaries", help=f"Print to stdout any new file boundary found. Defaults to {self.PRINT_NEW_FILE_BOUNDARIES}", action=Utils.BooleanOptionalAction)
@@ -560,6 +566,12 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
             self.ASM_EMIT_SIZE_DIRECTIVE = args.asm_emit_size_directive
         if args.asm_use_prelude is not None:
             self.ASM_USE_PRELUDE = args.asm_use_prelude
+        if args.asm_prelude_use_includes is not None:
+            self.ASM_PRELUDE_USE_INCLUDES = args.asm_prelude_use_includes
+        if args.asm_prelude_use_instruction_directives is not None:
+            self.ASM_PRELUDE_USE_INSTRUCTION_DIRECTIVES = args.asm_prelude_use_instruction_directives
+        if args.asm_prelude_use_section_start is not None:
+            self.ASM_PRELUDE_USE_SECTION_START = args.asm_prelude_use_section_start
         if args.asm_generated_by is not None:
             self.ASM_GENERATED_BY = args.asm_generated_by
 
