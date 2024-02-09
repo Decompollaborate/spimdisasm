@@ -315,6 +315,15 @@ class SymbolBase(common.ElementBase):
         if symbolRef.isElfNotype:
             return False
 
+        if symbolRef.vram < 0:
+            return False
+
+        if not self.contextSym.allowedToReferenceSymbols:
+            return False
+
+        if not symbolRef.allowedToBeReferenced:
+            return False
+
         symType = symbolRef.getTypeSpecial()
         if isinstance(symType, common.SymbolSpecialType):
             if symType == common.SymbolSpecialType.function:
@@ -373,7 +382,7 @@ class SymbolBase(common.ElementBase):
                     if constant is not None:
                         value = constant.getName()
 
-        comment = self.generateAsmLineComment(localOffset)
+        comment = self.generateAsmLineComment(localOffset, w)
         output += f"{label}{comment} {dotType} {value}"
         output += self.getEndOfLineComment(i)
         output += common.GlobalConfig.LINE_ENDS

@@ -65,7 +65,7 @@ def writeSection(path: Path, fileSection: sections.SectionBase):
     return path
 
 
-#! @deprecated
+#! @deprecated: Use the static methods from FunctionRodataEntry instead
 def getRdataAndLateRodataForFunctionFromSection(func: symbols.SymbolFunction, rodataSection: sections.SectionRodata) -> tuple[list[symbols.SymbolBase], list[symbols.SymbolBase], int]:
     entry = FunctionRodataEntry.getEntryForFuncFromSection(func, rodataSection)
 
@@ -75,7 +75,7 @@ def getRdataAndLateRodataForFunctionFromSection(func: symbols.SymbolFunction, ro
 
     return entry.rodataSyms, entry.lateRodataSyms, lateRodataSize
 
-#! @deprecated
+#! @deprecated: Use the static methods from FunctionRodataEntry instead
 def getRdataAndLateRodataForFunction(func: symbols.SymbolFunction, rodataFileList: list[sections.SectionBase]) -> tuple[list[symbols.SymbolBase], list[symbols.SymbolBase], int]:
     entry = FunctionRodataEntry.getEntryForFuncFromPossibleRodataSections(func, rodataFileList)
 
@@ -85,12 +85,12 @@ def getRdataAndLateRodataForFunction(func: symbols.SymbolFunction, rodataFileLis
 
     return entry.rodataSyms, entry.lateRodataSyms, lateRodataSize
 
-#! @deprecated
+#! @deprecated: Use the static methods from FunctionRodataEntry instead
 def writeFunctionRodataToFile(f: TextIO, func: symbols.SymbolFunction, rdataList: list[symbols.SymbolBase], lateRodataList: list[symbols.SymbolBase], lateRodataSize: int=0):
     entry = FunctionRodataEntry(func, rdataList, lateRodataList)
     entry.writeToFile(f, writeFunction=False)
 
-#! @deprecated
+#! @deprecated: Use the static methods from FunctionRodataEntry instead
 def writeSplitedFunction(path: Path, func: symbols.SymbolFunction, rodataFileList: list[sections.SectionBase]):
     path.mkdir(parents=True, exist_ok=True)
     entry = FunctionRodataEntry.getEntryForFuncFromPossibleRodataSections(func, rodataFileList)

@@ -41,6 +41,18 @@ class SectionText(SectionBase):
         return instrsList
 
 
+    def getAsmPrelude_instructionDirectives(self) -> str:
+        output = ""
+
+        output += f"/* assembler directives */{common.GlobalConfig.LINE_ENDS}"
+        output += f".set noat      /* allow manual use of $at */{common.GlobalConfig.LINE_ENDS}"
+        output += f".set noreorder /* do not insert nops after branches */{common.GlobalConfig.LINE_ENDS}"
+        if common.GlobalConfig.ARCHLEVEL >= common.ArchLevel.MIPS3:
+            output += f".set gp=64     /* allow use of 64-bit general purpose registers */{common.GlobalConfig.LINE_ENDS}"
+        output += common.GlobalConfig.LINE_ENDS
+        return output
+
+
     def tryDetectRedundantFunctionEnd(self) -> bool:
         if common.GlobalConfig.COMPILER != common.Compiler.IDO:
             return False

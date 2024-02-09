@@ -33,26 +33,49 @@ class FileBase(common.ElementBase):
 
         self.bytes: bytes = common.Utils.wordsToBytes(self.words)
 
+        self.sectionAlignment: int|None = 4
+        """
+        In log2
+
+        If the desired alignment for the file is 8, then `sectionAlignment`
+        should be set to 3.
+        """
+
 
     def setCommentOffset(self, commentOffset: int):
         self.commentOffset = commentOffset
         for sym in self.symbolList:
             sym.setCommentOffset(self.commentOffset)
 
+    def getAsmPrelude_includes(self) -> str:
+        output = ""
+
+        output += f".include \"macro.inc\"{common.GlobalConfig.LINE_ENDS}"
+        output += common.GlobalConfig.LINE_ENDS
+        return output
+
+    def getAsmPrelude_instructionDirectives(self) -> str:
+        return ""
+
+    def getAsmPrelude_sectionStart(self) -> str:
+        output = ""
+
+        output += f".section {self.getSectionName()}{common.GlobalConfig.LINE_ENDS}"
+        output += common.GlobalConfig.LINE_ENDS
+        if self.sectionAlignment is not None:
+            output += f".align {self.sectionAlignment}{common.GlobalConfig.LINE_ENDS}"
+            output += common.GlobalConfig.LINE_ENDS
+        return output
+
     def getAsmPrelude(self) -> str:
         output = ""
 
-        output += ".include \"macro.inc\"" + common.GlobalConfig.LINE_ENDS
-        output += common.GlobalConfig.LINE_ENDS
-        output += "/* assembler directives */" + common.GlobalConfig.LINE_ENDS
-        output += ".set noat      /* allow manual use of $at */" + common.GlobalConfig.LINE_ENDS
-        output += ".set noreorder /* do not insert nops after branches */" + common.GlobalConfig.LINE_ENDS
-        if common.GlobalConfig.ARCHLEVEL >= common.ArchLevel.MIPS3:
-            output += ".set gp=64     /* allow use of 64-bit general purpose registers */" + common.GlobalConfig.LINE_ENDS
-        output += common.GlobalConfig.LINE_ENDS
-        output += f".section {self.getSectionName()}" + common.GlobalConfig.LINE_ENDS
-        output += common.GlobalConfig.LINE_ENDS
-        output += ".align 4" + common.GlobalConfig.LINE_ENDS
+        if common.GlobalConfig.ASM_PRELUDE_USE_INCLUDES:
+            output += self.getAsmPrelude_includes()
+        if common.GlobalConfig.ASM_PRELUDE_USE_INSTRUCTION_DIRECTIVES:
+            output += self.getAsmPrelude_instructionDirectives()
+        if common.GlobalConfig.ASM_PRELUDE_USE_SECTION_START:
+            output += self.getAsmPrelude_sectionStart()
 
         return output
 
@@ -171,7 +194,6 @@ class FileBase(common.ElementBase):
     def disassembleToFile(self, f: TextIO):
         if common.GlobalConfig.ASM_USE_PRELUDE:
             f.write(self.getAsmPrelude())
-            f.write(common.GlobalConfig.LINE_ENDS)
         f.write(self.disassemble())
 
 

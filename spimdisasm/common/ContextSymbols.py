@@ -196,6 +196,16 @@ class ContextSymbol:
     allowedToReferenceConstants: bool = False
     notAllowedToReferenceConstants: bool = False
 
+    allowedToReferenceSymbols: bool = True
+    """
+    Allow or prohibit this symbol to reference other symbols.
+    """
+
+    allowedToBeReferenced: bool = True
+    """
+    Allow or prohibit this symbol to be referenced by other symbols.
+    """
+
     isAutocreatedSymFromOtherSizedSym: bool = False
 
     isMips1Double: bool = False

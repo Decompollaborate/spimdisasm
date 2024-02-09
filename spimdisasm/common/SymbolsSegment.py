@@ -562,3 +562,11 @@ class SymbolsSegment:
                 dontAllowAddend = Utils.getMaybeBooleyFromMaybeStr(pairs.get("dont_allow_addend"))
                 if dontAllowAddend is not None:
                     contextSym.notAllowedToReferenceAddends = dontAllowAddend
+
+                allowReference = Utils.getMaybeBooleyFromMaybeStr(pairs.get("allow_reference"))
+                if allowReference is not None:
+                    contextSym.allowedToReferenceSymbols = allowReference
+
+                allowBeReferenced = Utils.getMaybeBooleyFromMaybeStr(pairs.get("allow_be_referenced"))
+                if allowBeReferenced is not None:
+                    contextSym.allowedToBeReferenced = allowBeReferenced

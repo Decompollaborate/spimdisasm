@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from ... import common
 
 from .. import symbols
@@ -88,6 +90,9 @@ class SectionRelocZ64(SectionBase):
 
 
     def analyze(self):
+        # The name may be a path, so we take the name of the file and discard everything else
+        relocName = Path(self.name).stem
+
         localOffset = 0
 
         sym: symbols.SymbolBase
@@ -96,10 +101,13 @@ class SectionRelocZ64(SectionBase):
         vrom = self.getVromOffset(localOffset)
         vromEnd = vrom + 4 * 4
         sym = symbols.SymbolData(self.context, vrom, vromEnd, localOffset + self.inFileOffset, currentVram, self.words[0:4], self.segmentVromStart, self.overlayCategory)
-        sym.contextSym.name = f"{self.name}_OverlayInfo"
+        sym.contextSym.name = f"{relocName}_OverlayInfo"
+        sym.contextSym.userDeclaredType = "s32"
+        sym.contextSym.allowedToReferenceSymbols = False
+        sym.contextSym.allowedToBeReferenced = False
         sym.parent = self
         sym.setCommentOffset(self.commentOffset)
-        sym.endOfLineComment = {i: f" /* _{self.name}Segment{sectName.toCapitalizedStr()}Size */" for i, sectName in enumerate(common.FileSections_ListBasic)}
+        sym.endOfLineComment = {i: f" /* _{relocName}Segment{sectName.toCapitalizedStr()}Size */" for i, sectName in enumerate(common.FileSections_ListBasic)}
         sym.analyze()
         self.symbolList.append(sym)
         localOffset += 4 * 4
@@ -108,7 +116,10 @@ class SectionRelocZ64(SectionBase):
         vrom = self.getVromOffset(localOffset)
         vromEnd = vrom + 4
         sym = symbols.SymbolData(self.context, vrom, vromEnd, localOffset + self.inFileOffset, currentVram, [self.relocCount], self.segmentVromStart, self.overlayCategory)
-        sym.contextSym.name = f"{self.name}_RelocCount"
+        sym.contextSym.name = f"{relocName}_RelocCount"
+        sym.contextSym.userDeclaredType = "s32"
+        sym.contextSym.allowedToReferenceSymbols = False
+        sym.contextSym.allowedToBeReferenced = False
         sym.parent = self
         sym.setCommentOffset(self.commentOffset)
         sym.analyze()
@@ -119,7 +130,10 @@ class SectionRelocZ64(SectionBase):
         vrom = self.getVromOffset(localOffset)
         vromEnd = vrom + 4 * len(self.entries)
         sym = symbols.SymbolData(self.context, vrom, vromEnd, localOffset + self.inFileOffset, currentVram, [r.reloc for r in self.entries], self.segmentVromStart, self.overlayCategory)
-        sym.contextSym.name = f"{self.name}_OverlayRelocations"
+        sym.contextSym.name = f"{relocName}_OverlayRelocations"
+        sym.contextSym.userDeclaredType = "s32"
+        sym.contextSym.allowedToReferenceSymbols = False
+        sym.contextSym.allowedToBeReferenced = False
         sym.parent = self
         sym.setCommentOffset(self.commentOffset)
         sym.endOfLineComment = {i: f" /* {str(r)} */" for i, r in enumerate(self.entries)}
@@ -132,7 +146,10 @@ class SectionRelocZ64(SectionBase):
             vrom = self.getVromOffset(localOffset)
             vromEnd = vrom + 4 * len(self.tail)
             sym = symbols.SymbolData(self.context, vrom, vromEnd, localOffset + self.inFileOffset, currentVram, self.tail, self.segmentVromStart, self.overlayCategory)
-            sym.contextSym.name = f"{self.name}_Padding"
+            sym.contextSym.name = f"{relocName}_Padding"
+            sym.contextSym.userDeclaredType = "s32"
+            sym.contextSym.allowedToReferenceSymbols = False
+            sym.contextSym.allowedToBeReferenced = False
             sym.parent = self
             sym.setCommentOffset(self.commentOffset)
             sym.analyze()
@@ -143,7 +160,10 @@ class SectionRelocZ64(SectionBase):
         vrom = self.getVromOffset(localOffset)
         vromEnd = vrom + 4
         sym = symbols.SymbolData(self.context, vrom, vromEnd, localOffset + self.inFileOffset, currentVram, [self.seekup], self.segmentVromStart, self.overlayCategory)
-        sym.contextSym.name = f"{self.name}_OverlayInfoOffset"
+        sym.contextSym.name = f"{relocName}_OverlayInfoOffset"
+        sym.contextSym.userDeclaredType = "s32"
+        sym.contextSym.allowedToReferenceSymbols = False
+        sym.contextSym.allowedToBeReferenced = False
         sym.parent = self
         sym.setCommentOffset(self.commentOffset)
         sym.analyze()
