@@ -58,7 +58,7 @@ class AccessTypeInfo:
     typeUnsigned: str|None
     typeNameAliases: set[str] = dataclasses.field(default_factory=set)
 
-    def typeMatchesAccess(self, typename) -> bool:
+    def typeMatchesAccess(self, typename: SymbolSpecialType|str|None) -> bool:
         if typename is None:
             return False
         if typename == self.typeSigned:

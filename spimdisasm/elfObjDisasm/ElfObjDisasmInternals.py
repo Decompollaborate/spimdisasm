@@ -137,7 +137,7 @@ def processSection(
         sectionName: str, sectionEntry: elf32.Elf32SectionHeaderEntry,
         sectionType: common.FileSectionType,
         sectionClass: type[mips.sections.SectionText]|type[mips.sections.SectionData]|type[mips.sections.SectionRodata]|type[mips.sections.SectionBss]
-    ):
+    ) -> None:
     outputFilePath = getOutputPath(inputPath, textOutput, dataOutput, sectionType, sectionName)
 
     vromStart = sectionEntry.offset

@@ -13,27 +13,28 @@ import rabbitizer
 import struct
 import subprocess
 import sys
+from typing import Any
 
 from .GlobalConfig import GlobalConfig, InputEndian
 
 
-def eprint(*args, **kwargs) -> None:
+def eprint(*args: Any, **kwargs: Any) -> None:
     print(*args, file=sys.stderr, **kwargs)
 
-def printQuietless(*args, **kwargs) -> None:
+def printQuietless(*args: Any, **kwargs: Any) -> None:
     if not GlobalConfig.QUIET:
         print(*args, **kwargs)
 
-def epprintQuietless(*args, **kwargs) -> None:
+def epprintQuietless(*args: Any, **kwargs: Any) -> None:
     if not GlobalConfig.QUIET:
         print(*args, file=sys.stderr, **kwargs)
 
 
-def printVerbose(*args, **kwargs) -> None:
+def printVerbose(*args: Any, **kwargs: Any) -> None:
     if not GlobalConfig.QUIET and GlobalConfig.VERBOSE:
         print(*args, **kwargs)
 
-def eprintVerbose(*args, **kwargs) -> None:
+def eprintVerbose(*args: Any, **kwargs: Any) -> None:
     if not GlobalConfig.QUIET and GlobalConfig.VERBOSE:
         print(*args, file=sys.stderr, **kwargs)
 
@@ -436,7 +437,7 @@ def decodeString(buf: bytes, offset: int, stringEncoding: str) -> tuple[list[str
 
 # Copied from argparse.py to be able to use it on Python versions < 3.9
 class BooleanOptionalAction(argparse.Action):
-    def __init__(self,
+    def __init__(self, # type: ignore[no-untyped-def]
                  option_strings,
                  dest,
                  default=None,
@@ -468,7 +469,7 @@ class BooleanOptionalAction(argparse.Action):
             help=help,
             metavar=metavar)
 
-    def __call__(self, parser, namespace, values, option_string: str|None=None) -> None:
+    def __call__(self, parser, namespace, values, option_string: str|None=None) -> None: # type: ignore
         if option_string is not None and option_string in self.option_strings:
             setattr(namespace, self.dest, not option_string.startswith('--no-'))
 

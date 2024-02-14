@@ -93,7 +93,7 @@ class ArchLevel(OrderedEnum):
     MIPS64R2    = 9
 
     @staticmethod
-    def fromValue(value) -> ArchLevel|None:
+    def fromValue(value: int) -> ArchLevel|None:
         try:
             return ArchLevel(value)
         except ValueError:
@@ -413,6 +413,8 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
 
 
     def processEnvironmentVariables(self) -> None:
+        from typing import Any
+
         # Allows changing the global configuration by setting a SPIMDISASM_SETTINGNAME environment variable
         # For example: SPIMDISASM_EMIT_CPLOAD=False
 
@@ -422,7 +424,7 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
 
             currentValue = getattr(self, attr)
 
-            environmentValue = os.getenv(f"SPIMDISASM_{attr}", currentValue)
+            environmentValue: Any = os.getenv(f"SPIMDISASM_{attr}", currentValue)
             if environmentValue == currentValue:
                 continue
 
@@ -442,7 +444,7 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
             elif isinstance(currentValue, Abi):
                 environmentValue = Abi.fromStr(environmentValue)
             elif isinstance(currentValue, ArchLevel):
-                value = ArchLevel.fromValue(environmentValue)
+                value = ArchLevel.fromValue(int(environmentValue))
                 if value is not None:
                     environmentValue = value
                 else:
