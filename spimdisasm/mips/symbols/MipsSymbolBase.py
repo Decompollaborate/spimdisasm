@@ -186,7 +186,7 @@ class SymbolBase(common.ElementBase):
     def shouldMigrate(self) -> bool:
         return False
 
-    def analyze(self):
+    def analyze(self) -> None:
         self.contextSym.inFileOffset = self.inFileOffset
         if self.parent is not None:
             self.contextSym.parentFileName = self.parent.getName()

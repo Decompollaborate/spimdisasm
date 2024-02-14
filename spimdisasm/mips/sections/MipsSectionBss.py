@@ -35,7 +35,7 @@ class SectionBss(SectionBase):
         self.bssVramStart = vram
         self.bssVramEnd = vram + self.bssTotalSize
 
-    def analyze(self):
+    def analyze(self) -> None:
         self.checkAndCreateFirstSymbol()
 
         # If something that could be a pointer found in data happens to be in the middle of this bss file's addresses space

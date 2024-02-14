@@ -106,7 +106,7 @@ class ElementBase:
         return ""
 
 
-    def analyze(self):
+    def analyze(self) -> None:
         """Scans the words of this element, gathering as much info as possible.
 
         This method should be called only once for each element.

@@ -13,7 +13,7 @@ from .SortedDict import SortedDict
 
 
 class GlobalOffsetTable:
-    def __init__(self):
+    def __init__(self) -> None:
         self.localsTable: list[int] = list()
         self.globalsTable: list[int] = list()
 
@@ -66,19 +66,19 @@ class GpAccess:
     isSmallSection: bool = False
 
     @property
-    def isGot(self):
+    def isGot(self) -> bool:
         return self.isGotLocal or self.isGotGlobal
 
 
 class GpAccessContainer:
-    def __init__(self):
+    def __init__(self) -> None:
         self.got = GlobalOffsetTable()
         self.smallSections: SortedDict[SmallSection] = SortedDict()
 
-    def addSmallSection(self, address: int, size: int):
+    def addSmallSection(self, address: int, size: int) -> None:
         self.smallSections[address] = SmallSection(address, size)
 
-    def initGotTable(self, tableAddress: int, localsTable: list[int], globalsTable: list[int]):
+    def initGotTable(self, tableAddress: int, localsTable: list[int], globalsTable: list[int]) -> None:
         self.got.initTables(tableAddress, localsTable, globalsTable)
 
         self.addSmallSection(tableAddress, (len(localsTable) + len(globalsTable)) * 4)

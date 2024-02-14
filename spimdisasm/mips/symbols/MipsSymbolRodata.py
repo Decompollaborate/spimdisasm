@@ -75,7 +75,7 @@ class SymbolRodata(SymbolBase):
         return True
 
 
-    def analyze(self):
+    def analyze(self) -> None:
         if self.contextSym.isDouble():
             if self.sizew % 2 != 0:
                 # doubles require an even amount of words

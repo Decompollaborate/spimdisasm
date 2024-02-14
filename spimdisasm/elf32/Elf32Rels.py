@@ -18,11 +18,11 @@ class Elf32RelEntry:
                             # 0x08
 
     @property
-    def rSym(self):
+    def rSym(self) -> int:
         return self.info >> 8
 
     @property
-    def rType(self):
+    def rType(self) -> int:
         return self.info & 0xFF
 
     @staticmethod

@@ -157,7 +157,7 @@ class SymbolFunction(SymbolText):
             instructionOffset += 4
 
 
-    def _postProcessGotAccesses(self):
+    def _postProcessGotAccesses(self) -> None:
         if not common.GlobalConfig.PIC:
             return
 
@@ -388,7 +388,7 @@ class SymbolFunction(SymbolText):
             self.relocs[instrOffset] = common.RelocationInfo(common.RelocType.MIPS_26, funcSym)
 
 
-    def analyze(self):
+    def analyze(self) -> None:
         if not common.GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS and self.hasUnimplementedIntrs:
             offset = 0
             for instr in self.instructions:
@@ -406,7 +406,6 @@ class SymbolFunction(SymbolText):
         self._processElfRelocSymbols()
 
         # Branches
-        labelSyms = {}
         for instrOffset, targetBranchVram in self.instrAnalyzer.branchInstrOffsets.items():
             if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
                 if self.getVromOffset(instrOffset) in self.context.globalRelocationOverrides:

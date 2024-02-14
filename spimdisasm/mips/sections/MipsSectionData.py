@@ -21,7 +21,7 @@ class SectionData(SectionBase):
         super().__init__(context, vromStart, vromEnd, vram, filename, words, common.FileSectionType.Data, segmentVromStart, overlayCategory)
 
 
-    def analyze(self):
+    def analyze(self) -> None:
         self.checkAndCreateFirstSymbol()
 
         symbolList: list[tuple[int, common.ContextSymbol]] = []

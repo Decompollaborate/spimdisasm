@@ -72,7 +72,7 @@ class Context:
         0x80000020,
     }
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Arbitrary initial range
         self.globalSegment = SymbolsSegment(self, 0x0, 0x1000, 0x80000000, 0x80001000, overlayCategory=None)
         # For symbols that we don't know where they come from

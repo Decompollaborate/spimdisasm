@@ -548,7 +548,7 @@ class Elf32File:
         for i, sym in enumerate(symbolTable.symbols):
             entryType = Elf32SymbolTableType(sym.stType)
 
-            bind = sym.stBind
+            bind = str(sym.stBind)
             stBind = Elf32SymbolTableBinding.fromValue(sym.stBind)
             if stBind is not None:
                 bind = stBind.name
@@ -589,7 +589,7 @@ class Elf32File:
             # Info column is basically useless since this shows the type and sym too
             print(f" {'Offset':8} {'Info':8} {'Type':12} {'Sym.Value':>9} {'Sym.Name'}")
             for rel in relSection.relocations:
-                relType = rel.rType
+                relType = str(rel.rType)
                 rType = common.RelocType.fromValue(rel.rType)
                 if rType is not None:
                     relType = rType.name

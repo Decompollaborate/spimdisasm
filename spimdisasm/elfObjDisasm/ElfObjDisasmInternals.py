@@ -197,10 +197,10 @@ def getProcessedSections(context: common.Context, elfFile: elf32.Elf32File, arra
     return processedSections, segmentPaths, sectionsPerName
 
 def changeGlobalSegmentRanges(context: common.Context, processedSegments: dict[common.FileSectionType, list[mips.sections.SectionBase]]) -> None:
-    lowestVromStart = None
-    highestVromEnd = None
-    lowestVramStart = None
-    highestVramEnd = None
+    lowestVromStart: int|None = None
+    highestVromEnd: int|None = None
+    lowestVramStart: int|None = None
+    highestVramEnd: int|None = None
 
     for subSegment in processedSegments.values():
         for section in subSegment:
@@ -306,11 +306,10 @@ def insertDynsymIntoContext(context: common.Context, symbolTable: elf32.Elf32Sym
 
 def insertGotIntoContext(context: common.Context, got: elf32.Elf32GlobalOffsetTable, stringTable: elf32.Elf32StringTable):
     lazyResolver = got.localsTable[0]
-    contextSym: common.ContextSymbol|None
-    contextSym = context.globalSegment.addSymbol(lazyResolver)
-    contextSym.name = f"$$.LazyResolver"
-    contextSym.isUserDeclared = True
-    contextSym.isGotLocal = True
+    lazyResolverSym = context.globalSegment.addSymbol(lazyResolver)
+    lazyResolverSym.name = f"$$.LazyResolver"
+    lazyResolverSym.isUserDeclared = True
+    lazyResolverSym.isGotLocal = True
 
     gotIndex = len(got.localsTable)
 

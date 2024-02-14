@@ -34,7 +34,7 @@ class SymbolData(SymbolBase):
             overlayCategory,
         )
 
-    def analyze(self):
+    def analyze(self) -> None:
         super().analyze()
 
         if self.contextSym.hasUserDeclaredSize():

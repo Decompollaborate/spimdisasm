@@ -40,7 +40,7 @@ class SymbolBss(SymbolBase):
     def sizew(self) -> int:
         return self.spaceSize // 4
 
-    def analyze(self):
+    def analyze(self) -> None:
         super().analyze()
 
         if self.contextSym.hasUserDeclaredSize():

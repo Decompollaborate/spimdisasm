@@ -23,11 +23,11 @@ class Elf32SymEntry:
                             # 0x10
 
     @property
-    def stBind(self):
+    def stBind(self) -> int:
         return self.info >> 4
 
     @property
-    def stType(self):
+    def stType(self) -> int:
         return self.info & 0xF
 
     @staticmethod

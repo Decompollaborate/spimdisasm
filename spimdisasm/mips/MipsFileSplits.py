@@ -103,7 +103,7 @@ class FileSplits(FileBase):
         buffer = common.Utils.wordsToBytes(words)
         return common.Utils.getStrHash(buffer)
 
-    def analyze(self):
+    def analyze(self) -> None:
         for filename, relocSection in self.sectionsDict[common.FileSectionType.Reloc].items():
             assert isinstance(relocSection, sections.SectionRelocZ64)
             for entry in relocSection.entries:

@@ -277,7 +277,7 @@ class SectionText(SectionBase):
         return funcsStartsList, unimplementedInstructionsFuncList
 
 
-    def analyze(self):
+    def analyze(self) -> None:
         instrsList = self.wordListToInstructions(self.words, self.getVramOffset(0), self.instrCat)
         nInstr = len(instrsList)
 

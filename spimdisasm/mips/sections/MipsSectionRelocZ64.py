@@ -23,7 +23,7 @@ class RelocEntry:
         self.offset = entry & 0x00FFFFFF
 
     @property
-    def reloc(self):
+    def reloc(self) -> int:
         return (self.sectionId << 30) | (self.relocType << 24) | (self.offset)
 
     def getSectionType(self) -> common.FileSectionType:
@@ -48,22 +48,22 @@ class SectionRelocZ64(SectionBase):
     def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytes, segmentVromStart: int, overlayCategory: str|None):
         super().__init__(context, vromStart, vromEnd, vram, filename, common.Utils.bytesToWords(array_of_bytes, vromStart, vromEnd), common.FileSectionType.Reloc, segmentVromStart, overlayCategory)
 
-        self.seekup = self.words[-1]
+        self.seekup: int = self.words[-1]
 
         self.setCommentOffset(self.sizew*4 - self.seekup)
 
         # Remove non reloc stuff
-        self.words = self.words[-self.seekup // 4:]
+        self.words: list[int] = self.words[-self.seekup // 4:]
 
-        self.sectionSizes = {
+        self.sectionSizes: dict[common.FileSectionType, int] = {
             common.FileSectionType.Text: self.words[0],
             common.FileSectionType.Data: self.words[1],
             common.FileSectionType.Rodata: self.words[2],
             common.FileSectionType.Bss: self.words[3],
         }
-        self.relocCount = self.words[4]
+        self.relocCount: int = self.words[4]
 
-        self.tail = self.words[self.relocCount+5:-1]
+        self.tail: list[int] = self.words[self.relocCount+5:-1]
 
         self.entries: list[RelocEntry] = list()
         for word in self.words[5:self.relocCount+5]:
@@ -89,7 +89,7 @@ class SectionRelocZ64(SectionBase):
         return self.sectionSizes[common.FileSectionType.Bss]
 
 
-    def analyze(self):
+    def analyze(self) -> None:
         # The name may be a path, so we take the name of the file and discard everything else
         relocName = Path(self.name).stem
 

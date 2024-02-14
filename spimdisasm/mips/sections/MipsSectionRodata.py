@@ -25,7 +25,7 @@ class SectionRodata(SectionBase):
         self.stringEncoding = common.GlobalConfig.RODATA_STRING_ENCODING
 
 
-    def analyze(self):
+    def analyze(self) -> None:
         self.checkAndCreateFirstSymbol()
 
         symbolList = []
