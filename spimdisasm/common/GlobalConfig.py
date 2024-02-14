@@ -297,7 +297,7 @@ class GlobalConfigType:
     """write to files splitted binaries"""
 
 
-    def addParametersToArgParse(self, parser: argparse.ArgumentParser):
+    def addParametersToArgParse(self, parser: argparse.ArgumentParser) -> None:
         backendConfig = parser.add_argument_group("Disassembler backend configuration")
 
         backendConfig.add_argument("--disasm-unknown", help=f"Force disassembling functions with unknown instructions. Defaults to {self.DISASSEMBLE_UNKNOWN_INSTRUCTIONS}", action=Utils.BooleanOptionalAction)
@@ -412,7 +412,7 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
         debugging.add_argument("--debug-unpaired-luis", help="Enables some debug info printing related to the unpaired LUI instructions)", action=Utils.BooleanOptionalAction)
 
 
-    def processEnvironmentVariables(self):
+    def processEnvironmentVariables(self) -> None:
         # Allows changing the global configuration by setting a SPIMDISASM_SETTINGNAME environment variable
         # For example: SPIMDISASM_EMIT_CPLOAD=False
 
@@ -452,7 +452,7 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
 
             setattr(self, attr, environmentValue)
 
-    def parseArgs(self, args: argparse.Namespace):
+    def parseArgs(self, args: argparse.Namespace) -> None:
         if args.disasm_unknown is not None:
             self.DISASSEMBLE_UNKNOWN_INSTRUCTIONS = args.disasm_unknown
 

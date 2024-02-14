@@ -13,7 +13,7 @@ from . import SectionBase
 
 
 class SectionBss(SectionBase):
-    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, bssVramStart: int, bssVramEnd: int, filename: str, segmentVromStart: int, overlayCategory: str|None):
+    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, bssVramStart: int, bssVramEnd: int, filename: str, segmentVromStart: int, overlayCategory: str|None) -> None:
         super().__init__(context, vromStart, vromEnd, bssVramStart, filename, [], common.FileSectionType.Bss, segmentVromStart, overlayCategory)
 
         self.bssVramStart: int = bssVramStart
@@ -29,7 +29,7 @@ class SectionBss(SectionBase):
     def sizew(self) -> int:
         return self.bssTotalSize // 4
 
-    def setVram(self, vram: int):
+    def setVram(self, vram: int) -> None:
         super().setVram(vram)
 
         self.bssVramStart = vram

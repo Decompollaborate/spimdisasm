@@ -59,7 +59,7 @@ def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_byte
 
     return f
 
-def writeSection(path: Path, fileSection: sections.SectionBase):
+def writeSection(path: Path, fileSection: sections.SectionBase) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     fileSection.saveToFile(str(path))
     return path
@@ -86,12 +86,12 @@ def getRdataAndLateRodataForFunction(func: symbols.SymbolFunction, rodataFileLis
     return entry.rodataSyms, entry.lateRodataSyms, lateRodataSize
 
 #! @deprecated: Use the static methods from FunctionRodataEntry instead
-def writeFunctionRodataToFile(f: TextIO, func: symbols.SymbolFunction, rdataList: list[symbols.SymbolBase], lateRodataList: list[symbols.SymbolBase], lateRodataSize: int=0):
+def writeFunctionRodataToFile(f: TextIO, func: symbols.SymbolFunction, rdataList: list[symbols.SymbolBase], lateRodataList: list[symbols.SymbolBase], lateRodataSize: int=0) -> None:
     entry = FunctionRodataEntry(func, rdataList, lateRodataList)
     entry.writeToFile(f, writeFunction=False)
 
 #! @deprecated: Use the static methods from FunctionRodataEntry instead
-def writeSplitedFunction(path: Path, func: symbols.SymbolFunction, rodataFileList: list[sections.SectionBase]):
+def writeSplitedFunction(path: Path, func: symbols.SymbolFunction, rodataFileList: list[sections.SectionBase]) -> None:
     path.mkdir(parents=True, exist_ok=True)
     entry = FunctionRodataEntry.getEntryForFuncFromPossibleRodataSections(func, rodataFileList)
 
@@ -99,7 +99,7 @@ def writeSplitedFunction(path: Path, func: symbols.SymbolFunction, rodataFileLis
     with funcPath.open("w") as f:
         entry.writeToFile(f, writeFunction=True)
 
-def writeOtherRodata(path: Path, rodataFileList: list[sections.SectionBase]):
+def writeOtherRodata(path: Path, rodataFileList: list[sections.SectionBase]) -> None:
     for rodataSection in rodataFileList:
         assert isinstance(rodataSection, sections.SectionRodata)
 

@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from .Context import Context
 
 class SymbolsSegment:
-    def __init__(self, context: "Context", vromStart: int|None, vromEnd: int|None, vramStart: int, vramEnd: int, overlayCategory: str|None=None):
+    def __init__(self, context: "Context", vromStart: int|None, vromEnd: int|None, vramStart: int, vramEnd: int, overlayCategory: str|None=None) -> None:
         assert vramStart < vramEnd
         if vromStart is not None and vromEnd is not None:
             assert vromStart <= vromEnd, f"0x{vromStart:06X} <= 0x{vromEnd:06X}"
@@ -130,7 +130,7 @@ class SymbolsSegment:
         return contextSym
 
 
-    def removeSymbol(self, address: int):
+    def removeSymbol(self, address: int) -> None:
         if address not in self.symbols:
             return
 
@@ -179,7 +179,7 @@ class SymbolsSegment:
             yield key
 
 
-    def saveContextToFile(self, f: TextIO):
+    def saveContextToFile(self, f: TextIO) -> None:
         f.write(f"category,{ContextSymbol.getCsvHeader()}\n")
 
         for address in self.symbols:
@@ -356,7 +356,7 @@ class SymbolsSegment:
     "N64 OS hardware registers"
 
 
-    def fillLibultraSymbols(self):
+    def fillLibultraSymbols(self) -> None:
         lowestVram = 0xFFFFFFFF
         highestVram = 0x00000000
         for vram, (name, type, size) in self.N64LibultraSyms.items():
@@ -372,7 +372,7 @@ class SymbolsSegment:
                 lowestVram = vram
         self.context.totalVramRange.addSpecialRange(lowestVram, highestVram)
 
-    def fillIQueSymbols(self):
+    def fillIQueSymbols(self) -> None:
         lowestVram = 0xFFFFFFFF
         highestVram = 0x00000000
         for vram, (name, type, size) in self.iQueLibultraSyms.items():
@@ -388,7 +388,7 @@ class SymbolsSegment:
                 lowestVram = vram
         self.context.totalVramRange.addSpecialRange(lowestVram, highestVram)
 
-    def fillHardwareRegs(self, useRealNames: bool=False):
+    def fillHardwareRegs(self, useRealNames: bool=False) -> None:
         lowestVram = 0xFFFFFFFF
         highestVram = 0x00000000
         for vram, name in self.N64HardwareRegs.items():
@@ -415,7 +415,7 @@ class SymbolsSegment:
         self.context.totalVramRange.addSpecialRange(lowestVram, highestVram)
 
 
-    def readVariablesCsv(self, filepath: Path):
+    def readVariablesCsv(self, filepath: Path) -> None:
         if not filepath.exists():
             return
 
@@ -461,7 +461,7 @@ class SymbolsSegment:
             contextSym.userDeclaredSize = varSize
             contextSym.isUserDeclared = True
 
-    def readFunctionsCsv(self, filepath: Path):
+    def readFunctionsCsv(self, filepath: Path) -> None:
         if not filepath.exists():
             return
 
@@ -479,7 +479,7 @@ class SymbolsSegment:
             contextSym.name = funcName
             contextSym.isUserDeclared = True
 
-    def readConstantsCsv(self, filepath: Path):
+    def readConstantsCsv(self, filepath: Path) -> None:
         if not filepath.exists():
             return
 
@@ -496,7 +496,7 @@ class SymbolsSegment:
             contextSym = self.addConstant(constantValue, constantName)
             contextSym.isUserDeclared = True
 
-    def readSplatSymbolAddrs(self, filepath: Path):
+    def readSplatSymbolAddrs(self, filepath: Path) -> None:
         if not filepath.exists():
             return
 

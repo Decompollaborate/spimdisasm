@@ -17,7 +17,7 @@ from . import SectionBase
 
 
 class RelocEntry:
-    def __init__(self, entry: int):
+    def __init__(self, entry: int) -> None:
         self.sectionId = entry >> 30
         self.relocType = (entry >> 24) & 0x3F
         self.offset = entry & 0x00FFFFFF
@@ -45,7 +45,7 @@ class RelocEntry:
 
 
 class SectionRelocZ64(SectionBase):
-    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytes, segmentVromStart: int, overlayCategory: str|None):
+    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytes, segmentVromStart: int, overlayCategory: str|None) -> None:
         super().__init__(context, vromStart, vromEnd, vram, filename, common.Utils.bytesToWords(array_of_bytes, vromStart, vromEnd), common.FileSectionType.Reloc, segmentVromStart, overlayCategory)
 
         self.seekup: int = self.words[-1]

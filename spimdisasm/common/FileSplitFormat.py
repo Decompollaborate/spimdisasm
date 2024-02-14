@@ -6,13 +6,14 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Generator
 
 from . import Utils
 from .FileSectionType import FileSectionType
 
 
 class FileSplitEntry:
-    def __init__(self, offset: int, vram: int, fileName: str, section: FileSectionType, nextOffset: int, isHandwritten: bool, isRsp: bool):
+    def __init__(self, offset: int, vram: int, fileName: str, section: FileSectionType, nextOffset: int, isHandwritten: bool, isRsp: bool) -> None:
         self.offset: int = offset
         self.vram: int = vram
         self.fileName: str = fileName
@@ -23,16 +24,16 @@ class FileSplitEntry:
 
 
 class FileSplitFormat:
-    def __init__(self, csvPath: Path|None = None):
+    def __init__(self, csvPath: Path|None = None) -> None:
         self.splits: list[list[str]] = list()
 
         if csvPath is not None:
             self.readCsvFile(csvPath)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.splits)
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[FileSplitEntry, None, None]:
         section = FileSectionType.Invalid
 
         for i, row in enumerate(self.splits):
@@ -72,11 +73,11 @@ class FileSplitFormat:
 
             yield FileSplitEntry(offset, vram, fileName, section, nextOffset, isHandwritten, isRsp)
 
-    def readCsvFile(self, csvPath: Path):
+    def readCsvFile(self, csvPath: Path) -> None:
         self.splits = Utils.readCsv(csvPath)
         self.splits = [x for x in self.splits if len(x) > 0]
 
-    def append(self, element: FileSplitEntry | list[str]):
+    def append(self, element: FileSplitEntry | list[str]) -> None:
         if isinstance(element, FileSplitEntry):
 
             offset = f"{element.offset:X}"
@@ -108,5 +109,5 @@ class FileSplitFormat:
             # TODO: error message
             raise TypeError()
 
-    def appendEndSection(self, offset: int, vram: int):
+    def appendEndSection(self, offset: int, vram: int) -> None:
         self.splits.append([f"{offset:X}", f"{vram:X}", ".end"])

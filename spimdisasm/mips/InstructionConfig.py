@@ -14,7 +14,7 @@ from ..common import Utils
 
 class InstructionConfig:
     @staticmethod
-    def addParametersToArgParse(parser: argparse.ArgumentParser):
+    def addParametersToArgParse(parser: argparse.ArgumentParser) -> None:
         registerNames = parser.add_argument_group("MIPS register names options")
 
         registerNames.add_argument("--named-registers", help=f"(Dis)allows named registers for every instruction. This flag takes precedence over similar flags in this category. Defaults to {rabbitizer.config.regNames_namedRegisters}", action=Utils.BooleanOptionalAction)
@@ -44,7 +44,7 @@ class InstructionConfig:
 
 
     @staticmethod
-    def parseArgs(args: argparse.Namespace):
+    def parseArgs(args: argparse.Namespace) -> None:
         if args.named_registers is not None:
             rabbitizer.config.regNames_namedRegisters = args.named_registers
 

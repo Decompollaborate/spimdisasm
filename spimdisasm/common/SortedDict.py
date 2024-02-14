@@ -24,7 +24,7 @@ ValueType = TypeVar("ValueType")
 
 
 class SortedDict(MutableMapping[int, ValueType]):
-    def __init__(self, other: Mapping[int, ValueType]|None=None):
+    def __init__(self, other: Mapping[int, ValueType]|None=None) -> None:
         self.map: dict[int, ValueType] = dict()
         self.sortedKeys: list[int] = list()
 

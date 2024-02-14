@@ -21,7 +21,7 @@ from .Elf32Rels import Elf32Rels
 
 
 class Elf32File:
-    def __init__(self, array_of_bytes: bytes):
+    def __init__(self, array_of_bytes: bytes) -> None:
         self.header = Elf32Header.fromBytearray(array_of_bytes)
         # print(self.header)
 

@@ -8,7 +8,6 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
-import json
 from pathlib import Path
 import rabbitizer
 import struct
@@ -18,23 +17,23 @@ import sys
 from .GlobalConfig import GlobalConfig, InputEndian
 
 
-def eprint(*args, **kwargs):
+def eprint(*args, **kwargs) -> None:
     print(*args, file=sys.stderr, **kwargs)
 
-def printQuietless(*args, **kwargs):
+def printQuietless(*args, **kwargs) -> None:
     if not GlobalConfig.QUIET:
         print(*args, **kwargs)
 
-def epprintQuietless(*args, **kwargs):
+def epprintQuietless(*args, **kwargs) -> None:
     if not GlobalConfig.QUIET:
         print(*args, file=sys.stderr, **kwargs)
 
 
-def printVerbose(*args, **kwargs):
+def printVerbose(*args, **kwargs) -> None:
     if not GlobalConfig.QUIET and GlobalConfig.VERBOSE:
         print(*args, **kwargs)
 
-def eprintVerbose(*args, **kwargs):
+def eprintVerbose(*args, **kwargs) -> None:
     if not GlobalConfig.QUIET and GlobalConfig.VERBOSE:
         print(*args, file=sys.stderr, **kwargs)
 
@@ -46,7 +45,7 @@ def isStdoutRedirected() -> bool:
 def getStrHash(byte_array: bytes) -> str:
     return str(hashlib.md5(byte_array).hexdigest())
 
-def writeBytesToFile(filepath: Path, array_of_bytes: bytes):
+def writeBytesToFile(filepath: Path, array_of_bytes: bytes) -> None:
     with filepath.open(mode="wb") as f:
         f.write(array_of_bytes)
 
@@ -62,10 +61,6 @@ def readFileAsBytearray(filepath: Path) -> bytearray:
 def readFile(filepath: Path) -> list[str]:
     with filepath.open() as f:
         return [x.strip() for x in f.readlines()]
-
-def readJson(filepath: Path):
-    with filepath.open() as f:
-        return json.load(f)
 
 def removeExtraWhitespace(line: str) -> str:
     return " ".join(line.split())
@@ -449,7 +444,7 @@ class BooleanOptionalAction(argparse.Action):
                  choices=None,
                  required=False,
                  help=None,
-                 metavar=None):
+                 metavar=None) -> None:
 
         _option_strings = []
         for option_string in option_strings:
@@ -473,31 +468,34 @@ class BooleanOptionalAction(argparse.Action):
             help=help,
             metavar=metavar)
 
-    def __call__(self, parser, namespace, values, option_string: str|None=None):
+    def __call__(self, parser, namespace, values, option_string: str|None=None) -> None:
         if option_string is not None and option_string in self.option_strings:
             setattr(namespace, self.dest, not option_string.startswith('--no-'))
 
-    def format_usage(self):
+    def format_usage(self) -> str:
         return ' | '.join(self.option_strings)
 
 # https://stackoverflow.com/a/35925919/6292472
 class PreserveWhiteSpaceWrapRawTextHelpFormatter(argparse.RawDescriptionHelpFormatter):
-    def __add_whitespace(self, idx, iWSpace, text):
+    def __add_whitespace(self, idx: int, iWSpace: int, text: str) -> str:
         if idx == 0:
             return text
         return (" " * iWSpace) + text
 
-    def _split_lines(self, text, width):
+    def _split_lines(self, text: str, width: int) -> list[str]:
         import textwrap
         import re
-        textRows = text.splitlines()
-        for idx, line in enumerate(textRows):
-            search = re.search('\s*[0-9\-]{0,}\.?\s*', line)
+        textRows: list[str] = text.splitlines()
+        newRows: list[str] = []
+        for line in textRows:
+            search = re.search(r'\s*[0-9\-]{0,}\.?\s*', line)
             if line.strip() == "":
-                textRows[idx] = " "
+                newRows.append(" ")
             elif search:
                 lWSpace = search.end()
-                lines = [self.__add_whitespace(i,lWSpace,x) for i,x in enumerate(textwrap.wrap(line, width))]
-                textRows[idx] = lines
+                for i, x in enumerate(textwrap.wrap(line, width)):
+                    newRows.append(self.__add_whitespace(i, lWSpace, x))
+            else:
+                newRows.append(line)
 
-        return [item for sublist in textRows for item in sublist]
+        return newRows

@@ -16,7 +16,7 @@ from . import FileBase, createEmptyFile
 
 
 class FileSplits(FileBase):
-    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytes, segmentVromStart: int, overlayCategory: str|None, splitsData: common.FileSplitFormat|None=None, relocSection: sections.SectionRelocZ64|None=None):
+    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytes, segmentVromStart: int, overlayCategory: str|None, splitsData: common.FileSplitFormat|None=None, relocSection: sections.SectionRelocZ64|None=None) -> None:
         super().__init__(context, vromStart, vromEnd, vram, filename, common.Utils.bytesToWords(array_of_bytes, vromStart, vromEnd), common.FileSectionType.Unknown, segmentVromStart, overlayCategory)
 
         self.sectionsDict: dict[common.FileSectionType, dict[str, sections.SectionBase]] = {
@@ -89,7 +89,7 @@ class FileSplits(FileBase):
             nFuncs += text.nFuncs
         return nFuncs
 
-    def setVram(self, vram: int):
+    def setVram(self, vram: int) -> None:
         super().setVram(vram)
         for sectDict in self.sectionsDict.values():
             for section in sectDict.values():
@@ -118,7 +118,7 @@ class FileSplits(FileBase):
             for section in sectDict.values():
                 section.analyze()
 
-    def compareToFile(self, other_file: FileBase):
+    def compareToFile(self, other_file: FileBase) -> dict:
         if isinstance(other_file, FileSplits):
             filesections: dict[common.FileSectionType, dict] = {
                 common.FileSectionType.Text: dict(),
@@ -178,7 +178,7 @@ class FileSplits(FileBase):
 
         return was_updated
 
-    def saveToFile(self, filepath: str):
+    def saveToFile(self, filepath: str) -> None:
         for sectDict in self.sectionsDict.values():
             for name, section in sectDict.items():
                 if name != "" and not filepath.endswith("/"):

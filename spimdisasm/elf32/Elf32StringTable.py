@@ -5,10 +5,12 @@
 
 from __future__ import annotations
 
+from typing import Generator
+
 
 # a.k.a. strtab (string table)
 class Elf32StringTable:
-    def __init__(self, array_of_bytes: bytes, offset: int, rawsize: int):
+    def __init__(self, array_of_bytes: bytes, offset: int, rawsize: int) -> None:
         self.strings: bytes = array_of_bytes[offset:offset+rawsize]
         self.offset: int = offset
         self.rawsize: int = rawsize
@@ -23,7 +25,7 @@ class Elf32StringTable:
 
         return buffer.decode()
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[str, None, None]:
         i = 0
         while i < self.rawsize:
             string = self[i]

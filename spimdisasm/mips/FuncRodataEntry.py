@@ -45,7 +45,7 @@ class FunctionRodataEntry:
     def hasRodataSyms(self) -> bool:
         return len(self.rodataSyms) > 0 or len(self.lateRodataSyms) > 0
 
-    def writeToFile(self, f: TextIO, writeFunction: bool=True):
+    def writeToFile(self, f: TextIO, writeFunction: bool=True) -> None:
         if len(self.rodataSyms) > 0:
             # Write the rdata
             f.write(f".section {self.sectionRodata}{common.GlobalConfig.LINE_ENDS}")

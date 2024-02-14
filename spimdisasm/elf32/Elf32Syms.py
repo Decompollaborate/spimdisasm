@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import dataclasses
 import struct
+from typing import Generator
 
 from .. import common
 
@@ -43,7 +44,7 @@ class Elf32SymEntry:
 
 
 class Elf32Syms:
-    def __init__(self, array_of_bytes: bytes, offset: int, rawSize: int):
+    def __init__(self, array_of_bytes: bytes, offset: int, rawSize: int) -> None:
         self.symbols: list[Elf32SymEntry] = list()
         self.offset: int = offset
         self.rawSize: int = rawSize
@@ -55,7 +56,7 @@ class Elf32Syms:
     def __getitem__(self, key: int) -> Elf32SymEntry:
         return self.symbols[key]
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[Elf32SymEntry, None, None]:
         for entry in self.symbols:
             yield entry
 

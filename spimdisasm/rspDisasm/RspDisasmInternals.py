@@ -101,7 +101,7 @@ def processArguments(args: argparse.Namespace) -> int:
 
     return 0
 
-def addSubparser(subparser: argparse._SubParsersAction[argparse.ArgumentParser]):
+def addSubparser(subparser: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     parser = subparser.add_parser("rspDisasm", help=getToolDescription(), formatter_class=common.Utils.PreserveWhiteSpaceWrapRawTextHelpFormatter)
 
     addOptionsToParser(parser)
@@ -109,7 +109,7 @@ def addSubparser(subparser: argparse._SubParsersAction[argparse.ArgumentParser])
     parser.set_defaults(func=processArguments)
 
 
-def rspDisasmMain():
+def rspDisasmMain() -> int:
     args = getArgsParser().parse_args()
 
     return processArguments(args)

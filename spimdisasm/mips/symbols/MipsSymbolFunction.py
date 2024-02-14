@@ -13,7 +13,7 @@ from . import SymbolText, analysis
 
 
 class SymbolFunction(SymbolText):
-    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, instrsList: list[rabbitizer.Instruction], segmentVromStart: int, overlayCategory: str|None):
+    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, instrsList: list[rabbitizer.Instruction], segmentVromStart: int, overlayCategory: str|None) -> None:
         super().__init__(context, vromStart, vromEnd, inFileOffset, vram, list(), segmentVromStart, overlayCategory)
         self.instructions = list(instrsList)
 
@@ -37,7 +37,7 @@ class SymbolFunction(SymbolText):
         return self.nInstr
 
 
-    def _lookAheadSymbolFinder(self, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction, instructionOffset: int, trackedRegistersOriginal: rabbitizer.RegistersTracker):
+    def _lookAheadSymbolFinder(self, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction, instructionOffset: int, trackedRegistersOriginal: rabbitizer.RegistersTracker) -> None:
         if not prevInstr.isBranch() and not prevInstr.isUnconditionalBranch():
             return
 
@@ -75,7 +75,7 @@ class SymbolFunction(SymbolText):
             self.instrAnalyzer.processPrevFuncCall(regsTracker, targetInstr, prevTargetInstr)
             branch += 4
 
-    def _runInstructionAnalyzer(self):
+    def _runInstructionAnalyzer(self) -> None:
         regsTracker = rabbitizer.RegistersTracker()
 
         instructionOffset = 0
@@ -106,7 +106,7 @@ class SymbolFunction(SymbolText):
 
         self.instrAnalyzer.printSymbolFinderDebugInfo_UnpairedLuis()
 
-    def _processElfRelocSymbols(self):
+    def _processElfRelocSymbols(self) -> None:
         if len(self.context.globalRelocationOverrides) == 0:
             return
 
@@ -291,7 +291,7 @@ class SymbolFunction(SymbolText):
                     return common.RelocType.MIPS_GOT_LO16
         return common.RelocType.MIPS_LO16
 
-    def _generateRelocsFromInstructionAnalyzer(self):
+    def _generateRelocsFromInstructionAnalyzer(self) -> None:
         for instrOffset, address in self.instrAnalyzer.symbolInstrOffset.items():
             if self.context.isAddressBanned(address):
                 continue

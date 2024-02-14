@@ -20,7 +20,7 @@ class GlobalOffsetTable:
         self.tableAddress: int|None = None
 
 
-    def initTables(self, pltGot: int, localsTable: list[int], globalsTable: list[int]):
+    def initTables(self, pltGot: int, localsTable: list[int], globalsTable: list[int]) -> None:
         self.tableAddress = pltGot
         self.localsTable = [address for address in localsTable]
         self.globalsTable = [address for address in globalsTable]
