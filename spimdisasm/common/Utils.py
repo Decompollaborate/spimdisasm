@@ -125,11 +125,11 @@ beWordsToBytes = wordsToBytes
 
 def wordToFloat(word: int) -> float:
     b = struct.pack('>I', word)
-    return struct.unpack('>f', b)[0]
+    return float(struct.unpack('>f', b)[0])
 
 def qwordToDouble(qword: int) -> float:
     b = struct.pack('>Q', qword)
-    return struct.unpack('>d', b)[0]
+    return float(struct.unpack('>d', b)[0])
 
 def wordToCurrenEndian(word: int) -> int:
     if GlobalConfig.ENDIAN == InputEndian.BIG:
@@ -137,11 +137,11 @@ def wordToCurrenEndian(word: int) -> int:
 
     if GlobalConfig.ENDIAN == InputEndian.LITTLE:
         b = struct.pack('>I', word)
-        return struct.unpack('<I', b)[0]
+        return int(struct.unpack('<I', b)[0])
 
     # MIDDLE
     b = struct.pack('<2H', word >> 16, word & 0xFFFF)
-    first, second = struct.unpack('>2H', b)
+    first, second = map(int, struct.unpack('>2H', b))
     return (first << 16) | second
 
 def qwordToCurrenEndian(word: int) -> int:
@@ -150,11 +150,11 @@ def qwordToCurrenEndian(word: int) -> int:
 
     if GlobalConfig.ENDIAN == InputEndian.LITTLE:
         b = struct.pack('>Q', word)
-        return struct.unpack('<Q', b)[0]
+        return int(struct.unpack('<Q', b)[0])
 
     # MIDDLE
     b = struct.pack('<4H', (word >> 48) & 0xFFFF, (word >> 32) & 0xFFFF, (word >> 16) & 0xFFFF, word & 0xFFFF)
-    first, second, third, fourth = struct.unpack('>4H', b)
+    first, second, third, fourth = map(int, struct.unpack('>4H', b))
     return (first << 48) | (second << 32) | (third << 16) | fourth
 
 def runCommandGetOutput(command: str, args: list[str]) -> list[str] | None:
