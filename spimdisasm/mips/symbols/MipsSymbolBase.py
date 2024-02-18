@@ -500,12 +500,13 @@ class SymbolBase(common.ElementBase):
     def _getAlignDirectiveStr(self, shiftValue: int) -> str:
         shiftedVal = 1 << shiftValue
 
-        if self.parent is not None and self.parent.vram % shiftedVal != 0:
-            # Can't emit alignment directives if the parent file isn't properly aligned
+        if self.parent is None:
+            # Can't emit alignment directives if we don't have info about the parent
             return ""
 
-        if self.vram % shiftedVal != 0:
-            # If the symbol itself isn't already aligned to the desired alignment then the directive would break matching
+        subRam = self.vram - self.parent.vram
+        if subRam % shiftedVal != 0:
+            # Alignment is relative to the file, not relative to the full binary
             return ""
 
         return f".align {shiftValue}{common.GlobalConfig.LINE_ENDS}"

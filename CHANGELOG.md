@@ -18,6 +18,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
         misconfigured or fake refences, since nothing besides jumptables should
         be able to reference labels inside a function.
 
+### Changed
+
+- Change the logic for emitting the alignment directives.
+  - Now the address of the symbol must be aligned relative to the file where
+    the symbol is, instead of requiring both the symbol and the file to be
+    aligned independently.
+  - This should be specially useful for PSX projects, since the compiler aligns
+    jumptables to 8, but it doesn't impose alignment restrictions on files,
+    meaning the files (and those jumptables) may end up aligned to a lower
+    alignment.
+
 ### Fixed
 
 - Fix missing type hints
