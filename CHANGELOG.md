@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- New options:
+  - Add `ASM_GLOBALIZE_TEXT_LABELS_REFERENCED_BY_NON_JUMPTABLE`.
+    - Forces the use of `ASM_JTBL_LABEL` on text labels that are referenced by
+      non jumptables.
+    - Turned off by default.
+      - Not enabled by default since this may be a symptom of something
+        misconfigured or fake refences, since nothing besides jumptables should
+        be able to reference labels inside a function.
+
 ### Fixed
 
 - Fix missing type hints

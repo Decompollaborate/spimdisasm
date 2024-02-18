@@ -257,6 +257,16 @@ class GlobalConfigType:
     ASM_PRELUDE_USE_SECTION_START: bool = True
     ASM_GENERATED_BY: bool = True
 
+    ASM_GLOBALIZE_TEXT_LABELS_REFERENCED_BY_NON_JUMPTABLE: bool = False
+    """
+    Use `ASM_JTBL_LABEL` on text labels that are referenced by non jumptable
+    symbols.
+
+    This is turned off by default since text labels referenced by non
+    jumptables is usually a symptom of something going wrong, like fake symbols
+    fake references, or jumptables being disassembled as data instead of rodata
+    """
+
     PRINT_NEW_FILE_BOUNDARIES: bool = False
     """Print to stdout every file boundary found in .text and .rodata"""
 
@@ -387,6 +397,15 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
         miscConfig.add_argument("--asm-prelude-use-instruction-directives", help=f"Toggle use of the instruction directives on the default prelude. Has no effect if `--asm-use-prelude` is turned off. Defaults to {self.ASM_PRELUDE_USE_INSTRUCTION_DIRECTIVES}", action=Utils.BooleanOptionalAction)
         miscConfig.add_argument("--asm-prelude-use-section-start", help=f"Toggle use of the section start directive on the default prelude. Has no effect if `--asm-use-prelude` is turned off. Defaults to {self.ASM_PRELUDE_USE_SECTION_START}", action=Utils.BooleanOptionalAction)
         miscConfig.add_argument("--asm-generated-by", help=f"Toggle comment indicating the tool and version used to generate the disassembly. Defaults to {self.ASM_GENERATED_BY}", action=Utils.BooleanOptionalAction)
+
+        miscConfig.add_argument("--asm-globalize-text-labels-referenced-by-non-jumptable", help=f"""\
+Use `ASM_JTBL_LABEL` on text labels that are referenced by non jumptable
+symbols.
+
+This is turned off by default since text labels referenced by non
+jumptables is usually a symptom of something going wrong, like fake symbols
+fake references, or jumptables being disassembled as data instead of rodata.
+Defaults to {self.ASM_GLOBALIZE_TEXT_LABELS_REFERENCED_BY_NON_JUMPTABLE}""", action=Utils.BooleanOptionalAction)
 
         miscConfig.add_argument("--print-new-file-boundaries", help=f"Print to stdout any new file boundary found. Defaults to {self.PRINT_NEW_FILE_BOUNDARIES}", action=Utils.BooleanOptionalAction)
 

@@ -685,7 +685,17 @@ class SymbolFunction(SymbolText):
         labelSym.isDefined = True
         labelSym.sectionType = self.sectionType
         labelSymType = labelSym.getTypeSpecial()
-        if labelSymType is None or labelSymType == common.SymbolSpecialType.function or (labelSymType == common.SymbolSpecialType.jumptablelabel and not migrate):
+
+        useLabelMacro = labelSymType is None or labelSymType == common.SymbolSpecialType.function or (labelSymType == common.SymbolSpecialType.jumptablelabel and not migrate)
+        if not useLabelMacro:
+            if common.GlobalConfig.ASM_GLOBALIZE_TEXT_LABELS_REFERENCED_BY_NON_JUMPTABLE:
+                # Check if any non-jumptable symbol references this label
+                for otherSym in labelSym.referenceSymbols:
+                    if otherSym.getTypeSpecial() != common.SymbolSpecialType.jumptable:
+                        useLabelMacro = True
+                        break
+
+        if useLabelMacro:
             label = labelSym.getReferenceeSymbols()
             labelMacro = labelSym.getLabelMacro(isInMiddleLabel=True)
             if labelMacro is not None:
