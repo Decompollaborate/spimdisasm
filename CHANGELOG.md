@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       - Not enabled by default since this may be a symptom of something
         misconfigured or fake refences, since nothing besides jumptables should
         be able to reference labels inside a function.
+- Add libleo (64DD) hardware registers to the list of known N64 hardware
+  registers.
 
 ### Changed
 
