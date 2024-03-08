@@ -13,7 +13,7 @@ from . import SectionBase
 
 
 class SectionData(SectionBase):
-    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytes, segmentVromStart: int, overlayCategory: str|None):
+    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, array_of_bytes: bytes, segmentVromStart: int, overlayCategory: str|None) -> None:
         if common.GlobalConfig.ENDIAN_DATA is not None:
             words = common.Utils.endianessBytesToWords(common.GlobalConfig.ENDIAN_DATA, array_of_bytes, vromStart, vromEnd)
         else:
@@ -21,7 +21,7 @@ class SectionData(SectionBase):
         super().__init__(context, vromStart, vromEnd, vram, filename, words, common.FileSectionType.Data, segmentVromStart, overlayCategory)
 
 
-    def analyze(self):
+    def analyze(self) -> None:
         self.checkAndCreateFirstSymbol()
 
         symbolList: list[tuple[int, common.ContextSymbol]] = []

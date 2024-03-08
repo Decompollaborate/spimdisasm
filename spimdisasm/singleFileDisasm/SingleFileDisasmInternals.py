@@ -207,7 +207,7 @@ def processArguments(args: argparse.Namespace) -> int:
 
     return 0
 
-def addSubparser(subparser: argparse._SubParsersAction[argparse.ArgumentParser]):
+def addSubparser(subparser: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     parser = subparser.add_parser("singleFileDisasm", help=getToolDescription(), formatter_class=common.Utils.PreserveWhiteSpaceWrapRawTextHelpFormatter)
 
     addOptionsToParser(parser)
@@ -215,7 +215,7 @@ def addSubparser(subparser: argparse._SubParsersAction[argparse.ArgumentParser])
     parser.set_defaults(func=processArguments)
 
 
-def disassemblerMain():
+def disassemblerMain() -> int:
     args = getArgsParser().parse_args()
 
     return processArguments(args)

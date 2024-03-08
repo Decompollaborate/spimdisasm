@@ -13,7 +13,7 @@ from . import SymbolText, analysis
 
 
 class SymbolFunction(SymbolText):
-    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, instrsList: list[rabbitizer.Instruction], segmentVromStart: int, overlayCategory: str|None):
+    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, instrsList: list[rabbitizer.Instruction], segmentVromStart: int, overlayCategory: str|None) -> None:
         super().__init__(context, vromStart, vromEnd, inFileOffset, vram, list(), segmentVromStart, overlayCategory)
         self.instructions = list(instrsList)
 
@@ -37,7 +37,7 @@ class SymbolFunction(SymbolText):
         return self.nInstr
 
 
-    def _lookAheadSymbolFinder(self, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction, instructionOffset: int, trackedRegistersOriginal: rabbitizer.RegistersTracker):
+    def _lookAheadSymbolFinder(self, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction, instructionOffset: int, trackedRegistersOriginal: rabbitizer.RegistersTracker) -> None:
         if not prevInstr.isBranch() and not prevInstr.isUnconditionalBranch():
             return
 
@@ -75,7 +75,7 @@ class SymbolFunction(SymbolText):
             self.instrAnalyzer.processPrevFuncCall(regsTracker, targetInstr, prevTargetInstr)
             branch += 4
 
-    def _runInstructionAnalyzer(self):
+    def _runInstructionAnalyzer(self) -> None:
         regsTracker = rabbitizer.RegistersTracker()
 
         instructionOffset = 0
@@ -106,7 +106,7 @@ class SymbolFunction(SymbolText):
 
         self.instrAnalyzer.printSymbolFinderDebugInfo_UnpairedLuis()
 
-    def _processElfRelocSymbols(self):
+    def _processElfRelocSymbols(self) -> None:
         if len(self.context.globalRelocationOverrides) == 0:
             return
 
@@ -157,7 +157,7 @@ class SymbolFunction(SymbolText):
             instructionOffset += 4
 
 
-    def _postProcessGotAccesses(self):
+    def _postProcessGotAccesses(self) -> None:
         if not common.GlobalConfig.PIC:
             return
 
@@ -291,7 +291,7 @@ class SymbolFunction(SymbolText):
                     return common.RelocType.MIPS_GOT_LO16
         return common.RelocType.MIPS_LO16
 
-    def _generateRelocsFromInstructionAnalyzer(self):
+    def _generateRelocsFromInstructionAnalyzer(self) -> None:
         for instrOffset, address in self.instrAnalyzer.symbolInstrOffset.items():
             if self.context.isAddressBanned(address):
                 continue
@@ -379,7 +379,7 @@ class SymbolFunction(SymbolText):
                     if generatedReloc is not None:
                         self.relocs[instrOffset] = generatedReloc
             else:
-                self.endOfLineComment[instrOffset//4] = f" /* Failed to symbolize address 0x{constant:08X} for {relocType.getPercentRel()} */"
+                self.endOfLineComment[instrOffset//4] = f" /* Failed to symbolize address 0x{constant:08X} for {relocType.getPercentRel()}. Make sure this address is within the recognized valid address space */"
 
         for instrOffset, targetVram in self.instrAnalyzer.funcCallInstrOffsets.items():
             funcSym = self.getSymbol(targetVram, tryPlusOffset=False)
@@ -388,7 +388,7 @@ class SymbolFunction(SymbolText):
             self.relocs[instrOffset] = common.RelocationInfo(common.RelocType.MIPS_26, funcSym)
 
 
-    def analyze(self):
+    def analyze(self) -> None:
         if not common.GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS and self.hasUnimplementedIntrs:
             offset = 0
             for instr in self.instructions:
@@ -406,7 +406,6 @@ class SymbolFunction(SymbolText):
         self._processElfRelocSymbols()
 
         # Branches
-        labelSyms = {}
         for instrOffset, targetBranchVram in self.instrAnalyzer.branchInstrOffsets.items():
             if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
                 if self.getVromOffset(instrOffset) in self.context.globalRelocationOverrides:
@@ -686,7 +685,17 @@ class SymbolFunction(SymbolText):
         labelSym.isDefined = True
         labelSym.sectionType = self.sectionType
         labelSymType = labelSym.getTypeSpecial()
-        if labelSymType is None or labelSymType == common.SymbolSpecialType.function or (labelSymType == common.SymbolSpecialType.jumptablelabel and not migrate):
+
+        useLabelMacro = labelSymType is None or labelSymType == common.SymbolSpecialType.function or (labelSymType == common.SymbolSpecialType.jumptablelabel and not migrate)
+        if not useLabelMacro:
+            if common.GlobalConfig.ASM_GLOBALIZE_TEXT_LABELS_REFERENCED_BY_NON_JUMPTABLE:
+                # Check if any non-jumptable symbol references this label
+                for otherSym in labelSym.referenceSymbols:
+                    if otherSym.getTypeSpecial() != common.SymbolSpecialType.jumptable:
+                        useLabelMacro = True
+                        break
+
+        if useLabelMacro:
             label = labelSym.getReferenceeSymbols()
             labelMacro = labelSym.getLabelMacro(isInMiddleLabel=True)
             if labelMacro is not None:

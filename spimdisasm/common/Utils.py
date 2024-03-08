@@ -8,33 +8,33 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
-import json
 from pathlib import Path
 import rabbitizer
 import struct
 import subprocess
 import sys
+from typing import Any
 
 from .GlobalConfig import GlobalConfig, InputEndian
 
 
-def eprint(*args, **kwargs):
+def eprint(*args: Any, **kwargs: Any) -> None:
     print(*args, file=sys.stderr, **kwargs)
 
-def printQuietless(*args, **kwargs):
+def printQuietless(*args: Any, **kwargs: Any) -> None:
     if not GlobalConfig.QUIET:
         print(*args, **kwargs)
 
-def epprintQuietless(*args, **kwargs):
+def epprintQuietless(*args: Any, **kwargs: Any) -> None:
     if not GlobalConfig.QUIET:
         print(*args, file=sys.stderr, **kwargs)
 
 
-def printVerbose(*args, **kwargs):
+def printVerbose(*args: Any, **kwargs: Any) -> None:
     if not GlobalConfig.QUIET and GlobalConfig.VERBOSE:
         print(*args, **kwargs)
 
-def eprintVerbose(*args, **kwargs):
+def eprintVerbose(*args: Any, **kwargs: Any) -> None:
     if not GlobalConfig.QUIET and GlobalConfig.VERBOSE:
         print(*args, file=sys.stderr, **kwargs)
 
@@ -46,7 +46,7 @@ def isStdoutRedirected() -> bool:
 def getStrHash(byte_array: bytes) -> str:
     return str(hashlib.md5(byte_array).hexdigest())
 
-def writeBytesToFile(filepath: Path, array_of_bytes: bytes):
+def writeBytesToFile(filepath: Path, array_of_bytes: bytes) -> None:
     with filepath.open(mode="wb") as f:
         f.write(array_of_bytes)
 
@@ -62,10 +62,6 @@ def readFileAsBytearray(filepath: Path) -> bytearray:
 def readFile(filepath: Path) -> list[str]:
     with filepath.open() as f:
         return [x.strip() for x in f.readlines()]
-
-def readJson(filepath: Path):
-    with filepath.open() as f:
-        return json.load(f)
 
 def removeExtraWhitespace(line: str) -> str:
     return " ".join(line.split())
@@ -125,11 +121,11 @@ beWordsToBytes = wordsToBytes
 
 def wordToFloat(word: int) -> float:
     b = struct.pack('>I', word)
-    return struct.unpack('>f', b)[0]
+    return float(struct.unpack('>f', b)[0])
 
 def qwordToDouble(qword: int) -> float:
     b = struct.pack('>Q', qword)
-    return struct.unpack('>d', b)[0]
+    return float(struct.unpack('>d', b)[0])
 
 def wordToCurrenEndian(word: int) -> int:
     if GlobalConfig.ENDIAN == InputEndian.BIG:
@@ -137,11 +133,11 @@ def wordToCurrenEndian(word: int) -> int:
 
     if GlobalConfig.ENDIAN == InputEndian.LITTLE:
         b = struct.pack('>I', word)
-        return struct.unpack('<I', b)[0]
+        return int(struct.unpack('<I', b)[0])
 
     # MIDDLE
     b = struct.pack('<2H', word >> 16, word & 0xFFFF)
-    first, second = struct.unpack('>2H', b)
+    first, second = map(int, struct.unpack('>2H', b))
     return (first << 16) | second
 
 def qwordToCurrenEndian(word: int) -> int:
@@ -150,11 +146,11 @@ def qwordToCurrenEndian(word: int) -> int:
 
     if GlobalConfig.ENDIAN == InputEndian.LITTLE:
         b = struct.pack('>Q', word)
-        return struct.unpack('<Q', b)[0]
+        return int(struct.unpack('<Q', b)[0])
 
     # MIDDLE
     b = struct.pack('<4H', (word >> 48) & 0xFFFF, (word >> 32) & 0xFFFF, (word >> 16) & 0xFFFF, word & 0xFFFF)
-    first, second, third, fourth = struct.unpack('>4H', b)
+    first, second, third, fourth = map(int, struct.unpack('>4H', b))
     return (first << 48) | (second << 32) | (third << 16) | fourth
 
 def runCommandGetOutput(command: str, args: list[str]) -> list[str] | None:
@@ -441,7 +437,7 @@ def decodeString(buf: bytes, offset: int, stringEncoding: str) -> tuple[list[str
 
 # Copied from argparse.py to be able to use it on Python versions < 3.9
 class BooleanOptionalAction(argparse.Action):
-    def __init__(self,
+    def __init__(self, # type: ignore[no-untyped-def]
                  option_strings,
                  dest,
                  default=None,
@@ -449,7 +445,7 @@ class BooleanOptionalAction(argparse.Action):
                  choices=None,
                  required=False,
                  help=None,
-                 metavar=None):
+                 metavar=None) -> None:
 
         _option_strings = []
         for option_string in option_strings:
@@ -473,31 +469,34 @@ class BooleanOptionalAction(argparse.Action):
             help=help,
             metavar=metavar)
 
-    def __call__(self, parser, namespace, values, option_string: str|None=None):
+    def __call__(self, parser, namespace, values, option_string: str|None=None) -> None: # type: ignore
         if option_string is not None and option_string in self.option_strings:
             setattr(namespace, self.dest, not option_string.startswith('--no-'))
 
-    def format_usage(self):
+    def format_usage(self) -> str:
         return ' | '.join(self.option_strings)
 
 # https://stackoverflow.com/a/35925919/6292472
 class PreserveWhiteSpaceWrapRawTextHelpFormatter(argparse.RawDescriptionHelpFormatter):
-    def __add_whitespace(self, idx, iWSpace, text):
+    def __add_whitespace(self, idx: int, iWSpace: int, text: str) -> str:
         if idx == 0:
             return text
         return (" " * iWSpace) + text
 
-    def _split_lines(self, text, width):
+    def _split_lines(self, text: str, width: int) -> list[str]:
         import textwrap
         import re
-        textRows = text.splitlines()
-        for idx, line in enumerate(textRows):
-            search = re.search('\s*[0-9\-]{0,}\.?\s*', line)
+        textRows: list[str] = text.splitlines()
+        newRows: list[str] = []
+        for line in textRows:
+            search = re.search(r'\s*[0-9\-]{0,}\.?\s*', line)
             if line.strip() == "":
-                textRows[idx] = " "
+                newRows.append(" ")
             elif search:
                 lWSpace = search.end()
-                lines = [self.__add_whitespace(i,lWSpace,x) for i,x in enumerate(textwrap.wrap(line, width))]
-                textRows[idx] = lines
+                for i, x in enumerate(textwrap.wrap(line, width)):
+                    newRows.append(self.__add_whitespace(i, lWSpace, x))
+            else:
+                newRows.append(line)
 
-        return [item for sublist in textRows for item in sublist]
+        return newRows

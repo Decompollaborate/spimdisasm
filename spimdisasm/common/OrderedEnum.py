@@ -9,19 +9,22 @@ import enum
 
 
 class OrderedEnum(enum.Enum):
-     def __ge__(self, other):
+     def __ge__(self, other: OrderedEnum) -> bool:
          if isinstance(other, self.__class__):
-             return self.value >= other.value
+             return bool(self.value >= other.value)
          return NotImplemented
-     def __gt__(self, other):
+
+     def __gt__(self, other: OrderedEnum) -> bool:
          if isinstance(other, self.__class__):
-             return self.value > other.value
+             return bool(self.value > other.value)
          return NotImplemented
-     def __le__(self, other):
+
+     def __le__(self, other: OrderedEnum) -> bool:
          if isinstance(other, self.__class__):
-             return self.value <= other.value
+             return bool(self.value <= other.value)
          return NotImplemented
-     def __lt__(self, other):
+
+     def __lt__(self, other: OrderedEnum) -> bool:
          if isinstance(other, self.__class__):
-             return self.value < other.value
+             return bool(self.value < other.value)
          return NotImplemented

@@ -137,7 +137,7 @@ def processSection(
         sectionName: str, sectionEntry: elf32.Elf32SectionHeaderEntry,
         sectionType: common.FileSectionType,
         sectionClass: type[mips.sections.SectionText]|type[mips.sections.SectionData]|type[mips.sections.SectionRodata]|type[mips.sections.SectionBss]
-    ):
+    ) -> None:
     outputFilePath = getOutputPath(inputPath, textOutput, dataOutput, sectionType, sectionName)
 
     vromStart = sectionEntry.offset
@@ -197,10 +197,10 @@ def getProcessedSections(context: common.Context, elfFile: elf32.Elf32File, arra
     return processedSections, segmentPaths, sectionsPerName
 
 def changeGlobalSegmentRanges(context: common.Context, processedSegments: dict[common.FileSectionType, list[mips.sections.SectionBase]]) -> None:
-    lowestVromStart = None
-    highestVromEnd = None
-    lowestVramStart = None
-    highestVramEnd = None
+    lowestVromStart: int|None = None
+    highestVromEnd: int|None = None
+    lowestVramStart: int|None = None
+    highestVramEnd: int|None = None
 
     for subSegment in processedSegments.values():
         for section in subSegment:
@@ -266,7 +266,7 @@ def addContextSymFromSymEntry(context: common.Context, symEntry: elf32.Elf32SymE
     return contextSym
 
 
-def insertSymtabIntoContext(context: common.Context, symbolTable: elf32.Elf32Syms, stringTable: elf32.Elf32StringTable, elfFile: elf32.Elf32File):
+def insertSymtabIntoContext(context: common.Context, symbolTable: elf32.Elf32Syms, stringTable: elf32.Elf32StringTable, elfFile: elf32.Elf32File) -> None:
     # Use the symbol table to replace symbol names present in disassembled sections
     for i, symEntry in enumerate(symbolTable):
         symName = stringTable[symEntry.name]
@@ -296,7 +296,7 @@ def insertSymtabIntoContext(context: common.Context, symbolTable: elf32.Elf32Sym
         if contextSym is not None:
             contextSym.sectionType = sectType
 
-def insertDynsymIntoContext(context: common.Context, symbolTable: elf32.Elf32Syms, stringTable: elf32.Elf32StringTable):
+def insertDynsymIntoContext(context: common.Context, symbolTable: elf32.Elf32Syms, stringTable: elf32.Elf32StringTable) -> None:
     for symEntry in symbolTable:
         if symEntry.value == 0 or symEntry.shndx == 0:
             continue
@@ -304,13 +304,12 @@ def insertDynsymIntoContext(context: common.Context, symbolTable: elf32.Elf32Sym
         symName = stringTable[symEntry.name]
         addContextSymFromSymEntry(context, symEntry, symEntry.value, symName)
 
-def insertGotIntoContext(context: common.Context, got: elf32.Elf32GlobalOffsetTable, stringTable: elf32.Elf32StringTable):
+def insertGotIntoContext(context: common.Context, got: elf32.Elf32GlobalOffsetTable, stringTable: elf32.Elf32StringTable) -> None:
     lazyResolver = got.localsTable[0]
-    contextSym: common.ContextSymbol|None
-    contextSym = context.globalSegment.addSymbol(lazyResolver)
-    contextSym.name = f"$$.LazyResolver"
-    contextSym.isUserDeclared = True
-    contextSym.isGotLocal = True
+    lazyResolverSym = context.globalSegment.addSymbol(lazyResolver)
+    lazyResolverSym.name = f"$$.LazyResolver"
+    lazyResolverSym.isUserDeclared = True
+    lazyResolverSym.isGotLocal = True
 
     gotIndex = len(got.localsTable)
 
@@ -472,7 +471,7 @@ def processArguments(args: argparse.Namespace) -> int:
 
     return 0
 
-def addSubparser(subparser: argparse._SubParsersAction[argparse.ArgumentParser]):
+def addSubparser(subparser: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     parser = subparser.add_parser(PROGNAME, help=getToolDescription(), formatter_class=common.Utils.PreserveWhiteSpaceWrapRawTextHelpFormatter)
 
     addOptionsToParser(parser)
@@ -480,7 +479,7 @@ def addSubparser(subparser: argparse._SubParsersAction[argparse.ArgumentParser])
     parser.set_defaults(func=processArguments)
 
 
-def elfObjDisasmMain():
+def elfObjDisasmMain() -> int:
     args = getArgsParser().parse_args()
 
     return processArguments(args)

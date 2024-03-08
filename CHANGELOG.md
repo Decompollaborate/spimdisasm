@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.0] - 2024-03-08
+
+### Added
+
+- New options:
+  - Add `ASM_GLOBALIZE_TEXT_LABELS_REFERENCED_BY_NON_JUMPTABLE`.
+    - Forces the use of `ASM_JTBL_LABEL` on text labels that are referenced by
+      non jumptables.
+    - Turned off by default.
+      - Not enabled by default since this may be a symptom of something
+        misconfigured or fake refences, since nothing besides jumptables should
+        be able to reference labels inside a function.
+- Add libleo (64DD) hardware registers to the list of known N64 hardware
+  registers.
+
+### Changed
+
+- Change the logic for emitting the alignment directives.
+  - Now the address of the symbol must be aligned relative to the file where
+    the symbol is, instead of requiring both the symbol and the file to be
+    aligned independently.
+  - This should be specially useful for PSX projects, since the compiler aligns
+    jumptables to 8, but it doesn't impose alignment restrictions on files,
+    meaning the files (and those jumptables) may end up aligned to a lower
+    alignment.
+- Avoid filtering out user declared symbols when they are outside the valid
+  address space.
+
+### Fixed
+
+- Fix missing type hints
+
 ## [1.21.0] - 2024-02-08
 
 ### Added
@@ -1390,6 +1422,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.22.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.21.1...1.22.0
 [1.21.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.20.1...1.21.0
 [1.20.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.20.0...1.20.1
 [1.20.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.19.0...1.20.0

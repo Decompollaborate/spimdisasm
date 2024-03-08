@@ -93,7 +93,7 @@ class ArchLevel(OrderedEnum):
     MIPS64R2    = 9
 
     @staticmethod
-    def fromValue(value) -> ArchLevel|None:
+    def fromValue(value: int) -> ArchLevel|None:
         try:
             return ArchLevel(value)
         except ValueError:
@@ -257,6 +257,16 @@ class GlobalConfigType:
     ASM_PRELUDE_USE_SECTION_START: bool = True
     ASM_GENERATED_BY: bool = True
 
+    ASM_GLOBALIZE_TEXT_LABELS_REFERENCED_BY_NON_JUMPTABLE: bool = False
+    """
+    Use `ASM_JTBL_LABEL` on text labels that are referenced by non jumptable
+    symbols.
+
+    This is turned off by default since text labels referenced by non
+    jumptables is usually a symptom of something going wrong, like fake symbols
+    fake references, or jumptables being disassembled as data instead of rodata
+    """
+
     PRINT_NEW_FILE_BOUNDARIES: bool = False
     """Print to stdout every file boundary found in .text and .rodata"""
 
@@ -297,7 +307,7 @@ class GlobalConfigType:
     """write to files splitted binaries"""
 
 
-    def addParametersToArgParse(self, parser: argparse.ArgumentParser):
+    def addParametersToArgParse(self, parser: argparse.ArgumentParser) -> None:
         backendConfig = parser.add_argument_group("Disassembler backend configuration")
 
         backendConfig.add_argument("--disasm-unknown", help=f"Force disassembling functions with unknown instructions. Defaults to {self.DISASSEMBLE_UNKNOWN_INSTRUCTIONS}", action=Utils.BooleanOptionalAction)
@@ -388,6 +398,15 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
         miscConfig.add_argument("--asm-prelude-use-section-start", help=f"Toggle use of the section start directive on the default prelude. Has no effect if `--asm-use-prelude` is turned off. Defaults to {self.ASM_PRELUDE_USE_SECTION_START}", action=Utils.BooleanOptionalAction)
         miscConfig.add_argument("--asm-generated-by", help=f"Toggle comment indicating the tool and version used to generate the disassembly. Defaults to {self.ASM_GENERATED_BY}", action=Utils.BooleanOptionalAction)
 
+        miscConfig.add_argument("--asm-globalize-text-labels-referenced-by-non-jumptable", help=f"""\
+Use `ASM_JTBL_LABEL` on text labels that are referenced by non jumptable
+symbols.
+
+This is turned off by default since text labels referenced by non
+jumptables is usually a symptom of something going wrong, like fake symbols
+fake references, or jumptables being disassembled as data instead of rodata.
+Defaults to {self.ASM_GLOBALIZE_TEXT_LABELS_REFERENCED_BY_NON_JUMPTABLE}""", action=Utils.BooleanOptionalAction)
+
         miscConfig.add_argument("--print-new-file-boundaries", help=f"Print to stdout any new file boundary found. Defaults to {self.PRINT_NEW_FILE_BOUNDARIES}", action=Utils.BooleanOptionalAction)
 
         miscConfig.add_argument("--use-dot-byte", help=f"Disassemble symbols marked as bytes with .byte instead of .word. Defaults to {self.USE_DOT_BYTE}", action=Utils.BooleanOptionalAction)
@@ -412,7 +431,9 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
         debugging.add_argument("--debug-unpaired-luis", help="Enables some debug info printing related to the unpaired LUI instructions)", action=Utils.BooleanOptionalAction)
 
 
-    def processEnvironmentVariables(self):
+    def processEnvironmentVariables(self) -> None:
+        from typing import Any
+
         # Allows changing the global configuration by setting a SPIMDISASM_SETTINGNAME environment variable
         # For example: SPIMDISASM_EMIT_CPLOAD=False
 
@@ -422,7 +443,7 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
 
             currentValue = getattr(self, attr)
 
-            environmentValue = os.getenv(f"SPIMDISASM_{attr}", currentValue)
+            environmentValue: Any = os.getenv(f"SPIMDISASM_{attr}", currentValue)
             if environmentValue == currentValue:
                 continue
 
@@ -442,7 +463,7 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
             elif isinstance(currentValue, Abi):
                 environmentValue = Abi.fromStr(environmentValue)
             elif isinstance(currentValue, ArchLevel):
-                value = ArchLevel.fromValue(environmentValue)
+                value = ArchLevel.fromValue(int(environmentValue))
                 if value is not None:
                     environmentValue = value
                 else:
@@ -452,7 +473,7 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
 
             setattr(self, attr, environmentValue)
 
-    def parseArgs(self, args: argparse.Namespace):
+    def parseArgs(self, args: argparse.Namespace) -> None:
         if args.disasm_unknown is not None:
             self.DISASSEMBLE_UNKNOWN_INSTRUCTIONS = args.disasm_unknown
 

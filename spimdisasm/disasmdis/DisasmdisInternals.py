@@ -74,7 +74,7 @@ def wordGeneratorFromStrList(inputlist: list|None) -> Generator[int, None, None]
     if len(wordStr) > 0:
         yield getWordFromStr(wordStr)
 
-def getWordListFromStdin():
+def getWordListFromStdin() -> Generator[int, None, None]:
     if sys.stdin.isatty():
         return
 
@@ -103,7 +103,7 @@ def processArguments(args: argparse.Namespace) -> int:
 
     return 0
 
-def addSubparser(subparser: argparse._SubParsersAction[argparse.ArgumentParser]):
+def addSubparser(subparser: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
     parser = subparser.add_parser("disasmdis", help=getToolDescription(), formatter_class=common.Utils.PreserveWhiteSpaceWrapRawTextHelpFormatter)
 
     addOptionsToParser(parser)
@@ -111,7 +111,7 @@ def addSubparser(subparser: argparse._SubParsersAction[argparse.ArgumentParser])
     parser.set_defaults(func=processArguments)
 
 
-def disasmdisMain():
+def disasmdisMain() -> int:
     args = getArgsParser().parse_args()
 
     return processArguments(args)

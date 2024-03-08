@@ -23,7 +23,7 @@ class SymbolTypeInfo:
         return self.accessType == other.accessType and self.unsignedMemoryAccess == other.unsignedMemoryAccess
 
     # https://stackoverflow.com/a/56915493/6292472
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.accessType, self.unsignedMemoryAccess))
 
 
@@ -256,6 +256,13 @@ class InstrAnalyzer:
             else:
                 filterOut |= True
 
+        if filterOut:
+            contextSym = self.context.globalSegment.getSymbol(address)
+            if contextSym is not None:
+                if contextSym.isUserDeclared:
+                    # If the user declared a symbol outside the total vram range then use it anyways
+                    filterOut = False
+
         if address > 0 and filterOut and lowerInstr.uniqueId != rabbitizer.InstrId.cpu_addiu:
             if common.GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_CONSTANTS:
                 # Let's pretend this value is a constant
@@ -460,7 +467,7 @@ class InstrAnalyzer:
 
 
 
-    def printAnalisisDebugInfo_IterInfo(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, currentVram: int):
+    def printAnalisisDebugInfo_IterInfo(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, currentVram: int) -> None:
         if not common.GlobalConfig.PRINT_FUNCTION_ANALYSIS_DEBUG_INFO:
             return
 
@@ -477,7 +484,7 @@ class InstrAnalyzer:
         # print({instr.getRegisterName(register_t): f"{state_t.value:X},{state_t.loOffset:X},{state_t.dereferenced}" for register_t, state_t in regsTracker.registers.items() if state_t.hasLoValue})
         print()
 
-    def printSymbolFinderDebugInfo_UnpairedLuis(self):
+    def printSymbolFinderDebugInfo_UnpairedLuis(self) -> None:
         if not common.GlobalConfig.PRINT_UNPAIRED_LUIS_DEBUG_INFO:
             return
 

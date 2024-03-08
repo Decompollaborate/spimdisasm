@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import dataclasses
 import struct
+from typing import Generator
 
 from .. import common
 
@@ -41,7 +42,7 @@ class Elf32DynEntry:
 
 
 class Elf32Dyns:
-    def __init__(self, array_of_bytes: bytes, offset: int, rawSize: int):
+    def __init__(self, array_of_bytes: bytes, offset: int, rawSize: int) -> None:
         self.dyns: list[Elf32DynEntry] = list()
         self.offset: int = offset
         self.rawSize: int = rawSize
@@ -72,7 +73,7 @@ class Elf32Dyns:
     def __getitem__(self, key: int) -> Elf32DynEntry:
         return self.dyns[key]
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[Elf32DynEntry, None, None]:
         for entry in self.dyns:
             yield entry
 

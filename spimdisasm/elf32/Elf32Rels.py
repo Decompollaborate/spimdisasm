@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import dataclasses
 import struct
+from typing import Generator
 
 from .. import common
 
@@ -18,11 +19,11 @@ class Elf32RelEntry:
                             # 0x08
 
     @property
-    def rSym(self):
+    def rSym(self) -> int:
         return self.info >> 8
 
     @property
-    def rType(self):
+    def rType(self) -> int:
         return self.info & 0xFF
 
     @staticmethod
@@ -34,7 +35,7 @@ class Elf32RelEntry:
 
 
 class Elf32Rels:
-    def __init__(self, sectionName: str, array_of_bytes: bytes, offset: int, rawSize: int):
+    def __init__(self, sectionName: str, array_of_bytes: bytes, offset: int, rawSize: int) -> None:
         self.sectionName = sectionName
         self.relocations: list[Elf32RelEntry] = list()
         self.offset: int = offset
@@ -44,6 +45,6 @@ class Elf32Rels:
             entry = Elf32RelEntry.fromBytearray(array_of_bytes, offset + i*0x08)
             self.relocations.append(entry)
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[Elf32RelEntry, None, None]:
         for entry in self.relocations:
             yield entry

@@ -91,7 +91,7 @@ def configureProcessedFiles(processedFiles: dict[common.FileSectionType, list[mi
         textFile.instrCat = instrCat
 
 
-def analyzeProcessedFiles(processedFiles: dict[common.FileSectionType, list[mips.sections.SectionBase]], processedFilesOutputPaths: dict[common.FileSectionType, list[Path]], processedFilesCount: int, progressCallback: ProgressCallbackType|None=None):
+def analyzeProcessedFiles(processedFiles: dict[common.FileSectionType, list[mips.sections.SectionBase]], processedFilesOutputPaths: dict[common.FileSectionType, list[Path]], processedFilesCount: int, progressCallback: ProgressCallbackType|None=None) -> None:
     i = 0
     for sectionType, filesInSection in sorted(processedFiles.items()):
         pathLists = processedFilesOutputPaths[sectionType]
@@ -115,7 +115,7 @@ def progressCallback_analyzeProcessedFiles(i: int, filePath: str, processedFiles
     common.Utils.printVerbose("")
 
 
-def nukePointers(processedFiles: dict[common.FileSectionType, list[mips.sections.SectionBase]], processedFilesOutputPaths: dict[common.FileSectionType, list[Path]], processedFilesCount: int, progressCallback: ProgressCallbackType|None=None):
+def nukePointers(processedFiles: dict[common.FileSectionType, list[mips.sections.SectionBase]], processedFilesOutputPaths: dict[common.FileSectionType, list[Path]], processedFilesCount: int, progressCallback: ProgressCallbackType|None=None) -> None:
     i = 0
     for sectionType, filesInSection in processedFiles.items():
         pathLists = processedFilesOutputPaths[sectionType]
@@ -137,7 +137,7 @@ def progressCallback_nukePointers(i: int, filePath: str, processedFilesCount: in
     common.Utils.printQuietless(progressStr, end="")
 
 
-def writeProcessedFiles(processedFiles: dict[common.FileSectionType, list[mips.sections.SectionBase]], processedFilesOutputPaths: dict[common.FileSectionType, list[Path]], processedFilesCount: int, progressCallback: ProgressCallbackType|None=None):
+def writeProcessedFiles(processedFiles: dict[common.FileSectionType, list[mips.sections.SectionBase]], processedFilesOutputPaths: dict[common.FileSectionType, list[Path]], processedFilesCount: int, progressCallback: ProgressCallbackType|None=None) -> None:
     common.Utils.printVerbose("Writing files...")
     i = 0
     for section, filesInSection in processedFiles.items():
@@ -165,7 +165,7 @@ def progressCallback_writeProcessedFiles(i: int, filePath: str, processedFilesCo
         common.Utils.printQuietless()
 
 
-def migrateFunctions(processedFiles: dict[common.FileSectionType, list[mips.sections.SectionBase]], functionMigrationPath: Path, progressCallback: ProgressCallbackType|None=None):
+def migrateFunctions(processedFiles: dict[common.FileSectionType, list[mips.sections.SectionBase]], functionMigrationPath: Path, progressCallback: ProgressCallbackType|None=None) -> None:
     funcTotal = sum(len(x.symbolList) for x in processedFiles.get(common.FileSectionType.Text, []))
     rodataFileList = processedFiles.get(common.FileSectionType.Rodata, [])
     i = 0
@@ -198,7 +198,7 @@ def progressCallback_migrateFunctions(i: int, funcName: str, funcTotal: int) -> 
     common.Utils.printQuietless(progressStr, end="")
 
 
-def writeFunctionInfoCsv(processedFiles: dict[common.FileSectionType, list[mips.sections.SectionBase]], csvPath: Path):
+def writeFunctionInfoCsv(processedFiles: dict[common.FileSectionType, list[mips.sections.SectionBase]], csvPath: Path) -> None:
     csvPath.parent.mkdir(parents=True, exist_ok=True)
 
     with csvPath.open("w") as f:
@@ -256,7 +256,7 @@ def writeFunctionInfoCsv(processedFiles: dict[common.FileSectionType, list[mips.
             # f.write("\n")
 
 
-def cliMain():
+def cliMain() -> int:
     parser = argparse.ArgumentParser(description="Interface to call any of the spimdisasm's CLI utilities", prog="spimdisasm")
 
     parser.add_argument("-V", "--version", action="version", version=f"%(prog)s {__version__}")
@@ -269,4 +269,4 @@ def cliMain():
     spimdisasm.rspDisasm.addSubparser(subparsers)
 
     args = parser.parse_args()
-    return args.func(args)
+    return int(args.func(args))

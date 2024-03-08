@@ -34,8 +34,14 @@ class AddressRange:
             self.end = address
         return None
 
+    def __str__(self) -> str:
+        return f"AddressRange(0x{self.start:08X}, 0x{self.end:08X})"
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
 class SymbolsRanges:
-    def __init__(self, start: int, end: int):
+    def __init__(self, start: int, end: int) -> None:
         self.mainAddressRange = AddressRange(start, end)
         self.specialRanges: list[AddressRange] = list()
 
@@ -63,6 +69,12 @@ class SymbolsRanges:
         self.specialRanges.append(addrRange)
         return addrRange
 
+    def __str__(self) -> str:
+        ret = f"MainRange: {self.mainAddressRange}\n"
+        for i, spRange in enumerate(self.specialRanges):
+            ret += f"    {i}'th special: {spRange}\n"
+        return ret
+
 class Context:
     N64DefaultBanned = {
         0x7FFFFFE0, # osInvalICache
@@ -72,7 +84,7 @@ class Context:
         0x80000020,
     }
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Arbitrary initial range
         self.globalSegment = SymbolsSegment(self, 0x0, 0x1000, 0x80000000, 0x80001000, overlayCategory=None)
         # For symbols that we don't know where they come from
@@ -95,7 +107,7 @@ class Context:
         self.gpAccesses = GpAccessContainer()
 
 
-    def changeGlobalSegmentRanges(self, vromStart: int, vromEnd: int, vramStart: int, vramEnd: int):
+    def changeGlobalSegmentRanges(self, vromStart: int, vromEnd: int, vramStart: int, vramEnd: int) -> None:
         if vromStart == vromEnd:
             Utils.eprint(f"Warning: globalSegment's will has its vromStart equal to the vromEnd (0x{vromStart:X})")
         if vramStart == vramEnd:
@@ -130,7 +142,7 @@ class Context:
         return self.totalVramRange.addSpecialRange(start, end)
 
 
-    def initGotTable(self, pltGot: int, localsTable: list[int], globalsTable: list[int]):
+    def initGotTable(self, pltGot: int, localsTable: list[int], globalsTable: list[int]) -> None:
         self.gpAccesses.initGotTable(pltGot, localsTable, globalsTable)
 
         for gotEntry in self.gpAccesses.got.globalsTable:
@@ -138,11 +150,11 @@ class Context:
             contextSym.isUserDeclared = True
             contextSym.isGotGlobal = True
 
-    def addSmallSection(self, address: int, size: int):
+    def addSmallSection(self, address: int, size: int) -> None:
         self.gpAccesses.addSmallSection(address, size)
 
 
-    def fillDefaultBannedSymbols(self):
+    def fillDefaultBannedSymbols(self) -> None:
         self.bannedSymbols |= self.N64DefaultBanned
 
 
@@ -150,13 +162,13 @@ class Context:
         return self.totalVramRange.isInRange(address)
 
 
-    def addBannedSymbol(self, address: int):
+    def addBannedSymbol(self, address: int) -> None:
         self.bannedSymbols.add(address)
 
-    def addBannedSymbolRange(self, rangeStart: int, rangeEnd: int):
+    def addBannedSymbolRange(self, rangeStart: int, rangeEnd: int) -> None:
         self.bannedRangedSymbols.append(AddressRange(rangeStart, rangeEnd))
 
-    def addBannedSymbolRangeBySize(self, rangeStart: int, size: int):
+    def addBannedSymbolRangeBySize(self, rangeStart: int, size: int) -> None:
         self.bannedRangedSymbols.append(AddressRange(rangeStart, rangeStart + size))
 
     def isAddressBanned(self, address: int) -> bool:
@@ -172,7 +184,7 @@ class Context:
         self.globalRelocationOverrides[vromAddres] = reloc
         return reloc
 
-    def saveContextToFile(self, contextPath: Path):
+    def saveContextToFile(self, contextPath: Path) -> None:
         with contextPath.open("w") as f:
             self.globalSegment.saveContextToFile(f)
 
@@ -191,7 +203,7 @@ class Context:
 
 
     @staticmethod
-    def addParametersToArgParse(parser: argparse.ArgumentParser):
+    def addParametersToArgParse(parser: argparse.ArgumentParser) -> None:
         contextParser = parser.add_argument_group("Context configuration")
 
         contextParser.add_argument("--save-context", help="Saves the context to a file", metavar="FILENAME")
@@ -214,7 +226,7 @@ class Context:
         symbolsConfig.add_argument("--named-hardware-regs", help="Use actual names for the hardware registers", action=Utils.BooleanOptionalAction)
 
 
-    def parseArgs(self, args: argparse.Namespace):
+    def parseArgs(self, args: argparse.Namespace) -> None:
         if args.default_banned != False:
             self.fillDefaultBannedSymbols()
         if args.libultra_syms != False:

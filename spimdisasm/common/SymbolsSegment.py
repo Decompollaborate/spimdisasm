@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from .Context import Context
 
 class SymbolsSegment:
-    def __init__(self, context: "Context", vromStart: int|None, vromEnd: int|None, vramStart: int, vramEnd: int, overlayCategory: str|None=None):
+    def __init__(self, context: "Context", vromStart: int|None, vromEnd: int|None, vramStart: int, vramEnd: int, overlayCategory: str|None=None) -> None:
         assert vramStart < vramEnd
         if vromStart is not None and vromEnd is not None:
             assert vromStart <= vromEnd, f"0x{vromStart:06X} <= 0x{vromEnd:06X}"
@@ -130,7 +130,7 @@ class SymbolsSegment:
         return contextSym
 
 
-    def removeSymbol(self, address: int):
+    def removeSymbol(self, address: int) -> None:
         if address not in self.symbols:
             return
 
@@ -179,7 +179,7 @@ class SymbolsSegment:
             yield key
 
 
-    def saveContextToFile(self, f: TextIO):
+    def saveContextToFile(self, f: TextIO) -> None:
         f.write(f"category,{ContextSymbol.getCsvHeader()}\n")
 
         for address in self.symbols:
@@ -352,11 +352,49 @@ class SymbolsSegment:
         0xA4940010: "USB0_STATUS_REG",
         0xA4A00000: "D_A4A00000",
         0xA4A40010: "USB1_STATUS_REG",
+
+        # libleo (64DD) address range
+        0xA5000508: "LEO_CMD",
+        0xA5000508: "LEO_STATUS",
+
+        0xA5000510: "LEO_BM_CTL",
+        0xA5000510: "LEO_BM_STATUS",
+
+        0xA5000518: "LEO_SEQ_CTL",
+        0xA5000518: "LEO_SEQ_STATUS",
+
+
+        0xA5000000: "LEO_C2_BUFF",      # C2 Sector Buffer
+        0xA5000400: "LEO_SECTOR_BUFF",  # Data Sector Buffer
+        0xA5000500: "LEO_DATA",         # Data
+        0xA5000504: "LEO_MISC_REG",     # Misc Register
+
+        0xA500050C: "LEO_CUR_TK",       # Current Track
+
+        0xA5000514: "LEO_ERR_SECTOR",   # Sector Error Status
+
+        0xA500051C: "LEO_CUR_SECTOR",   # Current Sector
+        0xA5000520: "LEO_HARD_RESET",   # Hard Reset
+        0xA5000524: "LEO_C1_S0",        # C1
+        0xA5000528: "LEO_HOST_SECBYTE", # Sector Size (in bytes)
+        0xA500052C: "LEO_C1_S2",        # C1
+        0xA5000530: "LEO_SEC_BYTE",     # Sectors per Block, Full Size
+        0xA5000534: "LEO_C1_S4",        # C1
+        0xA5000538: "LEO_C1_S6",        # C1
+        0xA500053C: "LEO_CUR_ADDR",     # Current Address?
+        0xA5000540: "LEO_ID_REG",       # ID
+        0xA5000544: "LEO_TEST_REG",     # Test Read
+        0xA5000548: "LEO_TEST_PIN_SEL", # Test Write
+        0xA5000580: "LEO_RAM_ADDR",     # Microsequencer RAM
     }
     "N64 OS hardware registers"
 
+    iQueHardwareReg: dict[int, str] = {
+    }
+    "iQue OS hardware registers"
 
-    def fillLibultraSymbols(self):
+
+    def fillLibultraSymbols(self) -> None:
         lowestVram = 0xFFFFFFFF
         highestVram = 0x00000000
         for vram, (name, type, size) in self.N64LibultraSyms.items():
@@ -372,7 +410,7 @@ class SymbolsSegment:
                 lowestVram = vram
         self.context.totalVramRange.addSpecialRange(lowestVram, highestVram)
 
-    def fillIQueSymbols(self):
+    def fillIQueSymbols(self) -> None:
         lowestVram = 0xFFFFFFFF
         highestVram = 0x00000000
         for vram, (name, type, size) in self.iQueLibultraSyms.items():
@@ -388,7 +426,7 @@ class SymbolsSegment:
                 lowestVram = vram
         self.context.totalVramRange.addSpecialRange(lowestVram, highestVram)
 
-    def fillHardwareRegs(self, useRealNames: bool=False):
+    def fillHardwareRegs(self, useRealNames: bool=False) -> None:
         lowestVram = 0xFFFFFFFF
         highestVram = 0x00000000
         for vram, name in self.N64HardwareRegs.items():
@@ -415,7 +453,7 @@ class SymbolsSegment:
         self.context.totalVramRange.addSpecialRange(lowestVram, highestVram)
 
 
-    def readVariablesCsv(self, filepath: Path):
+    def readVariablesCsv(self, filepath: Path) -> None:
         if not filepath.exists():
             return
 
@@ -461,7 +499,7 @@ class SymbolsSegment:
             contextSym.userDeclaredSize = varSize
             contextSym.isUserDeclared = True
 
-    def readFunctionsCsv(self, filepath: Path):
+    def readFunctionsCsv(self, filepath: Path) -> None:
         if not filepath.exists():
             return
 
@@ -479,7 +517,7 @@ class SymbolsSegment:
             contextSym.name = funcName
             contextSym.isUserDeclared = True
 
-    def readConstantsCsv(self, filepath: Path):
+    def readConstantsCsv(self, filepath: Path) -> None:
         if not filepath.exists():
             return
 
@@ -496,7 +534,7 @@ class SymbolsSegment:
             contextSym = self.addConstant(constantValue, constantName)
             contextSym.isUserDeclared = True
 
-    def readSplatSymbolAddrs(self, filepath: Path):
+    def readSplatSymbolAddrs(self, filepath: Path) -> None:
         if not filepath.exists():
             return
 

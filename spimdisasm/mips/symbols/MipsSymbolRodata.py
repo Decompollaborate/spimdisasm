@@ -13,7 +13,7 @@ from . import SymbolBase
 
 
 class SymbolRodata(SymbolBase):
-    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, words: list[int], segmentVromStart: int, overlayCategory: str|None):
+    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, words: list[int], segmentVromStart: int, overlayCategory: str|None) -> None:
         super().__init__(context, vromStart, vromEnd, inFileOffset, vram, words, common.FileSectionType.Rodata, segmentVromStart, overlayCategory)
 
         self.stringEncoding = common.GlobalConfig.RODATA_STRING_ENCODING
@@ -75,7 +75,7 @@ class SymbolRodata(SymbolBase):
         return True
 
 
-    def analyze(self):
+    def analyze(self) -> None:
         if self.contextSym.isDouble():
             if self.sizew % 2 != 0:
                 # doubles require an even amount of words

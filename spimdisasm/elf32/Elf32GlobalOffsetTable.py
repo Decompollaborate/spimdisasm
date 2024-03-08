@@ -27,7 +27,7 @@ class GotEntry:
 
 
 class Elf32GlobalOffsetTable:
-    def __init__(self, array_of_bytes: bytes, offset: int, rawSize: int):
+    def __init__(self, array_of_bytes: bytes, offset: int, rawSize: int) -> None:
         self.entries: list[int] = list()
         self.offset: int = offset
         self.rawSize: int = rawSize

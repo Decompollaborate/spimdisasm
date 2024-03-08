@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import dataclasses
 import struct
+from typing import Generator
 
 from .. import common
 
@@ -37,7 +38,7 @@ class Elf32SectionHeaderEntry:
 
 
 class Elf32SectionHeaders:
-    def __init__(self, array_of_bytes: bytes, shoff: int, shnum: int):
+    def __init__(self, array_of_bytes: bytes, shoff: int, shnum: int) -> None:
         self.sections: list[Elf32SectionHeaderEntry] = list()
         self.shoff: int = shoff
         self.shnum: int = shnum
@@ -67,7 +68,7 @@ class Elf32SectionHeaders:
             return None
         return self.sections[key]
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[Elf32SectionHeaderEntry, None, None]:
         for entry in self.sections:
             yield entry
 
