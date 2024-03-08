@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     jumptables to 8, but it doesn't impose alignment restrictions on files,
     meaning the files (and those jumptables) may end up aligned to a lower
     alignment.
+- Avoid filtering out user declared symbols when they are outside the valid
+  address space.
 
 ### Fixed
 

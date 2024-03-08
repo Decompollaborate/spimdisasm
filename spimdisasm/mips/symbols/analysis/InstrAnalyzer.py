@@ -256,6 +256,13 @@ class InstrAnalyzer:
             else:
                 filterOut |= True
 
+        if filterOut:
+            contextSym = self.context.globalSegment.getSymbol(address)
+            if contextSym is not None:
+                if contextSym.isUserDeclared:
+                    # If the user declared a symbol outside the total vram range then use it anyways
+                    filterOut = False
+
         if address > 0 and filterOut and lowerInstr.uniqueId != rabbitizer.InstrId.cpu_addiu:
             if common.GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_CONSTANTS:
                 # Let's pretend this value is a constant

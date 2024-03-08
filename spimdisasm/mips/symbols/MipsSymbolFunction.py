@@ -379,7 +379,7 @@ class SymbolFunction(SymbolText):
                     if generatedReloc is not None:
                         self.relocs[instrOffset] = generatedReloc
             else:
-                self.endOfLineComment[instrOffset//4] = f" /* Failed to symbolize address 0x{constant:08X} for {relocType.getPercentRel()} */"
+                self.endOfLineComment[instrOffset//4] = f" /* Failed to symbolize address 0x{constant:08X} for {relocType.getPercentRel()}. Make sure this address is within the recognized valid address space */"
 
         for instrOffset, targetVram in self.instrAnalyzer.funcCallInstrOffsets.items():
             funcSym = self.getSymbol(targetVram, tryPlusOffset=False)

@@ -34,6 +34,12 @@ class AddressRange:
             self.end = address
         return None
 
+    def __str__(self) -> str:
+        return f"AddressRange(0x{self.start:08X}, 0x{self.end:08X})"
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
 class SymbolsRanges:
     def __init__(self, start: int, end: int) -> None:
         self.mainAddressRange = AddressRange(start, end)
@@ -62,6 +68,12 @@ class SymbolsRanges:
         addrRange = AddressRange(start, end)
         self.specialRanges.append(addrRange)
         return addrRange
+
+    def __str__(self) -> str:
+        ret = f"MainRange: {self.mainAddressRange}\n"
+        for i, spRange in enumerate(self.specialRanges):
+            ret += f"    {i}'th special: {spRange}\n"
+        return ret
 
 class Context:
     N64DefaultBanned = {
