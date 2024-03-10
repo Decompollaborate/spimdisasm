@@ -494,10 +494,14 @@ class ContextSymbol:
 
     def getName(self) -> str:
         if self.nameGetCallback is not None:
-            return self.nameGetCallback(self)
-        if self.name is None:
-            return self.getDefaultName()
-        return self.name
+            name = self.nameGetCallback(self)
+        elif self.name is None:
+            name = self.getDefaultName()
+        else:
+            name = self.name
+        if "@" in name or "<" in name or "\\" in name or "-" in name or "+" in name:
+            return f'"{name}"'
+        return name
 
     def setNameIfUnset(self, name: str) -> bool:
         if self.name is None:
