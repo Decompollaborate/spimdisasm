@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Symbols are now quoted if they contain special characters.
   - The symbol will be quote if any of the following characters in contained on
     the symbol name: `@`, `<`, `\\`, `-` or `+`.
+- `FileBase.sectionFlags`, allows to specify flags for the specific section.
+
+### Changed
+
+- `SectionRelocZ64` now emits `"a"` flag as the section flag.
 
 ## [1.22.0] - 2024-03-08
 

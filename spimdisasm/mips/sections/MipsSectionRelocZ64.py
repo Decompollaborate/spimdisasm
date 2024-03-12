@@ -71,6 +71,8 @@ class SectionRelocZ64(SectionBase):
 
         self.differentSegment: bool = False
 
+        self.sectionFlags = "a"
+
     @property
     def nRelocs(self) -> int:
         return len(self.entries)

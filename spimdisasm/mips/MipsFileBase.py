@@ -41,6 +41,8 @@ class FileBase(common.ElementBase):
         should be set to 3.
         """
 
+        self.sectionFlags: str|None = None
+
 
     def setCommentOffset(self, commentOffset: int) -> None:
         self.commentOffset = commentOffset
@@ -60,7 +62,11 @@ class FileBase(common.ElementBase):
     def getAsmPrelude_sectionStart(self) -> str:
         output = ""
 
-        output += f".section {self.getSectionName()}{common.GlobalConfig.LINE_ENDS}"
+        output += f".section {self.getSectionName()}"
+        if self.sectionFlags is not None:
+            output += f", \"{self.sectionFlags}\""
+        output += common.GlobalConfig.LINE_ENDS
+
         output += common.GlobalConfig.LINE_ENDS
         if self.sectionAlignment is not None:
             output += f".align {self.sectionAlignment}{common.GlobalConfig.LINE_ENDS}"
