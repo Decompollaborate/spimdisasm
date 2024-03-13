@@ -30,6 +30,14 @@ class FileBase(common.ElementBase):
         "addresses of symbols in this section"
 
         self.stringEncoding: str = common.GlobalConfig.DATA_STRING_ENCODING
+        self.enableStringGuessing: bool = True
+        """
+        Allows to toggle string guessing at the section level.
+
+        Can be useful for sections that are known to never have strings.
+
+        This option is ignored if the global string guessing option is disabled.
+        """
 
         self.bytes: bytes = common.Utils.wordsToBytes(self.words)
 

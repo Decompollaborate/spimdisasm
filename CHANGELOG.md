@@ -12,7 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Symbols are now quoted if they contain special characters.
   - The symbol will be quote if any of the following characters in contained on
     the symbol name: `@`, `<`, `\\`, `-` or `+`.
-- `FileBase.sectionFlags`, allows to specify flags for the specific section.
+- `FileBase.sectionFlags`: allows to specify flags for the specific section.
+- `FileBase.enableStringGuessing`: Allows to toggle the string guessing at the
+  section level.
+  - This option is ignored if the global string guessing option is disabled.
 
 ### Changed
 

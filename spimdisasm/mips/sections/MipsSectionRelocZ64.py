@@ -72,6 +72,7 @@ class SectionRelocZ64(SectionBase):
         self.differentSegment: bool = False
 
         self.sectionFlags = "a"
+        self.enableStringGuessing = False
 
     @property
     def nRelocs(self) -> int:

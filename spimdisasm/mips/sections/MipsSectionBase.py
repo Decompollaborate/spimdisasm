@@ -50,6 +50,9 @@ class SectionBase(FileBase):
         if contextSym.isMaybeString or contextSym.isString():
             return True
 
+        if not self.enableStringGuessing:
+            return False
+
         if self.sectionType == common.FileSectionType.Rodata:
             stringGuesserLevel = common.GlobalConfig.RODATA_STRING_GUESSER_LEVEL
         else:
@@ -89,6 +92,9 @@ class SectionBase(FileBase):
     def _pascalStringGuesser(self, contextSym: common.ContextSymbol, localOffset: int) -> bool:
         if contextSym.isMaybePascalString or contextSym.isPascalString():
             return True
+
+        if not self.enableStringGuessing:
+            return False
 
         if self.sectionType == common.FileSectionType.Rodata:
             stringGuesserLevel = common.GlobalConfig.PASCAL_RODATA_STRING_GUESSER_LEVEL
