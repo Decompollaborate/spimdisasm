@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `SectionBase.sizeForOwnedSymbols`: Allows to specify that all the symbols from
   the current section should have the same size.
   - Does not override user declared sizes for symbols on the section.
+- Add `MWCC` compiler option.
 
 ### Changed
 

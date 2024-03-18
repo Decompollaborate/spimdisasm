@@ -199,7 +199,7 @@ class InstrAnalyzer:
                 # IDO does not pair multiples %hi to the same %lo
                 return self.symbolLoInstrOffset[lowerOffset]
 
-            elif common.GlobalConfig.COMPILER in {common.Compiler.GCC, common.Compiler.SN64, common.Compiler.PSYQ, common.Compiler.EGCS}:
+            elif common.GlobalConfig.COMPILER in {common.Compiler.GCC, common.Compiler.SN64, common.Compiler.PSYQ, common.Compiler.EGCS, common.Compiler.MWCC}:
                 if luiOffset is None or hiValue is None:
                     return None
 
