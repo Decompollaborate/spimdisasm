@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `FileBase.enableStringGuessing`: Allows to toggle the string guessing at the
   section level.
   - This option is ignored if the global string guessing option is disabled.
+- `SectionBase.typeForOwnedSymbols`: Allows to specify that all the symbols from
+  the current section should have the same type.
+  - Does not override user declared types for symbols on the section.
+- `SectionBase.sizeForOwnedSymbols`: Allows to specify that all the symbols from
+  the current section should have the same size.
+  - Does not override user declared sizes for symbols on the section.
 
 ### Changed
 
