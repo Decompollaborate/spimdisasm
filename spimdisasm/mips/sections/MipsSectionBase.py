@@ -13,6 +13,16 @@ class SectionBase(FileBase):
     def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, words: list[int], sectionType: common.FileSectionType, segmentVromStart: int, overlayCategory: str|None) -> None:
         super().__init__(context, vromStart, vromEnd, vram, filename, words, sectionType, segmentVromStart, overlayCategory)
 
+        self.stringEncoding: str = common.GlobalConfig.DATA_STRING_ENCODING
+        self.enableStringGuessing: bool = True
+        """
+        Allows to toggle string guessing at the section level.
+
+        Can be useful for sections that are known to never have strings.
+
+        This option is ignored if the global string guessing option is disabled.
+        """
+
         self.typeForOwnedSymbols: str|None = None
         """
         If not `None`, then the `autodetectedType` of the `ContextSymbol`s

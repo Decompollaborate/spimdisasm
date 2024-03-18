@@ -13,8 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The symbol will be quote if any of the following characters in contained on
     the symbol name: `@`, `<`, `\\`, `-` or `+`.
 - `FileBase.sectionFlags`: allows to specify flags for the specific section.
-- `FileBase.enableStringGuessing`: Allows to toggle the string guessing at the
-  section level.
+- `SectionBase.enableStringGuessing`: Allows to toggle the string guessing at
+  the section level.
   - This option is ignored if the global string guessing option is disabled.
 - `SectionBase.typeForOwnedSymbols`: Allows to specify that all the symbols from
   the current section should have the same type.
