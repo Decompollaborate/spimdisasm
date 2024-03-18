@@ -123,9 +123,11 @@ class ContextSymbol:
 
     isMaybeString: bool = False
     failedStringDecoding: bool = False
+    _ranStringCheck: bool = False
 
     isMaybePascalString: bool = False
     failedPascalStringDecoding: bool = False
+    _ranPascalStringCheck: bool = False
 
     referenceCounter: int = 0
     "How much this symbol is referenced by something else"

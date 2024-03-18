@@ -63,8 +63,9 @@ class SectionBase(FileBase):
         if contextSym is None:
             return None
 
-        contextSym.isMaybeString = self._stringGuesser(contextSym, localOffset)
-        contextSym.isMaybePascalString = self._pascalStringGuesser(contextSym, localOffset)
+        if self.sectionType != common.FileSectionType.Bss:
+            contextSym.isMaybeString = self._stringGuesser(contextSym, localOffset)
+            contextSym.isMaybePascalString = self._pascalStringGuesser(contextSym, localOffset)
 
         self._createAutoPadFromSymbol(localOffset, contextSym)
 
@@ -110,6 +111,9 @@ class SectionBase(FileBase):
         return None
 
     def _stringGuesser(self, contextSym: common.ContextSymbol, localOffset: int) -> bool:
+        if contextSym._ranStringCheck:
+            return contextSym.isMaybeString
+
         if contextSym.isMaybeString or contextSym.isString():
             return True
 
@@ -153,6 +157,9 @@ class SectionBase(FileBase):
         return True
 
     def _pascalStringGuesser(self, contextSym: common.ContextSymbol, localOffset: int) -> bool:
+        if contextSym._ranPascalStringCheck:
+            return contextSym.isMaybePascalString
+
         if contextSym.isMaybePascalString or contextSym.isPascalString():
             return True
 
