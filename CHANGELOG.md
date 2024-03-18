@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `SectionRelocZ64` now emits `"a"` flag as the section flag.
 - Make sure to not reference local branch labels on data symbols.
+- Minor code cleanups
 
 ## [1.22.0] - 2024-03-08
 
