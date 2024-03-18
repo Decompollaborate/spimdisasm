@@ -141,7 +141,7 @@ class Elf32File:
 
         if Elf32HeaderFlag.EABI64 in self.elfFlags:
             common.Utils.eprint(f"Warning: Elf compiled using EABI64 ABI. Support is in experimental state")
-            common.GlobalConfig.ABI = common.Abi.N32
+            common.GlobalConfig.ABI = common.Abi.EABI64
 
         unkArchLevel = {Elf32HeaderFlag.ARCH_5, Elf32HeaderFlag.ARCH_32, Elf32HeaderFlag.ARCH_64, Elf32HeaderFlag.ARCH_32R2, Elf32HeaderFlag.ARCH_64R2} & set(self.elfFlags)
         if unkArchLevel:
