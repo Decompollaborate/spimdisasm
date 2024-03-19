@@ -22,6 +22,8 @@ class SectionText(SectionBase):
         self.instrCat: rabbitizer.Enum = rabbitizer.InstrCategory.CPU
         self.detectRedundantFunctionEnd: bool|None = None
 
+        self.enableStringGuessing = False
+
 
     @property
     def nFuncs(self) -> int:

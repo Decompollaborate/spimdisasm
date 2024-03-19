@@ -331,6 +331,9 @@ class SymbolBase(common.ElementBase):
                     # Avoid using addends on functions
                     return False
 
+            if symType == common.SymbolSpecialType.branchlabel:
+                return False
+
             if symType.isTargetLabel():
                 if word != symbolRef.vram:
                     # Avoid using addends on labels

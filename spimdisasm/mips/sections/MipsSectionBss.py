@@ -36,10 +36,11 @@ class SectionBss(SectionBase):
         self.bssVramEnd = vram + self.bssTotalSize
 
     def analyze(self) -> None:
-        self.checkAndCreateFirstSymbol()
+        self._checkAndCreateFirstSymbol()
 
-        # If something that could be a pointer found in data happens to be in the middle of this bss file's addresses space
-        # Then consider it as a new bss variable
+        # If something that could be a pointer found in data happens to be in
+        # the middle of this bss file's addresses space then consider it as a
+        # new bss variable
         for ptr in self.getAndPopPointerInDataReferencesRange(self.bssVramStart, self.bssVramEnd):
             # Check if the symbol already exists, in case the user has provided size
             contextSym = self.getSymbol(ptr, tryPlusOffset=True)

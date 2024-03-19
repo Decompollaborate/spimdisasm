@@ -80,6 +80,11 @@ class ElementBase:
     def getVromOffset(self, localOffset: int) -> int:
         return self.vromStart + localOffset
 
+    def getVromOffsetNone(self, localOffset: int) -> int|None:
+        if self.sectionType == FileSectionType.Bss:
+            return None
+        return self.getVromOffset(localOffset)
+
     def getVramOffset(self, localOffset: int) -> int:
         return self.vram + localOffset
 

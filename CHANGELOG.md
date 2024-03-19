@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.0] - 2024-03-19
+
+### Added
+
+- Symbols are now quoted if they contain special characters.
+  - The symbol will be quote if any of the following characters in contained on
+    the symbol name: `@`, `<`, `\\`, `-` or `+`.
+- `FileBase.sectionFlags`: allows to specify flags for the specific section.
+- `SectionBase.enableStringGuessing`: Allows to toggle the string guessing at
+  the section level.
+  - This option is ignored if the global string guessing option is disabled.
+- `SectionBase.typeForOwnedSymbols`: Allows to specify that all the symbols from
+  the current section should have the same type.
+  - Does not override user declared types for symbols on the section.
+- `SectionBase.sizeForOwnedSymbols`: Allows to specify that all the symbols from
+  the current section should have the same size.
+  - Does not override user declared sizes for symbols on the section.
+- Add `MWCC` compiler option.
+
+### Changed
+
+- `SectionRelocZ64` now emits `"a"` flag as the section flag.
+- Make sure to not reference local branch labels on data symbols.
+- Minor code cleanups
+
 ## [1.22.0] - 2024-03-08
 
 ### Added
@@ -1422,6 +1447,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.23.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.22.0...1.23.0
 [1.22.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.21.1...1.22.0
 [1.21.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.20.1...1.21.0
 [1.20.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.20.0...1.20.1
