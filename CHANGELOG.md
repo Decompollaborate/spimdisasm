@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.1] - 2024-03-22
+
 ### Fixed
 
 - Fix rodata symbols referencing symbols that it should not reference.
@@ -1453,6 +1455,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.23.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.23.1...1.23.1
 [1.23.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.22.0...1.23.0
 [1.22.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.21.1...1.22.0
 [1.21.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.20.1...1.21.0
