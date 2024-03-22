@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix rodata symbols referencing symbols that it should not reference.
+  - Symbols like functions with addends, branch labels (not to be confused with
+    jumptable labels), etc.
+
 ## [1.23.0] - 2024-03-19
 
 ### Added

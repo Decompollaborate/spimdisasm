@@ -371,8 +371,25 @@ class SymbolBase(common.ElementBase):
                 contextSym = self.getSymbol(relocVram, checkUpperLimit=False)
                 if contextSym is not None:
                     value = contextSym.getSymbolPlusOffset(relocVram)
+                    wordRel = relocInfo.relocType.getWordRel()
+                    if wordRel is not None:
+                        dotType = wordRel
             else:
                 value = relocInfo.getName(isSplittedSymbol=isSplittedSymbol)
+                wordRel = relocInfo.relocType.getWordRel()
+                if wordRel is not None:
+                    dotType = wordRel
+        elif self.contextSym.isJumpTable():
+            if self.contextSym.isGot and common.GlobalConfig.GP_VALUE is not None:
+                labelAddr = common.GlobalConfig.GP_VALUE + rabbitizer.Utils.from2Complement(w, 32)
+                labelSym = self.getSymbol(labelAddr, tryPlusOffset=False)
+                if labelSym is not None and labelSym.getTypeSpecial() == common.SymbolSpecialType.jumptablelabel:
+                    dotType = ".gpword"
+            else:
+                labelSym = self.getSymbol(w, tryPlusOffset=False)
+
+            if labelSym is not None and labelSym.getTypeSpecial() == common.SymbolSpecialType.jumptablelabel:
+                value = labelSym.getName()
         else:
             # This word could be a reference to a symbol
             if not self.context.isAddressBanned(w):
