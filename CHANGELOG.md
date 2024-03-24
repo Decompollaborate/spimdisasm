@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `EEGCC` compiler option.
 
+### Changed
+
+- Emit `.align 3` directives for strings for `EEGCC`.
+
 ## [1.23.1] - 2024-03-22
 
 ### Fixed

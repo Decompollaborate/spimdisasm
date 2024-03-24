@@ -40,13 +40,13 @@ compilerOptions = {"IDO", "GCC", "SN64", "PSYQ", "EGCS", "MWCC", "EEGCC"}
 @enum.unique
 class Compiler(enum.Enum):
     UNKNOWN = None
-    IDO = "IDO"
-    GCC = "GCC"
-    SN64 = "SN64"
-    PSYQ = "PSYQ"
-    EGCS = "EGCS"
-    MWCC = "MWCC"
-    EEGCC = "EEGCC"
+    IDO = "IDO" # N64
+    GCC = "GCC" # N64
+    SN64 = "SN64" # N64
+    PSYQ = "PSYQ" # PS1
+    EGCS = "EGCS" # iQue
+    MWCC = "MWCC" # PS2
+    EEGCC = "EEGCC" # PS2
 
     @staticmethod
     def fromStr(value: str) -> Compiler:
