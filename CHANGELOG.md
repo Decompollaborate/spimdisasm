@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Emit `.align 3` directives for strings for `EEGCC` compiler.
 - Emit `.align 3` directives for functions for `EEGCC` compiler.
+- Change default compiler to `GCC`.
 
 ## [1.23.1] - 2024-03-22
 

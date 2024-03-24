@@ -199,7 +199,7 @@ class GlobalConfigType:
 
     CUSTOM_SUFFIX: str = ""
 
-    COMPILER: Compiler = Compiler.IDO
+    COMPILER: Compiler = Compiler.GCC
 
     DETECT_REDUNDANT_FUNCTION_END: bool = False
     """Tries to detect redundant and unreferenced functions ends and merge them together.
