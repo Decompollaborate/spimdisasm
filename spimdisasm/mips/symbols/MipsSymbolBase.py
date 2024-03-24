@@ -129,6 +129,9 @@ class SymbolBase(common.ElementBase):
             return f".size {symName}, . - {symName}{common.GlobalConfig.LINE_ENDS}"
         return ""
 
+    def isFunction(self) -> bool:
+        return False
+
     def isByte(self, index: int) -> bool:
         if self.isString() or self.isPascalString():
             return False
@@ -544,6 +547,9 @@ class SymbolBase(common.ElementBase):
             if common.GlobalConfig.COMPILER == common.Compiler.EEGCC:
                 return self._getAlignDirectiveStr(3, i)
             return self._getAlignDirectiveStr(2, i)
+        elif self.isFunction():
+            if common.GlobalConfig.COMPILER == common.Compiler.EEGCC:
+                return self._getAlignDirectiveStr(3, i)
 
         return ""
 
