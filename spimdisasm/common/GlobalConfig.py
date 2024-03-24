@@ -35,16 +35,34 @@ class InputEndian(enum.Enum):
         raise ValueError(f"No struct format string available for : {self}")
 
 
-compilerOptions = {"IDO", "GCC", "SN64", "PSYQ", "EGCS", "MWCC", "EEGCC"}
+compilerOptions = {
+    "GCC",
+
+    # N64
+    "IDO",
+    "KMC",
+    "SN64",
+
+    # iQue
+    "EGCS",
+
+    # PS1
+    "PSYQ",
+
+    # PS2
+    "MWCC",
+    "EEGCC",
+}
 
 @enum.unique
 class Compiler(enum.Enum):
     UNKNOWN = None
+    GCC = "GCC" # General GCC
     IDO = "IDO" # N64
-    GCC = "GCC" # N64
+    KMC = "KMC" # N64
     SN64 = "SN64" # N64
-    PSYQ = "PSYQ" # PS1
     EGCS = "EGCS" # iQue
+    PSYQ = "PSYQ" # PS1
     MWCC = "MWCC" # PS2
     EEGCC = "EEGCC" # PS2
 
