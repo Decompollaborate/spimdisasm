@@ -12,6 +12,7 @@ import os
 
 from . import Utils
 from .OrderedEnum import OrderedEnum
+from .CompilerConfig import Compiler, compilerOptions
 
 
 class InputEndian(enum.Enum):
@@ -33,44 +34,6 @@ class InputEndian(enum.Enum):
         if self == InputEndian.LITTLE:
             return "<"
         raise ValueError(f"No struct format string available for : {self}")
-
-
-compilerOptions = {
-    "GCC",
-
-    # N64
-    "IDO",
-    "KMC",
-    "SN64",
-
-    # iQue
-    "EGCS",
-
-    # PS1
-    "PSYQ",
-
-    # PS2
-    "MWCC",
-    "EEGCC",
-}
-
-@enum.unique
-class Compiler(enum.Enum):
-    UNKNOWN = None
-    GCC = "GCC" # General GCC
-    IDO = "IDO" # N64
-    KMC = "KMC" # N64
-    SN64 = "SN64" # N64
-    EGCS = "EGCS" # iQue
-    PSYQ = "PSYQ" # PS1
-    MWCC = "MWCC" # PS2
-    EEGCC = "EEGCC" # PS2
-
-    @staticmethod
-    def fromStr(value: str) -> Compiler:
-        if value not in compilerOptions:
-            return Compiler.UNKNOWN
-        return Compiler(value)
 
 
 class Abi(enum.Enum):
@@ -199,7 +162,7 @@ class GlobalConfigType:
 
     CUSTOM_SUFFIX: str = ""
 
-    COMPILER: Compiler = Compiler.GCC
+    COMPILER: Compiler = Compiler.IDO
 
     DETECT_REDUNDANT_FUNCTION_END: bool = False
     """Tries to detect redundant and unreferenced functions ends and merge them together.
@@ -369,7 +332,7 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
 
         backendConfig.add_argument("--custom-suffix", help="Set a custom suffix for automatically generated symbols")
 
-        backendConfig.add_argument("--compiler", help=f"Enables some tweaks for the selected compiler. Defaults to {self.COMPILER.name}", choices=compilerOptions)
+        backendConfig.add_argument("--compiler", help=f"Enables some tweaks for the selected compiler. Defaults to {self.COMPILER.name}", choices=list(compilerOptions.keys()))
         backendConfig.add_argument("--detect-redundant-function-end", help=f"Tries to detect redundant and unreferenced function ends (jr $ra; nop), and merge it into the previous function. Currently it only is applied when the compiler is set to IDO. Defaults to {self.DETECT_REDUNDANT_FUNCTION_END}", action=Utils.BooleanOptionalAction)
 
         backendConfig.add_argument("--endian", help=f"Set the endianness of input files. Defaults to {self.ENDIAN.name.lower()}", choices=["big", "little", "middle"], default=self.ENDIAN.name.lower())
@@ -477,7 +440,11 @@ Defaults to {self.ASM_GLOBALIZE_TEXT_LABELS_REFERENCED_BY_NON_JUMPTABLE}""", act
                 else:
                     environmentValue = bool(environmentValue)
             elif isinstance(currentValue, Compiler):
-                environmentValue = Compiler.fromStr(environmentValue)
+                newComp = Compiler.fromStr(environmentValue)
+                if newComp == Compiler.UNKNOWN:
+                    Utils.eprint(f"Unrecognized compiler setting from environment 'SPIMDISASM_{attr.upper()}={environmentValue}'. Choosing compiler UNKNOWN instead.")
+                    continue
+                environmentValue = newComp
             elif isinstance(currentValue, InputEndian):
                 environmentValue = InputEndian.fromStr(environmentValue)
             elif isinstance(currentValue, Abi):

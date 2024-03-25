@@ -1,12 +1,13 @@
 # SPDX-FileCopyrightText: © 2022-2024 Decompollaborate
 # SPDX-License-Identifier: MIT
 
-from . import Utils
+from . import Utils as Utils
 
 from .SortedDict import SortedDict as SortedDict
+from .CompilerConfig import CompilerProperties as CompilerProperties
+from .CompilerConfig import Compiler as Compiler
 from .GlobalConfig import GlobalConfig as GlobalConfig
 from .GlobalConfig import InputEndian as InputEndian
-from .GlobalConfig import Compiler as Compiler
 from .GlobalConfig import Abi as Abi
 from .GlobalConfig import ArchLevel as ArchLevel
 from .GlobalConfig import InputFileType as InputFileType
