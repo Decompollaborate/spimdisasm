@@ -129,6 +129,9 @@ class SymbolBase(common.ElementBase):
             return f".size {symName}, . - {symName}{common.GlobalConfig.LINE_ENDS}"
         return ""
 
+    def isFunction(self) -> bool:
+        return False
+
     def isByte(self, index: int) -> bool:
         if self.isString() or self.isPascalString():
             return False
@@ -517,37 +520,44 @@ class SymbolBase(common.ElementBase):
         "Returns how many extra word paddings this symbol has"
         return 0
 
-    def _getAlignDirectiveStr(self, shiftValue: int) -> str:
+    def _getAlignDirectiveStr(self, shiftValue: int, i: int) -> str:
         shiftedVal = 1 << shiftValue
 
         if self.parent is None:
             # Can't emit alignment directives if we don't have info about the parent
             return ""
 
-        subRam = self.vram - self.parent.vram
+        subRam = self.getVramOffset(i * 4) - self.parent.vram
         if subRam % shiftedVal != 0:
             # Alignment is relative to the file, not relative to the full binary
             return ""
 
         return f".align {shiftValue}{common.GlobalConfig.LINE_ENDS}"
 
-    def getPrevAlignDirective(self, i: int=0) -> str:
+    def getPrevAlignDirective(self, i: int) -> str:
         if self.isDouble(i):
-            if common.GlobalConfig.COMPILER in {common.Compiler.SN64, common.Compiler.PSYQ}:
-                # This should be harmless in other compilers
-                # TODO: investigate if it is fine to use it unconditionally
-                return self._getAlignDirectiveStr(3)
+            shiftValue = common.GlobalConfig.COMPILER.value.prevAlign_double
+            if shiftValue is not None:
+                return self._getAlignDirectiveStr(shiftValue, i)
         elif self.isJumpTable():
-            if i == 0 and common.GlobalConfig.COMPILER not in {common.Compiler.IDO, common.Compiler.PSYQ}:
-                return self._getAlignDirectiveStr(3)
+            if i == 0:
+                shiftValue = common.GlobalConfig.COMPILER.value.prevAlign_jumptable
+                if shiftValue is not None:
+                    return self._getAlignDirectiveStr(shiftValue, i)
         elif self.isString() or self.isPascalString():
-            return self._getAlignDirectiveStr(2)
+            shiftValue = common.GlobalConfig.COMPILER.value.prevAlign_string
+            if shiftValue is not None:
+                return self._getAlignDirectiveStr(shiftValue, i)
+        elif self.isFunction():
+            shiftValue = common.GlobalConfig.COMPILER.value.prevAlign_function
+            if shiftValue is not None:
+                return self._getAlignDirectiveStr(shiftValue, i)
 
         return ""
 
-    def getPostAlignDirective(self, i: int=0) -> str:
+    def getPostAlignDirective(self, i: int) -> str:
         if self.isString() or self.isPascalString():
-            return self._getAlignDirectiveStr(2)
+            return self._getAlignDirectiveStr(2, i)
 
         return ""
 

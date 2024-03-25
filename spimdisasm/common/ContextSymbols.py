@@ -407,7 +407,7 @@ class ContextSymbol:
         return self.name.startswith(".")
 
     def isLateRodata(self) -> bool:
-        if GlobalConfig.COMPILER != Compiler.IDO:
+        if not GlobalConfig.COMPILER.value.hasLateRodata:
             # late rodata only exists in IDO world
             return False
         # if self.referenceCounter > 1: return False # ?

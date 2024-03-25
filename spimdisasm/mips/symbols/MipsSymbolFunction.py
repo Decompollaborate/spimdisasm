@@ -36,6 +36,8 @@ class SymbolFunction(SymbolText):
     def sizew(self) -> int:
         return self.nInstr
 
+    def isFunction(self) -> bool:
+        return True
 
     def _lookAheadSymbolFinder(self, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction, instructionOffset: int, trackedRegistersOriginal: rabbitizer.RegistersTracker) -> None:
         if not prevInstr.isBranch() and not prevInstr.isUnconditionalBranch():
@@ -751,6 +753,7 @@ class SymbolFunction(SymbolText):
                 return self.disassembleAsData(useGlobalLabel=useGlobalLabel, isSplittedSymbol=isSplittedSymbol)
 
         output += self.contextSym.getReferenceeSymbols()
+        output += self.getPrevAlignDirective(0)
 
         if self.isLikelyHandwritten:
             if not self.isRsp:

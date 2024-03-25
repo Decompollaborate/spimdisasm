@@ -69,7 +69,7 @@ class SymbolRodata(SymbolBase):
             return True
 
         if self.isRdata():
-            if common.GlobalConfig.COMPILER not in {common.Compiler.SN64, common.Compiler.PSYQ}:
+            if not common.GlobalConfig.COMPILER.value.allowRdataMigration:
                 return False
 
         return True

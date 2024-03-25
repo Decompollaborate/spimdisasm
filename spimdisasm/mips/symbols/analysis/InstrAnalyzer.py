@@ -195,11 +195,11 @@ class InstrAnalyzer:
                         if hiValue != otherLuiInstr.getProcessedImmediate() << 16:
                             return None
 
-            if common.GlobalConfig.COMPILER == common.Compiler.IDO:
+            if not common.GlobalConfig.COMPILER.value.pairMultipleHiToSameLow:
                 # IDO does not pair multiples %hi to the same %lo
                 return self.symbolLoInstrOffset[lowerOffset]
 
-            elif common.GlobalConfig.COMPILER in {common.Compiler.GCC, common.Compiler.SN64, common.Compiler.PSYQ, common.Compiler.EGCS, common.Compiler.MWCC}:
+            else:
                 if luiOffset is None or hiValue is None:
                     return None
 
