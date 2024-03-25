@@ -11,7 +11,6 @@ import enum
 from .ContextSymbols import ContextSymbol
 from .FileSectionType import FileSectionType
 from .GlobalConfig import GlobalConfig
-from .GlobalConfig import Compiler
 
 
 class RelocType(enum.Enum):
@@ -165,15 +164,7 @@ class RelocationInfo:
         if self.addend == 0:
             return name
 
-        # IDO always compiles assembly using modern GAS, for both whole files
-        # and splitted symbols. Using the workaround for addends outside the
-        # range of an s16 has different behavior in modern GAS.
-        if GlobalConfig.COMPILER == Compiler.IDO:
-            if self.addend < 0:
-                return f"{name} - 0x{-self.addend:X}"
-            return f"{name} + 0x{self.addend:X}"
-
-        if isSplittedSymbol:
+        if GlobalConfig.COMPILER.value.bigAddendWorkaroundForMigratedFunctions and isSplittedSymbol:
             if self.relocType == RelocType.MIPS_LO16:
                 if self.addend < -0x8000:
                     return f"{name} - (0x{-self.addend:X} & 0xFFFF)"
