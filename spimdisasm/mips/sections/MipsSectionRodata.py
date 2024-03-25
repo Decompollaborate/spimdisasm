@@ -135,8 +135,10 @@ class SectionRodata(SectionBase):
                         # doubles require a bit extra of alignment
                         if previousSymbolExtraPadding >= 2:
                             self.fileBoundaries.append(sym.inFileOffset)
-                    elif sym.isJumpTable() and common.GlobalConfig.COMPILER != common.Compiler.IDO:
-                        # non-IDO compilers emit a directive to align jumptables to 0x8 boundary
+                    elif sym.isJumpTable() and common.GlobalConfig.COMPILER.value.prevAlign_jumptable is not None and common.GlobalConfig.COMPILER.value.prevAlign_jumptable >= 3:
+                        if previousSymbolExtraPadding >= 2:
+                            self.fileBoundaries.append(sym.inFileOffset)
+                    elif sym.isString() and common.GlobalConfig.COMPILER.value.prevAlign_string is not None and common.GlobalConfig.COMPILER.value.prevAlign_string >= 3:
                         if previousSymbolExtraPadding >= 2:
                             self.fileBoundaries.append(sym.inFileOffset)
                     else:

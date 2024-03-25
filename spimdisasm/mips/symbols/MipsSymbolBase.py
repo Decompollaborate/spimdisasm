@@ -536,20 +536,22 @@ class SymbolBase(common.ElementBase):
 
     def getPrevAlignDirective(self, i: int) -> str:
         if self.isDouble(i):
-            if common.GlobalConfig.COMPILER in {common.Compiler.SN64, common.Compiler.PSYQ}:
-                # This should be harmless in other compilers
-                # TODO: investigate if it is fine to use it unconditionally
-                return self._getAlignDirectiveStr(3, i)
+            shiftValue = common.GlobalConfig.COMPILER.value.prevAlign_double
+            if shiftValue is not None:
+                return self._getAlignDirectiveStr(shiftValue, i)
         elif self.isJumpTable():
-            if i == 0 and common.GlobalConfig.COMPILER not in {common.Compiler.IDO, common.Compiler.PSYQ}:
-                return self._getAlignDirectiveStr(3, i)
+            if i == 0:
+                shiftValue = common.GlobalConfig.COMPILER.value.prevAlign_jumptable
+                if shiftValue is not None:
+                    return self._getAlignDirectiveStr(shiftValue, i)
         elif self.isString() or self.isPascalString():
-            if common.GlobalConfig.COMPILER == common.Compiler.EEGCC:
-                return self._getAlignDirectiveStr(3, i)
-            return self._getAlignDirectiveStr(2, i)
+            shiftValue = common.GlobalConfig.COMPILER.value.prevAlign_string
+            if shiftValue is not None:
+                return self._getAlignDirectiveStr(shiftValue, i)
         elif self.isFunction():
-            if common.GlobalConfig.COMPILER == common.Compiler.EEGCC:
-                return self._getAlignDirectiveStr(3, i)
+            shiftValue = common.GlobalConfig.COMPILER.value.prevAlign_function
+            if shiftValue is not None:
+                return self._getAlignDirectiveStr(shiftValue, i)
 
         return ""
 
