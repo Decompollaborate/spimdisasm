@@ -527,10 +527,19 @@ class SymbolBase(common.ElementBase):
             # Can't emit alignment directives if we don't have info about the parent
             return ""
 
-        subRam = self.getVramOffset(i * 4) - self.parent.vram
-        if subRam % shiftedVal != 0:
-            # Alignment is relative to the file, not relative to the full binary
-            return ""
+        if common.GlobalConfig.SYMBOL_ALIGNMENT_REQUIRES_ALIGNED_SECTION:
+            if self.parent.vram % shiftedVal != 0:
+                # Can't emit alignment directives if the parent file isn't properly aligned
+                return ""
+
+            if self.getVramOffset(i * 4) % shiftedVal != 0:
+                # If the symbol itself isn't already aligned to the desired alignment then the directive would break matching
+                return ""
+        else:
+            subRam = self.getVramOffset(i * 4) - self.parent.vram
+            if subRam % shiftedVal != 0:
+                # Alignment is relative to the file, not relative to the full binary
+                return ""
 
         return f".align {shiftValue}{common.GlobalConfig.LINE_ENDS}"
 

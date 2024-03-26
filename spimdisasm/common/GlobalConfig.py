@@ -164,6 +164,19 @@ class GlobalConfigType:
 
     COMPILER: Compiler = Compiler.IDO
 
+    SYMBOL_ALIGNMENT_REQUIRES_ALIGNED_SECTION: bool = False
+    """If True then emitting an align directive affects the assembler so it
+    aligns the section to the biggest symbol alignment.
+
+    Some assemblers detect the biggest alignment of the symbols of the section
+    and apply said alignment to the section itself, while other assemblers
+    hardcode the section alignment even when there are symbols that have larger
+    alignment.
+
+    We need this information to determine if we can emit alignment directives
+    than would make the section to not be aligned in the final ROM.
+    """
+
     DETECT_REDUNDANT_FUNCTION_END: bool = False
     """Tries to detect redundant and unreferenced functions ends and merge them together.
     This option is ignored if the compiler is not set to IDO"""
@@ -333,6 +346,7 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
         backendConfig.add_argument("--custom-suffix", help="Set a custom suffix for automatically generated symbols")
 
         backendConfig.add_argument("--compiler", help=f"Enables some tweaks for the selected compiler. Defaults to {self.COMPILER.name}", choices=list(compilerOptions.keys()))
+        backendConfig.add_argument("--symbol-alignment-requires-aligned-section", help=f"Only emit symbol alignment directives if those are not larger than the alignment of the disassembled section. Defaults to {self.SYMBOL_ALIGNMENT_REQUIRES_ALIGNED_SECTION}", action=Utils.BooleanOptionalAction)
         backendConfig.add_argument("--detect-redundant-function-end", help=f"Tries to detect redundant and unreferenced function ends (jr $ra; nop), and merge it into the previous function. Currently it only is applied when the compiler is set to IDO. Defaults to {self.DETECT_REDUNDANT_FUNCTION_END}", action=Utils.BooleanOptionalAction)
 
         backendConfig.add_argument("--endian", help=f"Set the endianness of input files. Defaults to {self.ENDIAN.name.lower()}", choices=["big", "little", "middle"], default=self.ENDIAN.name.lower())
@@ -501,6 +515,9 @@ Defaults to {self.ASM_GLOBALIZE_TEXT_LABELS_REFERENCED_BY_NON_JUMPTABLE}""", act
 
         if args.compiler is not None:
             self.COMPILER = Compiler.fromStr(args.compiler)
+
+        if args.symbol_alignment_requires_aligned_section is not None:
+            self.SYMBOL_ALIGNMENT_REQUIRES_ALIGNED_SECTION = args.symbol_alignment_requires_aligned_section
 
         if args.detect_redundant_function_end is not None:
             self.DETECT_REDUNDANT_FUNCTION_END = args.detect_redundant_function_end

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.24.2] - 2024-03-26
+
+### Added
+
+- `GlobalConfig.SYMBOL_ALIGNMENT_REQUIRES_ALIGNED_SECTION`.
+  - Only emit symbol alignment directives if those are not larger than the
+    alignment of the disassembled section.
+
 ## [1.24.1] - 2024-03-25
 
 ### Fixed
@@ -1474,6 +1482,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.24.2]: https://github.com/Decompollaborate/spimdisasm/compare/1.24.1...1.24.2
 [1.24.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.24.0...1.24.1
 [1.24.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.23.1...1.24.0
 [1.23.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.23.0...1.23.1
