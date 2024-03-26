@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix wrong function alignment for `EEGCC` compiler.
+
 ## [1.24.0] - 2024-03-25
 
 ### Added

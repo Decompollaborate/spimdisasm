@@ -67,7 +67,7 @@ class Compiler(enum.Enum):
 
     # PS2
     MWCC = CompilerProperties("MWCC", prevAlign_jumptable=4)
-    EEGCC = CompilerProperties("EEGCC", prevAlign_jumptable=3, prevAlign_string=3, prevAlign_function=4)
+    EEGCC = CompilerProperties("EEGCC", prevAlign_jumptable=3, prevAlign_string=3, prevAlign_function=3)
 
     @staticmethod
     def fromStr(value: str) -> Compiler:
