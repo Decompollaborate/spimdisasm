@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `GlobalConfig.SYMBOL_ALIGNMENT_REQUIRES_ALIGNED_SECTION`.
+  - Only emit symbol alignment directives if those are not larger than the
+    alignment of the disassembled section.
+
 ## [1.24.1] - 2024-03-25
 
 ### Fixed
