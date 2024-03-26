@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.24.1] - 2024-03-25
+
 ### Fixed
 
 - Fix wrong function alignment for `EEGCC` compiler.
@@ -1472,6 +1474,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.24.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.24.0...1.24.1
 [1.24.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.23.1...1.24.0
 [1.23.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.23.0...1.23.1
 [1.23.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.22.0...1.23.0
