@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.24.3] - 2024-04-24
+
+### Changed
+
+- Instruction analysis now follow all branches during look ahead analysis.
+  - Look ahead analysis consists on taking branches and trying to follow the
+    control flow without interrumping the main function analysis.
+  - Old behavior trigered the look ahead analysis on a branch, but if a second
+    branch was found during the look ahead analysis then it was ignored and not
+    taken. This lead to some pointers not being properly paired if the codegen
+    emitted the `%hi` and `%lo` separated by too many branches.
+  - New behavior do follows branches during look ahead analysis, improving
+    symbol pairing but making a bit slower the time needed for the overall
+    analysis.
+
 ## [1.24.2] - 2024-03-26
 
 ### Added
@@ -1482,6 +1497,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.24.3]: https://github.com/Decompollaborate/spimdisasm/compare/1.24.2...1.24.3
 [1.24.2]: https://github.com/Decompollaborate/spimdisasm/compare/1.24.1...1.24.2
 [1.24.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.24.0...1.24.1
 [1.24.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.23.1...1.24.0
