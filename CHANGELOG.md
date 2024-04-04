@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - New behavior do follows branches during look ahead analysis, improving
     symbol pairing but making a bit slower the time needed for the overall
     analysis.
+- rabbitizer 1.9.4 or above is required.
+  - Should fix some issues under Windows.
 
 ## [1.24.2] - 2024-03-26
 
