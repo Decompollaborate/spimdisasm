@@ -46,7 +46,6 @@ class SymbolFunction(SymbolText):
         currentVram = self.getVramOffset(instructionOffset)
 
         prevInstrOffset = instructionOffset - 4
-        prevVram = self.getVramOffset(prevInstrOffset)
         branchOffset = prevInstr.getBranchOffsetGeneric()
         branch = prevInstrOffset + branchOffset
 
@@ -69,9 +68,14 @@ class SymbolFunction(SymbolText):
 
             self.instrAnalyzer.processInstr(regsTracker, targetInstr, branch, self.getVramOffset(branch), prevTargetInstr)
 
+            self._lookAheadSymbolFinder(targetInstr, prevTargetInstr, branch, regsTracker)
+
             if prevTargetInstr.isUnconditionalBranch():
+                # Since we took the branch on the previous _lookAheadSymbolFinder
+                # call then we don't have anything else to process here.
                 return
             if prevTargetInstr.isJump() and not prevTargetInstr.doesLink():
+                # Technically this is another form of unconditional branching.
                 return
 
             self.instrAnalyzer.processPrevFuncCall(regsTracker, targetInstr, prevTargetInstr)
