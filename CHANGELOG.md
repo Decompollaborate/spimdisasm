@@ -7,7 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.24.3] - 2024-04-24
+## [1.25.0] - 2024-04-22
+
+### Added
+
+- R4000 ALLEGREX instruction set compatibility
+  - Used by the PlayStation Portable (PSP) CPU.
+- `rabbitizer` 1.10.0 or above is required.
+
+## [1.24.3] - 2024-04-04
 
 ### Changed
 
@@ -1499,6 +1507,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.25.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.24.3...1.25.0
 [1.24.3]: https://github.com/Decompollaborate/spimdisasm/compare/1.24.2...1.24.3
 [1.24.2]: https://github.com/Decompollaborate/spimdisasm/compare/1.24.1...1.24.2
 [1.24.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.24.0...1.24.1

@@ -50,6 +50,7 @@ MIPS platforms too.
     - RSP decoding has been tested to build back to matching assemblies with
       [armips](https://github.com/Kingcom/armips/).
   - PS1's R3000 GTE instruction set support.
+  - PSP's R4000 ALLEGREX instruction set support.
   - PS2's R5900 EE instruction set support.
 - (Experimental) Same VRAM overlay support.
   - Overlays which are able to reference symbols from other overlays in other
@@ -68,7 +69,7 @@ If you use a `requirements.txt` file in your repository, then you can add
 this library with the following line:
 
 ```txt
-spimdisasm>=1.24.3,<2.0.0
+spimdisasm>=1.25.0,<2.0.0
 ```
 
 ### Development version
