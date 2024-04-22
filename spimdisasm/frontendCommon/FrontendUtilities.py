@@ -72,6 +72,7 @@ gInstrCategoriesNameMap = {
     "cpu": rabbitizer.InstrCategory.CPU,
     "rsp": rabbitizer.InstrCategory.RSP,
     "r3000gte": rabbitizer.InstrCategory.R3000GTE,
+    "r4000allegrex": rabbitizer.InstrCategory.R4000ALLEGREX,
     "r5900": rabbitizer.InstrCategory.R5900,
 }
 
