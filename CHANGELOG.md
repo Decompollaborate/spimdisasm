@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix an edge case where strings may not get correctly disassembled when they
+  contain the escape character (`\\`).
+
 ## [1.25.0] - 2024-04-22
 
 ### Added

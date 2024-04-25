@@ -253,6 +253,7 @@ escapeCharactersSpecialCases = {
 escapeCharactersMaybeRealLookAhead = {
     0x8C,
     0x8D,
+    0xC9,
 }
 
 def decodeBytesToStrings(buf: bytes, offset: int, stringEncoding: str, terminator: int=0) -> tuple[list[str], int]:
@@ -284,7 +285,7 @@ def decodeBytesToStrings(buf: bytes, offset: int, stringEncoding: str, terminato
                     dst.pop()
             dst.pop()
 
-        if char > 0x7F and offset + i + 1 < len(buf):
+        if not theEscapeCharacterWasARealChar and char > 0x7F and offset + i + 1 < len(buf):
             nextChar = buf[offset + i + 1]
             if nextChar == 0x5C: # '\\'
                 # If the second part of a Japanese character is the 0x5C value ('\\') then we need to
