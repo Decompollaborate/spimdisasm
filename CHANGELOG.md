@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix an edge case where strings may not get correctly disassembled when they
   contain the escape character (`\\`).
+- Fix some overlay symbols not being properly created.
 
 ## [1.25.0] - 2024-04-22
 
