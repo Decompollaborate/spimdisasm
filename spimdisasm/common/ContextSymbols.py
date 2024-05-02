@@ -735,3 +735,9 @@ class ContextSymbol:
     # https://stackoverflow.com/a/56915493/6292472
     def __hash__(self) -> int:
         return hash((self.address, self.vromAddress))
+
+    def __str__(self) -> str:
+        return f"0x{self.address:08X} {self.name} ({self.getName()})"
+
+    def __repr__(self) -> str:
+        return self.__str__()
