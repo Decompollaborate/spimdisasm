@@ -608,3 +608,5 @@ class SymbolsSegment:
                 allowBeReferenced = Utils.getMaybeBooleyFromMaybeStr(pairs.get("allow_be_referenced"))
                 if allowBeReferenced is not None:
                     contextSym.allowedToBeReferenced = allowBeReferenced
+
+                contextSym.visibility = pairs.get("visibility", contextSym.visibility)

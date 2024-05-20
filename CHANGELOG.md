@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `visibility` attribute to symbols.
+  - Allows to specify custom visibility, like `weak` or `local`, to each symbol.
+
 ## [1.25.1] - 2024-05-03
 
 ### Fixed
