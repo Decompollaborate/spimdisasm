@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add `visibility` attribute to symbols.
   - Allows to specify custom visibility, like `weak` or `local`, to each symbol.
+- Read symbol binding from elf files as `visibility` automatically.
 
 ## [1.25.1] - 2024-05-03
 
