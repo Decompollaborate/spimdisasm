@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.26.0] - 2024-05-21
+
+### Added
+
+- Add `visibility` attribute to symbols.
+  - Allows to specify custom visibility, like `weak` or `local`, to each symbol.
+- Read symbol binding from elf files as `visibility` automatically.
+
 ## [1.25.1] - 2024-05-03
 
 ### Fixed
@@ -1515,6 +1523,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.26.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.25.1...1.26.0
 [1.25.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.25.0...1.25.1
 [1.25.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.24.3...1.25.0
 [1.24.3]: https://github.com/Decompollaborate/spimdisasm/compare/1.24.2...1.24.3
