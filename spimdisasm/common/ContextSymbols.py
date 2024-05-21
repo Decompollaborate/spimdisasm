@@ -212,7 +212,7 @@ class ContextSymbol:
 
     isMips1Double: bool = False
 
-    visibility: str = "global"
+    visibility: str|None = None
 
 
     @property

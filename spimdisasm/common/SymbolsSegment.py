@@ -609,4 +609,4 @@ class SymbolsSegment:
                 if allowBeReferenced is not None:
                     contextSym.allowedToBeReferenced = allowBeReferenced
 
-                contextSym.visibility = pairs.get("visibility", contextSym.visibility)
+                contextSym.visibility = pairs.get("visibility")
