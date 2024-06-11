@@ -298,7 +298,7 @@ def insertSymtabIntoContext(context: common.Context, symbolTable: elf32.Elf32Sym
 
             bind = elf32.Elf32SymbolTableBinding.fromValue(symEntry.stBind)
             if bind is not None:
-                contextSym.visibility = bind.name
+                contextSym.visibility = bind.name.lower()
 
 def insertDynsymIntoContext(context: common.Context, symbolTable: elf32.Elf32Syms, stringTable: elf32.Elf32StringTable) -> None:
     for symEntry in symbolTable:
