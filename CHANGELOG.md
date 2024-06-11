@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `elfObjDisasm`
+  - Fix wrong capitalization on elf symbol visibility.
+  - Fix symbol visibility not being used on some linked elfs.
+
 ## [1.26.0] - 2024-05-21
 
 ### Added
