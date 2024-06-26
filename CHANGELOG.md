@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `elfObjDisasm`
   - Fix wrong capitalization on elf symbol visibility.
   - Fix symbol visibility not being used on some linked elfs.
+- Fix some function pointers not being properly symbolized.
+  - Those function pointers may get wrongly identified as jumptables because the
+    jumptable pattern and the function pointer tail call pattern is similar.
 
 ## [1.26.0] - 2024-05-21
 

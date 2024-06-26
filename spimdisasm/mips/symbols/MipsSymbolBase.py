@@ -386,13 +386,18 @@ class SymbolBase(common.ElementBase):
             if self.contextSym.isGot and common.GlobalConfig.GP_VALUE is not None:
                 labelAddr = common.GlobalConfig.GP_VALUE + rabbitizer.Utils.from2Complement(w, 32)
                 labelSym = self.getSymbol(labelAddr, tryPlusOffset=False)
-                if labelSym is not None and labelSym.getTypeSpecial() == common.SymbolSpecialType.jumptablelabel:
-                    dotType = ".gpword"
+                if labelSym is not None:
+                    labelType = labelSym.getTypeSpecial()
+                    if labelType == common.SymbolSpecialType.jumptablelabel or labelType == common.SymbolSpecialType.function:
+                        dotType = ".gpword"
             else:
                 labelSym = self.getSymbol(w, tryPlusOffset=False)
 
-            if labelSym is not None and labelSym.getTypeSpecial() == common.SymbolSpecialType.jumptablelabel:
-                value = labelSym.getName()
+            if labelSym is not None:
+                labelType = labelSym.getTypeSpecial()
+                if labelType == common.SymbolSpecialType.jumptablelabel or labelType == common.SymbolSpecialType.function:
+                    # We check for function references too because this symbol may have gotten wrongly identified as a jumptable because of tail call optimizations.
+                    value = labelSym.getName()
         else:
             # This word could be a reference to a symbol
             if not self.context.isAddressBanned(w):
