@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `singleFileDisasm`
+  - Produce an error if input file does not exist instead of silently doing
+    nothing at all.
+
 ### Fixed
 
 - `elfObjDisasm`
