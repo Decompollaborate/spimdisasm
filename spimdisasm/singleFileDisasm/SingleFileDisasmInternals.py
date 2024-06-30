@@ -143,7 +143,23 @@ def processArguments(args: argparse.Namespace) -> int:
     context.parseArgs(args)
 
     inputPath = Path(args.binary)
+    textOutput = Path(args.output)
+
+    common.Utils.printQuietless(f"Using input file: '{inputPath}'")
+    common.Utils.printQuietless(f"Using output directory: '{textOutput}'")
+
+    if not inputPath.exists():
+        common.Utils.eprint(f"ERROR: Input file '{inputPath}' does not exist")
+        return 1
+
+    if textOutput.exists() and not textOutput.is_dir():
+        common.Utils.eprint(f"ERROR: '{textOutput}' is not a valid directory")
+        return 2
+
     array_of_bytes = common.Utils.readFileAsBytearray(inputPath)
+    if len(array_of_bytes) == 0:
+        common.Utils.eprint(f"ERROR: Input file '{inputPath}' is empty")
+        return 3
 
     fileSplitsPath = None
     if args.file_splits is not None:
@@ -157,7 +173,6 @@ def processArguments(args: argparse.Namespace) -> int:
     fileVram = int(args.vram, 16)
     splits = getSplits(fileSplitsPath, vromStart, vromEnd, fileVram, vromDataStart, vromDataEnd, args.disasm_rsp)
 
-    textOutput = Path(args.output)
     if args.data_output is None:
         dataOutput = textOutput
     else:

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.26.1] - 2024-06-30
+
+### Changed
+
+- `singleFileDisasm`
+  - Produce an error if input file does not exist instead of silently doing
+    nothing at all.
+
+### Fixed
+
+- `elfObjDisasm`
+  - Fix wrong capitalization on elf symbol visibility.
+  - Fix symbol visibility not being used on some linked elfs.
+- Fix some function pointers not being properly symbolized.
+  - Those function pointers may get wrongly identified as jumptables because the
+    jumptable pattern and the function pointer tail call pattern is similar.
+
 ## [1.26.0] - 2024-05-21
 
 ### Added
@@ -1523,6 +1540,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.26.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.26.0...1.26.1
 [1.26.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.25.1...1.26.0
 [1.25.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.25.0...1.25.1
 [1.25.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.24.3...1.25.0

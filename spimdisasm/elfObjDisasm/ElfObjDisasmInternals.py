@@ -263,6 +263,10 @@ def addContextSymFromSymEntry(context: common.Context, symEntry: elf32.Elf32SymE
     contextSym.isUserDeclared = True
     contextSym.setSizeIfUnset(symEntry.size)
 
+    bind = elf32.Elf32SymbolTableBinding.fromValue(symEntry.stBind)
+    if bind is not None:
+        contextSym.visibility = bind.name.lower()
+
     return contextSym
 
 
@@ -295,10 +299,6 @@ def insertSymtabIntoContext(context: common.Context, symbolTable: elf32.Elf32Sym
         contextSym = addContextSymFromSymEntry(context, symEntry, symAddress, symName, symVrom)
         if contextSym is not None:
             contextSym.sectionType = sectType
-
-            bind = elf32.Elf32SymbolTableBinding.fromValue(symEntry.stBind)
-            if bind is not None:
-                contextSym.visibility = bind.name
 
 def insertDynsymIntoContext(context: common.Context, symbolTable: elf32.Elf32Syms, stringTable: elf32.Elf32StringTable) -> None:
     for symEntry in symbolTable:
