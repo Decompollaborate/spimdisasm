@@ -13,3 +13,4 @@ from .MipsSectionRodata import SectionRodata as SectionRodata
 from .MipsSectionBss import SectionBss as SectionBss
 from .MipsSectionRelocZ64 import SectionRelocZ64 as SectionRelocZ64
 from .MipsSectionRelocZ64 import RelocEntry as RelocEntry
+from .MipsSectionGccExceptTable import SectionGccExceptTable as SectionGccExceptTable
