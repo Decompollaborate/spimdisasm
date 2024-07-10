@@ -690,7 +690,7 @@ class SymbolFunction(SymbolText):
         labelSym.sectionType = self.sectionType
         labelSymType = labelSym.getTypeSpecial()
 
-        useLabelMacro = labelSymType is None or labelSymType == common.SymbolSpecialType.function or (labelSymType == common.SymbolSpecialType.jumptablelabel and not migrate)
+        useLabelMacro = labelSymType is None or labelSymType == common.SymbolSpecialType.function or (labelSymType == common.SymbolSpecialType.jumptablelabel and not migrate) or labelSymType == common.SymbolSpecialType.gccexcepttablelabel
         if not useLabelMacro:
             if common.GlobalConfig.ASM_GLOBALIZE_TEXT_LABELS_REFERENCED_BY_NON_JUMPTABLE:
                 # Check if any non-jumptable symbol references this label

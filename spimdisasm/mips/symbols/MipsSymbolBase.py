@@ -342,7 +342,7 @@ class SymbolBase(common.ElementBase):
                     # Avoid using addends on labels
                     return False
 
-                if not self.contextSym.isJumpTable():
+                if not self.contextSym.isJumpTable() and not self.contextSym.isGccExceptTable():
                     # Non jumptables should not reference labels
                     return False
 

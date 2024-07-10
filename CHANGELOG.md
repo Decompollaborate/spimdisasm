@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.27.0] - 2024-07-10
+
+### Added
+
+- `gcc_except_table` support.
+  - This section type is used by C++ to implement exceptions.
+  - There's no automatic detection for this kind of symbol, so it must be
+    manually specified by the user.
+- Add two new `SymbolSpecialType`: `gccexcepttable` and `gccexcepttablelabel`.
+  - `gccexcepttable` symbols will be prefixed with `ehtbl_`, while
+    `gccexcepttablelabel` will have a `$LEH_` prefix.
+- A new kind of customizable label type for ehtable labels:
+  - `GlobalConfig.ASM_EHTBL_LABEL`: Allows to change the macro label for this
+    specific kind of label.
+  - Defaults to `ehlabel`.
+
 ## [1.26.1] - 2024-06-30
 
 ### Changed
@@ -1540,6 +1556,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.27.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.27.0...1.27.0
 [1.26.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.26.0...1.26.1
 [1.26.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.25.1...1.26.0
 [1.25.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.25.0...1.25.1

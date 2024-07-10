@@ -5,8 +5,6 @@
 
 from __future__ import annotations
 
-import rabbitizer
-
 from ... import common
 
 from . import SymbolBase
