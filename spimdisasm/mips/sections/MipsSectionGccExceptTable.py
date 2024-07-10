@@ -25,6 +25,10 @@ class SectionGccExceptTable(SectionBase):
     `-1`, which seems to exist just as an end marker (TODO: corroborate the
     endmarker claim).
 
+    Normally there's a single exception table per section per TU, but the way
+    it was implemented here allows for multiple exception tables in case file
+    splits have not been done yet.
+
     This is implemented similarly to how the jumptable handling is implemented.
     """
 

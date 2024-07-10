@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.27.0] - 2024-07-10
+
 ### Added
 
 - `gcc_except_table` support.
@@ -1554,6 +1556,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.27.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.27.0...1.27.0
 [1.26.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.26.0...1.26.1
 [1.26.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.25.1...1.26.0
 [1.25.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.25.0...1.25.1
