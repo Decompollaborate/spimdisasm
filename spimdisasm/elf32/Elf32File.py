@@ -543,7 +543,7 @@ class Elf32File:
 
         print(f"Symbol table '{symbolTableName}' contains {len(symbolTable.symbols)} entries:")
 
-        print(f" {'Num':>5}: {'Value':>8} {'Size':>5} {'Type':7} {'Bind':6} {'Vis':9} {'Ndx':>12} {'Name'}")
+        print(f" {'Num':>5}: {'Value':>8} {'Size':>5} {'Type':7} {'Bind':6} {'Vis':9} {'Ndx':>15} {'Name'}")
 
         for i, sym in enumerate(symbolTable.symbols):
             entryType = Elf32SymbolTableType(sym.stType)
@@ -566,7 +566,7 @@ class Elf32File:
             symName = ""
             if stringTable is not None:
                 symName = stringTable[sym.name]
-            print(f" {i:>5}: {sym.value:08X} {sym.size:>5X} {entryType.name:7} {bind:6} {visibility:9} {ndx:>12} {symName}")
+            print(f" {i:>5}: {sym.value:08X} {sym.size:>5X} {entryType.name:7} {bind:6} {visibility:9} {ndx:>15} {symName}")
 
         print()
 

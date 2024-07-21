@@ -64,6 +64,12 @@ class Elf32SectionHeaders:
             return self.mipsText
         if key == Elf32SectionHeaderNumber.MIPS_DATA.value:
             return self.mipsData
+        if key == Elf32SectionHeaderNumber.MIPS_SCOMMON.value:
+            common.Utils.eprint("Warning: Elf32SectionHeaderNumber.MIPS_SCOMMON not implemented\n")
+            return None
+        if key == Elf32SectionHeaderNumber.MIPS_SUNDEFINED.value:
+            common.Utils.eprint("Warning: Elf32SectionHeaderNumber.MIPS_SUNDEFINED not implemented\n")
+            return None
         if key > len(self.sections):
             return None
         return self.sections[key]

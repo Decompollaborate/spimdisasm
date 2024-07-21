@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `MIPS_SCOMMON` and `MIPS_SUNDEFINED` to elfObjDisasm's readelf
+  reimplementation.
+
 ## [1.27.0] - 2024-07-10
 
 ### Added
