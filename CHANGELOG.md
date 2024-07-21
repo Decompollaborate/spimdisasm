@@ -9,8 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add `MIPS_SCOMMON` and `MIPS_SUNDEFINED` to elfObjDisasm's readelf
-  reimplementation.
+- elfObjDisasm's readelf:
+  - Add `MIPS_SCOMMON` and `MIPS_SUNDEFINED` support in symtab.
+  - Use the section name in the ndx column instead of a plain number for
+    `OBJECT`s and `FUNC`s.
+
+### Fixed
+
+- elfObjDisasm's readelf:
+  - Fix name column not displaying the section's name.
 
 ## [1.27.0] - 2024-07-10
 

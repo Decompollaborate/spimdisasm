@@ -562,10 +562,22 @@ class Elf32File:
             shndx = Elf32SectionHeaderNumber.fromValue(sym.shndx)
             if shndx is not None:
                 ndx = shndx.name
+            elif entryType in { Elf32SymbolTableType.OBJECT, Elf32SymbolTableType.FUNC }:
+                # spimdisasm-extension: instead of a number we use the section name if available
+                section = self.sectionHeaders[sym.shndx]
+                if section is not None:
+                    ndx = self.shstrtab[section.name]
 
             symName = ""
             if stringTable is not None:
                 symName = stringTable[sym.name]
+            if symName == "":
+                # GNU readelf uses the section's name as the name column for sections instead of the symbol's name.
+                if entryType == Elf32SymbolTableType.SECTION:
+                    section = self.sectionHeaders[sym.shndx]
+                    if section is not None:
+                        symName = self.shstrtab[section.name]
+
             print(f" {i:>5}: {sym.value:08X} {sym.size:>5X} {entryType.name:7} {bind:6} {visibility:9} {ndx:>15} {symName}")
 
         print()
