@@ -73,6 +73,8 @@ class InstrAnalyzer:
         # Jump register (jumptables)
         self.jumpRegisterIntrOffset: dict[int, int] = dict()
         self.referencedJumpTableOffsets: dict[int, int] = dict()
+        self.rejectedjumpRegisterIntrOffset: dict[int, tuple[int, int, int]] = dict()
+        " key: jr instr offset, value: (jumptable reference offset, jumptable address, branch offset)"
 
         # Jump and link (functions)
         self.indirectFunctionCallIntrOffset: dict[int, int] = dict()
@@ -125,7 +127,9 @@ class InstrAnalyzer:
         "Instructions setting the $gp register, key: offset of the low instruction"
 
 
-    def processBranch(self, instr: rabbitizer.Instruction, instrOffset: int, currentVram: int) -> None:
+    def processBranch(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, instrOffset: int, currentVram: int) -> None:
+        regsTracker.processBranch(instr, instrOffset)
+
         if instrOffset in self.branchInstrOffsets:
             # Already processed
             return
@@ -409,19 +413,37 @@ class InstrAnalyzer:
 
 
     def processJumpRegister(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, instrOffset: int) -> None:
-        jrInfo = regsTracker.getJrInfo(instr)
-        if jrInfo is not None:
-            offset, address = jrInfo
+        jrRegData = regsTracker.getJrRegData(instr)
+        if jrRegData.hasInfo():
+            offset = jrRegData.offset()
+            address = jrRegData.address()
 
-            self.referencedJumpTableOffsets[offset] = address
+            if jrRegData.checkedForBranching():
+                self.rejectedjumpRegisterIntrOffset[instrOffset] = (offset, address, jrRegData.lastBranchOffset())
+            else:
+                # Jumptables never check the register they are branching into,
+                # since the references should always be valid.
+                # This kind of check usually is performed on tail call
+                # optimizations when a function pointer is involved.
+                # For example:
+                # ```mips
+                # lw          $t0, ...
+                # beqz        $t0, .LXXXXXXXX
+                #  nop
+                # jr          $t0
+                #  nop
+                # ```
+                self.referencedJumpTableOffsets[offset] = address
+
             self.jumpRegisterIntrOffset[instrOffset] = address
             if not common.GlobalConfig.PIC:
                 self.referencedVrams.add(address)
 
     def processJumpAndLinkRegister(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, instrOffset: int) -> None:
-        jrInfo = regsTracker.getJrInfo(instr)
-        if jrInfo is not None:
-            offset, address = jrInfo
+        jrRegData = regsTracker.getJrRegData(instr)
+        if jrRegData.hasInfo():
+            offset = jrRegData.offset()
+            address = jrRegData.address()
 
             self.indirectFunctionCallOffsets[offset] = address
             self.indirectFunctionCallIntrOffset[instrOffset] = address
@@ -431,7 +453,7 @@ class InstrAnalyzer:
 
     def processInstr(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, instrOffset: int, currentVram: int, prevInstr: rabbitizer.Instruction|None) -> None:
         if instr.isBranch() or instr.isUnconditionalBranch():
-            self.processBranch(instr, instrOffset, currentVram)
+            self.processBranch(regsTracker, instr, instrOffset, currentVram)
 
         elif instr.isJumpWithAddress():
             self.processFuncCall(instr, instrOffset)

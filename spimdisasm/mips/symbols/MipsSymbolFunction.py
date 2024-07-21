@@ -509,6 +509,10 @@ class SymbolFunction(SymbolText):
             jumpTable.parentFunction = self.contextSym
             self.contextSym.jumpTables.add(jumpTable.vram, jumpTable)
 
+        # To debug jumptable rejection change this check to `True`
+        if False:
+            for jrInstrOffset, (referenceOffset, jtblAddress, branchOffset) in self.instrAnalyzer.rejectedjumpRegisterIntrOffset.items():
+                self.endOfLineComment[jrInstrOffset//4] = f" /* Jumping to something at address 0x{jtblAddress:08X} (inferred from 0x{self.getVromOffset(referenceOffset):X}). Jumptable rejected by instruction at vrom 0x{self.getVromOffset(branchOffset):X} */"
 
         if self.isLikelyHandwritten:
             for instr in self.instructions:

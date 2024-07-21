@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Use the section name in the ndx column instead of a plain number for
     `OBJECT`s and `FUNC`s.
 
+### Changed
+
+- Try to detect function pointers used on tail call optimizations and try to not
+  confuse them with detected jumptables.
+- rabbitizer 1.12.0 or above is required.
+
 ### Fixed
 
 - Fix rodata addresses referenced _only_ by other rodata symbols on the same
