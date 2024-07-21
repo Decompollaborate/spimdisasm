@@ -613,6 +613,13 @@ class Elf32File:
                     symValue = f"{sym.value:08X}"
                     if self.strtab is not None:
                         symName = self.strtab[sym.name]
+                if symName == "":
+                    # Some relocations are an offset to a section on the current object instead of to a symtab symbol.
+                    # TODO: what is the proper way to check this?
+                    section = self.sectionHeaders[sym.shndx]
+                    if section is not None:
+                        symName = self.shstrtab[section.name]
+
                 print(f" {rel.offset:08X} {rel.info:08X} {relType:<12} {symValue:>9} {symName}")
 
             print()

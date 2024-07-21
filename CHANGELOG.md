@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - elfObjDisasm's readelf:
   - Fix name column not displaying the section's name.
+  - Fix relocation sections not displaying anything on the name columns for
+    relocations relative to a section instead of a symbol.
 
 ## [1.27.0] - 2024-07-10
 
