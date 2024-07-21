@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix rodata addresses referenced _only_ by other rodata symbols on the same
+  file not being properly symbolized.
 - elfObjDisasm's readelf:
   - Fix name column not displaying the section's name.
   - Fix relocation sections not displaying anything on the name columns for

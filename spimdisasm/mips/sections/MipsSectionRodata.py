@@ -72,8 +72,11 @@ class SectionRodata(SectionBase):
     def analyze(self) -> None:
         lastVramSymbol: common.ContextSymbol = self._checkAndCreateFirstSymbol()
 
-        symbolList: list[tuple[int, int]] = []
+        symbolList: list[tuple[int, common.ContextSymbol]] = []
         localOffset = 0
+        localOffsetsWithSymbols: set[int] = set()
+
+        needsFurtherAnalyzis = False
 
         jumpTableSym: common.ContextSymbol|None = None
         firstJumptableWord = -1
@@ -97,17 +100,43 @@ class SectionRodata(SectionBase):
                 self.checkWordIsASymbolReference(w)
 
             if contextSym is not None:
-                self.symbolsVRams.add(currentVram)
-                symbolList.append((localOffset, currentVram))
+                symbolList.append((localOffset, contextSym))
+                localOffsetsWithSymbols.add(localOffset)
 
                 self._createAutoPadFromSymbol(localOffset, contextSym)
 
+            elif jumpTableSym is None and self.popPointerInDataReference(currentVram) is not None:
+                contextSym = self._addOwnedSymbol(localOffset)
+                symbolList.append((localOffset, contextSym))
+                localOffsetsWithSymbols.add(localOffset)
+
+            if not lastVramSymbol.notPointerByType():
+                if self.checkWordIsASymbolReference(w):
+                    if w < currentVram and self.containsVram(w):
+                        # References a data symbol from this section and it is behind this current symbol
+                        needsFurtherAnalyzis = True
+
             localOffset += 4
+
+        if needsFurtherAnalyzis:
+            localOffset = 0
+            for w in self.words:
+                currentVram = self.getVramOffset(localOffset)
+
+                if self.popPointerInDataReference(currentVram) is not None and localOffset not in localOffsetsWithSymbols:
+                    contextSym = self._addOwnedSymbol(localOffset)
+                    symbolList.append((localOffset, contextSym))
+                    localOffsetsWithSymbols.add(localOffset)
+
+                localOffset += 4
+
+            # Since we appended new symbols, this list is not sorted anymore
+            symbolList.sort()
 
         previousSymbolWasLateRodata = False
         previousSymbolExtraPadding = 0
 
-        for i, (offset, vram) in enumerate(symbolList):
+        for i, (offset, contextSym) in enumerate(symbolList):
             if i + 1 == len(symbolList):
                 words = self.words[offset//4:]
             else:
@@ -116,12 +145,13 @@ class SectionRodata(SectionBase):
 
             vrom = self.getVromOffset(offset)
             vromEnd = vrom + len(words)*4
-            sym = symbols.SymbolRodata(self.context, vrom, vromEnd, offset + self.inFileOffset, vram, words, self.segmentVromStart, self.overlayCategory)
+            sym = symbols.SymbolRodata(self.context, vrom, vromEnd, offset + self.inFileOffset, contextSym.vram, words, self.segmentVromStart, self.overlayCategory)
             sym.parent = self
             sym.setCommentOffset(self.commentOffset)
             sym.stringEncoding = self.stringEncoding
             sym.analyze()
             self.symbolList.append(sym)
+            self.symbolsVRams.add(contextSym.vram)
 
             # File boundaries detection
             if sym.inFileOffset % 16 == 0:

@@ -426,6 +426,23 @@ class ContextSymbol:
         # if self.referenceCounter > 1: return False # ?
         return self.isJumpTable() or self.isFloat() or self.isDouble()
 
+
+    def notPointerByType(self) -> bool:
+        if self.isByte():
+            return True
+        if self.isShort():
+            return True
+        if self.isFloat():
+            return True
+        if self.isDouble():
+            return True
+        if self.isString():
+            return True
+        if self.isPascalString():
+            return True
+        return False
+
+
     def hasUserDeclaredSize(self) -> bool:
         return self.userDeclaredSize is not None
 
