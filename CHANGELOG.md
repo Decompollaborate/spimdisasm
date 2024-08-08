@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- New `SectionText.gpRelHack` setting.
+  - Turning it on changes all instructions that use a `%gp_rel` reloc into macro
+    instructions that do not specify the relocation explicitly nor reference the
+    `$gp` register.
+  - This may even change some instruction mnemonics, like replacing `addiu` into
+    `la`.
+  - This is required by old assemblers that do not support explicit `%gp_rel`
+    relocations, but instead they infer the relocation to be used by checking
+    if the symbol was defined in the assembly file and its size fits on the
+    passed `-G` parameter.
+  - WARNING: It is the user's responsability to provide those symbol definitions
+    to the assembler, otherwise those instructions will be expanded into
+    multiple instructions and produce a shifted build.
 - elfObjDisasm's readelf:
   - Add `MIPS_SCOMMON` and `MIPS_SUNDEFINED` support in symtab.
   - Use the section name in the ndx column instead of a plain number for

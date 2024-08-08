@@ -21,6 +21,8 @@ class SectionText(SectionBase):
 
         self.instrCat: rabbitizer.Enum = rabbitizer.InstrCategory.CPU
         self.detectRedundantFunctionEnd: bool|None = None
+        self.gpRelHack: bool = False
+        """Get rid of `%gp_rel` and `$gp` since old assemblers don't support `%gp_rel`."""
 
         self.enableStringGuessing = False
 
@@ -319,6 +321,7 @@ class SectionText(SectionBase):
             func.hasUnimplementedIntrs = hasUnimplementedIntrs
             func.parent = self
             func.isRsp = self.instrCat == rabbitizer.InstrCategory.RSP
+            func.gpRelHack = self.gpRelHack
             func.analyze()
             self.symbolList.append(func)
 
