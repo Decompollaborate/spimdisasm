@@ -27,6 +27,7 @@ class SymbolFunction(SymbolText):
         self.hasUnimplementedIntrs: bool = False
         self.isRsp: bool = False
         self.isLikelyHandwritten: bool = False
+        self.gpRelHack: bool = False
 
     @property
     def nInstr(self) -> int:
@@ -509,6 +510,10 @@ class SymbolFunction(SymbolText):
             jumpTable.parentFunction = self.contextSym
             self.contextSym.jumpTables.add(jumpTable.vram, jumpTable)
 
+        # To debug jumptable rejection change this check to `True`
+        if False:
+            for jrInstrOffset, (referenceOffset, jtblAddress, branchOffset) in self.instrAnalyzer.rejectedjumpRegisterIntrOffset.items():
+                self.endOfLineComment[jrInstrOffset//4] = f" /* Jumping to something at address 0x{jtblAddress:08X} (inferred from 0x{self.getVromOffset(referenceOffset):X}). Jumptable rejected by instruction at vrom 0x{self.getVromOffset(branchOffset):X} */"
 
         if self.isLikelyHandwritten:
             for instr in self.instructions:
@@ -641,38 +646,41 @@ class SymbolFunction(SymbolText):
         return None
 
 
-    def getImmOverrideForInstruction(self, instr: rabbitizer.Instruction, instrOffset: int, isSplittedSymbol: bool=False) -> str|None:
+    def _getImmOverrideForInstruction(self, instr: rabbitizer.Instruction, instrOffset: int, isSplittedSymbol: bool=False) -> tuple[str|None, common.RelocationInfo|None]:
         if self.pointersRemoved:
-            return None
+            return None, None
 
         relocInfo = self.getReloc(instrOffset, instr)
         if relocInfo is not None and not relocInfo.isRelocNone():
-            return relocInfo.getNameWithReloc(isSplittedSymbol=isSplittedSymbol)
+            ignoredRelocs = set()
+            if self.gpRelHack:
+                ignoredRelocs.add(common.RelocType.MIPS_GPREL16)
+            return relocInfo.getNameWithReloc(isSplittedSymbol=isSplittedSymbol, ignoredRelocs=ignoredRelocs), relocInfo
 
         if instr.isBranch() or instr.isUnconditionalBranch():
             if common.GlobalConfig.IGNORE_BRANCHES:
-                return None
+                return None, None
             branchOffset = instr.getBranchOffsetGeneric()
             targetBranchVram = self.getVramOffset(instrOffset + branchOffset)
             labelSymbol = self.getSymbol(targetBranchVram, tryPlusOffset=False)
             if labelSymbol is not None:
-                return labelSymbol.getName()
-            return None
+                return labelSymbol.getName(), None
+            return None, None
 
         if instr.hasOperandAlias(rabbitizer.OperandType.cpu_immediate):
             if instrOffset in self.instrAnalyzer.symbolInstrOffset:
                 address = self.instrAnalyzer.symbolInstrOffset[instrOffset]
                 relocInfo = self._generateHiLoConstantReloc(address, instr, instr)
                 if relocInfo is not None:
-                    return relocInfo.getNameWithReloc(isSplittedSymbol=isSplittedSymbol)
+                    return relocInfo.getNameWithReloc(isSplittedSymbol=isSplittedSymbol), relocInfo
 
             elif instr.canBeHi():
                 # Unpaired LUI
                 relocInfo = self._generateHiLoConstantReloc(instr.getProcessedImmediate()<<16, instr, None)
                 if relocInfo is not None:
-                    return relocInfo.getNameWithReloc(isSplittedSymbol=isSplittedSymbol)
+                    return relocInfo.getNameWithReloc(isSplittedSymbol=isSplittedSymbol), relocInfo
 
-        return None
+        return None, None
 
     def getLabelForOffset(self, instructionOffset: int, migrate: bool=False) -> str:
         if common.GlobalConfig.IGNORE_BRANCHES or instructionOffset == 0:
@@ -710,7 +718,7 @@ class SymbolFunction(SymbolText):
         return labelSym.getName() + ":" + common.GlobalConfig.LINE_ENDS
 
     def _emitInstruction(self, instr: rabbitizer.Instruction, instructionOffset: int, wasLastInstABranch: bool, isSplittedSymbol: bool=False) -> str:
-        immOverride = self.getImmOverrideForInstruction(instr, instructionOffset, isSplittedSymbol=isSplittedSymbol)
+        immOverride, relocInfo = self._getImmOverrideForInstruction(instr, instructionOffset, isSplittedSymbol=isSplittedSymbol)
         comment = self.generateAsmLineComment(instructionOffset, instr.getRaw())
         extraLJust = 0
 
@@ -719,6 +727,31 @@ class SymbolFunction(SymbolText):
             comment += " "
 
         line = instr.disassemble(immOverride, extraLJust=extraLJust)
+
+        if self.gpRelHack:
+            # Get rid of `%gp_rel` and `$gp` since old assemblers don't support `%gp_rel`.
+            #
+            # We convert the explicit instructions with relocations into macro/pseudo
+            # instructions and hope for the assembler to do the right thing.
+            #
+            # A few examples for the conversions (right being the macro instructions):
+            # `lw     $v0, %gp_rel(example_var)($gp)` -> `lw     $v0, (example_var)`
+            # `addiu  $v0, $gp, %gp_rel(example_var)` -> `la     $v0, (example_var)`
+            #
+            # Those assemblers will actually assemble those macro instructions into the
+            # proper ones with gp_rel relocations only if they can also see the symbol
+            # defined on the same assembly file and its size fits within the passed `-G`
+            # parameter. It is the user's responsability to provide those definitions to
+            # the assembler.
+            if relocInfo is not None and relocInfo.relocType == common.RelocType.MIPS_GPREL16:
+                if instr.canBeLo() and instr.doesDereference():
+                    line = line.replace("($gp)", "").replace("($28)", "")
+                elif instr.uniqueId == rabbitizer.InstrId.cpu_addiu:
+                    line = line.replace("addiu ", "la    ").replace(", $gp, ", ", ").replace(", $28, ", ", ")
+
+                endComment = self.endOfLineComment.get(instructionOffset//4, "")
+                endComment += f" /* gp_rel: {immOverride} */"
+                self.endOfLineComment[instructionOffset//4] = endComment
 
         return f"{comment}  {line}"
 

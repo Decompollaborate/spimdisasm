@@ -543,7 +543,7 @@ class Elf32File:
 
         print(f"Symbol table '{symbolTableName}' contains {len(symbolTable.symbols)} entries:")
 
-        print(f" {'Num':>5}: {'Value':>8} {'Size':>5} {'Type':7} {'Bind':6} {'Vis':9} {'Ndx':>12} {'Name'}")
+        print(f" {'Num':>5}: {'Value':>8} {'Size':>5} {'Type':7} {'Bind':6} {'Vis':9} {'Ndx':>15} {'Name'}")
 
         for i, sym in enumerate(symbolTable.symbols):
             entryType = Elf32SymbolTableType(sym.stType)
@@ -562,11 +562,23 @@ class Elf32File:
             shndx = Elf32SectionHeaderNumber.fromValue(sym.shndx)
             if shndx is not None:
                 ndx = shndx.name
+            elif entryType in { Elf32SymbolTableType.OBJECT, Elf32SymbolTableType.FUNC }:
+                # spimdisasm-extension: instead of a number we use the section name if available
+                section = self.sectionHeaders[sym.shndx]
+                if section is not None:
+                    ndx = self.shstrtab[section.name]
 
             symName = ""
             if stringTable is not None:
                 symName = stringTable[sym.name]
-            print(f" {i:>5}: {sym.value:08X} {sym.size:>5X} {entryType.name:7} {bind:6} {visibility:9} {ndx:>12} {symName}")
+            if symName == "":
+                # GNU readelf uses the section's name as the name column for sections instead of the symbol's name.
+                if entryType == Elf32SymbolTableType.SECTION:
+                    section = self.sectionHeaders[sym.shndx]
+                    if section is not None:
+                        symName = self.shstrtab[section.name]
+
+            print(f" {i:>5}: {sym.value:08X} {sym.size:>5X} {entryType.name:7} {bind:6} {visibility:9} {ndx:>15} {symName}")
 
         print()
 
@@ -601,6 +613,13 @@ class Elf32File:
                     symValue = f"{sym.value:08X}"
                     if self.strtab is not None:
                         symName = self.strtab[sym.name]
+                if symName == "":
+                    # Some relocations are an offset to a section on the current object instead of to a symtab symbol.
+                    # TODO: what is the proper way to check this?
+                    section = self.sectionHeaders[sym.shndx]
+                    if section is not None:
+                        symName = self.shstrtab[section.name]
+
                 print(f" {rel.offset:08X} {rel.info:08X} {relType:<12} {symValue:>9} {symName}")
 
             print()

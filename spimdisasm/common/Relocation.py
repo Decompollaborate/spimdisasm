@@ -175,11 +175,13 @@ class RelocationInfo:
             return f"{name} - 0x{-self.addend:X}"
         return f"{name} + 0x{self.addend:X}"
 
-    def getNameWithReloc(self, isSplittedSymbol: bool=False) -> str:
+    def getNameWithReloc(self, *, isSplittedSymbol: bool=False, ignoredRelocs: set[RelocType]=set()) -> str:
         name = self.getName(isSplittedSymbol=isSplittedSymbol)
 
         percentRel = self.relocType.getPercentRel()
         if percentRel is not None:
+            if self.relocType in ignoredRelocs:
+                return f"({name})"
             return f"{percentRel}({name})"
 
         wordRel = self.relocType.getWordRel()

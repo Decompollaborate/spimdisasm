@@ -54,7 +54,6 @@ class SectionData(SectionBase):
             localOffset = 0
             for w in self.words:
                 currentVram = self.getVramOffset(localOffset)
-                currentVrom = self.getVromOffset(localOffset)
 
                 if self.popPointerInDataReference(currentVram) is not None and localOffset not in localOffsetsWithSymbols:
                     contextSym = self._addOwnedSymbol(localOffset)

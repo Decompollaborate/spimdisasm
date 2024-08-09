@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.28.0] - 2024-08-09
+
+### Added
+
+- New `SectionText.gpRelHack` setting.
+  - Turning it on changes all instructions that use a `%gp_rel` reloc into macro
+    instructions that do not specify the relocation explicitly nor reference the
+    `$gp` register.
+  - This may even change some instruction mnemonics, like replacing `addiu` into
+    `la`.
+  - This is required by old assemblers that do not support explicit `%gp_rel`
+    relocations, but instead they infer the relocation to be used by checking
+    if the symbol was defined in the assembly file and its size fits on the
+    passed `-G` parameter.
+  - WARNING: It is the user's responsability to provide those symbol definitions
+    to the assembler, otherwise those instructions will be expanded into
+    multiple instructions and produce a shifted build.
+- elfObjDisasm's readelf:
+  - Add `MIPS_SCOMMON` and `MIPS_SUNDEFINED` support in symtab.
+  - Use the section name in the ndx column instead of a plain number for
+    `OBJECT`s and `FUNC`s.
+
+### Changed
+
+- Try to detect function pointers used on tail call optimizations and try to not
+  confuse them with detected jumptables.
+- rabbitizer 1.12.0 or above is required.
+
+### Fixed
+
+- Fix rodata addresses referenced _only_ by other rodata symbols on the same
+  file not being properly symbolized.
+- elfObjDisasm's readelf:
+  - Fix name column not displaying the section's name.
+  - Fix relocation sections not displaying anything on the name columns for
+    relocations relative to a section instead of a symbol.
+
 ## [1.27.0] - 2024-07-10
 
 ### Added
@@ -1556,7 +1593,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
-[1.27.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.27.0...1.27.0
+[1.28.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.27.0...1.28.0
+[1.27.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.26.1...1.27.0
 [1.26.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.26.0...1.26.1
 [1.26.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.25.1...1.26.0
 [1.25.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.25.0...1.25.1

@@ -346,9 +346,11 @@ class Elf32SectionHeaderNumber(enum.Enum):
     UNDEF           = 0
     ABS             = 0xFFF1
     COMMON          = 0xFFF2
-    MIPS_ACOMMON    = 0xFF00
-    MIPS_TEXT       = 0xFF01
-    MIPS_DATA       = 0xFF02
+    MIPS_ACOMMON    = 0xFF00 # Allocated common symbols.
+    MIPS_TEXT       = 0xFF01 # Allocated test symbols.
+    MIPS_DATA       = 0xFF02 # Allocated data symbols.
+    MIPS_SCOMMON    = 0xFF03 # Small common symbols.
+    MIPS_SUNDEFINED = 0xFF04 # Small undefined symbols.
 
     @staticmethod
     def fromValue(value: int) -> Elf32SectionHeaderNumber|None:
