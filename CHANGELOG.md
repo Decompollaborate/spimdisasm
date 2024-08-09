@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Avoid emitting "global" visibility on labels.
+- Avoid emitting a rom offset comment on bss symbols.
 
 ## [1.28.0] - 2024-08-09
 

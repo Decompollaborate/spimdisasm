@@ -61,7 +61,7 @@ Range check triggered: .bss symbol (name: {self.getName()}, address: 0x{self.con
         output += self.getPrevAlignDirective(0)
 
         output += self.getSymbolAsmDeclaration(self.getName(), useGlobalLabel)
-        output += self.generateAsmLineComment(0)
+        output += self.generateAsmLineComment(0, emitRomOffset=False)
         output += f" .space 0x{self.spaceSize:02X}{common.GlobalConfig.LINE_ENDS}"
 
         nameEnd = self.getNameEnd()
