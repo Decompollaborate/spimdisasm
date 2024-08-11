@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Avoid emitting "global" visibility on labels.
 - Avoid emitting a rom offset comment on bss symbols.
+- Change on `gpRelHack` behavior:
+  - Emit `.extern`s with dummy size at the top of the function for all the
+    `%gp_rel`-accessed symbols within the function.
 
 ## [1.28.0] - 2024-08-09
 

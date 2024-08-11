@@ -787,6 +787,14 @@ class SymbolFunction(SymbolText):
             if self.hasUnimplementedIntrs:
                 return self.disassembleAsData(useGlobalLabel=useGlobalLabel, isSplittedSymbol=isSplittedSymbol)
 
+        if not common.GlobalConfig.PIC and self.gpRelHack and len(self.instrAnalyzer.gpReferencedSymbols) > 0:
+            output += f"/* Symbols accessed via $gp register */{common.GlobalConfig.LINE_ENDS}"
+            for gpAddress in self.instrAnalyzer.gpReferencedSymbols:
+                gpSym = self.getSymbol(gpAddress, tryPlusOffset=False)
+                if gpSym is not None:
+                    output += f".extern {gpSym.getName()}, 1{common.GlobalConfig.LINE_ENDS}"
+            output += common.GlobalConfig.LINE_ENDS
+
         output += self.contextSym.getReferenceeSymbols()
         output += self.getPrevAlignDirective(0)
 
