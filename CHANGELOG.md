@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fix function symbols not acknowledging their parent file.
+- Fix function symbols and labels not acknowledging their parent file.
   - Used mainly for debugging purposes.
 
 ## [1.28.0] - 2024-08-09

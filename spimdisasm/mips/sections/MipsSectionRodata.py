@@ -64,6 +64,7 @@ class SectionRodata(SectionBase):
         labelSym.referenceCounter += 1
         if jumpTableSym.parentFunction is not None:
             labelSym.parentFunction = jumpTableSym.parentFunction
+            labelSym.parentFileName = jumpTableSym.parentFunction.parentFileName
             jumpTableSym.parentFunction.branchLabels.add(labelSym.vram, labelSym)
 
         return jumpTableSym, firstJumptableWord
