@@ -427,8 +427,7 @@ class SymbolFunction(SymbolText):
             labelSym.referenceCounter += 1
             labelSym.referenceFunctions.add(self.contextSym)
             labelSym.parentFunction = self.contextSym
-            if self.parent is not None:
-                labelSym.parentFileName = self.parent.getName()
+            labelSym.parentFileName = self.contextSym.parentFileName
             self.contextSym.branchLabels.add(labelSym.vram, labelSym)
 
         # Function calls
