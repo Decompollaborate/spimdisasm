@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Emit `.extern`s with dummy size at the top of the function for all the
     `%gp_rel`-accessed symbols within the function.
 
+### Fixed
+
+- Fix function symbols not acknowledging their parent file.
+  - Used mainly for debugging purposes.
+
 ## [1.28.0] - 2024-08-09
 
 ### Added

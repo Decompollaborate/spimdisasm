@@ -396,6 +396,10 @@ class SymbolFunction(SymbolText):
 
 
     def analyze(self) -> None:
+        self.contextSym.inFileOffset = self.inFileOffset
+        if self.parent is not None:
+            self.contextSym.parentFileName = self.parent.getName()
+
         if not common.GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS and self.hasUnimplementedIntrs:
             offset = 0
             for instr in self.instructions:
