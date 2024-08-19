@@ -64,11 +64,14 @@ class SymbolBase(common.ElementBase):
         return self.contextSym.allowedToReferenceConstants
 
 
-    def generateAsmLineComment(self, localOffset: int, wordValue: int|None=None, *, isDouble: bool=False) -> str:
+    def generateAsmLineComment(self, localOffset: int, wordValue: int|None=None, *, isDouble: bool=False, emitRomOffset: bool=True) -> str:
         if not common.GlobalConfig.ASM_COMMENT:
             return ""
 
-        offsetHex = "{0:0{1}X}".format(localOffset + self.inFileOffset + self.commentOffset, common.GlobalConfig.ASM_COMMENT_OFFSET_WIDTH)
+        if emitRomOffset:
+            offsetHex = "{0:0{1}X} ".format(localOffset + self.inFileOffset + self.commentOffset, common.GlobalConfig.ASM_COMMENT_OFFSET_WIDTH)
+        else:
+            offsetHex = ""
 
         currentVram = self.getVramOffset(localOffset)
         vramHex = f"{currentVram:08X}"
@@ -80,7 +83,7 @@ class SymbolBase(common.ElementBase):
             else:
                 wordValueHex = f"{common.Utils.wordToCurrenEndian(wordValue):08X} "
 
-        return f"/* {offsetHex} {vramHex} {wordValueHex}*/"
+        return f"/* {offsetHex}{vramHex} {wordValueHex}*/"
 
 
     def getSymbolAsmDeclaration(self, symName: str, useGlobalLabel: bool=True) -> str:

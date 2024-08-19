@@ -103,7 +103,7 @@ class ElementBase:
             if label is None:
                 return ""
             label += f" {symName or sym.getName()}"
-            if sym.visibility is not None:
+            if sym.visibility is not None and sym.visibility != "global":
                 label += f", {sym.visibility}"
             if GlobalConfig.GLABEL_ASM_COUNT:
                 if self.index is not None:

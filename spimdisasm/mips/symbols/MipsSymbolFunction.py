@@ -396,6 +396,10 @@ class SymbolFunction(SymbolText):
 
 
     def analyze(self) -> None:
+        self.contextSym.inFileOffset = self.inFileOffset
+        if self.parent is not None:
+            self.contextSym.parentFileName = self.parent.getName()
+
         if not common.GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS and self.hasUnimplementedIntrs:
             offset = 0
             for instr in self.instructions:
@@ -423,6 +427,7 @@ class SymbolFunction(SymbolText):
             labelSym.referenceCounter += 1
             labelSym.referenceFunctions.add(self.contextSym)
             labelSym.parentFunction = self.contextSym
+            labelSym.parentFileName = self.contextSym.parentFileName
             self.contextSym.branchLabels.add(labelSym.vram, labelSym)
 
         # Function calls
@@ -786,6 +791,14 @@ class SymbolFunction(SymbolText):
         if not common.GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS:
             if self.hasUnimplementedIntrs:
                 return self.disassembleAsData(useGlobalLabel=useGlobalLabel, isSplittedSymbol=isSplittedSymbol)
+
+        if not common.GlobalConfig.PIC and self.gpRelHack and len(self.instrAnalyzer.gpReferencedSymbols) > 0:
+            output += f"/* Symbols accessed via $gp register */{common.GlobalConfig.LINE_ENDS}"
+            for gpAddress in self.instrAnalyzer.gpReferencedSymbols:
+                gpSym = self.getSymbol(gpAddress, tryPlusOffset=False)
+                if gpSym is not None:
+                    output += f".extern {gpSym.getName()}, 1{common.GlobalConfig.LINE_ENDS}"
+            output += common.GlobalConfig.LINE_ENDS
 
         output += self.contextSym.getReferenceeSymbols()
         output += self.getPrevAlignDirective(0)

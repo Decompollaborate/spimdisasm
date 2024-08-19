@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.28.1] - 2024-08-19
+
+### Changed
+
+- Avoid emitting "global" visibility on labels.
+- Avoid emitting a rom offset comment on bss symbols.
+- Change on `gpRelHack` behavior:
+  - Emit `.extern`s with dummy size at the top of the function for all the
+    `%gp_rel`-accessed symbols within the function.
+
+### Fixed
+
+- Fix function symbols and labels not acknowledging their parent file.
+  - Used mainly for debugging purposes.
+
 ## [1.28.0] - 2024-08-09
 
 ### Added
@@ -1593,6 +1608,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.28.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.28.0...1.28.1
 [1.28.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.27.0...1.28.0
 [1.27.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.26.1...1.27.0
 [1.26.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.26.0...1.26.1

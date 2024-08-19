@@ -95,6 +95,7 @@ class InstrAnalyzer:
         "key: offset of instruction which is setting the %lo symbol, value: symbol"
 
         self.symbolGpInstrOffset: dict[int, int] = dict()
+        self.gpReferencedSymbols: set[int] = set()
 
         self.symbolInstrOffset: dict[int, int] = dict()
 
@@ -300,6 +301,7 @@ class InstrAnalyzer:
             self.lowToHiDict[lowerOffset] = luiOffset
         else:
             self.symbolGpInstrOffset[lowerOffset] = address
+            self.gpReferencedSymbols.add(address)
             self.symbolInstrOffset[lowerOffset] = address
             self.referencedVramsInstrOffset[lowerOffset] = address
 
