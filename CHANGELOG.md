@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix data references to symbols with adends (that have user declared sizes)
+  being symbolized instead of just using an addend to the symbol.
+  - This bug seems like was only happening if the referenced symbol was in the
+    same section as the one who was referencing it.
+
 ## [1.28.1] - 2024-08-19
 
 ### Changed
