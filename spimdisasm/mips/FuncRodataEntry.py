@@ -119,10 +119,7 @@ class FunctionRodataEntry:
         funcName = func.getName()
 
         for rodataSym in rodataSection.symbolList:
-            if rodataSym.vram not in intersection and rodataSym.contextSym.functionOwnerForMigration != funcName:
-                continue
-
-            if not rodataSym.shouldMigrate():
+            if not _shouldMigrateRodataSymbolToFunction(rodataSym, intersection, funcName):
                 continue
 
             if rodataSym.contextSym.isLateRodata():
@@ -203,3 +200,16 @@ class FunctionRodataEntry:
             allEntries.append(FunctionRodataEntry(rodataSyms=[rodataSym]))
 
         return allEntries
+
+
+def _shouldMigrateRodataSymbolToFunction(rodataSym: symbols.SymbolBase, intersection: set[int], funcName: str) -> bool:
+    if rodataSym.contextSym.functionOwnerForMigration == funcName:
+        return True
+
+    if rodataSym.vram not in intersection:
+        return False
+
+    if not rodataSym.shouldMigrate():
+        return False
+
+    return True

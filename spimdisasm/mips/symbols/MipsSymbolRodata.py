@@ -69,6 +69,9 @@ class SymbolRodata(SymbolBase):
         if self.contextSym.isMips1Double:
             return True
 
+        if len(self.contextSym.referenceSymbols) > 0:
+            return False
+
         if self.isRdata():
             if not common.GlobalConfig.COMPILER.value.allowRdataMigration:
                 return False

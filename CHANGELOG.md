@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Avoid migrating rodata symbols to functions if they are referenced by other
+  data or rodata symbols.
+- Disallow data and rodata symbols from referencing jumptables.
+
 ## [1.29.0] - 2024-09-09
 
 ### Added
