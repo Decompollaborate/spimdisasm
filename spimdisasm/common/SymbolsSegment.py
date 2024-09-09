@@ -604,6 +604,7 @@ class SymbolsSegment:
                 forceNotMigration = Utils.getMaybeBooleyFromMaybeStr(pairs.get("force_not_migration"))
                 if forceNotMigration is not None:
                     contextSym.forceNotMigration = forceNotMigration
+                contextSym.functionOwnerForMigration = pairs.get("function_owner")
 
                 allowAddend = Utils.getMaybeBooleyFromMaybeStr(pairs.get("allow_addend"))
                 if allowAddend is not None:

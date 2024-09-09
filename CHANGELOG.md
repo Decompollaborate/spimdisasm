@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.29.0] - 2024-09-09
+
+### Added
+
+- New `ContextSymbol.functionOwnerForMigration` attribute.
+  - Allows to override to which function a given rodata symbol should be
+    migrated to.
+  - Specially useful for unreferenced symbols.
+  - WARNING: It is undefined behavior if during rodata migration the listed
+    function does not exists on the given text section. For example this symbol
+    may get lost in limbo.
+
+### Fixed
+
+- Fix data references to symbols with adends (that have user declared sizes)
+  being symbolized instead of just using an addend to the symbol.
+  - This bug seems like was only happening if the referenced symbol was in the
+    same section as the one who was referencing it.
+
 ## [1.28.1] - 2024-08-19
 
 ### Changed
@@ -1608,6 +1627,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.29.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.28.1...1.29.0
 [1.28.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.28.0...1.28.1
 [1.28.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.27.0...1.28.0
 [1.27.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.26.1...1.27.0

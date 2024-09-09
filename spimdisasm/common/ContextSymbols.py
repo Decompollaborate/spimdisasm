@@ -186,18 +186,37 @@ class ContextSymbol:
     isElfNotype: bool = False
 
     forceMigration: bool = False
-    """Ignore rules for migrating rodata and force migration of this symbol to any
+    """
+    Ignore rules for migrating rodata and force migration of this symbol to any
     function which references it.
 
-    Enabling both forceMigration and forceNotMigration on the same symbol is
-    undefined behaviour.
+    WARNING: Enabling both forceMigration and forceNotMigration on the same
+    symbol is undefined behaviour.
     """
     forceNotMigration: bool = False
-    """Ignore rules for migrating rodata and prevent migration of this symbol to any
-    function which references it.
+    """
+    Ignore rules for migrating rodata and prevent migration of this symbol to
+    any function which references it.
 
-    Enabling both forceMigration and forceNotMigration on the same symbol is
-    undefined behaviour.
+    WARNING: Enabling both forceMigration and forceNotMigration on the same
+    symbol is undefined behaviour.
+    """
+    functionOwnerForMigration: str|None = None
+    """
+    Force migrating to the function that matches the specified name.
+
+    Overrides all logic for determining if this symbol should be migrated or
+    not and to which function should be migrated. This completely ignores both
+    `forceMigration` and `forceNotMigration` attributes.
+
+    This can be specially useful for unreferenced symbols that should be
+    defined in-between actually referenced symbols.
+
+    This field is ignored if applied on anything that is not a rodata symbol.
+
+    WARNING: It is undefined behavior if during rodata migration the listed
+    function does not exists on the given text section. For example this symbol
+    may get lost in limbo.
     """
 
     allowedToReferenceAddends: bool = False

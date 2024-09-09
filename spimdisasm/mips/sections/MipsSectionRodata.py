@@ -96,7 +96,8 @@ class SectionRodata(SectionBase):
             if jumpTableSym is None:
                 if contextSym is not None or self.popPointerInDataReference(currentVram) is not None or (lastVramSymbol.isJumpTable() and w != 0):
                     contextSym = self._addOwnedSymbol(localOffset)
-                    lastVramSymbol = contextSym
+                    if contextSym is not None:
+                        lastVramSymbol = contextSym
 
                 self.checkWordIsASymbolReference(w)
 
@@ -108,8 +109,9 @@ class SectionRodata(SectionBase):
 
             elif jumpTableSym is None and self.popPointerInDataReference(currentVram) is not None:
                 contextSym = self._addOwnedSymbol(localOffset)
-                symbolList.append((localOffset, contextSym))
-                localOffsetsWithSymbols.add(localOffset)
+                if contextSym is not None:
+                    symbolList.append((localOffset, contextSym))
+                    localOffsetsWithSymbols.add(localOffset)
 
             if not lastVramSymbol.notPointerByType():
                 if self.checkWordIsASymbolReference(w):
@@ -126,8 +128,9 @@ class SectionRodata(SectionBase):
 
                 if self.popPointerInDataReference(currentVram) is not None and localOffset not in localOffsetsWithSymbols:
                     contextSym = self._addOwnedSymbol(localOffset)
-                    symbolList.append((localOffset, contextSym))
-                    localOffsetsWithSymbols.add(localOffset)
+                    if contextSym is not None:
+                        symbolList.append((localOffset, contextSym))
+                        localOffsetsWithSymbols.add(localOffset)
 
                 localOffset += 4
 

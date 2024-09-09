@@ -57,6 +57,9 @@ class SymbolRodata(SymbolBase):
         return True
 
     def shouldMigrate(self) -> bool:
+        if self.contextSym.functionOwnerForMigration is not None:
+            return True
+
         if self.contextSym.forceMigration:
             return True
 

@@ -40,8 +40,9 @@ class SectionData(SectionBase):
 
             elif self.popPointerInDataReference(currentVram) is not None:
                 contextSym = self._addOwnedSymbol(localOffset)
-                symbolList.append((localOffset, contextSym))
-                localOffsetsWithSymbols.add(localOffset)
+                if contextSym is not None:
+                    symbolList.append((localOffset, contextSym))
+                    localOffsetsWithSymbols.add(localOffset)
 
             if self.checkWordIsASymbolReference(w):
                 if w < currentVram and self.containsVram(w):
@@ -57,8 +58,9 @@ class SectionData(SectionBase):
 
                 if self.popPointerInDataReference(currentVram) is not None and localOffset not in localOffsetsWithSymbols:
                     contextSym = self._addOwnedSymbol(localOffset)
-                    symbolList.append((localOffset, contextSym))
-                    localOffsetsWithSymbols.add(localOffset)
+                    if contextSym is not None:
+                        symbolList.append((localOffset, contextSym))
+                        localOffsetsWithSymbols.add(localOffset)
 
                 localOffset += 4
 
