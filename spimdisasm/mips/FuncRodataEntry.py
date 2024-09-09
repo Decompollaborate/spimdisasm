@@ -116,8 +116,10 @@ class FunctionRodataEntry:
         if len(intersection) == 0:
             return FunctionRodataEntry(func)
 
+        funcName = func.getName()
+
         for rodataSym in rodataSection.symbolList:
-            if rodataSym.vram not in intersection:
+            if rodataSym.vram not in intersection and rodataSym.contextSym.functionOwnerForMigration != funcName:
                 continue
 
             if not rodataSym.shouldMigrate():

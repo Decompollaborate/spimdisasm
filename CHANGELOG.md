@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- New `ContextSymbol.functionOwnerForMigration` attribute.
+  - Allows to override to which function a given rodata symbol should be
+    migrated to.
+  - Specially useful for unreferenced symbols.
+  - WARNING: It is undefined behavior if during rodata migration the listed
+    function does not exists on the given text section. For example this symbol
+    may get lost in limbo.
+
 ### Fixed
 
 - Fix data references to symbols with adends (that have user declared sizes)
