@@ -106,8 +106,13 @@ class FunctionRodataEntry:
 
     @staticmethod
     def _shouldMigrateRodataSymbolToFunction(rodataSym: symbols.SymbolBase, intersection: set[int], funcName: str) -> bool:
-        if rodataSym.contextSym.functionOwnerForMigration == funcName:
-            return True
+        functionOwner = rodataSym.contextSym.functionOwnerForMigration
+        if functionOwner is not None:
+            # If a function owner was specified for this symbol then it is only
+            # allowed to be migrated to that function and none other
+            if functionOwner == funcName:
+                return True
+            return False
 
         if rodataSym.vram not in intersection:
             return False
