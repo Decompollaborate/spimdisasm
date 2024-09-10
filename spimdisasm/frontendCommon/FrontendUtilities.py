@@ -169,6 +169,14 @@ def progressCallback_writeProcessedFiles(i: int, filePath: str, processedFilesCo
 def migrateFunctions(processedFiles: dict[common.FileSectionType, list[mips.sections.SectionBase]], functionMigrationPath: Path, progressCallback: ProgressCallbackType|None=None) -> None:
     funcTotal = sum(len(x.symbolList) for x in processedFiles.get(common.FileSectionType.Text, []))
     rodataFileList = processedFiles.get(common.FileSectionType.Rodata, [])
+
+    remainingRodataSyms: list[mips.symbols.SymbolBase] = []
+    rodataSectionNamesMapping: dict[int, str] = dict()
+    for x in rodataFileList:
+        remainingRodataSyms.extend(x.symbolList)
+        for y in x.symbolList:
+            rodataSectionNamesMapping[y.vram] = x.getName()
+
     i = 0
     for textFile in processedFiles.get(common.FileSectionType.Text, []):
         filePath = functionMigrationPath / textFile.getName()
@@ -180,13 +188,26 @@ def migrateFunctions(processedFiles: dict[common.FileSectionType, list[mips.sect
             assert isinstance(func, mips.symbols.SymbolFunction)
             entry = mips.FunctionRodataEntry.getEntryForFuncFromPossibleRodataSections(func, rodataFileList)
 
+            for sym in entry.iterRodataSyms():
+                if sym in remainingRodataSyms:
+                    remainingRodataSyms.remove(sym)
+
             funcPath = filePath / (func.getName()+ ".s")
             common.Utils.printVerbose(f"Writing function {funcPath}")
             with funcPath.open("w") as f:
                 entry.writeToFile(f, writeFunction=True)
 
             i += 1
-    mips.FilesHandlers.writeOtherRodata(functionMigrationPath, rodataFileList)
+
+    for rodataSym in remainingRodataSyms:
+        rodataPath = functionMigrationPath / rodataSectionNamesMapping[rodataSym.vram]
+        rodataPath.mkdir(parents=True, exist_ok=True)
+        rodataSymbolPath = rodataPath / f"{rodataSym.getName()}.s"
+        common.Utils.printVerbose(f"Writing unmigrated rodata {rodataSymbolPath}")
+        with rodataSymbolPath.open("w") as f:
+            f.write(".section .rodata" + common.GlobalConfig.LINE_ENDS)
+            f.write(rodataSym.disassemble(migrate=True))
+
 
 def progressCallback_migrateFunctions(i: int, funcName: str, funcTotal: int) -> None:
     global _sLenLastLine

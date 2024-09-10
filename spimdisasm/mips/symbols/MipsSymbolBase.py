@@ -185,10 +185,6 @@ class SymbolBase(common.ElementBase):
         return False
 
 
-    def isRdata(self) -> bool:
-        "Checks if the current symbol is .rdata"
-        return False
-
     def shouldMigrate(self) -> bool:
         return False
 
