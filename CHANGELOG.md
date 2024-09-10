@@ -7,12 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.30.0] - 2024-09-10
+
 ### Changed
 
 - Avoid migrating rodata symbols to functions if they are referenced by other
   data or rodata symbols.
 - Disallow data and rodata symbols from referencing jumptables.
-- Change the rodata migration algorithm.
+- BREAKING: Change the rodata migration algorithm.
   - This allows for the algorithm to migrate unreferenced symbols that are
     between other symbols that do get migrated to the given function.
   - The algorithm will now stop to migrate symbols as soon as it finds a symbol
@@ -23,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       correct build.
     - This change should also reduce (and hopefully remove) the gaps generated
       between symbols during rodata migration.
+
+### Deprecated
+
+- Depreacte `SymbolBase.isRdata`.
 
 ### Fixed
 
@@ -1649,6 +1655,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.30.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.29.0...1.30.0
 [1.29.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.28.1...1.29.0
 [1.28.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.28.0...1.28.1
 [1.28.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.27.0...1.28.0
