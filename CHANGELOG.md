@@ -24,6 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - This change should also reduce (and hopefully remove) the gaps generated
       between symbols during rodata migration.
 
+### Fixed
+
+- Fix pointer tracking: fix garbage state of registers after function jumping
+  outside of the current function.
+
 ## [1.29.0] - 2024-09-09
 
 ### Added

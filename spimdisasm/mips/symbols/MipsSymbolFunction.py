@@ -107,6 +107,16 @@ class SymbolFunction(SymbolText):
             # look-ahead symbol finder
             self._lookAheadSymbolFinder(instr, prevInstr, instructionOffset, regsTracker)
 
+            if prevInstr.isJumpWithAddress() and not prevInstr.doesLink():
+                targetVram = prevInstr.getBranchVramGeneric()
+                if targetVram < self.vram or targetVram >= self.vramEnd:
+                    # Function is jumping outside the current function, so
+                    # the state of the registers is garbage to the rest of the
+                    # function, so just reset everything.
+                    # Jumping without linking outside of functions like this is
+                    # usually caused by tail call optimizations.
+                    regsTracker = rabbitizer.RegistersTracker()
+
             self.instrAnalyzer.processPrevFuncCall(regsTracker, instr, prevInstr, currentVram)
 
             instructionOffset += 4
