@@ -5,8 +5,9 @@
 
 from __future__ import annotations
 
-from typing import TextIO
+from typing import Generator, TextIO
 
+from collections import deque
 import dataclasses
 
 from .. import common
@@ -44,6 +45,12 @@ class FunctionRodataEntry:
 
     def hasRodataSyms(self) -> bool:
         return len(self.rodataSyms) > 0 or len(self.lateRodataSyms) > 0
+
+    def iterRodataSyms(self) -> Generator[symbols.SymbolBase, None, None]:
+        for sym in self.rodataSyms:
+            yield sym
+        for sym in self.lateRodataSyms:
+            yield sym
 
     def writeToFile(self, f: TextIO, writeFunction: bool=True) -> None:
         if len(self.rodataSyms) > 0:
@@ -95,6 +102,55 @@ class FunctionRodataEntry:
         assert lateRodataSyms == 1, lateRodataSyms
         return self.lateRodataSyms[0].getName()
 
+
+
+    @staticmethod
+    def _shouldMigrateRodataSymbolToFunction(rodataSym: symbols.SymbolBase, intersection: set[int], funcName: str) -> bool:
+        functionOwner = rodataSym.contextSym.functionOwnerForMigration
+        if functionOwner is not None:
+            # If a function owner was specified for this symbol then it is only
+            # allowed to be migrated to that function and none other
+            if functionOwner == funcName:
+                return True
+            return False
+
+        if rodataSym.vram not in intersection:
+            return False
+
+        if not rodataSym.shouldMigrate():
+            return False
+
+        return True
+
+    @staticmethod
+    def _updateMigrableSymbolsSets(rodataSym: symbols.SymbolBase, intersection: set[int], funcName: str, migrableRodataSyms: set[int], maybeMigrableRodataSyms: set[int], rodataMigratedSomewhereElse: bool) -> bool:
+        # We try to decide which symbols should be migrated by checking from left
+        # to right.
+        # Completely unreferenced symbols may get migrated to the current
+        # function if they are between two symbols that do get migrated to this
+        # function.
+        # This is acomplished by keeping a second set of tentative symbols to
+        # migrate (`maybeMigrableRodataSyms`) which gets added to the main set
+        # when we see the next migrable symbol.
+
+        if rodataMigratedSomewhereElse:
+            return rodataMigratedSomewhereElse
+
+        if FunctionRodataEntry._shouldMigrateRodataSymbolToFunction(rodataSym, intersection, funcName):
+            migrableRodataSyms.add(rodataSym.vram)
+
+            migrableRodataSyms.update(maybeMigrableRodataSyms)
+            maybeMigrableRodataSyms.clear()
+        elif len(migrableRodataSyms) > 0:
+            if len(rodataSym.contextSym.referenceSymbols) > 0 or len(rodataSym.contextSym.referenceFunctions) > 0:
+                rodataMigratedSomewhereElse = True
+            elif rodataSym.shouldMigrate():
+                maybeMigrableRodataSyms.add(rodataSym.vram)
+            else:
+                rodataMigratedSomewhereElse = True
+
+        return rodataMigratedSomewhereElse
+
     @staticmethod
     def getEntryForFuncFromSection(func: symbols.SymbolFunction, rodataSection: sections.SectionRodata|None) -> FunctionRodataEntry:
         """
@@ -113,21 +169,31 @@ class FunctionRodataEntry:
         lateRodataList: list[symbols.SymbolBase] = []
 
         intersection = func.instrAnalyzer.referencedVrams & rodataSection.symbolsVRams
-        if len(intersection) == 0:
-            return FunctionRodataEntry(func)
 
         funcName = func.getName()
 
+        migrableRodataSyms: set[int] = set()
+        migrableLateRodataSyms: set[int] = set()
+        maybeMigrableRodataSyms: set[int] = set()
+        maybeMigrableLateRodataSyms: set[int] = set()
+        rodataMigratedSomewhereElse: bool = False
+        lateRodataMigratedSomewhereElse: bool = False
         for rodataSym in rodataSection.symbolList:
-            if rodataSym.vram not in intersection and rodataSym.contextSym.functionOwnerForMigration != funcName:
-                continue
-
-            if not rodataSym.shouldMigrate():
-                continue
+            if rodataMigratedSomewhereElse:
+                if not common.GlobalConfig.COMPILER.value.hasLateRodata:
+                    break
+                if lateRodataMigratedSomewhereElse:
+                    break
 
             if rodataSym.contextSym.isLateRodata():
-                lateRodataList.append(rodataSym)
+                lateRodataMigratedSomewhereElse = FunctionRodataEntry._updateMigrableSymbolsSets(rodataSym, intersection, funcName, migrableLateRodataSyms, maybeMigrableLateRodataSyms, lateRodataMigratedSomewhereElse)
             else:
+                rodataMigratedSomewhereElse = FunctionRodataEntry._updateMigrableSymbolsSets(rodataSym, intersection, funcName, migrableRodataSyms, maybeMigrableRodataSyms, rodataMigratedSomewhereElse)
+
+        for rodataSym in rodataSection.symbolList:
+            if rodataSym.vram in migrableLateRodataSyms:
+                lateRodataList.append(rodataSym)
+            elif rodataSym.vram in migrableRodataSyms:
                 rodataList.append(rodataSym)
 
         return FunctionRodataEntry(func, rodataList, lateRodataList)
@@ -166,13 +232,15 @@ class FunctionRodataEntry:
         sections.
         """
 
-        allUnmigratedRodataSymbols: list[symbols.SymbolBase] = []
-
-        rodataSymbols = rodataSection.symbolList if rodataSection is not None else []
-        for rodataSym in rodataSymbols:
-            if not rodataSym.shouldMigrate():
-                # We only care for the symbols which will not be migrated
-                allUnmigratedRodataSymbols.append(rodataSym)
+        # The simplest way to know which symbols has not been migrated yet and
+        # preserve order at the same time seem to be just keeping a list of the
+        # symbols and remove the ones that have been handled somehow (either by
+        # migrating to a function or adding an no-function entry for the given
+        # symbol).
+        # We use deque instead of a plain list because we want fast removal of
+        # the first symbol.
+        remainingRodataSymbols = deque(rodataSection.symbolList if rodataSection is not None else [])
+        handledSymbols: set[int] = set()
 
         allEntries: list[FunctionRodataEntry] = []
 
@@ -182,24 +250,34 @@ class FunctionRodataEntry:
 
             entry = FunctionRodataEntry.getEntryForFuncFromSection(func, rodataSection)
 
-            # Preserve the order of rodata symbols
+            for sym in entry.iterRodataSyms():
+                handledSymbols.add(sym.vram)
+
+            # Preserve the order of rodata symbols by looking for symbols that has not been migrated yet
             if len(entry.rodataSyms) > 0:
                 firstFuncRodataSym = entry.rodataSyms[0]
 
-                while len(allUnmigratedRodataSymbols) > 0:
-                    rodataSym = allUnmigratedRodataSymbols[0]
+                while len(remainingRodataSymbols) > 0:
+                    rodataSym = remainingRodataSymbols[0]
+
+                    if rodataSym.vram in handledSymbols:
+                        # Drop migrated symbols
+                        remainingRodataSymbols.popleft()
+                        continue
 
                     if rodataSym.vram >= firstFuncRodataSym.vram:
-                        # Take all the symbols up to the first rodata sym referenced by the current function
+                        # Take all the symbols up to symbols referenced by the current function
                         break
 
                     allEntries.append(FunctionRodataEntry(rodataSyms=[rodataSym]))
-                    del allUnmigratedRodataSymbols[0]
+                    handledSymbols.add(rodataSym.vram)
+                    remainingRodataSymbols.popleft()
 
             allEntries.append(entry)
 
         # Check if there's any rodata symbol remaining and add it to the list
-        for rodataSym in allUnmigratedRodataSymbols:
-            allEntries.append(FunctionRodataEntry(rodataSyms=[rodataSym]))
+        for rodataSym in remainingRodataSymbols:
+            if rodataSym.vram not in handledSymbols:
+                allEntries.append(FunctionRodataEntry(rodataSyms=[rodataSym]))
 
         return allEntries

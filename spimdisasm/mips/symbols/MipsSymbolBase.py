@@ -185,6 +185,7 @@ class SymbolBase(common.ElementBase):
         return False
 
 
+    #! @deprecated
     def isRdata(self) -> bool:
         "Checks if the current symbol is .rdata"
         return False
@@ -223,7 +224,8 @@ class SymbolBase(common.ElementBase):
                     word = self.words[i]
                     referencedSym = self.getSymbol(word, tryPlusOffset=False)
                     if referencedSym is not None:
-                        referencedSym.referenceSymbols.add(self.contextSym)
+                        if not referencedSym.isJumpTable():
+                            referencedSym.referenceSymbols.add(self.contextSym)
 
 
     def getEndOfLineComment(self, wordIndex: int) -> str:
@@ -338,6 +340,9 @@ class SymbolBase(common.ElementBase):
                     return False
 
             if symType == common.SymbolSpecialType.branchlabel:
+                return False
+
+            if symType == common.SymbolSpecialType.jumptable:
                 return False
 
             if symType.isTargetLabel():

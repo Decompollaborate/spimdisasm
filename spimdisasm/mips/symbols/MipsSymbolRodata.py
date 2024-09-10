@@ -44,6 +44,7 @@ class SymbolRodata(SymbolBase):
             return False
         return True
 
+    #! @deprecated
     def isRdata(self) -> bool:
         "Checks if the current symbol is .rdata"
         if self.isMaybeConstVariable():
@@ -69,7 +70,14 @@ class SymbolRodata(SymbolBase):
         if self.contextSym.isMips1Double:
             return True
 
-        if self.isRdata():
+        if len(self.contextSym.referenceSymbols) > 0:
+            return False
+        if len(self.contextSym.referenceFunctions) > 1:
+            return False
+
+        if self.isMaybeConstVariable():
+            if common.GlobalConfig.ALLOW_MIGRATING_CONST_VARIABLES:
+                return True
             if not common.GlobalConfig.COMPILER.value.allowRdataMigration:
                 return False
 
