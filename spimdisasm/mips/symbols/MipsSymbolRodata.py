@@ -44,6 +44,19 @@ class SymbolRodata(SymbolBase):
             return False
         return True
 
+    #! @deprecated
+    def isRdata(self) -> bool:
+        "Checks if the current symbol is .rdata"
+        if self.isMaybeConstVariable():
+            return True
+
+        # This symbol could be an unreferenced non-const variable
+        if len(self.contextSym.referenceFunctions) == 1:
+            # This const variable was already used in a function
+            return False
+
+        return True
+
     def shouldMigrate(self) -> bool:
         if self.contextSym.functionOwnerForMigration is not None:
             return True

@@ -146,6 +146,8 @@ class FunctionRodataEntry:
                 rodataMigratedSomewhereElse = True
             elif rodataSym.shouldMigrate():
                 maybeMigrableRodataSyms.add(rodataSym.vram)
+            else:
+                rodataMigratedSomewhereElse = True
 
         return rodataMigratedSomewhereElse
 
