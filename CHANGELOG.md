@@ -13,11 +13,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - May be desirable to be used with IDEs that support collapsing code by
     looking at the whitespace of each line.
   - This can be controlled by setting the `GlobalConfig.ASM_INDENTATION` option.
+  - Defaults to 4.
 - Add a way to indentate labels within functions.
   - May be desirable to be used with IDEs that support collapsing code by
     looking at the whitespace of each line.
   - This can be controlled by setting the `GlobalConfig.ASM_INDENTATION_LABELS`
     option.
+  - Defaults to 2.
+
+### Changed
+
+- Assembly now gets indentated by default to 4 spaces (or 2 spaces for labels).
+  - Use `GlobalConfig.ASM_INDENTATION` and `GlobalConfig.ASM_INDENTATION_LABELS`
+    to disable this behavior.
 
 ## [1.30.0] - 2024-09-10
 
