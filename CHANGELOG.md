@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add a way to indentate instructions and data.
+  - May be desirable to be used with IDEs that support collapsing code by
+    looking at the whitespace of each line.
+  - This can be controlled by setting the `GlobalConfig.ASM_INDENTATION` option.
+
 ## [1.30.0] - 2024-09-10
 
 ### Changed
