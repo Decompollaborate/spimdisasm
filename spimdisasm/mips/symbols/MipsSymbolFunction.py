@@ -729,8 +729,10 @@ class SymbolFunction(SymbolText):
                 label += f"{labelMacro} {labelSym.getName()}{common.GlobalConfig.LINE_ENDS}"
             if common.GlobalConfig.ASM_TEXT_FUNC_AS_LABEL:
                 label += f"{labelSym.getName()}:{common.GlobalConfig.LINE_ENDS}"
-            return label
-        return labelSym.getName() + ":" + common.GlobalConfig.LINE_ENDS
+        else:
+            label = labelSym.getName() + ":" + common.GlobalConfig.LINE_ENDS
+        label = (" " * common.GlobalConfig.ASM_INDENTATION_LABELS) + label
+        return label
 
     def _emitInstruction(self, instr: rabbitizer.Instruction, instructionOffset: int, wasLastInstABranch: bool, isSplittedSymbol: bool=False) -> str:
         immOverride, relocInfo = self._getImmOverrideForInstruction(instr, instructionOffset, isSplittedSymbol=isSplittedSymbol)

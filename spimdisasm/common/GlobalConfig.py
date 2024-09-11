@@ -239,8 +239,10 @@ class GlobalConfigType:
     """Toggle the glabel count comment on functions"""
     ASM_REFERENCEE_SYMBOLS: bool = False
 
-    ASM_INDENTATION: int = 0
+    ASM_INDENTATION: int = 4
     """Sets the indentation used for every instruction and data"""
+    ASM_INDENTATION_LABELS: int = 2
+    """Sets the indentation used for labels within functions"""
 
     ASM_TEXT_LABEL: str = "glabel"
     ASM_TEXT_ALT_LABEL: str = "glabel"
@@ -386,7 +388,8 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
         miscConfig.add_argument("--glabel-count", help=f"Toggle glabel count comment. Defaults to {self.GLABEL_ASM_COUNT}", action=Utils.BooleanOptionalAction)
         miscConfig.add_argument("--asm-referencee-symbols", help=f"Toggle glabel count comment. Defaults to {self.ASM_REFERENCEE_SYMBOLS}", action=Utils.BooleanOptionalAction)
 
-        miscConfig.add_argument("--asm-indentation", help=f"Sets the indentation used for every instruction and data. Defaults to {self.ASM_INDENTATION}")
+        miscConfig.add_argument("--asm-indentation", help=f"Sets the indentation used for every instruction and data. Defaults to {self.ASM_INDENTATION}", type=int)
+        miscConfig.add_argument("--asm-indentation-labels", help=f"Sets the indentation used for labels within functions. Defaults to {self.ASM_INDENTATION_LABELS}", type=int)
 
         miscConfig.add_argument("--asm-text-label", help=f"Changes the label used to declare functions. Defaults to {self.ASM_TEXT_LABEL}")
         miscConfig.add_argument("--asm-text-alt-label", help=f"Changes the label used to declare symbols in the middle of functions. Defaults to {self.ASM_TEXT_ALT_LABEL}")
@@ -582,8 +585,10 @@ Defaults to {self.ASM_GLOBALIZE_TEXT_LABELS_REFERENCED_BY_NON_JUMPTABLE}""", act
         if args.asm_referencee_symbols is not None:
             self.ASM_REFERENCEE_SYMBOLS = args.asm_referencee_symbols
 
-        if args.asm_referencee_symbols is not None:
-            self.ASM_REFERENCEE_SYMBOLS = args.asm_referencee_symbols
+        if args.asm_indentation is not None:
+            self.ASM_INDENTATION = args.asm_indentation
+        if args.asm_indentation_labels is not None:
+            self.ASM_INDENTATION_LABELS = args.asm_indentation_labels
 
         if args.asm_text_label:
             self.ASM_TEXT_LABEL = args.asm_text_label
