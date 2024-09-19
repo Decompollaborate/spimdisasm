@@ -27,6 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Use `GlobalConfig.ASM_INDENTATION` and `GlobalConfig.ASM_INDENTATION_LABELS`
     to disable this behavior.
 
+### Fixed
+
+- Prevent generating labels for ignored symbols that are referenced by function
+  calls (ie in a `jal`).
+
 ## [1.30.0] - 2024-09-10
 
 ### Changed
