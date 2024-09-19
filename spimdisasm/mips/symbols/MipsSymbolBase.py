@@ -65,8 +65,10 @@ class SymbolBase(common.ElementBase):
 
 
     def generateAsmLineComment(self, localOffset: int, wordValue: int|None=None, *, isDouble: bool=False, emitRomOffset: bool=True) -> str:
+        indentation = " " * common.GlobalConfig.ASM_INDENTATION
+
         if not common.GlobalConfig.ASM_COMMENT:
-            return ""
+            return indentation
 
         if emitRomOffset:
             offsetHex = "{0:0{1}X} ".format(localOffset + self.inFileOffset + self.commentOffset, common.GlobalConfig.ASM_COMMENT_OFFSET_WIDTH)
@@ -83,7 +85,7 @@ class SymbolBase(common.ElementBase):
             else:
                 wordValueHex = f"{common.Utils.wordToCurrenEndian(wordValue):08X} "
 
-        return f"/* {offsetHex}{vramHex} {wordValueHex}*/"
+        return f"{indentation}/* {offsetHex}{vramHex} {wordValueHex}*/"
 
 
     def getSymbolAsmDeclaration(self, symName: str, useGlobalLabel: bool=True) -> str:

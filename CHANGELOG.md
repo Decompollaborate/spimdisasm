@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.30.1] - 2024-09-19
+
+### Added
+
+- Add a way to indentate instructions and data.
+  - May be desirable to be used with IDEs that support collapsing code by
+    looking at the whitespace of each line.
+  - This can be controlled by setting the `GlobalConfig.ASM_INDENTATION` option.
+  - Defaults to 4.
+- Add a way to indentate labels within functions.
+  - May be desirable to be used with IDEs that support collapsing code by
+    looking at the whitespace of each line.
+  - This can be controlled by setting the `GlobalConfig.ASM_INDENTATION_LABELS`
+    option.
+  - Defaults to 2.
+
+### Changed
+
+- Assembly now gets indentated by default to 4 spaces (or 2 spaces for labels).
+  - Use `GlobalConfig.ASM_INDENTATION` and `GlobalConfig.ASM_INDENTATION_LABELS`
+    to disable this behavior.
+
+### Fixed
+
+- Prevent generating labels for ignored symbols that are referenced by function
+  calls (ie in a `jal`).
+
 ## [1.30.0] - 2024-09-10
 
 ### Changed
@@ -1655,6 +1682,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.30.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.30.0...1.30.1
 [1.30.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.29.0...1.30.0
 [1.29.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.28.1...1.29.0
 [1.28.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.28.0...1.28.1
