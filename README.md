@@ -69,7 +69,7 @@ If you use a `requirements.txt` file in your repository, then you can add
 this library with the following line:
 
 ```txt
-spimdisasm>=1.30.1,<2.0.0
+spimdisasm>=1.30.2,<2.0.0
 ```
 
 ### Development version
