@@ -396,7 +396,13 @@ class SymbolFunction(SymbolText):
                     if generatedReloc is not None:
                         self.relocs[instrOffset] = generatedReloc
             else:
-                self.endOfLineComment[instrOffset//4] = f" /* Failed to symbolize address 0x{constant:08X} for {relocType.getPercentRel()}. Make sure this address is within the recognized valid address space */"
+                comment = f"Failed to symbolize address 0x{constant:08X} for {relocType.getPercentRel()}. Make sure this address is within the recognized valid address space."
+                if relocType in {common.RelocType.MIPS_GPREL16, common.RelocType.MIPS_GOT16}:
+                    if common.GlobalConfig.GP_VALUE is None:
+                        comment += f" Please specify a gp_value."
+                    elif not self.context.isInTotalVramRange(common.GlobalConfig.GP_VALUE):
+                        comment += f" The provided gp_value (0x{common.GlobalConfig.GP_VALUE:08X}) seems wrong."
+                self.endOfLineComment[instrOffset//4] = f" /* {comment} */"
 
         for instrOffset, targetVram in self.instrAnalyzer.funcCallInstrOffsets.items():
             funcSym = self.getSymbol(targetVram, tryPlusOffset=False)

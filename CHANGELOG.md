@@ -9,9 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.30.2] - 2024-09-19
 
+### Changed
+
+- Improve comment specifying the reason why an address could not be symbolized
+  if it is `$gp` relative.
+
 ### Fixed
 
-- Fix not generating branch labels under some circuntances.
+- Fix not generating branch labels under some circumstances.
 
 ## [1.30.1] - 2024-09-19
 
