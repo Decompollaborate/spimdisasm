@@ -46,21 +46,34 @@ class CompilerProperties:
     based projects) then this flag needs to be turned on.
     """
 
+    sectionAlign_text: int|None = None
+    """
+    The value the compiler will use to align the `.text` section of the given
+    object.
+
+    Used for determining `.text` file splits when disassembling full ROM images.
+
+    The real aligment value will be computed like `1 << x`, where `x`
+    corresponds to the value given to this property.
+
+    If a compiler emits multiple `.text` sections per object (i.e. each function
+    is emitted on its own section) then it is better to keep this value as
+    `None`, since the split detector won't give any meaningful result.
+    """
+
 
 @enum.unique
 class Compiler(enum.Enum):
-    UNKNOWN = CompilerProperties("UNKNOWN")
-
     # General GCC
     GCC = CompilerProperties("GCC", prevAlign_jumptable=3)
 
     # N64
-    IDO = CompilerProperties("IDO", hasLateRodata=True, pairMultipleHiToSameLow=False, bigAddendWorkaroundForMigratedFunctions=False)
-    KMC = CompilerProperties("KMC", prevAlign_jumptable=3)
-    SN64 = CompilerProperties("SN64", prevAlign_double=3, prevAlign_jumptable=3, allowRdataMigration=True)
+    IDO = CompilerProperties("IDO", hasLateRodata=True, pairMultipleHiToSameLow=False, bigAddendWorkaroundForMigratedFunctions=False, sectionAlign_text=4)
+    KMC = CompilerProperties("KMC", prevAlign_jumptable=3, sectionAlign_text=4)
+    SN64 = CompilerProperties("SN64", prevAlign_double=3, prevAlign_jumptable=3, allowRdataMigration=True, sectionAlign_text=4)
 
     # iQue
-    EGCS = CompilerProperties("EGCS", prevAlign_jumptable=3)
+    EGCS = CompilerProperties("EGCS", prevAlign_jumptable=3, sectionAlign_text=4)
 
     # PS1
     PSYQ = CompilerProperties("PSYQ", prevAlign_double=3, prevAlign_jumptable=3, allowRdataMigration=True)
@@ -70,8 +83,8 @@ class Compiler(enum.Enum):
     EEGCC = CompilerProperties("EEGCC", prevAlign_jumptable=3, prevAlign_string=3, prevAlign_function=3)
 
     @staticmethod
-    def fromStr(value: str) -> Compiler:
-        return compilerOptions.get(value, Compiler.UNKNOWN)
+    def fromStr(value: str) -> Compiler|None:
+        return compilerOptions.get(value)
 
 
 compilerOptions: dict[str, Compiler] = {
