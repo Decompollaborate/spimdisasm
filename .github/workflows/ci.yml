@@ -12,8 +12,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup venv
+        run: |
+          python3 -m venv .venv
+          . .venv/bin/activate
+
       - name: Install build module
-        run: pip install -U build
+        run: python3 -m pip install -U build
 
       - name: Build wheel and source
         run: python -m build --sdist --wheel --outdir dist/ .

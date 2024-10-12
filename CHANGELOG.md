@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   if it is `$gp` relative.
 - Prevent section split suggestions if the selected compiler doesn't follow the
   0x10 boundary rule.
+- Python 3.9 or later is now required.
+  - Nothing really changed. Just the CI tools I was using is refusing to use any
+    Python version older than this. Sorry if you were affected by this.
 
 ## [1.30.2] - 2024-09-19
 
