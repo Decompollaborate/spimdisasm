@@ -61,6 +61,17 @@ class CompilerProperties:
     `None`, since the split detector won't give any meaningful result.
     """
 
+    sectionAlign_rodata: int|None = None
+    """
+    The value the compiler will use to align the `.rodata` section of the given
+    object.
+
+    Used for determining `.rodata` file splits when disassembling full ROM images.
+
+    The real aligment value will be computed like `1 << x`, where `x`
+    corresponds to the value given to this property.
+    """
+
 
 @enum.unique
 class Compiler(enum.Enum):
@@ -68,12 +79,12 @@ class Compiler(enum.Enum):
     GCC = CompilerProperties("GCC", prevAlign_jumptable=3)
 
     # N64
-    IDO = CompilerProperties("IDO", hasLateRodata=True, pairMultipleHiToSameLow=False, bigAddendWorkaroundForMigratedFunctions=False, sectionAlign_text=4)
-    KMC = CompilerProperties("KMC", prevAlign_jumptable=3, sectionAlign_text=4)
-    SN64 = CompilerProperties("SN64", prevAlign_double=3, prevAlign_jumptable=3, allowRdataMigration=True, sectionAlign_text=4)
+    IDO = CompilerProperties("IDO", hasLateRodata=True, pairMultipleHiToSameLow=False, bigAddendWorkaroundForMigratedFunctions=False, sectionAlign_text=4, sectionAlign_rodata=4)
+    KMC = CompilerProperties("KMC", prevAlign_jumptable=3, sectionAlign_text=4, sectionAlign_rodata=4)
+    SN64 = CompilerProperties("SN64", prevAlign_double=3, prevAlign_jumptable=3, allowRdataMigration=True, sectionAlign_text=4, sectionAlign_rodata=4)
 
     # iQue
-    EGCS = CompilerProperties("EGCS", prevAlign_jumptable=3, sectionAlign_text=4)
+    EGCS = CompilerProperties("EGCS", prevAlign_jumptable=3, sectionAlign_text=4, sectionAlign_rodata=4)
 
     # PS1
     PSYQ = CompilerProperties("PSYQ", prevAlign_double=3, prevAlign_jumptable=3, allowRdataMigration=True)

@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Improve comment specifying the reason why an address could not be symbolized
   if it is `$gp` relative.
+- Prevent section split suggestions if the selected compiler doesn't follow the
+  0x10 boundary rule.
 
 ## [1.30.2] - 2024-09-19
 

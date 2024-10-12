@@ -328,7 +328,7 @@ class SectionText(SectionBase):
             self.symbolList.append(func)
 
             if textAlignment is not None:
-                # File boundaries detection
+                # Section boundaries detection
 
                 if func.inFileOffset % textAlignment == 0 and previousSymbolExtraPadding > 0:
                     # If the previous symbol had trailing padding and the
