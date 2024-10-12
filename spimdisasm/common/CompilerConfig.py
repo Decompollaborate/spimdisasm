@@ -90,7 +90,7 @@ class Compiler(enum.Enum):
     PSYQ = CompilerProperties("PSYQ", prevAlign_double=3, prevAlign_jumptable=3, allowRdataMigration=True)
 
     # PS2
-    MWCC = CompilerProperties("MWCC", prevAlign_jumptable=4)
+    MWCCPS2 = CompilerProperties("MWCCPS2", prevAlign_jumptable=4)
     EEGCC = CompilerProperties("EEGCC", prevAlign_jumptable=3, prevAlign_string=3, prevAlign_function=3)
 
     @staticmethod
@@ -107,7 +107,7 @@ compilerOptions: dict[str, Compiler] = {
         Compiler.SN64,
         Compiler.EGCS,
         Compiler.PSYQ,
-        Compiler.MWCC,
+        Compiler.MWCCPS2,
         Compiler.EEGCC,
     ]
 }
