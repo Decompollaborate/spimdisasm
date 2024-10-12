@@ -161,7 +161,7 @@ class SectionRodata(SectionBase):
 
             if rodataAlignment is not None:
             # Section boundaries detection
-                if sym.inFileOffset % rodataAlignment == 0:
+                if (self.vromStart + sym.inFileOffset) % rodataAlignment == 0:
                     if previousSymbolWasLateRodata and not sym.contextSym.isLateRodata():
                         # late rodata followed by normal rodata implies a file split
                         self.fileBoundaries.append(sym.inFileOffset)
