@@ -468,8 +468,8 @@ Defaults to {self.ASM_GLOBALIZE_TEXT_LABELS_REFERENCED_BY_NON_JUMPTABLE}""", act
                     environmentValue = bool(environmentValue)
             elif isinstance(currentValue, Compiler):
                 newComp = Compiler.fromStr(environmentValue)
-                if newComp == Compiler.UNKNOWN:
-                    Utils.eprint(f"Unrecognized compiler setting from environment 'SPIMDISASM_{attr.upper()}={environmentValue}'. Choosing compiler UNKNOWN instead.")
+                if newComp is None:
+                    Utils.eprint(f"Unrecognized compiler setting from environment 'SPIMDISASM_{attr.upper()}={environmentValue}'.")
                     continue
                 environmentValue = newComp
             elif isinstance(currentValue, InputEndian):
@@ -530,7 +530,9 @@ Defaults to {self.ASM_GLOBALIZE_TEXT_LABELS_REFERENCED_BY_NON_JUMPTABLE}""", act
             self.CUSTOM_SUFFIX = args.custom_suffix
 
         if args.compiler is not None:
-            self.COMPILER = Compiler.fromStr(args.compiler)
+            compiler = Compiler.fromStr(args.compiler)
+            if compiler is not None:
+                self.COMPILER = compiler
 
         if args.symbol_alignment_requires_aligned_section is not None:
             self.SYMBOL_ALIGNMENT_REQUIRES_ALIGNED_SECTION = args.symbol_alignment_requires_aligned_section
