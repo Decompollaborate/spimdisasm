@@ -170,12 +170,14 @@ class SectionRodata(SectionBase):
                             # doubles require a bit extra of alignment
                             if previousSymbolExtraPadding >= 2:
                                 self.fileBoundaries.append(sym.inFileOffset)
-                        elif sym.isJumpTable() and common.GlobalConfig.COMPILER.value.prevAlign_jumptable is not None and common.GlobalConfig.COMPILER.value.prevAlign_jumptable >= 3:
-                            if previousSymbolExtraPadding >= 2:
-                                self.fileBoundaries.append(sym.inFileOffset)
-                        elif sym.isString() and common.GlobalConfig.COMPILER.value.prevAlign_string is not None and common.GlobalConfig.COMPILER.value.prevAlign_string >= 3:
-                            if previousSymbolExtraPadding >= 2:
-                                self.fileBoundaries.append(sym.inFileOffset)
+                        elif sym.isJumpTable():
+                            if common.GlobalConfig.COMPILER.value.prevAlign_jumptable is not None and common.GlobalConfig.COMPILER.value.prevAlign_jumptable >= 3:
+                                if previousSymbolExtraPadding >= 2:
+                                    self.fileBoundaries.append(sym.inFileOffset)
+                        elif sym.isString():
+                            if common.GlobalConfig.COMPILER.value.prevAlign_string is not None and common.GlobalConfig.COMPILER.value.prevAlign_string >= 3:
+                                if previousSymbolExtraPadding >= 2:
+                                    self.fileBoundaries.append(sym.inFileOffset)
                         else:
                             self.fileBoundaries.append(sym.inFileOffset)
 
