@@ -1,0 +1,34 @@
+# SPDX-FileCopyrightText: © 2024 Decompollaborate
+# SPDX-License-Identifier: MIT
+
+[package]
+name = "spimdisasm"
+version.workspace = true
+edition.workspace = true
+# rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "MIPS disassembler"
+readme = "README.md"
+# keywords = ["MIPS", "disassembler"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+path = "src/lib.rs"
+
+[features]
+default = []
+std = []
+
+[dependencies]
+rabbitizer = { git = "https://github.com/Decompollaborate/rabbitizer.git", branch = "🦀" }
+# bitflags = { version = "2.6.0", default-features = false }
+
+[dev-dependencies]
+# criterion = { version ="0.3", features = ["html_reports"]}
+
+# [[bench]]
+# name = "instruction"
+# harness = false
