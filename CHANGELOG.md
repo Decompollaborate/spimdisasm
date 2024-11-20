@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 202X-YY-ZZ
+
+### Changed
+
+- Change casing of everything from camelCase to snake_case.
+- Renames:
+  - `getSymbol`: `find_symbol`.
+  - `tryPlusOffset`: `check_addend`.
+
 ## [Unreleased]
 
 ### Changed

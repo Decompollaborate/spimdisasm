@@ -1,6 +1,6 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-pub trait Symbol {
-    fn bytes(&self) -> &[u8];
-}
+mod symbol_metadata;
+
+pub use symbol_metadata::SymbolMetadata;
