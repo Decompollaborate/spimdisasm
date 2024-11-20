@@ -191,7 +191,6 @@ class SectionText(SectionBase):
         index = 0
 
         if instrsList[0].isNop():
-            isboundary = False
             # Loop over until we find a instruction that isn't a nop
             while index < nInstr:
                 if currentFunctionSym is not None:
@@ -199,12 +198,9 @@ class SectionText(SectionBase):
 
                 instr = instrsList[index]
                 if not instr.isNop():
-                    if isboundary:
-                        self.fileBoundaries.append(self.inFileOffset + index*4)
                     break
                 index += 1
                 instructionOffset += 4
-                isboundary |= ((instructionOffset % 16) == 0)
 
                 currentInstructionStart = instructionOffset
                 currentFunctionSym = self.getSymbol(self.getVramOffset(instructionOffset), vromAddress=self.getVromOffset(instructionOffset), tryPlusOffset=False, checkGlobalSegment=False)
@@ -229,7 +225,6 @@ class SectionText(SectionBase):
 
                 auxSym = self.getSymbol(self.getVramOffset(instructionOffset), vromAddress=self.getVromOffset(instructionOffset), tryPlusOffset=False, checkGlobalSegment=False)
 
-                isboundary = False
                 # Loop over until we find a instruction that isn't a nop
                 while index < nInstr:
                     if auxSym is not None:
@@ -237,12 +232,9 @@ class SectionText(SectionBase):
 
                     instr = instrsList[index]
                     if not instr.isNop():
-                        if isboundary:
-                            self.fileBoundaries.append(self.inFileOffset + index*4)
                         break
                     index += 1
                     instructionOffset += 4
-                    isboundary |= ((instructionOffset % 16) == 0)
 
                     auxSym = self.getSymbol(self.getVramOffset(instructionOffset), vromAddress=self.getVromOffset(instructionOffset), tryPlusOffset=False, checkGlobalSegment=False)
 
@@ -288,6 +280,8 @@ class SectionText(SectionBase):
         funcsStartsList, unimplementedInstructionsFuncList = self._findFunctions(instrsList)
 
         previousSymbolExtraPadding = 0
+        sectionAlign_text = common.GlobalConfig.COMPILER.value.sectionAlign_text
+        textAlignment = 1 << sectionAlign_text if sectionAlign_text is not None else None
 
         i = 0
         startsCount = len(funcsStartsList)
@@ -325,14 +319,17 @@ class SectionText(SectionBase):
             func.analyze()
             self.symbolList.append(func)
 
-            # File boundaries detection
-            if func.inFileOffset % 16 == 0:
-                # Files are always 0x10 aligned
+            if textAlignment is not None:
+                # Section boundaries detection
 
-                if previousSymbolExtraPadding > 0:
+                if (self.vromStart + func.inFileOffset) % textAlignment == 0 and previousSymbolExtraPadding > 0:
+                    # If the previous symbol had trailing padding and the
+                    # current symbol is aligned to the expected alignment then
+                    # add this offset as a section boundary.
                     self.fileBoundaries.append(func.inFileOffset)
 
-            previousSymbolExtraPadding = func.countExtraPadding()
+                previousSymbolExtraPadding = func.countExtraPadding()
+
             i += 1
 
         # Filter out repeated values and sort

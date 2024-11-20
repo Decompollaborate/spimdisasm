@@ -139,6 +139,8 @@ class SectionRodata(SectionBase):
 
         previousSymbolWasLateRodata = False
         previousSymbolExtraPadding = 0
+        sectionAlign_rodata = common.GlobalConfig.COMPILER.value.sectionAlign_rodata
+        rodataAlignment = 1 << sectionAlign_rodata if sectionAlign_rodata is not None else None
 
         for i, (offset, contextSym) in enumerate(symbolList):
             if i + 1 == len(symbolList):
@@ -157,29 +159,30 @@ class SectionRodata(SectionBase):
             self.symbolList.append(sym)
             self.symbolsVRams.add(contextSym.vram)
 
-            # File boundaries detection
-            if sym.inFileOffset % 16 == 0:
-                # Files are always 0x10 aligned
-
-                if previousSymbolWasLateRodata and not sym.contextSym.isLateRodata():
-                    # late rodata followed by normal rodata implies a file split
-                    self.fileBoundaries.append(sym.inFileOffset)
-                elif previousSymbolExtraPadding > 0:
-                    if sym.isDouble(0):
-                        # doubles require a bit extra of alignment
-                        if previousSymbolExtraPadding >= 2:
-                            self.fileBoundaries.append(sym.inFileOffset)
-                    elif sym.isJumpTable() and common.GlobalConfig.COMPILER.value.prevAlign_jumptable is not None and common.GlobalConfig.COMPILER.value.prevAlign_jumptable >= 3:
-                        if previousSymbolExtraPadding >= 2:
-                            self.fileBoundaries.append(sym.inFileOffset)
-                    elif sym.isString() and common.GlobalConfig.COMPILER.value.prevAlign_string is not None and common.GlobalConfig.COMPILER.value.prevAlign_string >= 3:
-                        if previousSymbolExtraPadding >= 2:
-                            self.fileBoundaries.append(sym.inFileOffset)
-                    else:
+            if rodataAlignment is not None:
+            # Section boundaries detection
+                if (self.vromStart + sym.inFileOffset) % rodataAlignment == 0:
+                    if previousSymbolWasLateRodata and not sym.contextSym.isLateRodata():
+                        # late rodata followed by normal rodata implies a file split
                         self.fileBoundaries.append(sym.inFileOffset)
+                    elif previousSymbolExtraPadding > 0:
+                        if sym.isDouble(0):
+                            # doubles require a bit extra of alignment
+                            if previousSymbolExtraPadding >= 2:
+                                self.fileBoundaries.append(sym.inFileOffset)
+                        elif sym.isJumpTable():
+                            if common.GlobalConfig.COMPILER.value.prevAlign_jumptable is not None and common.GlobalConfig.COMPILER.value.prevAlign_jumptable >= 3:
+                                if previousSymbolExtraPadding >= 2:
+                                    self.fileBoundaries.append(sym.inFileOffset)
+                        elif sym.isString():
+                            if common.GlobalConfig.COMPILER.value.prevAlign_string is not None and common.GlobalConfig.COMPILER.value.prevAlign_string >= 3:
+                                if previousSymbolExtraPadding >= 2:
+                                    self.fileBoundaries.append(sym.inFileOffset)
+                        else:
+                            self.fileBoundaries.append(sym.inFileOffset)
 
-            previousSymbolWasLateRodata = sym.contextSym.isLateRodata()
-            previousSymbolExtraPadding = sym.countExtraPadding()
+                previousSymbolWasLateRodata = sym.contextSym.isLateRodata()
+                previousSymbolExtraPadding = sym.countExtraPadding()
 
         self.processStaticRelocs()
 

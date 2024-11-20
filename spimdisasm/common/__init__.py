@@ -6,6 +6,7 @@ from . import Utils as Utils
 from .SortedDict import SortedDict as SortedDict
 from .CompilerConfig import CompilerProperties as CompilerProperties
 from .CompilerConfig import Compiler as Compiler
+from .CompilerConfig import compilerOptions as compilerOptions
 from .GlobalConfig import GlobalConfig as GlobalConfig
 from .GlobalConfig import InputEndian as InputEndian
 from .GlobalConfig import Abi as Abi

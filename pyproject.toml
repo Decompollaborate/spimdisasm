@@ -4,11 +4,11 @@
 [project]
 name = "spimdisasm"
 # Version should be synced with spimdisasm/__init__.py
-version = "1.30.2"
+version = "1.31.0"
 description = "MIPS disassembler"
 readme = "README.md"
 license = {file = "LICENSE"}
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 authors = [
     { name="Anghelo Carvajal", email="angheloalf95@gmail.com" },
 ]
