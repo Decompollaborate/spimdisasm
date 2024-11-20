@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.31.0] - 2024-11-20
+
 ### Changed
 
 - Improve comment specifying the reason why an address could not be symbolized
@@ -1699,6 +1701,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.31.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.30.2...1.31.0
 [1.30.2]: https://github.com/Decompollaborate/spimdisasm/compare/1.30.1...1.30.2
 [1.30.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.30.0...1.30.1
 [1.30.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.29.0...1.30.0
