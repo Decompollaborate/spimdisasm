@@ -43,7 +43,7 @@ impl SectionText {
         let mut functions = Vec::new();
         let mut symbol_vrams = BTreeSet::new();
 
-        for (i, (start, contains_invalid)) in funcs_start_data.iter().enumerate() {
+        for (i, (start, _contains_invalid)) in funcs_start_data.iter().enumerate() {
             let end  = if i + 1 < funcs_start_data.len() {funcs_start_data[i+1].0} else {instrs.len()};
             debug_assert!(*start < end);
 
@@ -56,7 +56,7 @@ impl SectionText {
             symbol_vrams.insert(vram);
 
             // TODO: get rid of expect?
-            let mut func = SymbolFunction::new(context, instrs[*start..end].into(), rom.unwrap(), vram, local_offset);
+            let /*mut*/ func = SymbolFunction::new(context, instrs[*start..end].into(), rom.unwrap(), vram, local_offset);
 
             functions.push(func);
         }
@@ -159,7 +159,7 @@ fn find_functions(settings: &SectionTextSettings, context: &mut Context, section
         }
 
         if function_ended {
-            function_ended = false;
+            //function_ended = false;
 
             is_likely_handwritten = settings.is_handwritten;
             index += 1;
@@ -296,7 +296,7 @@ fn find_functions_branch_checker(context: &Context, section_base: &SectionBase, 
     (farthest_branch, halt_function_searching)
 }
 
-fn find_functions_check_function_ended(context: &Context, settings: &SectionTextSettings, section_base: &SectionBase, local_offset: usize, instr: &Instruction, index: usize, instrs: &[Instruction], current_rom: RomAddress, current_vram: Vram, current_function_sym: Option<&SymbolMetadata>, farthest_branch: VramOffset, current_function_start: usize, is_likely_handwritten: bool) -> (bool, bool) {
+fn find_functions_check_function_ended(context: &Context, settings: &SectionTextSettings, section_base: &SectionBase, local_offset: usize, instr: &Instruction, _index: usize, _instrs: &[Instruction], current_rom: RomAddress, current_vram: Vram, current_function_sym: Option<&SymbolMetadata>, farthest_branch: VramOffset, current_function_start: usize, _is_likely_handwritten: bool) -> (bool, bool) {
     let mut function_ended = false;
     let mut prev_func_had_user_declared_size = false;
     // TODO
@@ -304,7 +304,7 @@ fn find_functions_check_function_ended(context: &Context, settings: &SectionText
     if let Some(sym ) = current_function_sym {
         if let Some(user_declared_size) = sym.user_declared_size() {
             // If the function has a size set by the user then only use that and ignore the other ways of determining function-ends
-            if local_offset + 8 == current_function_start + user_declared_size as usize {
+            if local_offset + 8 == current_function_start + user_declared_size.inner() as usize {
                 function_ended = true;
                 prev_func_had_user_declared_size = true;
             }

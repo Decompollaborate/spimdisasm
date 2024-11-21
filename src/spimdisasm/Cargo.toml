@@ -24,6 +24,7 @@ std = []
 
 [dependencies]
 rabbitizer = { git = "https://github.com/Decompollaborate/rabbitizer.git", branch = "🦀" }
+polonius-the-crab = "0.4.2" # TODO: get rid of the polonius stuff when the new borrow checker has been released.
 # bitflags = { version = "2.6.0", default-features = false }
 
 [dev-dependencies]
