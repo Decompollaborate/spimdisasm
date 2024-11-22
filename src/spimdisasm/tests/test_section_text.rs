@@ -112,5 +112,5 @@ fn test_section_text_1() {
 
     assert_eq!(section_text.functions().len(), 3);
 
-    None::<u32>.unwrap();
+    // None::<u32>.unwrap();
 }

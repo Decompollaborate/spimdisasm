@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Change casing of everything from camelCase to snake_case.
 - Renames:
+  - `ContextSymbol`: `SymbolMetadata`.
+  - `SymbolsSegment`: `SegmentMetadata`.
   - `getSymbol`: `find_symbol`.
   - `tryPlusOffset`: `check_addend`.
 
