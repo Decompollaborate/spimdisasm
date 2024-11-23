@@ -5,4 +5,4 @@ mod global_config;
 mod context;
 
 pub use global_config::GlobalConfig;
-pub use context::Context;
+pub use context::{Context, OwnedSegmentNotFoundError};

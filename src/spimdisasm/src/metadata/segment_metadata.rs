@@ -9,19 +9,20 @@ use core::ops::Bound;
 #[cfg(feature="nightly")]
 use alloc::collections::btree_map;
 
-use alloc::{collections::{btree_map::BTreeMap, btree_set::BTreeSet}, string::String};
-use rabbitizer::{vram::VramOffset, Vram};
+use alloc::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
+use rabbitizer::Vram;
 
+use crate::size::Size;
 use crate::{address_range::AddressRange, rom_address::RomAddress, section_type::SectionType};
 
-use super::symbol_metadata::GeneratedBy;
+use super::{symbol_metadata::GeneratedBy, OverlayCategoryName};
 use super::SymbolMetadata;
 
 pub struct SegmentMetadata {
     rom_range: AddressRange<RomAddress>,
     vram_range: AddressRange<Vram>,
 
-    _category_name: Option<String>,
+    category_name: Option<OverlayCategoryName>,
 
     symbols: BTreeMap<Vram, SymbolMetadata>,
     // constants: BTreeMap<Vram, SymbolMetadata>,
@@ -37,33 +38,37 @@ impl SegmentMetadata {
     pub const fn new(
         rom_range: AddressRange<RomAddress>,
         vram_range: AddressRange<Vram>,
-        category_name: Option<String>,
+        category_name: Option<OverlayCategoryName>,
     ) -> Self {
         Self {
             rom_range,
             vram_range,
-            _category_name: category_name,
+            category_name,
 
             symbols: BTreeMap::new(),
             _new_pointer_in_data: BTreeSet::new(),
         }
     }
 
+    pub const fn rom_range(&self) -> &AddressRange<RomAddress> {
+        &self.rom_range
+    }
     pub fn in_rom_range(&self, rom: RomAddress) -> bool {
         self.rom_range.in_range(rom)
     }
 
+    pub const fn vram_range(&self) -> &AddressRange<Vram> {
+        &self.vram_range
+    }
     pub fn in_vram_range(&self, vram: Vram) -> bool {
         self.vram_range.in_range(vram)
     }
 
-    /*
-    pub const fn rom_size(&self)  {
+    pub const fn rom_size(&self) -> Size  {
         self.rom_range.size()
     }
-    */
 
-    pub fn vram_size(&self) -> VramOffset {
+    pub fn vram_size(&self) -> Size {
         self.vram_range.size()
     }
 
@@ -78,6 +83,14 @@ impl SegmentMetadata {
         }
     }
     */
+
+    pub const fn category_name(&self) -> Option<&OverlayCategoryName> {
+        self.category_name.as_ref()
+    }
+
+    pub const fn symbols(&self) -> &BTreeMap<Vram, SymbolMetadata> {
+        &self.symbols
+    }
 }
 
 #[cfg(feature="nightly")]
@@ -144,17 +157,28 @@ fn add_symbol_impl(slf: &mut SegmentMetadata, vram: Vram, generated_by: Generate
 }
 
 impl SegmentMetadata {
-    pub /*(crate)*/ fn add_symbol(
+    pub(crate) fn add_symbol(
         &mut self,
         vram: Vram,
         rom: Option<RomAddress>,
         generated_by: GeneratedBy,
         section_type: Option<SectionType>,
-        allow_sym_with_addend: bool,
+        allow_sym_with_addend: bool, // false
     ) -> &mut SymbolMetadata {
         let sym = add_symbol_impl(self, vram, generated_by, allow_sym_with_addend);
         sym.update_rom(rom);
         sym.update_section_type(section_type);
+        sym
+    }
+
+    pub(crate) fn add_function(
+        &mut self,
+        vram: Vram,
+        rom: Option<RomAddress>,
+        generated_by: GeneratedBy,
+    ) -> &mut SymbolMetadata {
+        let sym = self.add_symbol(vram, rom, generated_by, Some(SectionType::Text), false);
+
         sym
     }
 }

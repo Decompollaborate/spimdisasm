@@ -8,7 +8,7 @@ use spimdisasm::{context::{Context, GlobalConfig}, rom_address::RomAddress, sect
 #[test]
 fn test_section_text_1() {
     use rabbitizer::DisplayFlags;
-    use spimdisasm::symbols::Symbol;
+    use spimdisasm::{address_range::AddressRange, parent_segment_info::ParentSegmentInfo, size::Size, symbols::Symbol};
 
     let bytes = &[
         // 0x80000400
@@ -92,13 +92,18 @@ fn test_section_text_1() {
     ];
     let rom = RomAddress::new(0x001050);
     let vram = Vram::new(0x80000400);
+    let size = Size::new(0x1000);
 
     let global_config = GlobalConfig::new();
-    let mut context = Context::new(global_config);
+    let mut context = Context::new(
+        global_config,
+        AddressRange::new(rom, rom + size),
+        AddressRange::new(vram, vram + size),
+    );
     let text_settings = SectionTextSettings::new(InstructionFlags::new());
     let display_flags = DisplayFlags::new();
 
-    let section_text = SectionText::new(&mut context, text_settings, "test".into(), bytes, rom, vram);
+    let section_text = SectionText::new(&mut context, text_settings, "test".into(), bytes, rom, vram, ParentSegmentInfo::new(rom, None)).unwrap();
 
     for func in section_text.functions() {
         println!("func_{}:", func.vram());
@@ -111,6 +116,12 @@ fn test_section_text_1() {
     }
 
     assert_eq!(section_text.functions().len(), 3);
+
+    let symbols = context.global_segment().symbols();
+    for s in symbols {
+        println!("{:?}", s.1);
+    }
+    assert_eq!(symbols.len(), 3);
 
     // None::<u32>.unwrap();
 }

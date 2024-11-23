@@ -10,30 +10,37 @@ use rabbitizer::Vram;
 
 use crate::context::Context;
 use crate::metadata::SymbolMetadata;
+use crate::parent_segment_info::ParentSegmentInfo;
 use crate::rom_address::RomAddress;
 use crate::symbols::Symbol;
 
 pub struct SectionBase {
-    _name: String,
+    name: String,
 
     rom: Option<RomAddress>,
     vram: Vram,
 
     // in_section_offset: u32,
     // section_type: SectionType,
+
+    parent_segment_info: ParentSegmentInfo,
 }
 
 impl SectionBase {
-    pub fn new(name: String, rom: Option<RomAddress>, vram: Vram, ) -> Self {
+    pub fn new(name: String, rom: Option<RomAddress>, vram: Vram, parent_segment_info: ParentSegmentInfo) -> Self {
         Self {
-            _name: name,
+            name,
             rom,
             vram,
+            parent_segment_info,
         }
     }
 }
 
 impl SectionBase {
+    pub fn name(&self) -> &str {
+        &self.name
+    }
     pub fn vram_offset(&self, local_offset: usize) -> Vram {
         self.vram.add_offset(&VramOffset::new(local_offset as i32))
     }
@@ -44,6 +51,9 @@ impl SectionBase {
         } else {
             None
         }
+    }
+    pub fn parent_segment_info(&self) -> &ParentSegmentInfo {
+        &self.parent_segment_info
     }
 }
 

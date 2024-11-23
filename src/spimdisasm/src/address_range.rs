@@ -1,7 +1,11 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use core::{fmt, ops};
+use core::fmt;
+
+use rabbitizer::Vram;
+
+use crate::{rom_address::RomAddress, size::Size};
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct AddressRange<T>
@@ -30,12 +34,17 @@ where T: Copy + PartialOrd
     }
 }
 
-impl<T, U> AddressRange<T>
-where T: Copy + ops::Sub<Output = U>
-{
-    #[must_use]
-    pub fn size(&self) -> U {
-        self.end - self.start
+impl AddressRange<Vram> {
+    pub const fn size(&self) -> Size {
+        // Casting to unsigned should be fine because we now `self.end` is always greater or equal than `self.start`.
+        Size::new(self.end.sub_vram(&self.start).inner() as u32)
+    }
+}
+
+impl AddressRange<RomAddress> {
+    pub const fn size(&self) -> Size {
+        // TODO: Add a substraction method on RomAddress
+        Size::new(self.end.inner() - self.start.inner())
     }
 }
 

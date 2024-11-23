@@ -8,6 +8,8 @@ use alloc::string::String;
 
 use rabbitizer::{vram::VramOffset, Instruction, IsaExtension, Vram, InstructionFlags};
 
+use crate::context::OwnedSegmentNotFoundError;
+use crate::parent_segment_info::ParentSegmentInfo;
 use crate::{context::Context, metadata::SymbolMetadata, rom_address::RomAddress, symbols::{Symbol, SymbolFunction}};
 
 use super::{Section, SectionBase};
@@ -35,9 +37,9 @@ pub struct SectionText {
 }
 
 impl SectionText {
-    pub fn new(context: &mut Context, settings: SectionTextSettings, name: String, raw_bytes: &[u8], rom: RomAddress, vram: Vram, ) -> Self {
+    pub fn new(context: &mut Context, settings: SectionTextSettings, name: String, raw_bytes: &[u8], rom: RomAddress, vram: Vram, parent_segment_info: ParentSegmentInfo) -> Result<Self, OwnedSegmentNotFoundError> {
         let instrs = instrs_from_bytes(&settings, context, &raw_bytes, vram);
-        let mut section_base = SectionBase::new(name, Some(rom), vram);
+        let mut section_base = SectionBase::new(name, Some(rom), vram, parent_segment_info);
         let funcs_start_data = find_functions(&settings, context, &mut section_base, &instrs);
 
         let mut functions = Vec::new();
@@ -55,17 +57,17 @@ impl SectionText {
 
             symbol_vrams.insert(vram);
 
-            // TODO: get rid of expect?
-            let /*mut*/ func = SymbolFunction::new(context, instrs[*start..end].into(), rom.unwrap(), vram, local_offset);
+            // TODO: get rid of unwrap?
+            let /*mut*/ func = SymbolFunction::new(context, instrs[*start..end].into(), rom.unwrap(), vram, local_offset, section_base.parent_segment_info())?;
 
             functions.push(func);
         }
 
-        Self {
+        Ok(Self {
             section_base,
             functions,
             symbol_vrams,
-        }
+        })
     }
 
     // TODO: remove
@@ -301,7 +303,7 @@ fn find_functions_check_function_ended(context: &Context, settings: &SectionText
     let mut prev_func_had_user_declared_size = false;
     // TODO
 
-    if let Some(sym ) = current_function_sym {
+    if let Some(sym) = current_function_sym {
         if let Some(user_declared_size) = sym.user_declared_size() {
             // If the function has a size set by the user then only use that and ignore the other ways of determining function-ends
             if local_offset + 8 == current_function_start + user_declared_size.inner() as usize {
