@@ -2,7 +2,7 @@
 /* SPDX-License-Identifier: MIT */
 
 mod overlay_category_name;
-mod segment_metadata;
+pub(crate) mod segment_metadata;
 mod symbol_metadata;
 mod symbol_type;
 
