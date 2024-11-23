@@ -10,8 +10,6 @@ pub struct OverlayCategoryName {
 
 impl OverlayCategoryName {
     pub const fn new(name: String) -> Self {
-        Self {
-            inner: name,
-        }
+        Self { inner: name }
     }
 }

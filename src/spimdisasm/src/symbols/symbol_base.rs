@@ -11,11 +11,8 @@ pub struct SymbolBase {
 }
 
 impl SymbolBase {
-    pub(crate) fn new(rom: Option<RomAddress>, vram: Vram,) -> Self {
-        Self {
-            rom,
-            vram,
-        }
+    pub(crate) fn new(rom: Option<RomAddress>, vram: Vram) -> Self {
+        Self { rom, vram }
     }
 
     pub fn rom(&self) -> Option<RomAddress> {

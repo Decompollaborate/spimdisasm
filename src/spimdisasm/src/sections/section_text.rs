@@ -1,16 +1,20 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-
+use alloc::string::String;
 use alloc::vec;
 use alloc::{collections::BTreeSet, vec::Vec};
-use alloc::string::String;
 
-use rabbitizer::{vram::VramOffset, Instruction, IsaExtension, Vram, InstructionFlags};
+use rabbitizer::{vram::VramOffset, Instruction, InstructionFlags, IsaExtension, Vram};
 
 use crate::context::OwnedSegmentNotFoundError;
 use crate::parent_segment_info::ParentSegmentInfo;
-use crate::{context::Context, metadata::SymbolMetadata, rom_address::RomAddress, symbols::{Symbol, SymbolFunction}};
+use crate::{
+    context::Context,
+    metadata::SymbolMetadata,
+    rom_address::RomAddress,
+    symbols::{Symbol, SymbolFunction},
+};
 
 use super::{Section, SectionBase};
 
@@ -37,7 +41,15 @@ pub struct SectionText {
 }
 
 impl SectionText {
-    pub fn new(context: &mut Context, settings: SectionTextSettings, name: String, raw_bytes: &[u8], rom: RomAddress, vram: Vram, parent_segment_info: ParentSegmentInfo) -> Result<Self, OwnedSegmentNotFoundError> {
+    pub fn new(
+        context: &mut Context,
+        settings: SectionTextSettings,
+        name: String,
+        raw_bytes: &[u8],
+        rom: RomAddress,
+        vram: Vram,
+        parent_segment_info: ParentSegmentInfo,
+    ) -> Result<Self, OwnedSegmentNotFoundError> {
         let instrs = instrs_from_bytes(&settings, context, &raw_bytes, vram);
         let mut section_base = SectionBase::new(name, Some(rom), vram, parent_segment_info);
         let funcs_start_data = find_functions(&settings, context, &mut section_base, &instrs);
@@ -46,10 +58,14 @@ impl SectionText {
         let mut symbol_vrams = BTreeSet::new();
 
         for (i, (start, _contains_invalid)) in funcs_start_data.iter().enumerate() {
-            let end  = if i + 1 < funcs_start_data.len() {funcs_start_data[i+1].0} else {instrs.len()};
+            let end = if i + 1 < funcs_start_data.len() {
+                funcs_start_data[i + 1].0
+            } else {
+                instrs.len()
+            };
             debug_assert!(*start < end);
 
-            let local_offset = start*4;
+            let local_offset = start * 4;
             let vram = section_base.vram_offset(local_offset);
             let rom = section_base.rom_offset(local_offset);
 
@@ -95,7 +111,12 @@ impl Section for SectionText {
     }
 }
 
-fn instrs_from_bytes(settings: &SectionTextSettings, context: &Context, raw_bytes: &[u8], mut vram: Vram) -> Vec<Instruction> {
+fn instrs_from_bytes(
+    settings: &SectionTextSettings,
+    context: &Context,
+    raw_bytes: &[u8],
+    mut vram: Vram,
+) -> Vec<Instruction> {
     let mut instrs = Vec::new();
     let endian = context.global_config().endian();
 
@@ -109,7 +130,12 @@ fn instrs_from_bytes(settings: &SectionTextSettings, context: &Context, raw_byte
     instrs
 }
 
-fn find_functions(settings: &SectionTextSettings, context: &mut Context, section_base: &mut SectionBase, instrs: &[Instruction]) -> Vec<(usize, bool)> {
+fn find_functions(
+    settings: &SectionTextSettings,
+    context: &mut Context,
+    section_base: &mut SectionBase,
+    instrs: &[Instruction],
+) -> Vec<(usize, bool)> {
     if instrs.len() == 0 {
         return vec![(0, false)];
     }
@@ -121,8 +147,15 @@ fn find_functions(settings: &SectionTextSettings, context: &mut Context, section
     let mut halt_function_searching;
 
     let mut local_offset = 0;
-    let mut current_function_start  = local_offset;
-    let mut current_function_sym = section_base.find_symbol(context, section_base.vram_offset(local_offset), section_base.rom_offset(local_offset), false, true, false);
+    let mut current_function_start = local_offset;
+    let mut current_function_sym = section_base.find_symbol(
+        context,
+        section_base.vram_offset(local_offset),
+        section_base.rom_offset(local_offset),
+        false,
+        true,
+        false,
+    );
     let mut index = 0;
 
     let mut prev_start = index;
@@ -130,7 +163,6 @@ fn find_functions(settings: &SectionTextSettings, context: &mut Context, section
     let mut is_likely_handwritten = settings.is_handwritten;
 
     let mut prev_func_had_user_declared_size = false;
-
 
     if instrs[0].is_nop() {
         // Loop over until we find a instruction that isn't a nop
@@ -146,7 +178,14 @@ fn find_functions(settings: &SectionTextSettings, context: &mut Context, section
             index += 1;
             local_offset += 4;
             current_function_start = local_offset;
-            current_function_sym = section_base.find_symbol(context, section_base.vram_offset(local_offset), section_base.rom_offset(local_offset), false, true, false);
+            current_function_sym = section_base.find_symbol(
+                context,
+                section_base.vram_offset(local_offset),
+                section_base.rom_offset(local_offset),
+                false,
+                true,
+                false,
+            );
         }
 
         if index != 0 {
@@ -167,7 +206,14 @@ fn find_functions(settings: &SectionTextSettings, context: &mut Context, section
             index += 1;
             local_offset += 4;
 
-            let mut aux_sym = section_base.find_symbol(context, section_base.vram_offset(local_offset), section_base.rom_offset(local_offset), false, true, false);
+            let mut aux_sym = section_base.find_symbol(
+                context,
+                section_base.vram_offset(local_offset),
+                section_base.rom_offset(local_offset),
+                false,
+                true,
+                false,
+            );
 
             // Loop over until we find a instruction that isn't a nop
             while index < instrs.len() {
@@ -183,7 +229,14 @@ fn find_functions(settings: &SectionTextSettings, context: &mut Context, section
                 index += 1;
                 local_offset += 4;
 
-                aux_sym = section_base.find_symbol(context, section_base.vram_offset(local_offset), section_base.rom_offset(local_offset), false, true, false);
+                aux_sym = section_base.find_symbol(
+                    context,
+                    section_base.vram_offset(local_offset),
+                    section_base.rom_offset(local_offset),
+                    false,
+                    true,
+                    false,
+                );
             }
 
             current_function_start = local_offset;
@@ -197,10 +250,22 @@ fn find_functions(settings: &SectionTextSettings, context: &mut Context, section
             }
 
             if prev_func_had_user_declared_size {
-                let aux_sym = section_base.add_function(context, section_base.vram_offset(local_offset), section_base.rom_offset(local_offset), true);
+                let aux_sym = section_base.add_function(
+                    context,
+                    section_base.vram_offset(local_offset),
+                    section_base.rom_offset(local_offset),
+                    true,
+                );
                 aux_sym.set_autocreated_from_other_sized_sym();
                 // TODO: figure out a way to avoid having to search the symbol we just createdm, hopefully by reusing the above `aux_sym`.
-                current_function_sym = section_base.find_symbol(context, section_base.vram_offset(local_offset), section_base.rom_offset(local_offset), false, true, false);
+                current_function_sym = section_base.find_symbol(
+                    context,
+                    section_base.vram_offset(local_offset),
+                    section_base.rom_offset(local_offset),
+                    false,
+                    true,
+                    false,
+                );
             }
 
             // prev_func_had_user_declared_size = false;
@@ -215,15 +280,36 @@ fn find_functions(settings: &SectionTextSettings, context: &mut Context, section
         }
 
         if instr.opcode().is_branch() || instr.is_unconditional_branch() {
-            (farthest_branch, halt_function_searching) = find_functions_branch_checker(context, section_base, local_offset, instr, &mut starts_data, farthest_branch, is_likely_handwritten, contains_invalid);
+            (farthest_branch, halt_function_searching) = find_functions_branch_checker(
+                context,
+                section_base,
+                local_offset,
+                instr,
+                &mut starts_data,
+                farthest_branch,
+                is_likely_handwritten,
+                contains_invalid,
+            );
             if halt_function_searching {
                 break;
             }
         }
 
-        (function_ended, prev_func_had_user_declared_size) = find_functions_check_function_ended(context, settings, section_base, local_offset, instr, index, instrs, 
+        (function_ended, prev_func_had_user_declared_size) = find_functions_check_function_ended(
+            context,
+            settings,
+            section_base,
+            local_offset,
+            instr,
+            index,
+            instrs,
             section_base.rom_offset(local_offset).unwrap(), // TODO: avoid unwrap
-            section_base.vram_offset(local_offset), current_function_sym, farthest_branch, current_function_start, is_likely_handwritten);
+            section_base.vram_offset(local_offset),
+            current_function_sym,
+            farthest_branch,
+            current_function_start,
+            is_likely_handwritten,
+        );
 
         index += 1;
         //farthest_branch -= 4;
@@ -236,7 +322,16 @@ fn find_functions(settings: &SectionTextSettings, context: &mut Context, section
     starts_data
 }
 
-fn find_functions_branch_checker(context: &Context, section_base: &SectionBase, local_offset: usize, instr: &Instruction, starts_data: &mut Vec<(usize, bool)>, mut farthest_branch: VramOffset, is_likely_handwritten: bool, contains_invalid: bool) -> (VramOffset, bool) {
+fn find_functions_branch_checker(
+    context: &Context,
+    section_base: &SectionBase,
+    local_offset: usize,
+    instr: &Instruction,
+    starts_data: &mut Vec<(usize, bool)>,
+    mut farthest_branch: VramOffset,
+    is_likely_handwritten: bool,
+    contains_invalid: bool,
+) -> (VramOffset, bool) {
     let mut halt_function_searching = false;
 
     if instr.opcode().is_jump_with_address() {
@@ -246,7 +341,9 @@ fn find_functions_branch_checker(context: &Context, section_base: &SectionBase, 
 
         // TODO
         if let Some(target_vram) = instr.get_instr_index_as_vram() {
-            if let Some(aux_sym) = section_base.find_symbol(context, target_vram, None, false, false, false) {
+            if let Some(aux_sym) =
+                section_base.find_symbol(context, target_vram, None, false, false, false)
+            {
                 if aux_sym.is_trustable_function() {
                     return (farthest_branch, halt_function_searching);
                 }
@@ -263,7 +360,9 @@ fn find_functions_branch_checker(context: &Context, section_base: &SectionBase, 
             // TODO: branch_offset.is_negative()
             // Check backwards branches
 
-            if (branch_offset.inner() + (local_offset as i32) < 0) && (!instr.opcode().is_jump() || instr.flags().j_as_branch()) {
+            if (branch_offset.inner() + (local_offset as i32) < 0)
+                && (!instr.opcode().is_jump() || instr.flags().j_as_branch())
+            {
                 // Whatever we are reading is not a valid instruction, it doesn't make sense for
                 // an instruction to backwards-branch outside of the function.
 
@@ -274,12 +373,17 @@ fn find_functions_branch_checker(context: &Context, section_base: &SectionBase, 
                 let mut j = starts_data.len() as i32 - 1;
                 while j >= 0 {
                     let other_func_start_offset = starts_data[j as usize].0 * 4;
-                    if branch_offset.inner() + (local_offset as i32) < (other_func_start_offset as i32) {
+                    if branch_offset.inner() + (local_offset as i32)
+                        < (other_func_start_offset as i32)
+                    {
                         let vram = section_base.vram_offset(local_offset);
                         let rom_address = section_base.rom_offset(local_offset);
 
                         // TODO: invert check?
-                        if let Some(func_symbol) = section_base.find_symbol(context, vram, rom_address, false, true, false) { // TODO
+                        if let Some(func_symbol) =
+                            section_base.find_symbol(context, vram, rom_address, false, true, false)
+                        {
+                            // TODO
                             if func_symbol.is_trustable_function() {
                                 j -= 1;
                                 continue;
@@ -298,7 +402,21 @@ fn find_functions_branch_checker(context: &Context, section_base: &SectionBase, 
     (farthest_branch, halt_function_searching)
 }
 
-fn find_functions_check_function_ended(context: &Context, settings: &SectionTextSettings, section_base: &SectionBase, local_offset: usize, instr: &Instruction, _index: usize, _instrs: &[Instruction], current_rom: RomAddress, current_vram: Vram, current_function_sym: Option<&SymbolMetadata>, farthest_branch: VramOffset, current_function_start: usize, _is_likely_handwritten: bool) -> (bool, bool) {
+fn find_functions_check_function_ended(
+    context: &Context,
+    settings: &SectionTextSettings,
+    section_base: &SectionBase,
+    local_offset: usize,
+    instr: &Instruction,
+    _index: usize,
+    _instrs: &[Instruction],
+    current_rom: RomAddress,
+    current_vram: Vram,
+    current_function_sym: Option<&SymbolMetadata>,
+    farthest_branch: VramOffset,
+    current_function_start: usize,
+    _is_likely_handwritten: bool,
+) -> (bool, bool) {
     let mut function_ended = false;
     let mut prev_func_had_user_declared_size = false;
     // TODO
@@ -314,7 +432,14 @@ fn find_functions_check_function_ended(context: &Context, settings: &SectionText
         }
     }
 
-    let func_sym = section_base.find_symbol(context, current_vram + VramOffset::new(8), Some(RomAddress::new(current_rom.inner() + 8)), false, true, false);
+    let func_sym = section_base.find_symbol(
+        context,
+        current_vram + VramOffset::new(8),
+        Some(RomAddress::new(current_rom.inner() + 8)),
+        false,
+        true,
+        false,
+    );
     if let Some(sym) = func_sym {
         // # If there's another function after this then the current function has ended
         if sym.is_trustable_function() {
@@ -332,7 +457,7 @@ fn find_functions_check_function_ended(context: &Context, settings: &SectionText
         if instr.is_return() {
             // Found a jr $ra and there are no branches outside of this function
             if false { // redundant function end detection
-
+                // TODO
             } else {
                 return (true, false);
             }
@@ -349,8 +474,11 @@ fn find_functions_check_function_ended(context: &Context, settings: &SectionText
             } else {
                 // j is a jump, but it could be jumping to a function
                 if let Some(target_vram) = instr.get_instr_index_as_vram() {
-                    if let Some(aux_sym) = section_base.find_symbol(context, target_vram, None, false, true, false) {
-                        if aux_sym.is_trustable_function() && Some(aux_sym) != current_function_sym {
+                    if let Some(aux_sym) =
+                        section_base.find_symbol(context, target_vram, None, false, true, false)
+                    {
+                        if aux_sym.is_trustable_function() && Some(aux_sym) != current_function_sym
+                        {
                             return (true, false);
                         }
                     }

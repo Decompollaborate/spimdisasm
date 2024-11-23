@@ -9,10 +9,7 @@ pub struct ParentSegmentInfo {
     overlay_name: Option<OverlayCategoryName>,
 }
 impl ParentSegmentInfo {
-    pub const fn new(
-        segment_rom: RomAddress,
-        overlay_name: Option<OverlayCategoryName>,
-    ) -> Self {
+    pub const fn new(segment_rom: RomAddress, overlay_name: Option<OverlayCategoryName>) -> Self {
         Self {
             segment_rom,
             overlay_name,

@@ -9,7 +9,7 @@ pub struct RomAddress {
 impl RomAddress {
     #[must_use]
     pub const fn new(value: u32) -> Self {
-        Self {inner: value}
+        Self { inner: value }
     }
 
     pub const fn inner(&self) -> u32 {

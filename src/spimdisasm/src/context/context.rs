@@ -6,7 +6,12 @@ use core::{error, fmt};
 use alloc::collections::btree_map::BTreeMap;
 use rabbitizer::Vram;
 
-use crate::{address_range::AddressRange, metadata::{OverlayCategoryName, SegmentMetadata, SymbolMetadata}, parent_segment_info::ParentSegmentInfo, rom_address::RomAddress};
+use crate::{
+    address_range::AddressRange,
+    metadata::{OverlayCategoryName, SegmentMetadata, SymbolMetadata},
+    parent_segment_info::ParentSegmentInfo,
+    rom_address::RomAddress,
+};
 
 use super::GlobalConfig;
 
@@ -16,8 +21,10 @@ pub struct Context {
     global_segment: SegmentMetadata,
     // unknown_segment: SegmentMetadata,
 
+    //
     overlay_segments: BTreeMap<OverlayCategoryName, BTreeMap<RomAddress, SegmentMetadata>>,
 
+    //
     // totalVramRange: SymbolsRanges
 
     // Maybe move to SegmentMetadata?
@@ -32,7 +39,11 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn new(global_config: GlobalConfig, global_rom_range: AddressRange<RomAddress>, global_vram_range: AddressRange<Vram>) -> Self {
+    pub fn new(
+        global_config: GlobalConfig,
+        global_rom_range: AddressRange<RomAddress>,
+        global_vram_range: AddressRange<Vram>,
+    ) -> Self {
         let global_segment = SegmentMetadata::new(global_rom_range, global_vram_range, None);
 
         Self {
@@ -64,13 +75,16 @@ impl fmt::Display for OwnedSegmentNotFoundError {
 impl error::Error for OwnedSegmentNotFoundError {}
 
 impl Context {
-    pub/*(crate)*/ fn find_owned_segment(&self, info: &ParentSegmentInfo) -> Result<&SegmentMetadata, OwnedSegmentNotFoundError> {
+    pub fn find_owned_segment(
+        &self,
+        info: &ParentSegmentInfo,
+    ) -> Result<&SegmentMetadata, OwnedSegmentNotFoundError> {
         if let Some(overlay_name) = info.overlay_name() {
             if let Some(segments_per_rom) = self.overlay_segments.get(overlay_name) {
                 if let Some(segment) = segments_per_rom.get(&info.segment_rom()) {
                     debug_assert!(segment.category_name() == Some(overlay_name));
                     debug_assert!(segment.rom_range().start() == info.segment_rom());
-                    return Ok(segment)
+                    return Ok(segment);
                 }
             }
         } else if self.global_segment.in_rom_range(info.segment_rom()) {
@@ -79,13 +93,16 @@ impl Context {
         }
         Err(OwnedSegmentNotFoundError {})
     }
-    pub(crate) fn find_owned_segment_mut(&mut self, info: &ParentSegmentInfo) -> Result<&mut SegmentMetadata, OwnedSegmentNotFoundError> {
+    pub(crate) fn find_owned_segment_mut(
+        &mut self,
+        info: &ParentSegmentInfo,
+    ) -> Result<&mut SegmentMetadata, OwnedSegmentNotFoundError> {
         if let Some(overlay_name) = info.overlay_name() {
             if let Some(segments_per_rom) = self.overlay_segments.get_mut(overlay_name) {
                 if let Some(segment) = segments_per_rom.get_mut(&info.segment_rom()) {
                     debug_assert!(segment.category_name() == Some(overlay_name));
                     debug_assert!(segment.rom_range().start() == info.segment_rom());
-                    return Ok(segment)
+                    return Ok(segment);
                 }
             }
         } else if self.global_segment.in_rom_range(info.segment_rom()) {

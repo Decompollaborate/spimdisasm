@@ -1,13 +1,13 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-#[cfg(not(feature="nightly"))]
+#[cfg(not(feature = "nightly"))]
 use ::polonius_the_crab::prelude::*;
 
-#[cfg(feature="nightly")]
-use core::ops::Bound;
-#[cfg(feature="nightly")]
+#[cfg(feature = "nightly")]
 use alloc::collections::btree_map;
+#[cfg(feature = "nightly")]
+use core::ops::Bound;
 
 use alloc::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use rabbitizer::Vram;
@@ -15,8 +15,8 @@ use rabbitizer::Vram;
 use crate::size::Size;
 use crate::{address_range::AddressRange, rom_address::RomAddress, section_type::SectionType};
 
-use super::{symbol_metadata::GeneratedBy, OverlayCategoryName};
 use super::SymbolMetadata;
+use super::{symbol_metadata::GeneratedBy, OverlayCategoryName};
 
 pub struct SegmentMetadata {
     rom_range: AddressRange<RomAddress>,
@@ -27,10 +27,12 @@ pub struct SegmentMetadata {
     symbols: BTreeMap<Vram, SymbolMetadata>,
     // constants: BTreeMap<Vram, SymbolMetadata>,
 
+    //
     /// Stuff that looks like pointers. Found referenced by data.
     // TODO: consider changing to a Map and store which symbol added this possible pointer.
     _new_pointer_in_data: BTreeSet<Vram>,
 
+    //
     // is_the_unknown_segment: bool,
 }
 
@@ -64,7 +66,7 @@ impl SegmentMetadata {
         self.vram_range.in_range(vram)
     }
 
-    pub const fn rom_size(&self) -> Size  {
+    pub const fn rom_size(&self) -> Size {
         self.rom_range.size()
     }
 
@@ -93,32 +95,38 @@ impl SegmentMetadata {
     }
 }
 
-#[cfg(feature="nightly")]
-fn into_prev_and_next<'a, K, V>(mut cursor: btree_map::CursorMut<'a, K, V>) -> (Option<(&'a K, &'a mut V)>, Option<(&'a K, &'a mut V)>) {
+#[cfg(feature = "nightly")]
+fn into_prev_and_next<'a, K, V>(
+    mut cursor: btree_map::CursorMut<'a, K, V>,
+) -> (Option<(&'a K, &'a mut V)>, Option<(&'a K, &'a mut V)>) {
     let prev: Option<(&'a K, &'a mut V)> = cursor.peek_prev().map(|(k, v)| {
         let ptr_k = k as *const K;
         let ptr_v = v as *mut V;
-        unsafe {
-            (&*ptr_k, &mut *ptr_v)
-        }
+        unsafe { (&*ptr_k, &mut *ptr_v) }
     });
     let next: Option<(&'a K, &'a mut V)> = cursor.peek_next().map(|(k, v)| {
         let ptr_k = k as *const K;
         let ptr_v = v as *mut V;
-        unsafe {
-            (&*ptr_k, &mut *ptr_v)
-        }
+        unsafe { (&*ptr_k, &mut *ptr_v) }
     });
 
     (prev, next)
 }
 
-#[cfg(not(feature="nightly"))]
-fn add_symbol_impl(mut slf: &mut SegmentMetadata, vram: Vram, generated_by: GeneratedBy, allow_sym_with_addend: bool) -> &mut SymbolMetadata {
+#[cfg(not(feature = "nightly"))]
+fn add_symbol_impl(
+    mut slf: &mut SegmentMetadata,
+    vram: Vram,
+    generated_by: GeneratedBy,
+    allow_sym_with_addend: bool,
+) -> &mut SymbolMetadata {
     // TODO: get rid of the polonius stuff when the new borrow checker has been released.
 
     polonius!(|slf| -> &'polonius mut SymbolMetadata {
-        if let Some(x) = slf.find_symbol_mut(vram, FindSettings::new().with_allow_addend(allow_sym_with_addend)) {
+        if let Some(x) = slf.find_symbol_mut(
+            vram,
+            FindSettings::new().with_allow_addend(allow_sym_with_addend),
+        ) {
             polonius_return!(x);
         }
     });
@@ -128,8 +136,13 @@ fn add_symbol_impl(mut slf: &mut SegmentMetadata, vram: Vram, generated_by: Gene
     entry.or_insert(SymbolMetadata::new(generated_by, vram))
 }
 
-#[cfg(feature="nightly")]
-fn add_symbol_impl(slf: &mut SegmentMetadata, vram: Vram, generated_by: GeneratedBy, allow_sym_with_addend: bool) -> &mut SymbolMetadata {
+#[cfg(feature = "nightly")]
+fn add_symbol_impl(
+    slf: &mut SegmentMetadata,
+    vram: Vram,
+    generated_by: GeneratedBy,
+    allow_sym_with_addend: bool,
+) -> &mut SymbolMetadata {
     let mut cursor = slf.symbols.upper_bound_mut(Bound::Included(&vram));
 
     let must_insert_new = if let Some((sym_vram, sym)) = cursor.peek_prev() {
@@ -233,7 +246,11 @@ impl SegmentMetadata {
     }
 
     #[must_use]
-    pub /*(crate)*/ fn find_symbol_mut(&mut self, vram: Vram, settings: FindSettings) -> Option<&mut SymbolMetadata> {
+    pub /*(crate)*/ fn find_symbol_mut(
+        &mut self,
+        vram: Vram,
+        settings: FindSettings,
+    ) -> Option<&mut SymbolMetadata> {
         if !settings.allow_addend {
             self.symbols.get_mut(&vram)
         } else {
@@ -250,14 +267,16 @@ impl SegmentMetadata {
             }
         }
     }
-
 }
 
 #[cfg(test)]
 mod tests {
     use rabbitizer::Vram;
 
-    use crate::{address_range::AddressRange, metadata::symbol_metadata::GeneratedBy, rom_address::RomAddress};
+    use crate::{
+        address_range::AddressRange, metadata::symbol_metadata::GeneratedBy,
+        rom_address::RomAddress,
+    };
 
     use super::{FindSettings, SegmentMetadata};
 
@@ -267,49 +286,91 @@ mod tests {
         let vram_range = AddressRange::new(Vram::new(0), Vram::new(0x180));
         let mut segment = SegmentMetadata::new(rom_range, vram_range, None);
 
-        segment.add_symbol(Vram::new(0x100C), None, GeneratedBy::Autogenerated, None, true);
-        segment.add_symbol(Vram::new(0x1000), None, GeneratedBy::Autogenerated, None, true);
-        segment.add_symbol(Vram::new(0x1004), None, GeneratedBy::Autogenerated, None, true);
+        segment.add_symbol(
+            Vram::new(0x100C),
+            None,
+            GeneratedBy::Autogenerated,
+            None,
+            true,
+        );
+        segment.add_symbol(
+            Vram::new(0x1000),
+            None,
+            GeneratedBy::Autogenerated,
+            None,
+            true,
+        );
+        segment.add_symbol(
+            Vram::new(0x1004),
+            None,
+            GeneratedBy::Autogenerated,
+            None,
+            true,
+        );
 
         assert_eq!(
-            segment.find_symbol(Vram::new(0x1000), FindSettings::new()).map(|sym| sym.vram()),
+            segment
+                .find_symbol(Vram::new(0x1000), FindSettings::new())
+                .map(|sym| sym.vram()),
             Some(Vram::new(0x1000))
         );
 
         assert_eq!(
-            segment.find_symbol(Vram::new(0x1002), FindSettings::new()).map(|sym| sym.vram()),
+            segment
+                .find_symbol(Vram::new(0x1002), FindSettings::new())
+                .map(|sym| sym.vram()),
             Some(Vram::new(0x1000))
         );
 
         assert_eq!(
-            segment.find_symbol(Vram::new(0x0F00), FindSettings::new()).map(|sym| sym.vram()),
+            segment
+                .find_symbol(Vram::new(0x0F00), FindSettings::new())
+                .map(|sym| sym.vram()),
             None
         );
 
         assert_eq!(
-            segment.find_symbol(Vram::new(0x2000), FindSettings::new()).map(|sym| sym.vram()),
+            segment
+                .find_symbol(Vram::new(0x2000), FindSettings::new())
+                .map(|sym| sym.vram()),
             None
         );
 
         assert_eq!(
-            segment.find_symbol(Vram::new(0x1002), FindSettings::new().with_allow_addend(false)).map(|sym| sym.vram()),
+            segment
+                .find_symbol(
+                    Vram::new(0x1002),
+                    FindSettings::new().with_allow_addend(false)
+                )
+                .map(|sym| sym.vram()),
             None
         );
 
         assert_eq!(
-            segment.find_symbol(Vram::new(0x1100), FindSettings::new().with_check_upper_limit(false)).map(|sym| sym.vram()),
+            segment
+                .find_symbol(
+                    Vram::new(0x1100),
+                    FindSettings::new().with_check_upper_limit(false)
+                )
+                .map(|sym| sym.vram()),
             Some(Vram::new(0x100C))
         );
 
         assert_eq!(
-            segment.find_symbol(Vram::new(0x1008), FindSettings::new()).map(|sym| sym.vram()),
+            segment
+                .find_symbol(Vram::new(0x1008), FindSettings::new())
+                .map(|sym| sym.vram()),
             None
         );
 
         assert_eq!(
-            segment.find_symbol(Vram::new(0x1008), FindSettings::new().with_check_upper_limit(false)).map(|sym| sym.vram()),
+            segment
+                .find_symbol(
+                    Vram::new(0x1008),
+                    FindSettings::new().with_check_upper_limit(false)
+                )
+                .map(|sym| sym.vram()),
             Some(Vram::new(0x1004))
         );
-
     }
 }

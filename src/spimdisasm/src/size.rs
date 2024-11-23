@@ -15,7 +15,7 @@ pub struct Size {
 impl Size {
     #[must_use]
     pub const fn new(value: u32) -> Self {
-        Self {inner: value}
+        Self { inner: value }
     }
 
     pub const fn inner(&self) -> u32 {
@@ -81,7 +81,11 @@ pub struct ConvertToSizeError {
 }
 impl fmt::Display for ConvertToSizeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Can't convert negative value {} (-0x{:X}) to `Size`.", self.inner, -self.inner)
+        write!(
+            f,
+            "Can't convert negative value {} (-0x{:X}) to `Size`.",
+            self.inner, -self.inner
+        )
     }
 }
 impl error::Error for ConvertToSizeError {}
@@ -91,7 +95,9 @@ impl TryFrom<VramOffset> for Size {
 
     fn try_from(value: VramOffset) -> Result<Self, Self::Error> {
         if value.inner() < 0 {
-            Err(ConvertToSizeError {inner: value.inner()})
+            Err(ConvertToSizeError {
+                inner: value.inner(),
+            })
         } else {
             Ok(Self::new(value.inner() as u32))
         }

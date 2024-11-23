@@ -1,11 +1,10 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-
 use core::fmt;
 
 use alloc::{boxed::Box, string::String};
-use rabbitizer::{Vram, access_type::AccessType};
+use rabbitizer::{access_type::AccessType, Vram};
 
 use crate::{rom_address::RomAddress, section_type::SectionType, size::Size};
 
@@ -80,7 +79,6 @@ pub struct SymbolMetadata {
     /// Used by .get_name() instead of using the setted name or the default generated name.
     name_get_callback: Option<Box<dyn FnOnce(&SymbolMetadata) -> String>>,
 
-
     user_declared_size: Option<Size>,
     autodetected_size: Option<Size>,
 
@@ -123,12 +121,12 @@ pub struct SymbolMetadata {
 
     // unknownSegment: bool = False
 
+    //
     got_info: Option<GotInfo>,
 
     accessed_as_gp_rel: bool,
 
     // _isStatic: bool = False
-
 
     // TODO: These two are kinda redundant
     // isAutoCreatedPad: bool = False
@@ -138,6 +136,7 @@ pub struct SymbolMetadata {
 
     // isElfNotype: bool = False
 
+    //
     rodata_migration_behavior: RodataMigrationBehavior,
 
     /*
@@ -158,6 +157,7 @@ pub struct SymbolMetadata {
     """
     */
 
+    //
     is_autocreated_sym_from_other_sized_sym: bool,
 
     is_mips1_double: bool,
@@ -297,6 +297,10 @@ impl PartialOrd for SymbolMetadata {
 
 impl fmt::Debug for SymbolMetadata {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "SymbolMetadata {{ vram: 0x{}, name: {:?} }}", self.vram, self.name)
+        write!(
+            f,
+            "SymbolMetadata {{ vram: 0x{}, name: {:?} }}",
+            self.vram, self.name
+        )
     }
 }

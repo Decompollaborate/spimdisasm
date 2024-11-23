@@ -1,8 +1,8 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-mod global_config;
 mod context;
+mod global_config;
 
-pub use global_config::GlobalConfig;
 pub use context::{Context, OwnedSegmentNotFoundError};
+pub use global_config::GlobalConfig;

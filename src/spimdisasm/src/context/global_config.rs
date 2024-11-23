@@ -39,10 +39,7 @@ impl GlobalConfig {
         self.endian
     }
     pub const fn with_endian(self, endian: InputEndian) -> Self {
-        Self {
-            endian,
-            ..self
-        }
+        Self { endian, ..self }
     }
 }
 

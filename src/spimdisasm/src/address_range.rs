@@ -8,19 +8,22 @@ use rabbitizer::Vram;
 use crate::{rom_address::RomAddress, size::Size};
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct AddressRange<T>
-{
+pub struct AddressRange<T> {
     start: T,
     end: T,
 }
 
 impl<T> AddressRange<T>
-where T: Copy + PartialOrd
+where
+    T: Copy + PartialOrd,
 {
     #[must_use]
     pub fn new(start: T, end: T) -> Self {
-        assert!(start <= end, "An address range can't contain an `end` value that's smaller than the `start` one");
-        Self {start, end}
+        assert!(
+            start <= end,
+            "An address range can't contain an `end` value that's smaller than the `start` one"
+        );
+        Self { start, end }
     }
 
     #[must_use]
@@ -49,7 +52,8 @@ impl AddressRange<RomAddress> {
 }
 
 impl<T> AddressRange<T>
-where T: Copy + PartialOrd
+where
+    T: Copy + PartialOrd,
 {
     #[must_use]
     pub fn in_range(&self, value: T) -> bool {
@@ -69,9 +73,9 @@ where T: Copy + PartialOrd
     }
 }
 
-
 impl<T> fmt::Display for AddressRange<T>
-where T: fmt::Display
+where
+    T: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{{{}, {}}}", self.start, self.end)

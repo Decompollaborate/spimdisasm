@@ -2,13 +2,20 @@
 /* SPDX-License-Identifier: MIT */
 
 use rabbitizer::{InstructionFlags, Vram};
-use spimdisasm::{context::{Context, GlobalConfig}, rom_address::RomAddress, sections::{SectionText, SectionTextSettings}};
+use spimdisasm::{
+    context::{Context, GlobalConfig},
+    rom_address::RomAddress,
+    sections::{SectionText, SectionTextSettings},
+};
 
 #[cfg(test)]
 #[test]
 fn test_section_text_1() {
     use rabbitizer::DisplayFlags;
-    use spimdisasm::{address_range::AddressRange, parent_segment_info::ParentSegmentInfo, size::Size, symbols::Symbol};
+    use spimdisasm::{
+        address_range::AddressRange, parent_segment_info::ParentSegmentInfo, size::Size,
+        symbols::Symbol,
+    };
 
     let bytes = &[
         // 0x80000400
@@ -36,7 +43,6 @@ fn test_section_text_1() {
         0x27, 0xBD, 0x00, 0x18, // addiu
         0x03, 0xE0, 0x00, 0x08, // jr
         0x00, 0x00, 0x00, 0x00, //  nop
-
         // 0x80000460
         0x27, 0xBD, 0xFF, 0xD0, // addiu
         0x3C, 0x04, 0x01, 0x07, // lui
@@ -77,7 +83,6 @@ fn test_section_text_1() {
         0x27, 0xBD, 0x00, 0x30, // addiu
         0x03, 0xE0, 0x00, 0x08, // jr
         0x00, 0x00, 0x00, 0x00, //  nop
-
         // 0x800004FC
         0x27, 0xBD, 0xFF, 0xE8, // addiu
         0xAF, 0xBF, 0x00, 0x10, // sw
@@ -103,7 +108,16 @@ fn test_section_text_1() {
     let text_settings = SectionTextSettings::new(InstructionFlags::new());
     let display_flags = DisplayFlags::new();
 
-    let section_text = SectionText::new(&mut context, text_settings, "test".into(), bytes, rom, vram, ParentSegmentInfo::new(rom, None)).unwrap();
+    let section_text = SectionText::new(
+        &mut context,
+        text_settings,
+        "test".into(),
+        bytes,
+        rom,
+        vram,
+        ParentSegmentInfo::new(rom, None),
+    )
+    .unwrap();
 
     for func in section_text.functions() {
         println!("func_{}:", func.vram());
