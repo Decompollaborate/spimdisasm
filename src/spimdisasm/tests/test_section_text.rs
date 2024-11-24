@@ -13,8 +13,8 @@ use spimdisasm::{
 fn test_section_text_1() {
     use rabbitizer::DisplayFlags;
     use spimdisasm::{
-        address_range::AddressRange, parent_segment_info::ParentSegmentInfo, size::Size,
-        symbols::Symbol,
+        address_range::AddressRange, context::InputEndian, parent_segment_info::ParentSegmentInfo,
+        size::Size, symbols::Symbol,
     };
 
     let bytes = &[
@@ -99,7 +99,7 @@ fn test_section_text_1() {
     let vram = Vram::new(0x80000400);
     let size = Size::new(0x1000);
 
-    let global_config = GlobalConfig::new();
+    let global_config = GlobalConfig::new(InputEndian::Big);
     let mut context = Context::new(
         global_config,
         AddressRange::new(rom, rom + size),

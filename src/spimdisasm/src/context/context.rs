@@ -25,8 +25,8 @@ pub struct Context {
     // unknown_segment: SegmentMetadata,
 
     //
-    overlay_segments: BTreeMap<OverlayCategoryName, BTreeMap<RomAddress, SegmentMetadata>>,
-
+    overlay_segments:
+        BTreeMap<OverlayCategoryName, (SegmentMetadata, BTreeMap<RomAddress, SegmentMetadata>)>,
     //
     // totalVramRange: SymbolsRanges
 
@@ -84,7 +84,7 @@ impl Context {
     ) -> Result<&SegmentMetadata, OwnedSegmentNotFoundError> {
         if let Some(overlay_name) = info.overlay_category_name() {
             if let Some(segments_per_rom) = self.overlay_segments.get(overlay_name) {
-                if let Some(segment) = segments_per_rom.get(&info.segment_rom()) {
+                if let Some(segment) = segments_per_rom.1.get(&info.segment_rom()) {
                     debug_assert!(segment.category_name() == Some(overlay_name));
                     debug_assert!(segment.rom_range().start() == info.segment_rom());
                     return Ok(segment);
@@ -102,7 +102,7 @@ impl Context {
     ) -> Result<&mut SegmentMetadata, OwnedSegmentNotFoundError> {
         if let Some(overlay_category_name) = info.overlay_category_name() {
             if let Some(segments_per_rom) = self.overlay_segments.get_mut(overlay_category_name) {
-                if let Some(segment) = segments_per_rom.get_mut(&info.segment_rom()) {
+                if let Some(segment) = segments_per_rom.1.get_mut(&info.segment_rom()) {
                     debug_assert!(segment.category_name() == Some(overlay_category_name));
                     debug_assert!(segment.rom_range().start() == info.segment_rom());
                     return Ok(segment);
@@ -119,7 +119,8 @@ impl Context {
         &self,
         vram: Vram,
         info: &ParentSegmentInfo,
-    ) -> Option<&SegmentMetadata> { // TODO: Maybe remove Option and actually implement the unknown_segment?
+    ) -> Option<&SegmentMetadata> {
+        // TODO: Maybe remove Option and actually implement the unknown_segment?
         if self.global_segment.in_vram_range(vram) {
             return Some(&self.global_segment);
         }
@@ -127,7 +128,7 @@ impl Context {
         if let Some(overlay_category_name) = info.overlay_category_name() {
             // First check the segment associated to this category that matches the rom address of the parent segment to prioritize it.
             if let Some(segments_per_rom) = self.overlay_segments.get(overlay_category_name) {
-                if let Some(segment) = segments_per_rom.get(&info.segment_rom()) {
+                if let Some(segment) = segments_per_rom.1.get(&info.segment_rom()) {
                     if segment.in_vram_range(vram) {
                         return Some(segment);
                     }
@@ -139,10 +140,9 @@ impl Context {
                 if overlay_category_name == ovl_cat {
                     continue;
                 }
-                for segment in segments_per_rom.values() {
-                    if segment.in_vram_range(vram) {
-                        return Some(segment);
-                    }
+                let segment = &segments_per_rom.0;
+                if segment.in_vram_range(vram) {
+                    return Some(segment);
                 }
             }
         }
@@ -165,7 +165,7 @@ fn find_referenced_segment_mut_impl<'ctx>(
 
         polonius!(|slf| -> Option<&'polonius mut SegmentMetadata> {
             if let Some(segments_per_rom) = slf.overlay_segments.get_mut(overlay_category_name) {
-                if let Some(segment) = segments_per_rom.get_mut(&info.segment_rom()) {
+                if let Some(segment) = segments_per_rom.1.get_mut(&info.segment_rom()) {
                     if segment.in_vram_range(vram) {
                         polonius_return!(Some(segment));
                     }
@@ -178,10 +178,9 @@ fn find_referenced_segment_mut_impl<'ctx>(
             if overlay_category_name == ovl_cat {
                 continue;
             }
-            for segment in segments_per_rom.values_mut() {
-                if segment.in_vram_range(vram) {
-                    return Some(segment);
-                }
+            let segment = &mut segments_per_rom.0;
+            if segment.in_vram_range(vram) {
+                return Some(segment);
             }
         }
     }
@@ -194,7 +193,8 @@ impl Context {
         &mut self,
         vram: Vram,
         info: &ParentSegmentInfo,
-    ) -> Option<&mut SegmentMetadata> { // TODO: Maybe remove Option and actually implement the unknown_segment?
+    ) -> Option<&mut SegmentMetadata> {
+        // TODO: Maybe remove Option and actually implement the unknown_segment?
         find_referenced_segment_mut_impl(self, vram, info)
     }
 }

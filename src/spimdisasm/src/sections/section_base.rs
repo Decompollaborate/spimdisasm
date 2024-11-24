@@ -46,12 +46,12 @@ impl SectionBase {
     pub fn name(&self) -> &str {
         &self.name
     }
-    pub fn vram_offset(&self, local_offset: usize) -> Vram {
+    pub const fn vram_offset(&self, local_offset: usize) -> Vram {
         self.vram.add_offset(&VramOffset::new(local_offset as i32))
     }
-    pub fn rom_offset(&self, local_offset: usize) -> Option<RomAddress> {
+    pub const fn rom_offset(&self, local_offset: usize) -> Option<RomAddress> {
         if let Some(rom) = self.rom {
-            Some(rom + Size::new(local_offset as u32))
+            Some(rom.add_size(&Size::new(local_offset as u32)))
         } else {
             None
         }

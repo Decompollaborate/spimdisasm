@@ -156,7 +156,6 @@ pub struct SymbolMetadata {
     Allow or prohibit this symbol to be referenced by other symbols.
     """
     */
-
     //
     is_autocreated_sym_from_other_sized_sym: bool,
 

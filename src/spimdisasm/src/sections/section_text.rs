@@ -11,6 +11,7 @@ use crate::context::OwnedSegmentNotFoundError;
 use crate::metadata::segment_metadata::FindSettings;
 use crate::metadata::GeneratedBy;
 use crate::parent_segment_info::ParentSegmentInfo;
+use crate::size::Size;
 use crate::{
     context::Context,
     metadata::SymbolMetadata,
@@ -52,7 +53,7 @@ impl SectionText {
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
     ) -> Result<Self, OwnedSegmentNotFoundError> {
-        let instrs = instrs_from_bytes(&settings, context, &raw_bytes, vram);
+        let instrs = instrs_from_bytes(&settings, context, raw_bytes, vram);
         let mut section_base = SectionBase::new(name, Some(rom), vram, parent_segment_info);
         let funcs_start_data = find_functions(&settings, context, &mut section_base, &instrs)?;
 
@@ -65,7 +66,7 @@ impl SectionText {
             } else {
                 instrs.len()
             };
-            debug_assert!(*start < end);
+            debug_assert!(*start < end, "{:?} {} {} {}", rom, vram, *start, end);
 
             let local_offset = start * 4;
             let vram = section_base.vram_offset(local_offset);
@@ -84,6 +85,10 @@ impl SectionText {
             functions,
             symbol_vrams,
         })
+    }
+
+    pub fn name(&self) -> &str {
+        self.section_base.name()
     }
 
     // TODO: remove
@@ -305,7 +310,9 @@ fn find_functions(
         local_offset += 4;
     }
 
-    starts_data.push((prev_start, contains_invalid));
+    if prev_start != index {
+        starts_data.push((prev_start, contains_invalid));
+    }
 
     Ok(starts_data)
 }
@@ -436,7 +443,7 @@ fn find_functions_check_function_ended(
         // # If there's another function after this then the current function has ended
         if sym.is_trustable_function() {
             if let Some(sym_rom) = sym.rom() {
-                if RomAddress::new(current_rom.inner() + 8) == sym_rom {
+                if current_rom + Size::new(8) == sym_rom {
                     return Ok((true, false));
                 }
             } else {

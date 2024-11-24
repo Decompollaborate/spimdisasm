@@ -5,4 +5,4 @@ mod context;
 mod global_config;
 
 pub use context::{Context, OwnedSegmentNotFoundError};
-pub use global_config::GlobalConfig;
+pub use global_config::{GlobalConfig, InputEndian};

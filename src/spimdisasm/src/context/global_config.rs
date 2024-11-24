@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum InputEndian {
     Big,
     Little,
@@ -23,14 +23,8 @@ pub struct GlobalConfig {
 }
 
 impl GlobalConfig {
-    pub const fn default() -> Self {
-        Self {
-            endian: InputEndian::Big,
-        }
-    }
-
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(endian: InputEndian) -> Self {
+        Self { endian }
     }
 }
 
@@ -40,11 +34,5 @@ impl GlobalConfig {
     }
     pub const fn with_endian(self, endian: InputEndian) -> Self {
         Self { endian, ..self }
-    }
-}
-
-impl Default for GlobalConfig {
-    fn default() -> Self {
-        Self::default()
     }
 }
