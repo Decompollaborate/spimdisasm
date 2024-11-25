@@ -23,6 +23,7 @@ default = []
 std = []
 
 nightly = [] # Evil stuff, do not use.
+game_tests = [] # Tests that require game roms to run
 
 [dependencies]
 rabbitizer = { git = "https://github.com/Decompollaborate/rabbitizer.git", branch = "🦀" }

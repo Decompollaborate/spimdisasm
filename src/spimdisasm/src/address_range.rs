@@ -60,16 +60,19 @@ where
         self.start <= value && value < self.end
     }
 
-    pub fn decrease_start(&mut self, value: T) {
+    fn decrease_start(&mut self, value: T) {
         if value < self.start {
             self.start = value;
         }
     }
-
-    pub fn increase_end(&mut self, value: T) {
+    fn increase_end(&mut self, value: T) {
         if value >= self.end {
             self.end = value;
         }
+    }
+    pub(crate) fn expand_range(&mut self, other: &AddressRange<T>) {
+        self.decrease_start(other.start);
+        self.increase_end(other.end);
     }
 }
 

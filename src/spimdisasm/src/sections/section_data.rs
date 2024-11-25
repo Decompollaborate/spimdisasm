@@ -67,7 +67,7 @@ impl SectionData {
         let displacement = (4 - (vram.inner() % 4) as usize) % 4;
         // TODO: check for symbols in the displacement and everything that the `chunk_exact` may have left out
         for (i, word_bytes) in raw_bytes[displacement..].chunks_exact(4).enumerate() {
-            let local_offset = i * 4;
+            let local_offset = i * 4 + displacement;
             /*
             let word = context.global_config().endian().word_from_bytes(word_bytes);
 

@@ -3,7 +3,8 @@
 
 use core::fmt;
 
-use alloc::{boxed::Box, string::String};
+// use alloc::boxed::Box;
+use alloc::string::String;
 use rabbitizer::{access_type::AccessType, Vram};
 
 use crate::{rom_address::RomAddress, section_type::SectionType, size::Size};
@@ -62,6 +63,7 @@ pub enum RodataMigrationBehavior {
     MigrateToSpecificFunction(String),
 }
 
+#[derive(Clone, Hash)]
 #[allow(dead_code)]
 pub struct SymbolMetadata {
     generated_by: GeneratedBy,
@@ -77,8 +79,7 @@ pub struct SymbolMetadata {
     /// The only parameter is the ContextSymbol itself, and it should return a string containing the name of the symbol.
     ///
     /// Used by .get_name() instead of using the setted name or the default generated name.
-    name_get_callback: Option<Box<dyn FnOnce(&SymbolMetadata) -> String>>,
-
+    // name_get_callback: Option<Box<dyn FnOnce(&SymbolMetadata) -> String>>,
     user_declared_size: Option<Size>,
     autodetected_size: Option<Size>,
 
@@ -187,7 +188,7 @@ impl SymbolMetadata {
             c_string_info: None,
             pascal_string_info: None,
             reference_counter: 0,
-            name_get_callback: None,
+            // name_get_callback: None,
             got_info: None,
             accessed_as_gp_rel: false,
             rodata_migration_behavior: RodataMigrationBehavior::Default,

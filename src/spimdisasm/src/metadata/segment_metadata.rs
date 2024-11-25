@@ -20,6 +20,7 @@ use crate::{address_range::AddressRange, rom_address::RomAddress, section_type::
 use super::SymbolMetadata;
 use super::{symbol_metadata::GeneratedBy, OverlayCategoryName};
 
+#[derive(Debug, Clone, Hash, PartialEq, PartialOrd)]
 pub struct SegmentMetadata {
     rom_range: AddressRange<RomAddress>,
     vram_range: AddressRange<Vram>,
@@ -38,7 +39,7 @@ pub struct SegmentMetadata {
 }
 
 impl SegmentMetadata {
-    pub const fn new(
+    pub(crate) const fn new(
         rom_range: AddressRange<RomAddress>,
         vram_range: AddressRange<Vram>,
         category_name: Option<OverlayCategoryName>,
@@ -56,6 +57,11 @@ impl SegmentMetadata {
     pub const fn rom_range(&self) -> &AddressRange<RomAddress> {
         &self.rom_range
     }
+    /*
+    pub(crate) fn rom_range_mut(&mut self) -> &mut AddressRange<RomAddress> {
+        &mut self.rom_range
+    }
+    */
     pub fn in_rom_range(&self, rom: RomAddress) -> bool {
         self.rom_range.in_range(rom)
     }
@@ -63,6 +69,11 @@ impl SegmentMetadata {
     pub const fn vram_range(&self) -> &AddressRange<Vram> {
         &self.vram_range
     }
+    /*
+    pub(crate) fn vram_range_mut(&mut self) -> &mut AddressRange<Vram> {
+        &mut self.vram_range
+    }
+    */
     pub fn in_vram_range(&self, vram: Vram) -> bool {
         self.vram_range.in_range(vram)
     }
@@ -234,7 +245,11 @@ impl SegmentMetadata {
     #[must_use]
     // TODO: remove `allow`
     #[allow(dead_code)]
-    pub(crate) fn find_symbol(&self, vram: Vram, settings: FindSettings) -> Option<&SymbolMetadata> {
+    pub(crate) fn find_symbol(
+        &self,
+        vram: Vram,
+        settings: FindSettings,
+    ) -> Option<&SymbolMetadata> {
         if !settings.allow_addend {
             self.symbols.get(&vram)
         } else {
@@ -255,7 +270,7 @@ impl SegmentMetadata {
     #[must_use]
     // TODO: remove `allow`
     #[allow(dead_code)]
-    pub(crate)  fn find_symbol_mut(
+    pub(crate) fn find_symbol_mut(
         &mut self,
         vram: Vram,
         settings: FindSettings,

@@ -1,22 +1,21 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use rabbitizer::{InstructionFlags, Vram};
+use rabbitizer::{DisplayFlags, InstructionFlags, Vram};
 use spimdisasm::{
-    context::{Context, GlobalConfig},
+    address_range::AddressRange,
+    context::GlobalConfig,
+    context::{ContextBuilder, InputEndian},
+    parent_segment_info::ParentSegmentInfo,
     rom_address::RomAddress,
     sections::{SectionText, SectionTextSettings},
+    size::Size,
+    symbols::Symbol,
 };
 
 #[cfg(test)]
 #[test]
 fn test_section_text_1() {
-    use rabbitizer::DisplayFlags;
-    use spimdisasm::{
-        address_range::AddressRange, context::InputEndian, parent_segment_info::ParentSegmentInfo,
-        size::Size, symbols::Symbol,
-    };
-
     let bytes = &[
         // 0x80000400
         0x27, 0xBD, 0xFF, 0xE8, // addiu
@@ -100,11 +99,16 @@ fn test_section_text_1() {
     let size = Size::new(0x1000);
 
     let global_config = GlobalConfig::new(InputEndian::Big);
-    let mut context = Context::new(
+    let mut context = ContextBuilder::new(
         global_config,
         AddressRange::new(rom, rom + size),
         AddressRange::new(vram, vram + size),
-    );
+    )
+    .process()
+    .process()
+    .process()
+    .build();
+
     let text_settings = SectionTextSettings::new(InstructionFlags::new());
     let display_flags = DisplayFlags::new();
 

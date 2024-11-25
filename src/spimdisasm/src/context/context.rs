@@ -10,13 +10,29 @@ use ::polonius_the_crab::prelude::*;
 use rabbitizer::Vram;
 
 use crate::{
-    address_range::AddressRange,
     metadata::{OverlayCategoryName, SegmentMetadata},
     parent_segment_info::ParentSegmentInfo,
     rom_address::RomAddress,
 };
 
 use super::GlobalConfig;
+
+pub struct OverlayCategory {
+    placeholder_segment: SegmentMetadata,
+    segments: BTreeMap<RomAddress, SegmentMetadata>,
+}
+
+impl OverlayCategory {
+    pub(crate) fn new(
+        placeholder_segment: SegmentMetadata,
+        segments: BTreeMap<RomAddress, SegmentMetadata>,
+    ) -> Self {
+        Self {
+            placeholder_segment,
+            segments,
+        }
+    }
+}
 
 pub struct Context {
     global_config: GlobalConfig,
@@ -25,8 +41,7 @@ pub struct Context {
     // unknown_segment: SegmentMetadata,
 
     //
-    overlay_segments:
-        BTreeMap<OverlayCategoryName, (SegmentMetadata, BTreeMap<RomAddress, SegmentMetadata>)>,
+    overlay_segments: BTreeMap<OverlayCategoryName, OverlayCategory>,
     //
     // totalVramRange: SymbolsRanges
 
@@ -42,17 +57,15 @@ pub struct Context {
 }
 
 impl Context {
-    pub fn new(
+    pub(crate) fn new(
         global_config: GlobalConfig,
-        global_rom_range: AddressRange<RomAddress>,
-        global_vram_range: AddressRange<Vram>,
+        global_segment: SegmentMetadata,
+        overlay_segments: BTreeMap<OverlayCategoryName, OverlayCategory>,
     ) -> Self {
-        let global_segment = SegmentMetadata::new(global_rom_range, global_vram_range, None);
-
         Self {
             global_config,
             global_segment,
-            overlay_segments: BTreeMap::new(),
+            overlay_segments,
         }
     }
 }
@@ -86,7 +99,7 @@ impl Context {
     ) -> Result<&SegmentMetadata, OwnedSegmentNotFoundError> {
         if let Some(overlay_name) = info.overlay_category_name() {
             if let Some(segments_per_rom) = self.overlay_segments.get(overlay_name) {
-                if let Some(segment) = segments_per_rom.1.get(&info.segment_rom()) {
+                if let Some(segment) = segments_per_rom.segments.get(&info.segment_rom()) {
                     debug_assert!(segment.category_name() == Some(overlay_name));
                     debug_assert!(segment.rom_range().start() == info.segment_rom());
                     return Ok(segment);
@@ -104,7 +117,7 @@ impl Context {
     ) -> Result<&mut SegmentMetadata, OwnedSegmentNotFoundError> {
         if let Some(overlay_category_name) = info.overlay_category_name() {
             if let Some(segments_per_rom) = self.overlay_segments.get_mut(overlay_category_name) {
-                if let Some(segment) = segments_per_rom.1.get_mut(&info.segment_rom()) {
+                if let Some(segment) = segments_per_rom.segments.get_mut(&info.segment_rom()) {
                     debug_assert!(segment.category_name() == Some(overlay_category_name));
                     debug_assert!(segment.rom_range().start() == info.segment_rom());
                     return Ok(segment);
@@ -132,7 +145,7 @@ impl Context {
         if let Some(overlay_category_name) = info.overlay_category_name() {
             // First check the segment associated to this category that matches the rom address of the parent segment to prioritize it.
             if let Some(segments_per_rom) = self.overlay_segments.get(overlay_category_name) {
-                if let Some(segment) = segments_per_rom.1.get(&info.segment_rom()) {
+                if let Some(segment) = segments_per_rom.segments.get(&info.segment_rom()) {
                     if segment.in_vram_range(vram) {
                         return Some(segment);
                     }
@@ -144,7 +157,7 @@ impl Context {
                 if overlay_category_name == ovl_cat {
                     continue;
                 }
-                let segment = &segments_per_rom.0;
+                let segment = &segments_per_rom.placeholder_segment;
                 if segment.in_vram_range(vram) {
                     return Some(segment);
                 }
@@ -169,7 +182,7 @@ fn find_referenced_segment_mut_impl<'ctx>(
 
         polonius!(|slf| -> Option<&'polonius mut SegmentMetadata> {
             if let Some(segments_per_rom) = slf.overlay_segments.get_mut(overlay_category_name) {
-                if let Some(segment) = segments_per_rom.1.get_mut(&info.segment_rom()) {
+                if let Some(segment) = segments_per_rom.segments.get_mut(&info.segment_rom()) {
                     if segment.in_vram_range(vram) {
                         polonius_return!(Some(segment));
                     }
@@ -182,7 +195,7 @@ fn find_referenced_segment_mut_impl<'ctx>(
             if overlay_category_name == ovl_cat {
                 continue;
             }
-            let segment = &mut segments_per_rom.0;
+            let segment = &mut segments_per_rom.placeholder_segment;
             if segment.in_vram_range(vram) {
                 return Some(segment);
             }
