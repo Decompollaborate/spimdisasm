@@ -78,7 +78,9 @@ impl fmt::Display for OwnedSegmentNotFoundError {
 impl error::Error for OwnedSegmentNotFoundError {}
 
 impl Context {
-    pub /*(crate)*/ fn find_owned_segment(
+    // TODO: remove `allow`
+    #[allow(dead_code)]
+    pub(crate) fn find_owned_segment(
         &self,
         info: &ParentSegmentInfo,
     ) -> Result<&SegmentMetadata, OwnedSegmentNotFoundError> {
@@ -115,7 +117,9 @@ impl Context {
         Err(OwnedSegmentNotFoundError {})
     }
 
-    pub/*(crate)*/ fn find_referenced_segment(
+    // TODO: remove `allow`
+    #[allow(dead_code)]
+    pub(crate) fn find_referenced_segment(
         &self,
         vram: Vram,
         info: &ParentSegmentInfo,
@@ -189,7 +193,9 @@ fn find_referenced_segment_mut_impl<'ctx>(
 }
 
 impl Context {
-    pub/*(crate)*/ fn find_referenced_segment_mut(
+    // TODO: remove `allow`
+    #[allow(dead_code)]
+    pub(crate) fn find_referenced_segment_mut(
         &mut self,
         vram: Vram,
         info: &ParentSegmentInfo,

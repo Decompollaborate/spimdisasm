@@ -220,6 +220,9 @@ impl SymbolMetadata {
     pub fn autodetected_size(&self) -> Option<Size> {
         self.autodetected_size
     }
+    pub fn set_autodetected_size(&mut self, size: Size) {
+        self.autodetected_size = Some(size);
+    }
     pub fn size(&self) -> Size {
         // TODO
 

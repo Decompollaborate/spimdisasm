@@ -1,6 +1,9 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use alloc::collections::btree_map::BTreeMap;
+use alloc::vec::Vec;
+
 #[cfg(not(feature = "nightly"))]
 use ::polonius_the_crab::prelude::*;
 
@@ -9,7 +12,6 @@ use alloc::collections::btree_map;
 #[cfg(feature = "nightly")]
 use core::ops::Bound;
 
-use alloc::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use rabbitizer::Vram;
 
 use crate::size::Size;
@@ -30,7 +32,7 @@ pub struct SegmentMetadata {
     //
     /// Stuff that looks like pointers. Found referenced by data.
     // TODO: consider changing to a Map and store which symbol added this possible pointer.
-    _new_pointer_in_data: BTreeSet<Vram>,
+    new_pointer_in_data: BTreeMap<Vram, Vec<RomAddress>>,
     //
     // is_the_unknown_segment: bool,
 }
@@ -47,7 +49,7 @@ impl SegmentMetadata {
             category_name,
 
             symbols: BTreeMap::new(),
-            _new_pointer_in_data: BTreeSet::new(),
+            new_pointer_in_data: BTreeMap::new(),
         }
     }
 
@@ -202,11 +204,15 @@ pub struct FindSettings {
 }
 
 impl FindSettings {
-    pub const fn new() -> Self {
+    pub const fn default() -> Self {
         Self {
             allow_addend: true,
             check_upper_limit: true,
         }
+    }
+
+    pub const fn new() -> Self {
+        Self::default()
     }
 
     pub const fn with_allow_addend(self, allow_addend: bool) -> Self {
@@ -226,7 +232,9 @@ impl FindSettings {
 
 impl SegmentMetadata {
     #[must_use]
-    pub /*(crate)*/ fn find_symbol(&self, vram: Vram, settings: FindSettings) -> Option<&SymbolMetadata> {
+    // TODO: remove `allow`
+    #[allow(dead_code)]
+    pub(crate) fn find_symbol(&self, vram: Vram, settings: FindSettings) -> Option<&SymbolMetadata> {
         if !settings.allow_addend {
             self.symbols.get(&vram)
         } else {
@@ -245,7 +253,9 @@ impl SegmentMetadata {
     }
 
     #[must_use]
-    pub /*(crate)*/ fn find_symbol_mut(
+    // TODO: remove `allow`
+    #[allow(dead_code)]
+    pub(crate)  fn find_symbol_mut(
         &mut self,
         vram: Vram,
         settings: FindSettings,
@@ -265,6 +275,22 @@ impl SegmentMetadata {
                 None
             }
         }
+    }
+}
+
+impl SegmentMetadata {
+    pub(crate) fn add_possible_pointer_in_data(
+        &mut self,
+        possible_pointer: Vram,
+        rom_address_referencing_pointer: RomAddress,
+    ) {
+        self.new_pointer_in_data
+            .entry(possible_pointer)
+            .or_insert_with(Vec::new)
+            .push(rom_address_referencing_pointer);
+    }
+    pub(crate) fn is_vram_a_possible_pointer_in_data(&self, vram: Vram) -> bool {
+        self.new_pointer_in_data.contains_key(&vram)
     }
 }
 

@@ -53,8 +53,23 @@ impl SectionText {
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
     ) -> Result<Self, OwnedSegmentNotFoundError> {
-        let instrs = instrs_from_bytes(&settings, context, raw_bytes, vram);
+        assert!(
+            !raw_bytes.is_empty(),
+            "Can't initialize a section with empty bytes. {:?} {:?}",
+            rom,
+            vram
+        );
+        assert!(
+            vram.inner() % 4 == 0,
+            "Vram address must be aligned to 4 bytes"
+        );
+        assert!(
+            rom.inner() % 4 == 0,
+            "Rom address must be aligned to 4 bytes"
+        );
+
         let mut section_base = SectionBase::new(name, Some(rom), vram, parent_segment_info);
+        let instrs = instrs_from_bytes(&settings, context, raw_bytes, vram);
         let funcs_start_data = find_functions(&settings, context, &mut section_base, &instrs)?;
 
         let mut functions = Vec::new();

@@ -7,7 +7,7 @@ use spimdisasm::{
     context::{Context, GlobalConfig, InputEndian},
     parent_segment_info::ParentSegmentInfo,
     rom_address::RomAddress,
-    sections::{SectionText, SectionTextSettings},
+    sections::{SectionData, SectionDataSettings, SectionText, SectionTextSettings},
     size::Size,
 };
 
@@ -48,15 +48,17 @@ impl TestSegmentInfo {
 }
 
 pub struct SegmentData {
+    // TODO: remove
+    #[allow(dead_code)]
     name: String,
     #[allow(dead_code)]
     text_sections: Vec<SectionText>,
-    // data_sections: Vec<SectionData>,
+    data_sections: Vec<SectionData>,
     // rodata_sections: Vec<SectionRodata>,
     // bss_sections: Vec<SectionBss>,
 }
 
-// #[test]
+#[test]
 #[allow(dead_code)]
 fn drmario64_us() {
     let drmario64_us_segments = vec![
@@ -868,6 +870,7 @@ fn drmario64_us() {
                 | TestSegment::EndMarker(segment_rom_end),
             ) => {
                 let mut text_sections = Vec::new();
+                let mut data_sections = Vec::new();
 
                 let parent_segment_info = ParentSegmentInfo::new(info.rom, None);
 
@@ -901,7 +904,21 @@ fn drmario64_us() {
                                 .unwrap(),
                             );
                         }
-                        TestSection::Data(..) => {}
+                        TestSection::Data(rom, name) => {
+                            let data_settings = SectionDataSettings::new();
+                            data_sections.push(
+                                SectionData::new(
+                                    &mut context,
+                                    data_settings,
+                                    (*name).into(),
+                                    &rom_bytes[rom.inner() as usize..rom_end.inner() as usize],
+                                    *rom,
+                                    info.vram_from_rom(*rom),
+                                    parent_segment_info.clone(),
+                                )
+                                .unwrap(),
+                            );
+                        }
                         TestSection::Rodata(..) => {}
                         TestSection::Bss(..) => {}
                         TestSection::Bin(..) => {}
@@ -910,12 +927,13 @@ fn drmario64_us() {
                 segments.push(SegmentData {
                     name: info.name.into(),
                     text_sections,
+                    data_sections,
                 });
             }
         }
     }
 
-    assert_eq!(context.global_segment().symbols().len(), 1402);
+    assert_eq!(context.global_segment().symbols().len(), 1459);
 
     /*
     for seg in &segments {
@@ -934,4 +952,15 @@ fn drmario64_us() {
         })
         .sum();
     assert_eq!(function_count, 1402);
+
+    let data_syms_count: usize = segments
+        .iter()
+        .map(|x| {
+            x.data_sections
+                .iter()
+                .map(|y| y.data_symbols().len())
+                .sum::<usize>()
+        })
+        .sum();
+    assert_eq!(data_syms_count, 57);
 }
