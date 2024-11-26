@@ -32,7 +32,6 @@ pub struct SegmentMetadata {
 
     //
     /// Stuff that looks like pointers. Found referenced by data.
-    // TODO: consider changing to a Map and store which symbol added this possible pointer.
     new_pointer_in_data: BTreeMap<Vram, Vec<RomAddress>>,
     //
     // is_the_unknown_segment: bool,

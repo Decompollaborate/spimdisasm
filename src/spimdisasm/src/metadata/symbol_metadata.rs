@@ -355,7 +355,7 @@ impl fmt::Debug for SymbolMetadata {
     }
 }
 
-fn should_escape_symbol(name: &String) -> bool {
+fn should_escape_symbol(name: &str) -> bool {
     name.contains('@')
 }
 

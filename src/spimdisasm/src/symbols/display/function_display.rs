@@ -1,8 +1,6 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-// TODO: maybe rename to FunctionDisplay?
-
 use core::fmt;
 
 use alloc::string::String;

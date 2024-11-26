@@ -112,8 +112,6 @@ impl<'a> SegmentModifier<'a> {
         *sym.user_declared_name_mut() = Some(name);
         sym
     }
-
-    //TODO: the rest
 }
 
 pub struct ContextBuilder {
