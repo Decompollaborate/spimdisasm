@@ -17,6 +17,7 @@ use crate::{
 
 use super::GlobalConfig;
 
+#[derive(Debug, Clone, Hash, PartialEq)]
 pub struct OverlayCategory {
     placeholder_segment: SegmentMetadata,
     segments: BTreeMap<RomAddress, SegmentMetadata>,
@@ -34,6 +35,7 @@ impl OverlayCategory {
     }
 }
 
+#[derive(Debug, Clone, Hash, PartialEq)]
 pub struct Context {
     global_config: GlobalConfig,
 
@@ -89,6 +91,11 @@ impl fmt::Display for OwnedSegmentNotFoundError {
     }
 }
 impl error::Error for OwnedSegmentNotFoundError {}
+impl From<OwnedSegmentNotFoundError> for fmt::Error {
+    fn from(_value: OwnedSegmentNotFoundError) -> Self {
+        Self {}
+    }
+}
 
 impl Context {
     // TODO: remove `allow`

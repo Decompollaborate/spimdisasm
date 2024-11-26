@@ -13,13 +13,13 @@ use crate::{
     size::Size,
 };
 
-use super::{Symbol, SymbolBase};
+use super::Symbol;
 
 pub struct SymbolData {
-    symbol_base: SymbolBase,
-    // TODO: remove
-    #[allow(dead_code)]
+    rom: RomAddress,
+    vram: Vram,
     raw_bytes: Vec<u8>,
+    parent_segment_info: ParentSegmentInfo,
 }
 
 impl SymbolData {
@@ -29,10 +29,10 @@ impl SymbolData {
         rom: RomAddress,
         vram: Vram,
         _in_section_offset: usize,
-        parent_segment_info: &ParentSegmentInfo,
+        parent_segment_info: ParentSegmentInfo,
     ) -> Result<Self, OwnedSegmentNotFoundError> {
         let sym = context
-            .find_owned_segment_mut(parent_segment_info)?
+            .find_owned_segment_mut(&parent_segment_info)?
             .add_symbol(
                 vram,
                 Some(rom),
@@ -40,17 +40,39 @@ impl SymbolData {
                 Some(SectionType::Data),
                 false,
             );
-        sym.set_autodetected_size(Size::new(raw_bytes.len() as u32));
+        *sym.autodetected_size_mut() = Some(Size::new(raw_bytes.len() as u32));
+        sym.set_defined();
 
         Ok(Self {
-            symbol_base: SymbolBase::new(Some(rom), vram),
+            rom,
+            vram,
             raw_bytes,
+            parent_segment_info,
         })
     }
 }
 
+impl SymbolData {
+    pub fn rom(&self) -> RomAddress {
+        self.rom
+    }
+
+    // TODO: maybe remove?
+    pub fn raw_bytes(&self) -> &[u8] {
+        &self.raw_bytes
+    }
+}
+
 impl Symbol for SymbolData {
-    fn symbol_base(&self) -> &SymbolBase {
-        &self.symbol_base
+    fn vram(&self) -> Vram {
+        self.vram
+    }
+
+    fn size(&self) -> Size {
+        Size::new(self.raw_bytes.len() as u32)
+    }
+
+    fn parent_segment_info(&self) -> &ParentSegmentInfo {
+        &self.parent_segment_info
     }
 }

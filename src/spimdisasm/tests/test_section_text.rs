@@ -10,12 +10,13 @@ use spimdisasm::{
     rom_address::RomAddress,
     sections::{SectionText, SectionTextSettings},
     size::Size,
-    symbols::Symbol,
 };
 
 #[cfg(test)]
 #[test]
 fn test_section_text_1() {
+    use spimdisasm::symbols::display::FunctionDisplaySettings;
+
     let bytes = &[
         // 0x80000400
         0x27, 0xBD, 0xFF, 0xE8, // addiu
@@ -110,7 +111,7 @@ fn test_section_text_1() {
     .build();
 
     let text_settings = SectionTextSettings::new(InstructionFlags::new());
-    let display_flags = DisplayFlags::new();
+    let instr_display_flags = DisplayFlags::default();
 
     let section_text = SectionText::new(
         &mut context,
@@ -123,14 +124,18 @@ fn test_section_text_1() {
     )
     .unwrap();
 
+    let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
     for func in section_text.functions() {
+        /*
         println!("func_{}:", func.vram());
 
         for instr in func.instructions() {
             println!("{}", instr.display(None, &display_flags));
         }
+        */
+        println!("{}", func.display(&context, &function_display_settings));
 
-        println!();
+        // println!();
     }
 
     assert_eq!(section_text.functions().len(), 3);
@@ -141,5 +146,5 @@ fn test_section_text_1() {
     }
     assert_eq!(symbols.len(), 3);
 
-    // None::<u32>.unwrap();
+    None::<u32>.unwrap();
 }

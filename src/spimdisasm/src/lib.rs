@@ -4,6 +4,7 @@
 #![cfg_attr(feature = "nightly", feature(btree_cursors))]
 #![cfg_attr(not(feature = "std"), no_std)]
 
+// #[macro_use]
 extern crate alloc;
 pub extern crate rabbitizer;
 

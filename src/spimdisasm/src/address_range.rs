@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use core::fmt;
+use core::{fmt, ops};
 
 use rabbitizer::Vram;
 
@@ -82,5 +82,14 @@ where
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{{{}, {}}}", self.start, self.end)
+    }
+}
+
+impl ops::Index<AddressRange<RomAddress>> for [u8] {
+    type Output = [u8];
+
+    #[inline]
+    fn index(&self, index: AddressRange<RomAddress>) -> &Self::Output {
+        &self[index.start.inner() as usize..index.end.inner() as usize]
     }
 }

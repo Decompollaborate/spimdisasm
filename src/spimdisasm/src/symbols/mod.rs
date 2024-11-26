@@ -1,10 +1,11 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-mod symbol_base;
+pub mod display;
 mod symbol_data;
 mod symbol_function;
+mod trait_symbol;
 
-pub use symbol_base::{Symbol, SymbolBase};
 pub use symbol_data::SymbolData;
 pub use symbol_function::SymbolFunction;
+pub use trait_symbol::Symbol;

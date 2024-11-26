@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub enum InputEndian {
     Big,
     Little,
@@ -18,6 +18,7 @@ impl InputEndian {
     }
 }
 
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub struct GlobalConfig {
     endian: InputEndian,
 }

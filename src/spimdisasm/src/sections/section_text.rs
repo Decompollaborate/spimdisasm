@@ -90,7 +90,7 @@ impl SectionText {
             symbol_vrams.insert(vram);
 
             // TODO: get rid of unwrap?
-            let /*mut*/ func = SymbolFunction::new(context, instrs[*start..end].into(), rom.unwrap(), vram, local_offset, section_base.parent_segment_info())?;
+            let /*mut*/ func = SymbolFunction::new(context, instrs[*start..end].into(), rom.unwrap(), vram, local_offset, section_base.parent_segment_info().clone())?;
 
             functions.push(func);
         }

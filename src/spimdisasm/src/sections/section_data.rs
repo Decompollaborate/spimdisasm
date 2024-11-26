@@ -136,7 +136,7 @@ impl SectionData {
             symbol_vrams.insert(*new_vram_sym);
 
             // TODO: get rid of unwrap?
-            let /*mut*/ sym = SymbolData::new(context, raw_bytes[start..end].into(), rom, *new_vram_sym, local_offset, &parent_segment_info)?;
+            let /*mut*/ sym = SymbolData::new(context, raw_bytes[start..end].into(), rom, *new_vram_sym, local_offset, parent_segment_info.clone())?;
 
             data_symbols.push(sym);
         }

@@ -40,3 +40,12 @@ impl fmt::Debug for RomAddress {
         write!(f, "RomAddress {{ 0x{:08X} }}", self.inner)
     }
 }
+
+impl ops::Index<RomAddress> for [u8] {
+    type Output = u8;
+
+    #[inline]
+    fn index(&self, idx: RomAddress) -> &Self::Output {
+        &self[idx.inner as usize]
+    }
+}

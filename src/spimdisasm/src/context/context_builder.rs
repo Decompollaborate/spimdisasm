@@ -3,6 +3,7 @@
 
 use alloc::{
     collections::btree_map::{self, BTreeMap},
+    string::String,
     vec::Vec,
 };
 use rabbitizer::Vram;
@@ -11,6 +12,7 @@ use crate::{
     address_range::AddressRange,
     metadata::{GeneratedBy, OverlayCategoryName, SegmentMetadata, SymbolMetadata},
     rom_address::RomAddress,
+    sections::{SectionDataSettings, SectionTextSettings},
 };
 
 use super::{context::OverlayCategory, Context, GlobalConfig};
@@ -20,18 +22,97 @@ pub struct SegmentModifier<'a> {
 }
 
 impl<'a> SegmentModifier<'a> {
-    pub fn add_symbol(&mut self, vram: Vram, rom: Option<RomAddress>) -> &mut SymbolMetadata {
-        self.segment
-            .add_symbol(vram, rom, GeneratedBy::UserDeclared, None, false)
-    }
-    pub fn add_global_function(
+    pub fn add_symbol(
         &mut self,
+        name: String,
         vram: Vram,
         rom: Option<RomAddress>,
     ) -> &mut SymbolMetadata {
-        self.segment
-            .add_function(vram, rom, GeneratedBy::UserDeclared)
+        let sym = self
+            .segment
+            .add_symbol(vram, rom, GeneratedBy::UserDeclared, None, false);
+        *sym.user_declared_name_mut() = Some(name);
+        sym
     }
+
+    pub fn add_function(
+        &mut self,
+        name: String,
+        vram: Vram,
+        rom: Option<RomAddress>,
+    ) -> &mut SymbolMetadata {
+        let sym = self
+            .segment
+            .add_function(vram, rom, GeneratedBy::UserDeclared);
+        *sym.user_declared_name_mut() = Some(name);
+        sym
+    }
+
+    pub fn add_branch_label(
+        &mut self,
+        name: String,
+        vram: Vram,
+        rom: Option<RomAddress>,
+    ) -> &mut SymbolMetadata {
+        let sym = self
+            .segment
+            .add_branch_label(vram, rom, GeneratedBy::UserDeclared);
+        *sym.user_declared_name_mut() = Some(name);
+        sym
+    }
+
+    pub fn add_jumptable(
+        &mut self,
+        name: String,
+        vram: Vram,
+        rom: Option<RomAddress>,
+    ) -> &mut SymbolMetadata {
+        let sym = self
+            .segment
+            .add_jumptable(vram, rom, GeneratedBy::UserDeclared);
+        *sym.user_declared_name_mut() = Some(name);
+        sym
+    }
+
+    pub fn add_jumptable_label(
+        &mut self,
+        name: String,
+        vram: Vram,
+        rom: Option<RomAddress>,
+    ) -> &mut SymbolMetadata {
+        let sym = self
+            .segment
+            .add_jumptable_label(vram, rom, GeneratedBy::UserDeclared);
+        *sym.user_declared_name_mut() = Some(name);
+        sym
+    }
+
+    pub fn add_gcc_except_table(
+        &mut self,
+        name: String,
+        vram: Vram,
+        rom: Option<RomAddress>,
+    ) -> &mut SymbolMetadata {
+        let sym = self
+            .segment
+            .add_gcc_except_table(vram, rom, GeneratedBy::UserDeclared);
+        *sym.user_declared_name_mut() = Some(name);
+        sym
+    }
+
+    pub fn add_gcc_except_table_label(
+        &mut self,
+        name: String,
+        vram: Vram,
+        rom: Option<RomAddress>,
+    ) -> &mut SymbolMetadata {
+        let sym = self
+            .segment
+            .add_gcc_except_table_label(vram, rom, GeneratedBy::UserDeclared);
+        *sym.user_declared_name_mut() = Some(name);
+        sym
+    }
+
     //TODO: the rest
 }
 
@@ -95,7 +176,12 @@ impl<'a> OverlaysBuilder<'a> {
         }
     }
 
-    pub fn build(self) {
+    // TODO: proper error type
+    pub fn build(self) -> Result<(), ()> {
+        if self.overlays.is_empty() {
+            return Err(());
+        }
+
         let mut segments = BTreeMap::new();
 
         let mut rom_range = *self.overlays[0].rom_range();
@@ -110,6 +196,7 @@ impl<'a> OverlaysBuilder<'a> {
         let placeholder_segment = SegmentMetadata::new(rom_range, vram_range, Some(self.name));
         self.entry
             .or_insert(OverlayCategory::new(placeholder_segment, segments));
+        Ok(())
     }
 }
 
@@ -164,6 +251,49 @@ pub struct ContextBuilderFinderHeater {
 }
 
 impl ContextBuilderFinderHeater {
+    pub fn preanalyze_text(
+        &mut self,
+        _settings: SectionTextSettings,
+        _raw_bytes: &[u8],
+        _rom: RomAddress,
+        _vram: Vram,
+    ) {
+    }
+
+    pub fn preanalyze_data(
+        &mut self,
+        _settings: SectionDataSettings,
+        _raw_bytes: &[u8],
+        _rom: RomAddress,
+        _vram: Vram,
+    ) {
+    }
+
+    pub fn preanalyze_rodata(
+        &mut self,
+        _settings: SectionDataSettings,
+        raw_bytes: &[u8],
+        _rom: RomAddress,
+        vram: Vram,
+    ) {
+        // Look for stuff that looks like addresses which point to symbols on this section
+        let displacement = (4 - (vram.inner() % 4) as usize) % 4;
+        for (i, _word_bytes) in raw_bytes[displacement..].chunks_exact(4).enumerate() {
+            let _local_offset = i * 4 + displacement;
+
+            // let current_rom = rom + Size::new(local_offset as u32);
+        }
+    }
+
+    pub fn preanalyze_gcc_except_table(
+        &mut self,
+        _settings: SectionDataSettings,
+        _raw_bytes: &[u8],
+        _rom: RomAddress,
+        _vram: Vram,
+    ) {
+    }
+
     pub fn process(self) -> ContextBuilderFinderHeaterOverlays {
         ContextBuilderFinderHeaterOverlays {
             global_config: self.global_config,
