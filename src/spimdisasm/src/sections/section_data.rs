@@ -35,7 +35,7 @@ pub struct SectionData {
 impl SectionData {
     pub fn new(
         context: &mut Context,
-        _settings: SectionDataSettings,
+        _settings: &SectionDataSettings,
         name: String,
         raw_bytes: &[u8],
         rom: RomAddress,

@@ -10,14 +10,12 @@ use spimdisasm::{
     rom_address::RomAddress,
     sections::{SectionText, SectionTextSettings},
     size::Size,
+    symbols::display::FunctionDisplaySettings,
 };
 
-#[cfg(test)]
 #[test]
 fn test_section_text_1() {
-    use spimdisasm::symbols::display::FunctionDisplaySettings;
-
-    let bytes = &[
+    let bytes = [
         // 0x80000400
         0x27, 0xBD, 0xFF, 0xE8, // addiu
         0xAF, 0xB0, 0x00, 0x10, // sw
@@ -99,25 +97,30 @@ fn test_section_text_1() {
     let vram = Vram::new(0x80000400);
     let size = Size::new(0x1000);
 
-    let global_config = GlobalConfig::new(InputEndian::Big);
-    let mut context = ContextBuilder::new(
-        global_config,
-        AddressRange::new(rom, rom + size),
-        AddressRange::new(vram, vram + size),
-    )
-    .process()
-    .process()
-    .process()
-    .build();
-
     let text_settings = SectionTextSettings::new(InstructionFlags::new());
+
+    let global_config = GlobalConfig::new(InputEndian::Big);
+    let mut context = {
+        let mut heater = ContextBuilder::new(
+            global_config,
+            AddressRange::new(rom, rom + size),
+            AddressRange::new(vram, vram + size),
+        )
+        .process()
+        .process();
+
+        heater.preanalyze_text(&text_settings, &bytes, rom, vram);
+
+        heater.process().build()
+    };
+
     let instr_display_flags = DisplayFlags::default();
 
     let section_text = SectionText::new(
         &mut context,
-        text_settings,
+        &text_settings,
         "test".into(),
-        bytes,
+        &bytes,
         rom,
         vram,
         ParentSegmentInfo::new(rom, None),
@@ -126,16 +129,7 @@ fn test_section_text_1() {
 
     let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
     for func in section_text.functions() {
-        /*
-        println!("func_{}:", func.vram());
-
-        for instr in func.instructions() {
-            println!("{}", instr.display(None, &display_flags));
-        }
-        */
         println!("{}", func.display(&context, &function_display_settings));
-
-        // println!();
     }
 
     assert_eq!(section_text.functions().len(), 3);

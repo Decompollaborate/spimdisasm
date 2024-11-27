@@ -173,19 +173,19 @@ fn init_context(
 
                     match sect {
                         TestSection::Text(rom, _) => finder_heater.preanalyze_text(
-                            SectionTextSettings::new(InstructionFlags::default()),
+                            &SectionTextSettings::new(InstructionFlags::default()),
                             &rom_bytes[AddressRange::new(*rom, rom_end)],
                             *rom,
                             info.vram_from_rom(*rom),
                         ),
                         TestSection::Data(rom, _) => finder_heater.preanalyze_data(
-                            SectionDataSettings::new(),
+                            &SectionDataSettings::new(),
                             &rom_bytes[AddressRange::new(*rom, rom_end)],
                             *rom,
                             info.vram_from_rom(*rom),
                         ),
                         TestSection::Rodata(rom, _) => finder_heater.preanalyze_rodata(
-                            SectionDataSettings::new(),
+                            &SectionDataSettings::new(),
                             &rom_bytes[AddressRange::new(*rom, rom_end)],
                             *rom,
                             info.vram_from_rom(*rom),
@@ -247,7 +247,7 @@ fn init_segments(
                             text_sections.push(
                                 SectionText::new(
                                     &mut context,
-                                    text_settings,
+                                    &text_settings,
                                     (*name).into(),
                                     &rom_bytes[AddressRange::new(*rom, rom_end)],
                                     *rom,
@@ -262,7 +262,7 @@ fn init_segments(
                             data_sections.push(
                                 SectionData::new(
                                     &mut context,
-                                    data_settings,
+                                    &data_settings,
                                     (*name).into(),
                                     &rom_bytes[AddressRange::new(*rom, rom_end)],
                                     *rom,

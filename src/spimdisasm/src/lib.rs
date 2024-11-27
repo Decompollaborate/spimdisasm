@@ -9,6 +9,7 @@ extern crate alloc;
 pub extern crate rabbitizer;
 
 pub mod address_range;
+pub mod analysis;
 pub mod parent_segment_info;
 pub mod rom_address;
 pub mod section_type;

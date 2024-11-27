@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use core::fmt;
+use core::{fmt, hash::Hash};
 
 // use alloc::boxed::Box;
 use alloc::string::String;
@@ -63,7 +63,7 @@ pub enum RodataMigrationBehavior {
     MigrateToSpecificFunction(String),
 }
 
-#[derive(Clone, Hash)]
+#[derive(Clone)]
 #[allow(dead_code)]
 pub struct SymbolMetadata {
     generated_by: GeneratedBy,
@@ -342,6 +342,12 @@ impl PartialOrd for SymbolMetadata {
             ord => return ord,
         };
         self.rom.partial_cmp(&other.rom)
+    }
+}
+impl Hash for SymbolMetadata {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.vram.hash(state);
+        self.rom.hash(state);
     }
 }
 

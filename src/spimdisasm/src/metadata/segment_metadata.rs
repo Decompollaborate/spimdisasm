@@ -411,7 +411,7 @@ impl SegmentMetadata {
     ) {
         self.new_pointer_in_data
             .entry(possible_pointer)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(rom_address_referencing_pointer);
     }
     pub(crate) fn is_vram_a_possible_pointer_in_data(&self, vram: Vram) -> bool {

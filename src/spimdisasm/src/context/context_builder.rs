@@ -251,7 +251,7 @@ pub struct ContextBuilderFinderHeater {
 impl ContextBuilderFinderHeater {
     pub fn preanalyze_text(
         &mut self,
-        _settings: SectionTextSettings,
+        _settings: &SectionTextSettings,
         _raw_bytes: &[u8],
         _rom: RomAddress,
         _vram: Vram,
@@ -260,7 +260,7 @@ impl ContextBuilderFinderHeater {
 
     pub fn preanalyze_data(
         &mut self,
-        _settings: SectionDataSettings,
+        _settings: &SectionDataSettings,
         _raw_bytes: &[u8],
         _rom: RomAddress,
         _vram: Vram,
@@ -269,7 +269,7 @@ impl ContextBuilderFinderHeater {
 
     pub fn preanalyze_rodata(
         &mut self,
-        _settings: SectionDataSettings,
+        _settings: &SectionDataSettings,
         raw_bytes: &[u8],
         _rom: RomAddress,
         vram: Vram,
@@ -285,7 +285,7 @@ impl ContextBuilderFinderHeater {
 
     pub fn preanalyze_gcc_except_table(
         &mut self,
-        _settings: SectionDataSettings,
+        _settings: &SectionDataSettings,
         _raw_bytes: &[u8],
         _rom: RomAddress,
         _vram: Vram,

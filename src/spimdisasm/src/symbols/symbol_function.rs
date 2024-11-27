@@ -5,6 +5,7 @@ use alloc::vec::Vec;
 use rabbitizer::{Instruction, Vram};
 
 use crate::{
+    analysis::InstructionAnalyzer,
     context::{Context, OwnedSegmentNotFoundError},
     metadata::GeneratedBy,
     parent_segment_info::ParentSegmentInfo,
@@ -23,6 +24,8 @@ pub struct SymbolFunction {
     vram: Vram,
     instructions: Vec<Instruction>,
     parent_segment_info: ParentSegmentInfo,
+
+    instr_analyzer: InstructionAnalyzer,
 }
 
 impl SymbolFunction {
@@ -40,11 +43,19 @@ impl SymbolFunction {
         *sym.autodetected_size_mut() = Some(Size::new(instructions.len() as u32 * 4));
         sym.set_defined();
 
+        let instr_analyzer = InstructionAnalyzer::analyze(
+            context,
+            vram,
+            vram + Size::new(instructions.len() as u32),
+            &instructions,
+        );
+
         Ok(Self {
             rom,
             vram,
             instructions,
             parent_segment_info,
+            instr_analyzer,
         })
     }
 }

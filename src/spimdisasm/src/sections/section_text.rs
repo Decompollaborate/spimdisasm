@@ -46,7 +46,7 @@ pub struct SectionText {
 impl SectionText {
     pub fn new(
         context: &mut Context,
-        settings: SectionTextSettings,
+        settings: &SectionTextSettings,
         name: String,
         raw_bytes: &[u8],
         rom: RomAddress,
@@ -60,6 +60,12 @@ impl SectionText {
             vram
         );
         assert!(
+            raw_bytes.len() % 4 == 0,
+            "Bytes length must be a multiple of 4. {:?} {:?}",
+            rom,
+            vram
+        );
+        assert!(
             vram.inner() % 4 == 0,
             "Vram address must be aligned to 4 bytes"
         );
@@ -69,8 +75,8 @@ impl SectionText {
         );
 
         let mut section_base = SectionBase::new(name, Some(rom), vram, parent_segment_info);
-        let instrs = instrs_from_bytes(&settings, context, raw_bytes, vram);
-        let funcs_start_data = find_functions(&settings, context, &mut section_base, &instrs)?;
+        let instrs = instrs_from_bytes(settings, context, raw_bytes, vram);
+        let funcs_start_data = find_functions(settings, context, &mut section_base, &instrs)?;
 
         let mut functions = Vec::new();
         let mut symbol_vrams = BTreeSet::new();
