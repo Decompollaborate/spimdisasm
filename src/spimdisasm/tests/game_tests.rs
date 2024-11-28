@@ -1,14 +1,16 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use rabbitizer::{InstructionFlags, Vram};
+use rabbitizer::{DisplayFlags, InstructionFlags, Vram};
 use spimdisasm::{
     address_range::AddressRange,
-    context::{Context, ContextBuilder, GlobalConfig, InputEndian},
+    config::{Endian, GlobalConfig},
+    context::{Context, ContextBuilder},
     metadata::SymbolType,
     parent_segment_info::ParentSegmentInfo,
     rom_address::RomAddress,
     sections::{SectionData, SectionDataSettings, SectionText, SectionTextSettings},
+    symbols::display::FunctionDisplaySettings,
 };
 
 mod game_tests_info;
@@ -70,7 +72,7 @@ fn init_context(
     assert!(user_segments.len() >= 2);
 
     let mut builder = ContextBuilder::new(
-        GlobalConfig::new(InputEndian::Big),
+        GlobalConfig::new(Endian::Big),
         global_rom_range,
         global_vram_range,
     );
@@ -308,7 +310,22 @@ fn drmario64_us_without_symbols() {
 
     let segments = init_segments(&mut context, &rom_bytes, drmario64_us_segments);
 
-    assert_eq!(context.global_segment().symbols().len(), 1459);
+    let instr_display_flags = DisplayFlags::default();
+    let _function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
+    for seg in &segments {
+        for sect in &seg.text_sections {
+            for _sym in sect.functions() {
+                // sym.display(&context, &function_display_settings).hash(&mut hasher);
+            }
+        }
+        for sect in &seg.data_sections {
+            for _sym in sect.data_symbols() {
+                // sym.display(&context, &function_display_settings).hash(&mut hasher);
+            }
+        }
+    }
+
+    assert_eq!(context.global_segment().symbols().len(), 32809);
 
     /*
     for seg in &segments {
@@ -359,7 +376,22 @@ fn drmario64_us_with_symbols() {
 
     let segments = init_segments(&mut context, &rom_bytes, drmario64_us_segments);
 
-    assert_eq!(context.global_segment().symbols().len(), 2915);
+    let instr_display_flags = DisplayFlags::default();
+    let _function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
+    for seg in &segments {
+        for sect in &seg.text_sections {
+            for _sym in sect.functions() {
+                // sym.display(&context, &function_display_settings).hash(&mut hasher);
+            }
+        }
+        for sect in &seg.data_sections {
+            for _sym in sect.data_symbols() {
+                // sym.display(&context, &function_display_settings).hash(&mut hasher);
+            }
+        }
+    }
+
+    assert_eq!(context.global_segment().symbols().len(), 34200);
 
     /*
     for seg in &segments {

@@ -4,8 +4,8 @@
 use rabbitizer::{DisplayFlags, InstructionFlags, Vram};
 use spimdisasm::{
     address_range::AddressRange,
-    context::GlobalConfig,
-    context::{ContextBuilder, InputEndian},
+    config::{Endian, GlobalConfig},
+    context::ContextBuilder,
     parent_segment_info::ParentSegmentInfo,
     rom_address::RomAddress,
     sections::{SectionText, SectionTextSettings},
@@ -99,7 +99,7 @@ fn test_section_text_1() {
 
     let text_settings = SectionTextSettings::new(InstructionFlags::new());
 
-    let global_config = GlobalConfig::new(InputEndian::Big);
+    let global_config = GlobalConfig::new(Endian::Big);
     let mut context = {
         let mut heater = ContextBuilder::new(
             global_config,
@@ -129,7 +129,8 @@ fn test_section_text_1() {
 
     let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
     for func in section_text.functions() {
-        println!("{}", func.display(&context, &function_display_settings));
+        let func_display = func.display(&context, &function_display_settings);
+        println!("{}", func_display);
     }
 
     assert_eq!(section_text.functions().len(), 3);
@@ -140,5 +141,5 @@ fn test_section_text_1() {
     }
     assert_eq!(symbols.len(), 3);
 
-    // None::<u32>.unwrap();
+    None::<u32>.unwrap();
 }

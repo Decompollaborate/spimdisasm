@@ -4,12 +4,12 @@
 use core::fmt;
 
 use alloc::string::String;
-use rabbitizer::{DisplayFlags, Instruction};
+use rabbitizer::{DisplayFlags, Instruction, Vram};
 
 use crate::{
     context::Context,
     metadata::segment_metadata::FindSettings,
-    symbols::{Symbol, SymbolFunction},
+    symbols::{trait_symbol::RomSymbol, Symbol, SymbolFunction},
 };
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -59,8 +59,93 @@ impl<'ctx, 'sym, 'flg> FunctionDisplay<'ctx, 'sym, 'flg> {
 }
 
 impl FunctionDisplay<'_, '_, '_> {
-    fn display_label(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn display_label(&self, f: &mut fmt::Formatter<'_>, current_vram: Vram) -> fmt::Result {
+        if current_vram == self.sym.vram_range().start() {
+            // Avoid duplicating first symbol
+            return Ok(());
+        }
+
+        if let Some(sym_label) = self
+            .context
+            .find_owned_segment(self.sym.parent_segment_info())?
+            .find_symbol(current_vram, FindSettings::new().with_allow_addend(false))
+        {
+            if let Some(_typ) = sym_label.sym_type() {
+                // TODO:
+                /*
+                useLabelMacro = labelSymType is None or labelSymType == common.SymbolSpecialType.function or (labelSymType == common.SymbolSpecialType.jumptablelabel and not migrate) or labelSymType == common.SymbolSpecialType.gccexcepttablelabel
+                if not useLabelMacro:
+                    if common.GlobalConfig.ASM_GLOBALIZE_TEXT_LABELS_REFERENCED_BY_NON_JUMPTABLE:
+                        # Check if any non-jumptable symbol references this label
+                        for otherSym in labelSym.referenceSymbols:
+                            if otherSym.getTypeSpecial() != common.SymbolSpecialType.jumptable:
+                                useLabelMacro = True
+                                break
+
+                if useLabelMacro:
+                    label = labelSym.getReferenceeSymbols()
+                    labelMacro = labelSym.getLabelMacro(isInMiddleLabel=True)
+                    if labelMacro is not None:
+                        label += f"{labelMacro} {labelSym.getName()}{common.GlobalConfig.LINE_ENDS}"
+                    if common.GlobalConfig.ASM_TEXT_FUNC_AS_LABEL:
+                        label += f"{labelSym.getName()}:{common.GlobalConfig.LINE_ENDS}"
+                else:
+                    label = labelSym.getName() + ":" + common.GlobalConfig.LINE_ENDS
+                label = (" " * common.GlobalConfig.ASM_INDENTATION_LABELS) + label
+                return label
+                */
+
+                // PLACEHOLDER:
+                write!(
+                    f,
+                    "{}:{}",
+                    sym_label.display_name(),
+                    self.settings.line_end()
+                )?;
+            }
+        }
+
         Ok(())
+    }
+
+    fn display_asm_comment(&self, f: &mut fmt::Formatter<'_>, instr: &Instruction) -> fmt::Result {
+        // TODO:
+        /*
+        indentation = " " * common.GlobalConfig.ASM_INDENTATION
+
+        if not common.GlobalConfig.ASM_COMMENT:
+            return indentation
+
+        if emitRomOffset:
+            offsetHex = "{0:0{1}X} ".format(localOffset + self.inFileOffset + self.commentOffset, common.GlobalConfig.ASM_COMMENT_OFFSET_WIDTH)
+        else:
+            offsetHex = ""
+
+        currentVram = self.getVramOffset(localOffset)
+        vramHex = f"{currentVram:08X}"
+
+        wordValueHex = ""
+        if wordValue is not None:
+            if isDouble:
+                wordValueHex = f"{common.Utils.qwordToCurrenEndian(wordValue):016X} "
+            else:
+                wordValueHex = f"{common.Utils.wordToCurrenEndian(wordValue):08X} "
+
+        return f"{indentation}/* {offsetHex}{vramHex} {wordValueHex}*/
+"
+        */
+
+        write!(f, "/* ")?;
+        let current_vram = instr.vram();
+        if let Some(rom) = self.sym.rom_from_vram(current_vram) {
+            // TODO: implement display for RomAddress
+            write!(f, "{:06X} ", rom.inner())?;
+        }
+        write!(f, "{} ", current_vram)?;
+        // TODO: endian
+        write!(f, "{:08X} ", instr.word())?;
+
+        write!(f, "*/")
     }
 
     fn display_instruction(
@@ -69,6 +154,10 @@ impl FunctionDisplay<'_, '_, '_> {
         instr: &Instruction,
         prev_instr_had_delay_slot: bool,
     ) -> fmt::Result {
+        self.display_asm_comment(f, instr)?;
+        // TODO: why two spaces instead of one?
+        write!(f, "  ")?;
+
         // TODO: imm_override
         let imm_override = None;
 
@@ -92,7 +181,7 @@ impl<'ctx, 'sym, 'flg> fmt::Display for FunctionDisplay<'ctx, 'sym, 'flg> {
             .find_owned_segment(self.sym.parent_segment_info())?;
         let find_settings = FindSettings::default().with_allow_addend(false);
         let metadata = owned_segment
-            .find_symbol(self.sym.vram(), find_settings)
+            .find_symbol(self.sym.vram_range().start(), find_settings)
             .ok_or(fmt::Error)?;
 
         let name = metadata.display_name();
@@ -102,7 +191,8 @@ impl<'ctx, 'sym, 'flg> fmt::Display for FunctionDisplay<'ctx, 'sym, 'flg> {
 
         let mut prev_instr_had_delay_slot = false;
         for instr in self.sym.instructions() {
-            self.display_label(f)?;
+            let current_vram = instr.vram();
+            self.display_label(f, current_vram)?;
             self.display_instruction(f, instr, prev_instr_had_delay_slot)?;
 
             prev_instr_had_delay_slot = instr.opcode().has_delay_slot();

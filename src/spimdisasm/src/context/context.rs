@@ -10,12 +10,11 @@ use ::polonius_the_crab::prelude::*;
 use rabbitizer::Vram;
 
 use crate::{
+    config::GlobalConfig,
     metadata::{OverlayCategoryName, SegmentMetadata},
     parent_segment_info::ParentSegmentInfo,
     rom_address::RomAddress,
 };
-
-use super::GlobalConfig;
 
 #[derive(Debug, Clone, Hash, PartialEq)]
 pub struct OverlayCategory {

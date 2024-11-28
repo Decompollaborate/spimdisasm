@@ -15,6 +15,7 @@ pub mod rom_address;
 pub mod section_type;
 pub mod size;
 
+pub mod config;
 pub mod context;
 pub mod metadata;
 pub mod sections;

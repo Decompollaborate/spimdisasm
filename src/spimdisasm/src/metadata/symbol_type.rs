@@ -25,3 +25,17 @@ pub enum SymbolType {
     //
     UserDeclared(String),
 }
+
+impl SymbolType {
+    pub fn valid_branch_target(&self) -> bool {
+        match self {
+            SymbolType::Function => true,
+            SymbolType::BranchLabel => true,
+            SymbolType::Jumptable => false,
+            SymbolType::JumptableLabel => true,
+            SymbolType::GccExceptTable => false,
+            SymbolType::GccExceptTableLabel => true,
+            SymbolType::UserDeclared(_) => false,
+        }
+    }
+}

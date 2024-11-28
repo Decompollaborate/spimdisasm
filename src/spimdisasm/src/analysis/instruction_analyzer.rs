@@ -4,14 +4,13 @@
 use alloc::collections::btree_set::BTreeSet;
 use rabbitizer::{Instruction, Vram};
 
-use crate::context::Context;
+use crate::{address_range::AddressRange, context::Context};
 
-use super::RegisterTracker;
+use super::{InstructionAnalysisResult, RegisterTracker};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct InstructionAnalyzer {
-    vram_start: Vram,
-    vram_end: Vram,
+    vram_range: AddressRange<Vram>,
 
     branches_taken: BTreeSet<u32>,
 }
@@ -19,25 +18,26 @@ pub struct InstructionAnalyzer {
 impl InstructionAnalyzer {
     #[must_use]
     pub(crate) fn analyze(
-        _context: &Context,
-        vram_start: Vram,
-        vram_end: Vram,
+        context: &Context,
+        vram_range: AddressRange<Vram>,
         instrs: &[Instruction],
-    ) -> Self {
+    ) -> InstructionAnalysisResult {
         assert!(
             !instrs.is_empty(),
             "Empty instruction list?. {:?}",
-            vram_start,
+            vram_range,
         );
 
         let mut analyzer = Self {
-            vram_start,
-            vram_end,
+            vram_range,
             branches_taken: BTreeSet::new(),
         };
         let mut regs_tracker = RegisterTracker::new();
+        let mut result = InstructionAnalysisResult::new(vram_range);
 
-        analyzer.process_instr(&mut regs_tracker, &instrs[0], None);
+        result.process_instr(context, &mut regs_tracker, &instrs[0], None);
+
+        // TODO: maybe implement a way to know which instructions have been processed?
 
         for (i, w) in instrs.windows(2).enumerate() {
             let prev_instr = w[0];
@@ -59,14 +59,22 @@ impl InstructionAnalyzer {
             if !prev_instr.opcode().is_branch_likely()
             /*&& !prev_instr.is_unconditional_branch()*/
             {
-                analyzer.process_instr(&mut regs_tracker, &instr, Some(&prev_instr));
+                result.process_instr(context, &mut regs_tracker, &instr, Some(&prev_instr));
             }
 
-            analyzer.look_ahead(&regs_tracker, instrs, &instr, &prev_instr, local_offset);
+            analyzer.look_ahead(
+                context,
+                &mut result,
+                &regs_tracker,
+                instrs,
+                &instr,
+                &prev_instr,
+                local_offset,
+            );
 
             if prev_instr_opcode.is_jump_with_address() && !prev_instr_opcode.does_link() {
                 if let Some(target_vram) = prev_instr.get_branch_vram_generic() {
-                    if target_vram < vram_start || target_vram >= vram_end {
+                    if !vram_range.in_range(target_vram) {
                         // The instruction is jumping outside the current function, meaning the
                         // current state of the registers will be garbage for the rest of the
                         // function, so we just reset the tracker.
@@ -77,14 +85,16 @@ impl InstructionAnalyzer {
                 }
             }
 
-            analyzer.process_prev_func_call(&mut regs_tracker, &instr, &prev_instr);
+            result.process_prev_func_call(&mut regs_tracker, &instr, &prev_instr);
         }
 
-        analyzer
+        result
     }
 
     fn look_ahead(
         &mut self,
+        context: &Context,
+        mut result: &mut InstructionAnalysisResult,
         original_regs_tracker: &RegisterTracker,
         instrs: &[Instruction],
         instr: &Instruction,
@@ -118,7 +128,7 @@ impl InstructionAnalyzer {
         if prev_instr.opcode().is_branch_likely()
         /*|| prev_instr.is_unconditional_branch()*/
         {
-            self.process_instr(&mut regs_tracker, instr, Some(prev_instr));
+            result.process_instr(context, &mut regs_tracker, instr, Some(prev_instr));
         }
 
         while target_local_offset < instrs.len() {
@@ -128,9 +138,16 @@ impl InstructionAnalyzer {
             if prev_instr.opcode().is_branch_likely()
             /*|| prev_instr.is_unconditional_branch()*/
             {
-                self.process_instr(&mut regs_tracker, &target_instr, Some(&prev_target_instr));
+                result.process_instr(
+                    context,
+                    &mut regs_tracker,
+                    &target_instr,
+                    Some(&prev_target_instr),
+                );
             }
             self.look_ahead(
+                context,
+                &mut result,
                 &regs_tracker,
                 instrs,
                 &target_instr,
@@ -148,28 +165,9 @@ impl InstructionAnalyzer {
                 return;
             }
 
-            self.process_prev_func_call(&mut regs_tracker, &target_instr, &prev_target_instr);
+            result.process_prev_func_call(&mut regs_tracker, &target_instr, &prev_target_instr);
 
             target_local_offset += 4;
         }
-    }
-}
-
-impl InstructionAnalyzer {
-    fn process_prev_func_call(
-        &mut self,
-        regs_tracker: &mut RegisterTracker,
-        instr: &Instruction,
-        prev_instr: &Instruction,
-    ) {
-        regs_tracker.unset_registers_after_func_call(instr, prev_instr);
-    }
-
-    fn process_instr(
-        &mut self,
-        _regs_tracker: &mut RegisterTracker,
-        _instr: &Instruction,
-        _prev_instr: Option<&Instruction>,
-    ) {
     }
 }

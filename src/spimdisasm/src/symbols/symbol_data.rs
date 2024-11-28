@@ -5,6 +5,7 @@ use alloc::vec::Vec;
 use rabbitizer::Vram;
 
 use crate::{
+    address_range::AddressRange,
     context::{Context, OwnedSegmentNotFoundError},
     metadata::GeneratedBy,
     parent_segment_info::ParentSegmentInfo,
@@ -13,11 +14,11 @@ use crate::{
     size::Size,
 };
 
-use super::Symbol;
+use super::{trait_symbol::RomSymbol, Symbol};
 
 pub struct SymbolData {
-    rom: RomAddress,
-    vram: Vram,
+    rom_range: AddressRange<RomAddress>,
+    vram_range: AddressRange<Vram>,
     raw_bytes: Vec<u8>,
     parent_segment_info: ParentSegmentInfo,
 }
@@ -31,6 +32,10 @@ impl SymbolData {
         _in_section_offset: usize,
         parent_segment_info: ParentSegmentInfo,
     ) -> Result<Self, OwnedSegmentNotFoundError> {
+        let size = Size::new(raw_bytes.len() as u32);
+        let rom_range = AddressRange::new(rom, rom + size);
+        let vram_range = AddressRange::new(vram, vram + size);
+
         let sym = context
             .find_owned_segment_mut(&parent_segment_info)?
             .add_symbol(
@@ -40,12 +45,12 @@ impl SymbolData {
                 Some(SectionType::Data),
                 false,
             );
-        *sym.autodetected_size_mut() = Some(Size::new(raw_bytes.len() as u32));
+        *sym.autodetected_size_mut() = Some(size);
         sym.set_defined();
 
         Ok(Self {
-            rom,
-            vram,
+            rom_range,
+            vram_range,
             raw_bytes,
             parent_segment_info,
         })
@@ -53,10 +58,6 @@ impl SymbolData {
 }
 
 impl SymbolData {
-    pub fn rom(&self) -> RomAddress {
-        self.rom
-    }
-
     // TODO: maybe remove?
     pub fn raw_bytes(&self) -> &[u8] {
         &self.raw_bytes
@@ -64,15 +65,17 @@ impl SymbolData {
 }
 
 impl Symbol for SymbolData {
-    fn vram(&self) -> Vram {
-        self.vram
-    }
-
-    fn size(&self) -> Size {
-        Size::new(self.raw_bytes.len() as u32)
+    fn vram_range(&self) -> AddressRange<Vram> {
+        self.vram_range
     }
 
     fn parent_segment_info(&self) -> &ParentSegmentInfo {
         &self.parent_segment_info
+    }
+}
+
+impl RomSymbol for SymbolData {
+    fn rom_range(&self) -> AddressRange<RomAddress> {
+        self.rom_range
     }
 }

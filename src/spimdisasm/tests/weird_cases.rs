@@ -4,7 +4,8 @@
 use rabbitizer::{DisplayFlags, InstructionFlags, Vram};
 use spimdisasm::{
     address_range::AddressRange,
-    context::{ContextBuilder, GlobalConfig, InputEndian},
+    config::{Endian, GlobalConfig},
+    context::ContextBuilder,
     parent_segment_info::ParentSegmentInfo,
     rom_address::RomAddress,
     sections::{SectionText, SectionTextSettings},
@@ -248,7 +249,7 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
     let vram = Vram::new(0x8081CE54);
     let size = Size::new(bytes.len() as u32);
 
-    let global_config = GlobalConfig::new(InputEndian::Big);
+    let global_config = GlobalConfig::new(Endian::Big);
     let mut context = ContextBuilder::new(
         global_config,
         AddressRange::new(rom, rom + size),
@@ -275,8 +276,10 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
 
     let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
     for func in section_text.functions() {
-        println!("{}", func.display(&context, &function_display_settings));
+        let func_display = func.display(&context, &function_display_settings);
+        println!("{}", func_display);
     }
+
     assert_eq!(section_text.functions().len(), 1);
 
     let symbols = context.global_segment().symbols();

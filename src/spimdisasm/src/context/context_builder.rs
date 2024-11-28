@@ -10,12 +10,13 @@ use rabbitizer::Vram;
 
 use crate::{
     address_range::AddressRange,
+    config::GlobalConfig,
     metadata::{GeneratedBy, OverlayCategoryName, SegmentMetadata, SymbolMetadata},
     rom_address::RomAddress,
     sections::{SectionDataSettings, SectionTextSettings},
 };
 
-use super::{context::OverlayCategory, Context, GlobalConfig};
+use super::{context::OverlayCategory, Context};
 
 pub struct SegmentModifier<'a> {
     segment: &'a mut SegmentMetadata,

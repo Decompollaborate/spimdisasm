@@ -8,4 +8,4 @@ mod trait_symbol;
 
 pub use symbol_data::SymbolData;
 pub use symbol_function::SymbolFunction;
-pub use trait_symbol::Symbol;
+pub use trait_symbol::{Symbol, RomSymbol};

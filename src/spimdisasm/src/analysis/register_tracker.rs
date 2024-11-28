@@ -19,11 +19,11 @@ impl RegisterTracker {
 }
 
 impl RegisterTracker {
-    pub fn clear(&mut self) {
+    pub(crate) fn clear(&mut self) {
         self.registers.iter_mut().for_each(|state| state.clear());
     }
 
-    pub fn unset_registers_after_func_call(
+    pub(crate) fn unset_registers_after_func_call(
         &mut self,
         instr: &Instruction,
         prev_instr: &Instruction,
@@ -40,5 +40,9 @@ impl RegisterTracker {
                 self.registers[reg.as_index()].clear();
             }
         }
+    }
+
+    pub(crate) fn process_branch(&mut self, _instr: &Instruction) {
+        // TODO
     }
 }
