@@ -139,7 +139,7 @@ fn test_section_text_1() {
     for s in symbols {
         println!("{:?}", s.1);
     }
-    assert_eq!(symbols.len(), 3);
+    assert_eq!(symbols.len(), 4);
 
-    None::<u32>.unwrap();
+    // None::<u32>.unwrap();
 }

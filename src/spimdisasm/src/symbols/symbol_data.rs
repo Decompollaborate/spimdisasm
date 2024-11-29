@@ -9,6 +9,7 @@ use crate::{
     context::{Context, OwnedSegmentNotFoundError},
     metadata::GeneratedBy,
     parent_segment_info::ParentSegmentInfo,
+    relocation::RelocationInfo,
     rom_address::RomAddress,
     section_type::SectionType,
     size::Size,
@@ -21,6 +22,7 @@ pub struct SymbolData {
     vram_range: AddressRange<Vram>,
     raw_bytes: Vec<u8>,
     parent_segment_info: ParentSegmentInfo,
+    relocs: Vec<Option<RelocationInfo>>,
 }
 
 impl SymbolData {
@@ -35,6 +37,8 @@ impl SymbolData {
         let size = Size::new(raw_bytes.len() as u32);
         let rom_range = AddressRange::new(rom, rom + size);
         let vram_range = AddressRange::new(vram, vram + size);
+
+        let relocs = vec![None; raw_bytes.len() / 4];
 
         let sym = context
             .find_owned_segment_mut(&parent_segment_info)?
@@ -53,6 +57,7 @@ impl SymbolData {
             vram_range,
             raw_bytes,
             parent_segment_info,
+            relocs,
         })
     }
 }
@@ -77,5 +82,9 @@ impl Symbol for SymbolData {
 impl RomSymbol for SymbolData {
     fn rom_range(&self) -> AddressRange<RomAddress> {
         self.rom_range
+    }
+
+    fn relocs(&self) -> &[Option<RelocationInfo>] {
+        &self.relocs
     }
 }

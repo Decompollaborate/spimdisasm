@@ -10,6 +10,7 @@ use crate::{
     context::{Context, OwnedSegmentNotFoundError},
     metadata::GeneratedBy,
     parent_segment_info::ParentSegmentInfo,
+    relocation::{RelocReferencedSym, RelocationInfo, RelocationType},
     rom_address::RomAddress,
     size::Size,
 };
@@ -35,6 +36,7 @@ pub struct SymbolFunction {
     parent_segment_info: ParentSegmentInfo,
 
     instr_analysis: InstructionAnalysisResult,
+    relocs: Vec<Option<RelocationInfo>>,
 }
 
 impl SymbolFunction {
@@ -50,6 +52,8 @@ impl SymbolFunction {
         let rom_range = AddressRange::new(rom, rom + size);
         let vram_range = AddressRange::new(vram, vram + size);
 
+        let mut relocs = vec![None; instructions.len()];
+
         let instr_analysis = InstructionAnalyzer::analyze(context, vram_range, &instructions);
 
         let owned_segment = context.find_owned_segment_mut(&parent_segment_info)?;
@@ -57,7 +61,7 @@ impl SymbolFunction {
         *sym.autodetected_size_mut() = Some(size);
         sym.set_defined();
 
-        for (_instr_vram, target_vram) in instr_analysis.branch_targets() {
+        for (instr_vram, target_vram) in instr_analysis.branch_targets() {
             /*
             if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
                 if self.getVromOffset(instrOffset) in self.context.globalRelocationOverrides:
@@ -71,6 +75,13 @@ impl SymbolFunction {
             );
             if let Some(typ) = branch_sym.sym_type() {
                 if typ.valid_branch_target() {
+                    let instr_index = (*instr_vram - vram).inner() / 4;
+                    relocs[instr_index as usize] = Some(RelocationInfo::new(
+                        RelocationType::R_MIPS_PC16,
+                        RelocReferencedSym::Address(*target_vram),
+                        0,
+                    ));
+
                     // branch_sym.set_defined();
                     /*
                     labelSym.referenceCounter += 1
@@ -89,6 +100,7 @@ impl SymbolFunction {
             instructions,
             parent_segment_info,
             instr_analysis,
+            relocs,
         })
     }
 }
@@ -127,5 +139,9 @@ impl Symbol for SymbolFunction {
 impl RomSymbol for SymbolFunction {
     fn rom_range(&self) -> AddressRange<RomAddress> {
         self.rom_range
+    }
+
+    fn relocs(&self) -> &[Option<RelocationInfo>] {
+        &self.relocs
     }
 }

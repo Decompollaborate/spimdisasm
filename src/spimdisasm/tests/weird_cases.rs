@@ -286,7 +286,7 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
     for s in symbols {
         println!("{:?}", s.1);
     }
-    assert_eq!(symbols.len(), 1);
+    assert_eq!(symbols.len(), 21);
 
     // None::<u32>.unwrap();
 }

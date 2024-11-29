@@ -4,8 +4,8 @@
 use rabbitizer::Vram;
 
 use crate::{
-    address_range::AddressRange, parent_segment_info::ParentSegmentInfo, rom_address::RomAddress,
-    size::Size,
+    address_range::AddressRange, parent_segment_info::ParentSegmentInfo,
+    relocation::RelocationInfo, rom_address::RomAddress, size::Size,
 };
 
 pub trait Symbol {
@@ -40,4 +40,7 @@ pub trait RomSymbol: Symbol {
             self.rom_range().start() + diff.try_into().expect("Shouldn't panic")
         })
     }
+
+    #[must_use]
+    fn relocs(&self) -> &[Option<RelocationInfo>];
 }

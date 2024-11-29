@@ -3,12 +3,13 @@
 
 use core::fmt;
 
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use rabbitizer::{DisplayFlags, Instruction, Vram};
 
 use crate::{
     context::Context,
     metadata::segment_metadata::FindSettings,
+    relocation::RelocationInfo,
     symbols::{trait_symbol::RomSymbol, Symbol, SymbolFunction},
 };
 
@@ -158,12 +159,18 @@ impl FunctionDisplay<'_, '_, '_> {
         // TODO: why two spaces instead of one?
         write!(f, "  ")?;
 
-        // TODO: imm_override
-        let imm_override = None;
-
         if prev_instr_had_delay_slot {
             write!(f, " ")?;
         }
+
+        let temp = self
+            .get_reloc(instr)
+            .map(|x| {
+                x.display(self.context, self.sym.parent_segment_info())
+                    .map(|x| x.to_string())
+            })
+            .flatten();
+        let imm_override = temp.as_ref().map(|x| x.as_str());
 
         write!(
             f,
@@ -171,6 +178,13 @@ impl FunctionDisplay<'_, '_, '_> {
             instr.display(imm_override, &self.settings.display_flags),
             self.settings.line_end()
         )
+    }
+
+    fn get_reloc(&self, instr: &Instruction) -> Option<&RelocationInfo> {
+        let index = (instr.vram() - self.sym.vram_range().start()).inner() / 4;
+        self.sym.relocs()[index as usize]
+            .as_ref()
+            .filter(|x| !x.reloc_type().is_none())
     }
 }
 
