@@ -147,7 +147,7 @@ impl InstructionAnalyzer {
             }
             self.look_ahead(
                 context,
-                &mut result,
+                result,
                 &regs_tracker,
                 instrs,
                 &target_instr,

@@ -97,7 +97,6 @@ impl From<OwnedSegmentNotFoundError> for fmt::Error {
 }
 
 impl Context {
-    #[must_use]
     pub(crate) fn find_owned_segment(
         &self,
         info: &ParentSegmentInfo,

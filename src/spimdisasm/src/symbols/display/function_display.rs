@@ -3,7 +3,7 @@
 
 use core::fmt;
 
-use alloc::string::{String, ToString};
+use alloc::string::String;
 use rabbitizer::{DisplayFlags, Instruction, Vram};
 
 use crate::{
@@ -163,14 +163,9 @@ impl FunctionDisplay<'_, '_, '_> {
             write!(f, " ")?;
         }
 
-        let temp = self
+        let imm_override = self
             .get_reloc(instr)
-            .map(|x| {
-                x.display(self.context, self.sym.parent_segment_info())
-                    .map(|x| x.to_string())
-            })
-            .flatten();
-        let imm_override = temp.as_ref().map(|x| x.as_str());
+            .and_then(|x| x.display(self.context, self.sym.parent_segment_info()));
 
         write!(
             f,
@@ -188,7 +183,7 @@ impl FunctionDisplay<'_, '_, '_> {
     }
 }
 
-impl<'ctx, 'sym, 'flg> fmt::Display for FunctionDisplay<'ctx, 'sym, 'flg> {
+impl fmt::Display for FunctionDisplay<'_, '_, '_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let owned_segment = self
             .context

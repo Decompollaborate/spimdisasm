@@ -1,6 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+#![warn(clippy::ref_option)]
 #![cfg_attr(feature = "nightly", feature(btree_cursors))]
 #![cfg_attr(not(feature = "std"), no_std)]
 

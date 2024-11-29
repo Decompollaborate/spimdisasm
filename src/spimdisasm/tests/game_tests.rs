@@ -311,16 +311,19 @@ fn drmario64_us_without_symbols() {
     let segments = init_segments(&mut context, &rom_bytes, drmario64_us_segments);
 
     let instr_display_flags = DisplayFlags::default();
-    let _function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
+    let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
     for seg in &segments {
         for sect in &seg.text_sections {
-            for _sym in sect.functions() {
+            for sym in sect.functions() {
                 // sym.display(&context, &function_display_settings).hash(&mut hasher);
+                let _a = sym
+                    .display(&context, &function_display_settings)
+                    .to_string();
             }
         }
         for sect in &seg.data_sections {
             for _sym in sect.data_symbols() {
-                // sym.display(&context, &function_display_settings).hash(&mut hasher);
+                // sym.display(&context, &data_display_settings).hash(&mut hasher);
             }
         }
     }
@@ -377,16 +380,19 @@ fn drmario64_us_with_symbols() {
     let segments = init_segments(&mut context, &rom_bytes, drmario64_us_segments);
 
     let instr_display_flags = DisplayFlags::default();
-    let _function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
+    let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
     for seg in &segments {
         for sect in &seg.text_sections {
-            for _sym in sect.functions() {
+            for sym in sect.functions() {
                 // sym.display(&context, &function_display_settings).hash(&mut hasher);
+                let _a = sym
+                    .display(&context, &function_display_settings)
+                    .to_string();
             }
         }
         for sect in &seg.data_sections {
             for _sym in sect.data_symbols() {
-                // sym.display(&context, &function_display_settings).hash(&mut hasher);
+                // sym.display(&context, &data_display_settings).hash(&mut hasher);
             }
         }
     }

@@ -22,7 +22,7 @@ pub struct SegmentModifier<'a> {
     segment: &'a mut SegmentMetadata,
 }
 
-impl<'a> SegmentModifier<'a> {
+impl SegmentModifier<'_> {
     pub fn add_symbol(
         &mut self,
         name: String,
@@ -156,7 +156,7 @@ pub struct OverlaysBuilder<'a> {
     overlays: Vec<SegmentMetadata>,
 }
 
-impl<'a> OverlaysBuilder<'a> {
+impl OverlaysBuilder<'_> {
     pub fn add_overlay(
         &mut self,
         rom_range: AddressRange<RomAddress>,
