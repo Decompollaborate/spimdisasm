@@ -1,6 +1,8 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use super::{RelocReferencedSym, RelocationInfo};
+
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
 #[allow(non_camel_case_types)] // TODO: remove?
@@ -107,5 +109,10 @@ impl RelocationType {
             RelocationType::R_CUSTOM_CONSTANT_HI => true,
             RelocationType::R_CUSTOM_CONSTANT_LO => true,
         }
+    }
+
+    #[must_use]
+    pub fn new_reloc_info(self, referenced_sym: RelocReferencedSym, addend: i32) -> RelocationInfo {
+        RelocationInfo::new(self, referenced_sym, addend)
     }
 }

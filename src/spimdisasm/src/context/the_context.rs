@@ -115,7 +115,6 @@ impl Context {
         }
         Err(OwnedSegmentNotFoundError {})
     }
-    #[must_use]
     pub(crate) fn find_owned_segment_mut(
         &mut self,
         info: &ParentSegmentInfo,

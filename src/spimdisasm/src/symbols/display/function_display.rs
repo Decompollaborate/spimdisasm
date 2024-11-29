@@ -138,7 +138,7 @@ impl FunctionDisplay<'_, '_, '_> {
 
         write!(f, "/* ")?;
         let current_vram = instr.vram();
-        if let Some(rom) = self.sym.rom_from_vram(current_vram) {
+        if let Some(rom) = self.sym.rom_vram_range().rom_from_vram(current_vram) {
             // TODO: implement display for RomAddress
             write!(f, "{:06X} ", rom.inner())?;
         }

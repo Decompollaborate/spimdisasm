@@ -11,6 +11,7 @@ use crate::{
     parent_segment_info::ParentSegmentInfo,
     relocation::RelocationInfo,
     rom_address::RomAddress,
+    rom_vram_range::RomVramRange,
     section_type::SectionType,
     size::Size,
 };
@@ -18,8 +19,7 @@ use crate::{
 use super::{trait_symbol::RomSymbol, Symbol};
 
 pub struct SymbolData {
-    rom_range: AddressRange<RomAddress>,
-    vram_range: AddressRange<Vram>,
+    ranges: RomVramRange,
     raw_bytes: Vec<u8>,
     parent_segment_info: ParentSegmentInfo,
     relocs: Vec<Option<RelocationInfo>>,
@@ -37,6 +37,7 @@ impl SymbolData {
         let size = Size::new(raw_bytes.len() as u32);
         let rom_range = AddressRange::new(rom, rom + size);
         let vram_range = AddressRange::new(vram, vram + size);
+        let ranges = RomVramRange::new(rom_range, vram_range);
 
         let relocs = vec![None; raw_bytes.len() / 4];
 
@@ -53,8 +54,7 @@ impl SymbolData {
         sym.set_defined();
 
         Ok(Self {
-            rom_range,
-            vram_range,
+            ranges,
             raw_bytes,
             parent_segment_info,
             relocs,
@@ -71,7 +71,7 @@ impl SymbolData {
 
 impl Symbol for SymbolData {
     fn vram_range(&self) -> AddressRange<Vram> {
-        self.vram_range
+        self.ranges.vram()
     }
 
     fn parent_segment_info(&self) -> &ParentSegmentInfo {
@@ -80,8 +80,9 @@ impl Symbol for SymbolData {
 }
 
 impl RomSymbol for SymbolData {
-    fn rom_range(&self) -> AddressRange<RomAddress> {
-        self.rom_range
+    #[must_use]
+    fn rom_vram_range(&self) -> RomVramRange {
+        self.ranges
     }
 
     fn relocs(&self) -> &[Option<RelocationInfo>] {

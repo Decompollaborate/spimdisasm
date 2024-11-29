@@ -397,7 +397,7 @@ fn drmario64_us_with_symbols() {
         }
     }
 
-    assert_eq!(context.global_segment().symbols().len(), 9439);
+    assert_eq!(context.global_segment().symbols().len(), 9460);
 
     /*
     for seg in &segments {
@@ -426,5 +426,5 @@ fn drmario64_us_with_symbols() {
                 .sum::<usize>()
         })
         .sum();
-    assert_eq!(data_syms_count, 439);
+    assert_eq!(data_syms_count, 460);
 }

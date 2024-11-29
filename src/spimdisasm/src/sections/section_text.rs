@@ -7,10 +7,12 @@ use alloc::{collections::BTreeSet, vec::Vec};
 
 use rabbitizer::{vram::VramOffset, Instruction, InstructionFlags, IsaExtension, Vram};
 
+use crate::address_range::AddressRange;
 use crate::context::OwnedSegmentNotFoundError;
 use crate::metadata::segment_metadata::FindSettings;
 use crate::metadata::GeneratedBy;
 use crate::parent_segment_info::ParentSegmentInfo;
+use crate::rom_vram_range::RomVramRange;
 use crate::size::Size;
 use crate::{
     context::Context,
@@ -19,7 +21,8 @@ use crate::{
     symbols::{Symbol, SymbolFunction},
 };
 
-use super::{Section, SectionBase};
+use super::trait_section::RomSection;
+use super::Section;
 
 pub struct SectionTextSettings {
     instruction_flags: InstructionFlags,
@@ -36,7 +39,15 @@ impl SectionTextSettings {
 }
 
 pub struct SectionText {
-    section_base: SectionBase,
+    name: String,
+
+    ranges: RomVramRange,
+
+    // in_section_offset: u32,
+    // section_type: SectionType,
+
+    //
+    parent_segment_info: ParentSegmentInfo,
 
     functions: Vec<SymbolFunction>,
 
@@ -73,10 +84,14 @@ impl SectionText {
             rom.inner() % 4 == 0,
             "Rom address must be aligned to 4 bytes"
         );
+        let size = Size::new(raw_bytes.len() as u32);
+        let rom_range = AddressRange::new(rom, rom + size);
+        let vram_range = AddressRange::new(vram, vram + size);
+        let ranges = RomVramRange::new(rom_range, vram_range);
 
-        let mut section_base = SectionBase::new(name, Some(rom), vram, parent_segment_info);
         let instrs = instrs_from_bytes(settings, context, raw_bytes, vram);
-        let funcs_start_data = find_functions(settings, context, &mut section_base, &instrs)?;
+        let funcs_start_data =
+            find_functions(settings, context, &parent_segment_info, ranges, &instrs)?;
 
         let mut functions = Vec::new();
         let mut symbol_vrams = BTreeSet::new();
@@ -90,26 +105,25 @@ impl SectionText {
             debug_assert!(*start < end, "{:?} {} {} {}", rom, vram, *start, end);
 
             let local_offset = start * 4;
-            let vram = section_base.vram_offset(local_offset);
-            let rom = section_base.rom_offset(local_offset);
+            let s = Size::new(local_offset as u32);
+            let current_vram = vram + s;
+            let current_rom = rom + s;
 
             symbol_vrams.insert(vram);
 
             // TODO: get rid of unwrap?
-            let /*mut*/ func = SymbolFunction::new(context, instrs[*start..end].into(), rom.unwrap(), vram, local_offset, section_base.parent_segment_info().clone())?;
+            let /*mut*/ func = SymbolFunction::new(context, instrs[*start..end].into(), current_rom, current_vram, local_offset, parent_segment_info.clone())?;
 
             functions.push(func);
         }
 
         Ok(Self {
-            section_base,
+            name,
+            ranges,
+            parent_segment_info,
             functions,
             symbol_vrams,
         })
-    }
-
-    pub fn name(&self) -> &str {
-        self.section_base.name()
     }
 
     // TODO: remove
@@ -124,8 +138,16 @@ impl SectionText<'_, '_> {
 */
 
 impl Section for SectionText {
-    fn section_base(&self) -> &SectionBase {
-        &self.section_base
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    fn vram_range(&self) -> crate::address_range::AddressRange<Vram> {
+        self.ranges.vram()
+    }
+
+    fn parent_segment_info(&self) -> &ParentSegmentInfo {
+        &self.parent_segment_info
     }
 
     fn symbol_list(&self) -> &[impl Symbol] {
@@ -134,6 +156,12 @@ impl Section for SectionText {
 
     fn symbols_vrams(&self) -> &BTreeSet<Vram> {
         &self.symbol_vrams
+    }
+}
+
+impl RomSection for SectionText {
+    fn rom_vram_range(&self) -> RomVramRange {
+        self.ranges
     }
 }
 
@@ -159,14 +187,15 @@ fn instrs_from_bytes(
 fn find_functions(
     settings: &SectionTextSettings,
     context: &mut Context,
-    section_base: &mut SectionBase,
+    parent_segment_info: &ParentSegmentInfo,
+    section_ranges: RomVramRange,
     instrs: &[Instruction],
 ) -> Result<Vec<(usize, bool)>, OwnedSegmentNotFoundError> {
     if instrs.is_empty() {
         return Ok(vec![(0, false)]);
     }
 
-    let owned_segment = context.find_owned_segment(section_base.parent_segment_info())?;
+    let owned_segment = context.find_owned_segment(parent_segment_info)?;
     let mut starts_data = Vec::new();
 
     let mut function_ended = false;
@@ -176,7 +205,7 @@ fn find_functions(
     let mut local_offset = 0;
     let mut current_function_start = local_offset;
     let mut current_function_sym = owned_segment.find_symbol(
-        section_base.vram_offset(local_offset),
+        section_ranges.vram().start() + Size::new(local_offset as u32),
         FindSettings::new().with_allow_addend(false),
     );
     let mut index = 0;
@@ -202,7 +231,7 @@ fn find_functions(
             local_offset += 4;
             current_function_start = local_offset;
             current_function_sym = owned_segment.find_symbol(
-                section_base.vram_offset(local_offset),
+                section_ranges.vram().start() + Size::new(local_offset as u32),
                 FindSettings::new().with_allow_addend(false),
             );
         }
@@ -226,9 +255,9 @@ fn find_functions(
             local_offset += 4;
 
             let mut aux_sym = context
-                .find_owned_segment(section_base.parent_segment_info())?
+                .find_owned_segment(parent_segment_info)?
                 .find_symbol(
-                    section_base.vram_offset(local_offset),
+                    section_ranges.vram().start() + Size::new(local_offset as u32),
                     FindSettings::new().with_allow_addend(false),
                 );
 
@@ -247,9 +276,9 @@ fn find_functions(
                 local_offset += 4;
 
                 aux_sym = context
-                    .find_owned_segment(section_base.parent_segment_info())?
+                    .find_owned_segment(parent_segment_info)?
                     .find_symbol(
-                        section_base.vram_offset(local_offset),
+                        section_ranges.vram().start() + Size::new(local_offset as u32),
                         FindSettings::new().with_allow_addend(false),
                     );
             }
@@ -266,18 +295,18 @@ fn find_functions(
 
             if prev_func_had_user_declared_size {
                 let aux_sym = context
-                    .find_owned_segment_mut(section_base.parent_segment_info())?
+                    .find_owned_segment_mut(parent_segment_info)?
                     .add_function(
-                        section_base.vram_offset(local_offset),
-                        section_base.rom_offset(local_offset),
+                        section_ranges.vram().start() + Size::new(local_offset as u32),
+                        Some(section_ranges.rom().start() + Size::new(local_offset as u32)),
                         GeneratedBy::Autogenerated,
                     );
                 aux_sym.set_autocreated_from_other_sized_sym();
                 // TODO: figure out a way to avoid having to search the symbol we just created, hopefully by reusing the above `aux_sym`.
                 current_function_sym = context
-                    .find_owned_segment(section_base.parent_segment_info())?
+                    .find_owned_segment(parent_segment_info)?
                     .find_symbol(
-                        section_base.vram_offset(local_offset),
+                        section_ranges.vram().start() + Size::new(local_offset as u32),
                         FindSettings::new().with_allow_addend(false),
                     );
             }
@@ -296,7 +325,8 @@ fn find_functions(
         if instr.opcode().is_branch() || instr.is_unconditional_branch() {
             (farthest_branch, halt_function_searching) = find_functions_branch_checker(
                 context,
-                section_base,
+                parent_segment_info,
+                section_ranges,
                 local_offset,
                 instr,
                 &mut starts_data,
@@ -312,13 +342,13 @@ fn find_functions(
         (function_ended, prev_func_had_user_declared_size) = find_functions_check_function_ended(
             context,
             settings,
-            section_base,
+            parent_segment_info,
             local_offset,
             instr,
             index,
             instrs,
-            section_base.rom_offset(local_offset).unwrap(), // TODO: avoid unwrap
-            section_base.vram_offset(local_offset),
+            section_ranges.rom().start() + Size::new(local_offset as u32),
+            section_ranges.vram().start() + Size::new(local_offset as u32),
             current_function_sym,
             farthest_branch,
             current_function_start,
@@ -338,9 +368,11 @@ fn find_functions(
     Ok(starts_data)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn find_functions_branch_checker(
     context: &Context,
-    section_base: &SectionBase,
+    parent_segment_info: &ParentSegmentInfo,
+    section_ranges: RomVramRange,
     local_offset: usize,
     instr: &Instruction,
     starts_data: &mut Vec<(usize, bool)>,
@@ -358,7 +390,7 @@ fn find_functions_branch_checker(
         // TODO
         if let Some(target_vram) = instr.get_instr_index_as_vram() {
             if let Some(aux_sym) = context
-                .find_owned_segment(section_base.parent_segment_info())?
+                .find_owned_segment(parent_segment_info)?
                 .find_symbol(
                     target_vram,
                     FindSettings::new()
@@ -391,15 +423,14 @@ fn find_functions_branch_checker(
                 // Jumping outside of the function is fine, but branching isn't.
                 halt_function_searching = true;
             } else if !is_likely_handwritten && !contains_invalid {
-                let owned_segment =
-                    context.find_owned_segment(section_base.parent_segment_info())?;
+                let owned_segment = context.find_owned_segment(parent_segment_info)?;
                 let mut j = starts_data.len() as i32 - 1;
                 while j >= 0 {
                     let other_func_start_offset = starts_data[j as usize].0 * 4;
                     if branch_offset.inner() + (local_offset as i32)
                         < (other_func_start_offset as i32)
                     {
-                        let vram = section_base.vram_offset(local_offset);
+                        let vram = section_ranges.vram().start() + Size::new(local_offset as u32);
 
                         // TODO: invert check?
                         if let Some(func_symbol) = owned_segment
@@ -424,10 +455,11 @@ fn find_functions_branch_checker(
     Ok((farthest_branch, halt_function_searching))
 }
 
+#[allow(clippy::too_many_arguments)]
 fn find_functions_check_function_ended(
     context: &Context,
     settings: &SectionTextSettings,
-    section_base: &SectionBase,
+    parent_segment_info: &ParentSegmentInfo,
     local_offset: usize,
     instr: &Instruction,
     _index: usize,
@@ -454,7 +486,7 @@ fn find_functions_check_function_ended(
         }
     }
 
-    let owned_segment = context.find_owned_segment(section_base.parent_segment_info())?;
+    let owned_segment = context.find_owned_segment(parent_segment_info)?;
     let func_sym = owned_segment.find_symbol(
         current_vram + VramOffset::new(8),
         FindSettings::new().with_allow_addend(false),

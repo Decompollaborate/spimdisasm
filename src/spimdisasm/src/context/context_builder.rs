@@ -16,7 +16,7 @@ use crate::{
     sections::{SectionDataSettings, SectionTextSettings},
 };
 
-use super::{context::OverlayCategory, Context};
+use super::{the_context::OverlayCategory, Context};
 
 pub struct SegmentModifier<'a> {
     segment: &'a mut SegmentMetadata,
@@ -176,6 +176,7 @@ impl OverlaysBuilder<'_> {
     }
 
     // TODO: proper error type
+    #[allow(clippy::result_unit_err)]
     pub fn build(self) -> Result<(), ()> {
         if self.overlays.is_empty() {
             return Err(());

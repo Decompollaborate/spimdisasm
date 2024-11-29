@@ -1,14 +1,20 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use alloc::collections::BTreeSet;
+
 use rabbitizer::Vram;
 
-use crate::{
-    address_range::AddressRange, parent_segment_info::ParentSegmentInfo,
-    relocation::RelocationInfo, rom_address::RomAddress, rom_vram_range::RomVramRange, size::Size,
-};
+use crate::address_range::AddressRange;
+use crate::parent_segment_info::ParentSegmentInfo;
+use crate::rom_address::RomAddress;
+use crate::rom_vram_range::RomVramRange;
+use crate::size::Size;
+use crate::symbols::Symbol;
 
-pub trait Symbol {
+pub trait Section {
+    #[must_use]
+    fn name(&self) -> &str;
     #[must_use]
     fn vram_range(&self) -> AddressRange<Vram>;
 
@@ -19,9 +25,14 @@ pub trait Symbol {
 
     #[must_use]
     fn parent_segment_info(&self) -> &ParentSegmentInfo;
+
+    #[must_use]
+    fn symbol_list(&self) -> &[impl Symbol];
+    #[must_use]
+    fn symbols_vrams(&self) -> &BTreeSet<Vram>;
 }
 
-pub trait RomSymbol: Symbol {
+pub trait RomSection {
     #[must_use]
     fn rom_vram_range(&self) -> RomVramRange;
 
@@ -34,7 +45,4 @@ pub trait RomSymbol: Symbol {
     fn rom_size(&self) -> Size {
         self.rom_range().size()
     }
-
-    #[must_use]
-    fn relocs(&self) -> &[Option<RelocationInfo>];
 }

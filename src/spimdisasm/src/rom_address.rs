@@ -25,13 +25,17 @@ impl RomAddress {
     pub const fn add_size(&self, size: &Size) -> Self {
         size.add_rom(self)
     }
+
+    pub const fn sub_rom(&self, rhs: &RomAddress) -> Size {
+        Size::new(self.inner - rhs.inner)
+    }
 }
 
 impl ops::Sub<RomAddress> for RomAddress {
     type Output = Size;
 
     fn sub(self, rhs: RomAddress) -> Self::Output {
-        Self::Output::new(self.inner - rhs.inner)
+        self.sub_rom(&rhs)
     }
 }
 

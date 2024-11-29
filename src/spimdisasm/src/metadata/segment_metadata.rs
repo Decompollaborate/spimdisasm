@@ -353,8 +353,6 @@ impl FindSettings {
 
 impl SegmentMetadata {
     #[must_use]
-    // TODO: remove `allow`
-    #[allow(dead_code)]
     pub(crate) fn find_symbol(
         &self,
         vram: Vram,
@@ -378,8 +376,6 @@ impl SegmentMetadata {
     }
 
     #[must_use]
-    // TODO: remove `allow`
-    #[allow(dead_code)]
     pub(crate) fn find_symbol_mut(
         &mut self,
         vram: Vram,

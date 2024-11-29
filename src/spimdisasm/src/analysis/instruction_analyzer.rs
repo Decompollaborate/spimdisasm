@@ -2,15 +2,15 @@
 /* SPDX-License-Identifier: MIT */
 
 use alloc::collections::btree_set::BTreeSet;
-use rabbitizer::{Instruction, Vram};
+use rabbitizer::Instruction;
 
-use crate::{address_range::AddressRange, context::Context};
+use crate::{context::Context, rom_vram_range::RomVramRange};
 
 use super::{InstructionAnalysisResult, RegisterTracker};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct InstructionAnalyzer {
-    vram_range: AddressRange<Vram>,
+    ranges: RomVramRange,
 
     branches_taken: BTreeSet<u32>,
 }
@@ -19,21 +19,17 @@ impl InstructionAnalyzer {
     #[must_use]
     pub(crate) fn analyze(
         context: &Context,
-        vram_range: AddressRange<Vram>,
+        ranges: RomVramRange,
         instrs: &[Instruction],
     ) -> InstructionAnalysisResult {
-        assert!(
-            !instrs.is_empty(),
-            "Empty instruction list?. {:?}",
-            vram_range,
-        );
+        assert!(!instrs.is_empty(), "Empty instruction list?. {:?}", ranges,);
 
         let mut analyzer = Self {
-            vram_range,
+            ranges,
             branches_taken: BTreeSet::new(),
         };
         let mut regs_tracker = RegisterTracker::new();
-        let mut result = InstructionAnalysisResult::new(vram_range);
+        let mut result = InstructionAnalysisResult::new(ranges);
 
         result.process_instr(context, &mut regs_tracker, &instrs[0], None);
 
@@ -74,7 +70,7 @@ impl InstructionAnalyzer {
 
             if prev_instr_opcode.is_jump_with_address() && !prev_instr_opcode.does_link() {
                 if let Some(target_vram) = prev_instr.get_branch_vram_generic() {
-                    if !vram_range.in_range(target_vram) {
+                    if !ranges.in_vram_range(target_vram) {
                         // The instruction is jumping outside the current function, meaning the
                         // current state of the registers will be garbage for the rest of the
                         // function, so we just reset the tracker.
@@ -91,10 +87,12 @@ impl InstructionAnalyzer {
         result
     }
 
+    // TODO
+    #[allow(clippy::too_many_arguments)]
     fn look_ahead(
         &mut self,
         context: &Context,
-        mut result: &mut InstructionAnalysisResult,
+        result: &mut InstructionAnalysisResult,
         original_regs_tracker: &RegisterTracker,
         instrs: &[Instruction],
         instr: &Instruction,

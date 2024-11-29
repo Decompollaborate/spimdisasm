@@ -68,7 +68,6 @@ enum RelocSymState<'name, 'meta> {
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq)]
 pub struct RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
-    context: &'ctx Context,
     rel: &'rel RelocationInfo,
     segment_info: &'prnt ParentSegmentInfo,
     reloc_sym_state: RelocSymState<'rel, 'ctx>,
@@ -91,7 +90,7 @@ impl<'ctx, 'rel, 'prnt> RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
                     {
                         RelocSymState::Sym(sym_metadata)
                     } else {
-                        // TODO: make this an option
+                        // TODO: make this a setting
                         if false {
                             return None;
                         }
@@ -107,7 +106,6 @@ impl<'ctx, 'rel, 'prnt> RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
         };
 
         Some(Self {
-            context,
             rel,
             segment_info,
             reloc_sym_state,
