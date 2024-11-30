@@ -328,7 +328,7 @@ fn drmario64_us_without_symbols() {
         }
     }
 
-    assert_eq!(context.global_segment().symbols().len(), 7992);
+    assert_eq!(context.global_segment().symbols().len(), 9112);
 
     /*
     for seg in &segments {
@@ -346,7 +346,7 @@ fn drmario64_us_without_symbols() {
                 .sum::<usize>()
         })
         .sum();
-    assert_eq!(function_count, 1402);
+    assert_eq!(function_count, 1404);
 
     let data_syms_count: usize = segments
         .iter()
@@ -357,7 +357,7 @@ fn drmario64_us_without_symbols() {
                 .sum::<usize>()
         })
         .sum();
-    assert_eq!(data_syms_count, 57);
+    assert_eq!(data_syms_count, 279);
 }
 
 #[cfg_attr(feature = "game_tests", test)]
@@ -397,7 +397,7 @@ fn drmario64_us_with_symbols() {
         }
     }
 
-    assert_eq!(context.global_segment().symbols().len(), 9460);
+    assert_eq!(context.global_segment().symbols().len(), 9532);
 
     /*
     for seg in &segments {

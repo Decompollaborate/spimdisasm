@@ -1,15 +1,130 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use rabbitizer::Instruction;
+
+use crate::rom_address::RomAddress;
+
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct TrackedRegisterState {}
+pub(crate) struct HiInfo {
+    pub(crate) instr_rom: RomAddress,
+
+    // If the previous instructions is a branch likely, then nulify
+    // the effects of this instruction for future analysis
+    pub(crate) set_on_branch_likely: bool,
+}
+
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct TrackedRegisterState {
+    // Maybe wrap in Option?
+    value: u32,
+
+    // TODO: maybe wrap in an enum?
+    hi_info: Option<HiInfo>,
+    gp_info: Option<RomAddress>,
+    lo_info: Option<RomAddress>,
+    dereferenced: Option<RomAddress>,
+    branch_info: Option<RomAddress>,
+}
 
 impl TrackedRegisterState {
     pub(crate) fn new() -> Self {
-        Self {}
+        Self {
+            value: 0,
+            hi_info: None,
+            gp_info: None,
+            lo_info: None,
+            dereferenced: None,
+            branch_info: None,
+        }
+    }
+
+    pub(crate) fn value(&self) -> u32 {
+        self.value
+    }
+    pub(crate) fn hi_info(&self) -> Option<HiInfo> {
+        self.hi_info
+    }
+    pub(crate) fn gp_info(&self) -> Option<RomAddress> {
+        self.gp_info
+    }
+    pub(crate) fn lo_info(&self) -> Option<RomAddress> {
+        self.lo_info
+    }
+    pub(crate) fn dereferenced(&self) -> Option<RomAddress> {
+        self.dereferenced
     }
 }
 
 impl TrackedRegisterState {
-    pub fn clear(&mut self) {}
+    pub fn clear(&mut self) {
+        self.value = 0;
+
+        self.clear_hi();
+        self.clear_gp();
+        self.clear_lo();
+        self.clear_branch();
+    }
+
+    pub fn clear_hi(&mut self) {
+        self.hi_info = None;
+    }
+    pub fn clear_gp(&mut self) {
+        self.gp_info = None;
+    }
+    pub fn clear_lo(&mut self) {
+        self.lo_info = None;
+        self.dereferenced = None;
+    }
+    pub fn clear_branch(&mut self) {
+        self.branch_info = None;
+    }
+}
+
+impl TrackedRegisterState {
+    pub fn set_hi(&mut self, value: u32, instr_rom: RomAddress, prev_instr: Option<&Instruction>) {
+        assert!(self.gp_info.is_none());
+        self.value = value << 16;
+
+        self.hi_info = Some(HiInfo {
+            instr_rom,
+            set_on_branch_likely: prev_instr
+                .is_some_and(|x| x.opcode().is_branch_likely() || x.is_unconditional_branch()),
+        });
+        self.dereferenced = None;
+    }
+
+    pub fn set_gp_load(&mut self, value: u32, instr_rom: RomAddress) {
+        assert!(self.hi_info.is_none());
+        self.value = value;
+
+        self.gp_info = Some(instr_rom);
+    }
+
+    pub fn set_lo(&mut self, value: u32, instr_rom: RomAddress) {
+        self.value = value;
+
+        self.lo_info = Some(instr_rom);
+        self.dereferenced = None;
+    }
+
+    pub fn set_branching(&mut self, instr_rom: RomAddress) {
+        self.branch_info = Some(instr_rom);
+    }
+
+    pub fn set_deref(&mut self, instr_rom: RomAddress) {
+        self.dereferenced = Some(instr_rom);
+    }
+
+    pub fn dereference_from(&mut self, other: Self, instr_rom: RomAddress) {
+        *self = other;
+        self.set_deref(instr_rom);
+    }
+}
+
+impl TrackedRegisterState {
+    pub fn was_set_in_current_instr(&self, _instr_rom: RomAddress) -> bool {
+        // TODO
+        false
+    }
 }

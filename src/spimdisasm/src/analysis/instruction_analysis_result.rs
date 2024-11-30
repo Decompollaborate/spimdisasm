@@ -2,7 +2,9 @@
 /* SPDX-License-Identifier: MIT */
 
 use alloc::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
-use rabbitizer::{Instruction, Vram};
+use rabbitizer::{
+    opcodes::Opcode, registers::Gpr, traits::Register, vram::VramOffset, Instruction, Vram,
+};
 
 use crate::{context::Context, rom_address::RomAddress, rom_vram_range::RomVramRange};
 
@@ -22,6 +24,14 @@ pub struct InstructionAnalysisResult {
 
     /// Key is the rom of the instruction, value is the address of the called function.
     func_calls: BTreeMap<RomAddress, Vram>,
+
+    hi_instrs: BTreeMap<RomAddress, (Gpr, u16)>,
+    non_lo_instrs: BTreeSet<RomAddress>,
+
+    // TODO: merge these 3 thingies
+    address_per_instr: BTreeMap<RomAddress, Vram>,
+    address_per_hi_instr: BTreeMap<RomAddress, Vram>,
+    address_per_lo_instr: BTreeMap<RomAddress, Vram>,
 }
 
 impl InstructionAnalysisResult {
@@ -33,6 +43,11 @@ impl InstructionAnalysisResult {
             referenced_vrams_by_rom: BTreeMap::new(),
             branch_targets: BTreeMap::new(),
             func_calls: BTreeMap::new(),
+            hi_instrs: BTreeMap::new(),
+            non_lo_instrs: BTreeSet::new(),
+            address_per_instr: BTreeMap::new(),
+            address_per_hi_instr: BTreeMap::new(),
+            address_per_lo_instr: BTreeMap::new(),
         }
     }
 
@@ -49,6 +64,15 @@ impl InstructionAnalysisResult {
     #[must_use]
     pub fn func_calls(&self) -> &BTreeMap<RomAddress, Vram> {
         &self.func_calls
+    }
+
+    #[must_use]
+    pub fn address_per_hi_instr(&self) -> &BTreeMap<RomAddress, Vram> {
+        &self.address_per_hi_instr
+    }
+    #[must_use]
+    pub fn address_per_lo_instr(&self) -> &BTreeMap<RomAddress, Vram> {
+        &self.address_per_lo_instr
     }
 }
 
@@ -67,7 +91,7 @@ impl InstructionAnalysisResult {
         context: &Context,
         regs_tracker: &mut RegisterTracker,
         instr: &Instruction,
-        _prev_instr: Option<&Instruction>,
+        prev_instr: Option<&Instruction>,
     ) {
         if let Some(target_vram) = instr.get_branch_vram_generic() {
             // instr.opcode().is_branch() or instr.is_unconditional_branch()
@@ -75,7 +99,22 @@ impl InstructionAnalysisResult {
         } else if let Some(target_vram) = instr.get_instr_index_as_vram() {
             // instr.opcode().is_jump_with_address()
             self.process_func_call(context, instr, target_vram);
+        } else if instr.is_jumptable_jump() {
+            self.process_jumptable_jump(regs_tracker, instr);
+        } else if instr.opcode().is_jump() && instr.opcode().does_link() {
+            // `jalr`. Implicit `!is_jump_with_address`
+            self.process_jump_and_link_register(regs_tracker, instr);
+        } else if instr.opcode().can_be_hi() {
+            self.process_hi(regs_tracker, instr, prev_instr);
+        } else if instr.opcode().is_unsigned() {
+            self.process_unsigned_lo(regs_tracker, instr);
+        } else if instr.opcode().can_be_lo() {
+            self.process_signed_lo(context, regs_tracker, instr, prev_instr);
+        } else if instr.opcode() == Opcode::core_addu {
+            self.process_symbol_dereference_type(regs_tracker, instr);
         }
+
+        regs_tracker.overwrite_registers(instr, self.rom_from_instr(instr));
     }
 }
 
@@ -91,7 +130,7 @@ impl InstructionAnalysisResult {
             return;
         }
 
-        regs_tracker.process_branch(instr);
+        regs_tracker.process_branch(instr, self.rom_from_instr(instr));
 
         /*
         if instrOffset in self.branchInstrOffsets:
@@ -99,10 +138,7 @@ impl InstructionAnalysisResult {
             return
         */
 
-        let instr_rom = self
-            .ranges
-            .rom_from_vram(instr.vram())
-            .expect("This should not panic");
+        let instr_rom = self.rom_from_instr(instr);
         self.add_referenced_vram(context, instr_rom, target_vram);
         self.branch_targets.insert(instr_rom, target_vram);
     }
@@ -119,28 +155,350 @@ impl InstructionAnalysisResult {
             self.funcCallOutsideRangesOffsets[instrOffset] = target
         */
 
-        let instr_rom = self
-            .ranges
-            .rom_from_vram(instr.vram())
-            .expect("This should not panic");
+        let instr_rom = self.rom_from_instr(instr);
         self.add_referenced_vram(context, instr_rom, target_vram);
         self.func_calls.insert(instr_rom, target_vram);
+    }
+
+    fn process_jumptable_jump(
+        &mut self,
+        _regs_tracker: &mut RegisterTracker,
+        _instr: &Instruction,
+    ) {
+        // TODO
+    }
+
+    fn process_jump_and_link_register(
+        &mut self,
+        _regs_tracker: &mut RegisterTracker,
+        _instr: &Instruction,
+    ) {
+        // TODO
+    }
+
+    fn process_hi(
+        &mut self,
+        regs_tracker: &mut RegisterTracker,
+        instr: &Instruction,
+        prev_instr: Option<&Instruction>,
+    ) {
+        let instr_rom = self.rom_from_instr(instr);
+        regs_tracker.process_hi(instr, instr_rom, prev_instr);
+        self.hi_instrs.insert(
+            instr_rom,
+            (
+                instr.get_destination_gpr().unwrap(),
+                instr.get_processed_immediate().unwrap() as u16,
+            ),
+        );
+    }
+
+    fn process_unsigned_lo(&mut self, _regs_tracker: &mut RegisterTracker, _instr: &Instruction) {
+        // TODO
+        /*
+        # Constants
+        luiOffset = regsTracker.getLuiOffsetForConstant(instr)
+        if luiOffset is None:
+            return
+        luiInstr = self.luiInstrs.get(luiOffset, None)
+        if luiInstr is None:
+            return
+        self.processConstant(regsTracker, luiInstr, luiOffset, instr, instrOffset)
+        */
+    }
+
+    fn process_signed_lo(
+        &mut self,
+        context: &Context,
+        regs_tracker: &mut RegisterTracker,
+        instr: &Instruction,
+        _prev_instr: Option<&Instruction>,
+    ) {
+        let instr_rom = self.rom_from_instr(instr);
+
+        // TODO
+        if instr.opcode().does_load()
+            && instr
+                .get_destination_gpr()
+                .is_some_and(|reg| reg.is_global_pointer(instr.abi()))
+        {
+            regs_tracker.process_gp_load(instr, instr_rom);
+        }
+
+        /*
+        if instrOffset in self.nonLoInstrOffsets:
+            return
+        */
+
+        let pairing_info = regs_tracker.preprocess_lo_and_get_info(instr, instr_rom);
+        if pairing_info.is_none() {
+            if regs_tracker.has_lo_but_not_hi(instr) {
+                self.non_lo_instrs.insert(instr_rom);
+            }
+            return;
+        }
+        let pairing_info = pairing_info.unwrap();
+
+        if pairing_info.is_gp_got && !context.global_config().gp_config().is_some_and(|x| x.pic()) {
+            return;
+        }
+
+        let upper_info = if pairing_info.is_gp_rel {
+            None
+        } else {
+            Some((pairing_info.value, pairing_info.instr_rom))
+        };
+
+        if let Some((_upper_half, hi_rom)) = upper_info {
+            if let Some((hi_reg, _hi_imm)) = self.hi_instrs.get(&hi_rom) {
+                if hi_reg.is_global_pointer(instr.abi()) {
+                    if let Some(lo_rs) = instr.field_rs() {
+                        if instr.opcode().reads_rs() && lo_rs.is_global_pointer(instr.abi()) {
+                            if let Some(lo_rt) = instr.field_rt() {
+                                if instr.opcode().modifies_rt()
+                                    && lo_rt.is_global_pointer(instr.abi())
+                                {
+                                    if context.global_config().gp_config().is_some_and(|x| x.pic())
+                                    {
+                                        /*
+                                        # cpload
+                                        self.unpairedCploads.append(CploadInfo(luiOffset, instrOffset))
+                                        */
+                                    } else {
+                                        /*
+                                        hiGpValue = luiInstr.getProcessedImmediate() << 16
+                                        loGpValue = instr.getProcessedImmediate()
+                                        self.gpSets[instrOffset] = GpSetInfo(luiOffset, instrOffset, hiGpValue+loGpValue)
+                                        self.gpSetsOffsets.add(luiOffset)
+                                        self.gpSetsOffsets.add(instrOffset)
+                                        */
+                                    }
+                                    // Early return to avoid counting this pairing as a normal symbol
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        let address = self.pair_hi_lo(context, &upper_info, instr, instr_rom);
+        if address.is_none() {
+            return;
+        }
+        let address = address.unwrap();
+        if upper_info.is_none() {
+            if context.global_config().gp_config().is_some_and(|x| x.pic()) {
+                self.process_got_symbol(address, instr_rom);
+                return;
+            }
+        }
+
+        if self.process_address(context, address, &upper_info, instr, instr_rom) {
+            // TODO: move out from this check
+            regs_tracker.process_lo(instr, address.inner(), instr_rom);
+        }
+    }
+
+    fn process_symbol_dereference_type(
+        &mut self,
+        _regs_tracker: &mut RegisterTracker,
+        _instr: &Instruction,
+    ) {
+        // TODO
     }
 }
 
 impl InstructionAnalysisResult {
+    fn pair_hi_lo(
+        &mut self,
+        context: &Context,
+        upper_info: &Option<(i64, RomAddress)>,
+        instr: &Instruction,
+        _instr_rom: RomAddress,
+    ) -> Option<Vram> {
+        // upper_info being None means this symbol is a $gp access
+
+        let lower_half = if let Some(x) = instr.get_processed_immediate() {
+            VramOffset::new(x)
+        } else {
+            return None;
+        };
+        /*
+
+        if lowerOffset in self.symbolLoInstrOffset:
+            # This %lo has been processed already
+
+            # Check the other lui has the same immediate value as this one, and reject the pair if it doesn't
+            if hiValue is not None:
+                otherLuiOffset = self.lowToHiDict.get(lowerOffset, None)
+                if otherLuiOffset is not None:
+                    otherLuiInstr = self.luiInstrs.get(otherLuiOffset, None)
+                    if otherLuiInstr is not None:
+                        if hiValue != otherLuiInstr.getProcessedImmediate() << 16:
+                            return None
+
+            if not common.GlobalConfig.COMPILER.value.pairMultipleHiToSameLow:
+                # IDO does not pair multiples %hi to the same %lo
+                return self.symbolLoInstrOffset[lowerOffset]
+
+            else:
+                if luiOffset is None or hiValue is None:
+                    return None
+
+                if self.hiToLowDict.get(luiOffset, None) == lowerOffset and self.lowToHiDict.get(lowerOffset, None) == luiOffset:
+                    # This pair has been already paired
+                    return self.symbolLoInstrOffset[lowerOffset]
+
+                # luiInstrPrev = self.instructions[(luiOffset-4)//4]
+                # if luiInstrPrev.isBranchLikely() or luiInstrPrev.isUnconditionalBranch():
+                #     # This lui will be nullified afterwards, so it is likely for it to be re-used lui
+                #     pass
+                # elif luiInstrPrev.isBranch():
+                #     # I'm not really sure if a lui on any branch slot is enough to believe this is really a symbol
+                #     # Let's hope it does for now...
+                #     pass
+                # elif luiOffset + 4 == lowerOffset:
+                if luiOffset + 4 == lowerOffset:
+                    # Make an exception if the lower instruction is just after the LUI
+                    pass
+                else:
+                    upperHalf = hiValue
+                    address = upperHalf + lowerHalf
+                    if address == self.symbolLoInstrOffset[lowerOffset]:
+                        # Make an exception if the resulting address is the same
+                        pass
+                    else:
+                        return self.symbolLoInstrOffset[lowerOffset]
+        */
+
+        if let Some((upper_half, _hi_rom)) = upper_info {
+            if *upper_half < 0 {
+                None
+            } else if lower_half.is_negative()
+                && lower_half.inner().abs() as u32 > *upper_half as u32
+            {
+                None
+            } else {
+                Some(Vram::new(*upper_half as u32) + lower_half)
+            }
+        } else if let Some(gp_value) = context.global_config().gp_config().map(|x| x.gp_value()) {
+            // TODO: implement comparison for Vram and VramOffset
+            if lower_half.is_negative() && lower_half.inner().abs() as u32 > gp_value.inner() {
+                None
+            } else {
+                Some(gp_value + lower_half)
+            }
+        } else {
+            None
+        }
+    }
+
+    fn process_got_symbol(&mut self, _address: Vram, _instr_rom: RomAddress) {
+        // TODO
+    }
+
+    fn process_address(
+        &mut self,
+        context: &Context,
+        address: Vram,
+        upper_info: &Option<(i64, RomAddress)>,
+        instr: &Instruction,
+        instr_rom: RomAddress,
+    ) -> bool {
+        /*
+        # filter out stuff that may not be a real symbol
+        filterOut = False
+        if not self.context.totalVramRange.isInRange(address):
+            if common.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES or common.GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES:
+                filterOut |= common.GlobalConfig.SYMBOL_FINDER_FILTER_LOW_ADDRESSES and address < common.GlobalConfig.SYMBOL_FINDER_FILTER_ADDRESSES_ADDR_LOW
+                filterOut |= common.GlobalConfig.SYMBOL_FINDER_FILTER_HIGH_ADDRESSES and address >= common.GlobalConfig.SYMBOL_FINDER_FILTER_ADDRESSES_ADDR_HIGH
+            else:
+                filterOut |= True
+
+        if filterOut:
+            contextSym = self.context.globalSegment.getSymbol(address)
+            if contextSym is not None:
+                if contextSym.isUserDeclared:
+                    # If the user declared a symbol outside the total vram range then use it anyways
+                    filterOut = False
+
+        if address > 0 and filterOut and lowerInstr.uniqueId != rabbitizer.InstrId.cpu_addiu:
+            if common.GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_CONSTANTS:
+                # Let's pretend this value is a constant
+                constant = address
+                self.referencedConstants.add(constant)
+
+                self.constantLoInstrOffset[lowerOffset] = constant
+                self.constantInstrOffset[lowerOffset] = constant
+                if luiOffset is not None:
+                    self.constantHiInstrOffset[luiOffset] = constant
+                    self.constantInstrOffset[luiOffset] = constant
+
+                    self.hiToLowDict[luiOffset] = lowerOffset
+                    self.lowToHiDict[lowerOffset] = luiOffset
+            return None
+        */
+
+        self.add_referenced_vram(context, instr_rom, address);
+
+        if self
+            .address_per_lo_instr
+            .insert(instr_rom, address)
+            .is_none()
+        {
+            self.address_per_instr.insert(instr_rom, address);
+        }
+        if let Some((_upper_half, hi_rom)) = upper_info {
+            if self.address_per_hi_instr.insert(*hi_rom, address).is_none() {
+                self.address_per_instr.insert(*hi_rom, address);
+                self.add_referenced_vram(context, *hi_rom, address);
+            }
+            /*
+            self.hiToLowDict[luiOffset] = lowerOffset
+            self.lowToHiDict[lowerOffset] = luiOffset
+            */
+        } else {
+            /*
+            self.symbolGpInstrOffset[lowerOffset] = address
+            self.gpReferencedSymbols.add(address)
+            self.symbolInstrOffset[lowerOffset] = address
+            */
+        }
+
+        self.process_symbol_type(address, instr, instr_rom);
+
+        true
+    }
+
+    fn process_symbol_type(
+        &mut self,
+        _address: Vram,
+        _instr: &Instruction,
+        _instr_rom: RomAddress,
+    ) {
+        // TODO
+    }
+}
+
+impl InstructionAnalysisResult {
+    fn rom_from_instr(&self, instr: &Instruction) -> RomAddress {
+        self.ranges
+            .rom_from_vram(instr.vram())
+            .expect("This should not panic")
+    }
+
     fn add_referenced_vram(
         &mut self,
         context: &Context,
         instr_rom: RomAddress,
         referenced_vram: Vram,
     ) {
-        if let Some(gp_config) = context.global_config().gp_config() {
-            if !gp_config.pic() {
-                self.referenced_vrams.insert(referenced_vram);
-                self.referenced_vrams_by_rom
-                    .insert(instr_rom, referenced_vram);
-            }
+        if !context.global_config().gp_config().is_some_and(|x| x.pic()) {
+            self.referenced_vrams.insert(referenced_vram);
+            self.referenced_vrams_by_rom
+                .insert(instr_rom, referenced_vram);
         }
     }
 }

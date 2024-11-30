@@ -6,6 +6,7 @@ use spimdisasm::{
     address_range::AddressRange,
     config::{Endian, GlobalConfig},
     context::ContextBuilder,
+    metadata::OverlayCategoryName,
     parent_segment_info::ParentSegmentInfo,
     rom_address::RomAddress,
     sections::{SectionText, SectionTextSettings},
@@ -95,19 +96,41 @@ fn test_section_text_1() {
     ];
     let rom = RomAddress::new(0x001050);
     let vram = Vram::new(0x80000400);
-    let size = Size::new(0x1000);
+    let size = Size::new(0x21FC00);
 
     let text_settings = SectionTextSettings::new(InstructionFlags::new());
 
     let global_config = GlobalConfig::new(Endian::Big);
     let mut context = {
-        let mut heater = ContextBuilder::new(
+        let mut overlays_builder = ContextBuilder::new(
             global_config,
             AddressRange::new(rom, rom + size),
             AddressRange::new(vram, vram + size),
         )
-        .process()
         .process();
+
+        for i in 0x0..=0xF {
+            let category_name = OverlayCategoryName::new(format!("segment_0{:X}", i));
+            let mut overlay_builder = overlays_builder.add_overlay_category(category_name.clone());
+
+            let magic_number = 0x01000000;
+            let segment_size = Size::new(magic_number);
+            let segment_vram = Vram::new(i * magic_number);
+            let vram_range = AddressRange::new(segment_vram, segment_vram + segment_size);
+            let arbitrary_number = 128 * 1024 * 1024; // 128MiB, no rom should be that big, right?
+            let segment_rom = RomAddress::new(arbitrary_number + i * magic_number);
+            let rom_range = AddressRange::new(segment_rom, segment_rom + segment_size);
+
+            println!(
+                "Adding overlay '{:?}': {:?} {:?}",
+                category_name, rom_range, vram_range
+            );
+
+            overlay_builder.add_overlay(rom_range, vram_range);
+            overlay_builder.build().unwrap();
+        }
+
+        let mut heater = overlays_builder.process();
 
         heater.preanalyze_text(&text_settings, &bytes, rom, vram);
 
@@ -139,7 +162,25 @@ fn test_section_text_1() {
     for s in symbols {
         println!("{:?}", s.1);
     }
-    assert_eq!(symbols.len(), 4);
+    assert_eq!(symbols.len(), 7);
+
+    println!();
+    let overlays_data = context
+        .overlay_segments()
+        .get(&OverlayCategoryName::new("segment_01".into()))
+        .unwrap();
+    println!("placeholder:");
+    for sym in overlays_data.placeholder_segment.symbols() {
+        println!("{:?}", sym);
+    }
+    println!();
+    println!("other:");
+    for (segment_rom, segment_metadata) in &overlays_data.segments {
+        println!("  {:?}", segment_rom,);
+        for sym in segment_metadata.symbols() {
+            println!("    {:?}", sym);
+        }
+    }
 
     // None::<u32>.unwrap();
 }

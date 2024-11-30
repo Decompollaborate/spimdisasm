@@ -17,20 +17,14 @@ use super::{RelocReferencedSym, RelocationType};
 pub struct RelocationInfo {
     reloc_type: RelocationType,
     referenced_sym: RelocReferencedSym,
-    addend: i32,
 }
 
 impl RelocationInfo {
     #[must_use]
-    pub fn new(
-        reloc_type: RelocationType,
-        referenced_sym: RelocReferencedSym,
-        addend: i32,
-    ) -> Self {
+    pub fn new(reloc_type: RelocationType, referenced_sym: RelocReferencedSym) -> Self {
         Self {
             reloc_type,
             referenced_sym,
-            addend,
         }
     }
 
@@ -41,10 +35,6 @@ impl RelocationInfo {
     #[must_use]
     pub const fn referenced_sym(&self) -> &RelocReferencedSym {
         &self.referenced_sym
-    }
-    #[must_use]
-    pub const fn addend(&self) -> i32 {
-        self.addend
     }
 
     pub fn display<'ctx, 'rel, 'prnt>(
@@ -58,8 +48,8 @@ impl RelocationInfo {
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, PartialOrd)]
 enum RelocSymState<'name, 'meta> {
-    LiteralSymName(&'name str),
-    Sym(&'meta SymbolMetadata),
+    LiteralSymName(&'name str, i32),
+    Sym(Vram, &'meta SymbolMetadata),
     // Kinda useful for debugging
     SymbolNotFound(Vram),
     // Kinda useful for debugging
@@ -80,7 +70,9 @@ impl<'ctx, 'rel, 'prnt> RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
         segment_info: &'prnt ParentSegmentInfo,
     ) -> Option<Self> {
         let reloc_sym_state = match &rel.referenced_sym {
-            RelocReferencedSym::SymName(name) => RelocSymState::LiteralSymName(name),
+            RelocReferencedSym::SymName(name, addend) => {
+                RelocSymState::LiteralSymName(name, *addend)
+            }
             RelocReferencedSym::Address(vram) => {
                 if let Some(referenced_segment) =
                     context.find_referenced_segment(*vram, segment_info)
@@ -88,7 +80,7 @@ impl<'ctx, 'rel, 'prnt> RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
                     if let Some(sym_metadata) = referenced_segment
                         .find_symbol(*vram, FindSettings::new().with_allow_addend(false))
                     {
-                        RelocSymState::Sym(sym_metadata)
+                        RelocSymState::Sym(*vram, sym_metadata)
                     } else {
                         // TODO: make this a setting
                         if false {
@@ -142,18 +134,25 @@ impl fmt::Display for RelocationInfoDisplay<'_, '_, '_> {
             write!(f, "(")?;
         }
 
-        match &self.reloc_sym_state {
-            RelocSymState::LiteralSymName(name) => write!(f, "{}", name)?,
-            RelocSymState::Sym(sym_metadata) => write!(f, "{}", sym_metadata.display_name())?,
+        let addend = match &self.reloc_sym_state {
+            RelocSymState::LiteralSymName(name, addend) => {
+                write!(f, "{}", name)?;
+                *addend
+            }
+            RelocSymState::Sym(vram, sym_metadata) => {
+                write!(f, "{}", sym_metadata.display_name())?;
+                (*vram - sym_metadata.vram()).inner()
+            }
             RelocSymState::SymbolNotFound(vram) => {
-                write!(f, "/* ERROR: symbol for address 0x{} not found */", vram)?
+                write!(f, "/* ERROR: symbol for address 0x{} not found */", vram)?;
+                0
             }
             RelocSymState::SegmentNotFound(vram) => {
-                write!(f, "/* ERROR: segment for address 0x{} not found */", vram)?
+                write!(f, "/* ERROR: segment for address 0x{} not found */", vram)?;
+                0
             }
-        }
+        };
 
-        let addend = self.rel.addend;
         if addend != 0 {
             /*
             if GlobalConfig.COMPILER.value.bigAddendWorkaroundForMigratedFunctions and isSplittedSymbol:

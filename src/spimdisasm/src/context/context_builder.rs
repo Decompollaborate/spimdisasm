@@ -208,24 +208,7 @@ pub struct ContextBuilderOverlay {
 }
 
 impl ContextBuilderOverlay {
-    /*
-    pub fn add_overlay(&mut self, category: OverlayCategoryName,
-        rom_range: AddressRange<RomAddress>,
-        vram_range: AddressRange<Vram>,) -> SegmentModifier {
-
-        let segment = self.overlay_segments
-            .entry(
-                category.clone()
-            )
-            .or_insert_with(
-                || OverlayCategory::new(category, rom_range, vram_range)
-            );
-
-        SegmentModifier {
-            segment
-        }
-    }
-    */
+    #[must_use]
     pub fn add_overlay_category(&mut self, category: OverlayCategoryName) -> OverlaysBuilder {
         OverlaysBuilder {
             name: category.clone(),

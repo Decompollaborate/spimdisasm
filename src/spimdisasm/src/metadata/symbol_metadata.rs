@@ -355,7 +355,7 @@ impl fmt::Debug for SymbolMetadata {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "SymbolMetadata {{ vram: 0x{}, name: {} }}",
+            "SymbolMetadata {{ vram: 0x{}, name: \"{}\" }}",
             self.vram,
             self.display_name()
         )

@@ -112,7 +112,7 @@ impl RelocationType {
     }
 
     #[must_use]
-    pub fn new_reloc_info(self, referenced_sym: RelocReferencedSym, addend: i32) -> RelocationInfo {
-        RelocationInfo::new(self, referenced_sym, addend)
+    pub fn new_reloc_info(self, referenced_sym: RelocReferencedSym) -> RelocationInfo {
+        RelocationInfo::new(self, referenced_sym)
     }
 }

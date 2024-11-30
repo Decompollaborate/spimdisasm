@@ -8,5 +8,5 @@ use rabbitizer::Vram;
 #[non_exhaustive]
 pub enum RelocReferencedSym {
     Address(Vram),
-    SymName(String),
+    SymName(String, i32),
 }

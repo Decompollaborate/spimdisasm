@@ -18,8 +18,9 @@ use crate::{
 
 #[derive(Debug, Clone, Hash, PartialEq)]
 pub struct OverlayCategory {
-    placeholder_segment: SegmentMetadata,
-    segments: BTreeMap<RomAddress, SegmentMetadata>,
+    // TODO: remove `pub`s
+    pub placeholder_segment: SegmentMetadata,
+    pub segments: BTreeMap<RomAddress, SegmentMetadata>,
 }
 
 impl OverlayCategory {
@@ -72,11 +73,17 @@ impl Context {
 }
 
 impl Context {
+    #[must_use]
     pub const fn global_config(&self) -> &GlobalConfig {
         &self.global_config
     }
+    #[must_use]
     pub const fn global_segment(&self) -> &SegmentMetadata {
         &self.global_segment
+    }
+    #[must_use]
+    pub const fn overlay_segments(&self) -> &BTreeMap<OverlayCategoryName, OverlayCategory> {
+        &self.overlay_segments
     }
 }
 
@@ -154,16 +161,17 @@ impl Context {
                     }
                 }
             }
+        }
 
-            // If not found, then we should check every category except the one that associated to the parent segment.
-            for (ovl_cat, segments_per_rom) in self.overlay_segments.iter() {
-                if overlay_category_name == ovl_cat {
-                    continue;
-                }
-                let segment = &segments_per_rom.placeholder_segment;
-                if segment.in_vram_range(vram) {
-                    return Some(segment);
-                }
+        let overlay_category_name = info.overlay_category_name();
+        // If not found, then we should check every category except the one that associated to the parent segment.
+        for (ovl_cat, segments_per_rom) in self.overlay_segments.iter() {
+            if overlay_category_name == Some(ovl_cat) {
+                continue;
+            }
+            let segment = &segments_per_rom.placeholder_segment;
+            if segment.in_vram_range(vram) {
+                return Some(segment);
             }
         }
 
@@ -192,16 +200,17 @@ fn find_referenced_segment_mut_impl<'ctx>(
                 }
             }
         });
+    }
 
-        // If not found, then we should check every category except the one that associated to the parent segment.
-        for (ovl_cat, segments_per_rom) in slf.overlay_segments.iter_mut() {
-            if overlay_category_name == ovl_cat {
-                continue;
-            }
-            let segment = &mut segments_per_rom.placeholder_segment;
-            if segment.in_vram_range(vram) {
-                return Some(segment);
-            }
+    let overlay_category_name = info.overlay_category_name();
+    // If not found, then we should check every category except the one that associated to the parent segment.
+    for (ovl_cat, segments_per_rom) in slf.overlay_segments.iter_mut() {
+        if overlay_category_name == Some(ovl_cat) {
+            continue;
+        }
+        let segment = &mut segments_per_rom.placeholder_segment;
+        if segment.in_vram_range(vram) {
+            return Some(segment);
         }
     }
 
