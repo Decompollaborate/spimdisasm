@@ -329,19 +329,17 @@ impl InstructionAnalysisResult {
             }
         }
 
-        let address = self.pair_hi_lo(context, &upper_info, instr, instr_rom);
+        let address = self.pair_hi_lo(context, upper_info.as_ref(), instr, instr_rom);
         if address.is_none() {
             return;
         }
         let address = address.unwrap();
-        if upper_info.is_none() {
-            if context.global_config().gp_config().is_some_and(|x| x.pic()) {
-                self.process_got_symbol(address, instr_rom);
-                return;
-            }
+        if upper_info.is_none() && context.global_config().gp_config().is_some_and(|x| x.pic()) {
+            self.process_got_symbol(address, instr_rom);
+            return;
         }
 
-        if self.process_address(context, address, &upper_info, instr, instr_rom) {
+        if self.process_address(context, address, upper_info.as_ref(), instr, instr_rom) {
             // TODO: move out from this check
             regs_tracker.process_lo(instr, address.inner(), instr_rom);
         }
@@ -360,7 +358,7 @@ impl InstructionAnalysisResult {
     fn pair_hi_lo(
         &mut self,
         context: &Context,
-        upper_info: &Option<(i64, RomAddress)>,
+        upper_info: Option<&(i64, RomAddress)>,
         instr: &Instruction,
         _instr_rom: RomAddress,
     ) -> Option<Vram> {
@@ -420,10 +418,9 @@ impl InstructionAnalysisResult {
         */
 
         if let Some((upper_half, _hi_rom)) = upper_info {
-            if *upper_half < 0 {
-                None
-            } else if lower_half.is_negative()
-                && lower_half.inner().abs() as u32 > *upper_half as u32
+            if *upper_half < 0
+                || (lower_half.is_negative()
+                    && lower_half.inner().unsigned_abs() > *upper_half as u32)
             {
                 None
             } else {
@@ -431,7 +428,7 @@ impl InstructionAnalysisResult {
             }
         } else if let Some(gp_value) = context.global_config().gp_config().map(|x| x.gp_value()) {
             // TODO: implement comparison for Vram and VramOffset
-            if lower_half.is_negative() && lower_half.inner().abs() as u32 > gp_value.inner() {
+            if lower_half.is_negative() && lower_half.inner().unsigned_abs() > gp_value.inner() {
                 None
             } else {
                 Some(gp_value + lower_half)
@@ -449,7 +446,7 @@ impl InstructionAnalysisResult {
         &mut self,
         context: &Context,
         address: Vram,
-        upper_info: &Option<(i64, RomAddress)>,
+        upper_info: Option<&(i64, RomAddress)>,
         instr: &Instruction,
         instr_rom: RomAddress,
     ) -> bool {

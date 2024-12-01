@@ -12,26 +12,13 @@ use crate::{
     rom_address::RomAddress,
     rom_vram_range::RomVramRange,
     size::Size,
-    symbols::{Symbol, SymbolData},
+    symbols::{Symbol, SymbolRodata},
 };
 
-use super::{trait_section::RomSection, Section};
-
-pub struct SectionDataSettings {}
-
-impl SectionDataSettings {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-impl Default for SectionDataSettings {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+use super::{RomSection, Section, SectionDataSettings};
 
 #[must_use]
-pub struct SectionData {
+pub struct SectionRodata {
     name: String,
 
     ranges: RomVramRange,
@@ -42,13 +29,13 @@ pub struct SectionData {
     //
     parent_segment_info: ParentSegmentInfo,
 
-    data_symbols: Vec<SymbolData>,
+    rodata_symbols: Vec<SymbolRodata>,
 
     // TODO: maybe move to SectionBase or just Section?
     symbol_vrams: BTreeSet<Vram>,
 }
 
-impl SectionData {
+impl SectionRodata {
     pub(crate) fn new(
         context: &mut Context,
         _settings: &SectionDataSettings,
@@ -69,7 +56,7 @@ impl SectionData {
         let vram_range = AddressRange::new(vram, vram + size);
         let ranges = RomVramRange::new(rom_range, vram_range);
 
-        let mut data_symbols = Vec::new();
+        let mut rodata_symbols = Vec::new();
         let mut symbol_vrams = BTreeSet::new();
 
         let owned_segment = context.find_owned_segment(&parent_segment_info)?;
@@ -164,9 +151,9 @@ impl SectionData {
             symbol_vrams.insert(*new_vram_sym);
 
             // TODO: get rid of unwrap?
-            let /*mut*/ sym = SymbolData::new(context, raw_bytes[start..end].into(), sym_rom, *new_vram_sym, start, parent_segment_info.clone())?;
+            let /*mut*/ sym = SymbolRodata::new(context, raw_bytes[start..end].into(), sym_rom, *new_vram_sym, start, parent_segment_info.clone())?;
 
-            data_symbols.push(sym);
+            rodata_symbols.push(sym);
         }
 
         let owned_segment_mut = context.find_owned_segment_mut(&parent_segment_info)?;
@@ -180,18 +167,18 @@ impl SectionData {
             name,
             ranges,
             parent_segment_info,
-            data_symbols,
+            rodata_symbols,
             symbol_vrams,
         })
     }
 
     // TODO: remove
-    pub fn data_symbols(&self) -> &[SymbolData] {
-        &self.data_symbols
+    pub fn rodata_symbols(&self) -> &[SymbolRodata] {
+        &self.rodata_symbols
     }
 }
 
-impl Section for SectionData {
+impl Section for SectionRodata {
     fn name(&self) -> &str {
         &self.name
     }
@@ -205,7 +192,7 @@ impl Section for SectionData {
     }
 
     fn symbol_list(&self) -> &[impl Symbol] {
-        &self.data_symbols
+        &self.rodata_symbols
     }
 
     fn symbols_vrams(&self) -> &BTreeSet<Vram> {
@@ -213,7 +200,7 @@ impl Section for SectionData {
     }
 }
 
-impl RomSection for SectionData {
+impl RomSection for SectionRodata {
     fn rom_vram_range(&self) -> RomVramRange {
         self.ranges
     }

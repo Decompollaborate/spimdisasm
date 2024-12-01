@@ -9,7 +9,7 @@ use spimdisasm::{
     metadata::OverlayCategoryName,
     parent_segment_info::ParentSegmentInfo,
     rom_address::RomAddress,
-    sections::{SectionText, SectionTextSettings},
+    sections::SectionTextSettings,
     size::Size,
     symbols::display::FunctionDisplaySettings,
 };
@@ -139,16 +139,16 @@ fn test_section_text_1() {
 
     let instr_display_flags = DisplayFlags::default();
 
-    let section_text = SectionText::new(
-        &mut context,
-        &text_settings,
-        "test".into(),
-        &bytes,
-        rom,
-        vram,
-        ParentSegmentInfo::new(rom, None),
-    )
-    .unwrap();
+    let section_text = context
+        .create_section_text(
+            &text_settings,
+            "test".into(),
+            &bytes,
+            rom,
+            vram,
+            ParentSegmentInfo::new(rom, None),
+        )
+        .unwrap();
 
     let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
     for func in section_text.functions() {

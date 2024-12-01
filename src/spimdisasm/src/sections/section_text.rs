@@ -38,6 +38,7 @@ impl SectionTextSettings {
     }
 }
 
+#[must_use]
 pub struct SectionText {
     name: String,
 
@@ -55,7 +56,7 @@ pub struct SectionText {
 }
 
 impl SectionText {
-    pub fn new(
+    pub(crate) fn new(
         context: &mut Context,
         settings: &SectionTextSettings,
         name: String,

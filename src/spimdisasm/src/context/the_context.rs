@@ -3,7 +3,7 @@
 
 use core::{error, fmt};
 
-use alloc::collections::btree_map::BTreeMap;
+use alloc::{collections::btree_map::BTreeMap, string::String};
 
 use ::polonius_the_crab::prelude::*;
 
@@ -14,6 +14,7 @@ use crate::{
     metadata::{OverlayCategoryName, SegmentMetadata},
     parent_segment_info::ParentSegmentInfo,
     rom_address::RomAddress,
+    sections::{SectionData, SectionDataSettings, SectionRodata, SectionText, SectionTextSettings},
 };
 
 #[derive(Debug, Clone, Hash, PartialEq)]
@@ -84,6 +85,68 @@ impl Context {
     #[must_use]
     pub const fn overlay_segments(&self) -> &BTreeMap<OverlayCategoryName, OverlayCategory> {
         &self.overlay_segments
+    }
+}
+
+impl Context {
+    pub fn create_section_text(
+        &mut self,
+        settings: &SectionTextSettings,
+        name: String,
+        raw_bytes: &[u8],
+        rom: RomAddress,
+        vram: Vram,
+        parent_segment_info: ParentSegmentInfo,
+    ) -> Result<SectionText, OwnedSegmentNotFoundError> {
+        SectionText::new(
+            self,
+            settings,
+            name,
+            raw_bytes,
+            rom,
+            vram,
+            parent_segment_info,
+        )
+    }
+
+    pub fn create_section_data(
+        &mut self,
+        settings: &SectionDataSettings,
+        name: String,
+        raw_bytes: &[u8],
+        rom: RomAddress,
+        vram: Vram,
+        parent_segment_info: ParentSegmentInfo,
+    ) -> Result<SectionData, OwnedSegmentNotFoundError> {
+        SectionData::new(
+            self,
+            settings,
+            name,
+            raw_bytes,
+            rom,
+            vram,
+            parent_segment_info,
+        )
+    }
+
+    pub fn create_section_rodata(
+        &mut self,
+        settings: &SectionDataSettings,
+        name: String,
+        raw_bytes: &[u8],
+        rom: RomAddress,
+        vram: Vram,
+        parent_segment_info: ParentSegmentInfo,
+    ) -> Result<SectionRodata, OwnedSegmentNotFoundError> {
+        SectionRodata::new(
+            self,
+            settings,
+            name,
+            raw_bytes,
+            rom,
+            vram,
+            parent_segment_info,
+        )
     }
 }
 

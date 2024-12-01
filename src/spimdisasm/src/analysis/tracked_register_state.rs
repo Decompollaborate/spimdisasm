@@ -60,10 +60,9 @@ impl TrackedRegisterState {
     pub(crate) fn get_jr_reg_data(&self) -> Option<JrRegData> {
         if self.dereferenced.is_none() {
             None
-        } else if let Some(lo_rom) = self.lo_info {
-            Some(JrRegData::new(lo_rom, self.value, self.branch_info))
         } else {
-            None
+            self.lo_info
+                .map(|lo_rom| JrRegData::new(lo_rom, self.value, self.branch_info))
         }
     }
 }

@@ -183,12 +183,13 @@ impl RegisterTracker {
             }
 
             if let Some(rt) = instr.field_rt() {
-                if instr.opcode().does_dereference() {
-                    if state.lo_info().is_some() && state.dereferenced().is_none() {
-                        // Simulate a dereference
-                        self.registers[rt.as_index()].dereference_from(*state, instr_rom);
-                        self.registers[rt.as_index()].clear_branch();
-                    }
+                if instr.opcode().does_dereference()
+                    && state.lo_info().is_some()
+                    && state.dereferenced().is_none()
+                {
+                    // Simulate a dereference
+                    self.registers[rt.as_index()].dereference_from(*state, instr_rom);
+                    self.registers[rt.as_index()].clear_branch();
                 }
             }
         }

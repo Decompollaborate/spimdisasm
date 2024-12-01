@@ -9,8 +9,8 @@ use spimdisasm::{
     metadata::SymbolType,
     parent_segment_info::ParentSegmentInfo,
     rom_address::RomAddress,
-    sections::{SectionData, SectionDataSettings, SectionText, SectionTextSettings},
-    symbols::display::FunctionDisplaySettings,
+    sections::{SectionDataSettings, SectionTextSettings},
+    symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings},
 };
 
 mod game_tests_info;
@@ -203,7 +203,7 @@ fn init_context(
 }
 
 fn init_segments(
-    mut context: &mut Context,
+    context: &mut Context,
     rom_bytes: &[u8],
     user_segments: Vec<TestSegment>,
 ) -> Vec<SegmentData> {
@@ -226,6 +226,7 @@ fn init_segments(
             ) => {
                 let mut text_sections = Vec::new();
                 let mut data_sections = Vec::new();
+                let mut rodata_sections = Vec::new();
 
                 let parent_segment_info = ParentSegmentInfo::new(info.rom, None);
 
@@ -247,34 +248,48 @@ fn init_segments(
                             let text_settings =
                                 SectionTextSettings::new(InstructionFlags::default());
                             text_sections.push(
-                                SectionText::new(
-                                    &mut context,
-                                    &text_settings,
-                                    (*name).into(),
-                                    &rom_bytes[AddressRange::new(*rom, rom_end)],
-                                    *rom,
-                                    info.vram_from_rom(*rom),
-                                    parent_segment_info.clone(),
-                                )
-                                .unwrap(),
+                                context
+                                    .create_section_text(
+                                        &text_settings,
+                                        (*name).into(),
+                                        &rom_bytes[AddressRange::new(*rom, rom_end)],
+                                        *rom,
+                                        info.vram_from_rom(*rom),
+                                        parent_segment_info.clone(),
+                                    )
+                                    .unwrap(),
                             );
                         }
                         TestSection::Data(rom, name) => {
                             let data_settings = SectionDataSettings::new();
                             data_sections.push(
-                                SectionData::new(
-                                    &mut context,
-                                    &data_settings,
-                                    (*name).into(),
-                                    &rom_bytes[AddressRange::new(*rom, rom_end)],
-                                    *rom,
-                                    info.vram_from_rom(*rom),
-                                    parent_segment_info.clone(),
-                                )
-                                .unwrap(),
+                                context
+                                    .create_section_data(
+                                        &data_settings,
+                                        (*name).into(),
+                                        &rom_bytes[AddressRange::new(*rom, rom_end)],
+                                        *rom,
+                                        info.vram_from_rom(*rom),
+                                        parent_segment_info.clone(),
+                                    )
+                                    .unwrap(),
                             );
                         }
-                        TestSection::Rodata(..) => {}
+                        TestSection::Rodata(rom, name) => {
+                            let data_settings = SectionDataSettings::new();
+                            rodata_sections.push(
+                                context
+                                    .create_section_rodata(
+                                        &data_settings,
+                                        (*name).into(),
+                                        &rom_bytes[AddressRange::new(*rom, rom_end)],
+                                        *rom,
+                                        info.vram_from_rom(*rom),
+                                        parent_segment_info.clone(),
+                                    )
+                                    .unwrap(),
+                            );
+                        }
                         TestSection::Bss(..) => {}
                         TestSection::Bin(..) => {}
                     }
@@ -283,6 +298,7 @@ fn init_segments(
                     name: info.name.into(),
                     text_sections,
                     data_sections,
+                    rodata_sections,
                 });
             }
         }
@@ -312,6 +328,7 @@ fn drmario64_us_without_symbols() {
 
     let instr_display_flags = DisplayFlags::default();
     let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
+    let sym_data_display_settings = SymDataDisplaySettings::new();
     for seg in &segments {
         for sect in &seg.text_sections {
             for sym in sect.functions() {
@@ -322,13 +339,16 @@ fn drmario64_us_without_symbols() {
             }
         }
         for sect in &seg.data_sections {
-            for _sym in sect.data_symbols() {
+            for sym in sect.data_symbols() {
                 // sym.display(&context, &data_display_settings).hash(&mut hasher);
+                let _a = sym
+                    .display(&context, &sym_data_display_settings)
+                    .to_string();
             }
         }
     }
 
-    assert_eq!(context.global_segment().symbols().len(), 9112);
+    assert_eq!(context.global_segment().symbols().len(), 9273);
 
     /*
     for seg in &segments {
@@ -381,6 +401,7 @@ fn drmario64_us_with_symbols() {
 
     let instr_display_flags = DisplayFlags::default();
     let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
+    let sym_data_display_settings = SymDataDisplaySettings::new();
     for seg in &segments {
         for sect in &seg.text_sections {
             for sym in sect.functions() {
@@ -391,13 +412,16 @@ fn drmario64_us_with_symbols() {
             }
         }
         for sect in &seg.data_sections {
-            for _sym in sect.data_symbols() {
+            for sym in sect.data_symbols() {
                 // sym.display(&context, &data_display_settings).hash(&mut hasher);
+                let _a = sym
+                    .display(&context, &sym_data_display_settings)
+                    .to_string();
             }
         }
     }
 
-    assert_eq!(context.global_segment().symbols().len(), 9532);
+    assert_eq!(context.global_segment().symbols().len(), 9560);
 
     /*
     for seg in &segments {
