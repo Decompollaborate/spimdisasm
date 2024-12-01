@@ -5,7 +5,7 @@ use rabbitizer::{opcodes::Opcode, registers::Gpr, traits::Register, Instruction}
 
 use crate::rom_address::RomAddress;
 
-use super::{LoPairingInfo, TrackedRegisterState};
+use super::{JrRegData, LoPairingInfo, TrackedRegisterState};
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct RegisterTracker {
@@ -62,6 +62,12 @@ impl RegisterTracker {
                 self.registers[reg.as_index()].set_branching(instr_rom);
             }
         }
+    }
+
+    pub(crate) fn get_jr_reg_data(&self, instr: &Instruction) -> Option<JrRegData> {
+        instr
+            .field_rs()
+            .and_then(|reg| self.registers[reg.as_index()].get_jr_reg_data())
     }
 
     pub(crate) fn process_hi(

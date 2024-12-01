@@ -25,6 +25,8 @@ pub struct InstructionAnalysisResult {
     /// Key is the rom of the instruction, value is the address of the called function.
     func_calls: BTreeMap<RomAddress, Vram>,
 
+    referenced_jumptables: BTreeMap<RomAddress, Vram>,
+
     hi_instrs: BTreeMap<RomAddress, (Gpr, u16)>,
     non_lo_instrs: BTreeSet<RomAddress>,
 
@@ -48,6 +50,7 @@ impl InstructionAnalysisResult {
             address_per_instr: BTreeMap::new(),
             address_per_hi_instr: BTreeMap::new(),
             address_per_lo_instr: BTreeMap::new(),
+            referenced_jumptables: BTreeMap::new(),
         }
     }
 
@@ -73,6 +76,11 @@ impl InstructionAnalysisResult {
     #[must_use]
     pub fn address_per_lo_instr(&self) -> &BTreeMap<RomAddress, Vram> {
         &self.address_per_lo_instr
+    }
+
+    #[must_use]
+    pub fn referenced_jumptables(&self) -> &BTreeMap<RomAddress, Vram> {
+        &self.referenced_jumptables
     }
 }
 
@@ -100,7 +108,7 @@ impl InstructionAnalysisResult {
             // instr.opcode().is_jump_with_address()
             self.process_func_call(context, instr, target_vram);
         } else if instr.is_jumptable_jump() {
-            self.process_jumptable_jump(regs_tracker, instr);
+            self.process_jumptable_jump(context, regs_tracker, instr);
         } else if instr.opcode().is_jump() && instr.opcode().does_link() {
             // `jalr`. Implicit `!is_jump_with_address`
             self.process_jump_and_link_register(regs_tracker, instr);
@@ -162,10 +170,37 @@ impl InstructionAnalysisResult {
 
     fn process_jumptable_jump(
         &mut self,
-        _regs_tracker: &mut RegisterTracker,
-        _instr: &Instruction,
+        context: &Context,
+        regs_tracker: &mut RegisterTracker,
+        instr: &Instruction,
     ) {
-        // TODO
+        if let Some(jr_reg_data) = regs_tracker.get_jr_reg_data(instr) {
+            let instr_rom = self.rom_from_instr(instr);
+            let lo_rom = jr_reg_data.lo_rom();
+            let address = Vram::new(jr_reg_data.address());
+
+            if jr_reg_data.branch_info().is_some() {
+                // Jumptables never check the register they are branching into,
+                // since the references should always be valid.
+                // This kind of check usually is performed on tail call
+                // optimizations when a function pointer is involved.
+                // For example:
+                // ```mips
+                // lw          $t0, ...
+                // beqz        $t0, .LXXXXXXXX
+                //  nop
+                // jr          $t0
+                //  nop
+                // ```
+                // TODO
+                // self.rejectedjumpRegisterIntrOffset[instrOffset] = (offset, address, jrRegData.lastBranchOffset())
+            } else {
+                self.referenced_jumptables.insert(lo_rom, address);
+            }
+
+            // self.jumpRegisterIntrOffset[instrOffset] = address
+            self.add_referenced_vram(context, instr_rom, address);
+        }
     }
 
     fn process_jump_and_link_register(
@@ -174,6 +209,17 @@ impl InstructionAnalysisResult {
         _instr: &Instruction,
     ) {
         // TODO
+        /*
+        jrRegData = regsTracker.getJrRegData(instr)
+        if jrRegData.hasInfo():
+            offset = jrRegData.offset()
+            address = jrRegData.address()
+
+            self.indirectFunctionCallOffsets[offset] = address
+            self.indirectFunctionCallIntrOffset[instrOffset] = address
+            if not common.GlobalConfig.PIC:
+                self.referencedVrams.add(address)
+        */
     }
 
     fn process_hi(

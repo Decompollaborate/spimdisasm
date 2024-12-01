@@ -5,6 +5,8 @@ use rabbitizer::Instruction;
 
 use crate::rom_address::RomAddress;
 
+use super::JrRegData;
+
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct HiInfo {
     pub(crate) instr_rom: RomAddress,
@@ -53,6 +55,16 @@ impl TrackedRegisterState {
     }
     pub(crate) fn dereferenced(&self) -> Option<RomAddress> {
         self.dereferenced
+    }
+
+    pub(crate) fn get_jr_reg_data(&self) -> Option<JrRegData> {
+        if self.dereferenced.is_none() {
+            None
+        } else if let Some(lo_rom) = self.lo_info {
+            Some(JrRegData::new(lo_rom, self.value, self.branch_info))
+        } else {
+            None
+        }
     }
 }
 
