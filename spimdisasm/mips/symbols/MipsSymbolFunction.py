@@ -720,6 +720,7 @@ class SymbolFunction(SymbolText):
 
         labelSym.isDefined = True
         labelSym.sectionType = self.sectionType
+        labelSym.vromAddress = currentVrom
         labelSymType = labelSym.getTypeSpecial()
 
         useLabelMacro = labelSymType is None or labelSymType == common.SymbolSpecialType.function or (labelSymType == common.SymbolSpecialType.jumptablelabel and not migrate) or labelSymType == common.SymbolSpecialType.gccexcepttablelabel
