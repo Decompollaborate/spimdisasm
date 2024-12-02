@@ -9,6 +9,7 @@ use spimdisasm::{
     metadata::OverlayCategoryName,
     parent_segment_info::ParentSegmentInfo,
     rom_address::RomAddress,
+    rom_vram_range::RomVramRange,
     sections::SectionTextSettings,
     size::Size,
     symbols::display::FunctionDisplaySettings,
@@ -104,8 +105,10 @@ fn test_section_text_1() {
     let mut context = {
         let mut overlays_builder = ContextBuilder::new(
             global_config,
-            AddressRange::new(rom, rom + size),
-            AddressRange::new(vram, vram + size),
+            RomVramRange::new(
+                AddressRange::new(rom, rom + size),
+                AddressRange::new(vram, vram + size),
+            ),
         )
         .process();
 
@@ -126,7 +129,7 @@ fn test_section_text_1() {
                 category_name, rom_range, vram_range
             );
 
-            overlay_builder.add_overlay(rom_range, vram_range);
+            overlay_builder.add_overlay(RomVramRange::new(rom_range, vram_range));
             overlay_builder.build().unwrap();
         }
 

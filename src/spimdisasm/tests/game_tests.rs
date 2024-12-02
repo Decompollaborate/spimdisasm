@@ -1,14 +1,14 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use rabbitizer::{DisplayFlags, InstructionFlags, Vram};
+use rabbitizer::{DisplayFlags, InstructionFlags};
 use spimdisasm::{
     address_range::AddressRange,
     config::{Endian, GlobalConfig},
     context::{Context, ContextBuilder},
     metadata::SymbolType,
     parent_segment_info::ParentSegmentInfo,
-    rom_address::RomAddress,
+    rom_vram_range::RomVramRange,
     sections::{SectionDataSettings, SectionTextSettings},
     symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings},
 };
@@ -19,9 +19,7 @@ use game_tests_info::{
     TestSegment, TestSegmentInfo, UserSymbol,
 };
 
-pub fn get_ranges_from_segments(
-    segments: &[TestSegment],
-) -> (AddressRange<RomAddress>, AddressRange<Vram>) {
+pub fn get_ranges_from_segments(segments: &[TestSegment]) -> RomVramRange {
     let mut rom_start = None;
     let mut rom_end = None;
     let mut vram_start = None;
@@ -59,23 +57,18 @@ pub fn get_ranges_from_segments(
     let global_rom_range = AddressRange::new(rom_start.unwrap(), rom_end.unwrap());
     let global_vram_range = AddressRange::new(vram_start.unwrap(), vram_end.unwrap());
 
-    (global_rom_range, global_vram_range)
+    RomVramRange::new(global_rom_range, global_vram_range)
 }
 
 fn init_context(
-    global_rom_range: AddressRange<RomAddress>,
-    global_vram_range: AddressRange<Vram>,
+    global_ranges: RomVramRange,
     symbols: Vec<UserSymbol>,
     rom_bytes: &[u8],
     user_segments: &[TestSegment],
 ) -> Context {
     assert!(user_segments.len() >= 2);
 
-    let mut builder = ContextBuilder::new(
-        GlobalConfig::new(Endian::Big),
-        global_rom_range,
-        global_vram_range,
-    );
+    let mut builder = ContextBuilder::new(GlobalConfig::new(Endian::Big), global_ranges);
 
     let mut global_segment = builder.global_segment();
     for sym in symbols {
@@ -314,11 +307,10 @@ fn drmario64_us_without_symbols() {
 
     let rom_bytes = std::fs::read("../../baserom_uncompressed.us.z64").unwrap();
 
-    let (global_rom_range, global_vram_range) = get_ranges_from_segments(&drmario64_us_segments);
+    let global_ranges = get_ranges_from_segments(&drmario64_us_segments);
 
     let mut context = init_context(
-        global_rom_range,
-        global_vram_range,
+        global_ranges,
         Vec::new(),
         &rom_bytes,
         &drmario64_us_segments,
@@ -387,11 +379,10 @@ fn drmario64_us_with_symbols() {
 
     let rom_bytes = std::fs::read("../../baserom_uncompressed.us.z64").unwrap();
 
-    let (global_rom_range, global_vram_range) = get_ranges_from_segments(&drmario64_us_segments);
+    let global_ranges = get_ranges_from_segments(&drmario64_us_segments);
 
     let mut context = init_context(
-        global_rom_range,
-        global_vram_range,
+        global_ranges,
         create_drmario64_us_symbols(),
         &rom_bytes,
         &drmario64_us_segments,

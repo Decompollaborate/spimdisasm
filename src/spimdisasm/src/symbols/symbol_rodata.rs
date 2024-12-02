@@ -71,7 +71,7 @@ impl SymbolRodata {
 }
 
 impl Symbol for SymbolRodata {
-    fn vram_range(&self) -> AddressRange<Vram> {
+    fn vram_range(&self) -> &AddressRange<Vram> {
         self.ranges.vram()
     }
 
@@ -82,8 +82,8 @@ impl Symbol for SymbolRodata {
 
 impl RomSymbol for SymbolRodata {
     #[must_use]
-    fn rom_vram_range(&self) -> RomVramRange {
-        self.ranges
+    fn rom_vram_range(&self) -> &RomVramRange {
+        &self.ranges
     }
 
     fn relocs(&self) -> &[Option<RelocationInfo>] {

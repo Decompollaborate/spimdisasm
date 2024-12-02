@@ -85,7 +85,7 @@ impl<'ctx, 'sym, 'flg> SymbolData {
 }
 
 impl Symbol for SymbolData {
-    fn vram_range(&self) -> AddressRange<Vram> {
+    fn vram_range(&self) -> &AddressRange<Vram> {
         self.ranges.vram()
     }
 
@@ -96,8 +96,8 @@ impl Symbol for SymbolData {
 
 impl RomSymbol for SymbolData {
     #[must_use]
-    fn rom_vram_range(&self) -> RomVramRange {
-        self.ranges
+    fn rom_vram_range(&self) -> &RomVramRange {
+        &self.ranges
     }
 
     fn relocs(&self) -> &[Option<RelocationInfo>] {

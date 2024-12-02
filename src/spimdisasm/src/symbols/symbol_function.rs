@@ -294,7 +294,7 @@ impl<'ctx, 'sym, 'flg> SymbolFunction {
 }
 
 impl Symbol for SymbolFunction {
-    fn vram_range(&self) -> AddressRange<Vram> {
+    fn vram_range(&self) -> &AddressRange<Vram> {
         self.ranges.vram()
     }
 
@@ -305,8 +305,8 @@ impl Symbol for SymbolFunction {
 
 impl RomSymbol for SymbolFunction {
     #[must_use]
-    fn rom_vram_range(&self) -> RomVramRange {
-        self.ranges
+    fn rom_vram_range(&self) -> &RomVramRange {
+        &self.ranges
     }
 
     #[must_use]

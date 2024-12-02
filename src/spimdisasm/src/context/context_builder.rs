@@ -9,10 +9,10 @@ use alloc::{
 use rabbitizer::Vram;
 
 use crate::{
-    address_range::AddressRange,
     config::GlobalConfig,
     metadata::{GeneratedBy, OverlayCategoryName, SegmentMetadata, SymbolMetadata},
     rom_address::RomAddress,
+    rom_vram_range::RomVramRange,
     sections::{SectionDataSettings, SectionTextSettings},
 };
 
@@ -122,12 +122,8 @@ pub struct ContextBuilder {
 }
 
 impl ContextBuilder {
-    pub fn new(
-        global_config: GlobalConfig,
-        global_rom_range: AddressRange<RomAddress>,
-        global_vram_range: AddressRange<Vram>,
-    ) -> Self {
-        let global_segment = SegmentMetadata::new(global_rom_range, global_vram_range, None);
+    pub fn new(global_config: GlobalConfig, global_ranges: RomVramRange) -> Self {
+        let global_segment = SegmentMetadata::new(global_ranges, None);
 
         Self {
             global_config,
@@ -157,16 +153,9 @@ pub struct OverlaysBuilder<'a> {
 }
 
 impl OverlaysBuilder<'_> {
-    pub fn add_overlay(
-        &mut self,
-        rom_range: AddressRange<RomAddress>,
-        vram_range: AddressRange<Vram>,
-    ) -> SegmentModifier {
-        self.overlays.push(SegmentMetadata::new(
-            rom_range,
-            vram_range,
-            Some(self.name.clone()),
-        ));
+    pub fn add_overlay(&mut self, ranges: RomVramRange) -> SegmentModifier {
+        self.overlays
+            .push(SegmentMetadata::new(ranges, Some(self.name.clone())));
         SegmentModifier {
             segment: self
                 .overlays
@@ -184,16 +173,14 @@ impl OverlaysBuilder<'_> {
 
         let mut segments = BTreeMap::new();
 
-        let mut rom_range = *self.overlays[0].rom_range();
-        let mut vram_range = *self.overlays[0].vram_range();
+        let mut ranges = *self.overlays[0].rom_vram_range();
 
         for seg in self.overlays {
-            rom_range.expand_range(seg.rom_range());
-            vram_range.expand_range(seg.vram_range());
+            ranges.expand_ranges(seg.rom_vram_range());
             segments.insert(seg.rom_range().start(), seg);
         }
 
-        let placeholder_segment = SegmentMetadata::new(rom_range, vram_range, Some(self.name));
+        let placeholder_segment = SegmentMetadata::new(ranges, Some(self.name));
         self.entry
             .or_insert(OverlayCategory::new(placeholder_segment, segments));
         Ok(())

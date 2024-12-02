@@ -143,7 +143,7 @@ impl Section for SectionText {
         &self.name
     }
 
-    fn vram_range(&self) -> crate::address_range::AddressRange<Vram> {
+    fn vram_range(&self) -> &AddressRange<Vram> {
         self.ranges.vram()
     }
 
@@ -161,8 +161,8 @@ impl Section for SectionText {
 }
 
 impl RomSection for SectionText {
-    fn rom_vram_range(&self) -> RomVramRange {
-        self.ranges
+    fn rom_vram_range(&self) -> &RomVramRange {
+        &self.ranges
     }
 }
 

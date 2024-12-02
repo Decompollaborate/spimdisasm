@@ -41,12 +41,12 @@ impl RomVramRange {
     }
 
     #[must_use]
-    pub const fn rom(&self) -> AddressRange<RomAddress> {
-        self.rom
+    pub const fn rom(&self) -> &AddressRange<RomAddress> {
+        &self.rom
     }
     #[must_use]
-    pub const fn vram(&self) -> AddressRange<Vram> {
-        self.vram
+    pub const fn vram(&self) -> &AddressRange<Vram> {
+        &self.vram
     }
 
     #[must_use]
@@ -74,5 +74,18 @@ impl RomVramRange {
                 .expect("This should not panic");
             self.rom.start() + diff
         })
+    }
+}
+
+impl RomVramRange {
+    pub fn expand_rom_range(&mut self, other: &AddressRange<RomAddress>) {
+        self.rom.expand_range(other);
+    }
+    pub fn expand_vram_range(&mut self, other: &AddressRange<Vram>) {
+        self.vram.expand_range(other);
+    }
+    pub fn expand_ranges(&mut self, other: &Self) {
+        self.expand_rom_range(&other.rom);
+        self.expand_vram_range(&other.vram);
     }
 }

@@ -16,7 +16,7 @@ pub trait Section {
     #[must_use]
     fn name(&self) -> &str;
     #[must_use]
-    fn vram_range(&self) -> AddressRange<Vram>;
+    fn vram_range(&self) -> &AddressRange<Vram>;
 
     #[must_use]
     fn size(&self) -> Size {
@@ -34,10 +34,10 @@ pub trait Section {
 
 pub trait RomSection {
     #[must_use]
-    fn rom_vram_range(&self) -> RomVramRange;
+    fn rom_vram_range(&self) -> &RomVramRange;
 
     #[must_use]
-    fn rom_range(&self) -> AddressRange<RomAddress> {
+    fn rom_range(&self) -> &AddressRange<RomAddress> {
         self.rom_vram_range().rom()
     }
 

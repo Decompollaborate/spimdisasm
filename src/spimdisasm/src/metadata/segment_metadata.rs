@@ -14,6 +14,7 @@ use core::ops::Bound;
 
 use rabbitizer::Vram;
 
+use crate::rom_vram_range::RomVramRange;
 use crate::size::Size;
 use crate::{address_range::AddressRange, rom_address::RomAddress, section_type::SectionType};
 
@@ -22,8 +23,7 @@ use super::{SymbolMetadata, SymbolType};
 
 #[derive(Debug, Clone, Hash, PartialEq, PartialOrd)]
 pub struct SegmentMetadata {
-    rom_range: AddressRange<RomAddress>,
-    vram_range: AddressRange<Vram>,
+    ranges: RomVramRange,
 
     category_name: Option<OverlayCategoryName>,
 
@@ -39,13 +39,11 @@ pub struct SegmentMetadata {
 
 impl SegmentMetadata {
     pub(crate) const fn new(
-        rom_range: AddressRange<RomAddress>,
-        vram_range: AddressRange<Vram>,
+        ranges: RomVramRange,
         category_name: Option<OverlayCategoryName>,
     ) -> Self {
         Self {
-            rom_range,
-            vram_range,
+            ranges,
             category_name,
 
             symbols: BTreeMap::new(),
@@ -53,8 +51,12 @@ impl SegmentMetadata {
         }
     }
 
+    pub const fn rom_vram_range(&self) -> &RomVramRange {
+        &self.ranges
+    }
+
     pub const fn rom_range(&self) -> &AddressRange<RomAddress> {
-        &self.rom_range
+        self.ranges.rom()
     }
     /*
     pub(crate) fn rom_range_mut(&mut self) -> &mut AddressRange<RomAddress> {
@@ -62,11 +64,11 @@ impl SegmentMetadata {
     }
     */
     pub fn in_rom_range(&self, rom: RomAddress) -> bool {
-        self.rom_range.in_range(rom)
+        self.ranges.rom().in_range(rom)
     }
 
     pub const fn vram_range(&self) -> &AddressRange<Vram> {
-        &self.vram_range
+        self.ranges.vram()
     }
     /*
     pub(crate) fn vram_range_mut(&mut self) -> &mut AddressRange<Vram> {
@@ -74,15 +76,15 @@ impl SegmentMetadata {
     }
     */
     pub fn in_vram_range(&self, vram: Vram) -> bool {
-        self.vram_range.in_range(vram)
+        self.ranges.vram().in_range(vram)
     }
 
     pub const fn rom_size(&self) -> Size {
-        self.rom_range.size()
+        self.ranges.rom().size()
     }
 
     pub fn vram_size(&self) -> Size {
-        self.vram_range.size()
+        self.ranges.vram().size()
     }
 
     /*
@@ -421,7 +423,7 @@ mod tests {
 
     use crate::{
         address_range::AddressRange, metadata::symbol_metadata::GeneratedBy,
-        rom_address::RomAddress,
+        rom_address::RomAddress, rom_vram_range::RomVramRange,
     };
 
     use super::{FindSettings, SegmentMetadata};
@@ -430,7 +432,8 @@ mod tests {
     fn check_symbol_bounds() {
         let rom_range = AddressRange::new(RomAddress::new(0), RomAddress::new(0x100));
         let vram_range = AddressRange::new(Vram::new(0), Vram::new(0x180));
-        let mut segment = SegmentMetadata::new(rom_range, vram_range, None);
+        let ranges = RomVramRange::new(rom_range, vram_range);
+        let mut segment = SegmentMetadata::new(ranges, None);
 
         segment.add_symbol(
             Vram::new(0x100C),

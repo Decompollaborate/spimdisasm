@@ -8,6 +8,7 @@ use spimdisasm::{
     context::ContextBuilder,
     parent_segment_info::ParentSegmentInfo,
     rom_address::RomAddress,
+    rom_vram_range::RomVramRange,
     sections::SectionTextSettings,
     size::Size,
     symbols::display::FunctionDisplaySettings,
@@ -252,8 +253,10 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
     let global_config = GlobalConfig::new(Endian::Big);
     let mut context = ContextBuilder::new(
         global_config,
-        AddressRange::new(rom, rom + size),
-        AddressRange::new(vram, vram + size),
+        RomVramRange::new(
+            AddressRange::new(rom, rom + size),
+            AddressRange::new(vram, vram + size),
+        ),
     )
     .process()
     .process()
