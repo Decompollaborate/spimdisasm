@@ -99,15 +99,16 @@ pub(crate) mod python_bindings {
     use pyo3::prelude::*;
     use rabbitizer::Vram;
 
-    use crate::{address_range::AddressRange, rom_address::RomAddress};
-
-    use super::RomVramRange;
+    use super::*;
 
     #[pymethods]
     impl RomVramRange {
         #[new]
-        pub fn py_new(rom_start: u32, rom_end: u32, vram_start: u32, vram_end: u32, ) -> Self {
-            Self::new(AddressRange::new(RomAddress::new(rom_start), RomAddress::new(rom_end)), AddressRange::new(Vram::new(vram_start), Vram::new(vram_end)))
+        pub fn py_new(rom_start: u32, rom_end: u32, vram_start: u32, vram_end: u32) -> Self {
+            Self::new(
+                AddressRange::new(RomAddress::new(rom_start), RomAddress::new(rom_end)),
+                AddressRange::new(Vram::new(vram_start), Vram::new(vram_end)),
+            )
         }
     }
 }

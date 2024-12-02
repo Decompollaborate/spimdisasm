@@ -4,6 +4,9 @@
 use alloc::{collections::btree_set::BTreeSet, string::String, vec::Vec};
 use rabbitizer::Vram;
 
+#[cfg(feature = "pyo3")]
+use pyo3::prelude::*;
+
 use crate::{
     address_range::AddressRange,
     context::{Context, OwnedSegmentNotFoundError},
@@ -17,7 +20,9 @@ use crate::{
 
 use super::{RomSection, Section, SectionDataSettings};
 
+#[derive(Debug, Clone, Hash, PartialEq)]
 #[must_use]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct SectionRodata {
     name: String,
 

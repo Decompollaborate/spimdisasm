@@ -4,6 +4,9 @@
 use alloc::vec::Vec;
 use rabbitizer::{Instruction, Vram};
 
+#[cfg(feature = "pyo3")]
+use pyo3::prelude::*;
+
 use crate::{
     address_range::AddressRange,
     analysis::{InstructionAnalysisResult, InstructionAnalyzer},
@@ -23,6 +26,7 @@ use super::{
 };
 
 #[derive(Debug, Clone, Hash, PartialEq)]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct SymbolFunction {
     ranges: RomVramRange,
     instructions: Vec<Instruction>,

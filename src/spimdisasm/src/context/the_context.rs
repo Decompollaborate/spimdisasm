@@ -155,6 +155,7 @@ impl Context {
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
+// TODO: Make a public error API
 pub struct OwnedSegmentNotFoundError {}
 impl fmt::Display for OwnedSegmentNotFoundError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -294,5 +295,84 @@ impl Context {
     ) -> Option<&mut SegmentMetadata> {
         // TODO: Maybe remove Option and actually implement the unknown_segment?
         find_referenced_segment_mut_impl(self, vram, info)
+    }
+}
+
+#[cfg(feature = "pyo3")]
+pub(crate) mod python_bindings {
+    use std::borrow::Cow;
+
+    use pyo3::{exceptions::PyRuntimeError, prelude::*};
+    use rabbitizer::Vram;
+
+    use super::*;
+
+    #[pymethods]
+    impl Context {
+        #[pyo3(name = "create_section_text")]
+        pub fn py_create_section_text(
+            &mut self,
+            settings: &SectionTextSettings,
+            name: String,
+            raw_bytes: Cow<[u8]>,
+            rom: RomAddress,
+            vram: u32, // Vram, // TODO
+            parent_segment_info: ParentSegmentInfo,
+        ) -> Result<SectionText, OwnedSegmentNotFoundError> {
+            self.create_section_text(
+                settings,
+                name,
+                &raw_bytes,
+                rom,
+                Vram::new(vram),
+                parent_segment_info,
+            )
+        }
+
+        #[pyo3(name = "create_section_data")]
+        pub fn py_create_section_data(
+            &mut self,
+            settings: &SectionDataSettings,
+            name: String,
+            raw_bytes: Cow<[u8]>,
+            rom: RomAddress,
+            vram: u32, // Vram, // TODO
+            parent_segment_info: ParentSegmentInfo,
+        ) -> Result<SectionData, OwnedSegmentNotFoundError> {
+            self.create_section_data(
+                settings,
+                name,
+                &raw_bytes,
+                rom,
+                Vram::new(vram),
+                parent_segment_info,
+            )
+        }
+
+        #[pyo3(name = "create_section_rodata")]
+        pub fn py_create_section_rodata(
+            &mut self,
+            settings: &SectionDataSettings,
+            name: String,
+            raw_bytes: Cow<[u8]>,
+            rom: RomAddress,
+            vram: u32, // Vram, // TODO
+            parent_segment_info: ParentSegmentInfo,
+        ) -> Result<SectionRodata, OwnedSegmentNotFoundError> {
+            self.create_section_rodata(
+                settings,
+                name,
+                &raw_bytes,
+                rom,
+                Vram::new(vram),
+                parent_segment_info,
+            )
+        }
+    }
+
+    impl From<OwnedSegmentNotFoundError> for PyErr {
+        fn from(_value: OwnedSegmentNotFoundError) -> Self {
+            PyRuntimeError::new_err("OwnedSegmentNotFoundError")
+        }
     }
 }

@@ -312,17 +312,12 @@ impl ContextBuilderFinderHeaterOverlays {
 pub(crate) mod python_bindings {
     use pyo3::prelude::*;
 
-    use crate::{config::GlobalConfig, context::Context, rom_vram_range::RomVramRange};
-
-    use super::{ContextBuilder, ContextBuilderFinderHeater, ContextBuilderFinderHeaterOverlays, ContextBuilderOverlay};
+    use super::*;
 
     #[pymethods]
     impl ContextBuilder {
         #[new]
-        fn py_new(
-            global_config: GlobalConfig,
-            global_ranges: RomVramRange,
-        ) -> Self {
+        fn py_new(global_config: GlobalConfig, global_ranges: RomVramRange) -> Self {
             Self::new(global_config, global_ranges)
         }
 

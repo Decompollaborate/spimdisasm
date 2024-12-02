@@ -108,7 +108,7 @@ impl TryFrom<VramOffset> for Size {
 mod tests {
     use rabbitizer::Vram;
 
-    use super::Size;
+    use super::*;
 
     #[test]
     #[should_panic]

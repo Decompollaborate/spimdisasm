@@ -3,9 +3,13 @@
 
 use core::{fmt, ops};
 
+#[cfg(feature = "pyo3")]
+use pyo3::prelude::*;
+
 use crate::size::Size;
 
 #[derive(Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct RomAddress {
     inner: u32,
 }
@@ -51,5 +55,20 @@ impl ops::Index<RomAddress> for [u8] {
     #[inline]
     fn index(&self, idx: RomAddress) -> &Self::Output {
         &self[idx.inner as usize]
+    }
+}
+
+#[cfg(feature = "pyo3")]
+pub(crate) mod python_bindings {
+    use pyo3::prelude::*;
+
+    use super::*;
+
+    #[pymethods]
+    impl RomAddress {
+        #[new]
+        pub fn py_new(value: u32) -> Self {
+            Self::new(value)
+        }
     }
 }

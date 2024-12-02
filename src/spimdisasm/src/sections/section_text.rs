@@ -7,23 +7,28 @@ use alloc::{collections::BTreeSet, vec::Vec};
 
 use rabbitizer::{vram::VramOffset, Instruction, InstructionFlags, IsaExtension, Vram};
 
-use crate::address_range::AddressRange;
-use crate::context::OwnedSegmentNotFoundError;
-use crate::metadata::segment_metadata::FindSettings;
-use crate::metadata::GeneratedBy;
-use crate::parent_segment_info::ParentSegmentInfo;
-use crate::rom_vram_range::RomVramRange;
-use crate::size::Size;
+#[cfg(feature = "pyo3")]
+use pyo3::prelude::*;
+
 use crate::{
+    address_range::AddressRange,
     context::Context,
+    context::OwnedSegmentNotFoundError,
+    metadata::segment_metadata::FindSettings,
+    metadata::GeneratedBy,
     metadata::SymbolMetadata,
+    parent_segment_info::ParentSegmentInfo,
     rom_address::RomAddress,
+    rom_vram_range::RomVramRange,
+    size::Size,
     symbols::{Symbol, SymbolFunction},
 };
 
 use super::trait_section::RomSection;
 use super::Section;
 
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct SectionTextSettings {
     instruction_flags: InstructionFlags,
     is_handwritten: bool,
@@ -38,7 +43,9 @@ impl SectionTextSettings {
     }
 }
 
+#[derive(Debug, Clone, Hash, PartialEq)]
 #[must_use]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct SectionText {
     name: String,
 
@@ -127,7 +134,6 @@ impl SectionText {
         })
     }
 
-    // TODO: remove
     pub fn functions(&self) -> &[SymbolFunction] {
         &self.functions
     }
@@ -540,4 +546,42 @@ fn find_functions_check_function_ended(
     }
 
     Ok((function_ended, prev_func_had_user_declared_size))
+}
+
+#[cfg(feature = "pyo3")]
+pub(crate) mod python_bindings {
+    use pyo3::prelude::*;
+    use rabbitizer::InstructionFlags;
+
+    use crate::symbols::display::FunctionDisplaySettings;
+
+    use super::*;
+
+    #[pymethods]
+    impl SectionTextSettings {
+        #[new]
+        pub fn py_new(/*instruction_flags: InstructionFlags*/) -> Self {
+            Self::new(InstructionFlags::default())
+        }
+    }
+
+    #[pymethods]
+    impl SectionText {
+        #[pyo3(name = "sym_count")]
+        pub fn py_sym_count(&self) -> usize {
+            self.functions.len()
+        }
+
+        #[pyo3(name = "display_sym")]
+        pub fn py_display_sym(
+            &self,
+            context: &Context,
+            index: usize,
+            settings: &FunctionDisplaySettings,
+        ) -> Option<String> {
+            self.functions
+                .get(index)
+                .map(|sym| sym.display(context, settings).to_string())
+        }
+    }
 }

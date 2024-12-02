@@ -48,9 +48,7 @@ impl GlobalConfig {
 pub(crate) mod python_bindings {
     use pyo3::prelude::*;
 
-    use crate::config::Endian;
-
-    use super::GlobalConfig;
+    use super::*;
 
     #[pymethods]
     impl GlobalConfig {

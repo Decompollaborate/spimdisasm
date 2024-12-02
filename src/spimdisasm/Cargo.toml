@@ -18,7 +18,6 @@ readme = "README.md"
 [lib]
 name = "spimdisasm"
 path = "src/lib.rs"
-crate-type = ["cdylib", "staticlib", "rlib"]
 
 [features]
 default = []
@@ -26,7 +25,7 @@ std = []
 
 nightly = [] # Evil stuff, do not use.
 game_tests = [] # Tests that require game roms to run
-pyo3 = ["dep:pyo3", "std"]
+pyo3 = ["dep:pyo3", "std", "rabbitizer/std"] # TODO: "rabbitizer/pyo3"
 
 [dependencies]
 rabbitizer = { git = "https://github.com/Decompollaborate/rabbitizer.git", branch = "🦀" }

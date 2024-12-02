@@ -4,6 +4,9 @@
 use alloc::{collections::btree_set::BTreeSet, string::String, vec::Vec};
 use rabbitizer::Vram;
 
+#[cfg(feature = "pyo3")]
+use pyo3::prelude::*;
+
 use crate::{
     address_range::AddressRange,
     context::{Context, OwnedSegmentNotFoundError},
@@ -17,6 +20,8 @@ use crate::{
 
 use super::{trait_section::RomSection, Section};
 
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct SectionDataSettings {}
 
 impl SectionDataSettings {
@@ -30,7 +35,9 @@ impl Default for SectionDataSettings {
     }
 }
 
+#[derive(Debug, Clone, Hash, PartialEq)]
 #[must_use]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct SectionData {
     name: String,
 
@@ -216,5 +223,33 @@ impl Section for SectionData {
 impl RomSection for SectionData {
     fn rom_vram_range(&self) -> &RomVramRange {
         &self.ranges
+    }
+}
+
+#[cfg(feature = "pyo3")]
+pub(crate) mod python_bindings {
+    use pyo3::prelude::*;
+
+    use super::*;
+
+    #[pymethods]
+    impl SectionDataSettings {
+        #[new]
+        pub fn py_new() -> Self {
+            Self::new()
+        }
+    }
+
+    #[pymethods]
+    impl SectionData {
+        #[pyo3(name = "sym_count")]
+        pub fn py_sym_count(&self) -> usize {
+            self.data_symbols.len()
+        }
+
+        // #[pyo3(name = "display_sym")]
+        // pub fn py_display_sym(&self, context: &Context, index: usize, /*settings: &DataDisplaySettings*/) -> Option<String> {
+        //     self.data_symbols.get(index).map(|sym| sym.display(context, settings).to_string())
+        // }
     }
 }

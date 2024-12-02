@@ -129,7 +129,7 @@ fn test_section_text_1() {
                 category_name, rom_range, vram_range
             );
 
-            overlay_builder.add_overlay(RomVramRange::new(rom_range, vram_range));
+            let _overlay = overlay_builder.add_overlay(RomVramRange::new(rom_range, vram_range));
             overlay_builder.build().unwrap();
         }
 

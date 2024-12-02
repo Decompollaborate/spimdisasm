@@ -421,12 +421,7 @@ impl SegmentMetadata {
 mod tests {
     use rabbitizer::Vram;
 
-    use crate::{
-        address_range::AddressRange, metadata::symbol_metadata::GeneratedBy,
-        rom_address::RomAddress, rom_vram_range::RomVramRange,
-    };
-
-    use super::{FindSettings, SegmentMetadata};
+    use super::*;
 
     #[test]
     fn check_symbol_bounds() {

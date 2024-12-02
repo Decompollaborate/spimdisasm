@@ -6,6 +6,9 @@ use core::fmt;
 use alloc::string::String;
 use rabbitizer::{DisplayFlags, Instruction, Vram};
 
+#[cfg(feature = "pyo3")]
+use pyo3::prelude::*;
+
 use crate::{
     context::Context,
     metadata::segment_metadata::FindSettings,
@@ -14,6 +17,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct FunctionDisplaySettings {
     display_flags: DisplayFlags,
     line_end: Option<String>,
@@ -208,5 +212,24 @@ impl fmt::Display for FunctionDisplay<'_, '_, '_> {
         }
 
         write!(f, ".end {}{}", name, self.settings.line_end())
+    }
+}
+
+#[cfg(feature = "pyo3")]
+pub(crate) mod python_bindings {
+    use pyo3::prelude::*;
+
+    use super::*;
+
+    #[pymethods]
+    impl FunctionDisplaySettings {
+        #[new]
+        pub fn py_new(/*display_flags: DisplayFlags*/) -> Self {
+            Self {
+                display_flags: DisplayFlags::default(),
+                line_end: None,
+                _gp_rel_hack: false,
+            }
+        }
     }
 }

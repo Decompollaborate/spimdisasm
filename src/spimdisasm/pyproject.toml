@@ -36,3 +36,4 @@ build-backend = "maturin"
 
 [tool.maturin]
 features = ["pyo3/extension-module", "pyo3"]
+cargo-extra-args = "--crate-type=cdylib"
