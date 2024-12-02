@@ -53,6 +53,16 @@ class FunctionRodataEntry:
             yield sym
 
     def writeToFile(self, f: TextIO, writeFunction: bool=True) -> None:
+        # Sadly, we have some logic that may affect disassembling other symbols
+        # on the "function"'s disassembly function, like setting the rom address
+        # of jumptable labels. Having this info may affect the name they get
+        # disassembled as.
+        # To avoid this issue, we disassemble the function first without writing
+        # it to the file.
+        disassembledFunction: str|None = None
+        if self.function is not None:
+            disassembledFunction = self.function.disassemble(migrate=self.hasRodataSyms(), isSplittedSymbol=True)
+
         if len(self.rodataSyms) > 0:
             # Write the rdata
             f.write(f".section {self.sectionRodata}{common.GlobalConfig.LINE_ENDS}")
@@ -79,13 +89,13 @@ class FunctionRodataEntry:
                 f.write(sym.disassemble(migrate=True, useGlobalLabel=True, isSplittedSymbol=True))
                 f.write(common.GlobalConfig.LINE_ENDS)
 
-        if self.function is not None:
+        if disassembledFunction is not None:
             if len(self.rodataSyms) > 0 or len(self.lateRodataSyms) > 0:
                 f.write(f"{common.GlobalConfig.LINE_ENDS}.section {self.sectionText}{common.GlobalConfig.LINE_ENDS}")
 
             if writeFunction:
                 # Write the function itself
-                f.write(self.function.disassemble(migrate=self.hasRodataSyms(), isSplittedSymbol=True))
+                f.write(disassembledFunction)
 
     def getName(self) -> str:
         assert self.function is not None or self.hasRodataSyms()
