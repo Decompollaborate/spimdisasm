@@ -167,23 +167,25 @@ fn test_section_text_1() {
     }
     assert_eq!(symbols.len(), 7);
 
+    /*
     println!();
     let overlays_data = context
         .overlay_segments()
         .get(&OverlayCategoryName::new("segment_01".into()))
         .unwrap();
     println!("placeholder:");
-    for sym in overlays_data.placeholder_segment.symbols() {
+    for sym in overlays_data.placeholder_segment().symbols() {
         println!("{:?}", sym);
     }
     println!();
     println!("other:");
-    for (segment_rom, segment_metadata) in &overlays_data.segments {
+    for (segment_rom, segment_metadata) in &overlays_data.segments() {
         println!("  {:?}", segment_rom,);
         for sym in segment_metadata.symbols() {
             println!("    {:?}", sym);
         }
     }
+    */
 
     // None::<u32>.unwrap();
 }
