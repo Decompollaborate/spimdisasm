@@ -16,7 +16,9 @@ readme = "README.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
+name = "spimdisasm"
 path = "src/lib.rs"
+crate-type = ["cdylib", "staticlib", "rlib"]
 
 [features]
 default = []
@@ -24,10 +26,12 @@ std = []
 
 nightly = [] # Evil stuff, do not use.
 game_tests = [] # Tests that require game roms to run
+pyo3 = ["dep:pyo3", "std"]
 
 [dependencies]
 rabbitizer = { git = "https://github.com/Decompollaborate/rabbitizer.git", branch = "🦀" }
 polonius-the-crab = "0.4.2" # TODO: get rid of the polonius stuff when the new borrow checker has been released.
+pyo3 = { version = "0.23.2", optional = true }
 # bitflags = { version = "2.6.0", default-features = false }
 
 [dev-dependencies]

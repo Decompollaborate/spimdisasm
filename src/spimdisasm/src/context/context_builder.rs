@@ -8,6 +8,9 @@ use alloc::{
 };
 use rabbitizer::Vram;
 
+#[cfg(feature = "pyo3")]
+use pyo3::prelude::*;
+
 use crate::{
     config::GlobalConfig,
     metadata::{GeneratedBy, OverlayCategoryName, SegmentMetadata, SymbolMetadata},
@@ -115,6 +118,8 @@ impl SegmentModifier<'_> {
     }
 }
 
+#[derive(Debug, Clone, Hash, PartialEq)]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct ContextBuilder {
     global_config: GlobalConfig,
 
@@ -122,6 +127,7 @@ pub struct ContextBuilder {
 }
 
 impl ContextBuilder {
+    #[must_use]
     pub fn new(global_config: GlobalConfig, global_ranges: RomVramRange) -> Self {
         let global_segment = SegmentMetadata::new(global_ranges, None);
 
@@ -131,12 +137,14 @@ impl ContextBuilder {
         }
     }
 
+    #[must_use]
     pub fn global_segment(&mut self) -> SegmentModifier {
         SegmentModifier {
             segment: &mut self.global_segment,
         }
     }
 
+    #[must_use]
     pub fn process(self) -> ContextBuilderOverlay {
         ContextBuilderOverlay {
             global_config: self.global_config,
@@ -153,6 +161,7 @@ pub struct OverlaysBuilder<'a> {
 }
 
 impl OverlaysBuilder<'_> {
+    #[must_use]
     pub fn add_overlay(&mut self, ranges: RomVramRange) -> SegmentModifier {
         self.overlays
             .push(SegmentMetadata::new(ranges, Some(self.name.clone())));
@@ -187,6 +196,8 @@ impl OverlaysBuilder<'_> {
     }
 }
 
+#[derive(Debug, Clone, Hash, PartialEq)]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct ContextBuilderOverlay {
     global_config: GlobalConfig,
 
@@ -204,6 +215,7 @@ impl ContextBuilderOverlay {
         }
     }
 
+    #[must_use]
     pub fn process(self) -> ContextBuilderFinderHeater {
         ContextBuilderFinderHeater {
             global_config: self.global_config,
@@ -213,6 +225,8 @@ impl ContextBuilderOverlay {
     }
 }
 
+#[derive(Debug, Clone, Hash, PartialEq)]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct ContextBuilderFinderHeater {
     global_config: GlobalConfig,
 
@@ -264,6 +278,7 @@ impl ContextBuilderFinderHeater {
     ) {
     }
 
+    #[must_use]
     pub fn process(self) -> ContextBuilderFinderHeaterOverlays {
         ContextBuilderFinderHeaterOverlays {
             global_config: self.global_config,
@@ -273,6 +288,8 @@ impl ContextBuilderFinderHeater {
     }
 }
 
+#[derive(Debug, Clone, Hash, PartialEq)]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct ContextBuilderFinderHeaterOverlays {
     global_config: GlobalConfig,
 
@@ -281,11 +298,68 @@ pub struct ContextBuilderFinderHeaterOverlays {
 }
 
 impl ContextBuilderFinderHeaterOverlays {
+    #[must_use]
     pub fn build(self) -> Context {
         Context::new(
             self.global_config,
             self.global_segment,
             self.overlay_segments,
         )
+    }
+}
+
+#[cfg(feature = "pyo3")]
+pub(crate) mod python_bindings {
+    use pyo3::prelude::*;
+
+    use crate::{config::GlobalConfig, context::Context, rom_vram_range::RomVramRange};
+
+    use super::{ContextBuilder, ContextBuilderFinderHeater, ContextBuilderFinderHeaterOverlays, ContextBuilderOverlay};
+
+    #[pymethods]
+    impl ContextBuilder {
+        #[new]
+        fn py_new(
+            global_config: GlobalConfig,
+            global_ranges: RomVramRange,
+        ) -> Self {
+            Self::new(global_config, global_ranges)
+        }
+
+        // TODO: add a way to add symbols
+        // #[pyo3(name = "global_segment")]
+        // pub fn py_global_segment(&mut self) -> SegmentModifier {
+        //     self.global_segment()
+        // }
+
+        #[pyo3(name = "process")]
+        pub fn py_process(&self) -> ContextBuilderOverlay {
+            // Silly clone because we can't move from a Python instance
+            self.clone().process()
+        }
+    }
+
+    #[pymethods]
+    impl ContextBuilderOverlay {
+        #[pyo3(name = "process")]
+        pub fn py_process(&self) -> ContextBuilderFinderHeater {
+            self.clone().process()
+        }
+    }
+
+    #[pymethods]
+    impl ContextBuilderFinderHeater {
+        #[pyo3(name = "process")]
+        pub fn py_process(&self) -> ContextBuilderFinderHeaterOverlays {
+            self.clone().process()
+        }
+    }
+
+    #[pymethods]
+    impl ContextBuilderFinderHeaterOverlays {
+        #[pyo3(name = "build")]
+        pub fn py_build(&self) -> Context {
+            self.clone().build()
+        }
     }
 }

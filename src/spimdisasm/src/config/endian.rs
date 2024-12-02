@@ -1,7 +1,11 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+#[cfg(feature = "pyo3")]
+use pyo3::prelude::*;
+
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", eq))]
 pub enum Endian {
     Big,
     Little,

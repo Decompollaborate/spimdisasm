@@ -1,13 +1,15 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use core::{error, fmt};
-
 use alloc::{collections::btree_map::BTreeMap, string::String};
+use core::{error, fmt};
 
 use ::polonius_the_crab::prelude::*;
 
 use rabbitizer::Vram;
+
+#[cfg(feature = "pyo3")]
+use pyo3::prelude::*;
 
 use crate::{
     config::GlobalConfig,
@@ -37,6 +39,7 @@ impl OverlayCategory {
 }
 
 #[derive(Debug, Clone, Hash, PartialEq)]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct Context {
     global_config: GlobalConfig,
 

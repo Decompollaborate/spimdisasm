@@ -3,7 +3,11 @@
 
 use super::{Endian, GpConfig};
 
+#[cfg(feature = "pyo3")]
+use pyo3::prelude::*;
+
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct GlobalConfig {
     endian: Endian,
     gp_config: Option<GpConfig>,
@@ -37,5 +41,22 @@ impl GlobalConfig {
     }
     pub const fn with_gp_config(self, gp_config: Option<GpConfig>) -> Self {
         Self { gp_config, ..self }
+    }
+}
+
+#[cfg(feature = "pyo3")]
+pub(crate) mod python_bindings {
+    use pyo3::prelude::*;
+
+    use crate::config::Endian;
+
+    use super::GlobalConfig;
+
+    #[pymethods]
+    impl GlobalConfig {
+        #[new]
+        pub fn py_new(endian: Endian) -> Self {
+            Self::new(endian)
+        }
     }
 }

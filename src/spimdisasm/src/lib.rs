@@ -23,3 +23,22 @@ pub mod metadata;
 pub mod relocation;
 pub mod sections;
 pub mod symbols;
+
+#[cfg(feature = "pyo3")]
+use pyo3::prelude::*;
+
+#[cfg(feature = "pyo3")]
+#[pymodule]
+fn spimdisasm(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<rom_vram_range::RomVramRange>()?;
+
+    m.add_class::<config::Endian>()?;
+    m.add_class::<config::GlobalConfig>()?;
+
+    m.add_class::<context::ContextBuilder>()?;
+    // m.add_class::<context::ContextBuilderOverlay>()?;
+    // m.add_class::<context::ContextBuilderFinderHeater>()?;
+    // m.add_class::<context::ContextBuilderFinderHeaterOverlays>()?;
+    m.add_class::<context::Context>()?;
+    Ok(())
+}

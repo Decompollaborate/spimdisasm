@@ -3,9 +3,13 @@
 
 use rabbitizer::Vram;
 
+#[cfg(feature = "pyo3")]
+use pyo3::prelude::*;
+
 use crate::{address_range::AddressRange, rom_address::RomAddress, size::Size};
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct RomVramRange {
     rom: AddressRange<RomAddress>,
     vram: AddressRange<Vram>,
@@ -87,5 +91,23 @@ impl RomVramRange {
     pub fn expand_ranges(&mut self, other: &Self) {
         self.expand_rom_range(&other.rom);
         self.expand_vram_range(&other.vram);
+    }
+}
+
+#[cfg(feature = "pyo3")]
+pub(crate) mod python_bindings {
+    use pyo3::prelude::*;
+    use rabbitizer::Vram;
+
+    use crate::{address_range::AddressRange, rom_address::RomAddress};
+
+    use super::RomVramRange;
+
+    #[pymethods]
+    impl RomVramRange {
+        #[new]
+        pub fn py_new(rom_start: u32, rom_end: u32, vram_start: u32, vram_end: u32, ) -> Self {
+            Self::new(AddressRange::new(RomAddress::new(rom_start), RomAddress::new(rom_end)), AddressRange::new(Vram::new(vram_start), Vram::new(vram_end)))
+        }
     }
 }
