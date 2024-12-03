@@ -96,9 +96,6 @@ impl RomVramRange {
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
-    use pyo3::prelude::*;
-    use rabbitizer::Vram;
-
     use super::*;
 
     #[pymethods]

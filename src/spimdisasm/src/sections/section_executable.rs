@@ -10,6 +10,7 @@ use rabbitizer::{vram::VramOffset, Instruction, InstructionFlags, IsaExtension, 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
+use crate::section_type::SectionType;
 use crate::{
     address_range::AddressRange,
     context::Context,
@@ -29,12 +30,12 @@ use super::Section;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
-pub struct SectionTextSettings {
+pub struct SectionExecutableSettings {
     instruction_flags: InstructionFlags,
     is_handwritten: bool,
 }
 
-impl SectionTextSettings {
+impl SectionExecutableSettings {
     pub fn new(instruction_flags: InstructionFlags) -> Self {
         Self {
             instruction_flags,
@@ -46,26 +47,26 @@ impl SectionTextSettings {
 #[derive(Debug, Clone, Hash, PartialEq)]
 #[must_use]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
-pub struct SectionText {
+pub struct SectionExecutable {
     name: String,
 
     ranges: RomVramRange,
+
+    parent_segment_info: ParentSegmentInfo,
 
     // in_section_offset: u32,
     // section_type: SectionType,
 
     //
-    parent_segment_info: ParentSegmentInfo,
-
     functions: Vec<SymbolFunction>,
 
     symbol_vrams: BTreeSet<Vram>,
 }
 
-impl SectionText {
+impl SectionExecutable {
     pub(crate) fn new(
         context: &mut Context,
-        settings: &SectionTextSettings,
+        settings: &SectionExecutableSettings,
         name: String,
         raw_bytes: &[u8],
         rom: RomAddress,
@@ -140,11 +141,11 @@ impl SectionText {
 }
 
 /*
-impl SectionText<'_, '_> {
+impl SectionExecutable<'_, '_> {
 }
 */
 
-impl Section for SectionText {
+impl Section for SectionExecutable {
     fn name(&self) -> &str {
         &self.name
     }
@@ -157,6 +158,11 @@ impl Section for SectionText {
         &self.parent_segment_info
     }
 
+    #[must_use]
+    fn section_type(&self) -> SectionType {
+        SectionType::Text
+    }
+
     fn symbol_list(&self) -> &[impl Symbol] {
         &self.functions
     }
@@ -166,14 +172,14 @@ impl Section for SectionText {
     }
 }
 
-impl RomSection for SectionText {
+impl RomSection for SectionExecutable {
     fn rom_vram_range(&self) -> &RomVramRange {
         &self.ranges
     }
 }
 
 fn instrs_from_bytes(
-    settings: &SectionTextSettings,
+    settings: &SectionExecutableSettings,
     context: &Context,
     raw_bytes: &[u8],
     mut vram: Vram,
@@ -192,7 +198,7 @@ fn instrs_from_bytes(
 }
 
 fn find_functions(
-    settings: &SectionTextSettings,
+    settings: &SectionExecutableSettings,
     context: &mut Context,
     parent_segment_info: &ParentSegmentInfo,
     section_ranges: RomVramRange,
@@ -465,7 +471,7 @@ fn find_functions_branch_checker(
 #[allow(clippy::too_many_arguments)]
 fn find_functions_check_function_ended(
     context: &Context,
-    settings: &SectionTextSettings,
+    settings: &SectionExecutableSettings,
     parent_segment_info: &ParentSegmentInfo,
     local_offset: usize,
     instr: &Instruction,
@@ -550,7 +556,6 @@ fn find_functions_check_function_ended(
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
-    use pyo3::prelude::*;
     use rabbitizer::InstructionFlags;
 
     use crate::symbols::display::FunctionDisplaySettings;
@@ -558,7 +563,7 @@ pub(crate) mod python_bindings {
     use super::*;
 
     #[pymethods]
-    impl SectionTextSettings {
+    impl SectionExecutableSettings {
         #[new]
         pub fn py_new(/*instruction_flags: InstructionFlags*/) -> Self {
             Self::new(InstructionFlags::default())
@@ -566,7 +571,7 @@ pub(crate) mod python_bindings {
     }
 
     #[pymethods]
-    impl SectionText {
+    impl SectionExecutable {
         #[pyo3(name = "sym_count")]
         pub fn py_sym_count(&self) -> usize {
             self.functions.len()

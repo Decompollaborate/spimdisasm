@@ -9,7 +9,7 @@ use spimdisasm::{
     parent_segment_info::ParentSegmentInfo,
     rom_address::RomAddress,
     rom_vram_range::RomVramRange,
-    sections::SectionTextSettings,
+    sections::SectionExecutableSettings,
     size::Size,
     symbols::display::FunctionDisplaySettings,
 };
@@ -263,7 +263,7 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
     .process()
     .build();
 
-    let text_settings = SectionTextSettings::new(InstructionFlags::new());
+    let text_settings = SectionExecutableSettings::new(InstructionFlags::new());
     let instr_display_flags = DisplayFlags::default();
 
     let section_text = context
@@ -273,7 +273,7 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
             &bytes,
             rom,
             vram,
-            ParentSegmentInfo::new(rom, None),
+            ParentSegmentInfo::new(rom, vram, None),
         )
         .unwrap();
 

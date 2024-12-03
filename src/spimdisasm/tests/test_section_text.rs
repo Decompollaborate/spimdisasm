@@ -10,7 +10,7 @@ use spimdisasm::{
     parent_segment_info::ParentSegmentInfo,
     rom_address::RomAddress,
     rom_vram_range::RomVramRange,
-    sections::SectionTextSettings,
+    sections::SectionExecutableSettings,
     size::Size,
     symbols::display::FunctionDisplaySettings,
 };
@@ -99,7 +99,7 @@ fn test_section_text_1() {
     let vram = Vram::new(0x80000400);
     let size = Size::new(0x21FC00);
 
-    let text_settings = SectionTextSettings::new(InstructionFlags::new());
+    let text_settings = SectionExecutableSettings::new(InstructionFlags::new());
 
     let global_config = GlobalConfig::new(Endian::Big);
     let mut context = {
@@ -149,7 +149,7 @@ fn test_section_text_1() {
             &bytes,
             rom,
             vram,
-            ParentSegmentInfo::new(rom, None),
+            ParentSegmentInfo::new(rom, vram, None),
         )
         .unwrap();
 

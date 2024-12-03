@@ -35,6 +35,7 @@ impl<'map_entry> OverlaysBuilder<'map_entry> {
 impl OverlaysBuilder<'_> {
     #[must_use]
     pub fn add_overlay(&mut self, ranges: RomVramRange) -> SegmentModifier {
+        // TODO: ensure an overlay doesn't overlap the global segment.
         self.overlays
             .push(SegmentMetadata::new(ranges, Some(self.name.clone())));
         SegmentModifier::new(

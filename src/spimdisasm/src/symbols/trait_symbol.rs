@@ -5,7 +5,8 @@ use rabbitizer::Vram;
 
 use crate::{
     address_range::AddressRange, parent_segment_info::ParentSegmentInfo,
-    relocation::RelocationInfo, rom_address::RomAddress, rom_vram_range::RomVramRange, size::Size,
+    relocation::RelocationInfo, rom_address::RomAddress, rom_vram_range::RomVramRange,
+    section_type::SectionType, size::Size,
 };
 
 pub trait Symbol {
@@ -19,6 +20,9 @@ pub trait Symbol {
 
     #[must_use]
     fn parent_segment_info(&self) -> &ParentSegmentInfo;
+
+    #[must_use]
+    fn section_type(&self) -> SectionType;
 }
 
 pub trait RomSymbol: Symbol {

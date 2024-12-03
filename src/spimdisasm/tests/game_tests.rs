@@ -9,7 +9,7 @@ use spimdisasm::{
     metadata::SymbolType,
     parent_segment_info::ParentSegmentInfo,
     rom_vram_range::RomVramRange,
-    sections::{SectionDataSettings, SectionTextSettings},
+    sections::{SectionDataSettings, SectionExecutableSettings, SectionNoloadSettings},
     symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings},
 };
 
@@ -168,7 +168,7 @@ fn init_context(
 
                     match sect {
                         TestSection::Text(rom, _) => finder_heater.preanalyze_text(
-                            &SectionTextSettings::new(InstructionFlags::default()),
+                            &SectionExecutableSettings::new(InstructionFlags::default()),
                             &rom_bytes[AddressRange::new(*rom, rom_end)],
                             *rom,
                             info.vram_from_rom(*rom),
@@ -220,8 +220,9 @@ fn init_segments(
                 let mut text_sections = Vec::new();
                 let mut data_sections = Vec::new();
                 let mut rodata_sections = Vec::new();
+                let mut bss_sections = Vec::new();
 
-                let parent_segment_info = ParentSegmentInfo::new(info.rom, None);
+                let parent_segment_info = ParentSegmentInfo::new(info.rom, info.vram, None);
 
                 for (i, sect) in info.sections.iter().enumerate() {
                     let rom_end = if i + 1 < info.sections.len() {
@@ -239,7 +240,7 @@ fn init_segments(
                     match sect {
                         TestSection::Text(rom, name) => {
                             let text_settings =
-                                SectionTextSettings::new(InstructionFlags::default());
+                                SectionExecutableSettings::new(InstructionFlags::default());
                             text_sections.push(
                                 context
                                     .create_section_text(
@@ -269,11 +270,11 @@ fn init_segments(
                             );
                         }
                         TestSection::Rodata(rom, name) => {
-                            let data_settings = SectionDataSettings::new();
+                            let rodata_settings = SectionDataSettings::new();
                             rodata_sections.push(
                                 context
                                     .create_section_rodata(
-                                        &data_settings,
+                                        &rodata_settings,
                                         (*name).into(),
                                         &rom_bytes[AddressRange::new(*rom, rom_end)],
                                         *rom,
@@ -283,7 +284,34 @@ fn init_segments(
                                     .unwrap(),
                             );
                         }
-                        TestSection::Bss(..) => {}
+                        TestSection::Bss(vram, name) => {
+                            let bss_settings = SectionNoloadSettings::new();
+
+                            let bss_section_vram_end = if i + 1 < info.sections.len() {
+                                match info.sections[i + 1] {
+                                    TestSection::Text(..)
+                                    | TestSection::Data(..)
+                                    | TestSection::Rodata(..)
+                                    | TestSection::Bin(..) => panic!("load follows noload????"),
+                                    TestSection::Bss(next_vram, ..) => next_vram,
+                                }
+                            } else {
+                                info.vram
+                                    + (*segment_rom_end - info.rom)
+                                    + info.noload_size.unwrap()
+                            };
+                            let vram_range = AddressRange::new(*vram, bss_section_vram_end);
+                            bss_sections.push(
+                                context
+                                    .create_section_bss(
+                                        &bss_settings,
+                                        (*name).into(),
+                                        vram_range,
+                                        parent_segment_info.clone(),
+                                    )
+                                    .unwrap(),
+                            );
+                        }
                         TestSection::Bin(..) => {}
                     }
                 }
@@ -292,6 +320,7 @@ fn init_segments(
                     text_sections,
                     data_sections,
                     rodata_sections,
+                    bss_sections,
                 });
             }
         }
@@ -308,6 +337,7 @@ fn drmario64_us_without_symbols() {
     let rom_bytes = std::fs::read("../../baserom_uncompressed.us.z64").unwrap();
 
     let global_ranges = get_ranges_from_segments(&drmario64_us_segments);
+    println!("Global ranges: {:?}", global_ranges);
 
     let mut context = init_context(
         global_ranges,
@@ -338,9 +368,17 @@ fn drmario64_us_without_symbols() {
                     .to_string();
             }
         }
+        for sect in &seg.rodata_sections {
+            for sym in sect.data_symbols() {
+                // sym.display(&context, &data_display_settings).hash(&mut hasher);
+                let _a = sym
+                    .display(&context, &sym_data_display_settings)
+                    .to_string();
+            }
+        }
     }
 
-    assert_eq!(context.global_segment().symbols().len(), 9273);
+    assert_eq!(context.global_segment().symbols().len(), 9274);
 
     /*
     for seg in &segments {
@@ -380,6 +418,7 @@ fn drmario64_us_with_symbols() {
     let rom_bytes = std::fs::read("../../baserom_uncompressed.us.z64").unwrap();
 
     let global_ranges = get_ranges_from_segments(&drmario64_us_segments);
+    println!("Global ranges: {:?}", global_ranges);
 
     let mut context = init_context(
         global_ranges,
@@ -403,6 +442,14 @@ fn drmario64_us_with_symbols() {
             }
         }
         for sect in &seg.data_sections {
+            for sym in sect.data_symbols() {
+                // sym.display(&context, &data_display_settings).hash(&mut hasher);
+                let _a = sym
+                    .display(&context, &sym_data_display_settings)
+                    .to_string();
+            }
+        }
+        for sect in &seg.rodata_sections {
             for sym in sect.data_symbols() {
                 // sym.display(&context, &data_display_settings).hash(&mut hasher);
                 let _a = sym

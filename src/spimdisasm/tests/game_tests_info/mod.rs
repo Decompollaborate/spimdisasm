@@ -7,7 +7,7 @@ use rabbitizer::Vram;
 use spimdisasm::{
     metadata::{RodataMigrationBehavior, SymbolType},
     rom_address::RomAddress,
-    sections::{SectionData, SectionRodata, SectionText},
+    sections::{SectionData, SectionExecutable, SectionNoload},
     size::Size,
 };
 
@@ -48,10 +48,10 @@ impl TestSegmentInfo {
 
 pub struct SegmentData {
     pub name: String,
-    pub text_sections: Vec<SectionText>,
+    pub text_sections: Vec<SectionExecutable>,
     pub data_sections: Vec<SectionData>,
-    pub rodata_sections: Vec<SectionRodata>,
-    // pub bss_sections: Vec<SectionBss>,
+    pub rodata_sections: Vec<SectionData>,
+    pub bss_sections: Vec<SectionNoload>,
 }
 
 pub struct UserSymbolInfo {

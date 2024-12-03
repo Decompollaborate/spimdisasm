@@ -20,8 +20,6 @@ impl OverlayCategoryName {
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
-    use pyo3::prelude::*;
-
     use super::*;
 
     #[pymethods]

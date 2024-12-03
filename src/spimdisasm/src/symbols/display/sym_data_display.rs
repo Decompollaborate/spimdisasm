@@ -5,6 +5,9 @@ use core::fmt;
 
 use alloc::string::String;
 
+#[cfg(feature = "pyo3")]
+use pyo3::prelude::*;
+
 use crate::{
     context::Context,
     metadata::segment_metadata::FindSettings,
@@ -12,6 +15,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct SymDataDisplaySettings {
     line_end: Option<String>,
 }
@@ -77,5 +81,18 @@ impl fmt::Display for SymDataDisplay<'_, '_, '_> {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(feature = "pyo3")]
+pub(crate) mod python_bindings {
+    use super::*;
+
+    #[pymethods]
+    impl SymDataDisplaySettings {
+        #[new]
+        pub fn py_new() -> Self {
+            Self::new()
+        }
     }
 }

@@ -11,7 +11,7 @@ use crate::{
     config::GlobalConfig,
     metadata::{OverlayCategory, OverlayCategoryName, SegmentMetadata},
     rom_address::RomAddress,
-    sections::{SectionDataSettings, SectionTextSettings},
+    sections::{SectionDataSettings, SectionExecutableSettings},
 };
 
 use super::ContextBuilderFinderHeaterOverlays;
@@ -41,7 +41,7 @@ impl ContextBuilderFinderHeater {
 
     pub fn preanalyze_text(
         &mut self,
-        _settings: &SectionTextSettings,
+        _settings: &SectionExecutableSettings,
         _raw_bytes: &[u8],
         _rom: RomAddress,
         _vram: Vram,
@@ -94,8 +94,6 @@ impl ContextBuilderFinderHeater {
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
-    use pyo3::prelude::*;
-
     use super::*;
 
     #[pymethods]

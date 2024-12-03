@@ -2,11 +2,11 @@
 /* SPDX-License-Identifier: MIT */
 
 mod section_data;
-mod section_rodata;
-mod section_text;
+mod section_executable;
+mod section_noload;
 mod trait_section;
 
 pub use section_data::{SectionData, SectionDataSettings};
-pub use section_rodata::SectionRodata;
-pub use section_text::{SectionText, SectionTextSettings};
+pub use section_executable::{SectionExecutable, SectionExecutableSettings};
+pub use section_noload::{SectionNoload, SectionNoloadSettings};
 pub use trait_section::{RomSection, Section};

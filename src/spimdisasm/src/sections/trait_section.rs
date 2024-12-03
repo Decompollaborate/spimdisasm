@@ -9,6 +9,7 @@ use crate::address_range::AddressRange;
 use crate::parent_segment_info::ParentSegmentInfo;
 use crate::rom_address::RomAddress;
 use crate::rom_vram_range::RomVramRange;
+use crate::section_type::SectionType;
 use crate::size::Size;
 use crate::symbols::Symbol;
 
@@ -25,6 +26,9 @@ pub trait Section {
 
     #[must_use]
     fn parent_segment_info(&self) -> &ParentSegmentInfo;
+
+    #[must_use]
+    fn section_type(&self) -> SectionType;
 
     #[must_use]
     fn symbol_list(&self) -> &[impl Symbol];

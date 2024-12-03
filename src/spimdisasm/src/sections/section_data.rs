@@ -14,6 +14,7 @@ use crate::{
     parent_segment_info::ParentSegmentInfo,
     rom_address::RomAddress,
     rom_vram_range::RomVramRange,
+    section_type::SectionType,
     size::Size,
     symbols::{Symbol, SymbolData},
 };
@@ -43,15 +44,14 @@ pub struct SectionData {
 
     ranges: RomVramRange,
 
-    // in_section_offset: u32,
-    // section_type: SectionType,
-
-    //
     parent_segment_info: ParentSegmentInfo,
 
+    // in_section_offset: u32,
+    section_type: SectionType,
+
+    //
     data_symbols: Vec<SymbolData>,
 
-    // TODO: maybe move to SectionBase or just Section?
     symbol_vrams: BTreeSet<Vram>,
 }
 
@@ -64,6 +64,7 @@ impl SectionData {
         rom: RomAddress,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
+        section_type: SectionType,
     ) -> Result<Self, OwnedSegmentNotFoundError> {
         assert!(
             !raw_bytes.is_empty(),
@@ -149,8 +150,8 @@ impl SectionData {
 
         let symbols_info_vec: Vec<Vram> = symbols_info.into_iter().collect();
 
-        for (i, new_vram_sym) in symbols_info_vec.iter().enumerate() {
-            let start = new_vram_sym.sub_vram(&vram).inner() as usize;
+        for (i, new_sym_vram) in symbols_info_vec.iter().enumerate() {
+            let start = new_sym_vram.sub_vram(&vram).inner() as usize;
             let end = if i + 1 < symbols_info_vec.len() {
                 symbols_info_vec[i + 1].sub_vram(&vram).inner() as usize
             } else {
@@ -168,10 +169,9 @@ impl SectionData {
 
             let sym_rom = rom + Size::new(start as u32);
 
-            symbol_vrams.insert(*new_vram_sym);
+            symbol_vrams.insert(*new_sym_vram);
 
-            // TODO: get rid of unwrap?
-            let /*mut*/ sym = SymbolData::new(context, raw_bytes[start..end].into(), sym_rom, *new_vram_sym, start, parent_segment_info.clone())?;
+            let /*mut*/ sym = SymbolData::new(context, raw_bytes[start..end].into(), sym_rom, *new_sym_vram, start, parent_segment_info.clone(), section_type)?;
 
             data_symbols.push(sym);
         }
@@ -187,6 +187,7 @@ impl SectionData {
             name,
             ranges,
             parent_segment_info,
+            section_type,
             data_symbols,
             symbol_vrams,
         })
@@ -211,6 +212,11 @@ impl Section for SectionData {
         &self.parent_segment_info
     }
 
+    #[must_use]
+    fn section_type(&self) -> SectionType {
+        self.section_type
+    }
+
     fn symbol_list(&self) -> &[impl Symbol] {
         &self.data_symbols
     }
@@ -228,7 +234,7 @@ impl RomSection for SectionData {
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
-    use pyo3::prelude::*;
+    use crate::symbols::display::SymDataDisplaySettings;
 
     use super::*;
 
@@ -247,9 +253,16 @@ pub(crate) mod python_bindings {
             self.data_symbols.len()
         }
 
-        // #[pyo3(name = "display_sym")]
-        // pub fn py_display_sym(&self, context: &Context, index: usize, /*settings: &DataDisplaySettings*/) -> Option<String> {
-        //     self.data_symbols.get(index).map(|sym| sym.display(context, settings).to_string())
-        // }
+        #[pyo3(name = "display_sym")]
+        pub fn py_display_sym(
+            &self,
+            context: &Context,
+            index: usize,
+            settings: &SymDataDisplaySettings,
+        ) -> Option<String> {
+            self.data_symbols
+                .get(index)
+                .map(|sym| sym.display(context, settings).to_string())
+        }
     }
 }

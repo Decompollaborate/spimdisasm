@@ -12,11 +12,16 @@ use rabbitizer::Vram;
 use pyo3::prelude::*;
 
 use crate::{
+    address_range::AddressRange,
     config::GlobalConfig,
     metadata::{OverlayCategory, OverlayCategoryName, SegmentMetadata},
     parent_segment_info::ParentSegmentInfo,
     rom_address::RomAddress,
-    sections::{SectionData, SectionDataSettings, SectionRodata, SectionText, SectionTextSettings},
+    section_type::SectionType,
+    sections::{
+        SectionData, SectionDataSettings, SectionExecutable, SectionExecutableSettings,
+        SectionNoload, SectionNoloadSettings,
+    },
 };
 
 #[derive(Debug, Clone, Hash, PartialEq)]
@@ -75,14 +80,14 @@ impl Context {
 impl Context {
     pub fn create_section_text(
         &mut self,
-        settings: &SectionTextSettings,
+        settings: &SectionExecutableSettings,
         name: String,
         raw_bytes: &[u8],
         rom: RomAddress,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
-    ) -> Result<SectionText, OwnedSegmentNotFoundError> {
-        SectionText::new(
+    ) -> Result<SectionExecutable, OwnedSegmentNotFoundError> {
+        SectionExecutable::new(
             self,
             settings,
             name,
@@ -110,6 +115,7 @@ impl Context {
             rom,
             vram,
             parent_segment_info,
+            SectionType::Data,
         )
     }
 
@@ -121,8 +127,8 @@ impl Context {
         rom: RomAddress,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
-    ) -> Result<SectionRodata, OwnedSegmentNotFoundError> {
-        SectionRodata::new(
+    ) -> Result<SectionData, OwnedSegmentNotFoundError> {
+        SectionData::new(
             self,
             settings,
             name,
@@ -130,6 +136,38 @@ impl Context {
             rom,
             vram,
             parent_segment_info,
+            SectionType::Rodata,
+        )
+    }
+
+    pub fn create_section_bss(
+        &mut self,
+        settings: &SectionNoloadSettings,
+        name: String,
+        vram_range: AddressRange<Vram>,
+        parent_segment_info: ParentSegmentInfo,
+    ) -> Result<SectionNoload, OwnedSegmentNotFoundError> {
+        SectionNoload::new(self, settings, name, vram_range, parent_segment_info)
+    }
+
+    pub fn create_section_gcc_except_table(
+        &mut self,
+        settings: &SectionDataSettings,
+        name: String,
+        raw_bytes: &[u8],
+        rom: RomAddress,
+        vram: Vram,
+        parent_segment_info: ParentSegmentInfo,
+    ) -> Result<SectionData, OwnedSegmentNotFoundError> {
+        SectionData::new(
+            self,
+            settings,
+            name,
+            raw_bytes,
+            rom,
+            vram,
+            parent_segment_info,
+            SectionType::GccExceptTable,
         )
     }
 }
@@ -167,6 +205,10 @@ impl Context {
         } else if self.global_segment.in_rom_range(info.segment_rom()) {
             // Global segment may contain more than one actual segment, so checking for ranges is okay.
             return Ok(&self.global_segment);
+        } else if self.global_segment.in_vram_range(info.segment_vram()) {
+            // Global segment doesn't have overlapping issues, so it should be fine to check for vram address.
+            // This can be required by segments that only have bss sections.
+            return Ok(&self.global_segment);
         }
         Err(OwnedSegmentNotFoundError {})
     }
@@ -185,6 +227,10 @@ impl Context {
             }
         } else if self.global_segment.in_rom_range(info.segment_rom()) {
             // Global segment may contain more than one actual segment, so checking for ranges is okay.
+            return Ok(&mut self.global_segment);
+        } else if self.global_segment.in_vram_range(info.segment_vram()) {
+            // Global segment doesn't have overlapping issues, so it should be fine to check for vram address.
+            // This can be required by segments that only have bss sections.
             return Ok(&mut self.global_segment);
         }
         Err(OwnedSegmentNotFoundError {})
@@ -295,13 +341,13 @@ pub(crate) mod python_bindings {
         #[pyo3(name = "create_section_text")]
         pub fn py_create_section_text(
             &mut self,
-            settings: &SectionTextSettings,
+            settings: &SectionExecutableSettings,
             name: String,
             raw_bytes: Cow<[u8]>,
             rom: RomAddress,
             vram: u32, // Vram, // TODO
             parent_segment_info: ParentSegmentInfo,
-        ) -> Result<SectionText, OwnedSegmentNotFoundError> {
+        ) -> Result<SectionExecutable, OwnedSegmentNotFoundError> {
             self.create_section_text(
                 settings,
                 name,
@@ -341,8 +387,41 @@ pub(crate) mod python_bindings {
             rom: RomAddress,
             vram: u32, // Vram, // TODO
             parent_segment_info: ParentSegmentInfo,
-        ) -> Result<SectionRodata, OwnedSegmentNotFoundError> {
+        ) -> Result<SectionData, OwnedSegmentNotFoundError> {
             self.create_section_rodata(
+                settings,
+                name,
+                &raw_bytes,
+                rom,
+                Vram::new(vram),
+                parent_segment_info,
+            )
+        }
+
+        /*
+        #[pyo3(name = "create_section_bss")]
+        pub fn py_create_section_bss(
+            &mut self,
+            settings: &SectionNoloadSettings,
+            name: String,
+            vram_range: AddressRange<Vram>,
+            parent_segment_info: ParentSegmentInfo,
+        ) -> Result<SectionNoload, OwnedSegmentNotFoundError> {
+            self.create_section_bss(settings, name, vram_range, parent_segment_info)
+        }
+        */
+
+        #[pyo3(name = "create_section_gcc_except_table")]
+        pub fn py_create_section_gcc_except_table(
+            &mut self,
+            settings: &SectionDataSettings,
+            name: String,
+            raw_bytes: Cow<[u8]>,
+            rom: RomAddress,
+            vram: u32, // Vram, // TODO
+            parent_segment_info: ParentSegmentInfo,
+        ) -> Result<SectionData, OwnedSegmentNotFoundError> {
+            self.create_section_gcc_except_table(
                 settings,
                 name,
                 &raw_bytes,

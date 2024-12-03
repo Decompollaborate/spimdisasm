@@ -15,13 +15,13 @@ pub struct AddressRange<T> {
 
 impl<T> AddressRange<T>
 where
-    T: Copy + PartialOrd,
+    T: Copy + PartialOrd + fmt::Debug,
 {
     #[must_use]
     pub fn new(start: T, end: T) -> Self {
         assert!(
             start <= end,
-            "An address range can't contain an `end` value that's smaller than the `start` one"
+            "An address range can't contain an `end` value that's smaller than the `start` one. start: {:?}, end: {:?}", start, end
         );
         Self { start, end }
     }

@@ -217,19 +217,13 @@ impl fmt::Display for FunctionDisplay<'_, '_, '_> {
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
-    use pyo3::prelude::*;
-
     use super::*;
 
     #[pymethods]
     impl FunctionDisplaySettings {
         #[new]
         pub fn py_new(/*display_flags: DisplayFlags*/) -> Self {
-            Self {
-                display_flags: DisplayFlags::default(),
-                line_end: None,
-                _gp_rel_hack: false,
-            }
+            Self::new(DisplayFlags::default())
         }
     }
 }
