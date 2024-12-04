@@ -3,7 +3,6 @@
 
 use core::fmt;
 
-use alloc::string::String;
 use rabbitizer::{DisplayFlags, Instruction, Vram};
 
 #[cfg(feature = "pyo3")]
@@ -16,28 +15,27 @@ use crate::{
     symbols::{trait_symbol::RomSymbol, Symbol, SymbolFunction},
 };
 
+use super::SymCommonDisplaySettings;
+
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct FunctionDisplaySettings {
+    common: SymCommonDisplaySettings,
+
     display_flags: DisplayFlags,
-    line_end: Option<String>,
+
+    asm_label_indentation: u8,
+
     _gp_rel_hack: bool,
 }
 
 impl FunctionDisplaySettings {
     pub fn new(display_flags: DisplayFlags) -> Self {
         Self {
+            common: SymCommonDisplaySettings::new(),
             display_flags,
-            line_end: None,
+            asm_label_indentation: 2,
             _gp_rel_hack: false,
-        }
-    }
-
-    pub(crate) fn line_end(&self) -> &str {
-        if let Some(line_end) = &self.line_end {
-            line_end
-        } else {
-            "\n"
         }
     }
 }
@@ -105,52 +103,12 @@ impl FunctionDisplay<'_, '_, '_> {
                     f,
                     "{}:{}",
                     sym_label.display_name(),
-                    self.settings.line_end()
+                    self.settings.common.line_end()
                 )?;
             }
         }
 
         Ok(())
-    }
-
-    fn display_asm_comment(&self, f: &mut fmt::Formatter<'_>, instr: &Instruction) -> fmt::Result {
-        // TODO:
-        /*
-        indentation = " " * common.GlobalConfig.ASM_INDENTATION
-
-        if not common.GlobalConfig.ASM_COMMENT:
-            return indentation
-
-        if emitRomOffset:
-            offsetHex = "{0:0{1}X} ".format(localOffset + self.inFileOffset + self.commentOffset, common.GlobalConfig.ASM_COMMENT_OFFSET_WIDTH)
-        else:
-            offsetHex = ""
-
-        currentVram = self.getVramOffset(localOffset)
-        vramHex = f"{currentVram:08X}"
-
-        wordValueHex = ""
-        if wordValue is not None:
-            if isDouble:
-                wordValueHex = f"{common.Utils.qwordToCurrenEndian(wordValue):016X} "
-            else:
-                wordValueHex = f"{common.Utils.wordToCurrenEndian(wordValue):08X} "
-
-        return f"{indentation}/* {offsetHex}{vramHex} {wordValueHex}*/
-"
-        */
-
-        write!(f, "/* ")?;
-        let current_vram = instr.vram();
-        if let Some(rom) = self.sym.rom_vram_range().rom_from_vram(current_vram) {
-            // TODO: implement display for RomAddress
-            write!(f, "{:06X} ", rom.inner())?;
-        }
-        write!(f, "{} ", current_vram)?;
-        // TODO: endian
-        write!(f, "{:08X} ", instr.word())?;
-
-        write!(f, "*/")
     }
 
     fn display_instruction(
@@ -159,7 +117,12 @@ impl FunctionDisplay<'_, '_, '_> {
         instr: &Instruction,
         prev_instr_had_delay_slot: bool,
     ) -> fmt::Result {
-        self.display_asm_comment(f, instr)?;
+        let vram = instr.vram();
+        let rom = self.sym.rom_vram_range().rom_from_vram(vram);
+        self.settings
+            .common
+            .display_asm_comment(f, rom, vram, Some(instr.word()))?;
+
         // TODO: why two spaces instead of one?
         write!(f, "  ")?;
 
@@ -175,7 +138,7 @@ impl FunctionDisplay<'_, '_, '_> {
             f,
             "{}{}",
             instr.display(imm_override, &self.settings.display_flags),
-            self.settings.line_end()
+            self.settings.common.line_end()
         )
     }
 
@@ -198,9 +161,9 @@ impl fmt::Display for FunctionDisplay<'_, '_, '_> {
             .ok_or(fmt::Error)?;
 
         let name = metadata.display_name();
-        write!(f, ".globl {}{}", name, self.settings.line_end())?;
+        write!(f, ".globl {}{}", name, self.settings.common.line_end())?;
 
-        write!(f, "{}:{}", name, self.settings.line_end())?;
+        write!(f, "{}:{}", name, self.settings.common.line_end())?;
 
         let mut prev_instr_had_delay_slot = false;
         for instr in self.sym.instructions() {
@@ -211,7 +174,7 @@ impl fmt::Display for FunctionDisplay<'_, '_, '_> {
             prev_instr_had_delay_slot = instr.opcode().has_delay_slot();
         }
 
-        write!(f, ".end {}{}", name, self.settings.line_end())
+        write!(f, ".end {}{}", name, self.settings.common.line_end())
     }
 }
 

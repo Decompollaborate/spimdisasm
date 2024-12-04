@@ -12,7 +12,7 @@ use crate::{
 };
 
 use super::{
-    // display::{SymDataDisplay, SymDataDisplaySettings},
+    display::{SymNoloadDisplay, SymNoloadDisplaySettings},
     Symbol,
 };
 
@@ -50,17 +50,15 @@ impl SymbolNoload {
 
 impl SymbolNoload {}
 
-/*
 impl<'ctx, 'sym, 'flg> SymbolNoload {
     pub fn display(
         &'sym self,
         context: &'ctx Context,
-        settings: &'flg SymDataDisplaySettings,
-    ) -> SymDataDisplay<'ctx, 'sym, 'flg> {
-        SymDataDisplay::new(context, self, settings)
+        settings: &'flg SymNoloadDisplaySettings,
+    ) -> SymNoloadDisplay<'ctx, 'sym, 'flg> {
+        SymNoloadDisplay::new(context, self, settings)
     }
 }
-*/
 
 impl Symbol for SymbolNoload {
     fn vram_range(&self) -> &AddressRange<Vram> {

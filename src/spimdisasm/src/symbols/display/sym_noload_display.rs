@@ -9,25 +9,24 @@ use pyo3::prelude::*;
 use crate::{
     context::Context,
     metadata::segment_metadata::FindSettings,
-    size::Size,
-    symbols::{RomSymbol, Symbol, SymbolData},
+    symbols::{Symbol, SymbolNoload},
 };
 
 use super::SymCommonDisplaySettings;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
-pub struct SymDataDisplaySettings {
+pub struct SymNoloadDisplaySettings {
     common: SymCommonDisplaySettings,
 }
 
-impl Default for SymDataDisplaySettings {
+impl Default for SymNoloadDisplaySettings {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl SymDataDisplaySettings {
+impl SymNoloadDisplaySettings {
     pub fn new() -> Self {
         Self {
             common: SymCommonDisplaySettings::new(),
@@ -36,17 +35,17 @@ impl SymDataDisplaySettings {
 }
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq)]
-pub struct SymDataDisplay<'ctx, 'sym, 'flg> {
+pub struct SymNoloadDisplay<'ctx, 'sym, 'flg> {
     context: &'ctx Context,
-    sym: &'sym SymbolData,
-    settings: &'flg SymDataDisplaySettings,
+    sym: &'sym SymbolNoload,
+    settings: &'flg SymNoloadDisplaySettings,
 }
 
-impl<'ctx, 'sym, 'flg> SymDataDisplay<'ctx, 'sym, 'flg> {
+impl<'ctx, 'sym, 'flg> SymNoloadDisplay<'ctx, 'sym, 'flg> {
     pub(crate) fn new(
         context: &'ctx Context,
-        sym: &'sym SymbolData,
-        settings: &'flg SymDataDisplaySettings,
+        sym: &'sym SymbolNoload,
+        settings: &'flg SymNoloadDisplaySettings,
     ) -> Self {
         Self {
             context,
@@ -56,7 +55,7 @@ impl<'ctx, 'sym, 'flg> SymDataDisplay<'ctx, 'sym, 'flg> {
     }
 }
 
-impl fmt::Display for SymDataDisplay<'_, '_, '_> {
+impl fmt::Display for SymNoloadDisplay<'_, '_, '_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let owned_segment = self
             .context
@@ -71,17 +70,15 @@ impl fmt::Display for SymDataDisplay<'_, '_, '_> {
 
         write!(f, "{}:{}", name, self.settings.common.line_end())?;
 
-        let ranges = self.sym.rom_vram_range();
-        let rom = ranges.rom().start();
-        let vram = ranges.vram().start();
-        for (i, byte) in self.sym.raw_bytes().iter().enumerate() {
-            let offset = Size::new(i as u32);
-
-            self.settings
-                .common
-                .display_asm_comment(f, Some(rom + offset), vram + offset, None)?;
-            write!(f, ".byte 0x{:02X}{}", byte, self.settings.common.line_end())?;
-        }
+        self.settings
+            .common
+            .display_asm_comment(f, None, self.sym.vram_range().start(), None)?;
+        write!(
+            f,
+            " .space 0x{:02X}{}",
+            self.sym.size(),
+            self.settings.common.line_end()
+        )?;
 
         Ok(())
     }
@@ -92,7 +89,7 @@ pub(crate) mod python_bindings {
     use super::*;
 
     #[pymethods]
-    impl SymDataDisplaySettings {
+    impl SymNoloadDisplaySettings {
         #[new]
         pub fn py_new() -> Self {
             Self::new()

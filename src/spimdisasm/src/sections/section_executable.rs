@@ -556,8 +556,6 @@ fn find_functions_check_function_ended(
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
-    use rabbitizer::InstructionFlags;
-
     use crate::symbols::display::FunctionDisplaySettings;
 
     use super::*;

@@ -398,18 +398,19 @@ pub(crate) mod python_bindings {
             )
         }
 
-        /*
         #[pyo3(name = "create_section_bss")]
         pub fn py_create_section_bss(
             &mut self,
             settings: &SectionNoloadSettings,
             name: String,
-            vram_range: AddressRange<Vram>,
+            vram_start: u32, // Vram // TODO
+            vram_end: u32,   // Vram // TODO
             parent_segment_info: ParentSegmentInfo,
         ) -> Result<SectionNoload, OwnedSegmentNotFoundError> {
-            self.create_section_bss(settings, name, vram_range, parent_segment_info)
+            let vram_ranges = AddressRange::new(Vram::new(vram_start), Vram::new(vram_end));
+
+            self.create_section_bss(settings, name, vram_ranges, parent_segment_info)
         }
-        */
 
         #[pyo3(name = "create_section_gcc_except_table")]
         pub fn py_create_section_gcc_except_table(

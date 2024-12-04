@@ -10,7 +10,7 @@ use spimdisasm::{
     parent_segment_info::ParentSegmentInfo,
     rom_vram_range::RomVramRange,
     sections::{SectionDataSettings, SectionExecutableSettings, SectionNoloadSettings},
-    symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings},
+    symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings, SymNoloadDisplaySettings},
 };
 
 mod game_tests_info;
@@ -351,6 +351,7 @@ fn drmario64_us_without_symbols() {
     let instr_display_flags = DisplayFlags::default();
     let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
     let sym_data_display_settings = SymDataDisplaySettings::new();
+    let sym_noload_display_settings = SymNoloadDisplaySettings::new();
     for seg in &segments {
         for sect in &seg.text_sections {
             for sym in sect.functions() {
@@ -373,6 +374,14 @@ fn drmario64_us_without_symbols() {
                 // sym.display(&context, &data_display_settings).hash(&mut hasher);
                 let _a = sym
                     .display(&context, &sym_data_display_settings)
+                    .to_string();
+            }
+        }
+        for sect in &seg.bss_sections {
+            for sym in sect.noload_symbols() {
+                // sym.display(&context, &data_display_settings).hash(&mut hasher);
+                let _a = sym
+                    .display(&context, &sym_noload_display_settings)
                     .to_string();
             }
         }
@@ -432,6 +441,7 @@ fn drmario64_us_with_symbols() {
     let instr_display_flags = DisplayFlags::default();
     let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
     let sym_data_display_settings = SymDataDisplaySettings::new();
+    let sym_noload_display_settings = SymNoloadDisplaySettings::new();
     for seg in &segments {
         for sect in &seg.text_sections {
             for sym in sect.functions() {
@@ -457,9 +467,17 @@ fn drmario64_us_with_symbols() {
                     .to_string();
             }
         }
+        for sect in &seg.bss_sections {
+            for sym in sect.noload_symbols() {
+                // sym.display(&context, &data_display_settings).hash(&mut hasher);
+                let _a = sym
+                    .display(&context, &sym_noload_display_settings)
+                    .to_string();
+            }
+        }
     }
 
-    assert_eq!(context.global_segment().symbols().len(), 9560);
+    assert_eq!(context.global_segment().symbols().len(), 9620);
 
     /*
     for seg in &segments {

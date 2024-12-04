@@ -1,14 +1,12 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::collections::btree_map::BTreeMap;
+use alloc::collections::btree_map::{self, BTreeMap};
 use alloc::vec::Vec;
 
 #[cfg(not(feature = "nightly"))]
 use ::polonius_the_crab::prelude::*;
 
-#[cfg(feature = "nightly")]
-use alloc::collections::btree_map;
 #[cfg(feature = "nightly")]
 use core::ops::Bound;
 
@@ -398,6 +396,14 @@ impl SegmentMetadata {
                 None
             }
         }
+    }
+
+    pub(crate) fn find_symbols_range(
+        &self,
+        vram_start: Vram,
+        vram_end: Vram,
+    ) -> btree_map::Range<'_, Vram, SymbolMetadata> {
+        self.symbols.range(vram_start..vram_end)
     }
 }
 
