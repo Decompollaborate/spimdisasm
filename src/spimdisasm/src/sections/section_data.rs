@@ -90,6 +90,9 @@ impl SectionData {
 
         let mut maybe_pointers_to_other_sections = Vec::new();
 
+        // let mut prev_word_symbol_vram = None;
+        // let mut current_jtbl_info = None;
+
         // Look for stuff that looks like addresses which point to symbols on this section
         let displacement = (4 - (vram.inner() % 4) as usize) % 4;
         // TODO: check for symbols in the displacement and everything that the `chunk_exact` may have left out
@@ -133,6 +136,16 @@ impl SectionData {
                     let current_rom = rom + (current_vram - vram).try_into().expect("This should not panic because `current_vram` should always be greter or equal to `vram`");
                     maybe_pointers_to_other_sections.push((word_vram, current_rom));
                 }
+
+                // if let Some(current_sym) = a {
+                //     prev_word_symbol_vram = Some(current_vram);
+                //     if current_sym.sym_type() == Some(&SymbolType::Jumptable) {
+                //         current_jtbl_info = Some((current_vram, word));
+                //     }
+                // }
+            } else {
+                // prev_word_symbol_vram = None;
+                // current_jtbl_info = None;
             }
 
             for (x_vram, x) in [(current_vram, a), (b_vram, b), (c_vram, c), (d_vram, d)] {

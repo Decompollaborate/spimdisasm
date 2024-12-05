@@ -20,4 +20,12 @@ impl Endian {
             Endian::Little => u32::from_le_bytes(x),
         }
     }
+    pub fn short_from_bytes(self, bytes: &[u8]) -> u16 {
+        let x = bytes.try_into().expect("Wrong input");
+
+        match self {
+            Endian::Big => u16::from_be_bytes(x),
+            Endian::Little => u16::from_le_bytes(x),
+        }
+    }
 }
