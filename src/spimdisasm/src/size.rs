@@ -68,7 +68,7 @@ impl fmt::Debug for Size {
         write!(f, "Size {{ 0x{:02X} }}", self.inner)
     }
 }
-impl fmt::UpperHex for Size {
+impl fmt::Display for Size {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "0x{:02X}", self.inner)
     }

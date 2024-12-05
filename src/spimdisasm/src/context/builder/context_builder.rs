@@ -40,6 +40,10 @@ impl ContextBuilder {
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
+    use rabbitizer::Vram;
+
+    use crate::rom_address::RomAddress;
+
     use super::*;
 
     #[pymethods]
@@ -54,6 +58,81 @@ pub(crate) mod python_bindings {
         // pub fn py_global_segment(&mut self) -> SegmentModifier {
         //     self.global_segment()
         // }
+        #[pyo3(signature = (name, vram, rom))]
+        pub fn add_symbol(
+            &mut self,
+            name: String,
+            vram: u32, // Vram // TODO
+            rom: Option<RomAddress>,
+        ) {
+            self.global_segment().add_symbol(name, Vram::new(vram), rom);
+        }
+
+        #[pyo3(signature = (name, vram, rom))]
+        pub fn add_function(
+            &mut self,
+            name: String,
+            vram: u32, // Vram // TODO
+            rom: Option<RomAddress>,
+        ) {
+            self.global_segment()
+                .add_function(name, Vram::new(vram), rom);
+        }
+
+        #[pyo3(signature = (name, vram, rom))]
+        pub fn add_branch_label(
+            &mut self,
+            name: String,
+            vram: u32, // Vram // TODO
+            rom: Option<RomAddress>,
+        ) {
+            self.global_segment()
+                .add_branch_label(name, Vram::new(vram), rom);
+        }
+
+        #[pyo3(signature = (name, vram, rom))]
+        pub fn add_jumptable(
+            &mut self,
+            name: String,
+            vram: u32, // Vram // TODO
+            rom: Option<RomAddress>,
+        ) {
+            self.global_segment()
+                .add_jumptable(name, Vram::new(vram), rom);
+        }
+
+        #[pyo3(signature = (name, vram, rom))]
+        pub fn add_jumptable_label(
+            &mut self,
+            name: String,
+            vram: u32, // Vram // TODO
+            rom: Option<RomAddress>,
+        ) {
+            self.global_segment()
+                .add_jumptable_label(name, Vram::new(vram), rom);
+        }
+
+        #[pyo3(signature = (name, vram, rom))]
+        pub fn add_gcc_except_table(
+            &mut self,
+            name: String,
+            vram: u32, // Vram // TODO
+            rom: Option<RomAddress>,
+        ) {
+            self.global_segment()
+                .add_gcc_except_table(name, Vram::new(vram), rom);
+        }
+
+        #[pyo3(signature = (name, vram, rom))]
+        pub fn add_gcc_except_table_label(
+            &mut self,
+            name: String,
+            vram: u32, // Vram // TODO
+            rom: Option<RomAddress>,
+        ) {
+            self.global_segment()
+                .add_gcc_except_table_label(name, Vram::new(vram), rom);
+        }
 
         #[pyo3(name = "process")]
         pub fn py_process(&self) -> ContextBuilderOverlay {

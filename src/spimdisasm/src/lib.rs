@@ -54,6 +54,7 @@ fn spimdisasm(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     m.add_class::<symbols::display::FunctionDisplaySettings>()?;
     m.add_class::<symbols::display::SymDataDisplaySettings>()?;
+    m.add_class::<symbols::display::SymNoloadDisplaySettings>()?;
 
     Ok(())
 }

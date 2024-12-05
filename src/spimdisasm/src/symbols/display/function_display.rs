@@ -98,6 +98,15 @@ impl FunctionDisplay<'_, '_, '_> {
                 return label
                 */
 
+                if self.settings.asm_label_indentation > 0 {
+                    write!(
+                        f,
+                        "{:width$}",
+                        " ",
+                        width = self.settings.asm_label_indentation as usize
+                    )?;
+                }
+
                 // PLACEHOLDER:
                 write!(
                     f,

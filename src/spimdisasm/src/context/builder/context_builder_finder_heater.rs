@@ -94,10 +94,56 @@ impl ContextBuilderFinderHeater {
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
+    use std::borrow::Cow;
+
     use super::*;
 
     #[pymethods]
     impl ContextBuilderFinderHeater {
+        #[pyo3(name = "preanalyze_text")]
+        pub fn py_preanalyze_text(
+            &mut self,
+            settings: &SectionExecutableSettings,
+            raw_bytes: Cow<[u8]>,
+            rom: RomAddress,
+            vram: u32, // Vram, // TODO
+        ) {
+            self.preanalyze_text(settings, &raw_bytes, rom, Vram::new(vram));
+        }
+
+        #[pyo3(name = "preanalyze_data")]
+        pub fn py_preanalyze_data(
+            &mut self,
+            settings: &SectionDataSettings,
+            raw_bytes: Cow<[u8]>,
+            rom: RomAddress,
+            vram: u32, // Vram, // TODO
+        ) {
+            self.preanalyze_data(settings, &raw_bytes, rom, Vram::new(vram));
+        }
+
+        #[pyo3(name = "preanalyze_rodata")]
+        pub fn py_preanalyze_rodata(
+            &mut self,
+            settings: &SectionDataSettings,
+            raw_bytes: Cow<[u8]>,
+            rom: RomAddress,
+            vram: u32, // Vram, // TODO
+        ) {
+            self.preanalyze_rodata(settings, &raw_bytes, rom, Vram::new(vram));
+        }
+
+        #[pyo3(name = "preanalyze_gcc_except_table")]
+        pub fn py_preanalyze_gcc_except_table(
+            &mut self,
+            settings: &SectionDataSettings,
+            raw_bytes: Cow<[u8]>,
+            rom: RomAddress,
+            vram: u32, // Vram, // TODO
+        ) {
+            self.preanalyze_gcc_except_table(settings, &raw_bytes, rom, Vram::new(vram));
+        }
+
         #[pyo3(name = "process")]
         pub fn py_process(&self) -> ContextBuilderFinderHeaterOverlays {
             self.clone().process()

@@ -77,8 +77,8 @@ impl<'ctx, 'rel, 'prnt> RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
                 if let Some(referenced_segment) =
                     context.find_referenced_segment(*vram, segment_info)
                 {
-                    if let Some(sym_metadata) = referenced_segment
-                        .find_symbol(*vram, FindSettings::new().with_allow_addend(false))
+                    if let Some(sym_metadata) =
+                        referenced_segment.find_symbol(*vram, FindSettings::default())
                     {
                         RelocSymState::Sym(*vram, sym_metadata)
                     } else {
