@@ -83,6 +83,6 @@ impl SymCommonDisplaySettings {
             write!(f, "{:08X} ", word)?;
         }
 
-        write!(f, "*/")
+        write!(f, "*/ ")
     }
 }

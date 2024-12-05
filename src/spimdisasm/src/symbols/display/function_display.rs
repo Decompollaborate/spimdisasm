@@ -133,8 +133,8 @@ impl FunctionDisplay<'_, '_, '_> {
             .common
             .display_asm_comment(f, rom, vram, Some(instr.word()))?;
 
-        // TODO: why two spaces instead of one?
-        write!(f, "  ")?;
+        // TODO: why an extra space?
+        write!(f, " ")?;
 
         let extra_ljust = if prev_instr_had_delay_slot {
             write!(f, " ")?;

@@ -82,7 +82,7 @@ impl fmt::Display for SymNoloadDisplay<'_, '_, '_> {
             .display_asm_comment(f, None, self.sym.vram_range().start(), None)?;
         write!(
             f,
-            " .space {}{}",
+            ".space {}{}",
             self.sym.size(),
             self.settings.common.line_end()
         )?;
