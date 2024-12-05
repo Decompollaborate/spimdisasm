@@ -3,7 +3,7 @@
 
 use core::fmt;
 
-use rabbitizer::{DisplayFlags, Instruction, Vram};
+use rabbitizer::{Instruction, InstructionDisplayFlags, Vram};
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
@@ -22,7 +22,7 @@ use super::SymCommonDisplaySettings;
 pub struct FunctionDisplaySettings {
     common: SymCommonDisplaySettings,
 
-    display_flags: DisplayFlags,
+    display_flags: InstructionDisplayFlags,
 
     asm_label_indentation: u8,
 
@@ -30,7 +30,7 @@ pub struct FunctionDisplaySettings {
 }
 
 impl FunctionDisplaySettings {
-    pub fn new(display_flags: DisplayFlags) -> Self {
+    pub fn new(display_flags: InstructionDisplayFlags) -> Self {
         Self {
             common: SymCommonDisplaySettings::new(),
             display_flags,
@@ -135,9 +135,12 @@ impl FunctionDisplay<'_, '_, '_> {
         // TODO: why two spaces instead of one?
         write!(f, "  ")?;
 
-        if prev_instr_had_delay_slot {
+        let extra_ljust = if prev_instr_had_delay_slot {
             write!(f, " ")?;
-        }
+            -1
+        } else {
+            0
+        };
 
         let imm_override = self
             .get_reloc(instr)
@@ -146,7 +149,7 @@ impl FunctionDisplay<'_, '_, '_> {
         write!(
             f,
             "{}{}",
-            instr.display(imm_override, &self.settings.display_flags),
+            instr.display(&self.settings.display_flags, imm_override, extra_ljust),
             self.settings.common.line_end()
         )
     }
@@ -194,8 +197,8 @@ pub(crate) mod python_bindings {
     #[pymethods]
     impl FunctionDisplaySettings {
         #[new]
-        pub fn py_new(/*display_flags: DisplayFlags*/) -> Self {
-            Self::new(DisplayFlags::default())
+        pub fn py_new(/*display_flags: InstructionDisplayFlags*/) -> Self {
+            Self::new(InstructionDisplayFlags::default())
         }
     }
 }

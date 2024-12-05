@@ -135,14 +135,18 @@ impl RegisterTracker {
                 // IDO usually use a reg as a temp when loading a constant value
                 // into the float coprocessor, after that IDO never re-uses the value
                 // in that reg for anything else
-                self.clear_reg(instr.field_rt().expect("This should not panic"), instr_rom);
+                self.clear_reg(
+                    instr.field_rt().expect("This should not panic"),
+                    instr,
+                    instr_rom,
+                );
             }
             _ => {
                 if let Some(reg) = instr.get_destination_gpr() {
                     if instr.opcode().can_be_hi() {
                         self.registers[reg.as_index()].clear_lo();
                     } else {
-                        self.clear_reg(reg, instr_rom);
+                        self.clear_reg(reg, instr, instr_rom);
                     }
                 }
             }
@@ -206,12 +210,96 @@ impl RegisterTracker {
 }
 
 impl RegisterTracker {
-    fn move_register(&mut self, _instr: &Instruction) -> bool {
-        // TODO
-        false
+    fn move_register(&mut self, instr: &Instruction) -> bool {
+        if !instr.opcode().maybe_is_move() {
+            return false;
+        }
+
+        // TODO: rewrite
+
+        // Destination register
+        let rd = if let Some(rd) = instr.field_rd() {
+            rd
+        } else {
+            return false;
+        };
+        let rs = if let Some(rs) = instr.field_rs() {
+            rs
+        } else {
+            return false;
+        };
+        let rt = if let Some(rt) = instr.field_rt() {
+            rt
+        } else {
+            return false;
+        };
+
+        if self.registers[rs.as_index()].contains_float()
+            || self.registers[rt.as_index()].contains_float()
+        {
+            // Either of these registers contain a value that come from coprocessor 1 (the float coprocessor).
+            // It wouldn't make sense to produce a pointer from any value that comes from that coprocessor.
+            return false;
+        }
+
+        if rs.is_zero(instr.abi()) && rt.is_zero(instr.abi()) {
+            return false;
+        }
+
+        if !rs.is_zero(instr.abi()) && !rt.is_zero(instr.abi()) {
+            let reg = if self.registers[rs.as_index()].has_any_value()
+                && !self.registers[rt.as_index()].has_any_value()
+            {
+                rs
+            } else if !self.registers[rs.as_index()].has_any_value()
+                && self.registers[rt.as_index()].has_any_value()
+            {
+                rt
+            } else if rd == rs {
+                // Check stuff like  `addu   $3, $3, $2`
+                if self.registers[rs.as_index()].hi_info().is_some()
+                    || self.registers[rs.as_index()].gp_info().is_some()
+                {
+                    rs
+                } else {
+                    rt
+                }
+            } else if rd == rt {
+                if self.registers[rt.as_index()].hi_info().is_some()
+                    || self.registers[rt.as_index()].gp_info().is_some()
+                {
+                    rt
+                } else {
+                    rs
+                }
+            } else {
+                return false;
+            };
+
+            let src_state = &self.registers[reg.as_index()];
+
+            self.registers[rd.as_index()] = *src_state;
+            self.registers[rd.as_index()].clear_branch();
+            return true;
+        }
+
+        let reg = if rt.is_zero(instr.abi()) { rs } else { rt };
+
+        let src_state = &self.registers[reg.as_index()];
+
+        if src_state.has_any_value() {
+            self.registers[rd.as_index()] = *src_state;
+            self.registers[rd.as_index()].clear_branch();
+
+            true
+        } else {
+            self.registers[rd.as_index()].clear();
+
+            false
+        }
     }
 
-    fn clear_reg(&mut self, reg: Gpr, instr_rom: RomAddress) {
+    fn clear_reg(&mut self, reg: Gpr, instr: &Instruction, instr_rom: RomAddress) {
         let state = &mut self.registers[reg.as_index()];
 
         state.clear_hi();
@@ -220,5 +308,11 @@ impl RegisterTracker {
             state.clear_lo();
         }
         state.clear_branch();
+
+        if instr.opcode().reads_fd() || instr.opcode().reads_ft() || instr.opcode().reads_fs() {
+            state.set_contains_float();
+        } else {
+            state.clear_contains_float();
+        }
     }
 }

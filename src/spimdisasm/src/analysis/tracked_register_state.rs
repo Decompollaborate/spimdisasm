@@ -27,6 +27,8 @@ pub struct TrackedRegisterState {
     lo_info: Option<RomAddress>,
     dereferenced: Option<RomAddress>,
     branch_info: Option<RomAddress>,
+
+    contains_float: bool,
 }
 
 impl TrackedRegisterState {
@@ -38,6 +40,7 @@ impl TrackedRegisterState {
             lo_info: None,
             dereferenced: None,
             branch_info: None,
+            contains_float: false,
         }
     }
 
@@ -65,6 +68,10 @@ impl TrackedRegisterState {
                 .map(|lo_rom| JrRegData::new(lo_rom, self.value, self.branch_info))
         }
     }
+
+    pub(crate) fn contains_float(&self) -> bool {
+        self.contains_float
+    }
 }
 
 impl TrackedRegisterState {
@@ -90,6 +97,10 @@ impl TrackedRegisterState {
     pub fn clear_branch(&mut self) {
         self.branch_info = None;
     }
+
+    pub fn clear_contains_float(&mut self) {
+        self.contains_float = false;
+    }
 }
 
 impl TrackedRegisterState {
@@ -103,6 +114,7 @@ impl TrackedRegisterState {
                 .is_some_and(|x| x.opcode().is_branch_likely() || x.is_unconditional_branch()),
         });
         self.dereferenced = None;
+        self.clear_contains_float();
     }
 
     pub fn set_gp_load(&mut self, value: u32, instr_rom: RomAddress) {
@@ -110,6 +122,7 @@ impl TrackedRegisterState {
         self.value = value;
 
         self.gp_info = Some(instr_rom);
+        self.clear_contains_float();
     }
 
     pub fn set_lo(&mut self, value: u32, instr_rom: RomAddress) {
@@ -117,6 +130,7 @@ impl TrackedRegisterState {
 
         self.lo_info = Some(instr_rom);
         self.dereferenced = None;
+        self.clear_contains_float();
     }
 
     pub fn set_branching(&mut self, instr_rom: RomAddress) {
@@ -125,17 +139,26 @@ impl TrackedRegisterState {
 
     pub fn set_deref(&mut self, instr_rom: RomAddress) {
         self.dereferenced = Some(instr_rom);
+        self.clear_contains_float();
     }
 
     pub fn dereference_from(&mut self, other: Self, instr_rom: RomAddress) {
         *self = other;
         self.set_deref(instr_rom);
     }
+
+    pub fn set_contains_float(&mut self) {
+        self.contains_float = true;
+    }
 }
 
 impl TrackedRegisterState {
-    pub fn was_set_in_current_instr(&self, _instr_rom: RomAddress) -> bool {
-        // TODO
-        false
+    pub fn has_any_value(&self) -> bool {
+        self.hi_info.is_some() || self.gp_info.is_some() || self.lo_info.is_some()
+    }
+
+    // TODO: rename to was_set_by_current_instr
+    pub fn was_set_in_current_instr(&self, instr_rom: RomAddress) -> bool {
+        self.lo_info == Some(instr_rom) || self.dereferenced == Some(instr_rom)
     }
 }

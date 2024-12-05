@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use rabbitizer::{DisplayFlags, InstructionFlags, Vram};
+use rabbitizer::{InstructionDisplayFlags, InstructionFlags, Vram};
 use spimdisasm::{
     address_range::AddressRange,
     config::{Endian, GlobalConfig},
@@ -264,7 +264,7 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
     .build();
 
     let text_settings = SectionExecutableSettings::new(InstructionFlags::new());
-    let instr_display_flags = DisplayFlags::default();
+    let instr_display_flags = InstructionDisplayFlags::default();
 
     let section_text = context
         .create_section_text(

@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use rabbitizer::{DisplayFlags, InstructionFlags, Vram};
+use rabbitizer::{InstructionDisplayFlags, InstructionFlags, Vram};
 use spimdisasm::{
     address_range::AddressRange,
     config::{Endian, GlobalConfig},
@@ -140,7 +140,7 @@ fn test_section_text_1() {
         heater.process().build()
     };
 
-    let instr_display_flags = DisplayFlags::default();
+    let instr_display_flags = InstructionDisplayFlags::default();
 
     let section_text = context
         .create_section_text(

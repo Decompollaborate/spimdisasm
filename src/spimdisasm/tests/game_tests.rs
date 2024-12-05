@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use rabbitizer::{DisplayFlags, InstructionFlags};
+use rabbitizer::{InstructionDisplayFlags, InstructionFlags};
 use spimdisasm::{
     address_range::AddressRange,
     config::{Endian, GlobalConfig},
@@ -348,7 +348,7 @@ fn drmario64_us_without_symbols() {
 
     let segments = init_segments(&mut context, &rom_bytes, drmario64_us_segments);
 
-    let instr_display_flags = DisplayFlags::default();
+    let instr_display_flags = InstructionDisplayFlags::default();
     let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
     let sym_data_display_settings = SymDataDisplaySettings::new();
     let sym_noload_display_settings = SymNoloadDisplaySettings::new();
@@ -438,7 +438,7 @@ fn drmario64_us_with_symbols() {
 
     let segments = init_segments(&mut context, &rom_bytes, drmario64_us_segments);
 
-    let instr_display_flags = DisplayFlags::default();
+    let instr_display_flags = InstructionDisplayFlags::default();
     let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
     let sym_data_display_settings = SymDataDisplaySettings::new();
     let sym_noload_display_settings = SymNoloadDisplaySettings::new();

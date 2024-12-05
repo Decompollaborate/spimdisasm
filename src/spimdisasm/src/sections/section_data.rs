@@ -56,6 +56,8 @@ pub struct SectionData {
 }
 
 impl SectionData {
+    // TODO: fix
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn new(
         context: &mut Context,
         _settings: &SectionDataSettings,
