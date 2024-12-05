@@ -67,9 +67,18 @@ impl fmt::Display for SymDataDisplay<'_, '_, '_> {
             .ok_or(fmt::Error)?;
 
         let name = metadata.display_name();
-        write!(f, ".globl {}{}", name, self.settings.common.line_end())?;
 
-        write!(f, "{}:{}", name, self.settings.common.line_end())?;
+        #[cfg(not(feature = "pyo3"))]
+        {
+            write!(f, ".globl {}{}", name, self.settings.common.line_end())?;
+            write!(f, "{}:{}", name, self.settings.common.line_end())?;
+        }
+        #[cfg(feature = "pyo3")]
+        {
+            write!(f, "dlabel {}{}", name, self.settings.common.line_end())?;
+        }
+
+        let mut size = Size::new(0);
 
         let ranges = self.sym.rom_vram_range();
         let rom = ranges.rom().start();
@@ -81,6 +90,17 @@ impl fmt::Display for SymDataDisplay<'_, '_, '_> {
                 .common
                 .display_asm_comment(f, Some(rom + offset), vram + offset, None)?;
             write!(f, ".byte 0x{:02X}{}", byte, self.settings.common.line_end())?;
+
+            size += Size::new(1);
+            if Some(size) == metadata.size() {
+                write!(
+                    f,
+                    ".size {}, . - {}{}",
+                    name,
+                    name,
+                    self.settings.common.line_end()
+                )?;
+            }
         }
 
         Ok(())

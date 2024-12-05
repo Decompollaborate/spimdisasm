@@ -66,9 +66,16 @@ impl fmt::Display for SymNoloadDisplay<'_, '_, '_> {
             .ok_or(fmt::Error)?;
 
         let name = metadata.display_name();
-        write!(f, ".globl {}{}", name, self.settings.common.line_end())?;
 
-        write!(f, "{}:{}", name, self.settings.common.line_end())?;
+        #[cfg(not(feature = "pyo3"))]
+        {
+            write!(f, ".globl {}{}", name, self.settings.common.line_end())?;
+            write!(f, "{}:{}", name, self.settings.common.line_end())?;
+        }
+        #[cfg(feature = "pyo3")]
+        {
+            write!(f, "dlabel {}{}", name, self.settings.common.line_end())?;
+        }
 
         self.settings
             .common

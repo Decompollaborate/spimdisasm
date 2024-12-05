@@ -364,8 +364,16 @@ impl SegmentMetadata {
             let mut range = self.symbols.range(..=vram);
 
             if let Some((sym_vram, sym)) = range.next_back() {
-                if settings.check_upper_limit && vram >= *sym_vram + sym.size() {
-                    None
+                if *sym_vram == vram {
+                    Some(sym)
+                } else if settings.check_upper_limit {
+                    sym.size().and_then(|siz| {
+                        if vram < *sym_vram + siz {
+                            Some(sym)
+                        } else {
+                            None
+                        }
+                    })
                 } else {
                     Some(sym)
                 }
@@ -387,8 +395,16 @@ impl SegmentMetadata {
             let mut range = self.symbols.range_mut(..=vram);
 
             if let Some((sym_vram, sym)) = range.next_back() {
-                if settings.check_upper_limit && vram >= *sym_vram + sym.size() {
-                    None
+                if *sym_vram == vram {
+                    Some(sym)
+                } else if settings.check_upper_limit {
+                    sym.size().and_then(|siz| {
+                        if vram < *sym_vram + siz {
+                            Some(sym)
+                        } else {
+                            None
+                        }
+                    })
                 } else {
                     Some(sym)
                 }

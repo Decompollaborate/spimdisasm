@@ -12,6 +12,7 @@ use crate::{
     context::Context,
     metadata::segment_metadata::FindSettings,
     relocation::RelocationInfo,
+    size::Size,
     symbols::{trait_symbol::RomSymbol, Symbol, SymbolFunction},
 };
 
@@ -173,9 +174,18 @@ impl fmt::Display for FunctionDisplay<'_, '_, '_> {
             .ok_or(fmt::Error)?;
 
         let name = metadata.display_name();
-        write!(f, ".globl {}{}", name, self.settings.common.line_end())?;
 
-        write!(f, "{}:{}", name, self.settings.common.line_end())?;
+        #[cfg(not(feature = "pyo3"))]
+        {
+            write!(f, ".globl {}{}", name, self.settings.common.line_end())?;
+            write!(f, "{}:{}", name, self.settings.common.line_end())?;
+        }
+        #[cfg(feature = "pyo3")]
+        {
+            write!(f, "glabel {}{}", name, self.settings.common.line_end())?;
+        }
+
+        let mut size = Size::new(0);
 
         let mut prev_instr_had_delay_slot = false;
         for instr in self.sym.instructions() {
@@ -184,9 +194,23 @@ impl fmt::Display for FunctionDisplay<'_, '_, '_> {
             self.display_instruction(f, instr, prev_instr_had_delay_slot)?;
 
             prev_instr_had_delay_slot = instr.opcode().has_delay_slot();
+
+            size += Size::new(4);
+            if Some(size) == metadata.size() {
+                write!(
+                    f,
+                    ".size {}, . - {}{}",
+                    name,
+                    name,
+                    self.settings.common.line_end()
+                )?;
+            }
         }
 
-        write!(f, ".end {}{}", name, self.settings.common.line_end())
+        #[cfg(not(feature = "pyo3"))]
+        write!(f, ".end {}{}", name, self.settings.common.line_end())?;
+
+        Ok(())
     }
 }
 

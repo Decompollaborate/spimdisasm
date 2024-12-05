@@ -249,28 +249,21 @@ impl SymbolMetadata {
     pub(crate) fn autodetected_size_mut(&mut self) -> &mut Option<Size> {
         &mut self.autodetected_size
     }
-    pub fn size(&self) -> Size {
+    pub fn size(&self) -> Option<Size> {
         // TODO
 
         if let Some(siz) = self.user_declared_size {
-            return siz;
+            return Some(siz);
         }
         if let Some(siz) = self.autodetected_size {
-            return siz;
+            return Some(siz);
         }
 
         // TODO: Infer size based on user-declared type
 
         // TODO: Infer size based on instruction access type
 
-        // Infer size based on symbol's address alignment
-        if self.vram.inner() % 4 == 0 {
-            Size::new(4)
-        } else if self.vram.inner() % 2 == 0 {
-            Size::new(2)
-        } else {
-            Size::new(1)
-        }
+        None
     }
 
     pub fn sym_type(&self) -> Option<&SymbolType> {

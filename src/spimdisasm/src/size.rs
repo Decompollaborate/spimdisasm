@@ -18,16 +18,37 @@ impl Size {
         Self { inner: value }
     }
 
+    #[must_use]
     pub const fn inner(&self) -> u32 {
         self.inner
     }
 
+    #[must_use]
+    pub const fn add_size(&self, rhs: &Self) -> Self {
+        Self::new(self.inner() + rhs.inner())
+    }
+
+    #[must_use]
     pub const fn add_vram(&self, rhs: &Vram) -> Vram {
         Vram::new(self.inner() + rhs.inner())
     }
 
+    #[must_use]
     pub const fn add_rom(&self, rhs: &RomAddress) -> RomAddress {
         RomAddress::new(self.inner() + rhs.inner())
+    }
+}
+
+impl ops::Add<Size> for Size {
+    type Output = Size;
+
+    fn add(self, rhs: Size) -> Self::Output {
+        self.add_size(&rhs)
+    }
+}
+impl ops::AddAssign for Size {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs
     }
 }
 
