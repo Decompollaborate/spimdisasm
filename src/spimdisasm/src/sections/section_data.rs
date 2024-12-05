@@ -119,14 +119,18 @@ impl SectionData {
                 if vram_range.in_range(word_vram) {
                     // Vram is contained in this section
                     if let Some(sym) = owned_segment.find_symbol(
-                        current_vram,
+                        word_vram,
                         FindSettings::default().with_allow_addend(true),
                     ) {
                         if sym.vram() == word_vram {
-                            // Only count this symbol if it doesn't have an addend
+                            // Only count this symbol if it doesn't have an addend.
+                            // If it does have an addend then it may be part of a larger symbol.
                             symbols_info.insert(word_vram);
                         }
+                    } else {
+                        symbols_info.insert(word_vram);
                     }
+
                 } else {
                     let current_rom = rom + (current_vram - vram).try_into().expect("This should not panic because `current_vram` should always be greter or equal to `vram`");
                     maybe_pointers_to_other_sections.push((word_vram, current_rom));
