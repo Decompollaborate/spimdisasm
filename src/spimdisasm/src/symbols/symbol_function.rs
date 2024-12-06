@@ -69,9 +69,7 @@ impl SymbolFunction {
             context,
             &parent_segment_info,
         );
-        Self::generate_relocs_from_analyzer(&mut relocs,
-            &instr_analysis,
-            &ranges,&instructions);
+        Self::generate_relocs_from_analyzer(&mut relocs, &instr_analysis, &ranges, &instructions);
 
         Ok(Self {
             ranges,
@@ -358,10 +356,17 @@ impl SymbolFunction {
             let instr_index = (*instr_rom - ranges.rom().start()).inner() / 4;
             let instr = &instrs[instr_index as usize];
             // TODO: proper reloc inference
-            let reloc_type = if instr.opcode().can_be_hi() { RelocationType::R_CUSTOM_CONSTANT_HI} else { RelocationType::R_CUSTOM_CONSTANT_LO};
+            let reloc_type = if instr.opcode().can_be_hi() {
+                RelocationType::R_CUSTOM_CONSTANT_HI
+            } else {
+                RelocationType::R_CUSTOM_CONSTANT_LO
+            };
 
             // TODO: use `:08X`.
-            relocs[instr_index as usize] = Some(reloc_type.new_reloc_info(RelocReferencedSym::SymName(format!("0x{:X}", constant), 0)));
+            relocs[instr_index as usize] = Some(
+                reloc_type
+                    .new_reloc_info(RelocReferencedSym::SymName(format!("0x{:X}", constant), 0)),
+            );
         }
         /*
         for instrOffset, constant in self.instrAnalyzer.constantInstrOffset.items():
@@ -392,7 +397,8 @@ impl SymbolFunction {
                         comment += f" Please specify a gp_value."
                     elif not self.context.isInTotalVramRange(common.GlobalConfig.GP_VALUE):
                         comment += f" The provided gp_value (0x{common.GlobalConfig.GP_VALUE:08X}) seems wrong."
-                self.endOfLineComment[instrOffset//4] = f" /* {comment} */"
+                self.endOfLineComment[instrOffset//4] = f" /* {comment} */
+"
         */
 
         /*
@@ -406,12 +412,19 @@ impl SymbolFunction {
 
         // Handle unpaired `lui`s
         for (instr_rom, (_hi_reg, hi_imm)) in instr_analysis.hi_instrs() {
-            if !instr_analysis.address_per_hi_instr().contains_key(instr_rom) && !instr_analysis.constant_per_instr().contains_key(instr_rom) {
+            if !instr_analysis
+                .address_per_hi_instr()
+                .contains_key(instr_rom)
+                && !instr_analysis.constant_per_instr().contains_key(instr_rom)
+            {
                 let instr_index = (*instr_rom - ranges.rom().start()).inner() / 4;
                 let constant = (*hi_imm as u32) << 16;
 
                 // TODO: use `:08X`.
-                relocs[instr_index as usize] = Some(RelocationType::R_CUSTOM_CONSTANT_HI.new_reloc_info(RelocReferencedSym::SymName(format!("0x{:X}", constant), 0)));
+                relocs[instr_index as usize] =
+                    Some(RelocationType::R_CUSTOM_CONSTANT_HI.new_reloc_info(
+                        RelocReferencedSym::SymName(format!("0x{:X}", constant), 0),
+                    ));
             }
         }
     }

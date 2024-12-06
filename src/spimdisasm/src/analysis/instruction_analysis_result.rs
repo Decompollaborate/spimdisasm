@@ -262,7 +262,14 @@ impl InstructionAnalysisResult {
         }
     }
 
-    fn process_constant(&mut self, regs_tracker: &mut RegisterTracker, instr: &Instruction, instr_rom: RomAddress, hi_imm: u16, hi_rom: RomAddress) {
+    fn process_constant(
+        &mut self,
+        regs_tracker: &mut RegisterTracker,
+        instr: &Instruction,
+        instr_rom: RomAddress,
+        hi_imm: u16,
+        hi_rom: RomAddress,
+    ) {
         let upper = hi_imm as u32;
         let lower = instr.get_processed_immediate().unwrap() as u32; // TODO: avoid unwrap
         let constant = (upper << 16) | lower;

@@ -381,9 +381,20 @@ pub struct SymbolMetadataNameDisplay<'sym> {
 }
 
 impl SymbolMetadataNameDisplay<'_> {
-    fn display_section_prefix(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn display_section_prefix(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Functions, labels and jumptables don't get a section prefix because most of the time they are in their respective sections
+        match self.sym.sym_type() {
+            Some(SymbolType::Function)
+            | Some(SymbolType::BranchLabel)
+            | Some(SymbolType::JumptableLabel)
+            | Some(SymbolType::Jumptable)
+            | Some(SymbolType::GccExceptTable)
+            | Some(SymbolType::GccExceptTableLabel) => return Ok(()),
+            _ => {}
+        }
+
         // TODO
-        Ok(())
+        write!(f, "D_")
     }
 
     fn display_type_prefix(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

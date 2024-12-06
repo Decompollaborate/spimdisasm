@@ -118,7 +118,12 @@ impl RegisterTracker {
         }
     }
 
-    pub(crate) fn process_constant(&mut self, instr: &Instruction, value: u32, instr_rom: RomAddress) {
+    pub(crate) fn process_constant(
+        &mut self,
+        instr: &Instruction,
+        value: u32,
+        instr_rom: RomAddress,
+    ) {
         if let Some(dst_reg) = instr.get_destination_gpr() {
             let state = &mut self.registers[dst_reg.as_index()];
 
