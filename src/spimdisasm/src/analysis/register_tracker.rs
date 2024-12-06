@@ -5,7 +5,7 @@ use rabbitizer::{opcodes::Opcode, registers::Gpr, traits::Register, Instruction}
 
 use crate::rom_address::RomAddress;
 
-use super::{JrRegData, LoPairingInfo, TrackedRegisterState};
+use super::{tracked_register_state::HiInfo, JrRegData, LoPairingInfo, TrackedRegisterState};
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct RegisterTracker {
@@ -108,6 +108,22 @@ impl RegisterTracker {
                 .expect("should have immediate field") as u32,
             instr_rom,
         );
+    }
+
+    pub(crate) fn get_hi_info_for_constant(&self, instr: &Instruction) -> Option<HiInfo> {
+        if let Some(rs) = instr.field_rs() {
+            self.registers[rs.as_index()].hi_info()
+        } else {
+            None
+        }
+    }
+
+    pub(crate) fn process_constant(&mut self, instr: &Instruction, value: u32, instr_rom: RomAddress) {
+        if let Some(dst_reg) = instr.get_destination_gpr() {
+            let state = &mut self.registers[dst_reg.as_index()];
+
+            state.set_lo(value, instr_rom);
+        }
     }
 
     pub(crate) fn process_lo(&mut self, instr: &Instruction, value: u32, instr_rom: RomAddress) {

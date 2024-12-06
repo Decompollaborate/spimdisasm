@@ -69,6 +69,9 @@ impl SymbolFunction {
             context,
             &parent_segment_info,
         );
+        Self::generate_relocs_from_analyzer(&mut relocs,
+            &instr_analysis,
+            &ranges,&instructions);
 
         Ok(Self {
             ranges,
@@ -259,8 +262,6 @@ impl SymbolFunction {
             );
         }
 
-        // self._generateRelocsFromInstructionAnalyzer()
-
         /*
         # To debug jumptable rejection change this check to `True`
         if False:
@@ -274,6 +275,145 @@ impl SymbolFunction {
             for instr in self.instructions:
                 instr.inHandwrittenFunction = self.isLikelyHandwritten
         */
+    }
+
+    fn generate_relocs_from_analyzer(
+        relocs: &mut [Option<RelocationInfo>],
+        instr_analysis: &InstructionAnalysisResult,
+        ranges: &RomVramRange,
+        instrs: &[Instruction],
+    ) {
+        /*
+        for instrOffset, address in self.instrAnalyzer.symbolInstrOffset.items():
+            if self.context.isAddressBanned(address):
+                continue
+
+            contextSym = self.getSymbol(address)
+
+            gotHiLo = False
+            gotSmall = False
+            if contextSym is None and address < 0 and common.GlobalConfig.PIC and common.GlobalConfig.GP_VALUE is not None:
+                # Negative pointer may mean it is a weird GOT access
+                gotAccess = common.GlobalConfig.GP_VALUE + address
+                gpAccess = self.context.gpAccesses.requestAddress(gotAccess)
+                if gpAccess is not None:
+                    address = gpAccess.address
+                    contextSym = self.getSymbol(address)
+                    gotHiLo = True
+                    gotSmall = gpAccess.isSmallSection
+                else:
+                    common.Utils.eprint(4, f"0x{self.instructions[instrOffset//4].vram:08X}", f"0x{gotAccess:08X}", self.instructions[instrOffset//4].disassemble())
+                    pass
+
+            if contextSym is None:
+                continue
+
+            if contextSym.isGotGlobal:
+                if instrOffset not in self.instrAnalyzer.gotAccessAddresses and not gotHiLo:
+                    continue
+
+            instr = self.instructions[instrOffset//4]
+
+            relocType = self._getRelocTypeForInstruction(instr, instrOffset, contextSym, gotHiLo, gotSmall)
+            if relocType == common.RelocType.MIPS_GPREL16:
+                contextSym.accessedAsGpRel = True
+            self.relocs[instrOffset] = common.RelocationInfo(relocType, contextSym, address - contextSym.vram)
+        */
+
+        /*
+        for instrOffset in self.instrAnalyzer.cploadOffsets:
+            # .cpload directive is meant to use the `_gp_disp` pseudo-symbol
+            instr = self.instructions[instrOffset//4]
+
+            relocType = self._getRelocTypeForInstruction(instr, instrOffset)
+            self.relocs[instrOffset] = common.RelocationInfo(relocType, "_gp_disp")
+        */
+
+        /*
+        for instrOffset, gpInfo in self.instrAnalyzer.gpSets.items():
+            hiInstrOffset = gpInfo.hiOffset
+            hiInstr = self.instructions[hiInstrOffset//4]
+            instr = self.instructions[instrOffset//4]
+
+            hiRelocType = self._getRelocTypeForInstruction(hiInstr, hiInstrOffset)
+            relocType = self._getRelocTypeForInstruction(instr, instrOffset)
+            if not common.GlobalConfig.PIC and gpInfo.value == common.GlobalConfig.GP_VALUE:
+                self.relocs[hiInstrOffset] = common.RelocationInfo(hiRelocType, "_gp")
+                self.relocs[instrOffset] = common.RelocationInfo(relocType, "_gp")
+            else:
+                # TODO: consider reusing the logic of the self.instrAnalyzer.symbolInstrOffset loop
+                address = gpInfo.value
+                if self.context.isAddressBanned(address):
+                    continue
+
+                contextSym = self.getSymbol(address)
+                if contextSym is None:
+                    continue
+
+                self.relocs[hiInstrOffset] = common.RelocationInfo(hiRelocType, contextSym)
+                self.relocs[instrOffset] = common.RelocationInfo(relocType, contextSym)
+        */
+
+        for (instr_rom, constant) in instr_analysis.constant_per_instr() {
+            let instr_index = (*instr_rom - ranges.rom().start()).inner() / 4;
+            let instr = &instrs[instr_index as usize];
+            // TODO: proper reloc inference
+            let reloc_type = if instr.opcode().can_be_hi() { RelocationType::R_CUSTOM_CONSTANT_HI} else { RelocationType::R_CUSTOM_CONSTANT_LO};
+
+            // TODO: use `:08X`.
+            relocs[instr_index as usize] = Some(reloc_type.new_reloc_info(RelocReferencedSym::SymName(format!("0x{:X}", constant), 0)));
+        }
+        /*
+        for instrOffset, constant in self.instrAnalyzer.constantInstrOffset.items():
+            instr = self.instructions[instrOffset//4]
+            relocType = self._getRelocTypeForInstruction(instr, instrOffset)
+
+            if relocType in {common.RelocType.MIPS_HI16, common.RelocType.MIPS_LO16}:
+                # We can only do this kind of shenanigans for normal %hi/%lo relocs
+
+                symbol = self.getConstant(constant)
+                if symbol is not None:
+                    self.relocs[instrOffset] = common.RelocationInfo(relocType, symbol.getName())
+                elif common.GlobalConfig.SYMBOL_FINDER_FILTERED_ADDRESSES_AS_HILO:
+                    self.relocs[instrOffset] = common.RelocationInfo(relocType, f"0x{constant:X}")
+                else:
+                    # Pretend this pair is a constant
+                    loInstr = instr
+                    if instr.canBeHi():
+                        loInstr = self.instructions[self.instrAnalyzer.hiToLowDict[instrOffset] // 4]
+
+                    generatedReloc = self._generateHiLoConstantReloc(constant, instr, loInstr)
+                    if generatedReloc is not None:
+                        self.relocs[instrOffset] = generatedReloc
+            else:
+                comment = f"Failed to symbolize address 0x{constant:08X} for {relocType.getPercentRel()}. Make sure this address is within the recognized valid address space."
+                if relocType in {common.RelocType.MIPS_GPREL16, common.RelocType.MIPS_GOT16}:
+                    if common.GlobalConfig.GP_VALUE is None:
+                        comment += f" Please specify a gp_value."
+                    elif not self.context.isInTotalVramRange(common.GlobalConfig.GP_VALUE):
+                        comment += f" The provided gp_value (0x{common.GlobalConfig.GP_VALUE:08X}) seems wrong."
+                self.endOfLineComment[instrOffset//4] = f" /* {comment} */"
+        */
+
+        /*
+        for instrOffset, targetVram in self.instrAnalyzer.funcCallInstrOffsets.items():
+            funcSym = self.getSymbol(targetVram, tryPlusOffset=False)
+            if funcSym is None:
+                continue
+            self.relocs[instrOffset] = common.RelocationInfo(common.RelocType.MIPS_26, funcSym)
+
+        */
+
+        // Handle unpaired `lui`s
+        for (instr_rom, (_hi_reg, hi_imm)) in instr_analysis.hi_instrs() {
+            if !instr_analysis.address_per_hi_instr().contains_key(instr_rom) && !instr_analysis.constant_per_instr().contains_key(instr_rom) {
+                let instr_index = (*instr_rom - ranges.rom().start()).inner() / 4;
+                let constant = (*hi_imm as u32) << 16;
+
+                // TODO: use `:08X`.
+                relocs[instr_index as usize] = Some(RelocationType::R_CUSTOM_CONSTANT_HI.new_reloc_info(RelocReferencedSym::SymName(format!("0x{:X}", constant), 0)));
+            }
+        }
     }
 }
 

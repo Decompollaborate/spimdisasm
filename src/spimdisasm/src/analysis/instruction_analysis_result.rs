@@ -30,6 +30,8 @@ pub struct InstructionAnalysisResult {
     hi_instrs: BTreeMap<RomAddress, (Gpr, u16)>,
     non_lo_instrs: BTreeSet<RomAddress>,
 
+    constant_per_instr: BTreeMap<RomAddress, u32>,
+
     // TODO: merge these 3 thingies
     address_per_instr: BTreeMap<RomAddress, Vram>,
     address_per_hi_instr: BTreeMap<RomAddress, Vram>,
@@ -47,6 +49,7 @@ impl InstructionAnalysisResult {
             func_calls: BTreeMap::new(),
             hi_instrs: BTreeMap::new(),
             non_lo_instrs: BTreeSet::new(),
+            constant_per_instr: BTreeMap::new(),
             address_per_instr: BTreeMap::new(),
             address_per_hi_instr: BTreeMap::new(),
             address_per_lo_instr: BTreeMap::new(),
@@ -67,6 +70,16 @@ impl InstructionAnalysisResult {
     #[must_use]
     pub fn func_calls(&self) -> &BTreeMap<RomAddress, Vram> {
         &self.func_calls
+    }
+
+    #[must_use]
+    pub fn hi_instrs(&self) -> &BTreeMap<RomAddress, (Gpr, u16)> {
+        &self.hi_instrs
+    }
+
+    #[must_use]
+    pub fn constant_per_instr(&self) -> &BTreeMap<RomAddress, u32> {
+        &self.constant_per_instr
     }
 
     #[must_use]
@@ -239,18 +252,32 @@ impl InstructionAnalysisResult {
         );
     }
 
-    fn process_unsigned_lo(&mut self, _regs_tracker: &mut RegisterTracker, _instr: &Instruction) {
-        // TODO
-        /*
-        # Constants
-        luiOffset = regsTracker.getLuiOffsetForConstant(instr)
-        if luiOffset is None:
-            return
-        luiInstr = self.luiInstrs.get(luiOffset, None)
-        if luiInstr is None:
-            return
-        self.processConstant(regsTracker, luiInstr, luiOffset, instr, instrOffset)
-        */
+    fn process_unsigned_lo(&mut self, regs_tracker: &mut RegisterTracker, instr: &Instruction) {
+        // Pairing with an `ori`, so we treat this as a constant.
+        if let Some(hi_info) = regs_tracker.get_hi_info_for_constant(instr) {
+            if let Some((_hi_reg, hi_imm)) = self.hi_instrs.get(&hi_info.instr_rom) {
+                let instr_rom = self.rom_from_instr(instr);
+                self.process_constant(regs_tracker, instr, instr_rom, *hi_imm, hi_info.instr_rom)
+            }
+        }
+    }
+
+    fn process_constant(&mut self, regs_tracker: &mut RegisterTracker, instr: &Instruction, instr_rom: RomAddress, hi_imm: u16, hi_rom: RomAddress) {
+        let upper = hi_imm as u32;
+        let lower = instr.get_processed_immediate().unwrap() as u32; // TODO: avoid unwrap
+        let constant = (upper << 16) | lower;
+
+        // self.referencedConstants.add(constant)
+
+        // self.constantHiInstrOffset[luiOffset] = constant
+        // self.constantLoInstrOffset[lowerOffset] = constant
+        self.constant_per_instr.insert(hi_rom, constant);
+        self.constant_per_instr.insert(instr_rom, constant);
+
+        // self.hiToLowDict[luiOffset] = lowerOffset
+        // self.lowToHiDict[lowerOffset] = luiOffset
+
+        regs_tracker.process_constant(instr, constant, instr_rom);
     }
 
     fn process_signed_lo(
