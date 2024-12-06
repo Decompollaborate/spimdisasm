@@ -135,7 +135,12 @@ impl SectionData {
                     }
                 } else {
                     let current_rom = rom + (current_vram - vram).try_into().expect("This should not panic because `current_vram` should always be greter or equal to `vram`");
-                    maybe_pointers_to_other_sections.push((word_vram, current_rom));
+                    let sym = context
+                        .find_referenced_segment(word_vram, &parent_segment_info)
+                        .and_then(|seg| seg.find_symbol(word_vram, FindSettings::default()));
+                    if sym.is_none() {
+                        maybe_pointers_to_other_sections.push((word_vram, current_rom));
+                    }
                 }
 
                 // if let Some(current_sym) = a {

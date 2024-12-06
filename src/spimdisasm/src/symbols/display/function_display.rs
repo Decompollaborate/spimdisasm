@@ -222,7 +222,7 @@ pub(crate) mod python_bindings {
     impl FunctionDisplaySettings {
         #[new]
         pub fn py_new(/*display_flags: InstructionDisplayFlags*/) -> Self {
-            Self::new(InstructionDisplayFlags::default())
+            Self::new(InstructionDisplayFlags::default().with_named_fpr(true))
         }
     }
 }
