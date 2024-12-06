@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-mod context_builder;
+pub(crate) mod context_builder;
 mod context_builder_finder_heater;
 mod context_builder_finder_heater_overlays;
 mod context_builder_overlay;

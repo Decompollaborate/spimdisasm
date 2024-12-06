@@ -7,6 +7,9 @@ use core::{fmt, hash::Hash};
 use alloc::string::String;
 use rabbitizer::{access_type::AccessType, Vram};
 
+#[cfg(feature = "pyo3")]
+use pyo3::prelude::*;
+
 use crate::{rom_address::RomAddress, section_type::SectionType, size::Size};
 
 use super::SymbolType;
@@ -33,19 +36,19 @@ pub(crate) struct GotInfo {
     got_index: Option<usize>, // TODO: maybe remove Option?
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Default)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", eq))]
 pub enum RodataMigrationBehavior {
     /// Let spimdisasm handle if it should migrate this rodata symbol.
-    #[default]
-    Default,
+    Default(),
 
     /// Ignore rules for migrating rodata and force migration of this symbol to any
     /// function which references it.
-    ForceMigrate,
+    ForceMigrate(),
     /// Ignore rules for migrating rodata and prevent migration of this symbol to
     /// any function which references it.
-    ForceNotMigrate,
+    ForceNotMigrate(),
 
     /// Force migrating to the function that matches the specified name.
     ///
@@ -61,6 +64,12 @@ pub enum RodataMigrationBehavior {
     /// function does not exists on the given text section. For example this symbol
     /// may get lost in limbo.
     MigrateToSpecificFunction(String),
+}
+
+impl Default for RodataMigrationBehavior {
+    fn default() -> Self {
+        Self::Default()
+    }
 }
 
 #[derive(Clone)]
@@ -191,7 +200,7 @@ impl SymbolMetadata {
             // name_get_callback: None,
             got_info: None,
             accessed_as_gp_rel: false,
-            rodata_migration_behavior: RodataMigrationBehavior::Default,
+            rodata_migration_behavior: RodataMigrationBehavior::Default(),
             is_autocreated_sym_from_other_sized_sym: false,
             is_mips1_double: false,
             visibility: None,
@@ -314,6 +323,13 @@ impl SymbolMetadata {
     pub(crate) fn set_autocreated_from_other_sized_sym(&mut self) {
         self.is_autocreated_sym_from_other_sized_sym = true;
     }
+
+    pub fn visibility(&self) -> Option<&String> {
+        self.visibility.as_ref()
+    }
+    pub fn visibility_mut(&mut self) -> &mut Option<String> {
+        &mut self.visibility
+    }
 }
 
 impl SymbolMetadata {
@@ -377,7 +393,8 @@ impl SymbolMetadataNameDisplay<'_> {
             Some(SymbolType::Jumptable) => write!(f, "jtbl_"),
             Some(SymbolType::GccExceptTable) => write!(f, "ehtbl_"),
             Some(SymbolType::GccExceptTableLabel) => write!(f, "$LEH_"),
-            Some(SymbolType::UserDeclared(_)) | None => Ok(()),
+            None => Ok(()),
+            _ => Ok(()), // TODO
         }
     }
 

@@ -1,10 +1,14 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::string::String;
+// use alloc::string::String;
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+#[cfg(feature = "pyo3")]
+use pyo3::prelude::*;
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 #[non_exhaustive]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", eq))]
 pub enum SymbolType {
     Function,
     BranchLabel,
@@ -15,15 +19,15 @@ pub enum SymbolType {
     GccExceptTable,
     GccExceptTableLabel,
 
-    // TODO: add stuff like string, pascal_string, s32, f32, s16, and so on?
-    // Float32
-    // Float64
-    // CString
-    // Byte? UInt8?
-    // Short? UInt16?
+    Byte,
+    Short,
+    Word,
+    DWord,
+    Float32,
+    Float64,
+    CString,
 
-    //
-    UserDeclared(String),
+    UserCustom,
 }
 
 impl SymbolType {
@@ -31,11 +35,9 @@ impl SymbolType {
         match self {
             SymbolType::Function => true,
             SymbolType::BranchLabel => true,
-            SymbolType::Jumptable => false,
             SymbolType::JumptableLabel => true,
-            SymbolType::GccExceptTable => false,
             SymbolType::GccExceptTableLabel => true,
-            SymbolType::UserDeclared(_) => false,
+            _ => false,
         }
     }
 }

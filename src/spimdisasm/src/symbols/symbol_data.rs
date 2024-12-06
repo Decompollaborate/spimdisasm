@@ -63,6 +63,7 @@ impl SymbolData {
 
         let is_jtbl = sym.sym_type() == Some(&SymbolType::Jumptable);
 
+        // TODO: improve heuristic to determine if should search for symbols
         if rom.inner() % 4 == 0 {
             for (i, word_bytes) in raw_bytes.chunks_exact(4).enumerate() {
                 let word = endian.word_from_bytes(word_bytes);

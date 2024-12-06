@@ -117,6 +117,7 @@ impl SectionData {
             if b.is_none() && c.is_none() && d.is_none() {
                 // There's no symbol in between
 
+                // TODO: improve heuristic to determine if should search for symbols
                 let word = context.global_config().endian().word_from_bytes(word_bytes);
                 let word_vram = Vram::new(word);
                 if vram_range.in_range(word_vram) {

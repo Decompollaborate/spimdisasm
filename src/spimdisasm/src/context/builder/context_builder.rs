@@ -42,7 +42,11 @@ impl ContextBuilder {
 pub(crate) mod python_bindings {
     use rabbitizer::Vram;
 
-    use crate::rom_address::RomAddress;
+    use crate::{
+        metadata::{RodataMigrationBehavior, SymbolMetadata, SymbolType},
+        rom_address::RomAddress,
+        size::Size,
+    };
 
     use super::*;
 
@@ -53,91 +57,188 @@ pub(crate) mod python_bindings {
             Self::new(global_config, global_ranges)
         }
 
-        // TODO: add a way to add symbols
-        // #[pyo3(name = "global_segment")]
-        // pub fn py_global_segment(&mut self) -> SegmentModifier {
-        //     self.global_segment()
-        // }
-        #[pyo3(signature = (name, vram, rom))]
+        #[pyo3(signature = (name, vram, rom, attributes))]
         pub fn add_symbol(
             &mut self,
             name: String,
             vram: u32, // Vram // TODO
             rom: Option<RomAddress>,
+            attributes: &SymAttributes,
         ) {
-            self.global_segment().add_symbol(name, Vram::new(vram), rom);
+            let mut segment = self.global_segment();
+            let sym = segment.add_symbol(name, Vram::new(vram), rom);
+            attributes.apply_to_sym(sym);
         }
 
-        #[pyo3(signature = (name, vram, rom))]
+        #[pyo3(signature = (name, vram, rom, attributes))]
         pub fn add_function(
             &mut self,
             name: String,
             vram: u32, // Vram // TODO
             rom: Option<RomAddress>,
+            attributes: &SymAttributes,
         ) {
-            self.global_segment()
-                .add_function(name, Vram::new(vram), rom);
+            let mut segment = self.global_segment();
+            let sym = segment.add_function(name, Vram::new(vram), rom);
+            attributes.apply_to_sym(sym);
         }
 
-        #[pyo3(signature = (name, vram, rom))]
+        #[pyo3(signature = (name, vram, rom, attributes))]
         pub fn add_branch_label(
             &mut self,
             name: String,
             vram: u32, // Vram // TODO
             rom: Option<RomAddress>,
+            attributes: &SymAttributes,
         ) {
-            self.global_segment()
-                .add_branch_label(name, Vram::new(vram), rom);
+            let mut segment = self.global_segment();
+            let sym = segment.add_branch_label(name, Vram::new(vram), rom);
+            attributes.apply_to_sym(sym);
         }
 
-        #[pyo3(signature = (name, vram, rom))]
+        #[pyo3(signature = (name, vram, rom, attributes))]
         pub fn add_jumptable(
             &mut self,
             name: String,
             vram: u32, // Vram // TODO
             rom: Option<RomAddress>,
+            attributes: &SymAttributes,
         ) {
-            self.global_segment()
-                .add_jumptable(name, Vram::new(vram), rom);
+            let mut segment = self.global_segment();
+            let sym = segment.add_jumptable(name, Vram::new(vram), rom);
+            attributes.apply_to_sym(sym);
         }
 
-        #[pyo3(signature = (name, vram, rom))]
+        #[pyo3(signature = (name, vram, rom, attributes))]
         pub fn add_jumptable_label(
             &mut self,
             name: String,
             vram: u32, // Vram // TODO
             rom: Option<RomAddress>,
+            attributes: &SymAttributes,
         ) {
-            self.global_segment()
-                .add_jumptable_label(name, Vram::new(vram), rom);
+            let mut segment = self.global_segment();
+            let sym = segment.add_jumptable_label(name, Vram::new(vram), rom);
+            attributes.apply_to_sym(sym);
         }
 
-        #[pyo3(signature = (name, vram, rom))]
+        #[pyo3(signature = (name, vram, rom, attributes))]
         pub fn add_gcc_except_table(
             &mut self,
             name: String,
             vram: u32, // Vram // TODO
             rom: Option<RomAddress>,
+            attributes: &SymAttributes,
         ) {
-            self.global_segment()
-                .add_gcc_except_table(name, Vram::new(vram), rom);
+            let mut segment = self.global_segment();
+            let sym = segment.add_gcc_except_table(name, Vram::new(vram), rom);
+            attributes.apply_to_sym(sym);
         }
 
-        #[pyo3(signature = (name, vram, rom))]
+        #[pyo3(signature = (name, vram, rom, attributes))]
         pub fn add_gcc_except_table_label(
             &mut self,
             name: String,
             vram: u32, // Vram // TODO
             rom: Option<RomAddress>,
+            attributes: &SymAttributes,
         ) {
-            self.global_segment()
-                .add_gcc_except_table_label(name, Vram::new(vram), rom);
+            let mut segment = self.global_segment();
+            let sym = segment.add_gcc_except_table_label(name, Vram::new(vram), rom);
+            attributes.apply_to_sym(sym);
         }
 
         #[pyo3(name = "process")]
         pub fn py_process(&self) -> ContextBuilderOverlay {
             // Silly clone because we can't move from a Python instance
             self.clone().process()
+        }
+    }
+
+    #[pyclass(module = "spimdisasm")]
+    pub struct SymAttributes {
+        typ: Option<SymbolType>,
+        defined: bool,
+        size: Option<Size>,
+        migration_behavior: RodataMigrationBehavior,
+        allow_addend: bool,
+        dont_allow_addend: bool,
+        can_reference: bool,
+        can_be_referenced: bool,
+        name_end: Option<String>,
+        visibility: Option<String>,
+    }
+
+    #[pymethods]
+    impl SymAttributes {
+        #[new]
+        pub fn new() -> Self {
+            Self {
+                typ: None,
+                defined: false,
+                size: None,
+                migration_behavior: RodataMigrationBehavior::Default(),
+                allow_addend: false,
+                dont_allow_addend: false,
+                can_reference: false,
+                can_be_referenced: false,
+                name_end: None,
+                visibility: None,
+            }
+        }
+
+        pub fn set_typ(&mut self, val: &SymbolType) {
+            self.typ = Some(val.clone());
+        }
+        pub fn set_defined(&mut self, val: bool) {
+            self.defined = val;
+        }
+        pub fn set_size(&mut self, val: &Size) {
+            self.size = Some(*val);
+        }
+        pub fn set_migration_behavior(&mut self, val: &RodataMigrationBehavior) {
+            self.migration_behavior = val.clone();
+        }
+        pub fn set_allow_addend(&mut self, val: bool) {
+            self.allow_addend = val;
+        }
+        pub fn set_dont_allow_addend(&mut self, val: bool) {
+            self.dont_allow_addend = val;
+        }
+        pub fn set_can_reference(&mut self, val: bool) {
+            self.can_reference = val;
+        }
+        pub fn set_can_be_referenced(&mut self, val: bool) {
+            self.can_be_referenced = val;
+        }
+        pub fn set_name_end(&mut self, val: String) {
+            self.name_end = Some(val);
+        }
+        pub fn set_visibility(&mut self, val: String) {
+            self.visibility = Some(val);
+        }
+    }
+
+    impl SymAttributes {
+        pub fn apply_to_sym(&self, sym: &mut SymbolMetadata) {
+            if let Some(typ) = self.typ {
+                *sym.user_declared_type_mut() = Some(typ);
+            }
+            //if self.defined {
+            //    sym.set_defined();
+            //}
+            if let Some(size) = self.size {
+                *sym.user_declared_size_mut() = Some(size);
+            }
+            *sym.rodata_migration_behavior_mut() = self.migration_behavior.clone();
+            /*
+            sym.allow_addend = self.allow_addend;
+            sym.dont_allow_addend = self.dont_allow_addend;
+            sym.can_reference = self.can_reference;
+            sym.can_be_referenced = self.can_be_referenced;
+            */
+            *sym.user_declared_name_end_mut() = self.name_end.clone();
+            *sym.visibility_mut() = self.visibility.clone();
         }
     }
 }

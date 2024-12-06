@@ -30,12 +30,18 @@ use pyo3::prelude::*;
 #[cfg(feature = "pyo3")]
 #[pymodule]
 fn spimdisasm(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<size::Size>()?;
     m.add_class::<rom_address::RomAddress>()?;
     m.add_class::<rom_vram_range::RomVramRange>()?;
+
+    m.add_class::<metadata::SymbolType>()?;
+
+    m.add_class::<metadata::RodataMigrationBehavior>()?;
 
     m.add_class::<config::Endian>()?;
     m.add_class::<config::GlobalConfig>()?;
 
+    m.add_class::<context::builder::context_builder::python_bindings::SymAttributes>()?;
     m.add_class::<context::ContextBuilder>()?;
     // m.add_class::<context::ContextBuilderOverlay>()?;
     // m.add_class::<context::ContextBuilderFinderHeater>()?;

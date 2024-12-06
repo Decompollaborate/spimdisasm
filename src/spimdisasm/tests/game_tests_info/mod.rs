@@ -78,7 +78,7 @@ impl UserSymbol {
             name_end: None,
             size: None,
             typ: None,
-            migration_behavior: RodataMigrationBehavior::Default,
+            migration_behavior: RodataMigrationBehavior::Default(),
             dont_allow_addend: false,
         })
     }
@@ -1226,8 +1226,7 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("dbits".into(), Vram::new(0x8000E31C)),
         UserSymbol::new("gzip_malloc_addr".into(), Vram::new(0x8000E320)),
         UserSymbol::new("gzip_malloc_tmp".into(), Vram::new(0x8000E324)),
-        UserSymbol::new("D_8000E330".into(), Vram::new(0x8000E330))
-            .with_typ(SymbolType::UserDeclared("s32".into())),
+        UserSymbol::new("D_8000E330".into(), Vram::new(0x8000E330)).with_typ(SymbolType::Word),
         UserSymbol::new("crc_32_tab".into(), Vram::new(0x8000E338)),
         UserSymbol::new("crc_132".into(), Vram::new(0x8000E738)),
         UserSymbol::new("storyRomData".into(), Vram::new(0x8000E740)).with_size(Size::new(0x38)),
@@ -1241,7 +1240,7 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
             Vram::new(0x8000EA80),
         )
         .with_size(Size::new(0x4))
-        .with_typ(SymbolType::UserDeclared("s32".into())),
+        .with_typ(SymbolType::Word),
         UserSymbol::new("__osPiAccessQueueEnabled".into(), Vram::new(0x8000EA90)),
         UserSymbol::new("hdwrBugFlag".into(), Vram::new(0x8000EAA0)),
         UserSymbol::new("eqpower".into(), Vram::new(0x8000EAB0)).with_size(Size::new(0x100)),
@@ -1280,17 +1279,17 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
             "_loadOutputBuffer$in_function_static$val".into(),
             Vram::new(0x800107CC),
         )
-        .with_typ(SymbolType::UserDeclared("f32".into())),
+        .with_typ(SymbolType::Float32),
         UserSymbol::new(
             "_loadOutputBuffer$in_function_static$lastval".into(),
             Vram::new(0x800107D0),
         )
-        .with_typ(SymbolType::UserDeclared("f32".into())),
+        .with_typ(SymbolType::Float32),
         UserSymbol::new(
             "_loadOutputBuffer$in_function_static$blob".into(),
             Vram::new(0x800107D4),
         )
-        .with_typ(SymbolType::UserDeclared("f32".into())),
+        .with_typ(SymbolType::Float32),
         UserSymbol::new("vi".into(), Vram::new(0x800107E0)).with_size(Size::new(0x60)),
         UserSymbol::new("__osViCurr".into(), Vram::new(0x80010840)),
         UserSymbol::new("__osViNext".into(), Vram::new(0x80010844)),
@@ -1300,7 +1299,7 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
             .with_size(Size::new(0x50)),
         UserSymbol::new("__ctype_map".into(), Vram::new(0x80010940))
             .with_size(Size::new(0x100))
-            .with_typ(SymbolType::UserDeclared("u8".into())),
+            .with_typ(SymbolType::Byte),
         UserSymbol::new("__osIntOffTable".into(), Vram::new(0x80010CB0)),
         UserSymbol::new("__osIntTable".into(), Vram::new(0x80010CD0))
             .with_typ(SymbolType::Jumptable),
@@ -1320,14 +1319,14 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("piAccessBuf".into(), Vram::new(0x8001A3B0)).with_size(Size::new(0x4)),
         UserSymbol::new("tmp_task".into(), Vram::new(0x8001A3C0))
             .with_size(Size::new(0x40))
-            .with_typ(SymbolType::UserDeclared("OSTask".into())),
+            .with_typ(SymbolType::UserCustom),
         UserSymbol::new("siAccessBuf".into(), Vram::new(0x8001A400)).with_size(Size::new(0x4)),
         UserSymbol::new(
             "viMgrMain$in_function_static$retrace".into(),
             Vram::new(0x8001A410),
         )
         .with_size(Size::new(0x2))
-        .with_typ(SymbolType::UserDeclared("u16".into())),
+        .with_typ(SymbolType::Short),
         UserSymbol::new("viThread".into(), Vram::new(0x8001A418)).with_size(Size::new(0x1B0)),
         UserSymbol::new("viThreadStack".into(), Vram::new(0x8001A5D0)),
         UserSymbol::new("viEventQueue".into(), Vram::new(0x8001B5D0)),
@@ -1357,7 +1356,7 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("__CartRomHandle".into(), Vram::new(0x8001F9B0)).with_size(Size::new(0x74)),
         UserSymbol::new("__osEepPifRam".into(), Vram::new(0x8001FA30))
             .with_size(Size::new(0x40))
-            .with_typ(SymbolType::UserDeclared("OSPifRam".into())),
+            .with_typ(SymbolType::UserCustom),
         UserSymbol::new("__osPiAccessQueue".into(), Vram::new(0x8001FA70)),
         UserSymbol::new("__Dom1SpeedParam".into(), Vram::new(0x8001FA88))
             .with_size(Size::new(0x74)),
@@ -2616,21 +2615,21 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("vp".into(), Vram::new(0x80088130)),
         UserSymbol::new("rdpinit_flag_161".into(), Vram::new(0x80088140)),
         UserSymbol::new("S2RDPinit_dl".into(), Vram::new(0x80088150))
-            .with_typ(SymbolType::UserDeclared("Gfx".into())),
+            .with_typ(SymbolType::UserCustom),
         UserSymbol::new("S2ClearCFB_dl".into(), Vram::new(0x800881B8))
-            .with_typ(SymbolType::UserDeclared("Gfx".into())),
+            .with_typ(SymbolType::UserCustom),
         UserSymbol::new("S2Spriteinit_dl".into(), Vram::new(0x800881E0))
-            .with_typ(SymbolType::UserDeclared("Gfx".into())),
+            .with_typ(SymbolType::UserCustom),
         UserSymbol::new("F3RDPinit_dl".into(), Vram::new(0x80088228))
-            .with_typ(SymbolType::UserDeclared("Gfx".into())),
+            .with_typ(SymbolType::UserCustom),
         UserSymbol::new("F3SetupRDP_dl".into(), Vram::new(0x80088308))
-            .with_typ(SymbolType::UserDeclared("Gfx".into())),
+            .with_typ(SymbolType::UserCustom),
         UserSymbol::new("F3SetupRSP_dl".into(), Vram::new(0x80088328))
-            .with_typ(SymbolType::UserDeclared("Gfx".into())),
+            .with_typ(SymbolType::UserCustom),
         UserSymbol::new("D_80088360".into(), Vram::new(0x80088360))
-            .with_typ(SymbolType::UserDeclared("Gfx".into())),
+            .with_typ(SymbolType::UserCustom),
         UserSymbol::new("D_800883A8".into(), Vram::new(0x800883A8))
-            .with_typ(SymbolType::UserDeclared("Gfx".into())),
+            .with_typ(SymbolType::UserCustom),
         UserSymbol::new("nn_mus_sched".into(), Vram::new(0x800883F0)).with_size(Size::new(0xC)),
         UserSymbol::new("evs_stereo".into(), Vram::new(0x80088400)),
         UserSymbol::new("evs_seqence".into(), Vram::new(0x80088401)),
@@ -2706,15 +2705,15 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("BASC".into(), Vram::new(0x8008D1F4)),
         UserSymbol::new("_div_data".into(), Vram::new(0x8008D208))
             .with_size(Size::new(0x48))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+            .with_typ(SymbolType::Float64),
         UserSymbol::new("_mul_data".into(), Vram::new(0x8008D250))
             .with_size(Size::new(0x48))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+            .with_typ(SymbolType::Float64),
         UserSymbol::new("D_8008D2A0".into(), Vram::new(0x8008D2A0))
-            .with_typ(SymbolType::UserDeclared("Gfx".into())),
+            .with_typ(SymbolType::UserCustom),
         UserSymbol::new("D_8008D2A8".into(), Vram::new(0x8008D2A8)),
         UserSymbol::new("D_8008D2C8".into(), Vram::new(0x8008D2C8))
-            .with_typ(SymbolType::UserDeclared("Gfx".into())),
+            .with_typ(SymbolType::UserCustom),
         UserSymbol::new("sDebugPrintFontTex".into(), Vram::new(0x8008D2D0))
             .with_size(Size::new(0xF00)),
         UserSymbol::new("sDebugPrintFontMap".into(), Vram::new(0x8008E1D0)),
@@ -2790,25 +2789,19 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("_nameEntry_charTable".into(), Vram::new(0x8008E86C)),
         UserSymbol::new("_code_9711".into(), Vram::new(0x8008E870))
             .with_size(Size::new(0x26))
-            .with_typ(SymbolType::UserDeclared("u8".into())),
+            .with_typ(SymbolType::Byte),
         UserSymbol::new("_posX_tbl_9716".into(), Vram::new(0x8008E898)),
         UserSymbol::new("_menuAll_lastMode".into(), Vram::new(0x8008E8B4))
             .with_size(Size::new(0x4)),
-        UserSymbol::new("font_a_tex".into(), Vram::new(0x8008E8C0))
-            .with_typ(SymbolType::UserDeclared("u8".into())),
-        UserSymbol::new("font_2_tex".into(), Vram::new(0x80094350))
-            .with_typ(SymbolType::UserDeclared("u8".into())),
+        UserSymbol::new("font_a_tex".into(), Vram::new(0x8008E8C0)).with_typ(SymbolType::Byte),
+        UserSymbol::new("font_2_tex".into(), Vram::new(0x80094350)).with_typ(SymbolType::Byte),
         UserSymbol::new("font_e_tex".into(), Vram::new(0x8009F870))
-            .with_typ(SymbolType::UserDeclared("u8".into()))
+            .with_typ(SymbolType::Byte)
             .with_dont_allow_addend(),
-        UserSymbol::new("font_e2_tex".into(), Vram::new(0x800A0E78))
-            .with_typ(SymbolType::UserDeclared("u8".into())),
-        UserSymbol::new("font_grade_tex".into(), Vram::new(0x800A3A88))
-            .with_typ(SymbolType::UserDeclared("u8".into())),
-        UserSymbol::new("D_800A3AD0".into(), Vram::new(0x800A3AD0))
-            .with_typ(SymbolType::UserDeclared("u8".into())),
-        UserSymbol::new("D_800A3BD0".into(), Vram::new(0x800A3BD0))
-            .with_typ(SymbolType::UserDeclared("u8".into())),
+        UserSymbol::new("font_e2_tex".into(), Vram::new(0x800A0E78)).with_typ(SymbolType::Byte),
+        UserSymbol::new("font_grade_tex".into(), Vram::new(0x800A3A88)).with_typ(SymbolType::Byte),
+        UserSymbol::new("D_800A3AD0".into(), Vram::new(0x800A3AD0)).with_typ(SymbolType::Byte),
+        UserSymbol::new("D_800A3BD0".into(), Vram::new(0x800A3BD0)).with_typ(SymbolType::Byte),
         UserSymbol::new("char_code_tbl".into(), Vram::new(0x800A3CD0)),
         UserSymbol::new("D_800A6D90".into(), Vram::new(0x800A6D90)),
         UserSymbol::new("_tbl_133".into(), Vram::new(0x800A6F70)),
@@ -2821,272 +2814,171 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("rotate_mtx_475".into(), Vram::new(0x800A6FAC)).with_size(Size::new(0x18)),
         UserSymbol::new("D_800A6FC4".into(), Vram::new(0x800A6FC4)),
         UserSymbol::new("visible_fall_point".into(), Vram::new(0x800A6FC8)),
-        UserSymbol::new("_mesPassword".into(), Vram::new(0x800A6FD8))
-            .with_typ(SymbolType::UserDeclared("asciz".into())),
-        UserSymbol::new("_mesEasyCont".into(), Vram::new(0x800A6FEC))
-            .with_typ(SymbolType::UserDeclared("asciz".into())),
+        UserSymbol::new("_mesPassword".into(), Vram::new(0x800A6FD8)).with_typ(SymbolType::CString),
+        UserSymbol::new("_mesEasyCont".into(), Vram::new(0x800A6FEC)).with_typ(SymbolType::CString),
         UserSymbol::new("_mesEasyNoCont".into(), Vram::new(0x800A7040))
-            .with_typ(SymbolType::UserDeclared("asciz".into())),
+            .with_typ(SymbolType::CString),
         UserSymbol::new("_mesNormalCont".into(), Vram::new(0x800A709C))
-            .with_typ(SymbolType::UserDeclared("asciz".into())),
+            .with_typ(SymbolType::CString),
         UserSymbol::new("_mesNormalNoCont".into(), Vram::new(0x800A70F4))
-            .with_typ(SymbolType::UserDeclared("asciz".into())),
-        UserSymbol::new("_mesHardCont".into(), Vram::new(0x800A7150))
-            .with_typ(SymbolType::UserDeclared("asciz".into())),
+            .with_typ(SymbolType::CString),
+        UserSymbol::new("_mesHardCont".into(), Vram::new(0x800A7150)).with_typ(SymbolType::CString),
         UserSymbol::new("_mesHardNoCont".into(), Vram::new(0x800A71A4))
-            .with_typ(SymbolType::UserDeclared("asciz".into())),
+            .with_typ(SymbolType::CString),
         UserSymbol::new("_mesSHardCont".into(), Vram::new(0x800A727C))
-            .with_typ(SymbolType::UserDeclared("asciz".into())),
+            .with_typ(SymbolType::CString),
         UserSymbol::new("_mesSHardNoCont".into(), Vram::new(0x800A72D8))
-            .with_typ(SymbolType::UserDeclared("asciz".into())),
+            .with_typ(SymbolType::CString),
         UserSymbol::new("_n_1199".into(), Vram::new(0x800A7354)),
         UserSymbol::new("D_800A7360".into(), Vram::new(0x800A7360)),
         UserSymbol::new("tbl_4589".into(), Vram::new(0x800A7374)),
         UserSymbol::new("col_4590".into(), Vram::new(0x800A7378))
             .with_size(Size::new(0xC))
-            .with_typ(SymbolType::UserDeclared("u8".into())),
+            .with_typ(SymbolType::Byte),
         UserSymbol::new("title_demo_flg".into(), Vram::new(0x800A7390)),
         UserSymbol::new("title_demo_no".into(), Vram::new(0x800A7394)),
         UserSymbol::new("title_manual_no".into(), Vram::new(0x800A7398)),
         UserSymbol::new("title_exit_flag".into(), Vram::new(0x800A739C)),
         UserSymbol::new("D_800A73A0".into(), Vram::new(0x800A73A0)),
         UserSymbol::new("D_800A73B8".into(), Vram::new(0x800A73B8))
-            .with_typ(SymbolType::UserDeclared("Gfx".into())),
+            .with_typ(SymbolType::UserCustom),
         UserSymbol::new("curtain_alpha_00_tex".into(), Vram::new(0x800A73C0)),
         UserSymbol::new("curtain_00_tex".into(), Vram::new(0x800A76C0)),
         UserSymbol::new("changestar_tex".into(), Vram::new(0x800A82C0)),
         UserSymbol::new("title_bmp_tbl".into(), Vram::new(0x800A8AC0)).with_size(Size::new(0xC)),
         UserSymbol::new("mess_heap".into(), Vram::new(0x800A8ACC)),
         UserSymbol::new("st_staffroll_txt".into(), Vram::new(0x800A8AD0))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_mo1_1".into(), Vram::new(0x800A923C))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_mo1_2".into(), Vram::new(0x800A9278))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+            .with_typ(SymbolType::CString),
+        UserSymbol::new("mes_mo1_1".into(), Vram::new(0x800A923C)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_mo1_2".into(), Vram::new(0x800A9278)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_mo1_data".into(), Vram::new(0x800A92C0)),
-        UserSymbol::new("mes_wo1_1".into(), Vram::new(0x800A92D8))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_wo1_2".into(), Vram::new(0x800A9314))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_wo1_3".into(), Vram::new(0x800A935C))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_wo1_1".into(), Vram::new(0x800A92D8)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_wo1_2".into(), Vram::new(0x800A9314)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_wo1_3".into(), Vram::new(0x800A935C)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_wo1_data".into(), Vram::new(0x800A9390)),
-        UserSymbol::new("mes_o2_1".into(), Vram::new(0x800A93B0))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_o2_2".into(), Vram::new(0x800A93F0))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_o2_3".into(), Vram::new(0x800A9418))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_o2_3a".into(), Vram::new(0x800A9444))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_o2_4".into(), Vram::new(0x800A9484))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_o2_5".into(), Vram::new(0x800A94D4))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_o2_1".into(), Vram::new(0x800A93B0)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_o2_2".into(), Vram::new(0x800A93F0)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_o2_3".into(), Vram::new(0x800A9418)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_o2_3a".into(), Vram::new(0x800A9444)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_o2_4".into(), Vram::new(0x800A9484)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_o2_5".into(), Vram::new(0x800A94D4)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_o2_data".into(), Vram::new(0x800A9520)),
-        UserSymbol::new("mes_o3_1".into(), Vram::new(0x800A9558))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_o3_2".into(), Vram::new(0x800A959C))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_o3_1".into(), Vram::new(0x800A9558)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_o3_2".into(), Vram::new(0x800A959C)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_o3_data".into(), Vram::new(0x800A95D4)),
-        UserSymbol::new("mes_01_1".into(), Vram::new(0x800A95EC))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_01_2".into(), Vram::new(0x800A962C))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_01_3".into(), Vram::new(0x800A965C))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_01_4".into(), Vram::new(0x800A96A0))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_01_5".into(), Vram::new(0x800A96D8))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_01_6".into(), Vram::new(0x800A9720))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_01_7".into(), Vram::new(0x800A9764))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_01_1".into(), Vram::new(0x800A95EC)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_01_2".into(), Vram::new(0x800A962C)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_01_3".into(), Vram::new(0x800A965C)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_01_4".into(), Vram::new(0x800A96A0)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_01_5".into(), Vram::new(0x800A96D8)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_01_6".into(), Vram::new(0x800A9720)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_01_7".into(), Vram::new(0x800A9764)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_01_data".into(), Vram::new(0x800A97AC)),
-        UserSymbol::new("mes_m02a_1".into(), Vram::new(0x800A97EC))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m02a_2".into(), Vram::new(0x800A9838))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_m02a_1".into(), Vram::new(0x800A97EC)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m02a_2".into(), Vram::new(0x800A9838)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_m02a_data".into(), Vram::new(0x800A9878)),
-        UserSymbol::new("mes_w02a_1".into(), Vram::new(0x800A9890))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_w02a_2".into(), Vram::new(0x800A98D4))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_w02a_1".into(), Vram::new(0x800A9890)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_w02a_2".into(), Vram::new(0x800A98D4)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_w02a_data".into(), Vram::new(0x800A9918)),
-        UserSymbol::new("mes_m02b_1".into(), Vram::new(0x800A9930))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m02b_2".into(), Vram::new(0x800A9974))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m02b_3".into(), Vram::new(0x800A99B0))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m02b_4".into(), Vram::new(0x800A99EC))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m02b_5".into(), Vram::new(0x800A9A18))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m02b_6".into(), Vram::new(0x800A9A50))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_m02b_1".into(), Vram::new(0x800A9930)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m02b_2".into(), Vram::new(0x800A9974)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m02b_3".into(), Vram::new(0x800A99B0)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m02b_4".into(), Vram::new(0x800A99EC)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m02b_5".into(), Vram::new(0x800A9A18)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m02b_6".into(), Vram::new(0x800A9A50)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_m02b_data".into(), Vram::new(0x800A9A94)),
-        UserSymbol::new("mes_w02b_1".into(), Vram::new(0x800A9ACC))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_w02b_1a".into(), Vram::new(0x800A9AF4))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_w02b_2".into(), Vram::new(0x800A9B30))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_w02b_3".into(), Vram::new(0x800A9B6C))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_w02b_1".into(), Vram::new(0x800A9ACC)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_w02b_1a".into(), Vram::new(0x800A9AF4)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_w02b_2".into(), Vram::new(0x800A9B30)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_w02b_3".into(), Vram::new(0x800A9B6C)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_w02b_data".into(), Vram::new(0x800A9BB8)),
-        UserSymbol::new("mes_m03_1".into(), Vram::new(0x800A9BE0))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m03_2".into(), Vram::new(0x800A9C18))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m03_3".into(), Vram::new(0x800A9C58))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m03_4".into(), Vram::new(0x800A9C74))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m03_5".into(), Vram::new(0x800A9CA0))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_m03_1".into(), Vram::new(0x800A9BE0)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m03_2".into(), Vram::new(0x800A9C18)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m03_3".into(), Vram::new(0x800A9C58)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m03_4".into(), Vram::new(0x800A9C74)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m03_5".into(), Vram::new(0x800A9CA0)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_m03_data".into(), Vram::new(0x800A9CF0)),
-        UserSymbol::new("mes_w03_1".into(), Vram::new(0x800A9D20))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_w03_2".into(), Vram::new(0x800A9D5C))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_w03_3".into(), Vram::new(0x800A9DA0))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_w03_1".into(), Vram::new(0x800A9D20)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_w03_2".into(), Vram::new(0x800A9D5C)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_w03_3".into(), Vram::new(0x800A9DA0)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_w03_data".into(), Vram::new(0x800A9DDC)),
-        UserSymbol::new("mes_m04_1".into(), Vram::new(0x800A9DFC))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m04_2".into(), Vram::new(0x800A9E44))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m04_3".into(), Vram::new(0x800A9E7C))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m04_4".into(), Vram::new(0x800A9EB8))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_m04_1".into(), Vram::new(0x800A9DFC)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m04_2".into(), Vram::new(0x800A9E44)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m04_3".into(), Vram::new(0x800A9E7C)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m04_4".into(), Vram::new(0x800A9EB8)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_m04_data".into(), Vram::new(0x800A9ED4)),
-        UserSymbol::new("mes_w04_1".into(), Vram::new(0x800A9EFC))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_w04_2".into(), Vram::new(0x800A9F48))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_w04_3".into(), Vram::new(0x800A9F7C))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_w04_1".into(), Vram::new(0x800A9EFC)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_w04_2".into(), Vram::new(0x800A9F48)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_w04_3".into(), Vram::new(0x800A9F7C)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_w04_data".into(), Vram::new(0x800A9FB4)),
-        UserSymbol::new("mes_m05_1".into(), Vram::new(0x800A9FD4))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m05_2".into(), Vram::new(0x800AA014))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m05_3".into(), Vram::new(0x800AA040))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m05_4".into(), Vram::new(0x800AA07C))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_m05_1".into(), Vram::new(0x800A9FD4)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m05_2".into(), Vram::new(0x800AA014)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m05_3".into(), Vram::new(0x800AA040)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m05_4".into(), Vram::new(0x800AA07C)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_m05_data".into(), Vram::new(0x800AA09C)),
-        UserSymbol::new("mes_w05_1".into(), Vram::new(0x800AA0C4))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_w05_2".into(), Vram::new(0x800AA104))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_w05_3".into(), Vram::new(0x800AA130))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_w05_4".into(), Vram::new(0x800AA168))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_w05_1".into(), Vram::new(0x800AA0C4)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_w05_2".into(), Vram::new(0x800AA104)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_w05_3".into(), Vram::new(0x800AA130)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_w05_4".into(), Vram::new(0x800AA168)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_w05_data".into(), Vram::new(0x800AA194)),
-        UserSymbol::new("mes_m06_1".into(), Vram::new(0x800AA1BC))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m06_2".into(), Vram::new(0x800AA200))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m06_3".into(), Vram::new(0x800AA238))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m06_4".into(), Vram::new(0x800AA26C))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_m06_1".into(), Vram::new(0x800AA1BC)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m06_2".into(), Vram::new(0x800AA200)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m06_3".into(), Vram::new(0x800AA238)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m06_4".into(), Vram::new(0x800AA26C)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_m06_data".into(), Vram::new(0x800AA29C)),
-        UserSymbol::new("mes_w06_1".into(), Vram::new(0x800AA2C4))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_w06_2".into(), Vram::new(0x800AA300))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_w06_3".into(), Vram::new(0x800AA318))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_w06_1".into(), Vram::new(0x800AA2C4)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_w06_2".into(), Vram::new(0x800AA300)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_w06_3".into(), Vram::new(0x800AA318)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_w06_data".into(), Vram::new(0x800AA334)),
-        UserSymbol::new("mes_07_1".into(), Vram::new(0x800AA354))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_07_2".into(), Vram::new(0x800AA398))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_07_3".into(), Vram::new(0x800AA3DC))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_07E_3".into(), Vram::new(0x800AA41C))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_07_1".into(), Vram::new(0x800AA354)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_07_2".into(), Vram::new(0x800AA398)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_07_3".into(), Vram::new(0x800AA3DC)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_07E_3".into(), Vram::new(0x800AA41C)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_07_data".into(), Vram::new(0x800AA454)),
         UserSymbol::new("mes_07E_data".into(), Vram::new(0x800AA474)),
-        UserSymbol::new("mes_08a_1".into(), Vram::new(0x800AA494))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_08a_1".into(), Vram::new(0x800AA494)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_08a_data".into(), Vram::new(0x800AA4DC)),
-        UserSymbol::new("mes_08Ea_1".into(), Vram::new(0x800AA4EC))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_08Ea_1".into(), Vram::new(0x800AA4EC)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_08Ea_data".into(), Vram::new(0x800AA528)),
-        UserSymbol::new("mes_08b_1".into(), Vram::new(0x800AA538))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_08b_2".into(), Vram::new(0x800AA570))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_08b_1".into(), Vram::new(0x800AA538)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_08b_2".into(), Vram::new(0x800AA570)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_08b_data".into(), Vram::new(0x800AA5AC)),
-        UserSymbol::new("mes_m09_2".into(), Vram::new(0x800AA5C4))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m09_3".into(), Vram::new(0x800AA604))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m09_4".into(), Vram::new(0x800AA63C))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_m09_2".into(), Vram::new(0x800AA5C4)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m09_3".into(), Vram::new(0x800AA604)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m09_4".into(), Vram::new(0x800AA63C)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_m09_data".into(), Vram::new(0x800AA668)),
-        UserSymbol::new("mes_w09_2".into(), Vram::new(0x800AA688))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_w09_3".into(), Vram::new(0x800AA6CC))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_w09_4".into(), Vram::new(0x800AA714))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_w09_2".into(), Vram::new(0x800AA688)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_w09_3".into(), Vram::new(0x800AA6CC)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_w09_4".into(), Vram::new(0x800AA714)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_w09_data".into(), Vram::new(0x800AA758)),
-        UserSymbol::new("mes_m0e1_1".into(), Vram::new(0x800AA778))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m0e1_2".into(), Vram::new(0x800AA7C4))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m0e1_3".into(), Vram::new(0x800AA808))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_m0e1_1".into(), Vram::new(0x800AA778)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m0e1_2".into(), Vram::new(0x800AA7C4)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m0e1_3".into(), Vram::new(0x800AA808)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_m0e1_data".into(), Vram::new(0x800AA844)),
-        UserSymbol::new("mes_m0e2_1".into(), Vram::new(0x800AA864))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m0e2_2".into(), Vram::new(0x800AA894))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m0e2_3".into(), Vram::new(0x800AA8CC))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m0e2_4".into(), Vram::new(0x800AA8F0))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m0e2_5".into(), Vram::new(0x800AA928))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m0e2_6".into(), Vram::new(0x800AA96C))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_m0e2_1".into(), Vram::new(0x800AA864)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m0e2_2".into(), Vram::new(0x800AA894)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m0e2_3".into(), Vram::new(0x800AA8CC)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m0e2_4".into(), Vram::new(0x800AA8F0)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m0e2_5".into(), Vram::new(0x800AA928)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m0e2_6".into(), Vram::new(0x800AA96C)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_m0e2_data".into(), Vram::new(0x800AA9A8)),
-        UserSymbol::new("mes_m0e_1".into(), Vram::new(0x800AA9E0))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m0e_2".into(), Vram::new(0x800AAA10))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_m0e_3".into(), Vram::new(0x800AAA4C))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_m0e_1".into(), Vram::new(0x800AA9E0)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m0e_2".into(), Vram::new(0x800AAA10)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_m0e_3".into(), Vram::new(0x800AAA4C)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_m0e_data".into(), Vram::new(0x800AAA80)),
-        UserSymbol::new("mes_w0e1_1".into(), Vram::new(0x800AAAA0))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_w0e1_2".into(), Vram::new(0x800AAAE0))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_w0e1_3".into(), Vram::new(0x800AAB18))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_w0e1_1".into(), Vram::new(0x800AAAA0)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_w0e1_2".into(), Vram::new(0x800AAAE0)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_w0e1_3".into(), Vram::new(0x800AAB18)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_w0e1_data".into(), Vram::new(0x800AAB5C)),
-        UserSymbol::new("mes_w0e2_1".into(), Vram::new(0x800AAB7C))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_w0e2_2".into(), Vram::new(0x800AABB4))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_w0e2_1".into(), Vram::new(0x800AAB7C)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_w0e2_2".into(), Vram::new(0x800AABB4)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_w0e2_data".into(), Vram::new(0x800AABC8)),
-        UserSymbol::new("mes_ep1".into(), Vram::new(0x800AABE0))
-            .with_typ(SymbolType::UserDeclared("char".into())),
-        UserSymbol::new("mes_ep2".into(), Vram::new(0x800AAC10))
-            .with_typ(SymbolType::UserDeclared("char".into())),
+        UserSymbol::new("mes_ep1".into(), Vram::new(0x800AABE0)).with_typ(SymbolType::CString),
+        UserSymbol::new("mes_ep2".into(), Vram::new(0x800AAC10)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_ep_data".into(), Vram::new(0x800AAC5C)),
         UserSymbol::new("mes_data".into(), Vram::new(0x800AAC74)).with_size(Size::new(0x78)),
         UserSymbol::new("story_proc_no".into(), Vram::new(0x800AACEC)),
-        UserSymbol::new("STR_800AACF0".into(), Vram::new(0x800AACF0))
-            .with_typ(SymbolType::UserDeclared("asciz".into())),
+        UserSymbol::new("STR_800AACF0".into(), Vram::new(0x800AACF0)).with_typ(SymbolType::CString),
         UserSymbol::new("EndingLastMessage".into(), Vram::new(0x800AAD04)),
         UserSymbol::new("story_time_cnt".into(), Vram::new(0x800AAD08)),
         UserSymbol::new("story_seq_step".into(), Vram::new(0x800AAD0C)),
@@ -3110,11 +3002,9 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("snd_tbl_838".into(), Vram::new(0x800AAE00)),
         UserSymbol::new("D_800AAE60".into(), Vram::new(0x800AAE60)),
         UserSymbol::new("D_800AAFF4".into(), Vram::new(0x800AAFF4)),
-        UserSymbol::new("D_800AB170".into(), Vram::new(0x800AB170))
-            .with_typ(SymbolType::UserDeclared("asciz".into())),
+        UserSymbol::new("D_800AB170".into(), Vram::new(0x800AB170)).with_typ(SymbolType::CString),
         UserSymbol::new("D_800AB1B4".into(), Vram::new(0x800AB1B4)),
-        UserSymbol::new("D_800AB1D4".into(), Vram::new(0x800AB1D4))
-            .with_typ(SymbolType::UserDeclared("asciz".into())),
+        UserSymbol::new("D_800AB1D4".into(), Vram::new(0x800AB1D4)).with_typ(SymbolType::CString),
         UserSymbol::new("D_800AB1EC".into(), Vram::new(0x800AB1EC)),
         UserSymbol::new("D_800AB1FC".into(), Vram::new(0x800AB1FC)),
         UserSymbol::new("D_800AB20C".into(), Vram::new(0x800AB20C)),
@@ -3151,10 +3041,8 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("_charSE_tbl".into(), Vram::new(0x800ACA10)),
         UserSymbol::new("RO_800ACA20".into(), Vram::new(0x800ACA20)).with_size(Size::new(0x60)),
         UserSymbol::new("gSndsEntries".into(), Vram::new(0x800ACA80)),
-        UserSymbol::new("DBL_800ACCF0".into(), Vram::new(0x800ACCF0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800ACCF8".into(), Vram::new(0x800ACCF8))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800ACCF0".into(), Vram::new(0x800ACCF0)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800ACCF8".into(), Vram::new(0x800ACCF8)).with_typ(SymbolType::Float64),
         UserSymbol::new("jtbl_800ACD00".into(), Vram::new(0x800ACD00))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("jtbl_800ACD20".into(), Vram::new(0x800ACD20))
@@ -3167,32 +3055,31 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("_seqTbl_224".into(), Vram::new(0x800ACE1C))
             .with_size(Size::new(0xA))
-            .with_typ(SymbolType::UserDeclared("u8".into())),
+            .with_typ(SymbolType::Byte),
         UserSymbol::new("_demoSeqTbl_225".into(), Vram::new(0x800ACE28))
             .with_size(Size::new(0x2))
-            .with_typ(SymbolType::UserDeclared("u8".into())),
+            .with_typ(SymbolType::Byte),
         UserSymbol::new("StoryVirLv_226".into(), Vram::new(0x800ACE2C))
             .with_size(Size::new(0x1E))
-            .with_typ(SymbolType::UserDeclared("u8".into())),
+            .with_typ(SymbolType::Byte),
         UserSymbol::new("_charToAi_227".into(), Vram::new(0x800ACE4C))
             .with_size(Size::new(0xF))
-            .with_typ(SymbolType::UserDeclared("u8".into())),
+            .with_typ(SymbolType::Byte),
         UserSymbol::new("_stageToChar_tbl_228".into(), Vram::new(0x800ACE5C))
             .with_size(Size::new(0x14))
-            .with_typ(SymbolType::UserDeclared("u8".into())),
+            .with_typ(SymbolType::Byte),
         UserSymbol::new("_story4PChar_tbl_229".into(), Vram::new(0x800ACE70))
             .with_size(Size::new(0x8))
-            .with_typ(SymbolType::UserDeclared("u8".into())),
+            .with_typ(SymbolType::Byte),
         UserSymbol::new("_team_flg_230".into(), Vram::new(0x800ACE78))
             .with_size(Size::new(0xC))
-            .with_typ(SymbolType::UserDeclared("u8".into())),
+            .with_typ(SymbolType::Byte),
         UserSymbol::new("GameSize_231".into(), Vram::new(0x800ACE84))
             .with_size(Size::new(0x7))
-            .with_typ(SymbolType::UserDeclared("u8".into())),
+            .with_typ(SymbolType::Byte),
         UserSymbol::new("jtbl_800ACE90".into(), Vram::new(0x800ACE90))
             .with_typ(SymbolType::Jumptable),
-        UserSymbol::new("DBL_800ACEB0".into(), Vram::new(0x800ACEB0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800ACEB0".into(), Vram::new(0x800ACEB0)).with_typ(SymbolType::Float64),
         UserSymbol::new("jtbl_800ACEB8".into(), Vram::new(0x800ACEB8))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("jtbl_800ACEE8".into(), Vram::new(0x800ACEE8))
@@ -3212,666 +3099,625 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("RO_800ACFB0".into(), Vram::new(0x800ACFB0)).with_size(Size::new(0x18)),
         UserSymbol::new("RO_800ACFC8".into(), Vram::new(0x800ACFC8)),
-        UserSymbol::new("DBL_800AD068".into(), Vram::new(0x800AD068))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800AD070".into(), Vram::new(0x800AD070))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800AD078".into(), Vram::new(0x800AD078))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800AD068".into(), Vram::new(0x800AD068)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800AD070".into(), Vram::new(0x800AD070)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800AD078".into(), Vram::new(0x800AD078)).with_typ(SymbolType::Float64),
         UserSymbol::new("RO_800AD080".into(), Vram::new(0x800AD080)).with_size(Size::new(0x18)),
         UserSymbol::new("RO_800AD098".into(), Vram::new(0x800AD098)),
-        UserSymbol::new("DBL_800AD138".into(), Vram::new(0x800AD138))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800AD140".into(), Vram::new(0x800AD140))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800AD150".into(), Vram::new(0x800AD150))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800AD158".into(), Vram::new(0x800AD158))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800AD160".into(), Vram::new(0x800AD160))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800AD168".into(), Vram::new(0x800AD168))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800AD170".into(), Vram::new(0x800AD170))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800AD178".into(), Vram::new(0x800AD178))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800AD180".into(), Vram::new(0x800AD180))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800AD188".into(), Vram::new(0x800AD188))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800AD138".into(), Vram::new(0x800AD138)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800AD140".into(), Vram::new(0x800AD140)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800AD150".into(), Vram::new(0x800AD150)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800AD158".into(), Vram::new(0x800AD158)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800AD160".into(), Vram::new(0x800AD160)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800AD168".into(), Vram::new(0x800AD168)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800AD170".into(), Vram::new(0x800AD170)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800AD178".into(), Vram::new(0x800AD178)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800AD180".into(), Vram::new(0x800AD180)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800AD188".into(), Vram::new(0x800AD188)).with_typ(SymbolType::Float64),
         UserSymbol::new("RO_800AD190".into(), Vram::new(0x800AD190)),
         UserSymbol::new("RO_800AD194".into(), Vram::new(0x800AD194)),
-        UserSymbol::new("DBL_800AD198".into(), Vram::new(0x800AD198))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800AD1A0".into(), Vram::new(0x800AD1A0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800AD1A8".into(), Vram::new(0x800AD1A8))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800AD1B0".into(), Vram::new(0x800AD1B0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800AD1B8".into(), Vram::new(0x800AD1B8))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800AD198".into(), Vram::new(0x800AD198)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800AD1A0".into(), Vram::new(0x800AD1A0)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800AD1A8".into(), Vram::new(0x800AD1A8)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800AD1B0".into(), Vram::new(0x800AD1B0)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800AD1B8".into(), Vram::new(0x800AD1B8)).with_typ(SymbolType::Float64),
         UserSymbol::new("RO_800AD1C0".into(), Vram::new(0x800AD1C0)),
         UserSymbol::new("jtbl_800AD1C8".into(), Vram::new(0x800AD1C8))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("jtbl_800AD210".into(), Vram::new(0x800AD210))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("STR_800AD2E0".into(), Vram::new(0x800AD2E0))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD2F0".into(), Vram::new(0x800AD2F0))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD2FC".into(), Vram::new(0x800AD2FC))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD30C".into(), Vram::new(0x800AD30C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD318".into(), Vram::new(0x800AD318))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD324".into(), Vram::new(0x800AD324))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD330".into(), Vram::new(0x800AD330))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD338".into(), Vram::new(0x800AD338))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD344".into(), Vram::new(0x800AD344))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD350".into(), Vram::new(0x800AD350))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD358".into(), Vram::new(0x800AD358))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD364".into(), Vram::new(0x800AD364))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD36C".into(), Vram::new(0x800AD36C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD374".into(), Vram::new(0x800AD374))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD37C".into(), Vram::new(0x800AD37C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD380".into(), Vram::new(0x800AD380))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD384".into(), Vram::new(0x800AD384))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD38C".into(), Vram::new(0x800AD38C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD394".into(), Vram::new(0x800AD394))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD39C".into(), Vram::new(0x800AD39C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD3A4".into(), Vram::new(0x800AD3A4))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD3AC".into(), Vram::new(0x800AD3AC))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD3B4".into(), Vram::new(0x800AD3B4))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD3BC".into(), Vram::new(0x800AD3BC))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD3CC".into(), Vram::new(0x800AD3CC))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD3D4".into(), Vram::new(0x800AD3D4))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD3E0".into(), Vram::new(0x800AD3E0))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD3E8".into(), Vram::new(0x800AD3E8))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD3F4".into(), Vram::new(0x800AD3F4))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD400".into(), Vram::new(0x800AD400))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD408".into(), Vram::new(0x800AD408))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD414".into(), Vram::new(0x800AD414))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD41C".into(), Vram::new(0x800AD41C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD428".into(), Vram::new(0x800AD428))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD430".into(), Vram::new(0x800AD430))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD438".into(), Vram::new(0x800AD438))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD440".into(), Vram::new(0x800AD440))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD448".into(), Vram::new(0x800AD448))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD450".into(), Vram::new(0x800AD450))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD458".into(), Vram::new(0x800AD458))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD460".into(), Vram::new(0x800AD460))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD46C".into(), Vram::new(0x800AD46C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD474".into(), Vram::new(0x800AD474))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD47C".into(), Vram::new(0x800AD47C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD484".into(), Vram::new(0x800AD484))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD48C".into(), Vram::new(0x800AD48C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD494".into(), Vram::new(0x800AD494))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD4A0".into(), Vram::new(0x800AD4A0))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD4A8".into(), Vram::new(0x800AD4A8))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD4B0".into(), Vram::new(0x800AD4B0))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD4C0".into(), Vram::new(0x800AD4C0))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD4D0".into(), Vram::new(0x800AD4D0))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD4D8".into(), Vram::new(0x800AD4D8))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD4E4".into(), Vram::new(0x800AD4E4))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD4F0".into(), Vram::new(0x800AD4F0))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD4F8".into(), Vram::new(0x800AD4F8))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD504".into(), Vram::new(0x800AD504))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD50C".into(), Vram::new(0x800AD50C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD514".into(), Vram::new(0x800AD514))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD520".into(), Vram::new(0x800AD520))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD528".into(), Vram::new(0x800AD528))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD530".into(), Vram::new(0x800AD530))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD53C".into(), Vram::new(0x800AD53C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD544".into(), Vram::new(0x800AD544))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD54C".into(), Vram::new(0x800AD54C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD554".into(), Vram::new(0x800AD554))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD55C".into(), Vram::new(0x800AD55C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD560".into(), Vram::new(0x800AD560))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD56C".into(), Vram::new(0x800AD56C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD574".into(), Vram::new(0x800AD574))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD59C".into(), Vram::new(0x800AD59C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD5A8".into(), Vram::new(0x800AD5A8))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD5AC".into(), Vram::new(0x800AD5AC))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD5D4".into(), Vram::new(0x800AD5D4))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD614".into(), Vram::new(0x800AD614))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD648".into(), Vram::new(0x800AD648))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD658".into(), Vram::new(0x800AD658))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD664".into(), Vram::new(0x800AD664))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD698".into(), Vram::new(0x800AD698))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD6A4".into(), Vram::new(0x800AD6A4))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD6B0".into(), Vram::new(0x800AD6B0))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD728".into(), Vram::new(0x800AD728))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD74C".into(), Vram::new(0x800AD74C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD790".into(), Vram::new(0x800AD790))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD794".into(), Vram::new(0x800AD794))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("jtbl_800AD7C0".into(), Vram::new(0x800AD7C0))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("STR_800AD7F0".into(), Vram::new(0x800AD7F0))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD864".into(), Vram::new(0x800AD864))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD898".into(), Vram::new(0x800AD898))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD8CC".into(), Vram::new(0x800AD8CC))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD8E8".into(), Vram::new(0x800AD8E8))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD8F4".into(), Vram::new(0x800AD8F4))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD904".into(), Vram::new(0x800AD904))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD914".into(), Vram::new(0x800AD914))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD91C".into(), Vram::new(0x800AD91C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD928".into(), Vram::new(0x800AD928))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD92C".into(), Vram::new(0x800AD92C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("jtbl_800AD950".into(), Vram::new(0x800AD950))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("STR_800AD980".into(), Vram::new(0x800AD980))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD98C".into(), Vram::new(0x800AD98C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD994".into(), Vram::new(0x800AD994))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD99C".into(), Vram::new(0x800AD99C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD9A8".into(), Vram::new(0x800AD9A8))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD9AC".into(), Vram::new(0x800AD9AC))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD9B4".into(), Vram::new(0x800AD9B4))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD9C0".into(), Vram::new(0x800AD9C0))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD9C8".into(), Vram::new(0x800AD9C8))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD9D0".into(), Vram::new(0x800AD9D0))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD9D8".into(), Vram::new(0x800AD9D8))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD9E0".into(), Vram::new(0x800AD9E0))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD9E4".into(), Vram::new(0x800AD9E4))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD9EC".into(), Vram::new(0x800AD9EC))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800AD9F8".into(), Vram::new(0x800AD9F8))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADA00".into(), Vram::new(0x800ADA00))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADA08".into(), Vram::new(0x800ADA08))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADA10".into(), Vram::new(0x800ADA10))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADA18".into(), Vram::new(0x800ADA18))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADA24".into(), Vram::new(0x800ADA24))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADA28".into(), Vram::new(0x800ADA28))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADA2C".into(), Vram::new(0x800ADA2C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADA30".into(), Vram::new(0x800ADA30))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADA3C".into(), Vram::new(0x800ADA3C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADA44".into(), Vram::new(0x800ADA44))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADA4C".into(), Vram::new(0x800ADA4C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADA50".into(), Vram::new(0x800ADA50))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADA58".into(), Vram::new(0x800ADA58))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADA64".into(), Vram::new(0x800ADA64))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADA6C".into(), Vram::new(0x800ADA6C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADA74".into(), Vram::new(0x800ADA74))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADA7C".into(), Vram::new(0x800ADA7C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADA80".into(), Vram::new(0x800ADA80))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADA84".into(), Vram::new(0x800ADA84))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADA8C".into(), Vram::new(0x800ADA8C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("jtbl_800ADA98".into(), Vram::new(0x800ADA98))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("STR_800ADAC8".into(), Vram::new(0x800ADAC8))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADAD0".into(), Vram::new(0x800ADAD0))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADADC".into(), Vram::new(0x800ADADC))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADAE4".into(), Vram::new(0x800ADAE4))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADAF0".into(), Vram::new(0x800ADAF0))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADB04".into(), Vram::new(0x800ADB04))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADB0C".into(), Vram::new(0x800ADB0C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADB10".into(), Vram::new(0x800ADB10))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADB18".into(), Vram::new(0x800ADB18))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800ADB24".into(), Vram::new(0x800ADB24))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_modes_96".into(), Vram::new(0x800ADB40)),
-        UserSymbol::new("DBL_800ADB50".into(), Vram::new(0x800ADB50))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800ADB58".into(), Vram::new(0x800ADB58))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800ADB60".into(), Vram::new(0x800ADB60))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800ADB68".into(), Vram::new(0x800ADB68))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800ADB70".into(), Vram::new(0x800ADB70))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800ADB78".into(), Vram::new(0x800ADB78))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800ADB80".into(), Vram::new(0x800ADB80))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800ADB88".into(), Vram::new(0x800ADB88))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800ADB90".into(), Vram::new(0x800ADB90))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800ADB98".into(), Vram::new(0x800ADB98))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800ADBA0".into(), Vram::new(0x800ADBA0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800ADBA8".into(), Vram::new(0x800ADBA8))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800ADBB0".into(), Vram::new(0x800ADBB0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800ADBB8".into(), Vram::new(0x800ADBB8))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800ADB50".into(), Vram::new(0x800ADB50)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800ADB58".into(), Vram::new(0x800ADB58)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800ADB60".into(), Vram::new(0x800ADB60)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800ADB68".into(), Vram::new(0x800ADB68)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800ADB70".into(), Vram::new(0x800ADB70)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800ADB78".into(), Vram::new(0x800ADB78)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800ADB80".into(), Vram::new(0x800ADB80)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800ADB88".into(), Vram::new(0x800ADB88)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800ADB90".into(), Vram::new(0x800ADB90)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800ADB98".into(), Vram::new(0x800ADB98)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800ADBA0".into(), Vram::new(0x800ADBA0)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800ADBA8".into(), Vram::new(0x800ADBA8)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800ADBB0".into(), Vram::new(0x800ADBB0)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800ADBB8".into(), Vram::new(0x800ADBB8)).with_typ(SymbolType::Float64),
         UserSymbol::new("_pnts_871".into(), Vram::new(0x800ADBC0)),
-        UserSymbol::new("DBL_800ADC10".into(), Vram::new(0x800ADC10))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800ADC18".into(), Vram::new(0x800ADC18))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800ADC20".into(), Vram::new(0x800ADC20))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800ADC28".into(), Vram::new(0x800ADC28))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800ADC30".into(), Vram::new(0x800ADC30))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800ADC38".into(), Vram::new(0x800ADC38))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800ADC40".into(), Vram::new(0x800ADC40))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800ADC48".into(), Vram::new(0x800ADC48))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800ADC10".into(), Vram::new(0x800ADC10)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800ADC18".into(), Vram::new(0x800ADC18)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800ADC20".into(), Vram::new(0x800ADC20)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800ADC28".into(), Vram::new(0x800ADC28)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800ADC30".into(), Vram::new(0x800ADC30)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800ADC38".into(), Vram::new(0x800ADC38)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800ADC40".into(), Vram::new(0x800ADC40)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800ADC48".into(), Vram::new(0x800ADC48)).with_typ(SymbolType::Float64),
         UserSymbol::new("color_251".into(), Vram::new(0x800ADC50))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("fade_normal_texture_init_dl".into(), Vram::new(0x800ADC60))
             .with_size(Size::new(0x18))
-            .with_typ(SymbolType::UserDeclared("Gfx".into())),
+            .with_typ(SymbolType::UserCustom),
         UserSymbol::new("fade_alpha_texture_init_dl".into(), Vram::new(0x800ADC78))
             .with_size(Size::new(0x18))
-            .with_typ(SymbolType::UserDeclared("Gfx".into())),
+            .with_typ(SymbolType::UserCustom),
         UserSymbol::new(
             "fade_intensity_texture_init_dl".into(),
             Vram::new(0x800ADC90),
         )
         .with_size(Size::new(0x28))
-        .with_typ(SymbolType::UserDeclared("Gfx".into())),
+        .with_typ(SymbolType::UserCustom),
         UserSymbol::new("fade_fillrect_init_dl".into(), Vram::new(0x800ADCB8))
             .with_size(Size::new(0x28))
-            .with_typ(SymbolType::UserDeclared("Gfx".into())),
+            .with_typ(SymbolType::UserCustom),
         UserSymbol::new("fade_shadow_texture_init_dl".into(), Vram::new(0x800ADCE0))
             .with_size(Size::new(0x20))
-            .with_typ(SymbolType::UserDeclared("Gfx".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
-        UserSymbol::new("FLT_800ADD00".into(), Vram::new(0x800ADD00))
-            .with_typ(SymbolType::UserDeclared("f32".into())),
+            .with_typ(SymbolType::UserCustom)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
+        UserSymbol::new("FLT_800ADD00".into(), Vram::new(0x800ADD00)).with_typ(SymbolType::Float32),
         UserSymbol::new("_timeAttack_levelTable".into(), Vram::new(0x800ADD3C))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesP1".into(), Vram::new(0x800ADD40))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mes2P".into(), Vram::new(0x800ADD60))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mes4P".into(), Vram::new(0x800ADD80))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesOpt".into(), Vram::new(0x800ADDBC))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesSt".into(), Vram::new(0x800ADDF0))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesLv".into(), Vram::new(0x800ADF2C))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesVsCom".into(), Vram::new(0x800AE070))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesVcFlash".into(), Vram::new(0x800AE1D8))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesLvTaiQ".into(), Vram::new(0x800AE33C))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesLvTimeAt".into(), Vram::new(0x800AE4C8))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesNs1".into(), Vram::new(0x800AE5E8))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesNs2".into(), Vram::new(0x800AE650))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesVsMan".into(), Vram::new(0x800AE66C))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesVmFlash".into(), Vram::new(0x800AE794))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesVmTimeAt".into(), Vram::new(0x800AE898))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesVsNum".into(), Vram::new(0x800AE9B8))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesVs4P".into(), Vram::new(0x800AE9CC))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mes4PTag".into(), Vram::new(0x800AEB3C))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mes4PFlash".into(), Vram::new(0x800AED50))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesRec".into(), Vram::new(0x800AEEA4))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesTutol".into(), Vram::new(0x800AEED0))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesName".into(), Vram::new(0x800AEF04))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesVsCnt".into(), Vram::new(0x800AEF38))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesSnd".into(), Vram::new(0x800AEF74))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesBak".into(), Vram::new(0x800AEFE0))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesMisc".into(), Vram::new(0x800AF014))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesRecMs1".into(), Vram::new(0x800AF048))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesRecMs2".into(), Vram::new(0x800AF070))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesRule1".into(), Vram::new(0x800AF09C))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesRule2".into(), Vram::new(0x800AF0CC))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesRule3".into(), Vram::new(0x800AF0FC))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesRule4".into(), Vram::new(0x800AF134))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesKotu".into(), Vram::new(0x800AF16C))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesNameSel".into(), Vram::new(0x800AF18C))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesNameErase".into(), Vram::new(0x800AF1BC))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesNameErase2".into(), Vram::new(0x800AF234))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesVsCnt2".into(), Vram::new(0x800AF268))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesSound".into(), Vram::new(0x800AF29C))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesStereo".into(), Vram::new(0x800AF2E0))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesMono".into(), Vram::new(0x800AF304))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesDoErase".into(), Vram::new(0x800AF324))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesDoErase1".into(), Vram::new(0x800AF390))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesNoCont2".into(), Vram::new(0x800AF3C4))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesNoCont3".into(), Vram::new(0x800AF3F8))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesNoCont4".into(), Vram::new(0x800AF42C))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesScore".into(), Vram::new(0x800AF460))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesScoreOnOff".into(), Vram::new(0x800AF498))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesWriting_mainmenu".into(), Vram::new(0x800AF4C4))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesDeleting_mainmenu".into(), Vram::new(0x800AF4EC))
-            .with_typ(SymbolType::UserDeclared("asciz".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_gameLvItemColor".into(), Vram::new(0x800AF514))
             .with_size(Size::new(0x18))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_musicItemColor".into(), Vram::new(0x800AF52C))
             .with_size(Size::new(0x8))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("RO_800AF534".into(), Vram::new(0x800AF534))
             .with_size(Size::new(0x8))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("jtbl_800AF538".into(), Vram::new(0x800AF538))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("_menuCursor_cursor_4_pattern".into(), Vram::new(0x800AF660))
             .with_size(Size::new(0x78)),
         UserSymbol::new("_color_1040".into(), Vram::new(0x800AF6D8))
             .with_size(Size::new(0x30))
-            .with_typ(SymbolType::UserDeclared("f32".into())),
+            .with_typ(SymbolType::Float32),
         UserSymbol::new("_pnts_1106".into(), Vram::new(0x800AF708)).with_size(Size::new(0x120)),
         UserSymbol::new("jtbl_800AF828".into(), Vram::new(0x800AF828))
             .with_size(Size::new(0x24))
@@ -3882,40 +3728,31 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("_size_1542".into(), Vram::new(0x800AFAD4)).with_size(Size::new(0x18)),
         UserSymbol::new("_type_1543".into(), Vram::new(0x800AFAEC)).with_size(Size::new(0xC)),
         UserSymbol::new("_yn_1691".into(), Vram::new(0x800AFAF8)).with_size(Size::new(0x10)),
-        UserSymbol::new("STR_800AFB08".into(), Vram::new(0x800AFB08))
-            .with_typ(SymbolType::UserDeclared("asciz".into())),
-        UserSymbol::new("STR_800AFB10".into(), Vram::new(0x800AFB10))
-            .with_typ(SymbolType::UserDeclared("asciz".into())),
+        UserSymbol::new("STR_800AFB08".into(), Vram::new(0x800AFB08)).with_typ(SymbolType::CString),
+        UserSymbol::new("STR_800AFB10".into(), Vram::new(0x800AFB10)).with_typ(SymbolType::CString),
         UserSymbol::new("_tex_1865".into(), Vram::new(0x800AFB18)).with_size(Size::new(0x20)),
         UserSymbol::new("_row_1866".into(), Vram::new(0x800AFB38)),
         UserSymbol::new("_size_1948".into(), Vram::new(0x800AFB48)).with_size(Size::new(0x20)),
         UserSymbol::new("_pos_1959".into(), Vram::new(0x800AFB68)).with_size(Size::new(0x8)),
-        UserSymbol::new("DBL_800AFB70".into(), Vram::new(0x800AFB70))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800AFB78".into(), Vram::new(0x800AFB78))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800AFB80".into(), Vram::new(0x800AFB80))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800AFB88".into(), Vram::new(0x800AFB88))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800AFB70".into(), Vram::new(0x800AFB70)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800AFB78".into(), Vram::new(0x800AFB78)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800AFB80".into(), Vram::new(0x800AFB80)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800AFB88".into(), Vram::new(0x800AFB88)).with_typ(SymbolType::Float64),
         UserSymbol::new("_seq_2327".into(), Vram::new(0x800AFB90)),
-        UserSymbol::new("DBL_800AFBA0".into(), Vram::new(0x800AFBA0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800AFBA8".into(), Vram::new(0x800AFBA8))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800AFBA0".into(), Vram::new(0x800AFBA0)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800AFBA8".into(), Vram::new(0x800AFBA8)).with_typ(SymbolType::Float64),
         UserSymbol::new("_tbl_2516".into(), Vram::new(0x800AFBB0)),
         UserSymbol::new("_step_2517".into(), Vram::new(0x800AFBD8)),
         UserSymbol::new("RO_800AFBE0".into(), Vram::new(0x800AFBE0))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_posDesc_2860".into(), Vram::new(0x800AFBEC))
             .with_size(Size::new(0x28))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_posLine_2861".into(), Vram::new(0x800AFC14)).with_size(Size::new(0x8)),
         UserSymbol::new("_line_2914".into(), Vram::new(0x800AFC1C)).with_size(Size::new(0x4)),
         UserSymbol::new("_desc_2915".into(), Vram::new(0x800AFC20)),
         UserSymbol::new("_panel_3220".into(), Vram::new(0x800AFC24)).with_size(Size::new(0x14)),
-        UserSymbol::new("DBL_800AFC38".into(), Vram::new(0x800AFC38))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800AFC38".into(), Vram::new(0x800AFC38)).with_typ(SymbolType::Float64),
         UserSymbol::new("_texEndOrGuest_3608".into(), Vram::new(0x800AFC40))
             .with_size(Size::new(0x8)),
         UserSymbol::new("_name_3803".into(), Vram::new(0x800AFC48)),
@@ -3926,7 +3763,7 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("_panel_4108".into(), Vram::new(0x800AFCDC)),
         UserSymbol::new("_lvNumScale_4308".into(), Vram::new(0x800AFCEC))
             .with_size(Size::new(0x10))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_player_4309".into(), Vram::new(0x800AFCFC)).with_size(Size::new(0x10)),
         UserSymbol::new("_lvNum_4310".into(), Vram::new(0x800AFD0C)).with_size(Size::new(0x10)),
         UserSymbol::new("_lvGauge_4311".into(), Vram::new(0x800AFD1C)).with_size(Size::new(0x10)),
@@ -3998,22 +3835,18 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("jtbl_800B08D8".into(), Vram::new(0x800B08D8))
             .with_typ(SymbolType::Jumptable),
-        UserSymbol::new("DBL_800B0938".into(), Vram::new(0x800B0938))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800B0938".into(), Vram::new(0x800B0938)).with_typ(SymbolType::Float64),
         UserSymbol::new("_pat_6137".into(), Vram::new(0x800B0940)).with_size(Size::new(0x18)),
-        UserSymbol::new("DBL_800B0958".into(), Vram::new(0x800B0958))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B0960".into(), Vram::new(0x800B0960))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800B0958".into(), Vram::new(0x800B0958)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B0960".into(), Vram::new(0x800B0960)).with_typ(SymbolType::Float64),
         UserSymbol::new("_pos_6413".into(), Vram::new(0x800B0968)).with_size(Size::new(0x90)),
         UserSymbol::new("_posChar_6445".into(), Vram::new(0x800B09F8)).with_size(Size::new(0x10)),
         UserSymbol::new("_posBgCursor_6446".into(), Vram::new(0x800B0A08))
             .with_size(Size::new(0x10)),
         UserSymbol::new("_cursor_6447".into(), Vram::new(0x800B0A18)).with_size(Size::new(0x30)),
-        UserSymbol::new("DBL_800B0A48".into(), Vram::new(0x800B0A48))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800B0A48".into(), Vram::new(0x800B0A48)).with_typ(SymbolType::Float64),
         UserSymbol::new("RO_800B0A50".into(), Vram::new(0x800B0A50))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_map_6928".into(), Vram::new(0x800B0A5C)),
         UserSymbol::new("_cover_6929".into(), Vram::new(0x800B0A6C)),
         UserSymbol::new("_filter_6930".into(), Vram::new(0x800B0A7C)),
@@ -4022,7 +3855,7 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("RO_800B0B44".into(), Vram::new(0x800B0B44)),
         UserSymbol::new("_pos_7882".into(), Vram::new(0x800B0B50))
             .with_size(Size::new(0x20))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("jtbl_800B0B70".into(), Vram::new(0x800B0B70))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("jtbl_800B0BE8".into(), Vram::new(0x800B0BE8))
@@ -4036,9 +3869,8 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("_tex_8297".into(), Vram::new(0x800B0D94)).with_size(Size::new(0x8)),
         UserSymbol::new("_pos_8298".into(), Vram::new(0x800B0D9C))
             .with_size(Size::new(0x10))
-            .with_typ(SymbolType::UserDeclared("s32".into())),
-        UserSymbol::new("_moveTbl_8521".into(), Vram::new(0x800B0DAC))
-            .with_typ(SymbolType::UserDeclared("s32".into())),
+            .with_typ(SymbolType::Word),
+        UserSymbol::new("_moveTbl_8521".into(), Vram::new(0x800B0DAC)).with_typ(SymbolType::Word),
         UserSymbol::new("_onaji_8534".into(), Vram::new(0x800B0DB4)).with_size(Size::new(0x10)),
         UserSymbol::new("_panel2_8535".into(), Vram::new(0x800B0DC4)).with_size(Size::new(0x10)),
         UserSymbol::new("_panel4_8536".into(), Vram::new(0x800B0DD4)).with_size(Size::new(0x20)),
@@ -4048,13 +3880,11 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("jtbl_800B0EE8".into(), Vram::new(0x800B0EE8))
             .with_typ(SymbolType::Jumptable),
-        UserSymbol::new("RO_800B0F5C".into(), Vram::new(0x800B0F5C))
-            .with_typ(SymbolType::UserDeclared("u8".into())),
+        UserSymbol::new("RO_800B0F5C".into(), Vram::new(0x800B0F5C)).with_typ(SymbolType::Byte),
         UserSymbol::new("jtbl_800B1070".into(), Vram::new(0x800B1070))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("_color_9658".into(), Vram::new(0x800B1168)),
-        UserSymbol::new("DBL_800B1180".into(), Vram::new(0x800B1180))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800B1180".into(), Vram::new(0x800B1180)).with_typ(SymbolType::Float64),
         UserSymbol::new("jtbl_800B1188".into(), Vram::new(0x800B1188))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("_posX_0_9712".into(), Vram::new(0x800B11A4)),
@@ -4062,8 +3892,7 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("_posX_2_9714".into(), Vram::new(0x800B11E0)),
         UserSymbol::new("_posX_4_9715".into(), Vram::new(0x800B11F8)),
         UserSymbol::new("RO_800B1210".into(), Vram::new(0x800B1210)),
-        UserSymbol::new("DBL_800B1218".into(), Vram::new(0x800B1218))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800B1218".into(), Vram::new(0x800B1218)).with_typ(SymbolType::Float64),
         UserSymbol::new("_rows_9879".into(), Vram::new(0x800B1220)),
         UserSymbol::new("_tex_9880".into(), Vram::new(0x800B1230)),
         UserSymbol::new("_choice_9881".into(), Vram::new(0x800B123C)),
@@ -4071,10 +3900,8 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("jtbl_800B1270".into(), Vram::new(0x800B1270))
             .with_typ(SymbolType::Jumptable),
-        UserSymbol::new("DBL_800B1288".into(), Vram::new(0x800B1288))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("_pos_10346".into(), Vram::new(0x800B1290))
-            .with_typ(SymbolType::UserDeclared("s32".into())),
+        UserSymbol::new("DBL_800B1288".into(), Vram::new(0x800B1288)).with_typ(SymbolType::Float64),
+        UserSymbol::new("_pos_10346".into(), Vram::new(0x800B1290)).with_typ(SymbolType::Word),
         UserSymbol::new("_hedAllType_10392".into(), Vram::new(0x800B1298)),
         UserSymbol::new("_hedStoryId_10393".into(), Vram::new(0x800B12A8)),
         UserSymbol::new("_hedStoryX_10394".into(), Vram::new(0x800B12B8)),
@@ -4097,7 +3924,7 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("jtbl_800B13D0".into(), Vram::new(0x800B13D0))
             .with_typ(SymbolType::Jumptable)
-            .with_migration_behavior(RodataMigrationBehavior::ForceMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceMigrate()),
         UserSymbol::new("_lr_10544".into(), Vram::new(0x800B13F8)).with_size(Size::new(0x10)),
         UserSymbol::new("jtbl_800B1408".into(), Vram::new(0x800B1408))
             .with_typ(SymbolType::Jumptable),
@@ -4109,45 +3936,33 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("jtbl_800B1600".into(), Vram::new(0x800B1600))
             .with_typ(SymbolType::Jumptable),
-        UserSymbol::new("DBL_800B1708".into(), Vram::new(0x800B1708))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B1710".into(), Vram::new(0x800B1710))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B1718".into(), Vram::new(0x800B1718))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800B1708".into(), Vram::new(0x800B1708)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B1710".into(), Vram::new(0x800B1710)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B1718".into(), Vram::new(0x800B1718)).with_typ(SymbolType::Float64),
         UserSymbol::new("jtbl_800B1720".into(), Vram::new(0x800B1720))
             .with_typ(SymbolType::Jumptable),
-        UserSymbol::new("DBL_800B1828".into(), Vram::new(0x800B1828))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B1830".into(), Vram::new(0x800B1830))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B1838".into(), Vram::new(0x800B1838))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800B1828".into(), Vram::new(0x800B1828)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B1830".into(), Vram::new(0x800B1830)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B1838".into(), Vram::new(0x800B1838)).with_typ(SymbolType::Float64),
         UserSymbol::new("jtbl_800B1840".into(), Vram::new(0x800B1840))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("init_dl_135".into(), Vram::new(0x800B1950))
-            .with_typ(SymbolType::UserDeclared("Gfx".into())),
-        UserSymbol::new("DBL_800B1978".into(), Vram::new(0x800B1978))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B1980".into(), Vram::new(0x800B1980))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B1988".into(), Vram::new(0x800B1988))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+            .with_typ(SymbolType::UserCustom),
+        UserSymbol::new("DBL_800B1978".into(), Vram::new(0x800B1978)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B1980".into(), Vram::new(0x800B1980)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B1988".into(), Vram::new(0x800B1988)).with_typ(SymbolType::Float64),
         UserSymbol::new("sMessageColorTable".into(), Vram::new(0x800B1990))
             .with_size(Size::new(0x18)),
         UserSymbol::new("jtbl_800B19A8".into(), Vram::new(0x800B19A8))
             .with_typ(SymbolType::Jumptable),
-        UserSymbol::new("DBL_800B19F8".into(), Vram::new(0x800B19F8))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B1A00".into(), Vram::new(0x800B1A00))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800B19F8".into(), Vram::new(0x800B19F8)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B1A00".into(), Vram::new(0x800B1A00)).with_typ(SymbolType::Float64),
         UserSymbol::new("jtbl_800B1A08".into(), Vram::new(0x800B1A08))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("STR_800B1A54".into(), Vram::new(0x800B1A54))
-            .with_typ(SymbolType::UserDeclared("asciz".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
-        UserSymbol::new("DBL_800B1A58".into(), Vram::new(0x800B1A58))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
+        UserSymbol::new("DBL_800B1A58".into(), Vram::new(0x800B1A58)).with_typ(SymbolType::Float64),
         UserSymbol::new("_size_122".into(), Vram::new(0x800B1A60)).with_size(Size::new(0x50)),
         UserSymbol::new("_addrTbl_124".into(), Vram::new(0x800B1AB0)).with_size(Size::new(0x50)),
         UserSymbol::new("_centerTbl_125".into(), Vram::new(0x800B1B00)).with_size(Size::new(0xA0)),
@@ -4166,20 +3981,20 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("_retryMenu_itemCount".into(), Vram::new(0x800B1C78))
             .with_size(Size::new(0x6)),
         UserSymbol::new("_big_virus_def_wait".into(), Vram::new(0x800B1C80))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_big_virus_min_wait".into(), Vram::new(0x800B1C8C))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_big_virus_max_wait".into(), Vram::new(0x800B1C98))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_scoreNumsColor".into(), Vram::new(0x800B1CA4))
             .with_size(Size::new(0x20))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesWriting_dmgamemain".into(), Vram::new(0x800B1CB8))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("STR_800B1CE0".into(), Vram::new(0x800B1CE0))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_posStP4StarX".into(), Vram::new(0x800B1D08)),
         UserSymbol::new("_posStStar".into(), Vram::new(0x800B1D18)).with_size(Size::new(0x10)),
         UserSymbol::new("RO_800B1D28".into(), Vram::new(0x800B1D28)).with_size(Size::new(0x8)),
@@ -4192,22 +4007,20 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("_posP4CharStarX".into(), Vram::new(0x800B1DEC)).with_size(Size::new(0x90)),
         UserSymbol::new("_posP4StockCap".into(), Vram::new(0x800B1E7C))
             .with_size(Size::new(0x10))
-            .with_typ(SymbolType::UserDeclared("s32".into())),
+            .with_typ(SymbolType::Word),
         UserSymbol::new("_posP2VirusNum".into(), Vram::new(0x800B1E8C)).with_size(Size::new(0x10)),
         UserSymbol::new("_posP2CharFrm".into(), Vram::new(0x800B1E9C))
             .with_size(Size::new(0x10))
-            .with_typ(SymbolType::UserDeclared("s32".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::Word)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("RO_800B1EB0".into(), Vram::new(0x800B1EB0)),
         UserSymbol::new("black_color_1384".into(), Vram::new(0x800B1EB8)),
         UserSymbol::new("attack_table_1531".into(), Vram::new(0x800B1EC0)),
         UserSymbol::new("_bonus_1884".into(), Vram::new(0x800B1ECC)),
-        UserSymbol::new("DBL_800B1EE8".into(), Vram::new(0x800B1EE8))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800B1EE8".into(), Vram::new(0x800B1EE8)).with_typ(SymbolType::Float64),
         UserSymbol::new("jtbl_800B1EF0".into(), Vram::new(0x800B1EF0))
             .with_typ(SymbolType::Jumptable),
-        UserSymbol::new("DBL_800B1F68".into(), Vram::new(0x800B1F68))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800B1F68".into(), Vram::new(0x800B1F68)).with_typ(SymbolType::Float64),
         UserSymbol::new("jtbl_800B1F70".into(), Vram::new(0x800B1F70))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("jtbl_800B1FF0".into(), Vram::new(0x800B1FF0))
@@ -4216,35 +4029,26 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("_tbl_2997".into(), Vram::new(0x800B2020)).with_size(Size::new(0xC)),
         UserSymbol::new("_clr_3004".into(), Vram::new(0x800B202C)),
-        UserSymbol::new("DBL_800B2030".into(), Vram::new(0x800B2030))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B2038".into(), Vram::new(0x800B2038))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B2040".into(), Vram::new(0x800B2040))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B2048".into(), Vram::new(0x800B2048))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800B2030".into(), Vram::new(0x800B2030)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B2038".into(), Vram::new(0x800B2038)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B2040".into(), Vram::new(0x800B2040)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B2048".into(), Vram::new(0x800B2048)).with_typ(SymbolType::Float64),
         UserSymbol::new("jtbl_800B2050".into(), Vram::new(0x800B2050))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("cap_tex_4162".into(), Vram::new(0x800B2068)),
         UserSymbol::new("cap_pal_4164".into(), Vram::new(0x800B2070)).with_size(Size::new(0x30)),
-        UserSymbol::new("DBL_800B20A0".into(), Vram::new(0x800B20A0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B20A8".into(), Vram::new(0x800B20A8))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B20B0".into(), Vram::new(0x800B20B0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B20B8".into(), Vram::new(0x800B20B8))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B20C0".into(), Vram::new(0x800B20C0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800B20A0".into(), Vram::new(0x800B20A0)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B20A8".into(), Vram::new(0x800B20A8)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B20B0".into(), Vram::new(0x800B20B0)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B20B8".into(), Vram::new(0x800B20B8)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B20C0".into(), Vram::new(0x800B20C0)).with_typ(SymbolType::Float64),
         UserSymbol::new("DBL_800B20C8".into(), Vram::new(0x800B20C8))
             .with_size(Size::new(0x8))
-            .with_typ(SymbolType::UserDeclared("f64".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceMigrate),
+            .with_typ(SymbolType::Float64)
+            .with_migration_behavior(RodataMigrationBehavior::ForceMigrate()),
         UserSymbol::new("_tbl_4274".into(), Vram::new(0x800B20D0))
-            .with_typ(SymbolType::UserDeclared("u8".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::Byte)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_tbl_4345".into(), Vram::new(0x800B20E0)),
         UserSymbol::new("_tex_4374".into(), Vram::new(0x800B20EC)),
         UserSymbol::new("_row_4375".into(), Vram::new(0x800B20F8)),
@@ -4254,22 +4058,17 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("_col_4427".into(), Vram::new(0x800B2114)),
         UserSymbol::new("_tex_4459".into(), Vram::new(0x800B211C)).with_size(Size::new(0x18)),
         UserSymbol::new("RO_800B2134".into(), Vram::new(0x800B2134)).with_size(Size::new(0x10)),
-        UserSymbol::new("DBL_800B2148".into(), Vram::new(0x800B2148))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B2150".into(), Vram::new(0x800B2150))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B2158".into(), Vram::new(0x800B2158))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800B2148".into(), Vram::new(0x800B2148)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B2150".into(), Vram::new(0x800B2150)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B2158".into(), Vram::new(0x800B2158)).with_typ(SymbolType::Float64),
         UserSymbol::new("_x_4663".into(), Vram::new(0x800B2160)),
         UserSymbol::new("_x_4670".into(), Vram::new(0x800B2168)),
         UserSymbol::new("_x_4676".into(), Vram::new(0x800B2170)),
         UserSymbol::new("_x_4693".into(), Vram::new(0x800B2178)),
         UserSymbol::new("_rect_4752".into(), Vram::new(0x800B2180)).with_size(Size::new(0x50)),
         UserSymbol::new("_pat_4838".into(), Vram::new(0x800B21D0)),
-        UserSymbol::new("DBL_800B21E8".into(), Vram::new(0x800B21E8))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B21F0".into(), Vram::new(0x800B21F0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800B21E8".into(), Vram::new(0x800B21E8)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B21F0".into(), Vram::new(0x800B21F0)).with_typ(SymbolType::Float64),
         UserSymbol::new("jtbl_800B21F8".into(), Vram::new(0x800B21F8))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("jtbl_800B2250".into(), Vram::new(0x800B2250))
@@ -4287,10 +4086,10 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("_bgPos_5792".into(), Vram::new(0x800B2314))
             .with_size(Size::new(0x1C))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_panelPos_5793".into(), Vram::new(0x800B2330))
             .with_size(Size::new(0xC))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_bgTex_5794".into(), Vram::new(0x800B233C)),
         UserSymbol::new("_magTex_5795".into(), Vram::new(0x800B2340)),
         UserSymbol::new("_scrTex_5796".into(), Vram::new(0x800B2344)),
@@ -4304,13 +4103,12 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("_x_6416".into(), Vram::new(0x800B23C4)),
         UserSymbol::new("dir_6435".into(), Vram::new(0x800B23CC))
-            .with_typ(SymbolType::UserDeclared("s32".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::Word)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("color2index_6470".into(), Vram::new(0x800B23D4)),
         UserSymbol::new("jtbl_800B23E0".into(), Vram::new(0x800B23E0))
             .with_typ(SymbolType::Jumptable),
-        UserSymbol::new("DBL_800B2400".into(), Vram::new(0x800B2400))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800B2400".into(), Vram::new(0x800B2400)).with_typ(SymbolType::Float64),
         UserSymbol::new("RO_800B2408".into(), Vram::new(0x800B2408)).with_size(Size::new(0x8)),
         UserSymbol::new("RO_800B2410".into(), Vram::new(0x800B2410)).with_size(Size::new(0x8)),
         UserSymbol::new("RO_800B2418".into(), Vram::new(0x800B2418)).with_size(Size::new(0x8)),
@@ -4333,131 +4131,131 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("capsel_4_1".into(), Vram::new(0x800B259C)).with_size(Size::new(0x11)),
         UserSymbol::new("position_4_1".into(), Vram::new(0x800B25B0)).with_size(Size::new(0x40)),
         UserSymbol::new("mes_1_1".into(), Vram::new(0x800B25F0))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_1_2".into(), Vram::new(0x800B2618))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_1_3".into(), Vram::new(0x800B2664))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_1_4".into(), Vram::new(0x800B26B4))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_1_5".into(), Vram::new(0x800B26EC))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_1_6".into(), Vram::new(0x800B2738))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_1_7".into(), Vram::new(0x800B2780))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_1_8".into(), Vram::new(0x800B27D4))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_2_1".into(), Vram::new(0x800B2808))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_2_2".into(), Vram::new(0x800B284C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_2_3".into(), Vram::new(0x800B2894))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_2_4".into(), Vram::new(0x800B28DC))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_2_5".into(), Vram::new(0x800B2914))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_2_6".into(), Vram::new(0x800B2958))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_2_7".into(), Vram::new(0x800B2994))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_2_8".into(), Vram::new(0x800B29E0))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_2_9".into(), Vram::new(0x800B2A20))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_3_1".into(), Vram::new(0x800B2A54))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_3_2".into(), Vram::new(0x800B2A98))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_3_3".into(), Vram::new(0x800B2ADC))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_3_4".into(), Vram::new(0x800B2B24))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_3_5".into(), Vram::new(0x800B2B58))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_3_6".into(), Vram::new(0x800B2BA8))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_3_7".into(), Vram::new(0x800B2BF4))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_3_8".into(), Vram::new(0x800B2C44))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_3_9".into(), Vram::new(0x800B2C90))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_3_10".into(), Vram::new(0x800B2CDC))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_3_11".into(), Vram::new(0x800B2D28))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_3_12".into(), Vram::new(0x800B2D60))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_3_13".into(), Vram::new(0x800B2D90))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_3_14".into(), Vram::new(0x800B2DD8))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_3_15".into(), Vram::new(0x800B2E24))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_4_1".into(), Vram::new(0x800B2E58))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_4_2".into(), Vram::new(0x800B2E90))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_4_3".into(), Vram::new(0x800B2ED4))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_4_4".into(), Vram::new(0x800B2F20))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_4_5".into(), Vram::new(0x800B2F60))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_4_6".into(), Vram::new(0x800B2FAC))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_4_7".into(), Vram::new(0x800B2FE4))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_4_8".into(), Vram::new(0x800B302C))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_4_9".into(), Vram::new(0x800B3054))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("mes_4_10".into(), Vram::new(0x800B3078))
-            .with_typ(SymbolType::UserDeclared("char".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("jtbl_800B3098".into(), Vram::new(0x800B3098))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("jtbl_800B30F0".into(), Vram::new(0x800B30F0))
@@ -4466,24 +4264,22 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("_tex_884".into(), Vram::new(0x800B3130))
             .with_size(Size::new(0x10))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_pos_885".into(), Vram::new(0x800B3140))
             .with_size(Size::new(0x10))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("RO_800B3150".into(), Vram::new(0x800B3150))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
-        UserSymbol::new("DBL_800B3168".into(), Vram::new(0x800B3168))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3170".into(), Vram::new(0x800B3170))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
+        UserSymbol::new("DBL_800B3168".into(), Vram::new(0x800B3168)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3170".into(), Vram::new(0x800B3170)).with_typ(SymbolType::Float64),
         UserSymbol::new("_posContPanel".into(), Vram::new(0x800B3178))
             .with_size(Size::new(0x8))
-            .with_typ(SymbolType::UserDeclared("s32".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::Word)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_posCircle_924".into(), Vram::new(0x800B3180))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_posFinger_925".into(), Vram::new(0x800B31A0))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("map_x_table_1036".into(), Vram::new(0x800B31C0))
             .with_size(Size::new(0x18)),
         UserSymbol::new("_seqTbl_1037".into(), Vram::new(0x800B31D8)).with_size(Size::new(0x2)),
@@ -4491,188 +4287,104 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("size_table_1039".into(), Vram::new(0x800B31E0)).with_size(Size::new(0x2)),
         UserSymbol::new("jtbl_800B31E8".into(), Vram::new(0x800B31E8))
             .with_typ(SymbolType::Jumptable),
-        UserSymbol::new("DBL_800B3200".into(), Vram::new(0x800B3200))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3208".into(), Vram::new(0x800B3208))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800B3200".into(), Vram::new(0x800B3200)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3208".into(), Vram::new(0x800B3208)).with_typ(SymbolType::Float64),
         UserSymbol::new("jtbl_800B3210".into(), Vram::new(0x800B3210))
             .with_typ(SymbolType::Jumptable),
-        UserSymbol::new("DBL_800B3228".into(), Vram::new(0x800B3228))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3230".into(), Vram::new(0x800B3230))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3238".into(), Vram::new(0x800B3238))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800B3228".into(), Vram::new(0x800B3228)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3230".into(), Vram::new(0x800B3230)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3238".into(), Vram::new(0x800B3238)).with_typ(SymbolType::Float64),
         UserSymbol::new("_stageTbl".into(), Vram::new(0x800B3240)).with_size(Size::new(0x12)),
-        UserSymbol::new("DBL_800B3258".into(), Vram::new(0x800B3258))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3260".into(), Vram::new(0x800B3260))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3268".into(), Vram::new(0x800B3268))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800B3258".into(), Vram::new(0x800B3258)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3260".into(), Vram::new(0x800B3260)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3268".into(), Vram::new(0x800B3268)).with_typ(SymbolType::Float64),
         UserSymbol::new("RO_800B3270".into(), Vram::new(0x800B3270)),
         UserSymbol::new("_mesBootContErr".into(), Vram::new(0x800B32A8))
-            .with_typ(SymbolType::UserDeclared("asciz".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesBootCSumErr".into(), Vram::new(0x800B3318))
-            .with_typ(SymbolType::UserDeclared("asciz".into()))
-            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
-        UserSymbol::new("DBL_800B3360".into(), Vram::new(0x800B3360))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3368".into(), Vram::new(0x800B3368))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3370".into(), Vram::new(0x800B3370))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3378".into(), Vram::new(0x800B3378))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3380".into(), Vram::new(0x800B3380))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3388".into(), Vram::new(0x800B3388))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3390".into(), Vram::new(0x800B3390))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3398".into(), Vram::new(0x800B3398))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B33A0".into(), Vram::new(0x800B33A0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B33A8".into(), Vram::new(0x800B33A8))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B33B0".into(), Vram::new(0x800B33B0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B33B8".into(), Vram::new(0x800B33B8))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B33C0".into(), Vram::new(0x800B33C0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B33C8".into(), Vram::new(0x800B33C8))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B33D0".into(), Vram::new(0x800B33D0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+            .with_typ(SymbolType::CString)
+            .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
+        UserSymbol::new("DBL_800B3360".into(), Vram::new(0x800B3360)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3368".into(), Vram::new(0x800B3368)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3370".into(), Vram::new(0x800B3370)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3378".into(), Vram::new(0x800B3378)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3380".into(), Vram::new(0x800B3380)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3388".into(), Vram::new(0x800B3388)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3390".into(), Vram::new(0x800B3390)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3398".into(), Vram::new(0x800B3398)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B33A0".into(), Vram::new(0x800B33A0)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B33A8".into(), Vram::new(0x800B33A8)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B33B0".into(), Vram::new(0x800B33B0)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B33B8".into(), Vram::new(0x800B33B8)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B33C0".into(), Vram::new(0x800B33C0)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B33C8".into(), Vram::new(0x800B33C8)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B33D0".into(), Vram::new(0x800B33D0)).with_typ(SymbolType::Float64),
         UserSymbol::new("jtbl_800B33D8".into(), Vram::new(0x800B33D8))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("jtbl_800B33F0".into(), Vram::new(0x800B33F0))
             .with_typ(SymbolType::Jumptable),
-        UserSymbol::new("DBL_800B3450".into(), Vram::new(0x800B3450))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3458".into(), Vram::new(0x800B3458))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3460".into(), Vram::new(0x800B3460))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3468".into(), Vram::new(0x800B3468))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3470".into(), Vram::new(0x800B3470))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3478".into(), Vram::new(0x800B3478))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3480".into(), Vram::new(0x800B3480))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3488".into(), Vram::new(0x800B3488))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3490".into(), Vram::new(0x800B3490))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3498".into(), Vram::new(0x800B3498))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B34A0".into(), Vram::new(0x800B34A0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B34A8".into(), Vram::new(0x800B34A8))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B34B0".into(), Vram::new(0x800B34B0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B34B8".into(), Vram::new(0x800B34B8))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B34C0".into(), Vram::new(0x800B34C0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B34C8".into(), Vram::new(0x800B34C8))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B34D0".into(), Vram::new(0x800B34D0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B34D8".into(), Vram::new(0x800B34D8))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B34E0".into(), Vram::new(0x800B34E0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B34E8".into(), Vram::new(0x800B34E8))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B34F0".into(), Vram::new(0x800B34F0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B34F8".into(), Vram::new(0x800B34F8))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3500".into(), Vram::new(0x800B3500))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3508".into(), Vram::new(0x800B3508))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3510".into(), Vram::new(0x800B3510))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3518".into(), Vram::new(0x800B3518))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3520".into(), Vram::new(0x800B3520))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3528".into(), Vram::new(0x800B3528))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3530".into(), Vram::new(0x800B3530))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3538".into(), Vram::new(0x800B3538))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3540".into(), Vram::new(0x800B3540))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3548".into(), Vram::new(0x800B3548))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3550".into(), Vram::new(0x800B3550))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3558".into(), Vram::new(0x800B3558))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3560".into(), Vram::new(0x800B3560))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3568".into(), Vram::new(0x800B3568))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3570".into(), Vram::new(0x800B3570))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3578".into(), Vram::new(0x800B3578))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3580".into(), Vram::new(0x800B3580))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3588".into(), Vram::new(0x800B3588))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3590".into(), Vram::new(0x800B3590))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3598".into(), Vram::new(0x800B3598))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B35A0".into(), Vram::new(0x800B35A0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B35A8".into(), Vram::new(0x800B35A8))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B35B0".into(), Vram::new(0x800B35B0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B35B8".into(), Vram::new(0x800B35B8))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B35C0".into(), Vram::new(0x800B35C0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B35C8".into(), Vram::new(0x800B35C8))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B35D0".into(), Vram::new(0x800B35D0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B35D8".into(), Vram::new(0x800B35D8))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B35E0".into(), Vram::new(0x800B35E0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B35E8".into(), Vram::new(0x800B35E8))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B35F0".into(), Vram::new(0x800B35F0))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B35F8".into(), Vram::new(0x800B35F8))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3600".into(), Vram::new(0x800B3600))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3608".into(), Vram::new(0x800B3608))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3610".into(), Vram::new(0x800B3610))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3618".into(), Vram::new(0x800B3618))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3620".into(), Vram::new(0x800B3620))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3630".into(), Vram::new(0x800B3630))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
-        UserSymbol::new("DBL_800B3638".into(), Vram::new(0x800B3638))
-            .with_typ(SymbolType::UserDeclared("f64".into())),
+        UserSymbol::new("DBL_800B3450".into(), Vram::new(0x800B3450)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3458".into(), Vram::new(0x800B3458)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3460".into(), Vram::new(0x800B3460)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3468".into(), Vram::new(0x800B3468)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3470".into(), Vram::new(0x800B3470)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3478".into(), Vram::new(0x800B3478)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3480".into(), Vram::new(0x800B3480)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3488".into(), Vram::new(0x800B3488)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3490".into(), Vram::new(0x800B3490)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3498".into(), Vram::new(0x800B3498)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B34A0".into(), Vram::new(0x800B34A0)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B34A8".into(), Vram::new(0x800B34A8)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B34B0".into(), Vram::new(0x800B34B0)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B34B8".into(), Vram::new(0x800B34B8)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B34C0".into(), Vram::new(0x800B34C0)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B34C8".into(), Vram::new(0x800B34C8)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B34D0".into(), Vram::new(0x800B34D0)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B34D8".into(), Vram::new(0x800B34D8)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B34E0".into(), Vram::new(0x800B34E0)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B34E8".into(), Vram::new(0x800B34E8)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B34F0".into(), Vram::new(0x800B34F0)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B34F8".into(), Vram::new(0x800B34F8)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3500".into(), Vram::new(0x800B3500)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3508".into(), Vram::new(0x800B3508)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3510".into(), Vram::new(0x800B3510)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3518".into(), Vram::new(0x800B3518)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3520".into(), Vram::new(0x800B3520)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3528".into(), Vram::new(0x800B3528)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3530".into(), Vram::new(0x800B3530)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3538".into(), Vram::new(0x800B3538)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3540".into(), Vram::new(0x800B3540)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3548".into(), Vram::new(0x800B3548)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3550".into(), Vram::new(0x800B3550)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3558".into(), Vram::new(0x800B3558)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3560".into(), Vram::new(0x800B3560)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3568".into(), Vram::new(0x800B3568)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3570".into(), Vram::new(0x800B3570)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3578".into(), Vram::new(0x800B3578)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3580".into(), Vram::new(0x800B3580)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3588".into(), Vram::new(0x800B3588)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3590".into(), Vram::new(0x800B3590)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3598".into(), Vram::new(0x800B3598)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B35A0".into(), Vram::new(0x800B35A0)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B35A8".into(), Vram::new(0x800B35A8)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B35B0".into(), Vram::new(0x800B35B0)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B35B8".into(), Vram::new(0x800B35B8)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B35C0".into(), Vram::new(0x800B35C0)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B35C8".into(), Vram::new(0x800B35C8)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B35D0".into(), Vram::new(0x800B35D0)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B35D8".into(), Vram::new(0x800B35D8)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B35E0".into(), Vram::new(0x800B35E0)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B35E8".into(), Vram::new(0x800B35E8)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B35F0".into(), Vram::new(0x800B35F0)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B35F8".into(), Vram::new(0x800B35F8)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3600".into(), Vram::new(0x800B3600)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3608".into(), Vram::new(0x800B3608)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3610".into(), Vram::new(0x800B3610)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3618".into(), Vram::new(0x800B3618)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3620".into(), Vram::new(0x800B3620)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3630".into(), Vram::new(0x800B3630)).with_typ(SymbolType::Float64),
+        UserSymbol::new("DBL_800B3638".into(), Vram::new(0x800B3638)).with_typ(SymbolType::Float64),
         UserSymbol::new("audio_memory".into(), Vram::new(0x800B3640)).with_size(Size::new(0x31000)),
         UserSymbol::new("mt".into(), Vram::new(0x800E4640)).with_size(Size::new(0x9C0)),
         UserSymbol::new("pGameState".into(), Vram::new(0x800E5000)),

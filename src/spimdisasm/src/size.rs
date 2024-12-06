@@ -5,9 +5,13 @@ use core::{error, fmt, ops};
 
 use rabbitizer::{vram::VramOffset, Vram};
 
+#[cfg(feature = "pyo3")]
+use pyo3::prelude::*;
+
 use crate::rom_address::RomAddress;
 
 #[derive(Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct Size {
     inner: u32,
 }
@@ -139,5 +143,18 @@ mod tests {
         let diff = a - b;
 
         Size::try_from(diff).unwrap();
+    }
+}
+
+#[cfg(feature = "pyo3")]
+pub(crate) mod python_bindings {
+    use super::*;
+
+    #[pymethods]
+    impl Size {
+        #[new]
+        pub fn py_new(value: u32) -> Self {
+            Self::new(value)
+        }
     }
 }

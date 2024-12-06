@@ -106,16 +106,15 @@ fn init_context(
                             user_symbol_info.vram,
                             user_symbol_info.rom,
                         ),
-                    Some(SymbolType::UserDeclared(name)) => {
+                    Some(typ) => {
                         let sym = global_segment.add_symbol(
                             user_symbol_info.name,
                             user_symbol_info.vram,
                             user_symbol_info.rom,
                         );
-                        *sym.user_declared_type_mut() = Some(SymbolType::UserDeclared(name));
+                        *sym.user_declared_type_mut() = Some(typ);
                         sym
                     }
-                    Some(_) => todo!(),
                     None => global_segment.add_symbol(
                         user_symbol_info.name,
                         user_symbol_info.vram,
@@ -387,7 +386,7 @@ fn drmario64_us_without_symbols() {
         }
     }
 
-    assert_eq!(context.global_segment().symbols().len(), 9274);
+    assert_eq!(context.global_segment().symbols().len(), 10484);
 
     /*
     for seg in &segments {
@@ -405,7 +404,7 @@ fn drmario64_us_without_symbols() {
                 .sum::<usize>()
         })
         .sum();
-    assert_eq!(function_count, 1404);
+    assert_eq!(function_count, 1408);
 
     let data_syms_count: usize = segments
         .iter()
@@ -416,7 +415,7 @@ fn drmario64_us_without_symbols() {
                 .sum::<usize>()
         })
         .sum();
-    assert_eq!(data_syms_count, 279);
+    assert_eq!(data_syms_count, 508);
 }
 
 #[cfg_attr(feature = "game_tests", test)]
@@ -477,7 +476,7 @@ fn drmario64_us_with_symbols() {
         }
     }
 
-    assert_eq!(context.global_segment().symbols().len(), 9620);
+    assert_eq!(context.global_segment().symbols().len(), 10253);
 
     /*
     for seg in &segments {
@@ -506,5 +505,5 @@ fn drmario64_us_with_symbols() {
                 .sum::<usize>()
         })
         .sum();
-    assert_eq!(data_syms_count, 460);
+    assert_eq!(data_syms_count, 462);
 }
