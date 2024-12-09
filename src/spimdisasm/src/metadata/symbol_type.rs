@@ -23,6 +23,7 @@ pub enum SymbolType {
     Short,
     Word,
     DWord,
+
     Float32,
     Float64,
     CString,

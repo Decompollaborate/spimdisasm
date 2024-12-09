@@ -189,3 +189,109 @@ fn test_section_text_1() {
 
     // None::<u32>.unwrap();
 }
+
+#[test]
+fn test_section_text_lui_delay_slot() {
+    let bytes = [
+        0x94, 0xA3, 0x00, 0x9A, // lhu
+        0x24, 0x02, 0x7F, 0xFF, // addiu
+        0x10, 0x62, 0x00, 0x0D, // beq
+        0x3C, 0x03, 0x7F, 0xFF, //  lui
+        0x94, 0xA3, 0x00, 0xB2, // lhu
+        0x10, 0x60, 0x00, 0x04, // beqz
+        0x00, 0x03, 0x1A, 0x00, //  sll
+        0x8C, 0xA2, 0x00, 0x40, // lw
+        0x08, 0x02, 0x05, 0xE1, // j
+        0x00, 0x43, 0x10, 0x21, //  addu
+        0x94, 0xA2, 0x00, 0xB4, // lhu
+        0x8C, 0xA3, 0x00, 0x3C, // lw
+        0x00, 0x02, 0x12, 0x00, // sll
+        0x00, 0x62, 0x18, 0x23, // subu
+        0x08, 0x02, 0x05, 0xE1, // j
+        0xAC, 0xA3, 0x00, 0x54, //  sw
+        0x8C, 0xA2, 0x00, 0x40, // lw
+        0x34, 0x63, 0xFF, 0xFF, // ori
+        0x00, 0x43, 0x10, 0x21, // addu
+        0x03, 0xE0, 0x00, 0x08, // jr
+        0xAC, 0xA2, 0x00, 0x54, //  sw
+    ];
+    let rom = RomAddress::new(0x069558);
+    let vram = Vram::new(0x80081738);
+    let size = Size::new(0x1000);
+
+    let text_settings = SectionExecutableSettings::new(InstructionFlags::new());
+
+    let global_config = GlobalConfig::new(Endian::Big);
+    let mut context = {
+        let mut heater = ContextBuilder::new(
+            global_config,
+            RomVramRange::new(
+                AddressRange::new(rom, rom + size),
+                AddressRange::new(vram, vram + size),
+            ),
+        )
+        .process()
+        .process();
+
+        heater.preanalyze_text(&text_settings, &bytes, rom, vram);
+
+        heater.process().build()
+    };
+
+    let instr_display_flags = InstructionDisplayFlags::default();
+
+    let section_text = context
+        .create_section_text(
+            &text_settings,
+            "test".into(),
+            &bytes,
+            rom,
+            vram,
+            ParentSegmentInfo::new(rom, vram, None),
+        )
+        .unwrap();
+
+    let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
+    for func in section_text.functions() {
+        let func_display = func.display(&context, &function_display_settings);
+        println!("{}", func_display);
+    }
+
+    let expected_str = "\
+.globl func_80081738
+func_80081738:
+    /* 069558 80081738 94A3009A */  lhu         $v1, 0x9A($a1)
+    /* 06955C 8008173C 24027FFF */  addiu       $v0, $zero, 0x7FFF
+    /* 069560 80081740 1062000D */  beq         $v1, $v0, .L80081778
+    /* 069564 80081744 3C037FFF */   lui        $v1, (0x7FFFFFFF >> 16)
+    /* 069568 80081748 94A300B2 */  lhu         $v1, 0xB2($a1)
+    /* 06956C 8008174C 10600004 */  beqz        $v1, .L80081760
+    /* 069570 80081750 00031A00 */   sll        $v1, $v1, 8
+    /* 069574 80081754 8CA20040 */  lw          $v0, 0x40($a1)
+    /* 069578 80081758 080205E1 */  j           .L80081784
+    /* 06957C 8008175C 00431021 */   addu       $v0, $v0, $v1
+  .L80081760:
+    /* 069580 80081760 94A200B4 */  lhu         $v0, 0xB4($a1)
+    /* 069584 80081764 8CA3003C */  lw          $v1, 0x3C($a1)
+    /* 069588 80081768 00021200 */  sll         $v0, $v0, 8
+    /* 06958C 8008176C 00621823 */  subu        $v1, $v1, $v0
+    /* 069590 80081770 080205E1 */  j           .L80081784
+    /* 069594 80081774 ACA30054 */   sw         $v1, 0x54($a1)
+  .L80081778:
+    /* 069598 80081778 8CA20040 */  lw          $v0, 0x40($a1)
+    /* 06959C 8008177C 3463FFFF */  ori         $v1, $v1, (0x7FFFFFFF & 0xFFFF)
+    /* 0695A0 80081780 00431021 */  addu        $v0, $v0, $v1
+  .L80081784:
+    /* 0695A4 80081784 03E00008 */  jr          $ra
+    /* 0695A8 80081788 ACA20054 */   sw         $v0, 0x54($a1)
+.size func_80081738, . - func_80081738
+.end func_80081738
+";
+
+    assert_eq!(
+        section_text.functions()[0]
+            .display(&context, &function_display_settings)
+            .to_string(),
+        expected_str
+    );
+}

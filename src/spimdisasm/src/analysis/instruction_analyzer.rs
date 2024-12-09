@@ -129,12 +129,12 @@ impl InstructionAnalyzer {
             result.process_instr(context, &mut regs_tracker, instr, Some(prev_instr));
         }
 
-        while target_local_offset < instrs.len() {
+        while target_local_offset / 4 < instrs.len() {
             let prev_target_instr = instrs[target_local_offset / 4 - 1];
             let target_instr = instrs[target_local_offset / 4];
 
-            if prev_instr.opcode().is_branch_likely()
-            /*|| prev_instr.is_unconditional_branch()*/
+            if !prev_target_instr.opcode().is_branch_likely()
+            /*&& !prev_target_instr.is_unconditional_branch()*/
             {
                 result.process_instr(
                     context,
