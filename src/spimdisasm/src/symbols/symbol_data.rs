@@ -22,6 +22,11 @@ use super::{
     Symbol,
 };
 
+#[derive(Debug, Clone, Copy, Hash, PartialEq)]
+pub(crate) struct SymbolDataProperties {
+    pub auto_pad_by: Option<Vram>,
+}
+
 #[derive(Debug, Clone, Hash, PartialEq)]
 pub struct SymbolData {
     ranges: RomVramRange,
@@ -40,6 +45,7 @@ impl SymbolData {
         _in_section_offset: usize,
         parent_segment_info: ParentSegmentInfo,
         section_type: SectionType,
+        properties: SymbolDataProperties,
     ) -> Result<Self, OwnedSegmentNotFoundError> {
         let size = Size::new(raw_bytes.len() as u32);
         let rom_range = AddressRange::new(rom, rom + size);
@@ -60,6 +66,10 @@ impl SymbolData {
         );
         *sym.autodetected_size_mut() = Some(size);
         sym.set_defined();
+
+        if let Some(auto_pad_by) = properties.auto_pad_by {
+            sym.set_auto_created_pad_by(auto_pad_by);
+        }
 
         let is_jtbl = sym.sym_type() == Some(&SymbolType::Jumptable);
 

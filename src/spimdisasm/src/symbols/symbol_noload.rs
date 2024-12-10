@@ -16,6 +16,11 @@ use super::{
     Symbol,
 };
 
+#[derive(Debug, Clone, Copy, Hash, PartialEq)]
+pub(crate) struct SymbolNoloadProperties {
+    pub auto_pad_by: Option<Vram>,
+}
+
 #[derive(Debug, Clone, Hash, PartialEq)]
 pub struct SymbolNoload {
     vram_range: AddressRange<Vram>,
@@ -28,6 +33,7 @@ impl SymbolNoload {
         vram_range: AddressRange<Vram>,
         _in_section_offset: usize,
         parent_segment_info: ParentSegmentInfo,
+        properties: SymbolNoloadProperties,
     ) -> Result<Self, OwnedSegmentNotFoundError> {
         let sym = context
             .find_owned_segment_mut(&parent_segment_info)?
@@ -40,6 +46,10 @@ impl SymbolNoload {
             );
         *sym.autodetected_size_mut() = Some(vram_range.size());
         sym.set_defined();
+
+        if let Some(auto_pad_by) = properties.auto_pad_by {
+            sym.set_auto_created_pad_by(auto_pad_by);
+        }
 
         Ok(Self {
             vram_range,

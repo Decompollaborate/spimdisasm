@@ -175,15 +175,16 @@ impl fmt::Display for FunctionDisplay<'_, '_, '_> {
 
         let name = metadata.display_name();
 
-        #[cfg(not(feature = "pyo3"))]
-        {
-            write!(f, ".globl {}{}", name, self.settings.common.line_end())?;
-            write!(f, "{}:{}", name, self.settings.common.line_end())?;
-        }
-        #[cfg(feature = "pyo3")]
-        {
-            write!(f, "glabel {}{}", name, self.settings.common.line_end())?;
-        }
+        self.settings
+            .common
+            .display_sym_property_comments(f, metadata, &owned_segment)?;
+        self.settings.common.display_symbol_name(
+            f,
+            self.context.global_config(),
+            &name,
+            metadata,
+            false,
+        )?;
 
         let mut size = Size::new(0);
 
@@ -197,18 +198,14 @@ impl fmt::Display for FunctionDisplay<'_, '_, '_> {
 
             size += Size::new(4);
             if Some(size) == metadata.size() {
-                write!(
+                self.settings.common.display_sym_end(
                     f,
-                    ".size {}, . - {}{}",
-                    name,
-                    name,
-                    self.settings.common.line_end()
+                    self.context.global_config(),
+                    &name,
+                    metadata,
                 )?;
             }
         }
-
-        #[cfg(not(feature = "pyo3"))]
-        write!(f, ".end {}{}", name, self.settings.common.line_end())?;
 
         Ok(())
     }

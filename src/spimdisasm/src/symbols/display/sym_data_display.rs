@@ -171,15 +171,16 @@ impl fmt::Display for SymDataDisplay<'_, '_, '_> {
 
         let name = metadata.display_name();
 
-        #[cfg(not(feature = "pyo3"))]
-        {
-            write!(f, ".globl {}{}", name, self.settings.common.line_end())?;
-            write!(f, "{}:{}", name, self.settings.common.line_end())?;
-        }
-        #[cfg(feature = "pyo3")]
-        {
-            write!(f, "dlabel {}{}", name, self.settings.common.line_end())?;
-        }
+        self.settings
+            .common
+            .display_sym_property_comments(f, metadata, &owned_segment)?;
+        self.settings.common.display_symbol_name(
+            f,
+            self.context.global_config(),
+            &name,
+            metadata,
+            false,
+        )?;
 
         let ranges = self.sym.rom_vram_range();
         let rom = ranges.rom().start();
@@ -201,13 +202,9 @@ impl fmt::Display for SymDataDisplay<'_, '_, '_> {
             i += advance;
         }
 
-        write!(
-            f,
-            ".size {}, . - {}{}",
-            name,
-            name,
-            self.settings.common.line_end()
-        )?;
+        self.settings
+            .common
+            .display_sym_end(f, self.context.global_config(), &name, metadata)?;
 
         Ok(())
     }

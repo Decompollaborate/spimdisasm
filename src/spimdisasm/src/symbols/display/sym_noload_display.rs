@@ -67,15 +67,16 @@ impl fmt::Display for SymNoloadDisplay<'_, '_, '_> {
 
         let name = metadata.display_name();
 
-        #[cfg(not(feature = "pyo3"))]
-        {
-            write!(f, ".globl {}{}", name, self.settings.common.line_end())?;
-            write!(f, "{}:{}", name, self.settings.common.line_end())?;
-        }
-        #[cfg(feature = "pyo3")]
-        {
-            write!(f, "dlabel {}{}", name, self.settings.common.line_end())?;
-        }
+        self.settings
+            .common
+            .display_sym_property_comments(f, metadata, &owned_segment)?;
+        self.settings.common.display_symbol_name(
+            f,
+            self.context.global_config(),
+            &name,
+            metadata,
+            false,
+        )?;
 
         self.settings
             .common
