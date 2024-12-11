@@ -146,6 +146,24 @@ impl RegisterTracker {
         }
     }
 
+    pub(crate) fn get_address_if_instr_can_set_type(
+        &self,
+        instr: &Instruction,
+        instr_rom: RomAddress,
+    ) -> Option<u32> {
+        if let Some(rs) = instr.field_rs() {
+            let state = &self.registers[rs.as_index()];
+
+            if state.lo_info().is_some() && state.dereferenced().is_none_or(|x| x == instr_rom) {
+                Some(state.value())
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
     pub(crate) fn overwrite_registers(&mut self, instr: &Instruction, instr_rom: RomAddress) {
         if self.move_register(instr) {
             return;

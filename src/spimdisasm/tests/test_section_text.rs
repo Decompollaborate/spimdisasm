@@ -258,8 +258,7 @@ fn test_section_text_lui_delay_slot() {
     }
 
     let expected_str = "\
-.globl func_80081738
-func_80081738:
+glabel func_80081738
     /* 069558 80081738 94A3009A */  lhu         $v1, 0x9A($a1)
     /* 06955C 8008173C 24027FFF */  addiu       $v0, $zero, 0x7FFF
     /* 069560 80081740 1062000D */  beq         $v1, $v0, .L80081778
@@ -285,7 +284,6 @@ func_80081738:
     /* 0695A4 80081784 03E00008 */  jr          $ra
     /* 0695A8 80081788 ACA20054 */   sw         $v0, 0x54($a1)
 .size func_80081738, . - func_80081738
-.end func_80081738
 ";
 
     assert_eq!(

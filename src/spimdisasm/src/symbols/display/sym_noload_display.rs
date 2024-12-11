@@ -12,7 +12,7 @@ use crate::{
     symbols::{Symbol, SymbolNoload},
 };
 
-use super::SymCommonDisplaySettings;
+use super::{sym_common_display::WordComment, SymCommonDisplaySettings};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
@@ -78,9 +78,12 @@ impl fmt::Display for SymNoloadDisplay<'_, '_, '_> {
             false,
         )?;
 
-        self.settings
-            .common
-            .display_asm_comment(f, None, self.sym.vram_range().start(), None)?;
+        self.settings.common.display_asm_comment(
+            f,
+            None,
+            self.sym.vram_range().start(),
+            WordComment::No,
+        )?;
         write!(
             f,
             ".space {}{}",

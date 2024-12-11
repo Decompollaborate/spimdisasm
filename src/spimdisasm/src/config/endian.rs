@@ -28,4 +28,12 @@ impl Endian {
             Endian::Little => u16::from_le_bytes(x),
         }
     }
+    pub fn dword_from_bytes(self, bytes: &[u8]) -> u64 {
+        let x = bytes.try_into().expect("Wrong input");
+
+        match self {
+            Endian::Big => u64::from_be_bytes(x),
+            Endian::Little => u64::from_le_bytes(x),
+        }
+    }
 }

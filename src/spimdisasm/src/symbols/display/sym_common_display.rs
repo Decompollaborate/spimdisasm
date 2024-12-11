@@ -12,6 +12,12 @@ use crate::{
     rom_address::RomAddress,
 };
 
+pub(crate) enum WordComment {
+    No,
+    U32(u32),
+    U64(u64),
+}
+
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SymCommonDisplaySettings {
     line_end: Option<String>,
@@ -255,7 +261,7 @@ impl SymCommonDisplaySettings {
         f: &mut fmt::Formatter<'_>,
         rom: Option<RomAddress>,
         vram: Vram,
-        word: Option<u32>,
+        word_comment: WordComment,
     ) -> fmt::Result {
         if self.asm_indentation > 0 {
             write!(f, "{:width$}", " ", width = self.asm_indentation as usize)?;
@@ -292,9 +298,12 @@ impl SymCommonDisplaySettings {
             write!(f, "{:06X} ", rom.inner())?;
         }
         write!(f, "{} ", vram)?;
-        if let Some(word) = word {
-            // TODO: endian
-            write!(f, "{:08X} ", word)?;
+
+        // TODO: endian
+        match word_comment {
+            WordComment::No => {}
+            WordComment::U32(word) => write!(f, "{:08X} ", word)?,
+            WordComment::U64(dword) => write!(f, "{:016X} ", dword)?,
         }
 
         write!(f, "*/ ")

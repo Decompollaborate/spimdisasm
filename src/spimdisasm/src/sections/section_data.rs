@@ -14,7 +14,7 @@ use pyo3::prelude::*;
 use crate::{
     address_range::AddressRange,
     context::{Context, OwnedSegmentNotFoundError},
-    metadata::segment_metadata::FindSettings,
+    metadata::{segment_metadata::FindSettings, SymbolType},
     parent_segment_info::ParentSegmentInfo,
     rom_address::RomAddress,
     rom_vram_range::RomVramRange,
@@ -123,41 +123,53 @@ impl SectionData {
             if b.is_none() && c.is_none() && d.is_none() {
                 // There's no symbol in between
 
-                // TODO: improve heuristic to determine if should search for symbols
-                let word = context.global_config().endian().word_from_bytes(word_bytes);
-                let word_vram = Vram::new(word);
-                if vram_range.in_range(word_vram) {
-                    // Vram is contained in this section
-                    if let Some(sym) = owned_segment
-                        .find_symbol(word_vram, FindSettings::default().with_allow_addend(true))
-                    {
-                        if sym.vram() == word_vram {
-                            // Only count this symbol if it doesn't have an addend.
-                            // If it does have an addend then it may be part of a larger symbol.
+                let should_search_for_address = match a {
+                    None => true,
+                    Some(metadata) => match metadata.sym_type() {
+                        None => true,
+                        Some(
+                            SymbolType::Function
+                            | SymbolType::BranchLabel
+                            | SymbolType::JumptableLabel
+                            | SymbolType::GccExceptTableLabel,
+                        ) => false,
+                        Some(SymbolType::Jumptable | SymbolType::GccExceptTable) => true,
+                        Some(SymbolType::Byte | SymbolType::Short) => false,
+                        Some(SymbolType::Word) => true,
+                        Some(SymbolType::DWord) => false,
+                        Some(SymbolType::Float32 | SymbolType::Float64) => false,
+                        Some(SymbolType::CString) => false,
+                        Some(SymbolType::UserCustom) => false,
+                    },
+                };
+
+                if should_search_for_address {
+                    // TODO: improve heuristic to determine if should search for symbols
+                    let word = context.global_config().endian().word_from_bytes(word_bytes);
+                    let word_vram = Vram::new(word);
+                    if vram_range.in_range(word_vram) {
+                        // Vram is contained in this section
+                        if let Some(sym) = owned_segment
+                            .find_symbol(word_vram, FindSettings::default().with_allow_addend(true))
+                        {
+                            if sym.vram() == word_vram {
+                                // Only count this symbol if it doesn't have an addend.
+                                // If it does have an addend then it may be part of a larger symbol.
+                                symbols_info.insert(word_vram);
+                            }
+                        } else {
                             symbols_info.insert(word_vram);
                         }
                     } else {
-                        symbols_info.insert(word_vram);
-                    }
-                } else {
-                    let current_rom = rom + (current_vram - vram).try_into().expect("This should not panic because `current_vram` should always be greter or equal to `vram`");
-                    let sym = context
-                        .find_referenced_segment(word_vram, &parent_segment_info)
-                        .and_then(|seg| seg.find_symbol(word_vram, FindSettings::default()));
-                    if sym.is_none() {
-                        maybe_pointers_to_other_sections.push((word_vram, current_rom));
+                        let current_rom = rom + (current_vram - vram).try_into().expect("This should not panic because `current_vram` should always be greter or equal to `vram`");
+                        let sym = context
+                            .find_referenced_segment(word_vram, &parent_segment_info)
+                            .and_then(|seg| seg.find_symbol(word_vram, FindSettings::default()));
+                        if sym.is_none() {
+                            maybe_pointers_to_other_sections.push((word_vram, current_rom));
+                        }
                     }
                 }
-
-                // if let Some(current_sym) = a {
-                //     prev_word_symbol_vram = Some(current_vram);
-                //     if current_sym.sym_type() == Some(&SymbolType::Jumptable) {
-                //         current_jtbl_info = Some((current_vram, word));
-                //     }
-                // }
-            } else {
-                // prev_word_symbol_vram = None;
-                // current_jtbl_info = None;
             }
 
             for (x_vram, x) in [(current_vram, a), (b_vram, b), (c_vram, c), (d_vram, d)] {

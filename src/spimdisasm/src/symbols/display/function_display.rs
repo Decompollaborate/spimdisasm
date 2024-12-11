@@ -13,7 +13,9 @@ use crate::{
     metadata::segment_metadata::FindSettings,
     relocation::RelocationInfo,
     size::Size,
-    symbols::{trait_symbol::RomSymbol, Symbol, SymbolFunction},
+    symbols::{
+        display::sym_common_display::WordComment, trait_symbol::RomSymbol, Symbol, SymbolFunction,
+    },
 };
 
 use super::SymCommonDisplaySettings;
@@ -131,7 +133,7 @@ impl FunctionDisplay<'_, '_, '_> {
         let rom = self.sym.rom_vram_range().rom_from_vram(vram);
         self.settings
             .common
-            .display_asm_comment(f, rom, vram, Some(instr.word()))?;
+            .display_asm_comment(f, rom, vram, WordComment::U32(instr.word()))?;
 
         // TODO: why an extra space?
         write!(f, " ")?;

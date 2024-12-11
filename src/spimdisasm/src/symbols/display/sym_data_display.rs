@@ -10,13 +10,13 @@ use rabbitizer::Vram;
 use crate::{
     config::Endian,
     context::Context,
-    metadata::segment_metadata::FindSettings,
+    metadata::{segment_metadata::FindSettings, SymbolType},
     rom_address::RomAddress,
     size::Size,
     symbols::{RomSymbol, Symbol, SymbolData},
 };
 
-use super::SymCommonDisplaySettings;
+use super::{sym_common_display::WordComment, SymCommonDisplaySettings};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
@@ -84,9 +84,12 @@ impl SymDataDisplay<'_, '_, '_> {
     ) -> Result<usize, fmt::Error> {
         let byte = self.sym.raw_bytes()[i];
 
-        self.settings
-            .common
-            .display_asm_comment(f, Some(current_rom), current_vram, None)?;
+        self.settings.common.display_asm_comment(
+            f,
+            Some(current_rom),
+            current_vram,
+            WordComment::No,
+        )?;
         write!(f, ".byte 0x{:02X}{}", byte, self.settings.common.line_end())?;
 
         Ok(1)
@@ -117,9 +120,12 @@ impl SymDataDisplay<'_, '_, '_> {
             .endian
             .short_from_bytes(&self.sym.raw_bytes()[i..i + 2]);
 
-        self.settings
-            .common
-            .display_asm_comment(f, Some(current_rom), current_vram, None)?;
+        self.settings.common.display_asm_comment(
+            f,
+            Some(current_rom),
+            current_vram,
+            WordComment::No,
+        )?;
         write!(
             f,
             ".short 0x{:04X}{}",
@@ -139,9 +145,12 @@ impl SymDataDisplay<'_, '_, '_> {
     ) -> Result<usize, fmt::Error> {
         let word = self.endian.word_from_bytes(&self.sym.raw_bytes()[i..i + 4]);
 
-        self.settings
-            .common
-            .display_asm_comment(f, Some(current_rom), current_vram, Some(word))?;
+        self.settings.common.display_asm_comment(
+            f,
+            Some(current_rom),
+            current_vram,
+            WordComment::U32(word),
+        )?;
 
         if let Some(rel) = self.sym.relocs()[i / 4]
             .as_ref()
@@ -157,6 +166,61 @@ impl SymDataDisplay<'_, '_, '_> {
 
         Ok(4)
     }
+
+    fn display_as_float32(
+        &self,
+        f: &mut fmt::Formatter<'_>,
+        i: usize,
+        current_rom: RomAddress,
+        current_vram: Vram,
+    ) -> Result<usize, fmt::Error> {
+        let word = self.endian.word_from_bytes(&self.sym.raw_bytes()[i..i + 4]);
+        let float32 = f32::from_bits(word);
+        if float32.is_nan() || float32.is_infinite() {
+            return self.display_as_word(f, i, current_rom, current_vram);
+        }
+
+        self.settings.common.display_asm_comment(
+            f,
+            Some(current_rom),
+            current_vram,
+            WordComment::U32(word),
+        )?;
+        write!(f, ".float {:?}{}", float32, self.settings.common.line_end())?;
+
+        Ok(4)
+    }
+
+    fn display_as_float64(
+        &self,
+        f: &mut fmt::Formatter<'_>,
+        i: usize,
+        current_rom: RomAddress,
+        current_vram: Vram,
+    ) -> Result<usize, fmt::Error> {
+        let dword = self
+            .endian
+            .dword_from_bytes(&self.sym.raw_bytes()[i..i + 8]);
+        let float64 = f64::from_bits(dword);
+        if float64.is_nan() || float64.is_infinite() {
+            return self.display_as_word(f, i, current_rom, current_vram);
+        }
+
+        self.settings.common.display_asm_comment(
+            f,
+            Some(current_rom),
+            current_vram,
+            WordComment::U64(dword),
+        )?;
+        write!(
+            f,
+            ".double {:?}{}",
+            float64,
+            self.settings.common.line_end()
+        )?;
+
+        Ok(8)
+    }
 }
 
 impl fmt::Display for SymDataDisplay<'_, '_, '_> {
@@ -170,6 +234,7 @@ impl fmt::Display for SymDataDisplay<'_, '_, '_> {
             .ok_or(fmt::Error)?;
 
         let name = metadata.display_name();
+        let sym_type = metadata.sym_type();
 
         self.settings
             .common
@@ -186,18 +251,86 @@ impl fmt::Display for SymDataDisplay<'_, '_, '_> {
         let rom = ranges.rom().start();
         let vram = ranges.vram().start();
         let mut i = 0;
-        while i < self.sym.raw_bytes().len() {
+        let bytes_len = self.sym.raw_bytes().len();
+        while i < bytes_len {
             let offset = Size::new(i as u32);
             let current_rom = rom + offset;
             let current_vram = vram + offset;
+            let x = current_rom.inner();
 
-            let advance = if self.is_byte(i) {
-                self.display_as_byte(f, i, current_rom, current_vram)?
-            } else if self.is_short(i) {
-                self.display_as_short(f, i, current_rom, current_vram)?
-            } else {
-                self.display_as_word(f, i, current_rom, current_vram)?
+            // Check if we have less bytes than a word left.
+            let advance = match bytes_len - i {
+                1 => self.display_as_byte(f, i, current_rom, current_vram)?,
+                2 | 3 => {
+                    if sym_type == Some(&SymbolType::Byte) || self.is_byte(i) {
+                        self.display_as_byte(f, i, current_rom, current_vram)?
+                    } else {
+                        self.display_as_short(f, i, current_rom, current_vram)?
+                    }
+                }
+                _ => {
+                    // Try to display according to the given type.
+                    match sym_type {
+                        Some(
+                            SymbolType::Function
+                            | SymbolType::BranchLabel
+                            | SymbolType::JumptableLabel
+                            | SymbolType::GccExceptTableLabel,
+                        ) if x % 4 == 0 => {
+                            // This should be cod, how did this end up here?
+                            self.display_as_word(f, i, current_rom, current_vram)?
+                        }
+
+                        // TODO: consider adding a specialized thing for tables?
+                        Some(SymbolType::Jumptable | SymbolType::GccExceptTable) if x % 4 == 0 => {
+                            self.display_as_word(f, i, current_rom, current_vram)?
+                        }
+
+                        Some(SymbolType::Byte) => {
+                            self.display_as_byte(f, i, current_rom, current_vram)?
+                        }
+                        Some(SymbolType::Short) if x % 2 == 0 => {
+                            self.display_as_short(f, i, current_rom, current_vram)?
+                        }
+                        Some(SymbolType::Word) if x % 4 == 0 => {
+                            self.display_as_word(f, i, current_rom, current_vram)?
+                        }
+                        Some(SymbolType::DWord) if x % 8 == 0 && bytes_len - i >= 8 => {
+                            // Maybe display DWords with `https://sourceware.org/binutils/docs/as/Quad.html`?
+                            self.display_as_word(f, i, current_rom, current_vram)?
+                        }
+
+                        Some(SymbolType::Float32) if x % 4 == 0 => {
+                            self.display_as_float32(f, i, current_rom, current_vram)?
+                        }
+                        Some(SymbolType::Float64) if x % 8 == 0 && bytes_len - i >= 8 => {
+                            self.display_as_float64(f, i, current_rom, current_vram)?
+                        }
+                        // TODO
+                        Some(SymbolType::CString) if x % 4 == 0 => {
+                            self.display_as_word(f, i, current_rom, current_vram)?
+                        }
+
+                        // Maybe someday add support for custom structs?
+                        Some(SymbolType::UserCustom) if x % 4 == 0 => {
+                            self.display_as_word(f, i, current_rom, current_vram)?
+                        }
+
+                        None | Some(_) => {
+                            // heuristic game to guess on what's best for this data
+                            if self.is_byte(i) {
+                                self.display_as_byte(f, i, current_rom, current_vram)?
+                            } else if self.is_short(i) {
+                                self.display_as_short(f, i, current_rom, current_vram)?
+                            } else {
+                                self.display_as_word(f, i, current_rom, current_vram)?
+                            }
+                        }
+                    }
+                }
             };
+
+            debug_assert!(advance > 0);
 
             i += advance;
         }

@@ -3,7 +3,8 @@
 
 use alloc::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use rabbitizer::{
-    opcodes::Opcode, registers::Gpr, traits::Register, vram::VramOffset, Instruction, Vram,
+    access_type::AccessType, opcodes::Opcode, registers::Gpr, traits::Register, vram::VramOffset,
+    Instruction, Vram,
 };
 
 use crate::{context::Context, rom_address::RomAddress, rom_vram_range::RomVramRange};
@@ -36,6 +37,9 @@ pub struct InstructionAnalysisResult {
     address_per_instr: BTreeMap<RomAddress, Vram>,
     address_per_hi_instr: BTreeMap<RomAddress, Vram>,
     address_per_lo_instr: BTreeMap<RomAddress, Vram>,
+
+    type_info_per_address: BTreeMap<Vram, BTreeMap<(AccessType, bool), u32>>,
+    type_info_per_instr: BTreeMap<RomAddress, (AccessType, bool)>,
 }
 
 impl InstructionAnalysisResult {
@@ -47,13 +51,15 @@ impl InstructionAnalysisResult {
             referenced_vrams_by_rom: BTreeMap::new(),
             branch_targets: BTreeMap::new(),
             func_calls: BTreeMap::new(),
+            referenced_jumptables: BTreeMap::new(),
             hi_instrs: BTreeMap::new(),
             non_lo_instrs: BTreeSet::new(),
             constant_per_instr: BTreeMap::new(),
             address_per_instr: BTreeMap::new(),
             address_per_hi_instr: BTreeMap::new(),
             address_per_lo_instr: BTreeMap::new(),
-            referenced_jumptables: BTreeMap::new(),
+            type_info_per_address: BTreeMap::new(),
+            type_info_per_instr: BTreeMap::new(),
         }
     }
 
@@ -95,6 +101,11 @@ impl InstructionAnalysisResult {
     pub fn referenced_jumptables(&self) -> &BTreeMap<RomAddress, Vram> {
         &self.referenced_jumptables
     }
+
+    #[must_use]
+    pub fn type_info_per_address(&self) -> &BTreeMap<Vram, BTreeMap<(AccessType, bool), u32>> {
+        &self.type_info_per_address
+    }
 }
 
 impl InstructionAnalysisResult {
@@ -131,8 +142,20 @@ impl InstructionAnalysisResult {
             self.process_unsigned_lo(regs_tracker, instr);
         } else if instr.opcode().can_be_lo() {
             self.process_signed_lo(context, regs_tracker, instr, prev_instr);
-        } else if instr.opcode() == Opcode::core_addu {
             self.process_symbol_dereference_type(regs_tracker, instr);
+        } else if instr.opcode() == Opcode::core_addu {
+            /*
+            # special check for .cpload
+            if len(self.unpairedCploads) > 0:
+                if instr.rd in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp} and instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
+                    cpload = self.unpairedCploads.pop()
+                    cpload.adduOffset = instrOffset
+                    cpload.reg = instr.rt
+                    self.cploadOffsets.add(cpload.hiOffset)
+                    self.cploadOffsets.add(cpload.loOffset)
+                    self.cploadOffsets.add(instrOffset)
+                    self.cploads[instrOffset] = cpload
+            */
         }
 
         regs_tracker.overwrite_registers(instr, self.rom_from_instr(instr));
@@ -381,10 +404,14 @@ impl InstructionAnalysisResult {
 
     fn process_symbol_dereference_type(
         &mut self,
-        _regs_tracker: &mut RegisterTracker,
-        _instr: &Instruction,
+        regs_tracker: &mut RegisterTracker,
+        instr: &Instruction,
     ) {
-        // TODO
+        let instr_rom = self.rom_from_instr(instr);
+
+        if let Some(address) = regs_tracker.get_address_if_instr_can_set_type(instr, instr_rom) {
+            self.process_symbol_type(Vram::new(address), instr, instr_rom);
+        }
     }
 }
 
@@ -549,13 +576,19 @@ impl InstructionAnalysisResult {
         true
     }
 
-    fn process_symbol_type(
-        &mut self,
-        _address: Vram,
-        _instr: &Instruction,
-        _instr_rom: RomAddress,
-    ) {
-        // TODO
+    fn process_symbol_type(&mut self, address: Vram, instr: &Instruction, instr_rom: RomAddress) {
+        let access_type = instr.opcode().access_type();
+        let unsigned_memory_address = instr.opcode().does_unsigned_memory_access();
+        debug_assert!(access_type != AccessType::NONE);
+
+        self.type_info_per_address
+            .entry(address)
+            .or_default()
+            .entry((access_type, unsigned_memory_address))
+            .and_modify(|v| *v += 1)
+            .or_insert(1);
+        self.type_info_per_instr
+            .insert(instr_rom, (access_type, unsigned_memory_address));
     }
 }
 
