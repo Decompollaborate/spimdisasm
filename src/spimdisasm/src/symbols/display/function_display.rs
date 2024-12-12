@@ -12,7 +12,7 @@ use pyo3::prelude::*;
 
 use crate::{
     context::Context,
-    metadata::segment_metadata::FindSettings,
+    metadata::{segment_metadata::FindSettings, SymbolType},
     relocation::RelocationInfo,
     size::Size,
     symbols::{
@@ -32,6 +32,8 @@ pub struct FunctionDisplaySettings {
     asm_label_indentation: u8,
 
     _gp_rel_hack: bool,
+
+    migrate: bool,
 }
 
 impl FunctionDisplaySettings {
@@ -41,6 +43,7 @@ impl FunctionDisplaySettings {
             display_flags,
             asm_label_indentation: 2,
             _gp_rel_hack: false,
+            migrate: false,
         }
     }
 }
@@ -78,47 +81,47 @@ impl FunctionDisplay<'_, '_, '_> {
             .find_owned_segment(self.sym.parent_segment_info())?
             .find_symbol(current_vram, FindSettings::new().with_allow_addend(false))
         {
-            if let Some(_typ) = sym_label.sym_type() {
-                // TODO:
-                /*
-                useLabelMacro = labelSymType is None or labelSymType == common.SymbolSpecialType.function or (labelSymType == common.SymbolSpecialType.jumptablelabel and not migrate) or labelSymType == common.SymbolSpecialType.gccexcepttablelabel
-                if not useLabelMacro:
-                    if common.GlobalConfig.ASM_GLOBALIZE_TEXT_LABELS_REFERENCED_BY_NON_JUMPTABLE:
-                        # Check if any non-jumptable symbol references this label
-                        for otherSym in labelSym.referenceSymbols:
-                            if otherSym.getTypeSpecial() != common.SymbolSpecialType.jumptable:
-                                useLabelMacro = True
-                                break
-
-                if useLabelMacro:
-                    label = labelSym.getReferenceeSymbols()
-                    labelMacro = labelSym.getLabelMacro(isInMiddleLabel=True)
-                    if labelMacro is not None:
-                        label += f"{labelMacro} {labelSym.getName()}{common.GlobalConfig.LINE_ENDS}"
-                    if common.GlobalConfig.ASM_TEXT_FUNC_AS_LABEL:
-                        label += f"{labelSym.getName()}:{common.GlobalConfig.LINE_ENDS}"
-                else:
-                    label = labelSym.getName() + ":" + common.GlobalConfig.LINE_ENDS
-                label = (" " * common.GlobalConfig.ASM_INDENTATION_LABELS) + label
-                return label
-                */
-
-                if self.settings.asm_label_indentation > 0 {
-                    write!(
-                        f,
-                        "{:width$}",
-                        " ",
-                        width = self.settings.asm_label_indentation as usize
-                    )?;
-                }
-
-                // PLACEHOLDER:
+            if self.settings.asm_label_indentation > 0 {
                 write!(
                     f,
-                    "{}:{}",
-                    sym_label.display_name(),
-                    self.settings.common.line_end()
+                    "{:width$}",
+                    " ",
+                    width = self.settings.asm_label_indentation as usize
                 )?;
+            }
+
+            let use_macro = sym_label.sym_type().is_none_or(|x| match x {
+                SymbolType::Function => true,
+                SymbolType::BranchLabel => false,
+                SymbolType::JumptableLabel => !self.settings.migrate,
+                SymbolType::GccExceptTableLabel => true,
+                _ => false,
+            });
+
+            // TODO:
+            /*
+            if not use_macro:
+                if common.GlobalConfig.ASM_GLOBALIZE_TEXT_LABELS_REFERENCED_BY_NON_JUMPTABLE:
+                    # Check if any non-jumptable symbol references this label
+                    for otherSym in labelSym.referenceSymbols:
+                        if otherSym.getTypeSpecial() != common.SymbolSpecialType.jumptable:
+                            use_macro = True
+                            break
+            */
+
+            let name = sym_label.display_name();
+            if use_macro {
+                // label = labelSym.getReferenceeSymbols()
+
+                self.settings.common.display_symbol_name(
+                    f,
+                    self.context.global_config(),
+                    &name,
+                    sym_label,
+                    true,
+                )?;
+            } else {
+                write!(f, "{}:{}", name, self.settings.common.line_end(),)?;
             }
         }
 

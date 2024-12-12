@@ -12,6 +12,7 @@ fn should_escape_symbol(name: &str) -> bool {
 }
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, PartialOrd)]
+#[must_use]
 pub struct SymbolMetadataNameDisplay<'sym> {
     sym: &'sym SymbolMetadata,
 }
