@@ -223,7 +223,7 @@ impl SymbolMetadata {
     }
 
     pub fn user_declared_name(&self) -> Option<&str> {
-        self.user_declared_name.as_ref().map(|x| x.as_str())
+        self.user_declared_name.as_deref()
     }
     pub fn user_declared_name_mut(&mut self) -> &mut Option<String> {
         &mut self.user_declared_name
@@ -346,7 +346,7 @@ impl SymbolMetadata {
     }
 
     pub fn visibility(&self) -> Option<&str> {
-        self.visibility.as_ref().map(|x| x.as_str())
+        self.visibility.as_deref()
     }
     pub fn visibility_mut(&mut self) -> &mut Option<String> {
         &mut self.visibility

@@ -6,6 +6,8 @@ use core::fmt;
 use rabbitizer::{Instruction, InstructionDisplayFlags, Vram};
 
 #[cfg(feature = "pyo3")]
+use alloc::string::ToString;
+#[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
@@ -149,12 +151,12 @@ impl FunctionDisplay<'_, '_, '_> {
             .get_reloc(instr)
             .and_then(|x| x.display(self.context, self.sym.parent_segment_info()));
 
-        write!(
-            f,
-            "{}{}",
-            instr.display(&self.settings.display_flags, imm_override, extra_ljust),
-            self.settings.common.line_end()
-        )
+        let instr_display = instr.display(&self.settings.display_flags, imm_override, extra_ljust);
+
+        #[cfg(feature = "pyo3")]
+        let instr_display = instr_display.to_string().replace("$s8", "$fp");
+
+        write!(f, "{}{}", instr_display, self.settings.common.line_end())
     }
 
     fn get_reloc(&self, instr: &Instruction) -> Option<&RelocationInfo> {
@@ -179,7 +181,7 @@ impl fmt::Display for FunctionDisplay<'_, '_, '_> {
 
         self.settings
             .common
-            .display_sym_property_comments(f, metadata, &owned_segment)?;
+            .display_sym_property_comments(f, metadata, owned_segment)?;
         self.settings.common.display_symbol_name(
             f,
             self.context.global_config(),

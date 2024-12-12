@@ -213,7 +213,7 @@ impl SectionData {
             symbol_vrams.insert(*new_sym_vram);
 
             let properties = SymbolDataProperties {
-                auto_pad_by: auto_pads.get(new_sym_vram).map(|x| *x),
+                auto_pad_by: auto_pads.get(new_sym_vram).copied(),
             };
             let /*mut*/ sym = SymbolData::new(context, raw_bytes[start..end].into(), sym_rom, *new_sym_vram, start, parent_segment_info.clone(), section_type, properties)?;
 

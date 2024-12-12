@@ -69,7 +69,7 @@ impl fmt::Display for SymNoloadDisplay<'_, '_, '_> {
 
         self.settings
             .common
-            .display_sym_property_comments(f, metadata, &owned_segment)?;
+            .display_sym_property_comments(f, metadata, owned_segment)?;
         self.settings.common.display_symbol_name(
             f,
             self.context.global_config(),

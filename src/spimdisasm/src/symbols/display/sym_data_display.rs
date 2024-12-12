@@ -62,6 +62,8 @@ impl<'ctx, 'sym, 'flg> SymDataDisplay<'ctx, 'sym, 'flg> {
 }
 
 impl SymDataDisplay<'_, '_, '_> {
+    #[allow(clippy::if_same_then_else)]
+    #[allow(clippy::needless_bool)]
     fn is_byte(&self, i: usize) -> bool {
         // TODO: implement access types and such
         if i % 2 != 0 {
@@ -95,6 +97,8 @@ impl SymDataDisplay<'_, '_, '_> {
         Ok(1)
     }
 
+    #[allow(clippy::if_same_then_else)]
+    #[allow(clippy::needless_bool)]
     fn is_short(&self, i: usize) -> bool {
         let rom = self.sym.rom_range().start();
 
@@ -238,7 +242,7 @@ impl fmt::Display for SymDataDisplay<'_, '_, '_> {
 
         self.settings
             .common
-            .display_sym_property_comments(f, metadata, &owned_segment)?;
+            .display_sym_property_comments(f, metadata, owned_segment)?;
         self.settings.common.display_symbol_name(
             f,
             self.context.global_config(),
@@ -258,10 +262,18 @@ impl fmt::Display for SymDataDisplay<'_, '_, '_> {
             let current_vram = vram + offset;
             let x = current_rom.inner();
 
-            // Check if we have less bytes than a word left.
-            let advance = match bytes_len - i {
-                1 => self.display_as_byte(f, i, current_rom, current_vram)?,
-                2 | 3 => {
+            // Check if we have less bytes than a word left or if we have alignment issues.
+            let advance = match (bytes_len - i, x % 4) {
+                (1, _) => self.display_as_byte(f, i, current_rom, current_vram)?,
+                (_, 1) => self.display_as_byte(f, i, current_rom, current_vram)?,
+                (2 | 3, _) => {
+                    if sym_type == Some(&SymbolType::Byte) || self.is_byte(i) {
+                        self.display_as_byte(f, i, current_rom, current_vram)?
+                    } else {
+                        self.display_as_short(f, i, current_rom, current_vram)?
+                    }
+                }
+                (_, 2 | 3) => {
                     if sym_type == Some(&SymbolType::Byte) || self.is_byte(i) {
                         self.display_as_byte(f, i, current_rom, current_vram)?
                     } else {
@@ -269,30 +281,36 @@ impl fmt::Display for SymDataDisplay<'_, '_, '_> {
                     }
                 }
                 _ => {
+                    // At this point we should have at least 4 bytes to display and we should have
+                    // at least a 4bytes alignement.
+
                     // Try to display according to the given type.
                     match sym_type {
+                        Some(SymbolType::Function) => {
+                            // This should be cod, how did this end up here?
+                            self.display_as_word(f, i, current_rom, current_vram)?
+                        }
                         Some(
-                            SymbolType::Function
-                            | SymbolType::BranchLabel
+                            SymbolType::BranchLabel
                             | SymbolType::JumptableLabel
                             | SymbolType::GccExceptTableLabel,
-                        ) if x % 4 == 0 => {
+                        ) => {
                             // This should be cod, how did this end up here?
                             self.display_as_word(f, i, current_rom, current_vram)?
                         }
 
                         // TODO: consider adding a specialized thing for tables?
-                        Some(SymbolType::Jumptable | SymbolType::GccExceptTable) if x % 4 == 0 => {
+                        Some(SymbolType::Jumptable | SymbolType::GccExceptTable) => {
                             self.display_as_word(f, i, current_rom, current_vram)?
                         }
 
                         Some(SymbolType::Byte) => {
                             self.display_as_byte(f, i, current_rom, current_vram)?
                         }
-                        Some(SymbolType::Short) if x % 2 == 0 => {
+                        Some(SymbolType::Short) => {
                             self.display_as_short(f, i, current_rom, current_vram)?
                         }
-                        Some(SymbolType::Word) if x % 4 == 0 => {
+                        Some(SymbolType::Word) => {
                             self.display_as_word(f, i, current_rom, current_vram)?
                         }
                         Some(SymbolType::DWord) if x % 8 == 0 && bytes_len - i >= 8 => {
@@ -300,23 +318,23 @@ impl fmt::Display for SymDataDisplay<'_, '_, '_> {
                             self.display_as_word(f, i, current_rom, current_vram)?
                         }
 
-                        Some(SymbolType::Float32) if x % 4 == 0 => {
+                        Some(SymbolType::Float32) => {
                             self.display_as_float32(f, i, current_rom, current_vram)?
                         }
                         Some(SymbolType::Float64) if x % 8 == 0 && bytes_len - i >= 8 => {
                             self.display_as_float64(f, i, current_rom, current_vram)?
                         }
                         // TODO
-                        Some(SymbolType::CString) if x % 4 == 0 => {
+                        Some(SymbolType::CString) => {
                             self.display_as_word(f, i, current_rom, current_vram)?
                         }
 
                         // Maybe someday add support for custom structs?
-                        Some(SymbolType::UserCustom) if x % 4 == 0 => {
+                        Some(SymbolType::UserCustom) => {
                             self.display_as_word(f, i, current_rom, current_vram)?
                         }
 
-                        None | Some(_) => {
+                        None | Some(SymbolType::DWord) | Some(SymbolType::Float64) => {
                             // heuristic game to guess on what's best for this data
                             if self.is_byte(i) {
                                 self.display_as_byte(f, i, current_rom, current_vram)?

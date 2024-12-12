@@ -22,6 +22,8 @@ pub struct InstructionAnalysisResult {
 
     /// Key is the rom of the branch instruction, value is the vram target for that instruction.
     branch_targets: BTreeMap<RomAddress, Vram>,
+    /// Same as `branch_targets`, but for branching outside the current function.
+    branch_targets_outside: BTreeMap<RomAddress, Vram>,
 
     /// Key is the rom of the instruction, value is the address of the called function.
     func_calls: BTreeMap<RomAddress, Vram>,
@@ -50,6 +52,7 @@ impl InstructionAnalysisResult {
             referenced_vrams: BTreeSet::new(),
             referenced_vrams_by_rom: BTreeMap::new(),
             branch_targets: BTreeMap::new(),
+            branch_targets_outside: BTreeMap::new(),
             func_calls: BTreeMap::new(),
             referenced_jumptables: BTreeMap::new(),
             hi_instrs: BTreeMap::new(),
@@ -71,6 +74,10 @@ impl InstructionAnalysisResult {
     #[must_use]
     pub fn branch_targets(&self) -> &BTreeMap<RomAddress, Vram> {
         &self.branch_targets
+    }
+    #[must_use]
+    pub fn branch_targets_outside(&self) -> &BTreeMap<RomAddress, Vram> {
+        &self.branch_targets_outside
     }
 
     #[must_use]
@@ -170,10 +177,6 @@ impl InstructionAnalysisResult {
         instr: &Instruction,
         target_vram: Vram,
     ) {
-        if !self.ranges.in_vram_range(target_vram) {
-            return;
-        }
-
         regs_tracker.process_branch(instr, self.rom_from_instr(instr));
 
         /*
@@ -184,7 +187,12 @@ impl InstructionAnalysisResult {
 
         let instr_rom = self.rom_from_instr(instr);
         self.add_referenced_vram(context, instr_rom, target_vram);
-        self.branch_targets.insert(instr_rom, target_vram);
+
+        if self.ranges.in_vram_range(target_vram) {
+            self.branch_targets.insert(instr_rom, target_vram);
+        } else {
+            self.branch_targets_outside.insert(instr_rom, target_vram);
+        }
     }
 
     fn process_func_call(&mut self, context: &Context, instr: &Instruction, target_vram: Vram) {

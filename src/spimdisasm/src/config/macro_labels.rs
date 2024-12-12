@@ -38,7 +38,7 @@ impl MacroLabels {
         &self.alt_func
     }
     pub fn func_end(&self) -> Option<&str> {
-        self.func_end.as_ref().map(|x| x.as_str())
+        self.func_end.as_deref()
     }
 
     pub fn jtbl_label(&self) -> &str {
@@ -52,7 +52,7 @@ impl MacroLabels {
         &self.data
     }
     pub fn data_end(&self) -> Option<&str> {
-        self.data_end.as_ref().map(|x| x.as_str())
+        self.data_end.as_deref()
     }
 }
 

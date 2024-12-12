@@ -126,7 +126,7 @@ impl SectionNoload {
             symbol_vrams.insert(*new_sym_vram);
 
             let properties = SymbolNoloadProperties {
-                auto_pad_by: auto_pads.get(new_sym_vram).map(|x| *x),
+                auto_pad_by: auto_pads.get(new_sym_vram).copied(),
             };
             let /*mut*/ sym = SymbolNoload::new(context, AddressRange::new(*new_sym_vram, new_sym_vram_end), start, parent_segment_info.clone(), properties)?;
 

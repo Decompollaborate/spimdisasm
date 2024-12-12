@@ -33,12 +33,12 @@ pub enum SymbolType {
 
 impl SymbolType {
     pub fn valid_branch_target(&self) -> bool {
-        match self {
-            SymbolType::Function => true,
-            SymbolType::BranchLabel => true,
-            SymbolType::JumptableLabel => true,
-            SymbolType::GccExceptTableLabel => true,
-            _ => false,
-        }
+        matches!(
+            self,
+            SymbolType::Function
+                | SymbolType::BranchLabel
+                | SymbolType::JumptableLabel
+                | SymbolType::GccExceptTableLabel
+        )
     }
 }

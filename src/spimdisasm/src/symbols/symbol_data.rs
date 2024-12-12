@@ -37,6 +37,8 @@ pub struct SymbolData {
 }
 
 impl SymbolData {
+    // TODO
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn new(
         context: &mut Context,
         raw_bytes: Vec<u8>,

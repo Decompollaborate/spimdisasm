@@ -235,18 +235,11 @@ impl SymCommonDisplaySettings {
                         }
                     }
                 }
-            } else {
-                if let Some(data_end) = macro_labels.data_end() {
-                    write!(f, "{} {}{}", data_end, sym_name, self.line_end())?;
-                }
+            } else if let Some(data_end) = macro_labels.data_end() {
+                write!(f, "{} {}{}", data_end, sym_name, self.line_end())?;
             }
-        } else {
-            match sym.sym_type() {
-                Some(SymbolType::Function) => {
-                    write!(f, ".end {}{}", sym_name, self.line_end())?;
-                }
-                _ => {}
-            }
+        } else if let Some(SymbolType::Function) = sym.sym_type() {
+            write!(f, ".end {}{}", sym_name, self.line_end())?;
         }
 
         if global_config.emit_size_directive() {
