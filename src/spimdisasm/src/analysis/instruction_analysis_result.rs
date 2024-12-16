@@ -609,16 +609,17 @@ impl InstructionAnalysisResult {
     fn process_symbol_type(&mut self, address: Vram, instr: &Instruction, instr_rom: RomAddress) {
         let access_type = instr.opcode().access_type();
         let unsigned_memory_address = instr.opcode().does_unsigned_memory_access();
-        debug_assert!(access_type != AccessType::NONE);
 
-        self.type_info_per_address
-            .entry(address)
-            .or_default()
-            .entry((access_type, unsigned_memory_address))
-            .and_modify(|v| *v += 1)
-            .or_insert(1);
-        self.type_info_per_instr
-            .insert(instr_rom, (access_type, unsigned_memory_address));
+        if access_type != AccessType::NONE {
+            self.type_info_per_address
+                .entry(address)
+                .or_default()
+                .entry((access_type, unsigned_memory_address))
+                .and_modify(|v| *v += 1)
+                .or_insert(1);
+            self.type_info_per_instr
+                .insert(instr_rom, (access_type, unsigned_memory_address));
+        }
     }
 }
 

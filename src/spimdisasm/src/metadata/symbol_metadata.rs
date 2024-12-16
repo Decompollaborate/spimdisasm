@@ -313,6 +313,9 @@ impl SymbolMetadata {
         self.is_defined = true;
     }
 
+    pub fn access_type(&self) -> Option<(AccessType, bool)> {
+        self.access_type
+    }
     pub(crate) fn set_access_type_if_unset(&mut self, access_type: (AccessType, bool)) {
         if self.access_type.is_none() {
             self.access_type = Some(access_type);
