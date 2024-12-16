@@ -14,7 +14,7 @@ use pyo3::prelude::*;
 use crate::{
     address_range::AddressRange,
     context::{Context, OwnedSegmentNotFoundError},
-    metadata::{segment_metadata::FindSettings, SymbolType},
+    metadata::segment_metadata::FindSettings,
     parent_segment_info::ParentSegmentInfo,
     rom_address::RomAddress,
     rom_vram_range::RomVramRange,
@@ -125,22 +125,9 @@ impl SectionData {
 
                 let should_search_for_address = match a {
                     None => true,
-                    Some(metadata) => match metadata.sym_type() {
-                        None => true,
-                        Some(
-                            SymbolType::Function
-                            | SymbolType::BranchLabel
-                            | SymbolType::JumptableLabel
-                            | SymbolType::GccExceptTableLabel,
-                        ) => false,
-                        Some(SymbolType::Jumptable | SymbolType::GccExceptTable) => true,
-                        Some(SymbolType::Byte | SymbolType::Short) => false,
-                        Some(SymbolType::Word) => true,
-                        Some(SymbolType::DWord) => false,
-                        Some(SymbolType::Float32 | SymbolType::Float64) => false,
-                        Some(SymbolType::CString) => false,
-                        Some(SymbolType::UserCustom) => false,
-                    },
+                    Some(metadata) => metadata
+                        .sym_type()
+                        .is_none_or(|x| x.can_reference_symbols()),
                 };
 
                 if should_search_for_address {

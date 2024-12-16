@@ -41,4 +41,20 @@ impl SymbolType {
                 | SymbolType::GccExceptTableLabel
         )
     }
+
+    pub fn can_reference_symbols(&self) -> bool {
+        match self {
+            SymbolType::Function
+            | SymbolType::BranchLabel
+            | SymbolType::JumptableLabel
+            | SymbolType::GccExceptTableLabel => false,
+            SymbolType::Jumptable | SymbolType::GccExceptTable => true,
+            SymbolType::Byte | SymbolType::Short => false,
+            SymbolType::Word => true,
+            SymbolType::DWord => false,
+            SymbolType::Float32 | SymbolType::Float64 => false,
+            SymbolType::CString => false,
+            SymbolType::UserCustom => true,
+        }
+    }
 }

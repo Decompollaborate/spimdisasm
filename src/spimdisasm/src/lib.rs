@@ -16,6 +16,7 @@ pub mod rom_address;
 pub mod rom_vram_range;
 pub mod section_type;
 pub mod size;
+pub mod str_decoding;
 
 pub mod config;
 pub mod context;

@@ -3,9 +3,10 @@
 
 use core::fmt;
 
+use rabbitizer::Vram;
+
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
-use rabbitizer::Vram;
 
 use crate::{
     config::Endian,
@@ -13,6 +14,7 @@ use crate::{
     metadata::{segment_metadata::FindSettings, SegmentMetadata, SymbolMetadata, SymbolType},
     rom_address::RomAddress,
     size::Size,
+    str_decoding,
     symbols::{RomSymbol, Symbol, SymbolData},
 };
 
@@ -240,6 +242,50 @@ impl SymDataDisplay<'_, '_, '_> {
 
         Ok(8)
     }
+
+    fn display_as_c_string(
+        &self,
+        f: &mut fmt::Formatter<'_>,
+        i: usize,
+        current_rom: RomAddress,
+        current_vram: Vram,
+    ) -> Result<usize, fmt::Error> {
+        let bytes = &self.sym.raw_bytes()[i..];
+        let str_end = if let Some(str_end) = bytes.iter().position(|x| *x == b'\0') {
+            if str_end == 0 {
+                return self.display_as_word(f, i, current_rom, current_vram);
+            }
+            str_end
+        } else {
+            // write!(f, "/* Invalid string due to missing nul terminator */{}", self.settings.common.line_end())?;
+            return self.display_as_word(f, i, current_rom, current_vram);
+        };
+
+        let (decoded, _, had_errors) = encoding_rs::SHIFT_JIS.decode(&bytes[..str_end]);
+
+        if had_errors {
+            // write!(f, "/* Invalid string due to decoding error */{}", self.settings.common.line_end())?;
+            return self.display_as_word(f, i, current_rom, current_vram);
+        }
+
+        let escaped = str_decoding::escape_string(&decoded);
+
+        self.settings.common.display_asm_comment(
+            f,
+            Some(current_rom),
+            current_vram,
+            WordComment::No,
+        )?;
+        // TODO: maybe change to `.string` instead of `.asciz`?
+        write!(
+            f,
+            ".asciz \"{}\"{}",
+            escaped,
+            self.settings.common.line_end()
+        )?;
+
+        Ok((str_end + 1).next_multiple_of(4))
+    }
 }
 
 impl fmt::Display for SymDataDisplay<'_, '_, '_> {
@@ -331,9 +377,8 @@ impl fmt::Display for SymDataDisplay<'_, '_, '_> {
                         Some(SymbolType::Float64) if x % 8 == 0 && bytes_len - i >= 8 => {
                             self.display_as_float64(f, i, current_rom, current_vram)?
                         }
-                        // TODO
                         Some(SymbolType::CString) => {
-                            self.display_as_word(f, i, current_rom, current_vram)?
+                            self.display_as_c_string(f, i, current_rom, current_vram)?
                         }
 
                         // Maybe someday add support for custom structs?
