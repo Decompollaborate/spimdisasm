@@ -76,7 +76,7 @@ impl SymCommonDisplaySettings {
         f: &mut fmt::Formatter<'_>,
         global_config: &GlobalConfig,
         sym_name: &SymbolMetadataNameDisplay,
-        sym: &SymbolMetadata,
+        metadata: &SymbolMetadata,
         in_middle: bool,
     ) -> fmt::Result {
         // TODO: implement somewhere else:
@@ -99,7 +99,7 @@ impl SymCommonDisplaySettings {
 
         if let Some(macro_labels) = global_config.macro_labels() {
             // Write the label, ie `glabel`, `dlabel`, etc
-            if let Some(sym_type) = sym.sym_type() {
+            if let Some(sym_type) = metadata.sym_type() {
                 match sym_type {
                     SymbolType::Function => {
                         if in_middle {
@@ -128,7 +128,7 @@ impl SymCommonDisplaySettings {
 
             write!(f, " {}", sym_name)?;
 
-            match sym.visibility() {
+            match metadata.visibility() {
                 None | Some("global") | Some("globl") => {}
                 Some(vis) => write!(f, ", {}", vis)?,
             }
@@ -139,13 +139,13 @@ impl SymCommonDisplaySettings {
             .ent func_80045DD0
             func_80045DD0:
             */
-            let vis = match sym.visibility() {
+            let vis = match metadata.visibility() {
                 None | Some("globl") => "globl",
                 Some(vis) => vis,
             };
             write!(f, ".{} {}{}", vis, sym_name, self.line_end())?;
 
-            if let Some(sym_type) = sym.sym_type() {
+            if let Some(sym_type) = metadata.sym_type() {
                 match sym_type {
                     SymbolType::Function => {
                         write!(f, ".type {}, @function{}", sym_name, self.line_end())?;
@@ -206,10 +206,10 @@ impl SymCommonDisplaySettings {
         f: &mut fmt::Formatter<'_>,
         global_config: &GlobalConfig,
         sym_name: &SymbolMetadataNameDisplay,
-        sym: &SymbolMetadata,
+        metadata: &SymbolMetadata,
     ) -> fmt::Result {
         if let Some(macro_labels) = global_config.macro_labels() {
-            if let Some(sym_type) = sym.sym_type() {
+            if let Some(sym_type) = metadata.sym_type() {
                 match sym_type {
                     SymbolType::Function => {
                         if let Some(func_end) = macro_labels.func_end() {
@@ -238,7 +238,7 @@ impl SymCommonDisplaySettings {
             } else if let Some(data_end) = macro_labels.data_end() {
                 write!(f, "{} {}{}", data_end, sym_name, self.line_end())?;
             }
-        } else if let Some(SymbolType::Function) = sym.sym_type() {
+        } else if let Some(SymbolType::Function) = metadata.sym_type() {
             write!(f, ".end {}{}", sym_name, self.line_end())?;
         }
 

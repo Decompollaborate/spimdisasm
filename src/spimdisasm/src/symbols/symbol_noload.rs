@@ -12,7 +12,7 @@ use crate::{
 };
 
 use super::{
-    display::{SymNoloadDisplay, SymNoloadDisplaySettings},
+    display::{SymDisplayError, SymNoloadDisplay, SymNoloadDisplaySettings},
     Symbol,
 };
 
@@ -65,7 +65,7 @@ impl<'ctx, 'sym, 'flg> SymbolNoload {
         &'sym self,
         context: &'ctx Context,
         settings: &'flg SymNoloadDisplaySettings,
-    ) -> SymNoloadDisplay<'ctx, 'sym, 'flg> {
+    ) -> Result<SymNoloadDisplay<'ctx, 'sym, 'flg>, SymDisplayError> {
         SymNoloadDisplay::new(context, self, settings)
     }
 }

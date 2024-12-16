@@ -161,8 +161,7 @@ pub(crate) mod python_bindings {
         defined: bool,
         size: Option<Size>,
         migration_behavior: RodataMigrationBehavior,
-        allow_addend: bool,
-        dont_allow_addend: bool,
+        allow_ref_with_addend: Option<bool>,
         can_reference: bool,
         can_be_referenced: bool,
         name_end: Option<String>,
@@ -178,8 +177,7 @@ pub(crate) mod python_bindings {
                 defined: false,
                 size: None,
                 migration_behavior: RodataMigrationBehavior::Default(),
-                allow_addend: false,
-                dont_allow_addend: false,
+                allow_ref_with_addend: None,
                 can_reference: false,
                 can_be_referenced: false,
                 name_end: None,
@@ -199,11 +197,8 @@ pub(crate) mod python_bindings {
         pub fn set_migration_behavior(&mut self, val: &RodataMigrationBehavior) {
             self.migration_behavior = val.clone();
         }
-        pub fn set_allow_addend(&mut self, val: bool) {
-            self.allow_addend = val;
-        }
-        pub fn set_dont_allow_addend(&mut self, val: bool) {
-            self.dont_allow_addend = val;
+        pub fn set_allow_ref_with_addend(&mut self, val: bool) {
+            self.allow_ref_with_addend = Some(val);
         }
         pub fn set_can_reference(&mut self, val: bool) {
             self.can_reference = val;
@@ -231,9 +226,10 @@ pub(crate) mod python_bindings {
                 *sym.user_declared_size_mut() = Some(size);
             }
             *sym.rodata_migration_behavior_mut() = self.migration_behavior.clone();
+            if let Some(allow_ref_with_addend) = self.allow_ref_with_addend {
+                sym.set_allow_ref_with_addend(allow_ref_with_addend);
+            }
             /*
-            sym.allow_addend = self.allow_addend;
-            sym.dont_allow_addend = self.dont_allow_addend;
             sym.can_reference = self.can_reference;
             sym.can_be_referenced = self.can_be_referenced;
             */

@@ -350,6 +350,11 @@ impl FindSettings {
         }
     }
 }
+impl Default for FindSettings {
+    fn default() -> Self {
+        Self::default()
+    }
+}
 
 impl SegmentMetadata {
     #[must_use]

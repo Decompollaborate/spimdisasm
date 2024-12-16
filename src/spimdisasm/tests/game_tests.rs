@@ -130,7 +130,7 @@ fn init_context(
                 }
                 *sym.rodata_migration_behavior_mut() = user_symbol_info.migration_behavior;
                 if user_symbol_info.dont_allow_addend {
-                    sym.set_dont_allow_addend();
+                    sym.set_allow_ref_with_addend(false);
                 }
             }
             game_tests_info::UserSymbol::Ignored(_vram, _size) => {}
@@ -357,6 +357,7 @@ fn drmario64_us_without_symbols() {
                 // sym.display(&context, &function_display_settings).hash(&mut hasher);
                 let _a = sym
                     .display(&context, &function_display_settings)
+                    .unwrap()
                     .to_string();
             }
         }
@@ -365,6 +366,7 @@ fn drmario64_us_without_symbols() {
                 // sym.display(&context, &data_display_settings).hash(&mut hasher);
                 let _a = sym
                     .display(&context, &sym_data_display_settings)
+                    .unwrap()
                     .to_string();
             }
         }
@@ -373,6 +375,7 @@ fn drmario64_us_without_symbols() {
                 // sym.display(&context, &data_display_settings).hash(&mut hasher);
                 let _a = sym
                     .display(&context, &sym_data_display_settings)
+                    .unwrap()
                     .to_string();
             }
         }
@@ -381,6 +384,7 @@ fn drmario64_us_without_symbols() {
                 // sym.display(&context, &data_display_settings).hash(&mut hasher);
                 let _a = sym
                     .display(&context, &sym_noload_display_settings)
+                    .unwrap()
                     .to_string();
             }
         }
@@ -447,6 +451,7 @@ fn drmario64_us_with_symbols() {
                 // sym.display(&context, &function_display_settings).hash(&mut hasher);
                 let _a = sym
                     .display(&context, &function_display_settings)
+                    .unwrap()
                     .to_string();
             }
         }
@@ -455,6 +460,7 @@ fn drmario64_us_with_symbols() {
                 // sym.display(&context, &data_display_settings).hash(&mut hasher);
                 let _a = sym
                     .display(&context, &sym_data_display_settings)
+                    .unwrap()
                     .to_string();
             }
         }
@@ -463,6 +469,7 @@ fn drmario64_us_with_symbols() {
                 // sym.display(&context, &data_display_settings).hash(&mut hasher);
                 let _a = sym
                     .display(&context, &sym_data_display_settings)
+                    .unwrap()
                     .to_string();
             }
         }
@@ -471,6 +478,7 @@ fn drmario64_us_with_symbols() {
                 // sym.display(&context, &data_display_settings).hash(&mut hasher);
                 let _a = sym
                     .display(&context, &sym_noload_display_settings)
+                    .unwrap()
                     .to_string();
             }
         }

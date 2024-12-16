@@ -175,6 +175,7 @@ impl Context {
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
 // TODO: Make a public error API
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct OwnedSegmentNotFoundError {}
 impl fmt::Display for OwnedSegmentNotFoundError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -183,11 +184,6 @@ impl fmt::Display for OwnedSegmentNotFoundError {
     }
 }
 impl error::Error for OwnedSegmentNotFoundError {}
-impl From<OwnedSegmentNotFoundError> for fmt::Error {
-    fn from(_value: OwnedSegmentNotFoundError) -> Self {
-        Self {}
-    }
-}
 
 impl Context {
     pub(crate) fn find_owned_segment(

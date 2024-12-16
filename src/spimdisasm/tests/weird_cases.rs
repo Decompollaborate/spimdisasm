@@ -279,7 +279,7 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
 
     let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
     for func in section_text.functions() {
-        let func_display = func.display(&context, &function_display_settings);
+        let func_display = func.display(&context, &function_display_settings).unwrap();
         println!("{}", func_display);
     }
 

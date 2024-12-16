@@ -155,7 +155,7 @@ fn test_section_text_1() {
 
     let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
     for func in section_text.functions() {
-        let func_display = func.display(&context, &function_display_settings);
+        let func_display = func.display(&context, &function_display_settings).unwrap();
         println!("{}", func_display);
     }
 
@@ -254,7 +254,7 @@ fn test_section_text_lui_delay_slot() {
     let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
     for func in section_text.functions() {
         let func_display = func.display(&context, &function_display_settings);
-        println!("{}", func_display);
+        println!("{}", func_display.unwrap());
     }
 
     let expected_str = "\
@@ -289,6 +289,7 @@ glabel func_80081738
     assert_eq!(
         section_text.functions()[0]
             .display(&context, &function_display_settings)
+            .unwrap()
             .to_string(),
         expected_str
     );

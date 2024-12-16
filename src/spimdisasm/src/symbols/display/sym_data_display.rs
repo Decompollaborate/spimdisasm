@@ -10,13 +10,15 @@ use rabbitizer::Vram;
 use crate::{
     config::Endian,
     context::Context,
-    metadata::{segment_metadata::FindSettings, SymbolType},
+    metadata::{segment_metadata::FindSettings, SegmentMetadata, SymbolMetadata, SymbolType},
     rom_address::RomAddress,
     size::Size,
     symbols::{RomSymbol, Symbol, SymbolData},
 };
 
-use super::{sym_common_display::WordComment, SymCommonDisplaySettings};
+use super::{
+    sym_common_display::WordComment, sym_display_error::SymDisplayError, SymCommonDisplaySettings,
+};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
@@ -44,6 +46,9 @@ pub struct SymDataDisplay<'ctx, 'sym, 'flg> {
     sym: &'sym SymbolData,
     settings: &'flg SymDataDisplaySettings,
     endian: Endian,
+
+    owned_segment: &'ctx SegmentMetadata,
+    metadata: &'ctx SymbolMetadata,
 }
 
 impl<'ctx, 'sym, 'flg> SymDataDisplay<'ctx, 'sym, 'flg> {
@@ -51,13 +56,21 @@ impl<'ctx, 'sym, 'flg> SymDataDisplay<'ctx, 'sym, 'flg> {
         context: &'ctx Context,
         sym: &'sym SymbolData,
         settings: &'flg SymDataDisplaySettings,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, SymDisplayError> {
+        let owned_segment = context.find_owned_segment(sym.parent_segment_info())?;
+        let find_settings = FindSettings::default().with_allow_addend(false);
+        let metadata = owned_segment
+            .find_symbol(sym.vram_range().start(), find_settings)
+            .ok_or(SymDisplayError::SelfSymNotFound())?;
+
+        Ok(Self {
             context,
             sym,
             settings,
             endian: context.global_config().endian(),
-        }
+            owned_segment,
+            metadata,
+        })
     }
 }
 
@@ -156,10 +169,12 @@ impl SymDataDisplay<'_, '_, '_> {
             WordComment::U32(word),
         )?;
 
+        let find_settings =
+            FindSettings::default().with_allow_addend(self.metadata.allow_ref_with_addend());
         if let Some(rel) = self.sym.relocs()[i / 4]
             .as_ref()
             .filter(|x| !x.reloc_type().is_none())
-            .and_then(|x| x.display(self.context, self.sym.parent_segment_info()))
+            .and_then(|x| x.display(self.context, self.sym.parent_segment_info(), find_settings))
         {
             write!(f, "{}", rel)?;
         } else {
@@ -229,25 +244,17 @@ impl SymDataDisplay<'_, '_, '_> {
 
 impl fmt::Display for SymDataDisplay<'_, '_, '_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let owned_segment = self
-            .context
-            .find_owned_segment(self.sym.parent_segment_info())?;
-        let find_settings = FindSettings::default().with_allow_addend(false);
-        let metadata = owned_segment
-            .find_symbol(self.sym.vram_range().start(), find_settings)
-            .ok_or(fmt::Error)?;
-
-        let name = metadata.display_name();
-        let sym_type = metadata.sym_type();
+        let name = self.metadata.display_name();
+        let sym_type = self.metadata.sym_type();
 
         self.settings
             .common
-            .display_sym_property_comments(f, metadata, owned_segment)?;
+            .display_sym_property_comments(f, self.metadata, self.owned_segment)?;
         self.settings.common.display_symbol_name(
             f,
             self.context.global_config(),
             &name,
-            metadata,
+            self.metadata,
             false,
         )?;
 
@@ -353,9 +360,12 @@ impl fmt::Display for SymDataDisplay<'_, '_, '_> {
             i += advance;
         }
 
-        self.settings
-            .common
-            .display_sym_end(f, self.context.global_config(), &name, metadata)?;
+        self.settings.common.display_sym_end(
+            f,
+            self.context.global_config(),
+            &name,
+            self.metadata,
+        )?;
 
         Ok(())
     }

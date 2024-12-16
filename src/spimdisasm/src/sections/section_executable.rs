@@ -559,7 +559,7 @@ fn find_functions_check_function_ended(
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
-    use crate::symbols::display::FunctionDisplaySettings;
+    use crate::symbols::display::{FunctionDisplaySettings, SymDisplayError};
 
     use super::*;
 
@@ -584,10 +584,14 @@ pub(crate) mod python_bindings {
             context: &Context,
             index: usize,
             settings: &FunctionDisplaySettings,
-        ) -> Option<String> {
-            self.functions
-                .get(index)
-                .map(|sym| sym.display(context, settings).to_string())
+        ) -> Result<Option<String>, SymDisplayError> {
+            let sym = self.functions.get(index);
+
+            Ok(if let Some(sym) = sym {
+                Some(sym.display(context, settings)?.to_string())
+            } else {
+                None
+            })
         }
     }
 }

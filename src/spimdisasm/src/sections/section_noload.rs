@@ -177,7 +177,7 @@ impl Section for SectionNoload {
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
-    use crate::symbols::display::SymNoloadDisplaySettings;
+    use crate::symbols::display::{SymDisplayError, SymNoloadDisplaySettings};
 
     use super::*;
 
@@ -202,10 +202,14 @@ pub(crate) mod python_bindings {
             context: &Context,
             index: usize,
             settings: &SymNoloadDisplaySettings,
-        ) -> Option<String> {
-            self.noload_symbols
-                .get(index)
-                .map(|sym| sym.display(context, settings).to_string())
+        ) -> Result<Option<String>, SymDisplayError> {
+            let sym = self.noload_symbols.get(index);
+
+            Ok(if let Some(sym) = sym {
+                Some(sym.display(context, settings)?.to_string())
+            } else {
+                None
+            })
         }
     }
 }

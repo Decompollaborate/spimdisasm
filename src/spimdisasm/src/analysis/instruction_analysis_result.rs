@@ -42,6 +42,8 @@ pub struct InstructionAnalysisResult {
 
     type_info_per_address: BTreeMap<Vram, BTreeMap<(AccessType, bool), u32>>,
     type_info_per_instr: BTreeMap<RomAddress, (AccessType, bool)>,
+
+    handwritten_instrs: BTreeSet<RomAddress>,
 }
 
 impl InstructionAnalysisResult {
@@ -63,6 +65,7 @@ impl InstructionAnalysisResult {
             address_per_lo_instr: BTreeMap::new(),
             type_info_per_address: BTreeMap::new(),
             type_info_per_instr: BTreeMap::new(),
+            handwritten_instrs: BTreeSet::new(),
         }
     }
 
@@ -113,6 +116,11 @@ impl InstructionAnalysisResult {
     pub fn type_info_per_address(&self) -> &BTreeMap<Vram, BTreeMap<(AccessType, bool), u32>> {
         &self.type_info_per_address
     }
+
+    #[must_use]
+    pub fn handwritten_instrs(&self) -> &BTreeSet<RomAddress> {
+        &self.handwritten_instrs
+    }
 }
 
 impl InstructionAnalysisResult {
@@ -132,24 +140,30 @@ impl InstructionAnalysisResult {
         instr: &Instruction,
         prev_instr: Option<&Instruction>,
     ) {
+        let instr_rom = self.rom_from_instr(instr);
+
+        if instr.is_likely_handwritten() {
+            self.handwritten_instrs.insert(instr_rom);
+        }
+
         if let Some(target_vram) = instr.get_branch_vram_generic() {
             // instr.opcode().is_branch() or instr.is_unconditional_branch()
-            self.process_branch(context, regs_tracker, instr, target_vram);
+            self.process_branch(context, regs_tracker, instr, instr_rom, target_vram);
         } else if let Some(target_vram) = instr.get_instr_index_as_vram() {
             // instr.opcode().is_jump_with_address()
-            self.process_func_call(context, instr, target_vram);
+            self.process_func_call(context, instr, instr_rom, target_vram);
         } else if instr.is_jumptable_jump() {
-            self.process_jumptable_jump(context, regs_tracker, instr);
+            self.process_jumptable_jump(context, regs_tracker, instr, instr_rom);
         } else if instr.opcode().is_jump() && instr.opcode().does_link() {
             // `jalr`. Implicit `!is_jump_with_address`
-            self.process_jump_and_link_register(regs_tracker, instr);
+            self.process_jump_and_link_register(regs_tracker, instr, instr_rom);
         } else if instr.opcode().can_be_hi() {
-            self.process_hi(regs_tracker, instr, prev_instr);
+            self.process_hi(regs_tracker, instr, instr_rom, prev_instr);
         } else if instr.opcode().is_unsigned() {
-            self.process_unsigned_lo(regs_tracker, instr);
+            self.process_unsigned_lo(regs_tracker, instr, instr_rom);
         } else if instr.opcode().can_be_lo() {
-            self.process_signed_lo(context, regs_tracker, instr, prev_instr);
-            self.process_symbol_dereference_type(regs_tracker, instr);
+            self.process_signed_lo(context, regs_tracker, instr, instr_rom, prev_instr);
+            self.process_symbol_dereference_type(regs_tracker, instr, instr_rom);
         } else if instr.opcode() == Opcode::core_addu {
             /*
             # special check for .cpload
@@ -165,7 +179,7 @@ impl InstructionAnalysisResult {
             */
         }
 
-        regs_tracker.overwrite_registers(instr, self.rom_from_instr(instr));
+        regs_tracker.overwrite_registers(instr, instr_rom);
     }
 }
 
@@ -175,9 +189,10 @@ impl InstructionAnalysisResult {
         context: &Context,
         regs_tracker: &mut RegisterTracker,
         instr: &Instruction,
+        instr_rom: RomAddress,
         target_vram: Vram,
     ) {
-        regs_tracker.process_branch(instr, self.rom_from_instr(instr));
+        regs_tracker.process_branch(instr, instr_rom);
 
         /*
         if instrOffset in self.branchInstrOffsets:
@@ -185,7 +200,6 @@ impl InstructionAnalysisResult {
             return
         */
 
-        let instr_rom = self.rom_from_instr(instr);
         self.add_referenced_vram(context, instr_rom, target_vram);
 
         if self.ranges.in_vram_range(target_vram) {
@@ -195,7 +209,13 @@ impl InstructionAnalysisResult {
         }
     }
 
-    fn process_func_call(&mut self, context: &Context, instr: &Instruction, target_vram: Vram) {
+    fn process_func_call(
+        &mut self,
+        context: &Context,
+        _instr: &Instruction,
+        instr_rom: RomAddress,
+        target_vram: Vram,
+    ) {
         /*
         if instrOffset in self.funcCallInstrOffsets:
             # Already processed
@@ -207,7 +227,6 @@ impl InstructionAnalysisResult {
             self.funcCallOutsideRangesOffsets[instrOffset] = target
         */
 
-        let instr_rom = self.rom_from_instr(instr);
         self.add_referenced_vram(context, instr_rom, target_vram);
         self.func_calls.insert(instr_rom, target_vram);
     }
@@ -217,9 +236,9 @@ impl InstructionAnalysisResult {
         context: &Context,
         regs_tracker: &mut RegisterTracker,
         instr: &Instruction,
+        instr_rom: RomAddress,
     ) {
         if let Some(jr_reg_data) = regs_tracker.get_jr_reg_data(instr) {
-            let instr_rom = self.rom_from_instr(instr);
             let lo_rom = jr_reg_data.lo_rom();
             let address = Vram::new(jr_reg_data.address());
 
@@ -251,6 +270,7 @@ impl InstructionAnalysisResult {
         &mut self,
         _regs_tracker: &mut RegisterTracker,
         _instr: &Instruction,
+        _instr_rom: RomAddress,
     ) {
         // TODO
         /*
@@ -270,9 +290,9 @@ impl InstructionAnalysisResult {
         &mut self,
         regs_tracker: &mut RegisterTracker,
         instr: &Instruction,
+        instr_rom: RomAddress,
         prev_instr: Option<&Instruction>,
     ) {
-        let instr_rom = self.rom_from_instr(instr);
         regs_tracker.process_hi(instr, instr_rom, prev_instr);
         self.hi_instrs.insert(
             instr_rom,
@@ -283,11 +303,15 @@ impl InstructionAnalysisResult {
         );
     }
 
-    fn process_unsigned_lo(&mut self, regs_tracker: &mut RegisterTracker, instr: &Instruction) {
+    fn process_unsigned_lo(
+        &mut self,
+        regs_tracker: &mut RegisterTracker,
+        instr: &Instruction,
+        instr_rom: RomAddress,
+    ) {
         // Pairing with an `ori`, so we treat this as a constant.
         if let Some(hi_info) = regs_tracker.get_hi_info_for_constant(instr) {
             if let Some((_hi_reg, hi_imm)) = self.hi_instrs.get(&hi_info.instr_rom) {
-                let instr_rom = self.rom_from_instr(instr);
                 self.process_constant(regs_tracker, instr, instr_rom, *hi_imm, hi_info.instr_rom)
             }
         }
@@ -323,10 +347,9 @@ impl InstructionAnalysisResult {
         context: &Context,
         regs_tracker: &mut RegisterTracker,
         instr: &Instruction,
+        instr_rom: RomAddress,
         _prev_instr: Option<&Instruction>,
     ) {
-        let instr_rom = self.rom_from_instr(instr);
-
         // TODO
         if instr.opcode().does_load()
             && instr
@@ -414,9 +437,8 @@ impl InstructionAnalysisResult {
         &mut self,
         regs_tracker: &mut RegisterTracker,
         instr: &Instruction,
+        instr_rom: RomAddress,
     ) {
-        let instr_rom = self.rom_from_instr(instr);
-
         if let Some(address) = regs_tracker.get_address_if_instr_can_set_type(instr, instr_rom) {
             self.process_symbol_type(Vram::new(address), instr, instr_rom);
         }

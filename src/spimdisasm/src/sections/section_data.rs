@@ -278,7 +278,7 @@ impl RomSection for SectionData {
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
-    use crate::symbols::display::SymDataDisplaySettings;
+    use crate::symbols::display::{SymDataDisplaySettings, SymDisplayError};
 
     use super::*;
 
@@ -303,10 +303,14 @@ pub(crate) mod python_bindings {
             context: &Context,
             index: usize,
             settings: &SymDataDisplaySettings,
-        ) -> Option<String> {
-            self.data_symbols
-                .get(index)
-                .map(|sym| sym.display(context, settings).to_string())
+        ) -> Result<Option<String>, SymDisplayError> {
+            let sym = self.data_symbols.get(index);
+
+            Ok(if let Some(sym) = sym {
+                Some(sym.display(context, settings)?.to_string())
+            } else {
+                None
+            })
         }
     }
 }

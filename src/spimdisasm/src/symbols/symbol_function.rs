@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::vec::Vec;
+use alloc::{collections::btree_set::BTreeSet, vec::Vec};
 use rabbitizer::{Instruction, Vram};
 
 use crate::{
@@ -18,7 +18,7 @@ use crate::{
 };
 
 use super::{
-    display::{FunctionDisplay, FunctionDisplaySettings},
+    display::{FunctionDisplay, FunctionDisplaySettings, SymDisplayError},
     trait_symbol::RomSymbol,
     Symbol,
 };
@@ -518,6 +518,11 @@ impl SymbolFunction {
     pub fn instructions(&self) -> &[Instruction] {
         &self.instructions
     }
+
+    #[must_use]
+    pub(crate) fn handwritten_instrs(&self) -> &BTreeSet<RomAddress> {
+        self.instr_analysis.handwritten_instrs()
+    }
 }
 
 impl<'ctx, 'sym, 'flg> SymbolFunction {
@@ -525,7 +530,7 @@ impl<'ctx, 'sym, 'flg> SymbolFunction {
         &'sym self,
         context: &'ctx Context,
         settings: &'flg FunctionDisplaySettings,
-    ) -> FunctionDisplay<'ctx, 'sym, 'flg> {
+    ) -> Result<FunctionDisplay<'ctx, 'sym, 'flg>, SymDisplayError> {
         FunctionDisplay::new(context, self, settings)
     }
 }

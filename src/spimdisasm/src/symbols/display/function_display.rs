@@ -12,7 +12,7 @@ use pyo3::prelude::*;
 
 use crate::{
     context::Context,
-    metadata::{segment_metadata::FindSettings, SymbolType},
+    metadata::{segment_metadata::FindSettings, SegmentMetadata, SymbolMetadata, SymbolType},
     relocation::RelocationInfo,
     size::Size,
     symbols::{
@@ -20,7 +20,7 @@ use crate::{
     },
 };
 
-use super::SymCommonDisplaySettings;
+use super::{sym_display_error::SymDisplayError, SymCommonDisplaySettings};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
@@ -53,6 +53,9 @@ pub struct FunctionDisplay<'ctx, 'sym, 'flg> {
     context: &'ctx Context,
     sym: &'sym SymbolFunction,
     settings: &'flg FunctionDisplaySettings,
+
+    owned_segment: &'ctx SegmentMetadata,
+    metadata: &'ctx SymbolMetadata,
 }
 
 impl<'ctx, 'sym, 'flg> FunctionDisplay<'ctx, 'sym, 'flg> {
@@ -60,12 +63,20 @@ impl<'ctx, 'sym, 'flg> FunctionDisplay<'ctx, 'sym, 'flg> {
         context: &'ctx Context,
         sym: &'sym SymbolFunction,
         settings: &'flg FunctionDisplaySettings,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, SymDisplayError> {
+        let owned_segment = context.find_owned_segment(sym.parent_segment_info())?;
+        let find_settings = FindSettings::default().with_allow_addend(false);
+        let metadata = owned_segment
+            .find_symbol(sym.vram_range().start(), find_settings)
+            .ok_or(SymDisplayError::SelfSymNotFound())?;
+
+        Ok(Self {
             context,
             sym,
             settings,
-        }
+            owned_segment,
+            metadata,
+        })
     }
 }
 
@@ -77,8 +88,7 @@ impl FunctionDisplay<'_, '_, '_> {
         }
 
         if let Some(sym_label) = self
-            .context
-            .find_owned_segment(self.sym.parent_segment_info())?
+            .owned_segment
             .find_symbol(current_vram, FindSettings::new().with_allow_addend(false))
         {
             if self.settings.asm_label_indentation > 0 {
@@ -150,16 +160,18 @@ impl FunctionDisplay<'_, '_, '_> {
             0
         };
 
+        let find_settings =
+            FindSettings::default().with_allow_addend(self.metadata.allow_ref_with_addend());
         let imm_override = self
             .get_reloc(instr)
-            .and_then(|x| x.display(self.context, self.sym.parent_segment_info()));
+            .and_then(|x| x.display(self.context, self.sym.parent_segment_info(), find_settings));
 
         let instr_display = instr.display(&self.settings.display_flags, imm_override, extra_ljust);
 
         #[cfg(feature = "pyo3")]
         let instr_display = instr_display.to_string().replace("$s8", "$fp");
 
-        write!(f, "{}{}", instr_display, self.settings.common.line_end())
+        write!(f, "{}", instr_display)
     }
 
     fn get_reloc(&self, instr: &Instruction) -> Option<&RelocationInfo> {
@@ -168,28 +180,43 @@ impl FunctionDisplay<'_, '_, '_> {
             .as_ref()
             .filter(|x| !x.reloc_type().is_none())
     }
+
+    fn display_end_of_line_comment(
+        &self,
+        f: &mut fmt::Formatter<'_>,
+        instr: &Instruction,
+    ) -> fmt::Result {
+        let vram = instr.vram();
+        let rom = self.sym.rom_vram_range().rom_from_vram(vram).unwrap();
+
+        if self.sym.handwritten_instrs().contains(&rom) {
+            write!(f, " /* handwritten instruction */")?;
+        }
+
+        Ok(())
+    }
 }
 
 impl fmt::Display for FunctionDisplay<'_, '_, '_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let owned_segment = self
-            .context
-            .find_owned_segment(self.sym.parent_segment_info())?;
-        let find_settings = FindSettings::default().with_allow_addend(false);
-        let metadata = owned_segment
-            .find_symbol(self.sym.vram_range().start(), find_settings)
-            .ok_or(fmt::Error)?;
+        if !self.sym.handwritten_instrs().is_empty() {
+            write!(
+                f,
+                "/* Handwritten function */{}",
+                self.settings.common.line_end()
+            )?;
+        }
 
-        let name = metadata.display_name();
+        let name = self.metadata.display_name();
 
         self.settings
             .common
-            .display_sym_property_comments(f, metadata, owned_segment)?;
+            .display_sym_property_comments(f, self.metadata, self.owned_segment)?;
         self.settings.common.display_symbol_name(
             f,
             self.context.global_config(),
             &name,
-            metadata,
+            self.metadata,
             false,
         )?;
 
@@ -201,15 +228,18 @@ impl fmt::Display for FunctionDisplay<'_, '_, '_> {
             self.display_label(f, current_vram)?;
             self.display_instruction(f, instr, prev_instr_had_delay_slot)?;
 
+            self.display_end_of_line_comment(f, instr)?;
+            write!(f, "{}", self.settings.common.line_end())?;
+
             prev_instr_had_delay_slot = instr.opcode().has_delay_slot();
 
             size += Size::new(4);
-            if Some(size) == metadata.size() {
+            if Some(size) == self.metadata.size() {
                 self.settings.common.display_sym_end(
                     f,
                     self.context.global_config(),
                     &name,
-                    metadata,
+                    self.metadata,
                 )?;
             }
         }

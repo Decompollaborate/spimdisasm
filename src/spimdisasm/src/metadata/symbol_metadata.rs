@@ -159,6 +159,7 @@ pub struct SymbolMetadata {
     //
     rodata_migration_behavior: RodataMigrationBehavior,
 
+    allow_ref_with_addend: bool,
     /*
     allowedToReferenceAddends: bool = False
     notAllowedToReferenceAddends: bool = False
@@ -210,6 +211,7 @@ impl SymbolMetadata {
             accessed_as_gp_rel: false,
             auto_created_pad_by: None,
             rodata_migration_behavior: RodataMigrationBehavior::Default(),
+            allow_ref_with_addend: true,
             is_mips1_double: false,
             visibility: None,
         }
@@ -380,8 +382,11 @@ impl SymbolMetadata {
         &mut self.rodata_migration_behavior
     }
 
-    pub fn set_dont_allow_addend(&mut self) {
-        // TODO: actually do something
+    pub fn allow_ref_with_addend(&self) -> bool {
+        self.allow_ref_with_addend
+    }
+    pub fn set_allow_ref_with_addend(&mut self, val: bool) {
+        self.allow_ref_with_addend = val;
     }
 
     pub fn visibility(&self) -> Option<&str> {

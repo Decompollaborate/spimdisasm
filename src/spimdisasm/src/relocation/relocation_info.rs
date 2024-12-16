@@ -41,8 +41,9 @@ impl RelocationInfo {
         &'rel self,
         context: &'ctx Context,
         segment_info: &'prnt ParentSegmentInfo,
+        find_settings: FindSettings,
     ) -> Option<RelocationInfoDisplay<'ctx, 'rel, 'prnt>> {
-        RelocationInfoDisplay::new(context, self, segment_info)
+        RelocationInfoDisplay::new(context, self, segment_info, find_settings)
     }
 }
 
@@ -68,6 +69,7 @@ impl<'ctx, 'rel, 'prnt> RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
         context: &'ctx Context,
         rel: &'rel RelocationInfo,
         segment_info: &'prnt ParentSegmentInfo,
+        find_settings: FindSettings,
     ) -> Option<Self> {
         let reloc_sym_state = match &rel.referenced_sym {
             RelocReferencedSym::SymName(name, addend) => {
@@ -77,8 +79,7 @@ impl<'ctx, 'rel, 'prnt> RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
                 if let Some(referenced_segment) =
                     context.find_referenced_segment(*vram, segment_info)
                 {
-                    if let Some(sym_metadata) =
-                        referenced_segment.find_symbol(*vram, FindSettings::default())
+                    if let Some(sym_metadata) = referenced_segment.find_symbol(*vram, find_settings)
                     {
                         RelocSymState::Sym(*vram, sym_metadata)
                     } else {

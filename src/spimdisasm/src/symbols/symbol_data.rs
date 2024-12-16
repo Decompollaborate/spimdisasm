@@ -17,7 +17,7 @@ use crate::{
 };
 
 use super::{
-    display::{SymDataDisplay, SymDataDisplaySettings},
+    display::{SymDataDisplay, SymDataDisplaySettings, SymDisplayError},
     trait_symbol::RomSymbol,
     Symbol,
 };
@@ -135,7 +135,7 @@ impl<'ctx, 'sym, 'flg> SymbolData {
         &'sym self,
         context: &'ctx Context,
         settings: &'flg SymDataDisplaySettings,
-    ) -> SymDataDisplay<'ctx, 'sym, 'flg> {
+    ) -> Result<SymDataDisplay<'ctx, 'sym, 'flg>, SymDisplayError> {
         SymDataDisplay::new(context, self, settings)
     }
 }
