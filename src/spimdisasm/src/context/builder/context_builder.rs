@@ -43,6 +43,7 @@ pub(crate) mod python_bindings {
     use rabbitizer::Vram;
 
     use crate::{
+        context::builder::UserSymbolOverlapError,
         metadata::{RodataMigrationBehavior, SymbolMetadata, SymbolType},
         rom_address::RomAddress,
         size::Size,
@@ -64,10 +65,11 @@ pub(crate) mod python_bindings {
             vram: u32, // Vram // TODO
             rom: Option<RomAddress>,
             attributes: &SymAttributes,
-        ) {
+        ) -> Result<(), UserSymbolOverlapError> {
             let mut segment = self.global_segment();
-            let sym = segment.add_symbol(name, Vram::new(vram), rom);
+            let sym = segment.add_symbol(name, Vram::new(vram), rom)?;
             attributes.apply_to_sym(sym);
+            Ok(())
         }
 
         #[pyo3(signature = (name, vram, rom, attributes))]
@@ -77,10 +79,11 @@ pub(crate) mod python_bindings {
             vram: u32, // Vram // TODO
             rom: Option<RomAddress>,
             attributes: &SymAttributes,
-        ) {
+        ) -> Result<(), UserSymbolOverlapError> {
             let mut segment = self.global_segment();
-            let sym = segment.add_function(name, Vram::new(vram), rom);
+            let sym = segment.add_function(name, Vram::new(vram), rom)?;
             attributes.apply_to_sym(sym);
+            Ok(())
         }
 
         #[pyo3(signature = (name, vram, rom, attributes))]
@@ -90,10 +93,11 @@ pub(crate) mod python_bindings {
             vram: u32, // Vram // TODO
             rom: Option<RomAddress>,
             attributes: &SymAttributes,
-        ) {
+        ) -> Result<(), UserSymbolOverlapError> {
             let mut segment = self.global_segment();
-            let sym = segment.add_branch_label(name, Vram::new(vram), rom);
+            let sym = segment.add_branch_label(name, Vram::new(vram), rom)?;
             attributes.apply_to_sym(sym);
+            Ok(())
         }
 
         #[pyo3(signature = (name, vram, rom, attributes))]
@@ -103,10 +107,11 @@ pub(crate) mod python_bindings {
             vram: u32, // Vram // TODO
             rom: Option<RomAddress>,
             attributes: &SymAttributes,
-        ) {
+        ) -> Result<(), UserSymbolOverlapError> {
             let mut segment = self.global_segment();
-            let sym = segment.add_jumptable(name, Vram::new(vram), rom);
+            let sym = segment.add_jumptable(name, Vram::new(vram), rom)?;
             attributes.apply_to_sym(sym);
+            Ok(())
         }
 
         #[pyo3(signature = (name, vram, rom, attributes))]
@@ -116,10 +121,11 @@ pub(crate) mod python_bindings {
             vram: u32, // Vram // TODO
             rom: Option<RomAddress>,
             attributes: &SymAttributes,
-        ) {
+        ) -> Result<(), UserSymbolOverlapError> {
             let mut segment = self.global_segment();
-            let sym = segment.add_jumptable_label(name, Vram::new(vram), rom);
+            let sym = segment.add_jumptable_label(name, Vram::new(vram), rom)?;
             attributes.apply_to_sym(sym);
+            Ok(())
         }
 
         #[pyo3(signature = (name, vram, rom, attributes))]
@@ -129,10 +135,11 @@ pub(crate) mod python_bindings {
             vram: u32, // Vram // TODO
             rom: Option<RomAddress>,
             attributes: &SymAttributes,
-        ) {
+        ) -> Result<(), UserSymbolOverlapError> {
             let mut segment = self.global_segment();
-            let sym = segment.add_gcc_except_table(name, Vram::new(vram), rom);
+            let sym = segment.add_gcc_except_table(name, Vram::new(vram), rom)?;
             attributes.apply_to_sym(sym);
+            Ok(())
         }
 
         #[pyo3(signature = (name, vram, rom, attributes))]
@@ -142,10 +149,11 @@ pub(crate) mod python_bindings {
             vram: u32, // Vram // TODO
             rom: Option<RomAddress>,
             attributes: &SymAttributes,
-        ) {
+        ) -> Result<(), UserSymbolOverlapError> {
             let mut segment = self.global_segment();
-            let sym = segment.add_gcc_except_table_label(name, Vram::new(vram), rom);
+            let sym = segment.add_gcc_except_table_label(name, Vram::new(vram), rom)?;
             attributes.apply_to_sym(sym);
+            Ok(())
         }
 
         #[pyo3(name = "process")]

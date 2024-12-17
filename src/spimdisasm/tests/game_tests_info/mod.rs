@@ -3709,7 +3709,7 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
             .with_size(Size::new(0x8))
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("RO_800AF534".into(), Vram::new(0x800AF534))
-            .with_size(Size::new(0x8))
+            .with_size(Size::new(0x4))
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("jtbl_800AF538".into(), Vram::new(0x800AF538))
             .with_typ(SymbolType::Jumptable),
@@ -3987,7 +3987,7 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("_big_virus_max_wait".into(), Vram::new(0x800B1C98))
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_scoreNumsColor".into(), Vram::new(0x800B1CA4))
-            .with_size(Size::new(0x20))
+            .with_size(Size::new(0x12))
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate()),
         UserSymbol::new("_mesWriting_dmgamemain".into(), Vram::new(0x800B1CB8))
             .with_typ(SymbolType::CString)

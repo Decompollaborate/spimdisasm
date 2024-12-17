@@ -40,6 +40,8 @@ pub(crate) mod python_bindings {
     use pyo3::exceptions::PyRuntimeError;
     use pyo3::prelude::*;
 
+    // TODO: make a generic spimdisasm exception and make every other error to inherit from it
+
     pyo3::create_exception!(spimdisasm, SymDisplayError, PyRuntimeError);
 
     pyo3::create_exception!(spimdisasm, OwnedSegmentNotFound, SymDisplayError);
