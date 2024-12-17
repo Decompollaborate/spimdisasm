@@ -13,28 +13,15 @@ use pyo3::prelude::*;
 
 use crate::{
     address_range::AddressRange,
+    config::Compiler,
     context::{Context, OwnedSegmentNotFoundError},
+    metadata::ParentSectionMetadata,
     parent_segment_info::ParentSegmentInfo,
     section_type::SectionType,
     symbols::{symbol_noload::SymbolNoloadProperties, Symbol, SymbolNoload},
 };
 
 use super::Section;
-
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
-pub struct SectionNoloadSettings {}
-
-impl SectionNoloadSettings {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-impl Default for SectionNoloadSettings {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 #[derive(Debug, Clone, Hash, PartialEq)]
 #[must_use]
@@ -57,7 +44,7 @@ pub struct SectionNoload {
 impl SectionNoload {
     pub(crate) fn new(
         context: &mut Context,
-        _settings: &SectionNoloadSettings,
+        settings: &SectionNoloadSettings,
         name: String,
         vram_range: AddressRange<Vram>,
         parent_segment_info: ParentSegmentInfo,
@@ -126,6 +113,12 @@ impl SectionNoload {
             symbol_vrams.insert(*new_sym_vram);
 
             let properties = SymbolNoloadProperties {
+                parent_metadata: ParentSectionMetadata::new(
+                    name.clone(),
+                    vram_range.start(),
+                    parent_segment_info.clone(),
+                ),
+                compiler: settings.compiler,
                 auto_pad_by: auto_pads.get(new_sym_vram).copied(),
             };
             let /*mut*/ sym = SymbolNoload::new(context, AddressRange::new(*new_sym_vram, new_sym_vram_end), start, parent_segment_info.clone(), properties)?;
@@ -175,6 +168,18 @@ impl Section for SectionNoload {
     }
 }
 
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+pub struct SectionNoloadSettings {
+    compiler: Option<Compiler>,
+}
+
+impl SectionNoloadSettings {
+    pub fn new(compiler: Option<Compiler>) -> Self {
+        Self { compiler }
+    }
+}
+
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
     use crate::symbols::display::{SymDisplayError, SymNoloadDisplaySettings};
@@ -184,8 +189,9 @@ pub(crate) mod python_bindings {
     #[pymethods]
     impl SectionNoloadSettings {
         #[new]
-        pub fn py_new() -> Self {
-            Self::new()
+        #[pyo3(signature = (compiler))]
+        pub fn py_new(compiler: Option<Compiler>) -> Self {
+            Self::new(compiler)
         }
     }
 

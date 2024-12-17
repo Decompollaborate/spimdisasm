@@ -212,6 +212,9 @@ impl fmt::Display for FunctionDisplay<'_, '_, '_> {
         self.settings
             .common
             .display_sym_property_comments(f, self.metadata, self.owned_segment)?;
+        self.settings
+            .common
+            .display_sym_prev_alignment(f, self.metadata)?;
         self.settings.common.display_symbol_name(
             f,
             self.context.global_config(),
@@ -243,6 +246,10 @@ impl fmt::Display for FunctionDisplay<'_, '_, '_> {
                 )?;
             }
         }
+
+        self.settings
+            .common
+            .display_sym_post_alignment(f, self.metadata)?;
 
         Ok(())
     }

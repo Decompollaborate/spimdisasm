@@ -14,11 +14,11 @@ use rabbitizer::{access_type::AccessType, Vram};
 use pyo3::prelude::*;
 
 use crate::{
-    parent_segment_info::ParentSegmentInfo, rom_address::RomAddress, section_type::SectionType,
-    size::Size,
+    config::Compiler, parent_segment_info::ParentSegmentInfo, rom_address::RomAddress,
+    section_type::SectionType, size::Size,
 };
 
-use super::{SymbolMetadataNameDisplay, SymbolType};
+use super::{ParentSectionMetadata, SymbolMetadataNameDisplay, SymbolType};
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub /*(crate)*/ enum GeneratedBy {
@@ -180,6 +180,9 @@ pub struct SymbolMetadata {
     is_mips1_double: bool,
 
     visibility: Option<String>,
+
+    compiler: Option<Compiler>,
+    parent_metadata: Option<ParentSectionMetadata>,
 }
 
 impl SymbolMetadata {
@@ -214,6 +217,9 @@ impl SymbolMetadata {
             allow_ref_with_addend: true,
             is_mips1_double: false,
             visibility: None,
+
+            compiler: None,
+            parent_metadata: None,
         }
     }
 
@@ -397,6 +403,20 @@ impl SymbolMetadata {
     }
     pub fn visibility_mut(&mut self) -> &mut Option<String> {
         &mut self.visibility
+    }
+
+    pub(crate) fn compiler(&self) -> Option<Compiler> {
+        self.compiler
+    }
+    pub(crate) fn set_compiler(&mut self, compiler: Compiler) {
+        self.compiler = Some(compiler);
+    }
+
+    pub(crate) fn parent_metadata(&self) -> Option<&ParentSectionMetadata> {
+        self.parent_metadata.as_ref()
+    }
+    pub(crate) fn set_parent_metadata(&mut self, parent_metadata: ParentSectionMetadata) {
+        self.parent_metadata = Some(parent_metadata);
     }
 }
 

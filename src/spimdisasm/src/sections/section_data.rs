@@ -13,8 +13,9 @@ use pyo3::prelude::*;
 
 use crate::{
     address_range::AddressRange,
+    config::Compiler,
     context::{Context, OwnedSegmentNotFoundError},
-    metadata::segment_metadata::FindSettings,
+    metadata::{segment_metadata::FindSettings, GeneratedBy, ParentSectionMetadata, SymbolType},
     parent_segment_info::ParentSegmentInfo,
     rom_address::RomAddress,
     rom_vram_range::RomVramRange,
@@ -24,21 +25,6 @@ use crate::{
 };
 
 use super::{trait_section::RomSection, Section};
-
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
-pub struct SectionDataSettings {}
-
-impl SectionDataSettings {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-impl Default for SectionDataSettings {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 #[derive(Debug, Clone, Hash, PartialEq)]
 #[must_use]
@@ -64,7 +50,7 @@ impl SectionData {
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn new(
         context: &mut Context,
-        _settings: &SectionDataSettings,
+        settings: &SectionDataSettings,
         name: String,
         raw_bytes: &[u8],
         rom: RomAddress,
@@ -96,8 +82,10 @@ impl SectionData {
 
         let mut auto_pads: BTreeMap<Vram, Vram> = BTreeMap::new();
 
-        // let mut prev_word_symbol_vram = None;
-        // let mut current_jtbl_info = None;
+        let mut remaining_string_size = -1;
+        let mut prev_string_vram = vram;
+        let mut pointers_in_data_to_remove = BTreeSet::new();
+        let mut syms_to_drop = BTreeSet::new();
 
         // Look for stuff that looks like addresses which point to symbols on this section
         let displacement = (4 - (vram.inner() % 4) as usize) % 4;
@@ -120,60 +108,107 @@ impl SectionData {
             let d =
                 owned_segment.find_symbol(d_vram, FindSettings::default().with_allow_addend(false));
 
-            if b.is_none() && c.is_none() && d.is_none() {
-                // There's no symbol in between
-
-                let should_search_for_address = match a {
-                    None => true,
-                    Some(metadata) => metadata
-                        .sym_type()
-                        .is_none_or(|x| x.can_reference_symbols()),
-                };
-
-                if should_search_for_address {
-                    // TODO: improve heuristic to determine if should search for symbols
-                    let word = context.global_config().endian().word_from_bytes(word_bytes);
-                    let word_vram = Vram::new(word);
-                    if vram_range.in_range(word_vram) {
-                        // Vram is contained in this section
-                        if let Some(sym) = owned_segment
-                            .find_symbol(word_vram, FindSettings::default().with_allow_addend(true))
+            // Avoid symbols in the middle of strings
+            if remaining_string_size < 0 {
+                if let Some(sym) = a {
+                    if sym.sym_type() == Some(&SymbolType::CString) {
+                        if let Some(str_end) =
+                            raw_bytes[local_offset..].iter().position(|x| *x == 0)
                         {
-                            if sym.vram() == word_vram {
-                                // Only count this symbol if it doesn't have an addend.
-                                // If it does have an addend then it may be part of a larger symbol.
+                            remaining_string_size = str_end as i32;
+                            prev_string_vram = current_vram;
+
+                            symbols_info.insert(current_vram);
+
+                            let next_vram = if let Some(size) = sym.user_declared_size() {
+                                current_vram + size
+                            } else {
+                                current_vram + Size::new((str_end + 1).next_multiple_of(4) as u32)
+                            };
+                            if ((next_vram - vram).inner() as usize) < raw_bytes.len() {
+                                // Avoid generating a symbol at the end of the section
+                                symbols_info.insert(next_vram);
+                                auto_pads.insert(next_vram, current_vram);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if remaining_string_size < 0 {
+                if b.is_none() && c.is_none() && d.is_none() {
+                    // There's no symbol in between
+
+                    let should_search_for_address = match a {
+                        None => true,
+                        Some(metadata) => metadata
+                            .sym_type()
+                            .is_none_or(|x| x.can_reference_symbols()),
+                    };
+
+                    if should_search_for_address {
+                        // TODO: improve heuristic to determine if should search for symbols
+                        let word = context.global_config().endian().word_from_bytes(word_bytes);
+                        let word_vram = Vram::new(word);
+                        if vram_range.in_range(word_vram) {
+                            // Vram is contained in this section
+                            if let Some(sym) = owned_segment.find_symbol(
+                                word_vram,
+                                FindSettings::default().with_allow_addend(true),
+                            ) {
+                                if sym.vram() == word_vram {
+                                    // Only count this symbol if it doesn't have an addend.
+                                    // If it does have an addend then it may be part of a larger symbol.
+                                    symbols_info.insert(word_vram);
+                                }
+                            } else {
                                 symbols_info.insert(word_vram);
                             }
                         } else {
-                            symbols_info.insert(word_vram);
-                        }
-                    } else {
-                        let current_rom = rom + (current_vram - vram).try_into().expect("This should not panic because `current_vram` should always be greter or equal to `vram`");
-                        let sym = context
-                            .find_referenced_segment(word_vram, &parent_segment_info)
-                            .and_then(|seg| seg.find_symbol(word_vram, FindSettings::default()));
-                        if sym.is_none() {
-                            maybe_pointers_to_other_sections.push((word_vram, current_rom));
+                            let current_rom = rom + (current_vram - vram).try_into().expect("This should not panic because `current_vram` should always be greter or equal to `vram`");
+                            let sym = context
+                                .find_referenced_segment(word_vram, &parent_segment_info)
+                                .and_then(|seg| {
+                                    seg.find_symbol(word_vram, FindSettings::default())
+                                });
+                            if sym.is_none() {
+                                maybe_pointers_to_other_sections.push((word_vram, current_rom));
+                            }
                         }
                     }
+                }
+
+                for (x_vram, x) in [(current_vram, a), (b_vram, b), (c_vram, c), (d_vram, d)] {
+                    if let Some(sym) = x {
+                        symbols_info.insert(sym.vram());
+                        if let Some(size) = sym.user_declared_size() {
+                            let next_vram = sym.vram() + size;
+                            if ((next_vram - vram).inner() as usize) < raw_bytes.len() {
+                                // Avoid generating a symbol at the end of the section
+                                symbols_info.insert(next_vram);
+                                auto_pads.insert(next_vram, sym.vram());
+                            }
+                        }
+                    } else if owned_segment.is_vram_a_possible_pointer_in_data(x_vram) {
+                        symbols_info.insert(x_vram);
+                    }
+                }
+            } else {
+                for (x_vram, x) in [(current_vram, a), (b_vram, b), (c_vram, c), (d_vram, d)] {
+                    if x_vram == prev_string_vram {
+                        continue;
+                    }
+
+                    if let Some(sym) = x {
+                        if sym.generated_by() == GeneratedBy::Autogenerated {
+                            syms_to_drop.insert(x_vram);
+                        }
+                    }
+                    pointers_in_data_to_remove.insert(x_vram);
                 }
             }
 
-            for (x_vram, x) in [(current_vram, a), (b_vram, b), (c_vram, c), (d_vram, d)] {
-                if let Some(sym) = x {
-                    symbols_info.insert(sym.vram());
-                    if let Some(size) = sym.user_declared_size() {
-                        let next_vram = sym.vram() + size;
-                        if ((next_vram - vram).inner() as usize) < raw_bytes.len() {
-                            // Avoid generating a symbol at the end of the section
-                            symbols_info.insert(next_vram);
-                            auto_pads.insert(next_vram, sym.vram());
-                        }
-                    }
-                } else if owned_segment.is_vram_a_possible_pointer_in_data(x_vram) {
-                    symbols_info.insert(x_vram);
-                }
-            }
+            remaining_string_size -= 4;
         }
 
         let symbols_info_vec: Vec<Vram> = symbols_info.into_iter().collect();
@@ -200,6 +235,12 @@ impl SectionData {
             symbol_vrams.insert(*new_sym_vram);
 
             let properties = SymbolDataProperties {
+                parent_metadata: ParentSectionMetadata::new(
+                    name.clone(),
+                    vram,
+                    parent_segment_info.clone(),
+                ),
+                compiler: settings.compiler,
                 auto_pad_by: auto_pads.get(new_sym_vram).copied(),
             };
             let /*mut*/ sym = SymbolData::new(context, raw_bytes[start..end].into(), sym_rom, *new_sym_vram, start, parent_segment_info.clone(), section_type, properties)?;
@@ -213,6 +254,12 @@ impl SectionData {
             owned_segment_mut
                 .add_possible_pointer_in_data(possible_pointer, rom_address_referencing_pointer);
         }
+        for possible_pointer in pointers_in_data_to_remove {
+            owned_segment_mut.drop_possible_pointer_in_data(possible_pointer);
+        }
+        for sym_to_drop in syms_to_drop {
+            owned_segment_mut.drop_symbol(sym_to_drop);
+        }
 
         Ok(Self {
             name,
@@ -224,7 +271,6 @@ impl SectionData {
         })
     }
 
-    // TODO: remove
     pub fn data_symbols(&self) -> &[SymbolData] {
         &self.data_symbols
     }
@@ -263,6 +309,18 @@ impl RomSection for SectionData {
     }
 }
 
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+pub struct SectionDataSettings {
+    compiler: Option<Compiler>,
+}
+
+impl SectionDataSettings {
+    pub fn new(compiler: Option<Compiler>) -> Self {
+        Self { compiler }
+    }
+}
+
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
     use crate::symbols::display::{SymDataDisplaySettings, SymDisplayError};
@@ -272,8 +330,9 @@ pub(crate) mod python_bindings {
     #[pymethods]
     impl SectionDataSettings {
         #[new]
-        pub fn py_new() -> Self {
-            Self::new()
+        #[pyo3(signature = (compiler))]
+        pub fn py_new(compiler: Option<Compiler>) -> Self {
+            Self::new(compiler)
         }
     }
 

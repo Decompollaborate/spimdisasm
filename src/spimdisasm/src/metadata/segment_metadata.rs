@@ -429,6 +429,12 @@ impl SegmentMetadata {
 }
 
 impl SegmentMetadata {
+    pub(crate) fn drop_symbol(&mut self, vram: Vram) {
+        self.symbols.remove(&vram);
+    }
+}
+
+impl SegmentMetadata {
     pub(crate) fn add_possible_pointer_in_data(
         &mut self,
         possible_pointer: Vram,
@@ -441,6 +447,9 @@ impl SegmentMetadata {
     }
     pub(crate) fn is_vram_a_possible_pointer_in_data(&self, vram: Vram) -> bool {
         self.new_pointer_in_data.contains_key(&vram)
+    }
+    pub(crate) fn drop_possible_pointer_in_data(&mut self, vram: Vram) {
+        self.new_pointer_in_data.remove(&vram);
     }
 }
 

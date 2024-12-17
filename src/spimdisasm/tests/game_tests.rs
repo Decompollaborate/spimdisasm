@@ -4,7 +4,7 @@
 use rabbitizer::{InstructionDisplayFlags, InstructionFlags};
 use spimdisasm::{
     address_range::AddressRange,
-    config::{Endian, GlobalConfig},
+    config::{Compiler, Endian, GlobalConfig},
     context::{Context, ContextBuilder},
     metadata::SymbolType,
     parent_segment_info::ParentSegmentInfo,
@@ -18,6 +18,8 @@ use game_tests_info::{
     create_drmario64_us_segments, create_drmario64_us_symbols, SegmentData, TestSection,
     TestSegment, TestSegmentInfo, UserSymbol,
 };
+
+const COMPILER: Option<Compiler> = Some(Compiler::KMC);
 
 pub fn get_ranges_from_segments(segments: &[TestSegment]) -> RomVramRange {
     let mut rom_start = None;
@@ -167,19 +169,19 @@ fn init_context(
 
                     match sect {
                         TestSection::Text(rom, _) => finder_heater.preanalyze_text(
-                            &SectionExecutableSettings::new(InstructionFlags::default()),
+                            &SectionExecutableSettings::new(COMPILER, InstructionFlags::default()),
                             &rom_bytes[AddressRange::new(*rom, rom_end)],
                             *rom,
                             info.vram_from_rom(*rom),
                         ),
                         TestSection::Data(rom, _) => finder_heater.preanalyze_data(
-                            &SectionDataSettings::new(),
+                            &SectionDataSettings::new(COMPILER),
                             &rom_bytes[AddressRange::new(*rom, rom_end)],
                             *rom,
                             info.vram_from_rom(*rom),
                         ),
                         TestSection::Rodata(rom, _) => finder_heater.preanalyze_rodata(
-                            &SectionDataSettings::new(),
+                            &SectionDataSettings::new(COMPILER),
                             &rom_bytes[AddressRange::new(*rom, rom_end)],
                             *rom,
                             info.vram_from_rom(*rom),
@@ -238,8 +240,10 @@ fn init_segments(
 
                     match sect {
                         TestSection::Text(rom, name) => {
-                            let text_settings =
-                                SectionExecutableSettings::new(InstructionFlags::default());
+                            let text_settings = SectionExecutableSettings::new(
+                                COMPILER,
+                                InstructionFlags::default(),
+                            );
                             text_sections.push(
                                 context
                                     .create_section_text(
@@ -254,7 +258,7 @@ fn init_segments(
                             );
                         }
                         TestSection::Data(rom, name) => {
-                            let data_settings = SectionDataSettings::new();
+                            let data_settings = SectionDataSettings::new(COMPILER);
                             data_sections.push(
                                 context
                                     .create_section_data(
@@ -269,7 +273,7 @@ fn init_segments(
                             );
                         }
                         TestSection::Rodata(rom, name) => {
-                            let rodata_settings = SectionDataSettings::new();
+                            let rodata_settings = SectionDataSettings::new(COMPILER);
                             rodata_sections.push(
                                 context
                                     .create_section_rodata(
@@ -284,7 +288,7 @@ fn init_segments(
                             );
                         }
                         TestSection::Bss(vram, name) => {
-                            let bss_settings = SectionNoloadSettings::new();
+                            let bss_settings = SectionNoloadSettings::new(COMPILER);
 
                             let bss_section_vram_end = if i + 1 < info.sections.len() {
                                 match info.sections[i + 1] {

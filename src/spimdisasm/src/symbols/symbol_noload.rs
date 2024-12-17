@@ -5,8 +5,9 @@ use rabbitizer::Vram;
 
 use crate::{
     address_range::AddressRange,
+    config::Compiler,
     context::{Context, OwnedSegmentNotFoundError},
-    metadata::GeneratedBy,
+    metadata::{GeneratedBy, ParentSectionMetadata, SymbolMetadata},
     parent_segment_info::ParentSegmentInfo,
     section_type::SectionType,
 };
@@ -15,11 +16,6 @@ use super::{
     display::{SymDisplayError, SymNoloadDisplay, SymNoloadDisplaySettings},
     Symbol,
 };
-
-#[derive(Debug, Clone, Copy, Hash, PartialEq)]
-pub(crate) struct SymbolNoloadProperties {
-    pub auto_pad_by: Option<Vram>,
-}
 
 #[derive(Debug, Clone, Hash, PartialEq)]
 pub struct SymbolNoload {
@@ -35,7 +31,7 @@ impl SymbolNoload {
         parent_segment_info: ParentSegmentInfo,
         properties: SymbolNoloadProperties,
     ) -> Result<Self, OwnedSegmentNotFoundError> {
-        let sym = context
+        let metadata = context
             .find_owned_segment_mut(&parent_segment_info)?
             .add_symbol(
                 vram_range.start(),
@@ -44,12 +40,10 @@ impl SymbolNoload {
                 Some(SectionType::Bss),
                 false,
             );
-        *sym.autodetected_size_mut() = Some(vram_range.size());
-        sym.set_defined();
+        *metadata.autodetected_size_mut() = Some(vram_range.size());
+        metadata.set_defined();
 
-        if let Some(auto_pad_by) = properties.auto_pad_by {
-            sym.set_auto_created_pad_by(auto_pad_by);
-        }
+        properties.apply_to_metadata(metadata);
 
         Ok(Self {
             vram_range,
@@ -82,5 +76,26 @@ impl Symbol for SymbolNoload {
     #[must_use]
     fn section_type(&self) -> SectionType {
         SectionType::Bss
+    }
+}
+
+#[derive(Debug, Clone, Hash, PartialEq)]
+pub(crate) struct SymbolNoloadProperties {
+    pub parent_metadata: ParentSectionMetadata,
+    pub compiler: Option<Compiler>,
+    pub auto_pad_by: Option<Vram>,
+}
+
+impl SymbolNoloadProperties {
+    fn apply_to_metadata(self, metadata: &mut SymbolMetadata) {
+        metadata.set_parent_metadata(self.parent_metadata);
+
+        if let Some(compiler) = self.compiler {
+            metadata.set_compiler(compiler);
+        }
+
+        if let Some(auto_pad_by) = self.auto_pad_by {
+            metadata.set_auto_created_pad_by(auto_pad_by);
+        }
     }
 }

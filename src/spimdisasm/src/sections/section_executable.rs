@@ -10,6 +10,8 @@ use rabbitizer::{vram::VramOffset, Instruction, InstructionFlags, IsaExtension, 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
+use crate::config::Compiler;
+use crate::metadata::ParentSectionMetadata;
 use crate::section_type::SectionType;
 use crate::symbols::symbol_function::SymbolFunctionProperties;
 use crate::{
@@ -28,22 +30,6 @@ use crate::{
 
 use super::trait_section::RomSection;
 use super::Section;
-
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
-pub struct SectionExecutableSettings {
-    instruction_flags: InstructionFlags,
-    is_handwritten: bool,
-}
-
-impl SectionExecutableSettings {
-    pub fn new(instruction_flags: InstructionFlags) -> Self {
-        Self {
-            instruction_flags,
-            is_handwritten: false,
-        }
-    }
-}
 
 #[derive(Debug, Clone, Hash, PartialEq)]
 #[must_use]
@@ -122,6 +108,12 @@ impl SectionExecutable {
             symbol_vrams.insert(vram);
 
             let properties = SymbolFunctionProperties {
+                parent_metadata: ParentSectionMetadata::new(
+                    name.clone(),
+                    vram,
+                    parent_segment_info.clone(),
+                ),
+                compiler: settings.compiler,
                 auto_pad_by: None, // TODO
             };
             let /*mut*/ func = SymbolFunction::new(context, instrs[*start..end].into(), current_rom, current_vram, local_offset, parent_segment_info.clone(), properties)?;
@@ -557,6 +549,24 @@ fn find_functions_check_function_ended(
     Ok((function_ended, prev_func_had_user_declared_size))
 }
 
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+pub struct SectionExecutableSettings {
+    compiler: Option<Compiler>,
+    instruction_flags: InstructionFlags,
+    is_handwritten: bool,
+}
+
+impl SectionExecutableSettings {
+    pub fn new(compiler: Option<Compiler>, instruction_flags: InstructionFlags) -> Self {
+        Self {
+            compiler,
+            instruction_flags,
+            is_handwritten: false,
+        }
+    }
+}
+
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
     use crate::symbols::display::{FunctionDisplaySettings, SymDisplayError};
@@ -566,8 +576,9 @@ pub(crate) mod python_bindings {
     #[pymethods]
     impl SectionExecutableSettings {
         #[new]
-        pub fn py_new(/*instruction_flags: InstructionFlags*/) -> Self {
-            Self::new(InstructionFlags::default())
+        #[pyo3(signature = (compiler))]
+        pub fn py_new(compiler: Option<Compiler>, /*instruction_flags: InstructionFlags*/) -> Self {
+            Self::new(compiler, InstructionFlags::default())
         }
     }
 

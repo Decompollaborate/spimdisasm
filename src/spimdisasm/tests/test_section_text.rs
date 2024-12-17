@@ -99,7 +99,7 @@ fn test_section_text_1() {
     let vram = Vram::new(0x80000400);
     let size = Size::new(0x21FC00);
 
-    let text_settings = SectionExecutableSettings::new(InstructionFlags::new());
+    let text_settings = SectionExecutableSettings::new(None, InstructionFlags::new());
 
     let global_config = GlobalConfig::new(Endian::Big);
     let mut context = {
@@ -219,7 +219,7 @@ fn test_section_text_lui_delay_slot() {
     let vram = Vram::new(0x80081738);
     let size = Size::new(0x1000);
 
-    let text_settings = SectionExecutableSettings::new(InstructionFlags::new());
+    let text_settings = SectionExecutableSettings::new(None, InstructionFlags::new());
 
     let global_config = GlobalConfig::new(Endian::Big);
     let mut context = {
