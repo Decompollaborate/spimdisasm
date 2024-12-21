@@ -11,7 +11,7 @@ fn should_escape_symbol(name: &str) -> bool {
     name.contains('@')
 }
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, PartialOrd)]
 #[must_use]
 pub struct SymbolMetadataNameDisplay<'sym> {
     sym: &'sym SymbolMetadata,

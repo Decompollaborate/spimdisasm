@@ -7,7 +7,7 @@ use crate::rom_address::RomAddress;
 
 use super::JrRegData;
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct HiInfo {
     pub(crate) instr_rom: RomAddress,
 
@@ -16,7 +16,7 @@ pub(crate) struct HiInfo {
     pub(crate) set_on_branch_likely: bool,
 }
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TrackedRegisterState {
     // Maybe wrap in Option?
     value: u32,

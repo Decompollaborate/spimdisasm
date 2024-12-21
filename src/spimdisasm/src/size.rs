@@ -10,7 +10,7 @@ use pyo3::prelude::*;
 
 use crate::rom_address::RomAddress;
 
-#[derive(Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct Size {
     inner: u32,
@@ -99,7 +99,7 @@ impl fmt::Display for Size {
     }
 }
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
 pub struct ConvertToSizeError {
     inner: i32,

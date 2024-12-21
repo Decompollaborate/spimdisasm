@@ -7,7 +7,7 @@ use crate::rom_address::RomAddress;
 
 use super::{tracked_register_state::HiInfo, JrRegData, LoPairingInfo, TrackedRegisterState};
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct RegisterTracker {
     registers: [TrackedRegisterState; Gpr::count()],
 }

@@ -318,7 +318,7 @@ impl SegmentMetadata {
     }
 }
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct FindSettings {
     allow_addend: bool,
     check_upper_limit: bool,

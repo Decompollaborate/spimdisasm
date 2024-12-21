@@ -36,7 +36,7 @@ impl SymNoloadDisplaySettings {
     }
 }
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq)]
 pub struct SymNoloadDisplay<'ctx, 'sym, 'flg> {
     context: &'ctx Context,
     sym: &'sym SymbolNoload,

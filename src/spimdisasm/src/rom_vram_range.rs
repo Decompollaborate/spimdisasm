@@ -8,7 +8,7 @@ use pyo3::prelude::*;
 
 use crate::{address_range::AddressRange, rom_address::RomAddress, size::Size};
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct RomVramRange {
     rom: AddressRange<RomAddress>,

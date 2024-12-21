@@ -549,7 +549,7 @@ fn find_functions_check_function_ended(
     Ok((function_ended, prev_func_had_user_declared_size))
 }
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct SectionExecutableSettings {
     compiler: Option<Compiler>,

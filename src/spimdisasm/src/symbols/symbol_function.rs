@@ -508,8 +508,8 @@ impl SymbolFunction {
 }
 
 impl SymbolFunction {
-    // TODO: maybe remove?
-    pub fn instructions(&self) -> &[Instruction] {
+    #[must_use]
+    pub(crate) fn instructions(&self) -> &[Instruction] {
         &self.instructions
     }
 

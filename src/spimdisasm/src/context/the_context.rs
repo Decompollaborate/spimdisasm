@@ -172,7 +172,7 @@ impl Context {
     }
 }
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
 // TODO: Make a public error API
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]

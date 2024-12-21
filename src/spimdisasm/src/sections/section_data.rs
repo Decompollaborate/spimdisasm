@@ -13,6 +13,7 @@ use pyo3::prelude::*;
 
 use crate::{
     address_range::AddressRange,
+    analysis::StringGuesserLevel,
     config::Compiler,
     context::{Context, OwnedSegmentNotFoundError},
     metadata::{segment_metadata::FindSettings, GeneratedBy, ParentSectionMetadata, SymbolType},
@@ -21,6 +22,7 @@ use crate::{
     rom_vram_range::RomVramRange,
     section_type::SectionType,
     size::Size,
+    str_decoding::Encoding,
     symbols::{symbol_data::SymbolDataProperties, Symbol, SymbolData},
 };
 
@@ -74,15 +76,15 @@ impl SectionData {
 
         let owned_segment = context.find_owned_segment(&parent_segment_info)?;
 
-        let mut symbols_info = BTreeSet::new();
+        let mut symbols_info = BTreeMap::new();
         // Ensure there's a symbol at the beginning of the section.
-        symbols_info.insert(vram);
+        symbols_info.insert(vram, (None,));
 
         let mut maybe_pointers_to_other_sections = Vec::new();
 
         let mut auto_pads: BTreeMap<Vram, Vram> = BTreeMap::new();
 
-        let mut remaining_string_size = -1;
+        let mut remaining_string_size = 0;
         let mut prev_string_vram = vram;
         let mut pointers_in_data_to_remove = BTreeSet::new();
         let mut syms_to_drop = BTreeSet::new();
@@ -109,33 +111,29 @@ impl SectionData {
                 owned_segment.find_symbol(d_vram, FindSettings::default().with_allow_addend(false));
 
             // Avoid symbols in the middle of strings
-            if remaining_string_size < 0 {
-                if let Some(sym) = a {
-                    if sym.sym_type() == Some(&SymbolType::CString) {
-                        if let Some(str_end) =
-                            raw_bytes[local_offset..].iter().position(|x| *x == 0)
-                        {
-                            remaining_string_size = str_end as i32;
-                            prev_string_vram = current_vram;
+            if remaining_string_size <= 0 {
+                if let Some(str_sym_size) = settings.string_guesser_level.guess(
+                    a,
+                    current_vram,
+                    &raw_bytes[local_offset..],
+                    settings.encoding,
+                    owned_segment,
+                ) {
+                    remaining_string_size = str_sym_size as i32;
+                    prev_string_vram = current_vram;
 
-                            symbols_info.insert(current_vram);
+                    symbols_info.insert(current_vram, (Some(SymbolType::CString),));
 
-                            let next_vram = if let Some(size) = sym.user_declared_size() {
-                                current_vram + size
-                            } else {
-                                current_vram + Size::new((str_end + 1).next_multiple_of(4) as u32)
-                            };
-                            if ((next_vram - vram).inner() as usize) < raw_bytes.len() {
-                                // Avoid generating a symbol at the end of the section
-                                symbols_info.insert(next_vram);
-                                auto_pads.insert(next_vram, current_vram);
-                            }
-                        }
+                    let next_vram = current_vram + Size::new(str_sym_size as u32);
+                    if ((next_vram - vram).inner() as usize) < raw_bytes.len() {
+                        // Avoid generating a symbol at the end of the section
+                        symbols_info.insert(next_vram, (None,));
+                        auto_pads.insert(next_vram, current_vram);
                     }
                 }
             }
 
-            if remaining_string_size < 0 {
+            if remaining_string_size <= 0 {
                 if b.is_none() && c.is_none() && d.is_none() {
                     // There's no symbol in between
 
@@ -159,10 +157,10 @@ impl SectionData {
                                 if sym.vram() == word_vram {
                                     // Only count this symbol if it doesn't have an addend.
                                     // If it does have an addend then it may be part of a larger symbol.
-                                    symbols_info.insert(word_vram);
+                                    symbols_info.insert(word_vram, (None,));
                                 }
                             } else {
-                                symbols_info.insert(word_vram);
+                                symbols_info.insert(word_vram, (None,));
                             }
                         } else {
                             let current_rom = rom + (current_vram - vram).try_into().expect("This should not panic because `current_vram` should always be greter or equal to `vram`");
@@ -180,17 +178,17 @@ impl SectionData {
 
                 for (x_vram, x) in [(current_vram, a), (b_vram, b), (c_vram, c), (d_vram, d)] {
                     if let Some(sym) = x {
-                        symbols_info.insert(sym.vram());
+                        symbols_info.insert(sym.vram(), (None,));
                         if let Some(size) = sym.user_declared_size() {
                             let next_vram = sym.vram() + size;
                             if ((next_vram - vram).inner() as usize) < raw_bytes.len() {
                                 // Avoid generating a symbol at the end of the section
-                                symbols_info.insert(next_vram);
+                                symbols_info.insert(next_vram, (None,));
                                 auto_pads.insert(next_vram, sym.vram());
                             }
                         }
                     } else if owned_segment.is_vram_a_possible_pointer_in_data(x_vram) {
-                        symbols_info.insert(x_vram);
+                        symbols_info.insert(x_vram, (None,));
                     }
                 }
             } else {
@@ -211,12 +209,13 @@ impl SectionData {
             remaining_string_size -= 4;
         }
 
-        let symbols_info_vec: Vec<Vram> = symbols_info.into_iter().collect();
+        let symbols_info_vec: Vec<(Vram, (Option<SymbolType>,))> =
+            symbols_info.into_iter().collect();
 
-        for (i, new_sym_vram) in symbols_info_vec.iter().enumerate() {
+        for (i, (new_sym_vram, extra_info)) in symbols_info_vec.iter().enumerate() {
             let start = new_sym_vram.sub_vram(&vram).inner() as usize;
             let end = if i + 1 < symbols_info_vec.len() {
-                symbols_info_vec[i + 1].sub_vram(&vram).inner() as usize
+                symbols_info_vec[i + 1].0.sub_vram(&vram).inner() as usize
             } else {
                 raw_bytes.len()
             };
@@ -242,6 +241,8 @@ impl SectionData {
                 ),
                 compiler: settings.compiler,
                 auto_pad_by: auto_pads.get(new_sym_vram).copied(),
+                detected_type: extra_info.0,
+                encoding: settings.encoding,
             };
             let /*mut*/ sym = SymbolData::new(context, raw_bytes[start..end].into(), sym_rom, *new_sym_vram, start, parent_segment_info.clone(), section_type, properties)?;
 
@@ -309,15 +310,38 @@ impl RomSection for SectionData {
     }
 }
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct SectionDataSettings {
     compiler: Option<Compiler>,
+    string_guesser_level: StringGuesserLevel,
+    encoding: Encoding,
 }
 
 impl SectionDataSettings {
     pub fn new(compiler: Option<Compiler>) -> Self {
-        Self { compiler }
+        Self {
+            compiler,
+            string_guesser_level: StringGuesserLevel::default(),
+            encoding: Encoding::default(),
+        }
+    }
+
+    pub fn set_string_guesser_level(&mut self, string_guesser_level: StringGuesserLevel) {
+        self.string_guesser_level = string_guesser_level;
+    }
+    pub fn with_string_guesser_level(self, string_guesser_level: StringGuesserLevel) -> Self {
+        Self {
+            string_guesser_level,
+            ..self
+        }
+    }
+
+    pub fn set_encoding(&mut self, encoding: Encoding) {
+        self.encoding = encoding;
+    }
+    pub fn with_encoding(self, encoding: Encoding) -> Self {
+        Self { encoding, ..self }
     }
 }
 
@@ -333,6 +357,16 @@ pub(crate) mod python_bindings {
         #[pyo3(signature = (compiler))]
         pub fn py_new(compiler: Option<Compiler>) -> Self {
             Self::new(compiler)
+        }
+
+        #[pyo3(name = "set_string_guesser_level")]
+        pub fn py_set_string_guesser_level(&mut self, string_guesser_level: StringGuesserLevel) {
+            self.set_string_guesser_level(string_guesser_level)
+        }
+
+        #[pyo3(name = "set_encoding")]
+        pub fn py_set_encoding(&mut self, encoding: Encoding) {
+            self.set_encoding(encoding);
         }
     }
 

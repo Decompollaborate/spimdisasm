@@ -48,7 +48,7 @@ impl FunctionDisplaySettings {
     }
 }
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq)]
 pub struct FunctionDisplay<'ctx, 'sym, 'flg> {
     context: &'ctx Context,
     sym: &'sym SymbolFunction,

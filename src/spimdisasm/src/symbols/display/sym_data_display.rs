@@ -42,7 +42,7 @@ impl SymDataDisplaySettings {
     }
 }
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq)]
 pub struct SymDataDisplay<'ctx, 'sym, 'flg> {
     context: &'ctx Context,
     sym: &'sym SymbolData,
@@ -261,12 +261,13 @@ impl SymDataDisplay<'_, '_, '_> {
             return self.display_as_word(f, i, current_rom, current_vram);
         };
 
-        let (decoded, _, had_errors) = encoding_rs::SHIFT_JIS.decode(&bytes[..str_end]);
-
-        if had_errors {
+        let decoded = if let Some(decoded) = self.sym.encoding().decode_to_string(&bytes[..str_end])
+        {
+            decoded
+        } else {
             // write!(f, "/* Invalid string due to decoding error */{}", self.settings.common.line_end())?;
             return self.display_as_word(f, i, current_rom, current_vram);
-        }
+        };
 
         let escaped = str_decoding::escape_string(&decoded);
 

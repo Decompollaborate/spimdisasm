@@ -8,7 +8,7 @@ use pyo3::prelude::*;
 
 use crate::size::Size;
 
-#[derive(Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct RomAddress {
     inner: u32,

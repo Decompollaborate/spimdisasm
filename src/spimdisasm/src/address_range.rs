@@ -7,7 +7,7 @@ use rabbitizer::Vram;
 
 use crate::{rom_address::RomAddress, size::Size};
 
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct AddressRange<T> {
     start: T,
     end: T,
