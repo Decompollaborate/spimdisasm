@@ -5,6 +5,7 @@
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
+use rabbitizer::access_type::AccessType;
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 #[non_exhaustive]
@@ -56,5 +57,39 @@ impl SymbolType {
             SymbolType::CString => false,
             SymbolType::UserCustom => true,
         }
+    }
+
+    pub fn from_access_type(access_type: AccessType) -> Option<Self> {
+        // TODO: use AccessType.min_size and AccessType.min_alignment
+
+        match access_type {
+            AccessType::NONE => None,
+
+            AccessType::BYTE => Some(SymbolType::Byte),
+            AccessType::SHORT => Some(SymbolType::Short),
+            AccessType::WORD => Some(SymbolType::Word),
+            AccessType::DOUBLEWORD => Some(SymbolType::DWord),
+            AccessType::QUADWORD => Some(SymbolType::DWord), // ?
+            AccessType::FLOAT => Some(SymbolType::Float32),
+            AccessType::DOUBLEFLOAT => Some(SymbolType::Float64),
+
+            // Struct copies
+            AccessType::WORD_LEFT
+            | AccessType::WORD_RIGHT
+            | AccessType::DOUBLEWORD_LEFT
+            | AccessType::DOUBLEWORD_RIGHT => None,
+
+            _ => todo!(),
+        }
+    }
+
+    pub(crate) fn may_have_addend(&self) -> bool {
+        !matches!(
+            self,
+            SymbolType::Function
+                | SymbolType::BranchLabel
+                | SymbolType::JumptableLabel
+                | SymbolType::GccExceptTableLabel
+        )
     }
 }

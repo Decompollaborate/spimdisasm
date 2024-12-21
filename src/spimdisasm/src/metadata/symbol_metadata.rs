@@ -326,25 +326,7 @@ impl SymbolMetadata {
         if self.access_type.is_none() {
             self.access_type = Some(access_type);
             if self.autodetected_type.is_none() {
-                self.autodetected_type = match access_type.0 {
-                    AccessType::NONE => None,
-
-                    AccessType::BYTE => Some(SymbolType::Byte),
-                    AccessType::SHORT => Some(SymbolType::Short),
-                    AccessType::WORD => Some(SymbolType::Word),
-                    AccessType::DOUBLEWORD => Some(SymbolType::DWord),
-                    AccessType::QUADWORD => Some(SymbolType::DWord), // ?
-                    AccessType::FLOAT => Some(SymbolType::Float32),
-                    AccessType::DOUBLEFLOAT => Some(SymbolType::Float64),
-
-                    // Struct copies
-                    AccessType::WORD_LEFT
-                    | AccessType::WORD_RIGHT
-                    | AccessType::DOUBLEWORD_LEFT
-                    | AccessType::DOUBLEWORD_RIGHT => None,
-
-                    _ => todo!(),
-                };
+                self.autodetected_type = SymbolType::from_access_type(access_type.0);
             }
         }
     }
