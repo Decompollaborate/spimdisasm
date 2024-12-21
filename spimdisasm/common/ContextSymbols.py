@@ -61,7 +61,7 @@ class SymbolSpecialType(enum.Enum):
 
 @dataclasses.dataclass
 class AccessTypeInfo:
-    size: int
+    size: int|None
     typeSigned: str|None
     typeUnsigned: str|None
     typeNameAliases: set[str] = dataclasses.field(default_factory=set)
@@ -92,8 +92,13 @@ gAccessKinds: dict[rabbitizer.Enum, AccessTypeInfo] = {
     # Ignore signed WORD since it tends to not give a proper type
     rabbitizer.AccessType.WORD: AccessTypeInfo(4, None, "u32", {"s32", "vs32", "vu32"}),
     rabbitizer.AccessType.DOUBLEWORD: AccessTypeInfo(8, "s64", "u64", {"vs64", "vu64"}),
+    rabbitizer.AccessType.QUADWORD: AccessTypeInfo(16, None, None),
     rabbitizer.AccessType.FLOAT: AccessTypeInfo(4, "f32", None, {"Vec3f"}),
     rabbitizer.AccessType.DOUBLEFLOAT: AccessTypeInfo(8, "f64", None),
+    rabbitizer.AccessType.WORD_LEFT: AccessTypeInfo(None, None, None),
+    rabbitizer.AccessType.WORD_RIGHT: AccessTypeInfo(None, None, None),
+    rabbitizer.AccessType.DOUBLEWORD_LEFT: AccessTypeInfo(None, None, None),
+    rabbitizer.AccessType.DOUBLEWORD_RIGHT: AccessTypeInfo(None, None, None),
 }
 
 
@@ -590,11 +595,16 @@ class ContextSymbol:
         if currentType is not None and not isinstance(currentType, SymbolSpecialType):
             for info in gAccessKinds.values():
                 if info.typeMatchesAccess(currentType):
-                    return info.size
+                    size = info.size
+                    if size is not None:
+                        return size
+                    break
 
         # Infer size based on instruction access type
         if self.accessType is not None:
-            return gAccessKinds[self.accessType].size
+            size = gAccessKinds[self.accessType].size
+            if size is not None:
+                return size
 
         # Infer size based on symbol's address alignment
         if self.vram % 4 == 0:

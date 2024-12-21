@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix a crash produced by not handling new `AccessType`s introduced by `rabbitizer`.
+- `rabbitizer` 1.12.5 or above is required.
+
 ## [1.31.2] - 2024-12-02
 
 ### Fixed
