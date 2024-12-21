@@ -131,7 +131,7 @@ impl FunctionDisplay<'_, '_, '_> {
                     true,
                 )?;
             } else {
-                write!(f, "{}:{}", name, self.settings.common.line_end(),)?;
+                write!(f, "{}:{}", name, self.settings.common.line_end())?;
             }
         }
 

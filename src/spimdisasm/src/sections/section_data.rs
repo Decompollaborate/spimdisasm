@@ -16,7 +16,10 @@ use crate::{
     analysis::StringGuesserLevel,
     config::Compiler,
     context::{Context, OwnedSegmentNotFoundError},
-    metadata::{segment_metadata::FindSettings, GeneratedBy, ParentSectionMetadata, SymbolType},
+    metadata::{
+        segment_metadata::FindSettings, GeneratedBy, ParentSectionMetadata, SymbolMetadata,
+        SymbolType,
+    },
     parent_segment_info::ParentSegmentInfo,
     rom_address::RomAddress,
     rom_vram_range::RomVramRange,
@@ -89,6 +92,8 @@ impl SectionData {
         let mut pointers_in_data_to_remove = BTreeSet::new();
         let mut syms_to_drop = BTreeSet::new();
 
+        let mut prev_sym: Option<&SymbolMetadata> = None;
+
         // Look for stuff that looks like addresses which point to symbols on this section
         let displacement = (4 - (vram.inner() % 4) as usize) % 4;
         // TODO: check for symbols in the displacement and everything that the `chunk_exact` may have left out
@@ -138,7 +143,8 @@ impl SectionData {
                     // There's no symbol in between
 
                     let should_search_for_address = match a {
-                        None => true,
+                        None => prev_sym
+                            .is_none_or(|s| s.sym_type().is_none_or(|x| x.can_reference_symbols())),
                         Some(metadata) => metadata
                             .sym_type()
                             .is_none_or(|x| x.can_reference_symbols()),
@@ -187,6 +193,7 @@ impl SectionData {
                                 auto_pads.insert(next_vram, sym.vram());
                             }
                         }
+                        prev_sym = Some(sym);
                     } else if owned_segment.is_vram_a_possible_pointer_in_data(x_vram) {
                         symbols_info.insert(x_vram, (None,));
                     }
