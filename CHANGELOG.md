@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.31.3] - 2024-12-21
+
 ### Fixed
 
 - Fix a crash produced by not handling new `AccessType`s introduced by `rabbitizer`.
@@ -1718,6 +1720,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.31.3]: https://github.com/Decompollaborate/spimdisasm/compare/1.31.2...1.31.3
 [1.31.2]: https://github.com/Decompollaborate/spimdisasm/compare/1.31.1...1.31.2
 [1.31.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.31.0...1.31.1
 [1.31.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.30.2...1.31.0
