@@ -369,6 +369,11 @@ impl SymbolMetadata {
         self.auto_created_pad_by = Some(vram);
     }
 
+    #[must_use]
+    pub fn rodata_migration_behavior(&self) -> &RodataMigrationBehavior {
+        &self.rodata_migration_behavior
+    }
+    #[must_use]
     pub fn rodata_migration_behavior_mut(&mut self) -> &mut RodataMigrationBehavior {
         &mut self.rodata_migration_behavior
     }
@@ -441,6 +446,79 @@ impl SymbolMetadata {
 
         return False
         */
+    }
+
+    fn is_maybe_const_variable(&self) -> bool {
+        if let Some(sym_type) = self.sym_type() {
+            match sym_type {
+                SymbolType::Function => false,
+                SymbolType::BranchLabel => false,
+                SymbolType::Jumptable => false,
+                SymbolType::JumptableLabel => false,
+                SymbolType::GccExceptTable => false,
+                SymbolType::GccExceptTableLabel => false,
+                SymbolType::Byte => true,
+                SymbolType::Short => true,
+                SymbolType::Word => true,
+                SymbolType::DWord => true,
+                SymbolType::Float32 => {
+                    /*
+                    if self.sizew > 1:
+                        for w in self.words[1:]:
+                            if w != 0:
+                                return True
+                    return False
+                    */
+                    false
+                }
+                SymbolType::Float64 => {
+                    /*
+                    if self.sizew > 2:
+                        for w in self.words[2:]:
+                            if w != 0:
+                                return True
+                    return False
+                    */
+                    false
+                }
+                SymbolType::CString => false,
+                SymbolType::UserCustom => false,
+            }
+        } else {
+            true
+        }
+    }
+
+    pub(crate) fn is_late_rodata(&self) -> bool {
+        if self.compiler().is_some_and(|x| x.has_late_rodata()) {
+            // late rodata only exists in IDO's world
+
+            matches!(
+                self.sym_type(),
+                Some(SymbolType::Jumptable | SymbolType::Float32 | SymbolType::Float64)
+            )
+        } else {
+            false
+        }
+    }
+
+    pub(crate) fn is_migrable(&self) -> bool {
+        match self.rodata_migration_behavior {
+            RodataMigrationBehavior::MigrateToSpecificFunction(_) => true,
+            RodataMigrationBehavior::ForceMigrate() => true,
+            RodataMigrationBehavior::ForceNotMigrate() => false,
+            RodataMigrationBehavior::Default() => {
+                if self.is_mips1_double {
+                    true
+                } else if !self.reference_symbols.is_empty() || self.reference_functions.len() > 1 {
+                    false
+                } else if self.is_maybe_const_variable() {
+                    self.compiler.is_some_and(|x| x.allow_rdata_migration())
+                } else {
+                    true
+                }
+            }
+        }
     }
 }
 

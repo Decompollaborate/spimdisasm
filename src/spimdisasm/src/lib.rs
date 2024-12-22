@@ -21,6 +21,7 @@ pub mod str_decoding;
 pub mod config;
 pub mod context;
 pub mod metadata;
+pub mod migration;
 pub mod relocation;
 pub mod sections;
 pub mod symbols;

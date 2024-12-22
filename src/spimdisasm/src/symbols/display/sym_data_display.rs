@@ -74,6 +74,16 @@ impl<'ctx, 'sym, 'flg> SymDataDisplay<'ctx, 'sym, 'flg> {
             metadata,
         })
     }
+
+    #[must_use]
+    pub(crate) fn sym(&self) -> &'sym SymbolData {
+        self.sym
+    }
+
+    #[must_use]
+    pub(crate) fn settings_common(&self) -> &'flg SymCommonDisplaySettings {
+        &self.settings.common
+    }
 }
 
 impl SymDataDisplay<'_, '_, '_> {

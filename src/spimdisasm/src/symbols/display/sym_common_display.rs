@@ -28,6 +28,7 @@ pub struct SymCommonDisplaySettings {
 }
 
 impl SymCommonDisplaySettings {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             line_end: None,
@@ -36,6 +37,7 @@ impl SymCommonDisplaySettings {
         }
     }
 
+    #[must_use]
     pub fn line_end(&self) -> &str {
         if let Some(line_end) = &self.line_end {
             line_end

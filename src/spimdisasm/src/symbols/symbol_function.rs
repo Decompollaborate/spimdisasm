@@ -517,6 +517,11 @@ impl SymbolFunction {
     pub(crate) fn handwritten_instrs(&self) -> &BTreeSet<RomAddress> {
         self.instr_analysis.handwritten_instrs()
     }
+
+    #[must_use]
+    pub fn referenced_vrams(&self) -> &BTreeSet<Vram> {
+        self.instr_analysis.referenced_vrams()
+    }
 }
 
 impl<'ctx, 'sym, 'flg> SymbolFunction {
