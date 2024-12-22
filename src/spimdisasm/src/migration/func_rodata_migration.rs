@@ -14,33 +14,33 @@ use crate::{
     metadata::{RodataMigrationBehavior, SymbolMetadata, SymbolMetadataNameDisplay},
     sections::{Section, SectionData, SectionExecutable},
     symbols::{
-        display::{FunctionDisplaySettings, SymDataDisplaySettings, SymDisplayError},
+        display::{FunctionDisplaySettings, SymDataDisplaySettings},
         Symbol, SymbolData, SymbolFunction,
     },
 };
 
-use super::{FuncRodataPairingDisplay, RodataIterator};
+use super::{FuncRodataPairingDisplay, PairingError, RodataIterator};
 
-#[derive(Debug, Clone, Hash, PartialEq)]
-pub enum FuncRodataPairing<'text, 'rodata> {
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub enum FuncRodataPairing {
     SingleFunction {
-        function: &'text SymbolFunction,
+        function_index: usize,
     },
     SingleRodata {
-        rodata: &'rodata SymbolData,
+        rodata_index: usize,
     },
     Pairing {
-        function: &'text SymbolFunction,
-        rodata_syms: Vec<&'rodata SymbolData>,
-        late_rodata_syms: Vec<&'rodata SymbolData>,
+        function_index: usize,
+        rodata_indices: Vec<usize>,
+        late_rodata_indices: Vec<usize>,
     },
 }
 
-impl<'text, 'rodata> FuncRodataPairing<'text, 'rodata> {
+impl FuncRodataPairing {
     pub fn pair_sections(
         context: &Context,
-        text_section: Option<&'text SectionExecutable>,
-        rodata_section: Option<&'rodata SectionData>,
+        text_section: Option<&SectionExecutable>,
+        rodata_section: Option<&SectionData>,
     ) -> Vec<Self> {
         let mut all_entries = Vec::new();
 
@@ -67,40 +67,53 @@ impl<'text, 'rodata> FuncRodataPairing<'text, 'rodata> {
         // # symbol).
         // # We use deque instead of a plain list because we want fast removal of
         // # the first symbol.
-        let mut remaining_rodata_symbols: VecDeque<&SymbolData> = rodata_section
+        let all_rodata_syms: &[SymbolData] = rodata_section.map_or(&[], |x| x.data_symbols());
+        let mut remaining_rodata_symbols: VecDeque<(usize, &SymbolData)> = rodata_section
             .iter()
-            .flat_map(|x| x.data_symbols())
+            .flat_map(|x| x.data_symbols().iter().enumerate())
             .collect();
         let mut handled_symbols = BTreeSet::new();
 
-        for func in text_section.iter().flat_map(|x| x.functions()) {
-            let entry = Self::pair_function_to_rodata_section(context, func, rodata_section);
+        for (func_index, func_sym) in text_section
+            .iter()
+            .flat_map(|x| x.functions().iter().enumerate())
+        {
+            let entry = Self::pair_function_to_rodata_section(
+                context,
+                func_index,
+                func_sym,
+                rodata_section,
+            );
 
-            for rodata in entry.iter_rodata() {
+            for rodata in entry.iter_rodata(rodata_section) {
                 handled_symbols.insert(rodata.vram_range().start());
             }
 
             // Preserve the order of rodata symbols by looking for symbols that has not been migrated yet
-            if let FuncRodataPairing::Pairing { rodata_syms, .. } = &entry {
-                if !rodata_syms.is_empty() {
-                    let first_rodata_sym = &rodata_syms[0];
+            if let FuncRodataPairing::Pairing { rodata_indices, .. } = &entry {
+                if !rodata_indices.is_empty() {
+                    let first_rodata_index = rodata_indices[0];
+                    let first_rodata_sym = &all_rodata_syms[first_rodata_index];
 
                     while !remaining_rodata_symbols.is_empty() {
-                        let rodata = &remaining_rodata_symbols[0];
+                        let (rodata_index, rodata_sym) = &remaining_rodata_symbols[0];
 
-                        if handled_symbols.contains(&rodata.vram_range().start()) {
+                        if handled_symbols.contains(&rodata_sym.vram_range().start()) {
                             // Drop migrated symbols
                             remaining_rodata_symbols.pop_front();
                             continue;
                         }
 
-                        if rodata.vram_range().start() >= first_rodata_sym.vram_range().start() {
+                        if rodata_sym.vram_range().start() >= first_rodata_sym.vram_range().start()
+                        {
                             // Take all the symbols up to symbols referenced by the current function
                             break;
                         }
 
-                        all_entries.push(FuncRodataPairing::SingleRodata { rodata });
-                        handled_symbols.insert(rodata.vram_range().start());
+                        all_entries.push(FuncRodataPairing::SingleRodata {
+                            rodata_index: *rodata_index,
+                        });
+                        handled_symbols.insert(rodata_sym.vram_range().start());
                         remaining_rodata_symbols.pop_front();
                     }
                 }
@@ -110,9 +123,9 @@ impl<'text, 'rodata> FuncRodataPairing<'text, 'rodata> {
         }
 
         // Check if there's any rodata symbol remaining and add it to the list
-        for rodata in remaining_rodata_symbols {
-            if !handled_symbols.contains(&rodata.vram_range().start()) {
-                all_entries.push(FuncRodataPairing::SingleRodata { rodata });
+        for (rodata_index, rodata_sym) in remaining_rodata_symbols {
+            if !handled_symbols.contains(&rodata_sym.vram_range().start()) {
+                all_entries.push(FuncRodataPairing::SingleRodata { rodata_index });
             }
         }
 
@@ -121,8 +134,9 @@ impl<'text, 'rodata> FuncRodataPairing<'text, 'rodata> {
 
     fn pair_function_to_rodata_section(
         context: &Context,
-        function: &'text SymbolFunction,
-        rodata_section: Option<&'rodata SectionData>,
+        function_index: usize,
+        function: &SymbolFunction,
+        rodata_section: Option<&SectionData>,
     ) -> Self {
         /*
         """
@@ -136,8 +150,8 @@ impl<'text, 'rodata> FuncRodataPairing<'text, 'rodata> {
         */
 
         if let Some(rodata_section) = rodata_section {
-            let mut rodata_syms = Vec::new();
-            let mut late_rodata_syms = Vec::new();
+            let mut rodata_indices = Vec::new();
+            let mut late_rodata_indices = Vec::new();
 
             let intersection: BTreeSet<Vram> = function
                 .referenced_vrams()
@@ -190,23 +204,23 @@ impl<'text, 'rodata> FuncRodataPairing<'text, 'rodata> {
                 }
             }
 
-            for rodata_sym in rodata_section.data_symbols() {
+            for (rodata_index, rodata_sym) in rodata_section.data_symbols().iter().enumerate() {
                 let rodata_vram = rodata_sym.vram_range().start();
 
                 if migrable_late_rodata_syms.contains(&rodata_vram) {
-                    late_rodata_syms.push(rodata_sym);
+                    late_rodata_indices.push(rodata_index);
                 } else if migrable_rodata_syms.contains(&rodata_vram) {
-                    rodata_syms.push(rodata_sym);
+                    rodata_indices.push(rodata_index);
                 }
             }
 
             FuncRodataPairing::Pairing {
-                function,
-                rodata_syms,
-                late_rodata_syms,
+                function_index,
+                rodata_indices,
+                late_rodata_indices,
             }
         } else {
-            FuncRodataPairing::SingleFunction { function }
+            FuncRodataPairing::SingleFunction { function_index }
         }
     }
 
@@ -271,22 +285,61 @@ impl<'text, 'rodata> FuncRodataPairing<'text, 'rodata> {
     }
 }
 
-impl<'ctx> FuncRodataPairing<'_, '_> {
-    pub fn display_name(&self, context: &'ctx Context) -> SymbolMetadataNameDisplay<'ctx> {
-        match &self {
-            FuncRodataPairing::SingleFunction { function }
-            | FuncRodataPairing::Pairing { function, .. } => function.find_own_metadata(context),
-            FuncRodataPairing::SingleRodata { rodata } => rodata.find_own_metadata(context),
-        }
-        .display_name()
+impl<'ctx> FuncRodataPairing {
+    pub fn display_name(
+        &self,
+        context: &'ctx Context,
+        text_section: Option<&SectionExecutable>,
+        rodata_section: Option<&SectionData>,
+    ) -> Result<SymbolMetadataNameDisplay<'ctx>, PairingError> {
+        let metadata = match &self {
+            FuncRodataPairing::Pairing { function_index, .. }
+            | FuncRodataPairing::SingleFunction { function_index } => {
+                if let Some(text_section) = text_section {
+                    let functions = text_section.functions();
+
+                    if let Some(func) = functions.get(*function_index) {
+                        func.find_own_metadata(context)
+                    } else {
+                        return Err(PairingError::FunctionOutOfBounds {
+                            index: *function_index,
+                            len: functions.len(),
+                            section_name: text_section.name().into(),
+                        });
+                    }
+                } else {
+                    return Err(PairingError::MissingTextSection);
+                }
+            }
+            FuncRodataPairing::SingleRodata { rodata_index } => {
+                if let Some(rodata_section) = rodata_section {
+                    let data_symbols = rodata_section.data_symbols();
+
+                    if let Some(rodata) = data_symbols.get(*rodata_index) {
+                        rodata.find_own_metadata(context)
+                    } else {
+                        return Err(PairingError::RodataOutOfBounds {
+                            index: *rodata_index,
+                            len: data_symbols.len(),
+                            section_name: rodata_section.name().into(),
+                        });
+                    }
+                } else {
+                    return Err(PairingError::MissingRodataSection);
+                }
+            }
+        };
+
+        Ok(metadata.display_name())
     }
 }
 
-impl<'pairing, 'text, 'rodata> FuncRodataPairing<'text, 'rodata> {
+impl<'pairing, 'rodata> FuncRodataPairing {
     pub fn iter_rodata(
         &'pairing self,
-    ) -> RodataIterator<'pairing, 'text, 'rodata> {
-        RodataIterator::new(self)
+        rodata_section: Option<&'rodata SectionData>,
+    ) -> RodataIterator<'pairing, 'rodata> {
+        RodataIterator::new(self, rodata_section)
     }
 }
 
@@ -299,12 +352,14 @@ impl<
         'text_label,
         'ro_label,
         'late_ro_label,
-    > FuncRodataPairing<'text, 'rodata>
+    > FuncRodataPairing
 {
     pub fn display(
         &self,
         context: &'ctx Context,
+        text_section: Option<&'text SectionExecutable>,
         function_display_settings: &'text_settings FunctionDisplaySettings,
+        rodata_section: Option<&'rodata SectionData>,
         rodata_display_settings: &'rodata_settings SymDataDisplaySettings,
         section_label_text: Option<Cow<'text_label, str>>,
         section_label_rodata: Option<Cow<'ro_label, str>>,
@@ -320,12 +375,14 @@ impl<
             'ro_label,
             'late_ro_label,
         >,
-        SymDisplayError,
+        PairingError,
     > {
         FuncRodataPairingDisplay::new(
             self,
             context,
+            text_section,
             function_display_settings,
+            rodata_section,
             rodata_display_settings,
             section_label_text,
             section_label_rodata,

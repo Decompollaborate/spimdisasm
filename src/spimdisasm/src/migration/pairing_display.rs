@@ -7,18 +7,19 @@ use alloc::{borrow::Cow, vec::Vec};
 
 use crate::{
     context::Context,
+    sections::{Section, SectionData, SectionExecutable},
     size::Size,
     symbols::{
         display::{
             FunctionDisplay, FunctionDisplaySettings, SymDataDisplay, SymDataDisplaySettings,
-            SymDisplayError,
         },
         Symbol,
     },
 };
 
-use super::FuncRodataPairing;
+use super::{FuncRodataPairing, PairingError};
 
+#[derive(Debug, Clone, Hash, PartialEq)]
 pub struct FuncRodataPairingDisplay<
     'ctx,
     'text,
@@ -29,7 +30,6 @@ pub struct FuncRodataPairingDisplay<
     'ro_label,
     'late_ro_label,
 > {
-    //pairing: &'pairing FuncRodataPairing<'text, 'rodata>,
     func_display: Option<FunctionDisplay<'ctx, 'text, 'text_settings>>,
     ro_syms_display: Vec<SymDataDisplay<'ctx, 'rodata, 'rodata_settings>>,
     late_ro_syms_display: Vec<SymDataDisplay<'ctx, 'rodata, 'rodata_settings>>,
@@ -61,23 +61,57 @@ impl<
     >
 {
     pub(super) fn new(
-        pairing: &FuncRodataPairing<'text, 'rodata>,
+        pairing: &FuncRodataPairing,
         context: &'ctx Context,
+        text_section: Option<&'text SectionExecutable>,
         function_display_settings: &'text_settings FunctionDisplaySettings,
+        rodata_section: Option<&'rodata SectionData>,
         rodata_display_settings: &'rodata_settings SymDataDisplaySettings,
         section_label_text: Option<Cow<'text_label, str>>,
         section_label_rodata: Option<Cow<'ro_label, str>>,
         section_label_late_rodata: Option<Cow<'late_ro_label, str>>,
-    ) -> Result<Self, SymDisplayError> {
+    ) -> Result<Self, PairingError> {
         let (func_display, ro_syms_display, late_ro_syms_display) = match pairing {
-            FuncRodataPairing::SingleFunction { function } => {
-                let func_display = Some(function.display(context, function_display_settings)?);
+            FuncRodataPairing::SingleFunction { function_index } => {
+                let text_section = if let Some(text_section) = text_section {
+                    text_section
+                } else {
+                    return Err(PairingError::MissingTextSection);
+                };
+                let functions = text_section.functions();
+                let func = if let Some(func) = functions.get(*function_index) {
+                    func
+                } else {
+                    return Err(PairingError::FunctionOutOfBounds {
+                        index: *function_index,
+                        len: functions.len(),
+                        section_name: text_section.name().into(),
+                    });
+                };
+
+                let func_display = Some(func.display(context, function_display_settings)?);
                 let ro_syms_display = Vec::new();
                 let late_ro_syms_display = Vec::new();
 
                 (func_display, ro_syms_display, late_ro_syms_display)
             }
-            FuncRodataPairing::SingleRodata { rodata } => {
+            FuncRodataPairing::SingleRodata { rodata_index } => {
+                let rodata_section = if let Some(rodata_section) = rodata_section {
+                    rodata_section
+                } else {
+                    return Err(PairingError::MissingRodataSection);
+                };
+                let rodata_syms = rodata_section.data_symbols();
+                let rodata = if let Some(rodata) = rodata_syms.get(*rodata_index) {
+                    rodata
+                } else {
+                    return Err(PairingError::RodataOutOfBounds {
+                        index: *rodata_index,
+                        len: rodata_syms.len(),
+                        section_name: rodata_section.name().into(),
+                    });
+                };
+
                 let func_display = None;
                 let ro_syms_display = vec![rodata.display(context, rodata_display_settings)?];
                 let late_ro_syms_display = Vec::new();
@@ -85,19 +119,64 @@ impl<
                 (func_display, ro_syms_display, late_ro_syms_display)
             }
             FuncRodataPairing::Pairing {
-                function,
-                rodata_syms,
-                late_rodata_syms,
+                function_index,
+                rodata_indices,
+                late_rodata_indices,
             } => {
-                let func_display = Some(function.display(context, function_display_settings)?);
-                let ro_syms_display = rodata_syms
+                let text_section = if let Some(text_section) = text_section {
+                    text_section
+                } else {
+                    return Err(PairingError::MissingTextSection);
+                };
+                let functions = text_section.functions();
+                let func = if let Some(func) = functions.get(*function_index) {
+                    func
+                } else {
+                    return Err(PairingError::FunctionOutOfBounds {
+                        index: *function_index,
+                        len: functions.len(),
+                        section_name: text_section.name().into(),
+                    });
+                };
+
+                let rodata_section = if let Some(rodata_section) = rodata_section {
+                    rodata_section
+                } else {
+                    return Err(PairingError::MissingRodataSection);
+                };
+                let rodata_syms = rodata_section.data_symbols();
+
+                let func_display = Some(func.display(context, function_display_settings)?);
+                let ro_syms_display = rodata_indices
                     .iter()
-                    .map(|x| x.display(context, rodata_display_settings))
-                    .collect::<Result<Vec<_>, SymDisplayError>>()?;
-                let late_ro_syms_display = late_rodata_syms
+                    .map(|x| {
+                        let rodata = if let Some(rodata) = rodata_syms.get(*x) {
+                            rodata
+                        } else {
+                            return Err(PairingError::RodataOutOfBounds {
+                                index: *x,
+                                len: rodata_syms.len(),
+                                section_name: rodata_section.name().into(),
+                            });
+                        };
+                        Ok(rodata.display(context, rodata_display_settings)?)
+                    })
+                    .collect::<Result<Vec<_>, PairingError>>()?;
+                let late_ro_syms_display = late_rodata_indices
                     .iter()
-                    .map(|x| x.display(context, rodata_display_settings))
-                    .collect::<Result<Vec<_>, SymDisplayError>>()?;
+                    .map(|x| {
+                        let rodata = if let Some(rodata) = rodata_syms.get(*x) {
+                            rodata
+                        } else {
+                            return Err(PairingError::RodataOutOfBounds {
+                                index: *x,
+                                len: rodata_syms.len(),
+                                section_name: rodata_section.name().into(),
+                            });
+                        };
+                        Ok(rodata.display(context, rodata_display_settings)?)
+                    })
+                    .collect::<Result<Vec<_>, PairingError>>()?;
 
                 (func_display, ro_syms_display, late_ro_syms_display)
             }
