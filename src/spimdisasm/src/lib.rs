@@ -37,7 +37,6 @@ fn spimdisasm(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<rom_vram_range::RomVramRange>()?;
 
     m.add_class::<metadata::SymbolType>()?;
-
     m.add_class::<metadata::RodataMigrationBehavior>()?;
 
     m.add_class::<config::Compiler>()?;
@@ -68,6 +67,9 @@ fn spimdisasm(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<symbols::display::FunctionDisplaySettings>()?;
     m.add_class::<symbols::display::SymDataDisplaySettings>()?;
     m.add_class::<symbols::display::SymNoloadDisplaySettings>()?;
+
+    m.add_class::<migration::FuncRodataPairing>()?;
+    m.add_class::<migration::PairingError>()?;
 
     Ok(())
 }

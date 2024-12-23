@@ -16,6 +16,10 @@ impl OverlayCategoryName {
     pub const fn new(name: String) -> Self {
         Self { inner: name }
     }
+
+    pub fn inner(&self) -> &str {
+        &self.inner
+    }
 }
 
 #[cfg(feature = "pyo3")]

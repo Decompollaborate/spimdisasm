@@ -109,8 +109,7 @@ pub struct SymbolMetadata {
     access_type: Option<(AccessType, bool)>,
 
     c_string_info: Option<StringInfo>,
-    pascal_string_info: Option<StringInfo>,
-
+    // pascal_string_info: Option<StringInfo>,
     /// Which functions reference this symbol
     /// Key is the vram of the function and the segment it is contained on (since vrams can overlap
     /// on different segments).
@@ -206,7 +205,7 @@ impl SymbolMetadata {
 
             access_type: None,
             c_string_info: None,
-            pascal_string_info: None,
+            // pascal_string_info: None,
             reference_functions: BTreeMap::new(),
             reference_symbols: BTreeMap::new(),
             // name_get_callback: None,
@@ -282,21 +281,21 @@ impl SymbolMetadata {
         None
     }
 
-    pub fn sym_type(&self) -> Option<&SymbolType> {
+    pub fn sym_type(&self) -> Option<SymbolType> {
         if let Some(t) = &self.user_declared_type {
-            Some(t)
+            Some(*t)
         } else {
-            self.autodetected_type.as_ref()
+            self.autodetected_type
         }
     }
-    pub fn user_declared_type(&self) -> Option<&SymbolType> {
-        self.user_declared_type.as_ref()
+    pub fn user_declared_type(&self) -> Option<SymbolType> {
+        self.user_declared_type
     }
     pub fn user_declared_type_mut(&mut self) -> &mut Option<SymbolType> {
         &mut self.user_declared_type
     }
-    pub fn autodetected_type(&self) -> Option<&SymbolType> {
-        self.autodetected_type.as_ref()
+    pub fn autodetected_type(&self) -> Option<SymbolType> {
+        self.autodetected_type
     }
     pub(crate) fn set_type(&mut self, new_type: SymbolType, generated_by: GeneratedBy) {
         match generated_by {

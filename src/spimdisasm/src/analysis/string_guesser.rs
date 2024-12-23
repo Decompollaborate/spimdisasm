@@ -91,7 +91,7 @@ impl StringGuesserLevel {
         */
 
         if let Some(metadata) = metadata {
-            if metadata.sym_type() == Some(&SymbolType::CString) {
+            if metadata.sym_type() == Some(SymbolType::CString) {
                 let size = if let Some(size) = metadata.user_declared_size() {
                     size.inner().next_multiple_of(4) as usize
                 } else if let Some(str_end) = bytes.iter().position(|x| *x == 0) {

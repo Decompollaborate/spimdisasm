@@ -156,5 +156,10 @@ pub(crate) mod python_bindings {
         pub fn py_new(value: u32) -> Self {
             Self::new(value)
         }
+
+        #[pyo3(name = "inner")]
+        pub fn py_inner(&self) -> u32 {
+            self.inner()
+        }
     }
 }

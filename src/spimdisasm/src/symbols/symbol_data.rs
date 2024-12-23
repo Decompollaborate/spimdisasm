@@ -77,7 +77,7 @@ impl SymbolData {
         let sym_type = metadata.sym_type();
 
         let should_search_for_address = sym_type.is_none_or(|x| x.can_reference_symbols());
-        let is_jtbl = sym_type == Some(&SymbolType::Jumptable);
+        let is_jtbl = sym_type == Some(SymbolType::Jumptable);
 
         // TODO: improve heuristic to determine if should search for symbols
         if rom.inner() % 4 == 0 && should_search_for_address {

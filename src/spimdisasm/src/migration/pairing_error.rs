@@ -13,8 +13,8 @@ use crate::symbols::display::SymDisplayError;
 #[non_exhaustive]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub enum PairingError {
-    MissingTextSection,
-    MissingRodataSection,
+    MissingTextSection {},
+    MissingRodataSection {},
     FunctionOutOfBounds {
         index: usize,
         len: usize,
@@ -37,11 +37,11 @@ impl fmt::Display for PairingError {
             "Not able to create a display name for this Function-Rodata pairing: "
         )?;
         match self {
-            PairingError::MissingTextSection => write!(
+            PairingError::MissingTextSection {} => write!(
                 f,
                 "Text section should be the same as the one used to generate the pairing"
             ),
-            PairingError::MissingRodataSection => write!(
+            PairingError::MissingRodataSection {} => write!(
                 f,
                 "Rodata section should be the same as the one used to generate the pairing"
             ),
@@ -73,5 +73,43 @@ impl error::Error for PairingError {}
 impl From<SymDisplayError> for PairingError {
     fn from(value: SymDisplayError) -> Self {
         PairingError::SymDisplayFail { err: value }
+    }
+}
+
+#[cfg(feature = "pyo3")]
+pub(crate) mod python_bindings {
+    use pyo3::exceptions::PyRuntimeError;
+    use pyo3::prelude::*;
+
+    // TODO: make a generic spimdisasm exception and make every other error to inherit from it
+
+    pyo3::create_exception!(spimdisasm, PairingError, PyRuntimeError);
+
+    pyo3::create_exception!(spimdisasm, MissingTextSection, PairingError);
+    pyo3::create_exception!(spimdisasm, MissingRodataSection, PairingError);
+    pyo3::create_exception!(spimdisasm, FunctionOutOfBounds, PairingError);
+    pyo3::create_exception!(spimdisasm, RodataOutOfBounds, PairingError);
+    pyo3::create_exception!(spimdisasm, SymDisplayFail, PairingError);
+
+    impl std::convert::From<super::PairingError> for PyErr {
+        fn from(err: super::PairingError) -> PyErr {
+            match err {
+                super::PairingError::MissingTextSection {} => {
+                    MissingTextSection::new_err(err.to_string())
+                }
+                super::PairingError::MissingRodataSection {} => {
+                    MissingRodataSection::new_err(err.to_string())
+                }
+                super::PairingError::FunctionOutOfBounds { .. } => {
+                    FunctionOutOfBounds::new_err(err.to_string())
+                }
+                super::PairingError::RodataOutOfBounds { .. } => {
+                    RodataOutOfBounds::new_err(err.to_string())
+                }
+                super::PairingError::SymDisplayFail { .. } => {
+                    SymDisplayFail::new_err(err.to_string())
+                }
+            }
+        }
     }
 }

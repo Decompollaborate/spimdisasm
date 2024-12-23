@@ -263,7 +263,7 @@ impl SymCommonDisplaySettings {
                     f,
                     metadata,
                     compiler,
-                    compiler.prev_align_for_type(*sym_type),
+                    compiler.prev_align_for_type(sym_type),
                 )?;
             }
         }
@@ -282,7 +282,7 @@ impl SymCommonDisplaySettings {
                     f,
                     metadata,
                     compiler,
-                    compiler.post_align_for_type(*sym_type),
+                    compiler.post_align_for_type(sym_type),
                 )?;
             }
         }

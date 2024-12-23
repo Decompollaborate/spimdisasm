@@ -182,7 +182,12 @@ impl SectionNoloadSettings {
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
-    use crate::symbols::display::{SymDisplayError, SymNoloadDisplaySettings};
+    use crate::{
+        metadata::SymbolType,
+        rom_address::RomAddress,
+        size::Size,
+        symbols::display::{SymDisplayError, SymNoloadDisplaySettings},
+    };
 
     use super::*;
 
@@ -200,6 +205,45 @@ pub(crate) mod python_bindings {
         #[pyo3(name = "sym_count")]
         pub fn py_sym_count(&self) -> usize {
             self.noload_symbols.len()
+        }
+
+        #[pyo3(name = "get_sym_info")]
+        pub fn py_get_sym_info(
+            &self,
+            context: &Context,
+            index: usize,
+        ) -> Option<(
+            u32,
+            Option<RomAddress>,
+            String,
+            Option<SymbolType>,
+            Option<Size>,
+            bool,
+            usize,
+            Option<String>,
+        )> {
+            let sym = self.noload_symbols.get(index);
+
+            if let Some(sym) = sym {
+                let metadata = sym.find_own_metadata(context);
+
+                Some((
+                    metadata.vram().inner(),
+                    metadata.rom(),
+                    metadata.display_name().to_string(),
+                    metadata.sym_type(),
+                    metadata.size(),
+                    metadata.is_defined(),
+                    metadata.reference_counter(),
+                    metadata.parent_metadata().and_then(|x| {
+                        x.parent_segment_info()
+                            .overlay_category_name()
+                            .map(|x| x.inner().to_owned())
+                    }),
+                ))
+            } else {
+                None
+            }
         }
 
         #[pyo3(name = "display_sym")]

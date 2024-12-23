@@ -2,12 +2,14 @@
 /* SPDX-License-Identifier: MIT */
 
 use alloc::{
-    borrow::Cow,
     collections::{btree_set::BTreeSet, vec_deque::VecDeque},
     string::ToString,
     vec::Vec,
 };
 use rabbitizer::Vram;
+
+#[cfg(feature = "pyo3")]
+use pyo3::prelude::*;
 
 use crate::{
     context::Context,
@@ -22,6 +24,7 @@ use crate::{
 use super::{FuncRodataPairingDisplay, PairingError, RodataIterator};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub enum FuncRodataPairing {
     SingleFunction {
         function_index: usize,
@@ -308,7 +311,7 @@ impl<'ctx> FuncRodataPairing {
                         });
                     }
                 } else {
-                    return Err(PairingError::MissingTextSection);
+                    return Err(PairingError::MissingTextSection {});
                 }
             }
             FuncRodataPairing::SingleRodata { rodata_index } => {
@@ -325,7 +328,7 @@ impl<'ctx> FuncRodataPairing {
                         });
                     }
                 } else {
-                    return Err(PairingError::MissingRodataSection);
+                    return Err(PairingError::MissingRodataSection {});
                 }
             }
         };
@@ -361,9 +364,9 @@ impl<
         function_display_settings: &'text_settings FunctionDisplaySettings,
         rodata_section: Option<&'rodata SectionData>,
         rodata_display_settings: &'rodata_settings SymDataDisplaySettings,
-        section_label_text: Option<Cow<'text_label, str>>,
-        section_label_rodata: Option<Cow<'ro_label, str>>,
-        section_label_late_rodata: Option<Cow<'late_ro_label, str>>,
+        section_label_text: Option<&'text_label str>,
+        section_label_rodata: Option<&'ro_label str>,
+        section_label_late_rodata: Option<&'late_ro_label str>,
     ) -> Result<
         FuncRodataPairingDisplay<
             'ctx,
@@ -388,5 +391,108 @@ impl<
             section_label_rodata,
             section_label_late_rodata,
         )
+    }
+}
+
+#[cfg(feature = "pyo3")]
+pub(crate) mod python_bindings {
+    use super::*;
+
+    #[pymethods]
+    impl FuncRodataPairing {
+        #[pyo3(name = "pair_sections", signature = (context, text_section=None, rodata_section=None))]
+        #[staticmethod]
+        pub fn py_pair_sections(
+            context: &Context,
+            text_section: Option<&SectionExecutable>,
+            rodata_section: Option<&SectionData>,
+        ) -> Vec<Self> {
+            Self::pair_sections(context, text_section, rodata_section)
+        }
+
+        #[pyo3(name = "get_function_name_and_vram", signature = (context, text_section=None))]
+        pub fn py_get_function_name_and_vram(
+            &self,
+            context: &Context,
+            text_section: Option<&SectionExecutable>,
+        ) -> Option<(String, u32)> {
+            match self {
+                FuncRodataPairing::Pairing { function_index, .. }
+                | FuncRodataPairing::SingleFunction { function_index } => {
+                    if let Some(text_section) = text_section {
+                        if let Some(function) = text_section.functions().get(*function_index) {
+                            Some((
+                                function
+                                    .find_own_metadata(context)
+                                    .display_name()
+                                    .to_string(),
+                                function.vram_range().start().inner(),
+                            ))
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                }
+                FuncRodataPairing::SingleRodata { .. } => None,
+            }
+        }
+
+        #[pyo3(name = "get_single_rodata_name_and_vram", signature = (context, rodata_section=None))]
+        pub fn py_get_single_rodata_name_and_vram(
+            &self,
+            context: &Context,
+            rodata_section: Option<&SectionData>,
+        ) -> Option<(String, u32)> {
+            match self {
+                FuncRodataPairing::Pairing { .. } | FuncRodataPairing::SingleFunction { .. } => {
+                    None
+                }
+                FuncRodataPairing::SingleRodata { rodata_index } => {
+                    if let Some(rodata_section) = rodata_section {
+                        if let Some(function) = rodata_section.data_symbols().get(*rodata_index) {
+                            Some((
+                                function
+                                    .find_own_metadata(context)
+                                    .display_name()
+                                    .to_string(),
+                                function.vram_range().start().inner(),
+                            ))
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                }
+            }
+        }
+
+        #[pyo3(name = "display", signature = (context, text_section, function_display_settings, rodata_section, rodata_display_settings, section_label_text, section_label_rodata, section_label_late_rodata))]
+        pub fn py_display(
+            &self,
+            context: &Context,
+            text_section: Option<&SectionExecutable>,
+            function_display_settings: &FunctionDisplaySettings,
+            rodata_section: Option<&SectionData>,
+            rodata_display_settings: &SymDataDisplaySettings,
+            section_label_text: Option<&str>,
+            section_label_rodata: Option<&str>,
+            section_label_late_rodata: Option<&str>,
+        ) -> Result<String, PairingError> {
+            let disp = self.display(
+                context,
+                text_section,
+                function_display_settings,
+                rodata_section,
+                rodata_display_settings,
+                section_label_text,
+                section_label_rodata,
+                section_label_late_rodata,
+            )?;
+
+            Ok(disp.to_string())
+        }
     }
 }

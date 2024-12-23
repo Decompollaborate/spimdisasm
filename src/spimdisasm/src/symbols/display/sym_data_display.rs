@@ -334,14 +334,14 @@ impl fmt::Display for SymDataDisplay<'_, '_, '_> {
                 (1, _) => self.display_as_byte(f, i, current_rom, current_vram)?,
                 (_, 1) => self.display_as_byte(f, i, current_rom, current_vram)?,
                 (2 | 3, _) => {
-                    if sym_type == Some(&SymbolType::Byte) || self.is_byte(i) {
+                    if sym_type == Some(SymbolType::Byte) || self.is_byte(i) {
                         self.display_as_byte(f, i, current_rom, current_vram)?
                     } else {
                         self.display_as_short(f, i, current_rom, current_vram)?
                     }
                 }
                 (_, 2 | 3) => {
-                    if sym_type == Some(&SymbolType::Byte) || self.is_byte(i) {
+                    if sym_type == Some(SymbolType::Byte) || self.is_byte(i) {
                         self.display_as_byte(f, i, current_rom, current_vram)?
                     } else {
                         self.display_as_short(f, i, current_rom, current_vram)?
