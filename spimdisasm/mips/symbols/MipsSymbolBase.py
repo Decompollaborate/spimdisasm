@@ -28,6 +28,9 @@ class SymbolBase(common.ElementBase):
         self.relocs: dict[int, common.RelocationInfo] = dict()
         "key: word offset"
 
+        self.referencedVrams: set[int] = set()
+        "Every referenced vram found"
+
 
     def getName(self) -> str:
         return self.contextSym.getName()
@@ -228,6 +231,7 @@ class SymbolBase(common.ElementBase):
                     if referencedSym is not None:
                         if not referencedSym.isJumpTable():
                             referencedSym.referenceSymbols.add(self.contextSym)
+                        self.referencedVrams.add(referencedSym.vram)
 
 
     def getEndOfLineComment(self, wordIndex: int) -> str:
