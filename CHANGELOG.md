@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix jumptable labels sometimes missing their rom suffix, again.
+
 ## [1.31.3] - 2024-12-21
 
 ### Fixed
