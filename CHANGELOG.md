@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `referencedVrams` member to `SymbolBase`.
+  - Contains every vram that is referenced by the current symbol.
+
 ### Fixed
 
 - Fix jumptable labels sometimes missing their rom suffix, again.

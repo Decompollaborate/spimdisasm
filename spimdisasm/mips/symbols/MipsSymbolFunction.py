@@ -545,6 +545,8 @@ class SymbolFunction(SymbolText):
 
         self.contextSym.autodetectedSize = self.sizew*4
 
+        self.referencedVrams = self.instrAnalyzer.referencedVrams
+
 
     def countExtraPadding(self) -> int:
         count = 0
