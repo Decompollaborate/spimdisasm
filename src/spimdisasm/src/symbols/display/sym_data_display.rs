@@ -381,7 +381,7 @@ impl fmt::Display for SymDataDisplay<'_, '_, '_> {
                             self.display_as_word(f, i, current_rom, current_vram)?
                         }
                         Some(SymbolType::DWord) if x % 8 == 0 && bytes_len - i >= 8 => {
-                            // Maybe display DWords with `https://sourceware.org/binutils/docs/as/Quad.html`?
+                            // Maybe display DWords with `.quad` https://sourceware.org/binutils/docs/as/Quad.html?
                             self.display_as_word(f, i, current_rom, current_vram)?
                         }
 

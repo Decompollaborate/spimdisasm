@@ -68,6 +68,10 @@ impl Compiler {
         matches!(self, Compiler::SN64 | Compiler::PSYQ)
     }
 
+    pub(crate) const fn forbids_const_structs(&self) -> bool {
+        matches!(self, Compiler::IDO)
+    }
+
     // """
     // Modern GAS can handle big addends (outside the 16-bits range) for the `%lo`
     // directive just fine, but old assemblers choke on them, so we truncate them

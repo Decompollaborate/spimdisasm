@@ -10,6 +10,7 @@ use crate::{
     metadata::{GeneratedBy, ParentSectionMetadata, SymbolMetadata},
     parent_segment_info::ParentSegmentInfo,
     section_type::SectionType,
+    size::Size,
 };
 
 use super::{
@@ -42,6 +43,7 @@ impl SymbolNoload {
             );
         *metadata.autodetected_size_mut() = Some(vram_range.size());
         metadata.set_defined();
+        metadata.set_trailing_padding_size(Size::new(0));
 
         properties.apply_to_metadata(metadata);
 

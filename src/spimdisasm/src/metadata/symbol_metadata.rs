@@ -182,6 +182,8 @@ pub struct SymbolMetadata {
 
     compiler: Option<Compiler>,
     parent_metadata: Option<ParentSectionMetadata>,
+
+    trailing_padding_size: Option<Size>,
 }
 
 impl SymbolMetadata {
@@ -219,6 +221,8 @@ impl SymbolMetadata {
 
             compiler: None,
             parent_metadata: None,
+
+            trailing_padding_size: None,
         }
     }
 
@@ -404,6 +408,13 @@ impl SymbolMetadata {
     pub(crate) fn set_parent_metadata(&mut self, parent_metadata: ParentSectionMetadata) {
         self.parent_metadata = Some(parent_metadata);
     }
+
+    pub fn trailing_padding_size(&self) -> Option<Size> {
+        self.trailing_padding_size
+    }
+    pub(crate) fn set_trailing_padding_size(&mut self, size: Size) {
+        self.trailing_padding_size = Some(size);
+    }
 }
 
 impl SymbolMetadata {
@@ -448,6 +459,10 @@ impl SymbolMetadata {
     }
 
     fn is_maybe_const_variable(&self) -> bool {
+        if self.section_type != Some(SectionType::Rodata) {
+            return false;
+        }
+
         if let Some(sym_type) = self.sym_type() {
             match sym_type {
                 SymbolType::Function => false,
@@ -481,7 +496,7 @@ impl SymbolMetadata {
                     false
                 }
                 SymbolType::CString => false,
-                SymbolType::UserCustom => false,
+                SymbolType::UserCustom => !self.compiler.is_some_and(|x| x.forbids_const_structs()),
             }
         } else {
             true
