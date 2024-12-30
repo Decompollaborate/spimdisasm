@@ -194,7 +194,7 @@ pub(crate) mod python_bindings {
         }
 
         pub fn set_typ(&mut self, val: &SymbolType) {
-            self.typ = Some(val.clone());
+            self.typ = Some(*val);
         }
         pub fn set_defined(&mut self, val: bool) {
             self.defined = val;

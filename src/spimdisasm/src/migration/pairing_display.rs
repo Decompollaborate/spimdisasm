@@ -34,9 +34,7 @@ pub struct FuncRodataPairingDisplay<
     ro_syms_display: Vec<SymDataDisplay<'ctx, 'rodata, 'rodata_settings>>,
     late_ro_syms_display: Vec<SymDataDisplay<'ctx, 'rodata, 'rodata_settings>>,
 
-    section_label_text: &'text_label str,
-    section_label_rodata: &'ro_label str,
-    section_label_late_rodata: &'late_ro_label str,
+    settings: FuncRodataPairingDisplaySettings<'text_label, 'ro_label, 'late_ro_label>,
 }
 
 impl<
@@ -67,34 +65,9 @@ impl<
         function_display_settings: &'text_settings FunctionDisplaySettings,
         rodata_section: Option<&'rodata SectionData>,
         rodata_display_settings: &'rodata_settings SymDataDisplaySettings,
-        section_label_text: Option<&'text_label str>,
-        section_label_rodata: Option<&'ro_label str>,
-        section_label_late_rodata: Option<&'late_ro_label str>,
+        settings: FuncRodataPairingDisplaySettings<'text_label, 'ro_label, 'late_ro_label>,
     ) -> Result<Self, PairingError> {
         let (func_display, ro_syms_display, late_ro_syms_display) = match pairing {
-            FuncRodataPairing::SingleFunction { function_index } => {
-                let text_section = if let Some(text_section) = text_section {
-                    text_section
-                } else {
-                    return Err(PairingError::MissingTextSection {});
-                };
-                let functions = text_section.functions();
-                let func = if let Some(func) = functions.get(*function_index) {
-                    func
-                } else {
-                    return Err(PairingError::FunctionOutOfBounds {
-                        index: *function_index,
-                        len: functions.len(),
-                        section_name: text_section.name().into(),
-                    });
-                };
-
-                let func_display = Some(func.display(context, function_display_settings)?);
-                let ro_syms_display = Vec::new();
-                let late_ro_syms_display = Vec::new();
-
-                (func_display, ro_syms_display, late_ro_syms_display)
-            }
             FuncRodataPairing::SingleRodata { rodata_index } => {
                 let rodata_section = if let Some(rodata_section) = rodata_section {
                     rodata_section
@@ -182,17 +155,11 @@ impl<
             }
         };
 
-        let section_label_text = section_label_text.unwrap_or(".text");
-        let section_label_rodata = section_label_rodata.unwrap_or(".rodata");
-        let section_label_late_rodata = section_label_late_rodata.unwrap_or(".late_rodata");
-
         Ok(Self {
             func_display,
             ro_syms_display,
             late_ro_syms_display,
-            section_label_text,
-            section_label_rodata,
-            section_label_late_rodata,
+            settings,
         })
     }
 }
@@ -202,7 +169,7 @@ impl fmt::Display for FuncRodataPairingDisplay<'_, '_, '_, '_, '_, '_, '_, '_> {
         if !self.ro_syms_display.is_empty() {
             let line_end = self.ro_syms_display[0].settings_common().line_end();
 
-            write!(f, ".section {}", self.section_label_rodata)?;
+            write!(f, ".section {}", self.settings.section_label_rodata())?;
 
             // TODO: pyo3 hack for splat stuff
             #[cfg(feature = "pyo3")]
@@ -232,7 +199,12 @@ impl fmt::Display for FuncRodataPairingDisplay<'_, '_, '_, '_, '_, '_, '_, '_> {
             if let Some(func_display) = self.func_display {
                 let line_end = self.late_ro_syms_display[0].settings_common().line_end();
 
-                write!(f, ".section {}{}", self.section_label_late_rodata, line_end)?;
+                write!(
+                    f,
+                    ".section {}{}",
+                    self.settings.section_label_late_rodata(),
+                    line_end,
+                )?;
 
                 let func_sym = func_display.sym();
 
@@ -270,7 +242,9 @@ impl fmt::Display for FuncRodataPairingDisplay<'_, '_, '_, '_, '_, '_, '_, '_> {
                 write!(
                     f,
                     "{}.section {}{}",
-                    line_end, self.section_label_text, line_end
+                    line_end,
+                    self.settings.section_label_text(),
+                    line_end,
                 )?;
             }
 
@@ -280,5 +254,41 @@ impl fmt::Display for FuncRodataPairingDisplay<'_, '_, '_, '_, '_, '_, '_, '_> {
         }
 
         Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Hash, PartialEq)]
+pub struct FuncRodataPairingDisplaySettings<'text_label, 'ro_label, 'late_ro_label> {
+    section_label_text: Option<&'text_label str>,
+    section_label_rodata: Option<&'ro_label str>,
+    section_label_late_rodata: Option<&'late_ro_label str>,
+}
+
+impl<'text_label, 'ro_label, 'late_ro_label>
+    FuncRodataPairingDisplaySettings<'text_label, 'ro_label, 'late_ro_label>
+{
+    pub fn new(
+        section_label_text: Option<&'text_label str>,
+        section_label_rodata: Option<&'ro_label str>,
+        section_label_late_rodata: Option<&'late_ro_label str>,
+    ) -> Self {
+        Self {
+            section_label_text,
+            section_label_rodata,
+            section_label_late_rodata,
+        }
+    }
+
+    pub fn section_label_text(&self) -> &'text_label str {
+        self.section_label_text.unwrap_or(".text")
+    }
+    pub fn section_label_rodata(&self) -> &'ro_label str {
+        self.section_label_rodata.unwrap_or(".rodata")
+    }
+    pub fn section_label_late_rodata(&self) -> &'late_ro_label str {
+        self.section_label_late_rodata.unwrap_or(
+            ".late_rodata
+        ",
+        )
     }
 }

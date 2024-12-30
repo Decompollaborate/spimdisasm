@@ -7,6 +7,6 @@ mod pairing_error;
 mod rodata_iterator;
 
 pub use func_rodata_migration::FuncRodataPairing;
-pub use pairing_display::FuncRodataPairingDisplay;
+pub use pairing_display::{FuncRodataPairingDisplay, FuncRodataPairingDisplaySettings};
 pub use pairing_error::PairingError;
 pub use rodata_iterator::RodataIterator;

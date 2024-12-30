@@ -21,14 +21,13 @@ use crate::{
     },
 };
 
-use super::{FuncRodataPairingDisplay, PairingError, RodataIterator};
+use super::{
+    FuncRodataPairingDisplay, FuncRodataPairingDisplaySettings, PairingError, RodataIterator,
+};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub enum FuncRodataPairing {
-    SingleFunction {
-        function_index: usize,
-    },
     SingleRodata {
         rodata_index: usize,
     },
@@ -152,10 +151,10 @@ impl FuncRodataPairing {
         """
         */
 
-        if let Some(rodata_section) = rodata_section {
-            let mut rodata_indices = Vec::new();
-            let mut late_rodata_indices = Vec::new();
+        let mut rodata_indices = Vec::new();
+        let mut late_rodata_indices = Vec::new();
 
+        if let Some(rodata_section) = rodata_section {
             let intersection: BTreeSet<Vram> = function
                 .referenced_vrams()
                 .intersection(rodata_section.symbols_vrams())
@@ -216,14 +215,12 @@ impl FuncRodataPairing {
                     rodata_indices.push(rodata_index);
                 }
             }
+        }
 
-            FuncRodataPairing::Pairing {
-                function_index,
-                rodata_indices,
-                late_rodata_indices,
-            }
-        } else {
-            FuncRodataPairing::SingleFunction { function_index }
+        FuncRodataPairing::Pairing {
+            function_index,
+            rodata_indices,
+            late_rodata_indices,
         }
     }
 
@@ -296,8 +293,7 @@ impl<'ctx> FuncRodataPairing {
         rodata_section: Option<&SectionData>,
     ) -> Result<SymbolMetadataNameDisplay<'ctx>, PairingError> {
         let metadata = match &self {
-            FuncRodataPairing::Pairing { function_index, .. }
-            | FuncRodataPairing::SingleFunction { function_index } => {
+            FuncRodataPairing::Pairing { function_index, .. } => {
                 if let Some(text_section) = text_section {
                     let functions = text_section.functions();
 
@@ -364,9 +360,7 @@ impl<
         function_display_settings: &'text_settings FunctionDisplaySettings,
         rodata_section: Option<&'rodata SectionData>,
         rodata_display_settings: &'rodata_settings SymDataDisplaySettings,
-        section_label_text: Option<&'text_label str>,
-        section_label_rodata: Option<&'ro_label str>,
-        section_label_late_rodata: Option<&'late_ro_label str>,
+        settings: FuncRodataPairingDisplaySettings<'text_label, 'ro_label, 'late_ro_label>,
     ) -> Result<
         FuncRodataPairingDisplay<
             'ctx,
@@ -387,9 +381,7 @@ impl<
             function_display_settings,
             rodata_section,
             rodata_display_settings,
-            section_label_text,
-            section_label_rodata,
-            section_label_late_rodata,
+            settings,
         )
     }
 }
@@ -417,20 +409,20 @@ pub(crate) mod python_bindings {
             text_section: Option<&SectionExecutable>,
         ) -> Option<(String, u32)> {
             match self {
-                FuncRodataPairing::Pairing { function_index, .. }
-                | FuncRodataPairing::SingleFunction { function_index } => {
+                FuncRodataPairing::Pairing { function_index, .. } => {
                     if let Some(text_section) = text_section {
-                        if let Some(function) = text_section.functions().get(*function_index) {
-                            Some((
-                                function
-                                    .find_own_metadata(context)
-                                    .display_name()
-                                    .to_string(),
-                                function.vram_range().start().inner(),
-                            ))
-                        } else {
-                            None
-                        }
+                        text_section
+                            .functions()
+                            .get(*function_index)
+                            .map(|function| {
+                                (
+                                    function
+                                        .find_own_metadata(context)
+                                        .display_name()
+                                        .to_string(),
+                                    function.vram_range().start().inner(),
+                                )
+                            })
                     } else {
                         None
                     }
@@ -446,22 +438,21 @@ pub(crate) mod python_bindings {
             rodata_section: Option<&SectionData>,
         ) -> Option<(String, u32)> {
             match self {
-                FuncRodataPairing::Pairing { .. } | FuncRodataPairing::SingleFunction { .. } => {
-                    None
-                }
+                FuncRodataPairing::Pairing { .. } => None,
                 FuncRodataPairing::SingleRodata { rodata_index } => {
                     if let Some(rodata_section) = rodata_section {
-                        if let Some(function) = rodata_section.data_symbols().get(*rodata_index) {
-                            Some((
-                                function
-                                    .find_own_metadata(context)
-                                    .display_name()
-                                    .to_string(),
-                                function.vram_range().start().inner(),
-                            ))
-                        } else {
-                            None
-                        }
+                        rodata_section
+                            .data_symbols()
+                            .get(*rodata_index)
+                            .map(|function| {
+                                (
+                                    function
+                                        .find_own_metadata(context)
+                                        .display_name()
+                                        .to_string(),
+                                    function.vram_range().start().inner(),
+                                )
+                            })
                     } else {
                         None
                     }
@@ -487,9 +478,11 @@ pub(crate) mod python_bindings {
                 function_display_settings,
                 rodata_section,
                 rodata_display_settings,
-                section_label_text,
-                section_label_rodata,
-                section_label_late_rodata,
+                FuncRodataPairingDisplaySettings::new(
+                    section_label_text,
+                    section_label_rodata,
+                    section_label_late_rodata,
+                ),
             )?;
 
             Ok(disp.to_string())

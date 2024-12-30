@@ -354,10 +354,7 @@ impl SectionDataSettings {
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
-    use crate::{
-        metadata::OverlayCategoryName,
-        symbols::display::{SymDataDisplaySettings, SymDisplayError},
-    };
+    use crate::symbols::display::{SymDataDisplaySettings, SymDisplayError};
 
     use super::*;
 

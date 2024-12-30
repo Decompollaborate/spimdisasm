@@ -32,7 +32,6 @@ impl<'rodata> Iterator for RodataIterator<'_, 'rodata> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match &self.pairing {
-            FuncRodataPairing::SingleFunction { .. } => None,
             FuncRodataPairing::SingleRodata { rodata_index } => {
                 if let Some(rodata_section) = self.rodata_section {
                     if self.rodata_index == 0 {
@@ -73,7 +72,6 @@ impl<'rodata> Iterator for RodataIterator<'_, 'rodata> {
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         match &self.pairing {
-            FuncRodataPairing::SingleFunction { .. } => (0, Some(0)),
             FuncRodataPairing::SingleRodata { .. } => {
                 let remaining = 1 - self.rodata_index;
 
