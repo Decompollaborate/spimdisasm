@@ -71,6 +71,11 @@ impl ops::Add<Size> for Vram {
         rhs.add_vram(&self)
     }
 }
+impl ops::AddAssign<Size> for Vram {
+    fn add_assign(&mut self, rhs: Size) {
+        *self = *self + rhs
+    }
+}
 
 impl ops::Add<RomAddress> for Size {
     type Output = RomAddress;
@@ -85,6 +90,11 @@ impl ops::Add<Size> for RomAddress {
 
     fn add(self, rhs: Size) -> Self::Output {
         rhs.add_rom(&self)
+    }
+}
+impl ops::AddAssign<Size> for RomAddress {
+    fn add_assign(&mut self, rhs: Size) {
+        *self = *self + rhs
     }
 }
 

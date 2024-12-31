@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use rabbitizer::{opcodes::Opcode, registers::Gpr, traits::Register, Instruction};
+use rabbitizer::{opcodes::Opcode, registers::Gpr, registers_meta::Register, Instruction};
 
 use crate::rom_address::RomAddress;
 
@@ -34,10 +34,7 @@ impl RegisterTracker {
             return;
         }
 
-        // TODO: consider writing an register iterator or something
-        for i in 0..Gpr::count() as u32 {
-            let reg: Gpr = i.try_into().expect("This should not panic");
-
+        for reg in Gpr::iter() {
             if reg.is_clobbered_by_func_call(instr.abi()) {
                 self.registers[reg.as_index()].clear();
             }
@@ -192,6 +189,7 @@ impl RegisterTracker {
         }
     }
 
+    #[must_use]
     pub(crate) fn preprocess_lo_and_get_info(
         &mut self,
         instr: &Instruction,

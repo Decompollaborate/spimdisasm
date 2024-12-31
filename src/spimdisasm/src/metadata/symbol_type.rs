@@ -7,7 +7,7 @@
 use pyo3::prelude::*;
 use rabbitizer::access_type::AccessType;
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", eq))]
 pub enum SymbolType {

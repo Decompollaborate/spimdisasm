@@ -565,6 +565,16 @@ impl SectionExecutableSettings {
             is_handwritten: false,
         }
     }
+
+    pub fn compiler(&self) -> Option<&Compiler> {
+        self.compiler.as_ref()
+    }
+    pub fn instruction_flags(&self) -> InstructionFlags {
+        self.instruction_flags
+    }
+    pub fn is_handwritten(&self) -> bool {
+        self.is_handwritten
+    }
 }
 
 #[cfg(feature = "pyo3")]

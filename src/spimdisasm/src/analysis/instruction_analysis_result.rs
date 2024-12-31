@@ -3,8 +3,8 @@
 
 use alloc::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use rabbitizer::{
-    access_type::AccessType, opcodes::Opcode, registers::Gpr, traits::Register, vram::VramOffset,
-    Instruction, Vram,
+    access_type::AccessType, opcodes::Opcode, registers::Gpr, registers_meta::Register,
+    vram::VramOffset, Instruction, Vram,
 };
 
 use crate::{context::Context, rom_address::RomAddress, rom_vram_range::RomVramRange};
