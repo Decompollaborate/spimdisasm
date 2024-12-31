@@ -69,25 +69,15 @@ impl<
     ) -> Result<Self, PairingError> {
         let (func_display, ro_syms_display, late_ro_syms_display) = match pairing {
             FuncRodataPairing::SingleRodata { rodata_index } => {
-                let rodata_section = if let Some(rodata_section) = rodata_section {
-                    rodata_section
-                } else {
-                    return Err(PairingError::MissingRodataSection {});
-                };
-                let rodata_syms = rodata_section.data_symbols();
-                let rodata = if let Some(rodata) = rodata_syms.get(*rodata_index) {
-                    rodata
-                } else {
-                    return Err(PairingError::RodataOutOfBounds {
-                        index: *rodata_index,
-                        len: rodata_syms.len(),
-                        section_name: rodata_section.name().into(),
-                    });
-                };
+                let (ro_syms_display, late_ro_syms_display) = Self::do_rodata_section(
+                    context,
+                    rodata_section,
+                    rodata_display_settings,
+                    &[*rodata_index],
+                    &[],
+                )?;
 
                 let func_display = None;
-                let ro_syms_display = vec![rodata.display(context, rodata_display_settings)?];
-                let late_ro_syms_display = Vec::new();
 
                 (func_display, ro_syms_display, late_ro_syms_display)
             }
@@ -112,44 +102,16 @@ impl<
                     });
                 };
 
-                let rodata_section = if let Some(rodata_section) = rodata_section {
-                    rodata_section
-                } else {
-                    return Err(PairingError::MissingRodataSection {});
-                };
-                let rodata_syms = rodata_section.data_symbols();
+                let (ro_syms_display, late_ro_syms_display) = Self::do_rodata_section(
+                    context,
+                    rodata_section,
+                    rodata_display_settings,
+                    rodata_indices,
+                    late_rodata_indices,
+                )?;
 
+                // We do this late to ensure all the section-existing checks are nearby and exist fast.
                 let func_display = Some(func.display(context, function_display_settings)?);
-                let ro_syms_display = rodata_indices
-                    .iter()
-                    .map(|x| {
-                        let rodata = if let Some(rodata) = rodata_syms.get(*x) {
-                            rodata
-                        } else {
-                            return Err(PairingError::RodataOutOfBounds {
-                                index: *x,
-                                len: rodata_syms.len(),
-                                section_name: rodata_section.name().into(),
-                            });
-                        };
-                        Ok(rodata.display(context, rodata_display_settings)?)
-                    })
-                    .collect::<Result<Vec<_>, PairingError>>()?;
-                let late_ro_syms_display = late_rodata_indices
-                    .iter()
-                    .map(|x| {
-                        let rodata = if let Some(rodata) = rodata_syms.get(*x) {
-                            rodata
-                        } else {
-                            return Err(PairingError::RodataOutOfBounds {
-                                index: *x,
-                                len: rodata_syms.len(),
-                                section_name: rodata_section.name().into(),
-                            });
-                        };
-                        Ok(rodata.display(context, rodata_display_settings)?)
-                    })
-                    .collect::<Result<Vec<_>, PairingError>>()?;
 
                 (func_display, ro_syms_display, late_ro_syms_display)
             }
@@ -161,6 +123,71 @@ impl<
             late_ro_syms_display,
             settings,
         })
+    }
+
+    fn do_rodata_section(
+        context: &'ctx Context,
+        rodata_section: Option<&'rodata SectionData>,
+        rodata_display_settings: &'rodata_settings SymDataDisplaySettings,
+        rodata_indices: &[usize],
+        late_rodata_indices: &[usize],
+    ) -> Result<
+        (
+            Vec<SymDataDisplay<'ctx, 'rodata, 'rodata_settings>>,
+            Vec<SymDataDisplay<'ctx, 'rodata, 'rodata_settings>>,
+        ),
+        PairingError,
+    > {
+        if rodata_indices.is_empty() && late_rodata_indices.is_empty() {
+            // We only care if the rodata section exists if we do actually reference rodata symbols.
+            return Ok((Vec::new(), Vec::new()));
+        }
+
+        let rodata_section = if let Some(rodata_section) = rodata_section {
+            rodata_section
+        } else {
+            return Err(PairingError::MissingRodataSection {});
+        };
+
+        let ro_syms_display = Self::do_rodata_displays(
+            context,
+            rodata_section,
+            rodata_display_settings,
+            rodata_indices,
+        )?;
+        let late_ro_syms_display = Self::do_rodata_displays(
+            context,
+            rodata_section,
+            rodata_display_settings,
+            late_rodata_indices,
+        )?;
+
+        Ok((ro_syms_display, late_ro_syms_display))
+    }
+
+    fn do_rodata_displays(
+        context: &'ctx Context,
+        rodata_section: &'rodata SectionData,
+        rodata_display_settings: &'rodata_settings SymDataDisplaySettings,
+        indices: &[usize],
+    ) -> Result<Vec<SymDataDisplay<'ctx, 'rodata, 'rodata_settings>>, PairingError> {
+        let rodata_syms = rodata_section.data_symbols();
+
+        indices
+            .iter()
+            .map(|x| {
+                let rodata = if let Some(rodata) = rodata_syms.get(*x) {
+                    rodata
+                } else {
+                    return Err(PairingError::RodataOutOfBounds {
+                        index: *x,
+                        len: rodata_syms.len(),
+                        section_name: rodata_section.name().into(),
+                    });
+                };
+                Ok(rodata.display(context, rodata_display_settings)?)
+            })
+            .collect()
     }
 }
 

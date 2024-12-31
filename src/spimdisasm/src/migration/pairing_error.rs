@@ -39,11 +39,11 @@ impl fmt::Display for PairingError {
         match self {
             PairingError::MissingTextSection {} => write!(
                 f,
-                "Text section should be the same as the one used to generate the pairing"
+                "Text section should be the same as the one used to generate the pairing. Somehow it is missing."
             ),
             PairingError::MissingRodataSection {} => write!(
                 f,
-                "Rodata section should be the same as the one used to generate the pairing"
+                "Rodata section should be the same as the one used to generate the pairing. Somehow it is missing."
             ),
             PairingError::FunctionOutOfBounds {
                 index,
