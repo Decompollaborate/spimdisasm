@@ -243,12 +243,14 @@ fn count_padding(
             count = count.saturating_sub(1);
         }
         Some(SymbolType::Float64 | SymbolType::DWord) => {
-            for byte_group in raw_bytes[8..].chunks_exact(8).rev() {
-                let dword = endian.dword_from_bytes(byte_group);
-                if dword != 0 {
-                    break;
+            if raw_bytes.len() > 8 {
+                for byte_group in raw_bytes[8..].chunks_exact(8).rev() {
+                    let dword = endian.dword_from_bytes(byte_group);
+                    if dword != 0 {
+                        break;
+                    }
+                    count += 8;
                 }
-                count += 8;
             }
         }
         Some(
@@ -257,12 +259,14 @@ fn count_padding(
             | SymbolType::Jumptable
             | SymbolType::GccExceptTable,
         ) => {
-            for byte_group in raw_bytes[4..].chunks_exact(4).rev() {
-                let word = endian.word_from_bytes(byte_group);
-                if word != 0 {
-                    break;
+            if raw_bytes.len() > 4 {
+                for byte_group in raw_bytes[4..].chunks_exact(4).rev() {
+                    let word = endian.word_from_bytes(byte_group);
+                    if word != 0 {
+                        break;
+                    }
+                    count += 4;
                 }
-                count += 4;
             }
         }
         // TODO: Should count padding for those bytes and shorts? And how?
@@ -274,7 +278,7 @@ fn count_padding(
         Some(SymbolType::Function) => {}
         None => {
             // Treat it as word-sized if the alignement and size allow it.
-            if raw_bytes.len() % 4 == 0 && rom.inner() % 4 == 0 {
+            if raw_bytes.len() > 4 && raw_bytes.len() % 4 == 0 && rom.inner() % 4 == 0 {
                 for byte_group in raw_bytes[4..].chunks_exact(4).rev() {
                     let word = endian.word_from_bytes(byte_group);
                     if word != 0 {
