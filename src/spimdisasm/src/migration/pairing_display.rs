@@ -11,7 +11,8 @@ use crate::{
     size::Size,
     symbols::{
         display::{
-            FunctionDisplay, FunctionDisplaySettings, SymDataDisplay, SymDataDisplaySettings,
+            FunctionDisplay, FunctionDisplaySettings, InternalSymDisplSettings, SymDataDisplay,
+            SymDataDisplaySettings,
         },
         Symbol,
     },
@@ -111,7 +112,11 @@ impl<
                 )?;
 
                 // We do this late to ensure all the section-existing checks are nearby and exist fast.
-                let func_display = Some(func.display(context, function_display_settings)?);
+                let func_display = Some(func.display_internal(
+                    context,
+                    function_display_settings,
+                    InternalSymDisplSettings::new(true),
+                )?);
 
                 (func_display, ro_syms_display, late_ro_syms_display)
             }
@@ -185,7 +190,11 @@ impl<
                         section_name: rodata_section.name().into(),
                     });
                 };
-                Ok(rodata.display(context, rodata_display_settings)?)
+                Ok(rodata.display_internal(
+                    context,
+                    rodata_display_settings,
+                    InternalSymDisplSettings::new(true),
+                )?)
             })
             .collect()
     }

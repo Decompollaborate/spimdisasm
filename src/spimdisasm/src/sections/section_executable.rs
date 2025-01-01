@@ -566,8 +566,8 @@ impl SectionExecutableSettings {
         }
     }
 
-    pub fn compiler(&self) -> Option<&Compiler> {
-        self.compiler.as_ref()
+    pub fn compiler(&self) -> Option<Compiler> {
+        self.compiler
     }
     pub fn instruction_flags(&self) -> InstructionFlags {
         self.instruction_flags

@@ -20,7 +20,9 @@ use crate::{
     },
 };
 
-use super::{sym_display_error::SymDisplayError, SymCommonDisplaySettings};
+use super::{
+    sym_display_error::SymDisplayError, InternalSymDisplSettings, SymCommonDisplaySettings,
+};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
@@ -32,8 +34,6 @@ pub struct FunctionDisplaySettings {
     asm_label_indentation: u8,
 
     _gp_rel_hack: bool,
-
-    migrate: bool,
 }
 
 impl FunctionDisplaySettings {
@@ -43,7 +43,6 @@ impl FunctionDisplaySettings {
             display_flags,
             asm_label_indentation: 2,
             _gp_rel_hack: false,
-            migrate: false,
         }
     }
 }
@@ -56,6 +55,8 @@ pub struct FunctionDisplay<'ctx, 'sym, 'flg> {
 
     owned_segment: &'ctx SegmentMetadata,
     metadata: &'ctx SymbolMetadata,
+
+    internal_settings: InternalSymDisplSettings,
 }
 
 impl<'ctx, 'sym, 'flg> FunctionDisplay<'ctx, 'sym, 'flg> {
@@ -63,6 +64,7 @@ impl<'ctx, 'sym, 'flg> FunctionDisplay<'ctx, 'sym, 'flg> {
         context: &'ctx Context,
         sym: &'sym SymbolFunction,
         settings: &'flg FunctionDisplaySettings,
+        internal_settings: InternalSymDisplSettings,
     ) -> Result<Self, SymDisplayError> {
         let owned_segment = context.find_owned_segment(sym.parent_segment_info())?;
         let find_settings = FindSettings::default().with_allow_addend(false);
@@ -76,6 +78,7 @@ impl<'ctx, 'sym, 'flg> FunctionDisplay<'ctx, 'sym, 'flg> {
             settings,
             owned_segment,
             metadata,
+            internal_settings,
         })
     }
 
@@ -113,7 +116,7 @@ impl FunctionDisplay<'_, '_, '_> {
             let use_macro = sym_label.sym_type().is_none_or(|x| match x {
                 SymbolType::Function => true,
                 SymbolType::BranchLabel => false,
-                SymbolType::JumptableLabel => !self.settings.migrate,
+                SymbolType::JumptableLabel => !self.internal_settings.migrate(),
                 SymbolType::GccExceptTableLabel => true,
                 _ => false,
             });
@@ -172,9 +175,15 @@ impl FunctionDisplay<'_, '_, '_> {
 
         let find_settings =
             FindSettings::default().with_allow_addend(self.metadata.allow_ref_with_addend());
-        let imm_override = self
-            .get_reloc(instr)
-            .and_then(|x| x.display(self.context, self.sym.parent_segment_info(), find_settings));
+        let imm_override = self.get_reloc(instr).and_then(|x| {
+            x.display(
+                self.context,
+                self.sym.parent_segment_info(),
+                find_settings,
+                self.metadata.compiler(),
+                self.internal_settings,
+            )
+        });
 
         let instr_display = instr.display(&self.settings.display_flags, imm_override, extra_ljust);
 

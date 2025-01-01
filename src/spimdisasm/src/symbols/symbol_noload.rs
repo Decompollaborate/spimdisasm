@@ -14,7 +14,9 @@ use crate::{
 };
 
 use super::{
-    display::{SymDisplayError, SymNoloadDisplay, SymNoloadDisplaySettings},
+    display::{
+        InternalSymDisplSettings, SymDisplayError, SymNoloadDisplay, SymNoloadDisplaySettings,
+    },
     Symbol,
 };
 
@@ -62,7 +64,16 @@ impl<'ctx, 'sym, 'flg> SymbolNoload {
         context: &'ctx Context,
         settings: &'flg SymNoloadDisplaySettings,
     ) -> Result<SymNoloadDisplay<'ctx, 'sym, 'flg>, SymDisplayError> {
-        SymNoloadDisplay::new(context, self, settings)
+        self.display_internal(context, settings, InternalSymDisplSettings::new(false))
+    }
+
+    pub(crate) fn display_internal(
+        &'sym self,
+        context: &'ctx Context,
+        settings: &'flg SymNoloadDisplaySettings,
+        internal_settings: InternalSymDisplSettings,
+    ) -> Result<SymNoloadDisplay<'ctx, 'sym, 'flg>, SymDisplayError> {
+        SymNoloadDisplay::new(context, self, settings, internal_settings)
     }
 }
 

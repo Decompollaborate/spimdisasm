@@ -6,9 +6,11 @@ use core::fmt;
 use rabbitizer::Vram;
 
 use crate::{
+    config::Compiler,
     context::Context,
     metadata::{segment_metadata::FindSettings, SymbolMetadata},
     parent_segment_info::ParentSegmentInfo,
+    symbols::display::InternalSymDisplSettings,
 };
 
 use super::{RelocReferencedSym, RelocationType};
@@ -21,7 +23,7 @@ pub struct RelocationInfo {
 
 impl RelocationInfo {
     #[must_use]
-    pub fn new(reloc_type: RelocationType, referenced_sym: RelocReferencedSym) -> Self {
+    pub(crate) fn new(reloc_type: RelocationType, referenced_sym: RelocReferencedSym) -> Self {
         Self {
             reloc_type,
             referenced_sym,
@@ -29,21 +31,31 @@ impl RelocationInfo {
     }
 
     #[must_use]
-    pub const fn reloc_type(&self) -> RelocationType {
+    pub(crate) const fn reloc_type(&self) -> RelocationType {
         self.reloc_type
     }
-    #[must_use]
-    pub const fn referenced_sym(&self) -> &RelocReferencedSym {
-        &self.referenced_sym
-    }
+    //#[must_use]
+    //pub(crate) const fn referenced_sym(&self) -> &RelocReferencedSym {
+    //    &self.referenced_sym
+    //}
 
-    pub fn display<'ctx, 'rel, 'prnt>(
+    #[must_use]
+    pub(crate) fn display<'ctx, 'rel, 'prnt>(
         &'rel self,
         context: &'ctx Context,
         segment_info: &'prnt ParentSegmentInfo,
         find_settings: FindSettings,
+        compiler: Option<Compiler>,
+        internal_settings: InternalSymDisplSettings,
     ) -> Option<RelocationInfoDisplay<'ctx, 'rel, 'prnt>> {
-        RelocationInfoDisplay::new(context, self, segment_info, find_settings)
+        RelocationInfoDisplay::new(
+            context,
+            self,
+            segment_info,
+            find_settings,
+            compiler,
+            internal_settings,
+        )
     }
 }
 
@@ -62,14 +74,18 @@ pub struct RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
     rel: &'rel RelocationInfo,
     segment_info: &'prnt ParentSegmentInfo,
     reloc_sym_state: RelocSymState<'rel, 'ctx>,
+    compiler: Option<Compiler>,
+    internal_settings: InternalSymDisplSettings,
 }
 
 impl<'ctx, 'rel, 'prnt> RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
-    pub fn new(
+    pub(crate) fn new(
         context: &'ctx Context,
         rel: &'rel RelocationInfo,
         segment_info: &'prnt ParentSegmentInfo,
         find_settings: FindSettings,
+        compiler: Option<Compiler>,
+        internal_settings: InternalSymDisplSettings,
     ) -> Option<Self> {
         let reloc_sym_state = match &rel.referenced_sym {
             RelocReferencedSym::SymName(name, addend) => {
@@ -102,7 +118,37 @@ impl<'ctx, 'rel, 'prnt> RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
             rel,
             segment_info,
             reloc_sym_state,
+            compiler,
+            internal_settings,
         })
+    }
+}
+
+impl RelocationInfoDisplay<'_, '_, '_> {
+    fn display_addend(&self, f: &mut fmt::Formatter<'_>, addend: i32) -> fmt::Result {
+        if addend == 0 {
+            Ok(())
+        } else {
+            if self
+                .compiler
+                .is_some_and(|x| x.big_addend_workaround_for_migrated_functions())
+                && self.internal_settings.migrate()
+                && self.rel.reloc_type == RelocationType::R_MIPS_LO16
+            {
+                if addend < -0x8000 {
+                    return write!(f, " - (0x{:X} & 0xFFFF)", -addend);
+                }
+                if addend > 0x7FFF {
+                    return write!(f, " + (0x{:X} & 0xFFFF)", addend);
+                }
+            }
+
+            if addend < 0 {
+                write!(f, " - 0x{:X}", -addend)
+            } else {
+                write!(f, " + 0x{:X}", addend)
+            }
+        }
     }
 }
 
@@ -154,22 +200,7 @@ impl fmt::Display for RelocationInfoDisplay<'_, '_, '_> {
             }
         };
 
-        if addend != 0 {
-            /*
-            if GlobalConfig.COMPILER.value.bigAddendWorkaroundForMigratedFunctions and isSplittedSymbol:
-                if self.relocType == RelocType.MIPS_LO16:
-                    if self.addend < -0x8000:
-                        return f"{name} - (0x{-self.addend:X} & 0xFFFF)"
-                    if self.addend > 0x7FFF:
-                        return f"{name} + (0x{self.addend:X} & 0xFFFF)"
-            */
-
-            if addend < 0 {
-                write!(f, " - 0x{:X}", -addend)?;
-            } else {
-                write!(f, " + 0x{:X}", addend)?;
-            }
-        }
+        self.display_addend(f, addend)?;
 
         let x = match self.rel.reloc_type {
             RelocationType::R_MIPS_NONE => "",

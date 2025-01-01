@@ -19,7 +19,9 @@ use crate::{
 };
 
 use super::{
-    display::{FunctionDisplay, FunctionDisplaySettings, SymDisplayError},
+    display::{
+        FunctionDisplay, FunctionDisplaySettings, InternalSymDisplSettings, SymDisplayError,
+    },
     trait_symbol::RomSymbol,
     Symbol,
 };
@@ -542,7 +544,16 @@ impl<'ctx, 'sym, 'flg> SymbolFunction {
         context: &'ctx Context,
         settings: &'flg FunctionDisplaySettings,
     ) -> Result<FunctionDisplay<'ctx, 'sym, 'flg>, SymDisplayError> {
-        FunctionDisplay::new(context, self, settings)
+        self.display_internal(context, settings, InternalSymDisplSettings::new(false))
+    }
+
+    pub(crate) fn display_internal(
+        &'sym self,
+        context: &'ctx Context,
+        settings: &'flg FunctionDisplaySettings,
+        internal_settings: InternalSymDisplSettings,
+    ) -> Result<FunctionDisplay<'ctx, 'sym, 'flg>, SymDisplayError> {
+        FunctionDisplay::new(context, self, settings, internal_settings)
     }
 }
 

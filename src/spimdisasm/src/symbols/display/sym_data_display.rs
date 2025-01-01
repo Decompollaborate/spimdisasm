@@ -19,7 +19,8 @@ use crate::{
 };
 
 use super::{
-    sym_common_display::WordComment, sym_display_error::SymDisplayError, SymCommonDisplaySettings,
+    sym_common_display::WordComment, sym_display_error::SymDisplayError, InternalSymDisplSettings,
+    SymCommonDisplaySettings,
 };
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -51,6 +52,8 @@ pub struct SymDataDisplay<'ctx, 'sym, 'flg> {
 
     owned_segment: &'ctx SegmentMetadata,
     metadata: &'ctx SymbolMetadata,
+
+    internal_settings: InternalSymDisplSettings,
 }
 
 impl<'ctx, 'sym, 'flg> SymDataDisplay<'ctx, 'sym, 'flg> {
@@ -58,6 +61,8 @@ impl<'ctx, 'sym, 'flg> SymDataDisplay<'ctx, 'sym, 'flg> {
         context: &'ctx Context,
         sym: &'sym SymbolData,
         settings: &'flg SymDataDisplaySettings,
+
+        internal_settings: InternalSymDisplSettings,
     ) -> Result<Self, SymDisplayError> {
         let owned_segment = context.find_owned_segment(sym.parent_segment_info())?;
         let find_settings = FindSettings::default().with_allow_addend(false);
@@ -72,6 +77,8 @@ impl<'ctx, 'sym, 'flg> SymDataDisplay<'ctx, 'sym, 'flg> {
             endian: context.global_config().endian(),
             owned_segment,
             metadata,
+
+            internal_settings,
         })
     }
 
@@ -245,7 +252,15 @@ impl SymDataDisplay<'_, '_, '_> {
         if let Some(rel) = self.sym.relocs()[i / 4]
             .as_ref()
             .filter(|x| !x.reloc_type().is_none())
-            .and_then(|x| x.display(self.context, self.sym.parent_segment_info(), find_settings))
+            .and_then(|x| {
+                x.display(
+                    self.context,
+                    self.sym.parent_segment_info(),
+                    find_settings,
+                    self.metadata.compiler(),
+                    self.internal_settings,
+                )
+            })
         {
             write!(f, "{}", rel)?;
         } else {

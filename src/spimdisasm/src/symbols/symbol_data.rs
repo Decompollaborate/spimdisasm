@@ -22,7 +22,7 @@ use crate::{
 };
 
 use super::{
-    display::{SymDataDisplay, SymDataDisplaySettings, SymDisplayError},
+    display::{InternalSymDisplSettings, SymDataDisplay, SymDataDisplaySettings, SymDisplayError},
     trait_symbol::RomSymbol,
     Symbol,
 };
@@ -161,7 +161,16 @@ impl<'ctx, 'sym, 'flg> SymbolData {
         context: &'ctx Context,
         settings: &'flg SymDataDisplaySettings,
     ) -> Result<SymDataDisplay<'ctx, 'sym, 'flg>, SymDisplayError> {
-        SymDataDisplay::new(context, self, settings)
+        self.display_internal(context, settings, InternalSymDisplSettings::new(false))
+    }
+
+    pub(crate) fn display_internal(
+        &'sym self,
+        context: &'ctx Context,
+        settings: &'flg SymDataDisplaySettings,
+        internal_settings: InternalSymDisplSettings,
+    ) -> Result<SymDataDisplay<'ctx, 'sym, 'flg>, SymDisplayError> {
+        SymDataDisplay::new(context, self, settings, internal_settings)
     }
 }
 
