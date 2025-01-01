@@ -87,6 +87,65 @@ impl<'ctx, 'sym, 'flg> SymDataDisplay<'ctx, 'sym, 'flg> {
 }
 
 impl SymDataDisplay<'_, '_, '_> {
+    fn display_sym_warnings(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        if false {
+            let ranges = self.sym.rom_vram_range();
+            let rom = ranges.rom().start();
+            let size = self.sym.raw_bytes().len();
+
+            if let Some(sym_type) = self.metadata.sym_type() {
+                match sym_type {
+                    SymbolType::Byte => Ok(()),
+                    SymbolType::Short if rom.inner() % 2 != 0 || size % 2 != 0 => {
+                        write!(f, "/* This symbol has type {:?}, but it is not possible to emit it due to wrong alignment or size */{}", sym_type, self.settings.common.line_end())
+                    }
+                    SymbolType::Word | SymbolType::Float32 | SymbolType::CString
+                        if rom.inner() % 4 != 0 || size % 4 != 0 =>
+                    {
+                        write!(f, "/* This symbol has type {:?}, but it is not possible to emit it due to wrong alignment or size */{}", sym_type, self.settings.common.line_end())
+                    }
+                    SymbolType::Function
+                    | SymbolType::BranchLabel
+                    | SymbolType::JumptableLabel
+                    | SymbolType::GccExceptTableLabel
+                        if rom.inner() % 4 != 0 || size % 4 != 0 =>
+                    {
+                        write!(f, "/* This symbol has type {:?}, but it is not possible to emit it due to wrong alignment or size */{}", sym_type, self.settings.common.line_end())
+                    }
+                    SymbolType::Jumptable | SymbolType::GccExceptTable
+                        if rom.inner() % 4 != 0 || size % 4 != 0 =>
+                    {
+                        write!(f, "/* This symbol has type {:?}, but it is not possible to emit it due to wrong alignment or size */{}", sym_type, self.settings.common.line_end())
+                    }
+                    SymbolType::DWord | SymbolType::Float64
+                        if rom.inner() % 8 != 0 || size % 8 != 0 =>
+                    {
+                        write!(f, "/* This symbol has type {:?}, but it is not possible to emit it due to wrong alignment or size */{}", sym_type, self.settings.common.line_end())
+                    }
+
+                    SymbolType::UserCustom => Ok(()),
+
+                    SymbolType::Short
+                    | SymbolType::Word
+                    | SymbolType::Float32
+                    | SymbolType::CString
+                    | SymbolType::Function
+                    | SymbolType::BranchLabel
+                    | SymbolType::JumptableLabel
+                    | SymbolType::GccExceptTableLabel
+                    | SymbolType::Jumptable
+                    | SymbolType::GccExceptTable
+                    | SymbolType::DWord
+                    | SymbolType::Float64 => Ok(()),
+                }
+            } else {
+                Ok(())
+            }
+        } else {
+            Ok(())
+        }
+    }
+
     #[allow(clippy::if_same_then_else)]
     #[allow(clippy::needless_bool)]
     fn is_byte(&self, i: usize) -> bool {
@@ -303,6 +362,8 @@ impl fmt::Display for SymDataDisplay<'_, '_, '_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let name = self.metadata.display_name();
         let sym_type = self.metadata.sym_type();
+
+        self.display_sym_warnings(f)?;
 
         self.settings
             .common
