@@ -3,13 +3,14 @@
 
 use alloc::string::String;
 use alloc::vec;
-use alloc::{collections::BTreeSet, vec::Vec};
+use alloc::vec::Vec;
 
 use rabbitizer::{vram::VramOffset, Instruction, InstructionFlags, IsaExtension, Vram};
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
+use crate::collections::unordered_set::UnorderedSet;
 use crate::config::Compiler;
 use crate::metadata::ParentSectionMetadata;
 use crate::section_type::SectionType;
@@ -47,7 +48,7 @@ pub struct SectionExecutable {
     //
     functions: Vec<SymbolFunction>,
 
-    symbol_vrams: BTreeSet<Vram>,
+    symbol_vrams: UnorderedSet<Vram>,
 }
 
 impl SectionExecutable {
@@ -90,7 +91,7 @@ impl SectionExecutable {
             find_functions(settings, context, &parent_segment_info, ranges, &instrs)?;
 
         let mut functions = Vec::new();
-        let mut symbol_vrams = BTreeSet::new();
+        let mut symbol_vrams = UnorderedSet::new();
 
         for (i, (start, _contains_invalid)) in funcs_start_data.iter().enumerate() {
             let end = if i + 1 < funcs_start_data.len() {
@@ -162,7 +163,7 @@ impl Section for SectionExecutable {
         &self.functions
     }
 
-    fn symbols_vrams(&self) -> &BTreeSet<Vram> {
+    fn symbols_vrams(&self) -> &UnorderedSet<Vram> {
         &self.symbol_vrams
     }
 }

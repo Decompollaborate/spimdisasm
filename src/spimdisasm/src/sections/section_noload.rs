@@ -9,7 +9,7 @@ use pyo3::prelude::*;
 
 use crate::{
     address_range::AddressRange,
-    collections::unordered_map::UnorderedMap,
+    collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
     config::Compiler,
     context::{Context, OwnedSegmentNotFoundError},
     metadata::ParentSectionMetadata,
@@ -20,7 +20,7 @@ use crate::{
 
 use super::Section;
 
-#[derive(Debug, Clone, Hash, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 #[must_use]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct SectionNoload {
@@ -35,7 +35,7 @@ pub struct SectionNoload {
     //
     noload_symbols: Vec<SymbolNoload>,
 
-    symbol_vrams: BTreeSet<Vram>,
+    symbol_vrams: UnorderedSet<Vram>,
 }
 
 impl SectionNoload {
@@ -53,7 +53,7 @@ impl SectionNoload {
         );
 
         let mut noload_symbols = Vec::new();
-        let mut symbol_vrams = BTreeSet::new();
+        let mut symbol_vrams = UnorderedSet::new();
 
         let owned_segment = context.find_owned_segment(&parent_segment_info)?;
 
@@ -160,7 +160,7 @@ impl Section for SectionNoload {
         &self.noload_symbols
     }
 
-    fn symbols_vrams(&self) -> &BTreeSet<Vram> {
+    fn symbols_vrams(&self) -> &UnorderedSet<Vram> {
         &self.symbol_vrams
     }
 }

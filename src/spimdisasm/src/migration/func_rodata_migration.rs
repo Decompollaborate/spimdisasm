@@ -1,17 +1,14 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{
-    collections::{btree_set::BTreeSet, vec_deque::VecDeque},
-    string::ToString,
-    vec::Vec,
-};
+use alloc::{collections::vec_deque::VecDeque, string::ToString, vec::Vec};
 use rabbitizer::Vram;
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
+    collections::unordered_set::UnorderedSet,
     context::Context,
     metadata::{RodataMigrationBehavior, SymbolMetadata, SymbolMetadataNameDisplay},
     sections::{Section, SectionData, SectionExecutable},
@@ -74,7 +71,7 @@ impl FuncRodataPairing {
             .iter()
             .flat_map(|x| x.data_symbols().iter().enumerate())
             .collect();
-        let mut handled_symbols = BTreeSet::new();
+        let mut handled_symbols = UnorderedSet::new();
 
         for (func_index, func_sym) in text_section
             .iter()
@@ -155,7 +152,7 @@ impl FuncRodataPairing {
         let mut late_rodata_indices = Vec::new();
 
         if let Some(rodata_section) = rodata_section {
-            let intersection: BTreeSet<Vram> = function
+            let intersection = function
                 .referenced_vrams()
                 .intersection(rodata_section.symbols_vrams())
                 .copied()
@@ -167,10 +164,10 @@ impl FuncRodataPairing {
                 .compiler()
                 .is_some_and(|x| x.has_late_rodata());
 
-            let mut migrable_rodata_syms = BTreeSet::new();
-            let mut migrable_late_rodata_syms = BTreeSet::new();
-            let mut maybe_migrable_rodata_syms = BTreeSet::new();
-            let mut maybe_migrable_late_rodata_syms = BTreeSet::new();
+            let mut migrable_rodata_syms = UnorderedSet::new();
+            let mut migrable_late_rodata_syms = UnorderedSet::new();
+            let mut maybe_migrable_rodata_syms = UnorderedSet::new();
+            let mut maybe_migrable_late_rodata_syms = UnorderedSet::new();
             let mut rodata_migrated_somewhere_else: bool = false;
             let mut late_rodata_migrated_somewhere_else: bool = false;
             for rodata_sym in rodata_section.data_symbols() {
@@ -226,10 +223,10 @@ impl FuncRodataPairing {
 
     fn update_migrable_symbols_sets(
         rodata_metadata: &SymbolMetadata,
-        intersection: &BTreeSet<Vram>,
+        intersection: &UnorderedSet<Vram>,
         func_name: &SymbolMetadataNameDisplay,
-        migrable_rodata_syms: &mut BTreeSet<Vram>,
-        maybe_migrable_rodata_syms: &mut BTreeSet<Vram>,
+        migrable_rodata_syms: &mut UnorderedSet<Vram>,
+        maybe_migrable_rodata_syms: &mut UnorderedSet<Vram>,
         mut rodata_migrated_somewhere_else: bool,
     ) -> bool {
         /*
@@ -268,7 +265,7 @@ impl FuncRodataPairing {
 
     fn should_migrate_rodata_symbol_to_function(
         rodata_metadata: &SymbolMetadata,
-        intersection: &BTreeSet<Vram>,
+        intersection: &UnorderedSet<Vram>,
         func_name: &SymbolMetadataNameDisplay,
     ) -> bool {
         if let RodataMigrationBehavior::MigrateToSpecificFunction(owner_name) =

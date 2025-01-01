@@ -1,11 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{
-    collections::{btree_map::BTreeMap, btree_set::BTreeSet},
-    string::String,
-    vec::Vec,
-};
+use alloc::{collections::btree_map::BTreeMap, string::String, vec::Vec};
 use rabbitizer::Vram;
 
 #[cfg(feature = "pyo3")]
@@ -14,7 +10,7 @@ use pyo3::prelude::*;
 use crate::{
     address_range::AddressRange,
     analysis::StringGuesserLevel,
-    collections::unordered_map::UnorderedMap,
+    collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
     config::Compiler,
     context::{Context, OwnedSegmentNotFoundError},
     metadata::{segment_metadata::FindSettings, ParentSectionMetadata, SymbolMetadata, SymbolType},
@@ -29,7 +25,7 @@ use crate::{
 
 use super::{trait_section::RomSection, Section};
 
-#[derive(Debug, Clone, Hash, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 #[must_use]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct SectionData {
@@ -45,7 +41,7 @@ pub struct SectionData {
     //
     data_symbols: Vec<SymbolData>,
 
-    symbol_vrams: BTreeSet<Vram>,
+    symbol_vrams: UnorderedSet<Vram>,
 }
 
 impl SectionData {
@@ -73,7 +69,7 @@ impl SectionData {
         let ranges = RomVramRange::new(rom_range, vram_range);
 
         let mut data_symbols = Vec::new();
-        let mut symbol_vrams = BTreeSet::new();
+        let mut symbol_vrams = UnorderedSet::new();
 
         let owned_segment = context.find_owned_segment(&parent_segment_info)?;
 
@@ -295,7 +291,7 @@ impl Section for SectionData {
         &self.data_symbols
     }
 
-    fn symbols_vrams(&self) -> &BTreeSet<Vram> {
+    fn symbols_vrams(&self) -> &UnorderedSet<Vram> {
         &self.symbol_vrams
     }
 }

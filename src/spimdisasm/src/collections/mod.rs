@@ -2,3 +2,4 @@
 /* SPDX-License-Identifier: MIT */
 
 pub mod unordered_map;
+pub mod unordered_set;

@@ -5,7 +5,7 @@ use crate::{sections::SectionData, symbols::SymbolData};
 
 use super::FuncRodataPairing;
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct RodataIterator<'pairing, 'rodata> {
     pairing: &'pairing FuncRodataPairing,
     rodata_section: Option<&'rodata SectionData>,

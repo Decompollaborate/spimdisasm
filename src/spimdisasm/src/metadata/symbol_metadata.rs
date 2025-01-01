@@ -3,15 +3,18 @@
 
 use core::{fmt, hash::Hash};
 
-use alloc::{collections::btree_set::BTreeSet, string::String};
+use alloc::string::String;
 use rabbitizer::{access_type::AccessType, Vram};
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
-    collections::unordered_map::UnorderedMap, config::Compiler,
-    parent_segment_info::ParentSegmentInfo, rom_address::RomAddress, section_type::SectionType,
+    collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
+    config::Compiler,
+    parent_segment_info::ParentSegmentInfo,
+    rom_address::RomAddress,
+    section_type::SectionType,
     size::Size,
 };
 
@@ -112,13 +115,13 @@ pub struct SymbolMetadata {
     /// on different segments).
     /// Value is the rom of the instruction that references this symbol, so we can know how many
     /// times a function references the same symbol.
-    reference_functions: UnorderedMap<(Vram, ParentSegmentInfo), BTreeSet<RomAddress>>,
+    reference_functions: UnorderedMap<(Vram, ParentSegmentInfo), UnorderedSet<RomAddress>>,
     /// Which symbols reference this symbol
     /// Key is the vram of the non-function symbol and the segment it is contained on (since vrams
     /// can overlap on different segments).
     /// Value is the rom of the word that references this symbol, so we can know how many
     /// times a function references the same symbol.
-    reference_symbols: UnorderedMap<(Vram, ParentSegmentInfo), BTreeSet<RomAddress>>,
+    reference_symbols: UnorderedMap<(Vram, ParentSegmentInfo), UnorderedSet<RomAddress>>,
 
     // TODO: how to reimplement these crossreferences?
     // parentFunction: ContextSymbol|None = None

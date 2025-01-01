@@ -3,10 +3,10 @@
 
 use core::{borrow::Borrow, hash::Hash};
 
-#[cfg(not(feature = "std"))]
+#[cfg(not(feature = "hash_tables"))]
 use alloc::collections::btree_map::{self, BTreeMap};
 
-#[cfg(feature = "std")]
+#[cfg(feature = "hash_tables")]
 use std::collections::hash_map::{self, HashMap};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -14,9 +14,9 @@ pub struct UnorderedMap<K, V>
 where
     K: Ord + Hash + Eq,
 {
-    #[cfg(not(feature = "std"))]
+    #[cfg(not(feature = "hash_tables"))]
     inner: BTreeMap<K, V>,
-    #[cfg(feature = "std")]
+    #[cfg(feature = "hash_tables")]
     inner: HashMap<K, V>,
 }
 
@@ -26,9 +26,9 @@ where
 {
     pub fn new() -> Self {
         Self {
-            #[cfg(not(feature = "std"))]
+            #[cfg(not(feature = "hash_tables"))]
             inner: BTreeMap::new(),
-            #[cfg(feature = "std")]
+            #[cfg(feature = "hash_tables")]
             inner: HashMap::new(),
         }
     }
@@ -39,9 +39,9 @@ where
         }
 
         Self {
-            #[cfg(not(feature = "std"))]
+            #[cfg(not(feature = "hash_tables"))]
             inner: BTreeMap::new(),
-            #[cfg(feature = "std")]
+            #[cfg(feature = "hash_tables")]
             inner: HashMap::with_capacity(capacity),
         }
     }
@@ -98,38 +98,38 @@ impl<K, V> UnorderedMap<K, V>
 where
     K: Ord + Hash + Eq,
 {
-    #[cfg(not(feature = "std"))]
+    #[cfg(not(feature = "hash_tables"))]
     pub fn iter(&self) -> btree_map::Iter<K, V> {
         self.inner.iter()
     }
-    #[cfg(feature = "std")]
+    #[cfg(feature = "hash_tables")]
     pub fn iter(&self) -> hash_map::Iter<K, V> {
         self.inner.iter()
     }
 
-    #[cfg(not(feature = "std"))]
+    #[cfg(not(feature = "hash_tables"))]
     pub fn iter_mut(&mut self) -> btree_map::IterMut<K, V> {
         self.inner.iter_mut()
     }
-    #[cfg(feature = "std")]
+    #[cfg(feature = "hash_tables")]
     pub fn iter_mut(&mut self) -> hash_map::IterMut<K, V> {
         self.inner.iter_mut()
     }
 
-    #[cfg(not(feature = "std"))]
+    #[cfg(not(feature = "hash_tables"))]
     pub fn keys(&self) -> btree_map::Keys<K, V> {
         self.inner.keys()
     }
-    #[cfg(feature = "std")]
+    #[cfg(feature = "hash_tables")]
     pub fn keys(&self) -> hash_map::Keys<K, V> {
         self.inner.keys()
     }
 
-    #[cfg(not(feature = "std"))]
+    #[cfg(not(feature = "hash_tables"))]
     pub fn values(&self) -> btree_map::Values<K, V> {
         self.inner.values()
     }
-    #[cfg(feature = "std")]
+    #[cfg(feature = "hash_tables")]
     pub fn values(&self) -> hash_map::Values<K, V> {
         self.inner.values()
     }
@@ -149,9 +149,9 @@ where
     K: Ord + Hash + Eq,
 {
     type Item = (&'a K, &'a V);
-    #[cfg(not(feature = "std"))]
+    #[cfg(not(feature = "hash_tables"))]
     type IntoIter = btree_map::Iter<'a, K, V>;
-    #[cfg(feature = "std")]
+    #[cfg(feature = "hash_tables")]
     type IntoIter = hash_map::Iter<'a, K, V>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -164,9 +164,9 @@ where
     K: Ord + Hash + Eq,
 {
     type Item = (&'a K, &'a mut V);
-    #[cfg(not(feature = "std"))]
+    #[cfg(not(feature = "hash_tables"))]
     type IntoIter = btree_map::IterMut<'a, K, V>;
-    #[cfg(feature = "std")]
+    #[cfg(feature = "hash_tables")]
     type IntoIter = hash_map::IterMut<'a, K, V>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -179,13 +179,43 @@ where
     K: Ord + Hash + Eq,
 {
     type Item = (K, V);
-    #[cfg(not(feature = "std"))]
+    #[cfg(not(feature = "hash_tables"))]
     type IntoIter = btree_map::IntoIter<K, V>;
-    #[cfg(feature = "std")]
+    #[cfg(feature = "hash_tables")]
     type IntoIter = hash_map::IntoIter<K, V>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.inner.into_iter()
+    }
+}
+
+impl<'a, K, V> Extend<(&'a K, &'a V)> for UnorderedMap<K, V>
+where
+    K: 'a + Ord + Hash + Eq + Copy,
+    V: Copy,
+{
+    fn extend<I: IntoIterator<Item = (&'a K, &'a V)>>(&mut self, iter: I) {
+        self.inner.extend(iter)
+    }
+}
+
+impl<K, V> Extend<(K, V)> for UnorderedMap<K, V>
+where
+    K: Ord + Hash + Eq,
+{
+    fn extend<I: IntoIterator<Item = (K, V)>>(&mut self, iter: I) {
+        self.inner.extend(iter)
+    }
+}
+
+impl<K, V> FromIterator<(K, V)> for UnorderedMap<K, V>
+where
+    K: Ord + Hash + Eq,
+{
+    fn from_iter<I: IntoIterator<Item = (K, V)>>(iter: I) -> Self {
+        let mut s = Self::new();
+        s.extend(iter);
+        s
     }
 }
 
@@ -194,9 +224,9 @@ pub struct Entry<'a, K: 'a, V: 'a>
 where
     K: Ord,
 {
-    #[cfg(not(feature = "std"))]
+    #[cfg(not(feature = "hash_tables"))]
     inner: btree_map::Entry<'a, K, V>,
-    #[cfg(feature = "std")]
+    #[cfg(feature = "hash_tables")]
     inner: hash_map::Entry<'a, K, V>,
 }
 

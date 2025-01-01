@@ -1,18 +1,19 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::collections::btree_set::BTreeSet;
 use rabbitizer::Instruction;
 
-use crate::{context::Context, rom_vram_range::RomVramRange};
+use crate::{
+    collections::unordered_set::UnorderedSet, context::Context, rom_vram_range::RomVramRange,
+};
 
 use super::{InstructionAnalysisResult, RegisterTracker};
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InstructionAnalyzer {
     ranges: RomVramRange,
 
-    branches_taken: BTreeSet<u32>,
+    branches_taken: UnorderedSet<u32>,
 }
 
 impl InstructionAnalyzer {
@@ -26,7 +27,7 @@ impl InstructionAnalyzer {
 
         let mut analyzer = Self {
             ranges,
-            branches_taken: BTreeSet::new(),
+            branches_taken: UnorderedSet::new(),
         };
         let mut regs_tracker = RegisterTracker::new();
         let mut result = InstructionAnalysisResult::new(ranges);

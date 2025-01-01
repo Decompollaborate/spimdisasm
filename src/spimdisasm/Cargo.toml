@@ -22,6 +22,7 @@ path = "src/lib.rs"
 [features]
 default = []
 std = ["rabbitizer/std"]
+hash_tables = ["std"]
 
 nightly = [] # Evil stuff, do not use.
 game_tests = [] # Tests that require game roms to run

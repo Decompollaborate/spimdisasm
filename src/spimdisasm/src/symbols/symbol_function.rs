@@ -1,12 +1,13 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{collections::btree_set::BTreeSet, vec::Vec};
+use alloc::vec::Vec;
 use rabbitizer::{access_type::AccessType, Instruction, Vram};
 
 use crate::{
     address_range::AddressRange,
     analysis::{InstructionAnalysisResult, InstructionAnalyzer},
+    collections::unordered_set::UnorderedSet,
     config::Compiler,
     context::{Context, OwnedSegmentNotFoundError},
     metadata::{GeneratedBy, ParentSectionMetadata, SegmentMetadata, SymbolMetadata},
@@ -528,12 +529,12 @@ impl SymbolFunction {
     }
 
     #[must_use]
-    pub(crate) fn handwritten_instrs(&self) -> &BTreeSet<RomAddress> {
+    pub(crate) fn handwritten_instrs(&self) -> &UnorderedSet<RomAddress> {
         self.instr_analysis.handwritten_instrs()
     }
 
     #[must_use]
-    pub fn referenced_vrams(&self) -> &BTreeSet<Vram> {
+    pub fn referenced_vrams(&self) -> &UnorderedSet<Vram> {
         self.instr_analysis.referenced_vrams()
     }
 }

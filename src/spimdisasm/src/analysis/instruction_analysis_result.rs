@@ -1,14 +1,15 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::collections::btree_set::BTreeSet;
 use rabbitizer::{
     access_type::AccessType, opcodes::Opcode, registers::Gpr, registers_meta::Register,
     vram::VramOffset, Instruction, Vram,
 };
 
 use crate::{
-    collections::unordered_map::UnorderedMap, context::Context, rom_address::RomAddress,
+    collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
+    context::Context,
+    rom_address::RomAddress,
     rom_vram_range::RomVramRange,
 };
 
@@ -19,7 +20,7 @@ pub struct InstructionAnalysisResult {
     ranges: RomVramRange,
 
     /// Every referenced vram found.
-    referenced_vrams: BTreeSet<Vram>,
+    referenced_vrams: UnorderedSet<Vram>,
     /// Key is the rom of the instruction referencing that address, value is the referenced address.
     referenced_vrams_by_rom: UnorderedMap<RomAddress, Vram>,
 
@@ -34,7 +35,7 @@ pub struct InstructionAnalysisResult {
     referenced_jumptables: UnorderedMap<RomAddress, Vram>,
 
     hi_instrs: UnorderedMap<RomAddress, (Gpr, u16)>,
-    non_lo_instrs: BTreeSet<RomAddress>,
+    non_lo_instrs: UnorderedSet<RomAddress>,
 
     constant_per_instr: UnorderedMap<RomAddress, u32>,
 
@@ -46,7 +47,7 @@ pub struct InstructionAnalysisResult {
     type_info_per_address: UnorderedMap<Vram, UnorderedMap<(AccessType, bool), u32>>,
     type_info_per_instr: UnorderedMap<RomAddress, (AccessType, bool)>,
 
-    handwritten_instrs: BTreeSet<RomAddress>,
+    handwritten_instrs: UnorderedSet<RomAddress>,
 }
 
 impl InstructionAnalysisResult {
@@ -55,26 +56,26 @@ impl InstructionAnalysisResult {
         // TODO: require how many instructions this function has, so we can use `with_capacity`
         Self {
             ranges,
-            referenced_vrams: BTreeSet::new(),
+            referenced_vrams: UnorderedSet::new(),
             referenced_vrams_by_rom: UnorderedMap::new(),
             branch_targets: UnorderedMap::new(),
             branch_targets_outside: UnorderedMap::new(),
             func_calls: UnorderedMap::new(),
             referenced_jumptables: UnorderedMap::new(),
             hi_instrs: UnorderedMap::new(),
-            non_lo_instrs: BTreeSet::new(),
+            non_lo_instrs: UnorderedSet::new(),
             constant_per_instr: UnorderedMap::new(),
             address_per_instr: UnorderedMap::new(),
             address_per_hi_instr: UnorderedMap::new(),
             address_per_lo_instr: UnorderedMap::new(),
             type_info_per_address: UnorderedMap::new(),
             type_info_per_instr: UnorderedMap::new(),
-            handwritten_instrs: BTreeSet::new(),
+            handwritten_instrs: UnorderedSet::new(),
         }
     }
 
     #[must_use]
-    pub fn referenced_vrams(&self) -> &BTreeSet<Vram> {
+    pub fn referenced_vrams(&self) -> &UnorderedSet<Vram> {
         &self.referenced_vrams
     }
 
@@ -124,7 +125,7 @@ impl InstructionAnalysisResult {
     }
 
     #[must_use]
-    pub fn handwritten_instrs(&self) -> &BTreeSet<RomAddress> {
+    pub fn handwritten_instrs(&self) -> &UnorderedSet<RomAddress> {
         &self.handwritten_instrs
     }
 }
