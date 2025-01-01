@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Tweak symbol pairing system a bit.
+  - Should reduce the amount of fake pairings emitted in the generated assembly.
+
 ## [1.32.0] - 2024-12-28
 
 ### Added
