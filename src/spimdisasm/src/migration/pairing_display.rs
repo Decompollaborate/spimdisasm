@@ -20,7 +20,7 @@ use crate::{
 
 use super::{FuncRodataPairing, PairingError};
 
-#[derive(Debug, Clone, Hash, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FuncRodataPairingDisplay<
     'ctx,
     'text,

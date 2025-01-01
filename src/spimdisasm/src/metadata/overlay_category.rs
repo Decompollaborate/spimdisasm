@@ -1,22 +1,20 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::collections::BTreeMap;
-
-use crate::rom_address::RomAddress;
+use crate::{collections::unordered_map::UnorderedMap, rom_address::RomAddress};
 
 use super::SegmentMetadata;
 
-#[derive(Debug, Clone, Hash, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct OverlayCategory {
     placeholder_segment: SegmentMetadata,
-    segments: BTreeMap<RomAddress, SegmentMetadata>,
+    segments: UnorderedMap<RomAddress, SegmentMetadata>,
 }
 
 impl OverlayCategory {
     pub(crate) fn new(
         placeholder_segment: SegmentMetadata,
-        segments: BTreeMap<RomAddress, SegmentMetadata>,
+        segments: UnorderedMap<RomAddress, SegmentMetadata>,
     ) -> Self {
         Self {
             placeholder_segment,
@@ -31,10 +29,10 @@ impl OverlayCategory {
         &mut self.placeholder_segment
     }
 
-    pub(crate) fn segments(&self) -> &BTreeMap<RomAddress, SegmentMetadata> {
+    pub(crate) fn segments(&self) -> &UnorderedMap<RomAddress, SegmentMetadata> {
         &self.segments
     }
-    pub(crate) fn segments_mut(&mut self) -> &mut BTreeMap<RomAddress, SegmentMetadata> {
+    pub(crate) fn segments_mut(&mut self) -> &mut UnorderedMap<RomAddress, SegmentMetadata> {
         &mut self.segments
     }
 }

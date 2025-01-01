@@ -43,7 +43,7 @@ impl SymDataDisplaySettings {
     }
 }
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SymDataDisplay<'ctx, 'sym, 'flg> {
     context: &'ctx Context,
     sym: &'sym SymbolData,

@@ -3,19 +3,16 @@
 
 use core::{fmt, hash::Hash};
 
-// use alloc::boxed::Box;
-use alloc::{
-    collections::{btree_map::BTreeMap, btree_set::BTreeSet},
-    string::String,
-};
+use alloc::{collections::btree_set::BTreeSet, string::String};
 use rabbitizer::{access_type::AccessType, Vram};
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
-    config::Compiler, parent_segment_info::ParentSegmentInfo, rom_address::RomAddress,
-    section_type::SectionType, size::Size,
+    collections::unordered_map::UnorderedMap, config::Compiler,
+    parent_segment_info::ParentSegmentInfo, rom_address::RomAddress, section_type::SectionType,
+    size::Size,
 };
 
 use super::{ParentSectionMetadata, SymbolMetadataNameDisplay, SymbolType};
@@ -115,13 +112,13 @@ pub struct SymbolMetadata {
     /// on different segments).
     /// Value is the rom of the instruction that references this symbol, so we can know how many
     /// times a function references the same symbol.
-    reference_functions: BTreeMap<(Vram, ParentSegmentInfo), BTreeSet<RomAddress>>,
+    reference_functions: UnorderedMap<(Vram, ParentSegmentInfo), BTreeSet<RomAddress>>,
     /// Which symbols reference this symbol
     /// Key is the vram of the non-function symbol and the segment it is contained on (since vrams
     /// can overlap on different segments).
     /// Value is the rom of the word that references this symbol, so we can know how many
     /// times a function references the same symbol.
-    reference_symbols: BTreeMap<(Vram, ParentSegmentInfo), BTreeSet<RomAddress>>,
+    reference_symbols: UnorderedMap<(Vram, ParentSegmentInfo), BTreeSet<RomAddress>>,
 
     // TODO: how to reimplement these crossreferences?
     // parentFunction: ContextSymbol|None = None
@@ -208,8 +205,8 @@ impl SymbolMetadata {
             access_type: None,
             c_string_info: None,
             // pascal_string_info: None,
-            reference_functions: BTreeMap::new(),
-            reference_symbols: BTreeMap::new(),
+            reference_functions: UnorderedMap::new(),
+            reference_symbols: UnorderedMap::new(),
             // name_get_callback: None,
             got_info: None,
             accessed_as_gp_rel: false,

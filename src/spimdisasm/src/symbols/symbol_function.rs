@@ -26,7 +26,7 @@ use super::{
     Symbol,
 };
 
-#[derive(Debug, Clone, Hash, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SymbolFunction {
     ranges: RomVramRange,
     instructions: Vec<Instruction>,

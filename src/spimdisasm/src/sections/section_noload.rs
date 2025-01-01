@@ -1,11 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{
-    collections::{btree_map::BTreeMap, btree_set::BTreeSet},
-    string::String,
-    vec::Vec,
-};
+use alloc::{collections::btree_set::BTreeSet, string::String, vec::Vec};
 use rabbitizer::Vram;
 
 #[cfg(feature = "pyo3")]
@@ -13,6 +9,7 @@ use pyo3::prelude::*;
 
 use crate::{
     address_range::AddressRange,
+    collections::unordered_map::UnorderedMap,
     config::Compiler,
     context::{Context, OwnedSegmentNotFoundError},
     metadata::ParentSectionMetadata,
@@ -64,7 +61,7 @@ impl SectionNoload {
         // Ensure there's a symbol at the beginning of the section.
         symbols_info.insert(vram_range.start());
 
-        let mut auto_pads: BTreeMap<Vram, Vram> = BTreeMap::new();
+        let mut auto_pads: UnorderedMap<Vram, Vram> = UnorderedMap::new();
 
         /*
         # If something that could be a pointer found in data happens to be in

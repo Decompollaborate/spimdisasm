@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{collections::btree_map::BTreeMap, string::String};
+use alloc::string::String;
 use core::{error, fmt};
 
 use ::polonius_the_crab::prelude::*;
@@ -13,6 +13,7 @@ use pyo3::prelude::*;
 
 use crate::{
     address_range::AddressRange,
+    collections::unordered_map::UnorderedMap,
     config::GlobalConfig,
     metadata::{OverlayCategory, OverlayCategoryName, SegmentMetadata},
     parent_segment_info::ParentSegmentInfo,
@@ -24,7 +25,7 @@ use crate::{
     },
 };
 
-#[derive(Debug, Clone, Hash, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct Context {
     global_config: GlobalConfig,
@@ -33,7 +34,7 @@ pub struct Context {
     // unknown_segment: SegmentMetadata,
 
     //
-    overlay_segments: BTreeMap<OverlayCategoryName, OverlayCategory>,
+    overlay_segments: UnorderedMap<OverlayCategoryName, OverlayCategory>,
     //
     // totalVramRange: SymbolsRanges
 
@@ -52,7 +53,7 @@ impl Context {
     pub(crate) fn new(
         global_config: GlobalConfig,
         global_segment: SegmentMetadata,
-        overlay_segments: BTreeMap<OverlayCategoryName, OverlayCategory>,
+        overlay_segments: UnorderedMap<OverlayCategoryName, OverlayCategory>,
     ) -> Self {
         Self {
             global_config,
@@ -72,7 +73,7 @@ impl Context {
         &self.global_segment
     }
     #[must_use]
-    pub const fn overlay_segments(&self) -> &BTreeMap<OverlayCategoryName, OverlayCategory> {
+    pub const fn overlay_segments(&self) -> &UnorderedMap<OverlayCategoryName, OverlayCategory> {
         &self.overlay_segments
     }
 }

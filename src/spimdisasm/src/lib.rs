@@ -26,6 +26,8 @@ pub mod relocation;
 pub mod sections;
 pub mod symbols;
 
+pub mod collections;
+
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 

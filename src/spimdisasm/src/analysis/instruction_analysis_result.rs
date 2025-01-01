@@ -1,47 +1,50 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
+use alloc::collections::btree_set::BTreeSet;
 use rabbitizer::{
     access_type::AccessType, opcodes::Opcode, registers::Gpr, registers_meta::Register,
     vram::VramOffset, Instruction, Vram,
 };
 
-use crate::{context::Context, rom_address::RomAddress, rom_vram_range::RomVramRange};
+use crate::{
+    collections::unordered_map::UnorderedMap, context::Context, rom_address::RomAddress,
+    rom_vram_range::RomVramRange,
+};
 
 use super::RegisterTracker;
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InstructionAnalysisResult {
     ranges: RomVramRange,
 
     /// Every referenced vram found.
     referenced_vrams: BTreeSet<Vram>,
     /// Key is the rom of the instruction referencing that address, value is the referenced address.
-    referenced_vrams_by_rom: BTreeMap<RomAddress, Vram>,
+    referenced_vrams_by_rom: UnorderedMap<RomAddress, Vram>,
 
     /// Key is the rom of the branch instruction, value is the vram target for that instruction.
-    branch_targets: BTreeMap<RomAddress, Vram>,
+    branch_targets: UnorderedMap<RomAddress, Vram>,
     /// Same as `branch_targets`, but for branching outside the current function.
-    branch_targets_outside: BTreeMap<RomAddress, Vram>,
+    branch_targets_outside: UnorderedMap<RomAddress, Vram>,
 
     /// Key is the rom of the instruction, value is the address of the called function.
-    func_calls: BTreeMap<RomAddress, Vram>,
+    func_calls: UnorderedMap<RomAddress, Vram>,
 
-    referenced_jumptables: BTreeMap<RomAddress, Vram>,
+    referenced_jumptables: UnorderedMap<RomAddress, Vram>,
 
-    hi_instrs: BTreeMap<RomAddress, (Gpr, u16)>,
+    hi_instrs: UnorderedMap<RomAddress, (Gpr, u16)>,
     non_lo_instrs: BTreeSet<RomAddress>,
 
-    constant_per_instr: BTreeMap<RomAddress, u32>,
+    constant_per_instr: UnorderedMap<RomAddress, u32>,
 
     // TODO: merge these 3 thingies
-    address_per_instr: BTreeMap<RomAddress, Vram>,
-    address_per_hi_instr: BTreeMap<RomAddress, Vram>,
-    address_per_lo_instr: BTreeMap<RomAddress, Vram>,
+    address_per_instr: UnorderedMap<RomAddress, Vram>,
+    address_per_hi_instr: UnorderedMap<RomAddress, Vram>,
+    address_per_lo_instr: UnorderedMap<RomAddress, Vram>,
 
-    type_info_per_address: BTreeMap<Vram, BTreeMap<(AccessType, bool), u32>>,
-    type_info_per_instr: BTreeMap<RomAddress, (AccessType, bool)>,
+    type_info_per_address: UnorderedMap<Vram, UnorderedMap<(AccessType, bool), u32>>,
+    type_info_per_instr: UnorderedMap<RomAddress, (AccessType, bool)>,
 
     handwritten_instrs: BTreeSet<RomAddress>,
 }
@@ -49,22 +52,23 @@ pub struct InstructionAnalysisResult {
 impl InstructionAnalysisResult {
     #[must_use]
     pub(crate) fn new(ranges: RomVramRange) -> Self {
+        // TODO: require how many instructions this function has, so we can use `with_capacity`
         Self {
             ranges,
             referenced_vrams: BTreeSet::new(),
-            referenced_vrams_by_rom: BTreeMap::new(),
-            branch_targets: BTreeMap::new(),
-            branch_targets_outside: BTreeMap::new(),
-            func_calls: BTreeMap::new(),
-            referenced_jumptables: BTreeMap::new(),
-            hi_instrs: BTreeMap::new(),
+            referenced_vrams_by_rom: UnorderedMap::new(),
+            branch_targets: UnorderedMap::new(),
+            branch_targets_outside: UnorderedMap::new(),
+            func_calls: UnorderedMap::new(),
+            referenced_jumptables: UnorderedMap::new(),
+            hi_instrs: UnorderedMap::new(),
             non_lo_instrs: BTreeSet::new(),
-            constant_per_instr: BTreeMap::new(),
-            address_per_instr: BTreeMap::new(),
-            address_per_hi_instr: BTreeMap::new(),
-            address_per_lo_instr: BTreeMap::new(),
-            type_info_per_address: BTreeMap::new(),
-            type_info_per_instr: BTreeMap::new(),
+            constant_per_instr: UnorderedMap::new(),
+            address_per_instr: UnorderedMap::new(),
+            address_per_hi_instr: UnorderedMap::new(),
+            address_per_lo_instr: UnorderedMap::new(),
+            type_info_per_address: UnorderedMap::new(),
+            type_info_per_instr: UnorderedMap::new(),
             handwritten_instrs: BTreeSet::new(),
         }
     }
@@ -75,45 +79,47 @@ impl InstructionAnalysisResult {
     }
 
     #[must_use]
-    pub fn branch_targets(&self) -> &BTreeMap<RomAddress, Vram> {
+    pub fn branch_targets(&self) -> &UnorderedMap<RomAddress, Vram> {
         &self.branch_targets
     }
     #[must_use]
-    pub fn branch_targets_outside(&self) -> &BTreeMap<RomAddress, Vram> {
+    pub fn branch_targets_outside(&self) -> &UnorderedMap<RomAddress, Vram> {
         &self.branch_targets_outside
     }
 
     #[must_use]
-    pub fn func_calls(&self) -> &BTreeMap<RomAddress, Vram> {
+    pub fn func_calls(&self) -> &UnorderedMap<RomAddress, Vram> {
         &self.func_calls
     }
 
     #[must_use]
-    pub fn hi_instrs(&self) -> &BTreeMap<RomAddress, (Gpr, u16)> {
+    pub fn hi_instrs(&self) -> &UnorderedMap<RomAddress, (Gpr, u16)> {
         &self.hi_instrs
     }
 
     #[must_use]
-    pub fn constant_per_instr(&self) -> &BTreeMap<RomAddress, u32> {
+    pub fn constant_per_instr(&self) -> &UnorderedMap<RomAddress, u32> {
         &self.constant_per_instr
     }
 
     #[must_use]
-    pub fn address_per_hi_instr(&self) -> &BTreeMap<RomAddress, Vram> {
+    pub fn address_per_hi_instr(&self) -> &UnorderedMap<RomAddress, Vram> {
         &self.address_per_hi_instr
     }
     #[must_use]
-    pub fn address_per_lo_instr(&self) -> &BTreeMap<RomAddress, Vram> {
+    pub fn address_per_lo_instr(&self) -> &UnorderedMap<RomAddress, Vram> {
         &self.address_per_lo_instr
     }
 
     #[must_use]
-    pub fn referenced_jumptables(&self) -> &BTreeMap<RomAddress, Vram> {
+    pub fn referenced_jumptables(&self) -> &UnorderedMap<RomAddress, Vram> {
         &self.referenced_jumptables
     }
 
     #[must_use]
-    pub fn type_info_per_address(&self) -> &BTreeMap<Vram, BTreeMap<(AccessType, bool), u32>> {
+    pub fn type_info_per_address(
+        &self,
+    ) -> &UnorderedMap<Vram, UnorderedMap<(AccessType, bool), u32>> {
         &self.type_info_per_address
     }
 

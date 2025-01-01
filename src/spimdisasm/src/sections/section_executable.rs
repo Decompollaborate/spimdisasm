@@ -31,7 +31,7 @@ use crate::{
 use super::trait_section::RomSection;
 use super::Section;
 
-#[derive(Debug, Clone, Hash, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 #[must_use]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct SectionExecutable {

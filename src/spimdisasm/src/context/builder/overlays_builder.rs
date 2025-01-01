@@ -1,12 +1,10 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{
-    collections::btree_map::{self, BTreeMap},
-    vec::Vec,
-};
+use alloc::vec::Vec;
 
 use crate::{
+    collections::unordered_map::{self, UnorderedMap},
     metadata::{OverlayCategory, OverlayCategoryName, SegmentMetadata},
     rom_vram_range::RomVramRange,
 };
@@ -15,14 +13,14 @@ use super::SegmentModifier;
 
 pub struct OverlaysBuilder<'map_entry> {
     name: OverlayCategoryName,
-    entry: btree_map::Entry<'map_entry, OverlayCategoryName, OverlayCategory>,
+    entry: unordered_map::Entry<'map_entry, OverlayCategoryName, OverlayCategory>,
     overlays: Vec<SegmentMetadata>,
 }
 
 impl<'map_entry> OverlaysBuilder<'map_entry> {
     pub(crate) fn new(
         category: OverlayCategoryName,
-        overlay_segments: &'map_entry mut BTreeMap<OverlayCategoryName, OverlayCategory>,
+        overlay_segments: &'map_entry mut UnorderedMap<OverlayCategoryName, OverlayCategory>,
     ) -> Self {
         Self {
             name: category.clone(),
@@ -52,7 +50,7 @@ impl OverlaysBuilder<'_> {
             return Err(());
         }
 
-        let mut segments = BTreeMap::new();
+        let mut segments = UnorderedMap::new();
 
         let mut ranges = *self.overlays[0].rom_vram_range();
 

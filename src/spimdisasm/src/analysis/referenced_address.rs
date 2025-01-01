@@ -1,20 +1,20 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::collections::BTreeMap;
+use core::hash::Hash;
 
 use rabbitizer::Vram;
 
-use crate::{metadata::SymbolType, size::Size};
+use crate::{collections::unordered_map::UnorderedMap, metadata::SymbolType, size::Size};
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Eq)]
 pub struct ReferencedAddress {
     vram: Vram,
 
-    sym_type: BTreeMap<SymbolType, u32>,
+    sym_type: UnorderedMap<SymbolType, u32>,
 
-    sizes: BTreeMap<Option<Size>, u32>,
-    alignments: BTreeMap<Option<u8>, u32>,
+    sizes: UnorderedMap<Option<Size>, u32>,
+    alignments: UnorderedMap<Option<u8>, u32>,
 
     reference_count: usize,
 }
@@ -24,10 +24,10 @@ impl ReferencedAddress {
         Self {
             vram,
 
-            sym_type: BTreeMap::new(),
+            sym_type: UnorderedMap::new(),
 
-            alignments: BTreeMap::new(),
-            sizes: BTreeMap::new(),
+            alignments: UnorderedMap::new(),
+            sizes: UnorderedMap::new(),
 
             reference_count: 0,
         }
@@ -73,5 +73,21 @@ impl ReferencedAddress {
 
     pub fn increment_references(&mut self) {
         self.reference_count += 1;
+    }
+}
+
+impl PartialEq for ReferencedAddress {
+    fn eq(&self, other: &Self) -> bool {
+        self.vram == other.vram
+    }
+}
+impl PartialOrd for ReferencedAddress {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        self.vram.partial_cmp(&other.vram)
+    }
+}
+impl Hash for ReferencedAddress {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.vram.hash(state);
     }
 }

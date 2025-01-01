@@ -1,25 +1,24 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::collections::btree_map::BTreeMap;
-
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
+    collections::unordered_map::UnorderedMap,
     config::GlobalConfig,
     metadata::{OverlayCategory, OverlayCategoryName, SegmentMetadata},
 };
 
 use super::{ContextBuilderFinderHeater, OverlaysBuilder};
 
-#[derive(Debug, Clone, Hash, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct ContextBuilderOverlay {
     global_config: GlobalConfig,
 
     global_segment: SegmentMetadata,
-    overlay_segments: BTreeMap<OverlayCategoryName, OverlayCategory>,
+    overlay_segments: UnorderedMap<OverlayCategoryName, OverlayCategory>,
 }
 
 impl ContextBuilderOverlay {
@@ -28,7 +27,7 @@ impl ContextBuilderOverlay {
         Self {
             global_config,
             global_segment,
-            overlay_segments: BTreeMap::new(),
+            overlay_segments: UnorderedMap::new(),
         }
     }
 

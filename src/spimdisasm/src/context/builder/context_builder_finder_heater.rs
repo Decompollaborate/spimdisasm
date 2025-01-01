@@ -1,7 +1,6 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::collections::btree_map::BTreeMap;
 use rabbitizer::Vram;
 
 #[cfg(feature = "pyo3")]
@@ -9,6 +8,7 @@ use pyo3::prelude::*;
 
 use crate::{
     analysis::Preheater,
+    collections::unordered_map::UnorderedMap,
     config::GlobalConfig,
     metadata::{OverlayCategory, OverlayCategoryName, SegmentMetadata},
     rom_address::RomAddress,
@@ -17,13 +17,13 @@ use crate::{
 
 use super::ContextBuilderFinderHeaterOverlays;
 
-#[derive(Debug, Clone, Hash, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct ContextBuilderFinderHeater {
     global_config: GlobalConfig,
 
     global_segment: SegmentMetadata,
-    overlay_segments: BTreeMap<OverlayCategoryName, OverlayCategory>,
+    overlay_segments: UnorderedMap<OverlayCategoryName, OverlayCategory>,
 
     preheater: Preheater,
 }
@@ -33,7 +33,7 @@ impl ContextBuilderFinderHeater {
         global_config: GlobalConfig,
 
         global_segment: SegmentMetadata,
-        overlay_segments: BTreeMap<OverlayCategoryName, OverlayCategory>,
+        overlay_segments: UnorderedMap<OverlayCategoryName, OverlayCategory>,
     ) -> Self {
         Self {
             global_config,

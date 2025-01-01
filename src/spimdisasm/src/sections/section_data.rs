@@ -14,6 +14,7 @@ use pyo3::prelude::*;
 use crate::{
     address_range::AddressRange,
     analysis::StringGuesserLevel,
+    collections::unordered_map::UnorderedMap,
     config::Compiler,
     context::{Context, OwnedSegmentNotFoundError},
     metadata::{segment_metadata::FindSettings, ParentSectionMetadata, SymbolMetadata, SymbolType},
@@ -82,7 +83,7 @@ impl SectionData {
 
         let mut maybe_pointers_to_other_sections = Vec::new();
 
-        let mut auto_pads: BTreeMap<Vram, Vram> = BTreeMap::new();
+        let mut auto_pads: UnorderedMap<Vram, Vram> = UnorderedMap::new();
 
         let mut remaining_string_size = 0;
 

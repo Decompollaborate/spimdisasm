@@ -14,7 +14,7 @@ use crate::{
 
 use super::{ReferenceWrapper, ReferencedAddress, RegisterTracker};
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Preheater {
     references: BTreeMap<Vram, ReferencedAddress>,
 }
