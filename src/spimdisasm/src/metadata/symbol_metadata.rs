@@ -476,24 +476,24 @@ impl SymbolMetadata {
                 SymbolType::Word => true,
                 SymbolType::DWord => true,
                 SymbolType::Float32 => {
-                    /*
-                    if self.sizew > 1:
-                        for w in self.words[1:]:
-                            if w != 0:
-                                return True
-                    return False
-                    */
-                    false
+                    if let (Some(size), Some(padding)) = (self.size(), self.trailing_padding_size())
+                    {
+                        // Check if we have more than a single float here. If that's the case, then
+                        // let's say it is a const variable instead of a float literal.
+                        size != padding + Size::new(4)
+                    } else {
+                        false
+                    }
                 }
                 SymbolType::Float64 => {
-                    /*
-                    if self.sizew > 2:
-                        for w in self.words[2:]:
-                            if w != 0:
-                                return True
-                    return False
-                    */
-                    false
+                    if let (Some(size), Some(padding)) = (self.size(), self.trailing_padding_size())
+                    {
+                        // Check if we have more than a single double here. If that's the case, then
+                        // let's say it is a const variable instead of a double literal.
+                        size != padding + Size::new(8)
+                    } else {
+                        false
+                    }
                 }
                 SymbolType::CString => false,
                 SymbolType::UserCustom => !self.compiler.is_some_and(|x| x.forbids_const_structs()),
