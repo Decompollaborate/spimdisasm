@@ -1,7 +1,11 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use core::{borrow::Borrow, hash::Hash};
+use core::{
+    borrow::Borrow,
+    hash::Hash,
+    ops::{BitAnd, BitOr, BitXor, Sub},
+};
 
 #[cfg(not(feature = "hash_tables"))]
 use alloc::collections::btree_set::{self, BTreeSet};
@@ -51,10 +55,6 @@ impl<T> UnorderedSet<T>
 where
     T: Ord + Hash + Eq,
 {
-    pub fn insert(&mut self, value: T) -> bool {
-        self.inner.insert(value)
-    }
-
     pub fn get<Q>(&self, value: &Q) -> Option<&T>
     where
         T: Borrow<Q>,
@@ -77,6 +77,58 @@ where
 
     pub fn is_empty(&self) -> bool {
         self.inner.is_empty()
+    }
+
+    pub fn is_disjoint(&self, other: &Self) -> bool {
+        self.inner.is_disjoint(&other.inner)
+    }
+
+    pub fn is_subset(&self, other: &Self) -> bool {
+        self.inner.is_subset(&other.inner)
+    }
+
+    pub fn is_superset(&self, other: &Self) -> bool {
+        self.inner.is_superset(&other.inner)
+    }
+}
+
+impl<T> UnorderedSet<T>
+where
+    T: Ord + Hash + Eq,
+{
+    pub fn insert(&mut self, value: T) -> bool {
+        self.inner.insert(value)
+    }
+
+    pub fn replace(&mut self, value: T) -> Option<T> {
+        self.inner.replace(value)
+    }
+
+    pub fn take<Q>(&mut self, value: &Q) -> Option<T>
+    where
+        T: Borrow<Q>,
+        Q: ?Sized + Ord + Hash + Eq,
+    {
+        self.inner.take(value)
+    }
+
+    pub fn clear(&mut self) {
+        self.inner.clear();
+    }
+
+    pub fn remove<Q>(&mut self, value: &Q) -> bool
+    where
+        T: Borrow<Q>,
+        Q: ?Sized + Ord + Hash + Eq,
+    {
+        self.inner.remove(value)
+    }
+
+    pub fn retain<F>(&mut self, f: F)
+    where
+        F: FnMut(&T) -> bool,
+    {
+        self.inner.retain(f);
     }
 
     pub fn append(&mut self, other: &mut Self) {
@@ -114,6 +166,42 @@ where
         other: &'a Self,
     ) -> hash_set::Intersection<'a, T, std::hash::RandomState> {
         self.inner.intersection(&other.inner)
+    }
+
+    #[cfg(not(feature = "hash_tables"))]
+    pub fn union<'a>(&'a self, other: &'a Self) -> btree_set::Union<'a, T> {
+        self.inner.union(&other.inner)
+    }
+    #[cfg(feature = "hash_tables")]
+    pub fn union<'a>(&'a self, other: &'a Self) -> hash_set::Union<'a, T, std::hash::RandomState> {
+        self.inner.union(&other.inner)
+    }
+
+    #[cfg(not(feature = "hash_tables"))]
+    pub fn difference<'a>(&'a self, other: &'a Self) -> btree_set::Difference<'a, T> {
+        self.inner.difference(&other.inner)
+    }
+    #[cfg(feature = "hash_tables")]
+    pub fn difference<'a>(
+        &'a self,
+        other: &'a Self,
+    ) -> hash_set::Difference<'a, T, std::hash::RandomState> {
+        self.inner.difference(&other.inner)
+    }
+
+    #[cfg(not(feature = "hash_tables"))]
+    pub fn symmetric_difference<'a>(
+        &'a self,
+        other: &'a Self,
+    ) -> btree_set::SymmetricDifference<'a, T> {
+        self.inner.symmetric_difference(&other.inner)
+    }
+    #[cfg(feature = "hash_tables")]
+    pub fn symmetric_difference<'a>(
+        &'a self,
+        other: &'a Self,
+    ) -> hash_set::SymmetricDifference<'a, T, std::hash::RandomState> {
+        self.inner.symmetric_difference(&other.inner)
     }
 }
 
@@ -182,5 +270,57 @@ where
         let mut s = Self::new();
         s.extend(iter);
         s
+    }
+}
+
+impl<T> BitAnd for &UnorderedSet<T>
+where
+    T: Ord + Hash + Eq + Clone,
+{
+    type Output = UnorderedSet<T>;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        UnorderedSet {
+            inner: self.inner.bitand(&rhs.inner),
+        }
+    }
+}
+
+impl<T> BitOr for &UnorderedSet<T>
+where
+    T: Ord + Hash + Eq + Clone,
+{
+    type Output = UnorderedSet<T>;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        UnorderedSet {
+            inner: self.inner.bitor(&rhs.inner),
+        }
+    }
+}
+
+impl<T> BitXor for &UnorderedSet<T>
+where
+    T: Ord + Hash + Eq + Clone,
+{
+    type Output = UnorderedSet<T>;
+
+    fn bitxor(self, rhs: Self) -> Self::Output {
+        UnorderedSet {
+            inner: self.inner.bitxor(&rhs.inner),
+        }
+    }
+}
+
+impl<T> Sub for &UnorderedSet<T>
+where
+    T: Ord + Hash + Eq + Clone,
+{
+    type Output = UnorderedSet<T>;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        UnorderedSet {
+            inner: self.inner.sub(&rhs.inner),
+        }
     }
 }

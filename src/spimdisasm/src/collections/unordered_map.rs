@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use core::{borrow::Borrow, hash::Hash};
+use core::{borrow::Borrow, hash::Hash, ops::Index};
 
 #[cfg(not(feature = "hash_tables"))]
 use alloc::collections::btree_map::{self, BTreeMap};
@@ -51,10 +51,6 @@ impl<K, V> UnorderedMap<K, V>
 where
     K: Ord + Hash + Eq,
 {
-    pub fn insert(&mut self, key: K, value: V) -> Option<V> {
-        self.inner.insert(key, value)
-    }
-
     pub fn get<Q>(&self, key: &Q) -> Option<&V>
     where
         K: Borrow<Q>,
@@ -63,12 +59,12 @@ where
         self.inner.get(key)
     }
 
-    pub fn get_mut<Q>(&mut self, key: &Q) -> Option<&mut V>
+    pub fn get_key_value<Q>(&self, key: &Q) -> Option<(&K, &V)>
     where
         K: Borrow<Q>,
         Q: ?Sized + Ord + Hash + Eq,
     {
-        self.inner.get_mut(key)
+        self.inner.get_key_value(key)
     }
 
     pub fn contains_key<Q>(&self, key: &Q) -> bool
@@ -79,18 +75,62 @@ where
         self.inner.contains_key(key)
     }
 
-    pub fn entry(&mut self, key: K) -> Entry<'_, K, V> {
-        Entry {
-            inner: self.inner.entry(key),
-        }
-    }
-
     pub fn len(&self) -> usize {
         self.inner.len()
     }
 
     pub fn is_empty(&self) -> bool {
         self.inner.is_empty()
+    }
+}
+
+impl<K, V> UnorderedMap<K, V>
+where
+    K: Ord + Hash + Eq,
+{
+    pub fn get_mut<Q>(&mut self, key: &Q) -> Option<&mut V>
+    where
+        K: Borrow<Q>,
+        Q: ?Sized + Ord + Hash + Eq,
+    {
+        self.inner.get_mut(key)
+    }
+
+    pub fn insert(&mut self, key: K, value: V) -> Option<V> {
+        self.inner.insert(key, value)
+    }
+
+    pub fn entry(&mut self, key: K) -> Entry<'_, K, V> {
+        Entry {
+            inner: self.inner.entry(key),
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.inner.clear();
+    }
+
+    pub fn remove<Q>(&mut self, value: &Q) -> Option<V>
+    where
+        K: Borrow<Q>,
+        Q: ?Sized + Ord + Hash + Eq,
+    {
+        self.inner.remove(value)
+    }
+
+    pub fn remove_entry<Q>(&mut self, value: &Q) -> Option<(K, V)>
+    where
+        K: Borrow<Q>,
+        Q: ?Sized + Ord + Hash + Eq,
+    {
+        self.inner.remove_entry(value)
+    }
+
+    pub fn retain<F>(&mut self, f: F)
+    where
+        F: FnMut(&K, &mut V) -> bool,
+    {
+        self.inner.retain(f);
     }
 }
 
@@ -132,6 +172,33 @@ where
     #[cfg(feature = "hash_tables")]
     pub fn values(&self) -> hash_map::Values<K, V> {
         self.inner.values()
+    }
+
+    #[cfg(not(feature = "hash_tables"))]
+    pub fn values_mut(&mut self) -> btree_map::ValuesMut<K, V> {
+        self.inner.values_mut()
+    }
+    #[cfg(feature = "hash_tables")]
+    pub fn values_mut(&mut self) -> hash_map::ValuesMut<K, V> {
+        self.inner.values_mut()
+    }
+
+    #[cfg(not(feature = "hash_tables"))]
+    pub fn into_keys(self) -> btree_map::IntoKeys<K, V> {
+        self.inner.into_keys()
+    }
+    #[cfg(feature = "hash_tables")]
+    pub fn into_keys(self) -> hash_map::IntoKeys<K, V> {
+        self.inner.into_keys()
+    }
+
+    #[cfg(not(feature = "hash_tables"))]
+    pub fn into_values(self) -> btree_map::IntoValues<K, V> {
+        self.inner.into_values()
+    }
+    #[cfg(feature = "hash_tables")]
+    pub fn into_values(self) -> hash_map::IntoValues<K, V> {
+        self.inner.into_values()
     }
 }
 
@@ -216,6 +283,18 @@ where
         let mut s = Self::new();
         s.extend(iter);
         s
+    }
+}
+
+impl<K, V, Q> Index<&Q> for UnorderedMap<K, V>
+where
+    K: Ord + Hash + Eq + Borrow<Q>,
+    Q: ?Sized + Ord + Hash + Eq,
+{
+    type Output = V;
+
+    fn index(&self, index: &Q) -> &Self::Output {
+        self.inner.index(index)
     }
 }
 
