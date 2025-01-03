@@ -137,6 +137,10 @@ impl TryFrom<VramOffset> for Size {
     }
 }
 
+pub trait SizedAddress {
+    fn size(&self) -> Option<Size>;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

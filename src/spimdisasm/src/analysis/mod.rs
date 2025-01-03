@@ -5,7 +5,7 @@ mod instruction_analysis_result;
 mod instruction_analyzer;
 mod jr_reg_data;
 mod lo_pairing_info;
-pub mod preheat;
+pub(crate) mod preheat;
 mod reference_wrapper;
 mod referenced_address;
 mod register_tracker;

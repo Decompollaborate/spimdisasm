@@ -11,4 +11,4 @@ mod size;
 pub use address_range::AddressRange;
 pub use rom::Rom;
 pub use rom_vram_range::RomVramRange;
-pub use size::Size;
+pub use size::{Size, SizedAddress};

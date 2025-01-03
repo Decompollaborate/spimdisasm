@@ -7,8 +7,9 @@ use core::fmt;
 use pyo3::prelude::*;
 
 use crate::{
+    collections::addended_ordered_map::FindSettings,
     context::Context,
-    metadata::{segment_metadata::FindSettings, SegmentMetadata, SymbolMetadata},
+    metadata::{SegmentMetadata, SymbolMetadata},
     symbols::{Symbol, SymbolNoload},
 };
 

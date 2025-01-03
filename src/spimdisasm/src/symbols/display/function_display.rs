@@ -10,8 +10,9 @@ use pyo3::prelude::*;
 
 use crate::{
     addresses::{Size, Vram},
+    collections::addended_ordered_map::FindSettings,
     context::Context,
-    metadata::{segment_metadata::FindSettings, SegmentMetadata, SymbolMetadata, SymbolType},
+    metadata::{SegmentMetadata, SymbolMetadata, SymbolType},
     relocation::RelocationInfo,
     symbols::{
         display::sym_common_display::WordComment, trait_symbol::RomSymbol, Symbol, SymbolFunction,

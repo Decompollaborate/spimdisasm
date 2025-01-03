@@ -91,3 +91,13 @@ impl ops::Index<AddressRange<Rom>> for [u8] {
         &self[index.start.inner() as usize..index.end.inner() as usize]
     }
 }
+
+impl<T> ops::RangeBounds<T> for AddressRange<T> {
+    fn start_bound(&self) -> ops::Bound<&T> {
+        ops::Bound::Included(&self.start)
+    }
+
+    fn end_bound(&self) -> ops::Bound<&T> {
+        ops::Bound::Excluded(&self.end)
+    }
+}

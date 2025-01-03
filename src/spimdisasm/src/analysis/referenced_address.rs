@@ -54,6 +54,14 @@ impl ReferencedAddress {
         }
     }
 
+    pub fn alignment(&self) -> Option<u8> {
+        if self.alignments.len() == 1 {
+            self.alignments.iter().next().and_then(|(x, _count)| *x)
+        } else {
+            None
+        }
+    }
+
     pub fn reference_counter(&self) -> usize {
         self.reference_count
     }

@@ -4,13 +4,8 @@
 use alloc::collections::btree_map::{self, BTreeMap};
 use alloc::vec::Vec;
 
-#[cfg(not(feature = "nightly"))]
-use ::polonius_the_crab::prelude::*;
-
-#[cfg(feature = "nightly")]
-use core::ops::Bound;
-
 use crate::addresses::{AddressRange, Rom, RomVramRange, Size, Vram};
+use crate::collections::addended_ordered_map::{AddendedOrderedMap, FindSettings};
 use crate::section_type::SectionType;
 
 use super::{symbol_metadata::GeneratedBy, OverlayCategoryName};
@@ -22,7 +17,7 @@ pub struct SegmentMetadata {
 
     category_name: Option<OverlayCategoryName>,
 
-    symbols: BTreeMap<Vram, SymbolMetadata>,
+    symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
     // constants: BTreeMap<Vram, SymbolMetadata>,
 
     //
@@ -41,7 +36,7 @@ impl SegmentMetadata {
             ranges,
             category_name,
 
-            symbols: BTreeMap::new(),
+            symbols: AddendedOrderedMap::new(),
             new_pointer_in_data: BTreeMap::new(),
         }
     }
@@ -98,85 +93,9 @@ impl SegmentMetadata {
         self.category_name.as_ref()
     }
 
-    pub const fn symbols(&self) -> &BTreeMap<Vram, SymbolMetadata> {
+    pub const fn symbols(&self) -> &AddendedOrderedMap<Vram, SymbolMetadata> {
         &self.symbols
     }
-}
-
-#[cfg(feature = "nightly")]
-fn into_prev_and_next<'a, K, V>(
-    mut cursor: btree_map::CursorMut<'a, K, V>,
-) -> (Option<(&'a K, &'a mut V)>, Option<(&'a K, &'a mut V)>) {
-    let prev: Option<(&'a K, &'a mut V)> = cursor.peek_prev().map(|(k, v)| {
-        let ptr_k = k as *const K;
-        let ptr_v = v as *mut V;
-        unsafe { (&*ptr_k, &mut *ptr_v) }
-    });
-    let next: Option<(&'a K, &'a mut V)> = cursor.peek_next().map(|(k, v)| {
-        let ptr_k = k as *const K;
-        let ptr_v = v as *mut V;
-        unsafe { (&*ptr_k, &mut *ptr_v) }
-    });
-
-    (prev, next)
-}
-
-#[cfg(not(feature = "nightly"))]
-fn add_symbol_impl(
-    mut slf: &mut SegmentMetadata,
-    vram: Vram,
-    generated_by: GeneratedBy,
-    allow_sym_with_addend: bool,
-) -> &mut SymbolMetadata {
-    // TODO: get rid of the polonius stuff when the new borrow checker has been released.
-
-    polonius!(|slf| -> &'polonius mut SymbolMetadata {
-        if let Some(x) = slf.find_symbol_mut(
-            vram,
-            FindSettings::new().with_allow_addend(allow_sym_with_addend),
-        ) {
-            polonius_return!(x);
-        }
-    });
-
-    let entry = slf.symbols.entry(vram);
-
-    entry.or_insert(SymbolMetadata::new(generated_by, vram))
-}
-
-#[cfg(feature = "nightly")]
-fn add_symbol_impl(
-    slf: &mut SegmentMetadata,
-    vram: Vram,
-    generated_by: GeneratedBy,
-    allow_sym_with_addend: bool,
-) -> &mut SymbolMetadata {
-    let mut cursor = slf.symbols.upper_bound_mut(Bound::Included(&vram));
-
-    let must_insert_new = if let Some((sym_vram, sym)) = cursor.peek_prev() {
-        if vram == *sym_vram {
-            false
-        } else if !allow_sym_with_addend {
-            true
-        } else if let Some(siz) = sym.size() {
-            vram >= *sym_vram + siz
-        } else {
-            true
-        }
-    } else {
-        true
-    };
-
-    if must_insert_new {
-        let sym = SymbolMetadata::new(generated_by, vram);
-
-        cursor
-            .insert_before(vram, sym)
-            .expect("This should not be able to panic");
-    }
-
-    //let sym = unsafe { &mut *(cursor.peek_prev().unwrap().1 as *mut SymbolMetadata) };
-    into_prev_and_next(cursor).0.unwrap().1
 }
 
 impl SegmentMetadata {
@@ -188,7 +107,11 @@ impl SegmentMetadata {
         section_type: Option<SectionType>,
         allow_sym_with_addend: bool, // false
     ) -> &mut SymbolMetadata {
-        let sym = add_symbol_impl(self, vram, generated_by, allow_sym_with_addend);
+        let sym = self.symbols.find_mut_or_insert_with(
+            &vram,
+            FindSettings::new().with_allow_addend(allow_sym_with_addend),
+            || SymbolMetadata::new(generated_by, vram),
+        );
         if let Some(rom) = rom {
             *sym.rom_mut() = Some(rom);
         }
@@ -317,44 +240,6 @@ impl SegmentMetadata {
     }
 }
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct FindSettings {
-    allow_addend: bool,
-    check_upper_limit: bool,
-}
-
-impl FindSettings {
-    pub const fn default() -> Self {
-        Self {
-            allow_addend: true,
-            check_upper_limit: true,
-        }
-    }
-
-    pub const fn new() -> Self {
-        Self::default()
-    }
-
-    pub const fn with_allow_addend(self, allow_addend: bool) -> Self {
-        Self {
-            allow_addend,
-            ..self
-        }
-    }
-
-    pub const fn with_check_upper_limit(self, check_upper_limit: bool) -> Self {
-        Self {
-            check_upper_limit,
-            ..self
-        }
-    }
-}
-impl Default for FindSettings {
-    fn default() -> Self {
-        Self::default()
-    }
-}
-
 impl SegmentMetadata {
     #[must_use]
     pub(crate) fn find_symbol(
@@ -362,68 +247,25 @@ impl SegmentMetadata {
         vram: Vram,
         settings: FindSettings,
     ) -> Option<&SymbolMetadata> {
-        if !settings.allow_addend {
-            self.symbols.get(&vram)
-        } else {
-            let mut range = self.symbols.range(..=vram);
-
-            if let Some((sym_vram, sym)) = range.next_back() {
-                if *sym_vram == vram {
-                    Some(sym)
-                } else if settings.check_upper_limit {
-                    sym.size().and_then(|siz| {
-                        if vram < *sym_vram + siz {
-                            Some(sym)
-                        } else {
-                            None
-                        }
-                    })
-                } else {
-                    Some(sym)
-                }
-            } else {
-                None
-            }
-        }
+        self.symbols.find(&vram, settings)
     }
 
+    /*
     #[must_use]
     pub(crate) fn find_symbol_mut(
         &mut self,
         vram: Vram,
         settings: FindSettings,
     ) -> Option<&mut SymbolMetadata> {
-        if !settings.allow_addend {
-            self.symbols.get_mut(&vram)
-        } else {
-            let mut range = self.symbols.range_mut(..=vram);
-
-            if let Some((sym_vram, sym)) = range.next_back() {
-                if *sym_vram == vram {
-                    Some(sym)
-                } else if settings.check_upper_limit {
-                    sym.size().and_then(|siz| {
-                        if vram < *sym_vram + siz {
-                            Some(sym)
-                        } else {
-                            None
-                        }
-                    })
-                } else {
-                    Some(sym)
-                }
-            } else {
-                None
-            }
-        }
+        self.symbols.find_mut(&vram, settings)
     }
+    */
 
     pub(crate) fn find_symbols_range(
         &self,
-        vram_start: Vram,
-        vram_end: Vram,
+        vram_range: AddressRange<Vram>,
     ) -> btree_map::Range<'_, Vram, SymbolMetadata> {
-        self.symbols.range(vram_start..vram_end)
+        self.symbols.range(vram_range)
     }
 }
 

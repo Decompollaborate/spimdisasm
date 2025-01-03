@@ -11,12 +11,11 @@ use rabbitizer::{Instruction, InstructionFlags, IsaExtension};
 use pyo3::prelude::*;
 
 use crate::addresses::{AddressRange, Rom, RomVramRange, Size, Vram, VramOffset};
+use crate::collections::addended_ordered_map::FindSettings;
 use crate::collections::unordered_set::UnorderedSet;
 use crate::config::Compiler;
 use crate::context::{Context, OwnedSegmentNotFoundError};
-use crate::metadata::{
-    segment_metadata::FindSettings, GeneratedBy, ParentSectionMetadata, SymbolMetadata,
-};
+use crate::metadata::{GeneratedBy, ParentSectionMetadata, SymbolMetadata};
 use crate::parent_segment_info::ParentSegmentInfo;
 use crate::section_type::SectionType;
 

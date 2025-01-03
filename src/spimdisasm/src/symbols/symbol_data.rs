@@ -5,12 +5,10 @@ use alloc::vec::Vec;
 
 use crate::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
+    collections::addended_ordered_map::FindSettings,
     config::{Compiler, Endian},
     context::{Context, OwnedSegmentNotFoundError},
-    metadata::{
-        segment_metadata::FindSettings, GeneratedBy, ParentSectionMetadata, SymbolMetadata,
-        SymbolType,
-    },
+    metadata::{GeneratedBy, ParentSectionMetadata, SymbolMetadata, SymbolType},
     parent_segment_info::ParentSegmentInfo,
     relocation::{RelocReferencedSym, RelocationInfo, RelocationType},
     section_type::SectionType,

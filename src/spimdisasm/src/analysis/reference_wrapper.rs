@@ -3,7 +3,8 @@
 
 use crate::{
     addresses::{Size, Vram},
-    metadata::{segment_metadata::FindSettings, SegmentMetadata, SymbolMetadata, SymbolType},
+    collections::addended_ordered_map::FindSettings,
+    metadata::{SegmentMetadata, SymbolMetadata, SymbolType},
 };
 
 use super::{Preheater, ReferencedAddress};

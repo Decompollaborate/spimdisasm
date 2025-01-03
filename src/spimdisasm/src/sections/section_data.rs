@@ -9,10 +9,13 @@ use pyo3::prelude::*;
 use crate::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     analysis::StringGuesserLevel,
-    collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
+    collections::{
+        addended_ordered_map::FindSettings, unordered_map::UnorderedMap,
+        unordered_set::UnorderedSet,
+    },
     config::Compiler,
     context::{Context, OwnedSegmentNotFoundError},
-    metadata::{segment_metadata::FindSettings, ParentSectionMetadata, SymbolMetadata, SymbolType},
+    metadata::{ParentSectionMetadata, SymbolMetadata, SymbolType},
     parent_segment_info::ParentSegmentInfo,
     section_type::SectionType,
     str_decoding::Encoding,

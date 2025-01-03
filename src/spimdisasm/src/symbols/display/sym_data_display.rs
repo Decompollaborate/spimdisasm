@@ -8,9 +8,10 @@ use pyo3::prelude::*;
 
 use crate::{
     addresses::{Rom, Size, Vram},
+    collections::addended_ordered_map::FindSettings,
     config::Endian,
     context::Context,
-    metadata::{segment_metadata::FindSettings, SegmentMetadata, SymbolMetadata, SymbolType},
+    metadata::{SegmentMetadata, SymbolMetadata, SymbolType},
     str_decoding,
     symbols::{RomSymbol, Symbol, SymbolData},
 };

@@ -3,8 +3,9 @@
 
 use crate::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
+    collections::addended_ordered_map::FindSettings,
     context::Context,
-    metadata::{segment_metadata::FindSettings, SymbolMetadata},
+    metadata::SymbolMetadata,
     parent_segment_info::ParentSegmentInfo,
     relocation::RelocationInfo,
     section_type::SectionType,

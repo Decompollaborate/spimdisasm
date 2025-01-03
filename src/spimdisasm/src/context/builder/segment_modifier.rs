@@ -9,9 +9,9 @@ use alloc::string::{String, ToString};
 use pyo3::prelude::*;
 
 use crate::{
-    addresses::Vram,
-    addresses::{Rom, Size},
-    metadata::{segment_metadata::FindSettings, GeneratedBy, SegmentMetadata, SymbolMetadata},
+    addresses::{Rom, Size, Vram},
+    collections::addended_ordered_map::FindSettings,
+    metadata::{GeneratedBy, SegmentMetadata, SymbolMetadata},
 };
 
 pub struct SegmentModifier<'seg> {

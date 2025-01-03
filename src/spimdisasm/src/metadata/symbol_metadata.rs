@@ -10,7 +10,7 @@ use rabbitizer::access_type::AccessType;
 use pyo3::prelude::*;
 
 use crate::{
-    addresses::{Rom, Size, Vram},
+    addresses::{Rom, Size, SizedAddress, Vram},
     collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
     config::Compiler,
     parent_segment_info::ParentSegmentInfo,
@@ -564,5 +564,11 @@ impl fmt::Debug for SymbolMetadata {
             self.vram,
             self.display_name()
         )
+    }
+}
+
+impl SizedAddress for SymbolMetadata {
+    fn size(&self) -> Option<Size> {
+        self.size()
     }
 }

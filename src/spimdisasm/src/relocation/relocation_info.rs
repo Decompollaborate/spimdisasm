@@ -4,11 +4,8 @@
 use core::fmt;
 
 use crate::{
-    addresses::Vram,
-    config::Compiler,
-    context::Context,
-    metadata::{segment_metadata::FindSettings, SymbolMetadata},
-    parent_segment_info::ParentSegmentInfo,
+    addresses::Vram, collections::addended_ordered_map::FindSettings, config::Compiler,
+    context::Context, metadata::SymbolMetadata, parent_segment_info::ParentSegmentInfo,
     symbols::display::InternalSymDisplSettings,
 };
 
