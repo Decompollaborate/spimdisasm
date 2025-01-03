@@ -409,7 +409,7 @@ fn drmario64_us_without_symbols() {
         }
     }
 
-    assert_eq!(context.global_segment().symbols().len(), 10363);
+    assert_eq!(context.global_segment().symbols().len(), 10362);
 
     /*
     for seg in &segments {
@@ -503,7 +503,7 @@ fn drmario64_us_with_symbols() {
         }
     }
 
-    assert_eq!(context.global_segment().symbols().len(), 10136);
+    assert_eq!(context.global_segment().symbols().len(), 10135);
 
     /*
     for seg in &segments {

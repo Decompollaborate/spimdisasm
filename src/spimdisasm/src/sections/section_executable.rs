@@ -5,11 +5,12 @@ use alloc::string::String;
 use alloc::vec;
 use alloc::vec::Vec;
 
-use rabbitizer::{vram::VramOffset, Instruction, InstructionFlags, IsaExtension, Vram};
+use rabbitizer::{Instruction, InstructionFlags, IsaExtension};
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
+use crate::address_abstraction::{Vram, VramOffset};
 use crate::collections::unordered_set::UnorderedSet;
 use crate::config::Compiler;
 use crate::metadata::ParentSectionMetadata;

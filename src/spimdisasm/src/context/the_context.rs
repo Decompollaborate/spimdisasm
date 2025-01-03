@@ -6,12 +6,11 @@ use core::{error, fmt};
 
 use ::polonius_the_crab::prelude::*;
 
-use rabbitizer::Vram;
-
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
+    address_abstraction::Vram,
     address_range::AddressRange,
     collections::unordered_map::UnorderedMap,
     config::GlobalConfig,
@@ -329,7 +328,6 @@ pub(crate) mod python_bindings {
     use std::borrow::Cow;
 
     use pyo3::{exceptions::PyRuntimeError, prelude::*};
-    use rabbitizer::Vram;
 
     use super::*;
 

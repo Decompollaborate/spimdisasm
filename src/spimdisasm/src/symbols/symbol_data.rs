@@ -2,9 +2,9 @@
 /* SPDX-License-Identifier: MIT */
 
 use alloc::vec::Vec;
-use rabbitizer::Vram;
 
 use crate::{
+    address_abstraction::Vram,
     address_range::AddressRange,
     config::{Compiler, Endian},
     context::{Context, OwnedSegmentNotFoundError},

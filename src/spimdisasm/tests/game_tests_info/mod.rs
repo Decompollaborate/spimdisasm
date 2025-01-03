@@ -3,8 +3,8 @@
 
 #![allow(dead_code)]
 
-use rabbitizer::Vram;
 use spimdisasm::{
+    address_abstraction::Vram,
     metadata::{RodataMigrationBehavior, SymbolType},
     rom_address::RomAddress,
     sections::{SectionData, SectionExecutable, SectionNoload},

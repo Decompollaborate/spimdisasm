@@ -1,9 +1,8 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use rabbitizer::Vram;
-
 use crate::{
+    address_abstraction::Vram,
     metadata::{segment_metadata::FindSettings, SegmentMetadata, SymbolMetadata, SymbolType},
     size::Size,
 };

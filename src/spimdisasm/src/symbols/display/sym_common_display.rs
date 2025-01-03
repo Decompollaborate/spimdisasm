@@ -4,9 +4,9 @@
 use core::fmt;
 
 use alloc::string::String;
-use rabbitizer::Vram;
 
 use crate::{
+    address_abstraction::Vram,
     config::{Compiler, GlobalConfig},
     metadata::{SegmentMetadata, SymbolMetadata, SymbolMetadataNameDisplay, SymbolType},
     rom_address::RomAddress,

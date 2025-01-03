@@ -3,9 +3,10 @@
 
 use core::hash::Hash;
 
-use rabbitizer::Vram;
-
-use crate::{collections::unordered_map::UnorderedMap, metadata::SymbolType, size::Size};
+use crate::{
+    address_abstraction::Vram, collections::unordered_map::UnorderedMap, metadata::SymbolType,
+    size::Size,
+};
 
 #[derive(Debug, Clone, Eq)]
 pub struct ReferencedAddress {

@@ -3,14 +3,13 @@
 
 use core::fmt;
 
-use rabbitizer::{Instruction, InstructionDisplayFlags, Vram};
+use rabbitizer::{Instruction, InstructionDisplayFlags};
 
-#[cfg(feature = "pyo3")]
-use alloc::string::ToString;
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
+    address_abstraction::Vram,
     context::Context,
     metadata::{segment_metadata::FindSettings, SegmentMetadata, SymbolMetadata, SymbolType},
     relocation::RelocationInfo,
@@ -188,7 +187,12 @@ impl FunctionDisplay<'_, '_, '_> {
         let instr_display = instr.display(&self.settings.display_flags, imm_override, extra_ljust);
 
         #[cfg(feature = "pyo3")]
-        let instr_display = instr_display.to_string().replace("$s8", "$fp");
+        let instr_display = {
+            use alloc::string::ToString;
+
+            // TODO: hack for splat diffs
+            instr_display.to_string().replace("$s8", "$fp")
+        };
 
         write!(f, "{}", instr_display)
     }

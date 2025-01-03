@@ -2,12 +2,12 @@
 /* SPDX-License-Identifier: MIT */
 
 use alloc::{collections::btree_set::BTreeSet, string::String, vec::Vec};
-use rabbitizer::Vram;
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
+    address_abstraction::Vram,
     address_range::AddressRange,
     collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
     config::Compiler,

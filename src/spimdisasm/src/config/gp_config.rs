@@ -1,10 +1,11 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use rabbitizer::Vram;
+use crate::address_abstraction::Vram;
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub struct GpConfig {
+    // TODO: make custom abstraction for gp value?
     gp_value: Vram,
     pic: bool,
 }

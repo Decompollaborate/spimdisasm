@@ -2,7 +2,8 @@
 /* SPDX-License-Identifier: MIT */
 
 use alloc::string::String;
-use rabbitizer::Vram;
+
+use crate::address_abstraction::Vram;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]

@@ -1,12 +1,12 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use rabbitizer::Vram;
-
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::{address_range::AddressRange, rom_address::RomAddress, size::Size};
+use crate::{
+    address_abstraction::Vram, address_range::AddressRange, rom_address::RomAddress, size::Size,
+};
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]

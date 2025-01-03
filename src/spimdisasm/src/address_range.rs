@@ -3,9 +3,7 @@
 
 use core::{fmt, ops};
 
-use rabbitizer::Vram;
-
-use crate::{rom_address::RomAddress, size::Size};
+use crate::{address_abstraction::Vram, rom_address::RomAddress, size::Size};
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct AddressRange<T> {

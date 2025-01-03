@@ -2,12 +2,12 @@
 /* SPDX-License-Identifier: MIT */
 
 use alloc::{collections::vec_deque::VecDeque, string::ToString, vec::Vec};
-use rabbitizer::Vram;
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
+    address_abstraction::Vram,
     collections::unordered_set::UnorderedSet,
     context::Context,
     metadata::{RodataMigrationBehavior, SymbolMetadata, SymbolMetadataNameDisplay},

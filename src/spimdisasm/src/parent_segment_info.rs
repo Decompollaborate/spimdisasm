@@ -3,9 +3,8 @@
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
-use rabbitizer::Vram;
 
-use crate::{metadata::OverlayCategoryName, rom_address::RomAddress};
+use crate::{address_abstraction::Vram, metadata::OverlayCategoryName, rom_address::RomAddress};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]

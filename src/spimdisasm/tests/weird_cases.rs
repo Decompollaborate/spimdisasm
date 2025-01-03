@@ -1,8 +1,9 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use rabbitizer::{InstructionDisplayFlags, InstructionFlags, Vram};
+use rabbitizer::{InstructionDisplayFlags, InstructionFlags};
 use spimdisasm::{
+    address_abstraction::Vram,
     address_range::AddressRange,
     config::{Endian, GlobalConfig},
     context::ContextBuilder,

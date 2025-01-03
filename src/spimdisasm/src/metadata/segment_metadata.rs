@@ -10,8 +10,7 @@ use ::polonius_the_crab::prelude::*;
 #[cfg(feature = "nightly")]
 use core::ops::Bound;
 
-use rabbitizer::Vram;
-
+use crate::address_abstraction::Vram;
 use crate::rom_vram_range::RomVramRange;
 use crate::size::Size;
 use crate::{address_range::AddressRange, rom_address::RomAddress, section_type::SectionType};
@@ -161,8 +160,10 @@ fn add_symbol_impl(
             false
         } else if !allow_sym_with_addend {
             true
+        } else if let Some(siz) = sym.size() {
+            vram >= *sym_vram + siz
         } else {
-            vram >= *sym_vram + sym.size()
+            true
         }
     } else {
         true
@@ -446,8 +447,6 @@ impl SegmentMetadata {
 
 #[cfg(test)]
 mod tests {
-    use rabbitizer::Vram;
-
     use super::*;
 
     #[test]

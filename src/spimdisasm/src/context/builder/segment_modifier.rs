@@ -4,12 +4,12 @@
 use core::{error, fmt};
 
 use alloc::string::{String, ToString};
-use rabbitizer::Vram;
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
+    address_abstraction::Vram,
     metadata::{segment_metadata::FindSettings, GeneratedBy, SegmentMetadata, SymbolMetadata},
     rom_address::RomAddress,
     size::Size,

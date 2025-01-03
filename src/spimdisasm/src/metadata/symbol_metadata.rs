@@ -4,12 +4,13 @@
 use core::{fmt, hash::Hash};
 
 use alloc::string::String;
-use rabbitizer::{access_type::AccessType, Vram};
+use rabbitizer::access_type::AccessType;
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
+    address_abstraction::Vram,
     collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
     config::Compiler,
     parent_segment_info::ParentSegmentInfo,

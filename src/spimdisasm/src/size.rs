@@ -3,12 +3,13 @@
 
 use core::{error, fmt, ops};
 
-use rabbitizer::{vram::VramOffset, Vram};
-
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::rom_address::RomAddress;
+use crate::{
+    address_abstraction::{Vram, VramOffset},
+    rom_address::RomAddress,
+};
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
@@ -141,8 +142,6 @@ impl TryFrom<VramOffset> for Size {
 
 #[cfg(test)]
 mod tests {
-    use rabbitizer::Vram;
-
     use super::*;
 
     #[test]

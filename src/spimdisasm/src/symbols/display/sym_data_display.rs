@@ -3,12 +3,11 @@
 
 use core::fmt;
 
-use rabbitizer::Vram;
-
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
+    address_abstraction::Vram,
     config::Endian,
     context::Context,
     metadata::{segment_metadata::FindSettings, SegmentMetadata, SymbolMetadata, SymbolType},

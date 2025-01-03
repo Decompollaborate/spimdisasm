@@ -1,8 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use rabbitizer::Vram;
-
+use crate::address_abstraction::Vram;
 use crate::address_range::AddressRange;
 use crate::collections::unordered_set::UnorderedSet;
 use crate::parent_segment_info::ParentSegmentInfo;

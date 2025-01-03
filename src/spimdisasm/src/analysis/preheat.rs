@@ -2,9 +2,10 @@
 /* SPDX-License-Identifier: MIT */
 
 use alloc::{collections::btree_map::BTreeMap, vec::Vec};
-use rabbitizer::{vram::VramOffset, Instruction, Vram};
+use rabbitizer::Instruction;
 
 use crate::{
+    address_abstraction::{Vram, VramOffset},
     config::GlobalConfig,
     metadata::{SegmentMetadata, SymbolType},
     rom_address::RomAddress,

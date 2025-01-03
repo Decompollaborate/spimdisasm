@@ -1,12 +1,10 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use rabbitizer::Vram;
-
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::{metadata::SymbolType, str_decoding::Encoding};
+use crate::{address_abstraction::Vram, metadata::SymbolType, str_decoding::Encoding};
 
 use super::ReferenceWrapper;
 

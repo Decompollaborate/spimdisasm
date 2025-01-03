@@ -3,9 +3,8 @@
 
 use core::fmt;
 
-use rabbitizer::Vram;
-
 use crate::{
+    address_abstraction::Vram,
     config::Compiler,
     context::Context,
     metadata::{segment_metadata::FindSettings, SymbolMetadata},

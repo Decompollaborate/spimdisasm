@@ -2,9 +2,10 @@
 /* SPDX-License-Identifier: MIT */
 
 use alloc::vec::Vec;
-use rabbitizer::{access_type::AccessType, Instruction, Vram};
+use rabbitizer::{access_type::AccessType, Instruction};
 
 use crate::{
+    address_abstraction::Vram,
     address_range::AddressRange,
     analysis::{InstructionAnalysisResult, InstructionAnalyzer},
     collections::unordered_set::UnorderedSet,

@@ -40,9 +40,8 @@ impl ContextBuilder {
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
-    use rabbitizer::Vram;
-
     use crate::{
+        address_abstraction::Vram,
         context::builder::UserSymbolOverlapError,
         metadata::{RodataMigrationBehavior, SymbolMetadata, SymbolType},
         rom_address::RomAddress,
