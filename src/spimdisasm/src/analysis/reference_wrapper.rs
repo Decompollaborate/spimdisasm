@@ -20,46 +20,15 @@ impl<'seg, 'addr> ReferenceWrapper<'seg, 'addr> {
         owned_segment: &'seg SegmentMetadata,
         preheater: &'addr Preheater,
         vram: Vram,
+        settings: FindSettings,
     ) -> Option<Self> {
-        if let Some(owned) =
-            owned_segment.find_symbol(vram, FindSettings::default().with_allow_addend(false))
-        {
+        if let Some(owned) = owned_segment.find_symbol(vram, settings) {
             Some(ReferenceWrapper::Metadata(owned))
         } else {
             preheater
                 .references()
-                .get(&vram)
+                .find(&vram, settings)
                 .map(ReferenceWrapper::Address)
-        }
-    }
-
-    pub fn find_with_addend(
-        owned_segment: &'seg SegmentMetadata,
-        preheater: &'addr Preheater,
-        vram: Vram,
-    ) -> Option<Self> {
-        if let Some(owned) =
-            owned_segment.find_symbol(vram, FindSettings::default().with_allow_addend(true))
-        {
-            Some(ReferenceWrapper::Metadata(owned))
-        } else {
-            let mut range = preheater.references().range(..=vram);
-
-            if let Some((sym_vram, sym)) = range.next_back() {
-                if *sym_vram == vram {
-                    Some(ReferenceWrapper::Address(sym))
-                } else {
-                    sym.size().and_then(|siz| {
-                        if vram < *sym_vram + siz {
-                            Some(ReferenceWrapper::Address(sym))
-                        } else {
-                            None
-                        }
-                    })
-                }
-            } else {
-                None
-            }
         }
     }
 }

@@ -250,17 +250,6 @@ impl SegmentMetadata {
         self.symbols.find(&vram, settings)
     }
 
-    /*
-    #[must_use]
-    pub(crate) fn find_symbol_mut(
-        &mut self,
-        vram: Vram,
-        settings: FindSettings,
-    ) -> Option<&mut SymbolMetadata> {
-        self.symbols.find_mut(&vram, settings)
-    }
-    */
-
     pub(crate) fn find_symbols_range(
         &self,
         vram_range: AddressRange<Vram>,

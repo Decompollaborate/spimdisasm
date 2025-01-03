@@ -120,35 +120,37 @@ impl ContextBuilderFinderHeater {
                 io::{BufWriter, Write},
             };
 
-            use crate::{addresses::Size, analysis::ReferenceWrapper};
+            use crate::{addresses::Size, collections::addended_ordered_map::FindSettings};
 
             let mut buf = BufWriter::new(File::create("gathered_global_references.csv").unwrap());
-            buf.write("vram,type,size,alignment,reference_counter,issues\n".as_bytes())
-                .unwrap();
+            buf.write_all(
+                "vram,type,size,alignment,reference_counter,referenced_by,issues\n".as_bytes(),
+            )
+            .unwrap();
             for reference in self.preheater.references().values() {
                 let vram = reference.vram();
                 let line = format!(
-                    "0x{},{:?},{:?},{:?},{},",
+                    "0x{},{:?},{:?},{:?},{},\"{:?}\",",
                     vram,
                     reference.sym_type(),
                     reference.size(),
                     reference.alignment(),
-                    reference.reference_counter()
+                    reference.reference_counter(),
+                    reference.referenced_by(),
                 );
-                buf.write(line.as_bytes()).unwrap();
+                buf.write_all(line.as_bytes()).unwrap();
 
                 if let Some(size) = reference.size() {
                     let aux_vram = vram + Size::new(size.inner() - 1);
 
-                    let maybe_overlapped_sym = ReferenceWrapper::find_with_addend(
-                        &self.global_segment,
-                        &self.preheater,
-                        aux_vram,
-                    );
+                    let maybe_overlapped_sym = self
+                        .preheater
+                        .references()
+                        .find(&aux_vram, FindSettings::default().with_allow_addend(true));
                     if maybe_overlapped_sym.is_none() {
-                        buf.write("what?".as_bytes()).unwrap();
+                        buf.write_all("what?".as_bytes()).unwrap();
                     } else if maybe_overlapped_sym.unwrap().vram() != vram {
-                        buf.write(
+                        buf.write_all(
                             format!(
                                 "The size of this symbol overlaps with address 0x{}",
                                 maybe_overlapped_sym.unwrap().vram()
@@ -159,16 +161,16 @@ impl ContextBuilderFinderHeater {
                     }
                 }
 
-                buf.write(";".as_bytes()).unwrap();
+                buf.write_all(";".as_bytes()).unwrap();
 
                 if let Some(alignment) = reference.alignment() {
                     if (vram.inner() % alignment as u32) != 0 {
-                        buf.write("Alignment doesn't make sense".as_bytes())
+                        buf.write_all("Alignment doesn't make sense".as_bytes())
                             .unwrap();
                     }
                 }
 
-                buf.write("\n".as_bytes()).unwrap();
+                buf.write_all("\n".as_bytes()).unwrap();
             }
         }
 

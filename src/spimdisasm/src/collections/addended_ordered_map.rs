@@ -276,7 +276,6 @@ where
         self.inner.range(range)
     }
 
-    /*
     pub fn keys(&self) -> btree_map::Keys<K, V> {
         self.inner.keys()
     }
@@ -296,7 +295,6 @@ where
     pub fn into_values(self) -> btree_map::IntoValues<K, V> {
         self.inner.into_values()
     }
-    */
 }
 
 impl<K, V> Default for AddendedOrderedMap<K, V>

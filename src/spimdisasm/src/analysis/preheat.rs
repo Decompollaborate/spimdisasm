@@ -1,12 +1,12 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{collections::btree_map::BTreeMap, vec::Vec};
+use alloc::vec::Vec;
 use rabbitizer::Instruction;
 
 use crate::{
-    addresses::{Rom, Size},
-    addresses::{Vram, VramOffset},
+    addresses::{Rom, Size, Vram, VramOffset},
+    collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
     config::GlobalConfig,
     metadata::{SegmentMetadata, SymbolType},
     sections::{SectionDataSettings, SectionExecutableSettings},
@@ -16,17 +16,17 @@ use super::{ReferenceWrapper, ReferencedAddress, RegisterTracker};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Preheater {
-    references: BTreeMap<Vram, ReferencedAddress>,
+    references: AddendedOrderedMap<Vram, ReferencedAddress>,
 }
 
 impl Preheater {
     pub fn new() -> Self {
         Self {
-            references: BTreeMap::new(),
+            references: AddendedOrderedMap::new(),
         }
     }
 
-    pub(crate) fn references(&self) -> &BTreeMap<Vram, ReferencedAddress> {
+    pub(crate) fn references(&self) -> &AddendedOrderedMap<Vram, ReferencedAddress> {
         &self.references
     }
 
@@ -37,7 +37,7 @@ impl Preheater {
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
-        _owned_segment: &SegmentMetadata,
+        owned_segment: &SegmentMetadata,
     ) {
         let mut current_rom = rom;
         let mut current_vram = vram;
@@ -47,11 +47,11 @@ impl Preheater {
         for b in raw_bytes.chunks_exact(4) {
             let word = global_config.endian().word_from_bytes(b);
             let instr = Instruction::new(word, current_vram, settings.instruction_flags());
-            current_rom += Size::new(4);
-            current_vram += Size::new(4);
 
             if !instr.is_valid() {
                 prev_instr = None;
+                current_rom += Size::new(4);
+                current_vram += Size::new(4);
                 continue;
             }
 
@@ -60,17 +60,16 @@ impl Preheater {
                 regs_tracker.process_branch(&instr, current_rom);
             } else if let Some(target_vram) = instr.get_instr_index_as_vram() {
                 // instr.opcode().is_jump_with_address()
-                let reference = self.new_ref(target_vram);
+                let reference = self.new_ref(target_vram, Some(current_vram), owned_segment);
 
                 reference.set_sym_type(SymbolType::Function);
-                reference.increment_references();
             } else if instr.is_jumptable_jump() {
                 //self.process_jumptable_jump(context, regs_tracker, instr, instr_rom);
                 if let Some(jr_reg_data) = regs_tracker.get_jr_reg_data(&instr) {
                     let address = Vram::new(jr_reg_data.address());
 
                     if jr_reg_data.branch_info().is_none() {
-                        let reference = self.new_ref(address);
+                        let reference = self.new_ref(address, None, owned_segment);
 
                         reference.set_sym_type(SymbolType::Jumptable);
                     }
@@ -80,7 +79,7 @@ impl Preheater {
                 if let Some(jr_reg_data) = regs_tracker.get_jr_reg_data(&instr) {
                     let address = Vram::new(jr_reg_data.address());
 
-                    let reference = self.new_ref(address);
+                    let reference = self.new_ref(address, None, owned_segment);
                     reference.set_sym_type(SymbolType::Function);
                 }
             } else if instr.opcode().can_be_hi() {
@@ -97,12 +96,11 @@ impl Preheater {
                         let address =
                             Vram::new(pairing_info.value as u32) + VramOffset::new(lower_half);
 
-                        let reference = self.new_ref(address);
+                        let reference = self.new_ref(address, Some(current_vram), owned_segment);
 
                         let access_type = instr.opcode().access_type();
                         reference.set_size(access_type.min_size());
                         reference.set_alignment(access_type.min_alignment());
-                        reference.increment_references();
 
                         if let Some(sym_type) = SymbolType::from_access_type(access_type) {
                             reference.set_sym_type(sym_type);
@@ -112,6 +110,8 @@ impl Preheater {
                     }
                 }
             }
+
+            regs_tracker.overwrite_registers(&instr, current_rom);
 
             if let Some(prev) = &prev_instr {
                 if prev.is_function_call() {
@@ -126,6 +126,8 @@ impl Preheater {
             }
 
             prev_instr = Some(instr);
+            current_rom += Size::new(4);
+            current_vram += Size::new(4);
         }
     }
 
@@ -177,6 +179,7 @@ impl Preheater {
             return;
         }
 
+        let mut current_vram = vram;
         let mut references_found = Vec::new();
 
         for word_bytes in raw_bytes.chunks_exact(4) {
@@ -184,17 +187,20 @@ impl Preheater {
             let word_vram = Vram::new(word);
 
             if owned_segment.in_vram_range(word_vram) {
-                references_found.push((word_vram, Some(SymbolType::GccExceptTableLabel), true));
+                references_found.push((
+                    word_vram,
+                    Some(SymbolType::GccExceptTableLabel),
+                    current_vram,
+                ));
             }
+
+            current_vram += Size::new(4);
         }
 
-        for (v, typ, referenced) in references_found {
-            let reference = self.new_ref(v);
+        for (v, typ, referenced_by) in references_found {
+            let reference = self.new_ref(v, Some(referenced_by), owned_segment);
             if let Some(typ) = typ {
                 reference.set_sym_type(typ);
-            }
-            if referenced {
-                reference.increment_references();
             }
         }
     }
@@ -227,7 +233,12 @@ impl Preheater {
             let c_vram = current_vram + Size::new(2);
             let d_vram = current_vram + Size::new(3);
 
-            let a = ReferenceWrapper::find(owned_segment, self, current_vram);
+            let a = ReferenceWrapper::find(
+                owned_segment,
+                self,
+                current_vram,
+                FindSettings::default().with_allow_addend(false),
+            );
 
             if remaining_string_size <= 0 {
                 if let Some(str_sym_size) = settings.string_guesser_level().guess(
@@ -236,24 +247,40 @@ impl Preheater {
                     &raw_bytes[local_offset..],
                     settings.encoding(),
                 ) {
-                    if ReferenceWrapper::find_with_addend(
+                    if ReferenceWrapper::find(
                         owned_segment,
                         self,
                         current_vram + Size::new(str_sym_size as u32 - 1),
+                        FindSettings::default().with_allow_addend(true),
                     )
                     .is_some_and(|x| x.vram() != current_vram)
                     {
                         remaining_string_size = str_sym_size as i32;
 
-                        references_found.push((current_vram, Some(SymbolType::CString), false));
+                        references_found.push((current_vram, Some(SymbolType::CString), None));
                     }
                 }
             }
 
             if remaining_string_size <= 0 {
-                let b = ReferenceWrapper::find(owned_segment, self, b_vram);
-                let c = ReferenceWrapper::find(owned_segment, self, c_vram);
-                let d = ReferenceWrapper::find(owned_segment, self, d_vram);
+                let b = ReferenceWrapper::find(
+                    owned_segment,
+                    self,
+                    b_vram,
+                    FindSettings::default().with_allow_addend(false),
+                );
+                let c = ReferenceWrapper::find(
+                    owned_segment,
+                    self,
+                    c_vram,
+                    FindSettings::default().with_allow_addend(false),
+                );
+                let d = ReferenceWrapper::find(
+                    owned_segment,
+                    self,
+                    d_vram,
+                    FindSettings::default().with_allow_addend(false),
+                );
 
                 if b.is_none() && c.is_none() && d.is_none() {
                     // There's no symbol in between
@@ -269,7 +296,7 @@ impl Preheater {
                         let word_vram = Vram::new(word);
 
                         if owned_segment.in_vram_range(word_vram) {
-                            references_found.push((word_vram, None, true));
+                            references_found.push((word_vram, None, Some(current_vram)));
                         }
                     }
                 }
@@ -282,21 +309,46 @@ impl Preheater {
             remaining_string_size -= 4;
         }
 
-        for (v, typ, referenced) in references_found {
-            let reference = self.new_ref(v);
+        for (v, typ, referenced_by) in references_found {
+            let reference = self.new_ref(v, referenced_by, owned_segment);
             if let Some(typ) = typ {
                 reference.set_sym_type(typ);
-            }
-            if referenced {
-                reference.increment_references();
             }
         }
     }
 
-    fn new_ref(&mut self, vram: Vram) -> &mut ReferencedAddress {
-        self.references
-            .entry(vram)
-            .or_insert_with(|| ReferencedAddress::new(vram))
+    fn new_ref(
+        &mut self,
+        vram: Vram,
+        referenced_by: Option<Vram>,
+        owned_segment: &SegmentMetadata,
+    ) -> &mut ReferencedAddress {
+        let settings = FindSettings::default().with_allow_addend(true);
+
+        let refer = self
+            .references
+            .find_mut_or_insert_with(&vram, settings, || {
+                if let Some(metadata) = owned_segment.find_symbol(vram, settings) {
+                    let mut refer = ReferencedAddress::new(metadata.vram());
+
+                    if let Some(typ) = metadata.user_declared_type() {
+                        refer.set_user_declared_type(typ);
+                    }
+                    if let Some(size) = metadata.user_declared_size() {
+                        refer.set_user_declared_size(size);
+                    }
+
+                    refer
+                } else {
+                    ReferencedAddress::new(vram)
+                }
+            });
+
+        if let Some(referenced_by) = referenced_by {
+            refer.add_referenced_by(referenced_by);
+        }
+
+        refer
     }
 }
 
