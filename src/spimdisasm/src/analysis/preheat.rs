@@ -5,12 +5,11 @@ use alloc::{collections::btree_map::BTreeMap, vec::Vec};
 use rabbitizer::Instruction;
 
 use crate::{
-    address_abstraction::{Vram, VramOffset},
+    addresses::{Rom, Size},
+    addresses::{Vram, VramOffset},
     config::GlobalConfig,
     metadata::{SegmentMetadata, SymbolType},
-    rom_address::RomAddress,
     sections::{SectionDataSettings, SectionExecutableSettings},
-    size::Size,
 };
 
 use super::{ReferenceWrapper, ReferencedAddress, RegisterTracker};
@@ -36,7 +35,7 @@ impl Preheater {
         global_config: &GlobalConfig,
         settings: &SectionExecutableSettings,
         raw_bytes: &[u8],
-        rom: RomAddress,
+        rom: Rom,
         vram: Vram,
         _owned_segment: &SegmentMetadata,
     ) {
@@ -135,7 +134,7 @@ impl Preheater {
         global_config: &GlobalConfig,
         settings: &SectionDataSettings,
         raw_bytes: &[u8],
-        rom: RomAddress,
+        rom: Rom,
         vram: Vram,
         owned_segment: &SegmentMetadata,
     ) {
@@ -152,7 +151,7 @@ impl Preheater {
         global_config: &GlobalConfig,
         settings: &SectionDataSettings,
         raw_bytes: &[u8],
-        rom: RomAddress,
+        rom: Rom,
         vram: Vram,
         owned_segment: &SegmentMetadata,
     ) {
@@ -169,7 +168,7 @@ impl Preheater {
         global_config: &GlobalConfig,
         _settings: &SectionDataSettings,
         raw_bytes: &[u8],
-        rom: RomAddress,
+        rom: Rom,
         vram: Vram,
         owned_segment: &SegmentMetadata,
     ) {
@@ -205,7 +204,7 @@ impl Preheater {
         global_config: &GlobalConfig,
         settings: &SectionDataSettings,
         raw_bytes: &[u8],
-        rom: RomAddress,
+        rom: Rom,
         vram: Vram,
         owned_segment: &SegmentMetadata,
     ) {

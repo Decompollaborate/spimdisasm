@@ -3,7 +3,7 @@
 
 use alloc::string::String;
 
-use crate::{address_abstraction::Vram, parent_segment_info::ParentSegmentInfo};
+use crate::{addresses::Vram, parent_segment_info::ParentSegmentInfo};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct ParentSectionMetadata {

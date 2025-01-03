@@ -3,16 +3,12 @@
 
 use rabbitizer::{InstructionDisplayFlags, InstructionFlags};
 use spimdisasm::{
-    address_abstraction::Vram,
-    address_range::AddressRange,
+    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     config::{Endian, GlobalConfig},
     context::ContextBuilder,
     metadata::OverlayCategoryName,
     parent_segment_info::ParentSegmentInfo,
-    rom_address::RomAddress,
-    rom_vram_range::RomVramRange,
     sections::SectionExecutableSettings,
-    size::Size,
     symbols::display::FunctionDisplaySettings,
 };
 
@@ -96,7 +92,7 @@ fn test_section_text_1() {
         0x03, 0xE0, 0x00, 0x08, // jr
         0x00, 0x00, 0x00, 0x00, //  nop
     ];
-    let rom = RomAddress::new(0x001050);
+    let rom = Rom::new(0x001050);
     let vram = Vram::new(0x80000400);
     let size = Size::new(0x21FC00);
 
@@ -122,7 +118,7 @@ fn test_section_text_1() {
             let segment_vram = Vram::new(i * magic_number);
             let vram_range = AddressRange::new(segment_vram, segment_vram + segment_size);
             let arbitrary_number = 128 * 1024 * 1024; // 128MiB, no rom should be that big, right?
-            let segment_rom = RomAddress::new(arbitrary_number + i * magic_number);
+            let segment_rom = Rom::new(arbitrary_number + i * magic_number);
             let rom_range = AddressRange::new(segment_rom, segment_rom + segment_size);
 
             println!(
@@ -216,7 +212,7 @@ fn test_section_text_lui_delay_slot() {
         0x03, 0xE0, 0x00, 0x08, // jr
         0xAC, 0xA2, 0x00, 0x54, //  sw
     ];
-    let rom = RomAddress::new(0x069558);
+    let rom = Rom::new(0x069558);
     let vram = Vram::new(0x80081738);
     let size = Size::new(0x1000);
 

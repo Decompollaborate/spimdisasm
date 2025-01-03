@@ -4,8 +4,8 @@
 use core::hash::Hash;
 
 use crate::{
-    address_abstraction::Vram, collections::unordered_map::UnorderedMap, metadata::SymbolType,
-    size::Size,
+    addresses::Size, addresses::Vram, collections::unordered_map::UnorderedMap,
+    metadata::SymbolType,
 };
 
 #[derive(Debug, Clone, Eq)]

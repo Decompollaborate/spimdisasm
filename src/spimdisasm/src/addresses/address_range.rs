@@ -3,7 +3,7 @@
 
 use core::{fmt, ops};
 
-use crate::{address_abstraction::Vram, rom_address::RomAddress, size::Size};
+use super::{Rom, Size, Vram};
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct AddressRange<T> {
@@ -42,9 +42,9 @@ impl AddressRange<Vram> {
     }
 }
 
-impl AddressRange<RomAddress> {
+impl AddressRange<Rom> {
     pub const fn size(&self) -> Size {
-        // TODO: Add a substraction method on RomAddress
+        // TODO: Add a substraction method on Rom
         Size::new(self.end.inner() - self.start.inner())
     }
 }
@@ -83,11 +83,11 @@ where
     }
 }
 
-impl ops::Index<AddressRange<RomAddress>> for [u8] {
+impl ops::Index<AddressRange<Rom>> for [u8] {
     type Output = [u8];
 
     #[inline]
-    fn index(&self, index: AddressRange<RomAddress>) -> &Self::Output {
+    fn index(&self, index: AddressRange<Rom>) -> &Self::Output {
         &self[index.start.inner() as usize..index.end.inner() as usize]
     }
 }

@@ -4,8 +4,7 @@
 use alloc::vec::Vec;
 
 use crate::{
-    address_abstraction::Vram,
-    address_range::AddressRange,
+    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     config::{Compiler, Endian},
     context::{Context, OwnedSegmentNotFoundError},
     metadata::{
@@ -14,10 +13,7 @@ use crate::{
     },
     parent_segment_info::ParentSegmentInfo,
     relocation::{RelocReferencedSym, RelocationInfo, RelocationType},
-    rom_address::RomAddress,
-    rom_vram_range::RomVramRange,
     section_type::SectionType,
-    size::Size,
     str_decoding::Encoding,
 };
 
@@ -44,7 +40,7 @@ impl SymbolData {
     pub(crate) fn new(
         context: &mut Context,
         raw_bytes: Vec<u8>,
-        rom: RomAddress,
+        rom: Rom,
         vram: Vram,
         _in_section_offset: usize,
         parent_segment_info: ParentSegmentInfo,
@@ -232,7 +228,7 @@ fn count_padding(
     user_declared_size: Option<Size>,
     typ: Option<SymbolType>,
     endian: Endian,
-    rom: RomAddress,
+    rom: Rom,
 ) -> Size {
     if user_declared_size.is_some() {
         return Size::new(0);

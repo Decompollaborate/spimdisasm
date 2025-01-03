@@ -4,7 +4,7 @@
 use core::fmt;
 
 use crate::{
-    address_abstraction::Vram,
+    addresses::Vram,
     config::Compiler,
     context::Context,
     metadata::{segment_metadata::FindSettings, SymbolMetadata},

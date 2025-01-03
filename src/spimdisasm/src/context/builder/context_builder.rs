@@ -4,7 +4,7 @@
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::{config::GlobalConfig, metadata::SegmentMetadata, rom_vram_range::RomVramRange};
+use crate::{addresses::RomVramRange, config::GlobalConfig, metadata::SegmentMetadata};
 
 use super::{ContextBuilderOverlay, SegmentModifier};
 
@@ -41,11 +41,10 @@ impl ContextBuilder {
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
     use crate::{
-        address_abstraction::Vram,
+        addresses::Vram,
+        addresses::{Rom, Size},
         context::builder::UserSymbolOverlapError,
         metadata::{RodataMigrationBehavior, SymbolMetadata, SymbolType},
-        rom_address::RomAddress,
-        size::Size,
     };
 
     use super::*;
@@ -62,7 +61,7 @@ pub(crate) mod python_bindings {
             &mut self,
             name: String,
             vram: u32, // Vram // TODO
-            rom: Option<RomAddress>,
+            rom: Option<Rom>,
             attributes: &SymAttributes,
         ) -> Result<(), UserSymbolOverlapError> {
             let mut segment = self.global_segment();
@@ -76,7 +75,7 @@ pub(crate) mod python_bindings {
             &mut self,
             name: String,
             vram: u32, // Vram // TODO
-            rom: Option<RomAddress>,
+            rom: Option<Rom>,
             attributes: &SymAttributes,
         ) -> Result<(), UserSymbolOverlapError> {
             let mut segment = self.global_segment();
@@ -90,7 +89,7 @@ pub(crate) mod python_bindings {
             &mut self,
             name: String,
             vram: u32, // Vram // TODO
-            rom: Option<RomAddress>,
+            rom: Option<Rom>,
             attributes: &SymAttributes,
         ) -> Result<(), UserSymbolOverlapError> {
             let mut segment = self.global_segment();
@@ -104,7 +103,7 @@ pub(crate) mod python_bindings {
             &mut self,
             name: String,
             vram: u32, // Vram // TODO
-            rom: Option<RomAddress>,
+            rom: Option<Rom>,
             attributes: &SymAttributes,
         ) -> Result<(), UserSymbolOverlapError> {
             let mut segment = self.global_segment();
@@ -118,7 +117,7 @@ pub(crate) mod python_bindings {
             &mut self,
             name: String,
             vram: u32, // Vram // TODO
-            rom: Option<RomAddress>,
+            rom: Option<Rom>,
             attributes: &SymAttributes,
         ) -> Result<(), UserSymbolOverlapError> {
             let mut segment = self.global_segment();
@@ -132,7 +131,7 @@ pub(crate) mod python_bindings {
             &mut self,
             name: String,
             vram: u32, // Vram // TODO
-            rom: Option<RomAddress>,
+            rom: Option<Rom>,
             attributes: &SymAttributes,
         ) -> Result<(), UserSymbolOverlapError> {
             let mut segment = self.global_segment();
@@ -146,7 +145,7 @@ pub(crate) mod python_bindings {
             &mut self,
             name: String,
             vram: u32, // Vram // TODO
-            rom: Option<RomAddress>,
+            rom: Option<Rom>,
             attributes: &SymAttributes,
         ) -> Result<(), UserSymbolOverlapError> {
             let mut segment = self.global_segment();

@@ -7,12 +7,10 @@ use core::fmt;
 use pyo3::prelude::*;
 
 use crate::{
-    address_abstraction::Vram,
+    addresses::{Rom, Size, Vram},
     config::Endian,
     context::Context,
     metadata::{segment_metadata::FindSettings, SegmentMetadata, SymbolMetadata, SymbolType},
-    rom_address::RomAddress,
-    size::Size,
     str_decoding,
     symbols::{RomSymbol, Symbol, SymbolData},
 };
@@ -171,7 +169,7 @@ impl SymDataDisplay<'_, '_, '_> {
         &self,
         f: &mut fmt::Formatter<'_>,
         i: usize,
-        current_rom: RomAddress,
+        current_rom: Rom,
         current_vram: Vram,
     ) -> Result<usize, fmt::Error> {
         let byte = self.sym.raw_bytes()[i];
@@ -207,7 +205,7 @@ impl SymDataDisplay<'_, '_, '_> {
         &self,
         f: &mut fmt::Formatter<'_>,
         i: usize,
-        current_rom: RomAddress,
+        current_rom: Rom,
         current_vram: Vram,
     ) -> Result<usize, fmt::Error> {
         let short = self
@@ -234,7 +232,7 @@ impl SymDataDisplay<'_, '_, '_> {
         &self,
         f: &mut fmt::Formatter<'_>,
         i: usize,
-        current_rom: RomAddress,
+        current_rom: Rom,
         current_vram: Vram,
     ) -> Result<usize, fmt::Error> {
         let word = self.endian.word_from_bytes(&self.sym.raw_bytes()[i..i + 4]);
@@ -275,7 +273,7 @@ impl SymDataDisplay<'_, '_, '_> {
         &self,
         f: &mut fmt::Formatter<'_>,
         i: usize,
-        current_rom: RomAddress,
+        current_rom: Rom,
         current_vram: Vram,
     ) -> Result<usize, fmt::Error> {
         let word = self.endian.word_from_bytes(&self.sym.raw_bytes()[i..i + 4]);
@@ -299,7 +297,7 @@ impl SymDataDisplay<'_, '_, '_> {
         &self,
         f: &mut fmt::Formatter<'_>,
         i: usize,
-        current_rom: RomAddress,
+        current_rom: Rom,
         current_vram: Vram,
     ) -> Result<usize, fmt::Error> {
         let dword = self
@@ -330,7 +328,7 @@ impl SymDataDisplay<'_, '_, '_> {
         &self,
         f: &mut fmt::Formatter<'_>,
         i: usize,
-        current_rom: RomAddress,
+        current_rom: Rom,
         current_vram: Vram,
     ) -> Result<usize, fmt::Error> {
         let bytes = &self.sym.raw_bytes()[i..];

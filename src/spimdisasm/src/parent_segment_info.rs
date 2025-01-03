@@ -4,18 +4,21 @@
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::{address_abstraction::Vram, metadata::OverlayCategoryName, rom_address::RomAddress};
+use crate::{
+    addresses::{Rom, Vram},
+    metadata::OverlayCategoryName,
+};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct ParentSegmentInfo {
-    segment_rom: RomAddress,
+    segment_rom: Rom,
     segment_vram: Vram,
     overlay_category_name: Option<OverlayCategoryName>,
 }
 impl ParentSegmentInfo {
     pub const fn new(
-        segment_rom: RomAddress,
+        segment_rom: Rom,
         segment_vram: Vram,
         overlay_category_name: Option<OverlayCategoryName>,
     ) -> Self {
@@ -26,7 +29,7 @@ impl ParentSegmentInfo {
         }
     }
 
-    pub const fn segment_rom(&self) -> RomAddress {
+    pub const fn segment_rom(&self) -> Rom {
         self.segment_rom
     }
     pub const fn segment_vram(&self) -> Vram {
@@ -47,7 +50,7 @@ pub(crate) mod python_bindings {
         // https://pyo3.rs/v0.23.2/function/signature.html#trailing-optional-arguments
         #[pyo3(signature = (segment_rom, segment_vram, overlay_category_name))]
         pub fn py_new(
-            segment_rom: RomAddress,
+            segment_rom: Rom,
             segment_vram: u32, // Vram,
             overlay_category_name: Option<OverlayCategoryName>,
         ) -> Self {

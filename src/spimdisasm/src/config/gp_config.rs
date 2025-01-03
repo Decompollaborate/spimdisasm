@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use crate::address_abstraction::Vram;
+use crate::addresses::Vram;
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub struct GpConfig {

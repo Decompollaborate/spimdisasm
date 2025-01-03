@@ -7,8 +7,7 @@ use alloc::{collections::btree_set::BTreeSet, string::String, vec::Vec};
 use pyo3::prelude::*;
 
 use crate::{
-    address_abstraction::Vram,
-    address_range::AddressRange,
+    addresses::{AddressRange, Vram},
     collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
     config::Compiler,
     context::{Context, OwnedSegmentNotFoundError},
@@ -180,9 +179,8 @@ impl SectionNoloadSettings {
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
     use crate::{
+        addresses::{Rom, Size},
         metadata::SymbolType,
-        rom_address::RomAddress,
-        size::Size,
         symbols::display::{SymDisplayError, SymNoloadDisplaySettings},
     };
 
@@ -211,7 +209,7 @@ pub(crate) mod python_bindings {
             index: usize,
         ) -> Option<(
             u32,
-            Option<RomAddress>,
+            Option<Rom>,
             String,
             Option<SymbolType>,
             Option<Size>,

@@ -4,9 +4,9 @@
 use alloc::vec::Vec;
 
 use crate::{
+    addresses::RomVramRange,
     collections::unordered_map::{self, UnorderedMap},
     metadata::{OverlayCategory, OverlayCategoryName, SegmentMetadata},
-    rom_vram_range::RomVramRange,
 };
 
 use super::SegmentModifier;

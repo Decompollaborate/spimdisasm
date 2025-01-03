@@ -10,13 +10,11 @@ use rabbitizer::access_type::AccessType;
 use pyo3::prelude::*;
 
 use crate::{
-    address_abstraction::Vram,
+    addresses::{Rom, Size, Vram},
     collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
     config::Compiler,
     parent_segment_info::ParentSegmentInfo,
-    rom_address::RomAddress,
     section_type::SectionType,
-    size::Size,
 };
 
 use super::{ParentSectionMetadata, SymbolMetadataNameDisplay, SymbolType};
@@ -84,7 +82,7 @@ impl Default for RodataMigrationBehavior {
 pub struct SymbolMetadata {
     generated_by: GeneratedBy,
     vram: Vram,
-    rom: Option<RomAddress>,
+    rom: Option<Rom>,
 
     user_declared_name: Option<String>,
     user_declared_name_end: Option<String>,
@@ -116,13 +114,13 @@ pub struct SymbolMetadata {
     /// on different segments).
     /// Value is the rom of the instruction that references this symbol, so we can know how many
     /// times a function references the same symbol.
-    reference_functions: UnorderedMap<(Vram, ParentSegmentInfo), UnorderedSet<RomAddress>>,
+    reference_functions: UnorderedMap<(Vram, ParentSegmentInfo), UnorderedSet<Rom>>,
     /// Which symbols reference this symbol
     /// Key is the vram of the non-function symbol and the segment it is contained on (since vrams
     /// can overlap on different segments).
     /// Value is the rom of the word that references this symbol, so we can know how many
     /// times a function references the same symbol.
-    reference_symbols: UnorderedMap<(Vram, ParentSegmentInfo), UnorderedSet<RomAddress>>,
+    reference_symbols: UnorderedMap<(Vram, ParentSegmentInfo), UnorderedSet<Rom>>,
 
     // TODO: how to reimplement these crossreferences?
     // parentFunction: ContextSymbol|None = None
@@ -235,10 +233,10 @@ impl SymbolMetadata {
         self.vram
     }
 
-    pub fn rom(&self) -> Option<RomAddress> {
+    pub fn rom(&self) -> Option<Rom> {
         self.rom
     }
-    pub(crate) fn rom_mut(&mut self) -> &mut Option<RomAddress> {
+    pub(crate) fn rom_mut(&mut self) -> &mut Option<Rom> {
         &mut self.rom
     }
 
@@ -343,7 +341,7 @@ impl SymbolMetadata {
         &mut self,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
-        rom: RomAddress,
+        rom: Rom,
     ) {
         self.reference_functions
             .entry((vram, parent_segment_info))
@@ -354,7 +352,7 @@ impl SymbolMetadata {
         &mut self,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
-        rom: RomAddress,
+        rom: Rom,
     ) {
         self.reference_symbols
             .entry((vram, parent_segment_info))

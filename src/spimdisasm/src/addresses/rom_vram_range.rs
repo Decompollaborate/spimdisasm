@@ -4,20 +4,18 @@
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::{
-    address_abstraction::Vram, address_range::AddressRange, rom_address::RomAddress, size::Size,
-};
+use super::{AddressRange, Rom, Size, Vram};
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct RomVramRange {
-    rom: AddressRange<RomAddress>,
+    rom: AddressRange<Rom>,
     vram: AddressRange<Vram>,
 }
 
 impl RomVramRange {
     #[must_use]
-    pub fn new(rom: AddressRange<RomAddress>, vram: AddressRange<Vram>) -> Self {
+    pub fn new(rom: AddressRange<Rom>, vram: AddressRange<Vram>) -> Self {
         assert!(
             vram.size() >= rom.size(),
             "vram ({:?}) can't be smaller than rom ({:?})",
@@ -45,7 +43,7 @@ impl RomVramRange {
     }
 
     #[must_use]
-    pub const fn rom(&self) -> &AddressRange<RomAddress> {
+    pub const fn rom(&self) -> &AddressRange<Rom> {
         &self.rom
     }
     #[must_use]
@@ -54,7 +52,7 @@ impl RomVramRange {
     }
 
     #[must_use]
-    pub fn in_rom_range(&self, rom: RomAddress) -> bool {
+    pub fn in_rom_range(&self, rom: Rom) -> bool {
         self.rom.in_range(rom)
     }
     #[must_use]
@@ -63,7 +61,7 @@ impl RomVramRange {
     }
 
     #[must_use]
-    pub fn vram_fom_rom(&self, rom: RomAddress) -> Option<Vram> {
+    pub fn vram_fom_rom(&self, rom: Rom) -> Option<Vram> {
         self.rom.in_range(rom).then(|| {
             let diff = rom - self.rom.start();
             self.vram.start() + diff
@@ -71,7 +69,7 @@ impl RomVramRange {
     }
 
     #[must_use]
-    pub fn rom_from_vram(&self, vram: Vram) -> Option<RomAddress> {
+    pub fn rom_from_vram(&self, vram: Vram) -> Option<Rom> {
         self.vram.in_range(vram).then(|| {
             let diff = (vram - self.vram.start())
                 .try_into()
@@ -82,7 +80,7 @@ impl RomVramRange {
 }
 
 impl RomVramRange {
-    pub fn expand_rom_range(&mut self, other: &AddressRange<RomAddress>) {
+    pub fn expand_rom_range(&mut self, other: &AddressRange<Rom>) {
         self.rom.expand_range(other);
     }
     pub fn expand_vram_range(&mut self, other: &AddressRange<Vram>) {
@@ -103,7 +101,7 @@ pub(crate) mod python_bindings {
         #[new]
         pub fn py_new(rom_start: u32, rom_end: u32, vram_start: u32, vram_end: u32) -> Self {
             Self::new(
-                AddressRange::new(RomAddress::new(rom_start), RomAddress::new(rom_end)),
+                AddressRange::new(Rom::new(rom_start), Rom::new(rom_end)),
                 AddressRange::new(Vram::new(vram_start), Vram::new(vram_end)),
             )
         }

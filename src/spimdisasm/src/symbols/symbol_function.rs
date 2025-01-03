@@ -5,8 +5,7 @@ use alloc::vec::Vec;
 use rabbitizer::{access_type::AccessType, Instruction};
 
 use crate::{
-    address_abstraction::Vram,
-    address_range::AddressRange,
+    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     analysis::{InstructionAnalysisResult, InstructionAnalyzer},
     collections::unordered_set::UnorderedSet,
     config::Compiler,
@@ -14,10 +13,7 @@ use crate::{
     metadata::{GeneratedBy, ParentSectionMetadata, SegmentMetadata, SymbolMetadata},
     parent_segment_info::ParentSegmentInfo,
     relocation::{RelocReferencedSym, RelocationInfo, RelocationType},
-    rom_address::RomAddress,
-    rom_vram_range::RomVramRange,
     section_type::SectionType,
-    size::Size,
 };
 
 use super::{
@@ -42,7 +38,7 @@ impl SymbolFunction {
     pub(crate) fn new(
         context: &mut Context,
         instructions: Vec<Instruction>,
-        rom: RomAddress,
+        rom: Rom,
         vram: Vram,
         _in_section_offset: usize,
         parent_segment_info: ParentSegmentInfo,
@@ -530,7 +526,7 @@ impl SymbolFunction {
     }
 
     #[must_use]
-    pub(crate) fn handwritten_instrs(&self) -> &UnorderedSet<RomAddress> {
+    pub(crate) fn handwritten_instrs(&self) -> &UnorderedSet<Rom> {
         self.instr_analysis.handwritten_instrs()
     }
 

@@ -9,10 +9,9 @@ use alloc::string::{String, ToString};
 use pyo3::prelude::*;
 
 use crate::{
-    address_abstraction::Vram,
+    addresses::Vram,
+    addresses::{Rom, Size},
     metadata::{segment_metadata::FindSettings, GeneratedBy, SegmentMetadata, SymbolMetadata},
-    rom_address::RomAddress,
-    size::Size,
 };
 
 pub struct SegmentModifier<'seg> {
@@ -30,7 +29,7 @@ impl SegmentModifier<'_> {
         &mut self,
         name: String,
         vram: Vram,
-        rom: Option<RomAddress>,
+        rom: Option<Rom>,
     ) -> Result<&mut SymbolMetadata, UserSymbolOverlapError> {
         let sym = self
             .segment
@@ -54,7 +53,7 @@ impl SegmentModifier<'_> {
         &mut self,
         name: String,
         vram: Vram,
-        rom: Option<RomAddress>,
+        rom: Option<Rom>,
     ) -> Result<&mut SymbolMetadata, UserSymbolOverlapError> {
         // TODO: avoid the double symbol fetching due to find_symbol and add_function
 
@@ -85,7 +84,7 @@ impl SegmentModifier<'_> {
         &mut self,
         name: String,
         vram: Vram,
-        rom: Option<RomAddress>,
+        rom: Option<Rom>,
     ) -> Result<&mut SymbolMetadata, UserSymbolOverlapError> {
         let sym = self
             .segment
@@ -98,7 +97,7 @@ impl SegmentModifier<'_> {
         &mut self,
         name: String,
         vram: Vram,
-        rom: Option<RomAddress>,
+        rom: Option<Rom>,
     ) -> Result<&mut SymbolMetadata, UserSymbolOverlapError> {
         if let Some(sym) = self
             .segment
@@ -127,7 +126,7 @@ impl SegmentModifier<'_> {
         &mut self,
         name: String,
         vram: Vram,
-        rom: Option<RomAddress>,
+        rom: Option<Rom>,
     ) -> Result<&mut SymbolMetadata, UserSymbolOverlapError> {
         let sym = self
             .segment
@@ -140,7 +139,7 @@ impl SegmentModifier<'_> {
         &mut self,
         name: String,
         vram: Vram,
-        rom: Option<RomAddress>,
+        rom: Option<Rom>,
     ) -> Result<&mut SymbolMetadata, UserSymbolOverlapError> {
         if let Some(sym) = self
             .segment
@@ -169,7 +168,7 @@ impl SegmentModifier<'_> {
         &mut self,
         name: String,
         vram: Vram,
-        rom: Option<RomAddress>,
+        rom: Option<Rom>,
     ) -> Result<&mut SymbolMetadata, UserSymbolOverlapError> {
         let sym = self
             .segment

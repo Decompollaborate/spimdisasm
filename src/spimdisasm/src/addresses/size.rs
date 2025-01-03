@@ -6,10 +6,7 @@ use core::{error, fmt, ops};
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::{
-    address_abstraction::{Vram, VramOffset},
-    rom_address::RomAddress,
-};
+use super::{Rom, Vram, VramOffset};
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
@@ -39,8 +36,8 @@ impl Size {
     }
 
     #[must_use]
-    pub const fn add_rom(&self, rhs: &RomAddress) -> RomAddress {
-        RomAddress::new(self.inner() + rhs.inner())
+    pub const fn add_rom(&self, rhs: &Rom) -> Rom {
+        Rom::new(self.inner() + rhs.inner())
     }
 }
 
@@ -78,22 +75,22 @@ impl ops::AddAssign<Size> for Vram {
     }
 }
 
-impl ops::Add<RomAddress> for Size {
-    type Output = RomAddress;
+impl ops::Add<Rom> for Size {
+    type Output = Rom;
 
-    fn add(self, rhs: RomAddress) -> Self::Output {
+    fn add(self, rhs: Rom) -> Self::Output {
         self.add_rom(&rhs)
     }
 }
 
-impl ops::Add<Size> for RomAddress {
-    type Output = RomAddress;
+impl ops::Add<Size> for Rom {
+    type Output = Rom;
 
     fn add(self, rhs: Size) -> Self::Output {
         rhs.add_rom(&self)
     }
 }
-impl ops::AddAssign<Size> for RomAddress {
+impl ops::AddAssign<Size> for Rom {
     fn add_assign(&mut self, rhs: Size) {
         *self = *self + rhs
     }

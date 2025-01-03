@@ -3,12 +3,11 @@
 
 use rabbitizer::{InstructionDisplayFlags, InstructionFlags};
 use spimdisasm::{
-    address_range::AddressRange,
+    addresses::{AddressRange, RomVramRange},
     config::{Compiler, Endian, GlobalConfig},
     context::{Context, ContextBuilder},
     metadata::SymbolType,
     parent_segment_info::ParentSegmentInfo,
-    rom_vram_range::RomVramRange,
     sections::{SectionDataSettings, SectionExecutableSettings, SectionNoloadSettings},
     symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings, SymNoloadDisplaySettings},
 };

@@ -7,18 +7,14 @@ use alloc::{collections::btree_map::BTreeMap, string::String, vec::Vec};
 use pyo3::prelude::*;
 
 use crate::{
-    address_abstraction::Vram,
-    address_range::AddressRange,
+    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     analysis::StringGuesserLevel,
     collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
     config::Compiler,
     context::{Context, OwnedSegmentNotFoundError},
     metadata::{segment_metadata::FindSettings, ParentSectionMetadata, SymbolMetadata, SymbolType},
     parent_segment_info::ParentSegmentInfo,
-    rom_address::RomAddress,
-    rom_vram_range::RomVramRange,
     section_type::SectionType,
-    size::Size,
     str_decoding::Encoding,
     symbols::{symbol_data::SymbolDataProperties, Symbol, SymbolData},
 };
@@ -52,7 +48,7 @@ impl SectionData {
         settings: &SectionDataSettings,
         name: String,
         raw_bytes: &[u8],
-        rom: RomAddress,
+        rom: Rom,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
         section_type: SectionType,
@@ -386,7 +382,7 @@ pub(crate) mod python_bindings {
             index: usize,
         ) -> Option<(
             u32,
-            Option<RomAddress>,
+            Option<Rom>,
             String,
             Option<SymbolType>,
             Option<Size>,

@@ -3,15 +3,11 @@
 
 use rabbitizer::{InstructionDisplayFlags, InstructionFlags};
 use spimdisasm::{
-    address_abstraction::Vram,
-    address_range::AddressRange,
+    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     config::{Endian, GlobalConfig},
     context::ContextBuilder,
     parent_segment_info::ParentSegmentInfo,
-    rom_address::RomAddress,
-    rom_vram_range::RomVramRange,
     sections::SectionExecutableSettings,
-    size::Size,
     symbols::display::FunctionDisplaySettings,
 };
 
@@ -247,7 +243,7 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
         0x03, 0xE0, 0x00, 0x08, // jr
         0x27, 0xBD, 0x02, 0x40, //  addiu
     ];
-    let rom = RomAddress::new(0x001050);
+    let rom = Rom::new(0x001050);
     let vram = Vram::new(0x8081CE54);
     let size = Size::new(bytes.len() as u32);
 

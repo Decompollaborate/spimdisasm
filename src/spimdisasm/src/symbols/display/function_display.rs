@@ -9,11 +9,10 @@ use rabbitizer::{Instruction, InstructionDisplayFlags};
 use pyo3::prelude::*;
 
 use crate::{
-    address_abstraction::Vram,
+    addresses::{Size, Vram},
     context::Context,
     metadata::{segment_metadata::FindSettings, SegmentMetadata, SymbolMetadata, SymbolType},
     relocation::RelocationInfo,
-    size::Size,
     symbols::{
         display::sym_common_display::WordComment, trait_symbol::RomSymbol, Symbol, SymbolFunction,
     },

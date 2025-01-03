@@ -2,14 +2,12 @@
 /* SPDX-License-Identifier: MIT */
 
 use crate::{
-    address_abstraction::Vram,
-    address_range::AddressRange,
+    addresses::{AddressRange, Size, Vram},
     config::Compiler,
     context::{Context, OwnedSegmentNotFoundError},
     metadata::{GeneratedBy, ParentSectionMetadata, SymbolMetadata},
     parent_segment_info::ParentSegmentInfo,
     section_type::SectionType,
-    size::Size,
 };
 
 use super::{

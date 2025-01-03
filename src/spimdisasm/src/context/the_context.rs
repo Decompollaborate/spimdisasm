@@ -10,13 +10,11 @@ use ::polonius_the_crab::prelude::*;
 use pyo3::prelude::*;
 
 use crate::{
-    address_abstraction::Vram,
-    address_range::AddressRange,
+    addresses::{AddressRange, Rom, Vram},
     collections::unordered_map::UnorderedMap,
     config::GlobalConfig,
     metadata::{OverlayCategory, OverlayCategoryName, SegmentMetadata},
     parent_segment_info::ParentSegmentInfo,
-    rom_address::RomAddress,
     section_type::SectionType,
     sections::{
         SectionData, SectionDataSettings, SectionExecutable, SectionExecutableSettings,
@@ -83,7 +81,7 @@ impl Context {
         settings: &SectionExecutableSettings,
         name: String,
         raw_bytes: &[u8],
-        rom: RomAddress,
+        rom: Rom,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
     ) -> Result<SectionExecutable, OwnedSegmentNotFoundError> {
@@ -103,7 +101,7 @@ impl Context {
         settings: &SectionDataSettings,
         name: String,
         raw_bytes: &[u8],
-        rom: RomAddress,
+        rom: Rom,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
     ) -> Result<SectionData, OwnedSegmentNotFoundError> {
@@ -124,7 +122,7 @@ impl Context {
         settings: &SectionDataSettings,
         name: String,
         raw_bytes: &[u8],
-        rom: RomAddress,
+        rom: Rom,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
     ) -> Result<SectionData, OwnedSegmentNotFoundError> {
@@ -155,7 +153,7 @@ impl Context {
         settings: &SectionDataSettings,
         name: String,
         raw_bytes: &[u8],
-        rom: RomAddress,
+        rom: Rom,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
     ) -> Result<SectionData, OwnedSegmentNotFoundError> {
@@ -339,7 +337,7 @@ pub(crate) mod python_bindings {
             settings: &SectionExecutableSettings,
             name: String,
             raw_bytes: Cow<[u8]>,
-            rom: RomAddress,
+            rom: Rom,
             vram: u32, // Vram, // TODO
             parent_segment_info: ParentSegmentInfo,
         ) -> Result<SectionExecutable, OwnedSegmentNotFoundError> {
@@ -359,7 +357,7 @@ pub(crate) mod python_bindings {
             settings: &SectionDataSettings,
             name: String,
             raw_bytes: Cow<[u8]>,
-            rom: RomAddress,
+            rom: Rom,
             vram: u32, // Vram, // TODO
             parent_segment_info: ParentSegmentInfo,
         ) -> Result<SectionData, OwnedSegmentNotFoundError> {
@@ -379,7 +377,7 @@ pub(crate) mod python_bindings {
             settings: &SectionDataSettings,
             name: String,
             raw_bytes: Cow<[u8]>,
-            rom: RomAddress,
+            rom: Rom,
             vram: u32, // Vram, // TODO
             parent_segment_info: ParentSegmentInfo,
         ) -> Result<SectionData, OwnedSegmentNotFoundError> {
@@ -413,7 +411,7 @@ pub(crate) mod python_bindings {
             settings: &SectionDataSettings,
             name: String,
             raw_bytes: Cow<[u8]>,
-            rom: RomAddress,
+            rom: Rom,
             vram: u32, // Vram, // TODO
             parent_segment_info: ParentSegmentInfo,
         ) -> Result<SectionData, OwnedSegmentNotFoundError> {

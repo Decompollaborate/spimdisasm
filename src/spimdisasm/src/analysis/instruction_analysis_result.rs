@@ -7,10 +7,9 @@ use rabbitizer::{
 };
 
 use crate::{
+    addresses::{Rom, RomVramRange},
     collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
     context::Context,
-    rom_address::RomAddress,
-    rom_vram_range::RomVramRange,
 };
 
 use super::RegisterTracker;
@@ -22,32 +21,32 @@ pub struct InstructionAnalysisResult {
     /// Every referenced vram found.
     referenced_vrams: UnorderedSet<Vram>,
     /// Key is the rom of the instruction referencing that address, value is the referenced address.
-    referenced_vrams_by_rom: UnorderedMap<RomAddress, Vram>,
+    referenced_vrams_by_rom: UnorderedMap<Rom, Vram>,
 
     /// Key is the rom of the branch instruction, value is the vram target for that instruction.
-    branch_targets: UnorderedMap<RomAddress, Vram>,
+    branch_targets: UnorderedMap<Rom, Vram>,
     /// Same as `branch_targets`, but for branching outside the current function.
-    branch_targets_outside: UnorderedMap<RomAddress, Vram>,
+    branch_targets_outside: UnorderedMap<Rom, Vram>,
 
     /// Key is the rom of the instruction, value is the address of the called function.
-    func_calls: UnorderedMap<RomAddress, Vram>,
+    func_calls: UnorderedMap<Rom, Vram>,
 
-    referenced_jumptables: UnorderedMap<RomAddress, Vram>,
+    referenced_jumptables: UnorderedMap<Rom, Vram>,
 
-    hi_instrs: UnorderedMap<RomAddress, (Gpr, u16)>,
-    non_lo_instrs: UnorderedSet<RomAddress>,
+    hi_instrs: UnorderedMap<Rom, (Gpr, u16)>,
+    non_lo_instrs: UnorderedSet<Rom>,
 
-    constant_per_instr: UnorderedMap<RomAddress, u32>,
+    constant_per_instr: UnorderedMap<Rom, u32>,
 
     // TODO: merge these 3 thingies
-    address_per_instr: UnorderedMap<RomAddress, Vram>,
-    address_per_hi_instr: UnorderedMap<RomAddress, Vram>,
-    address_per_lo_instr: UnorderedMap<RomAddress, Vram>,
+    address_per_instr: UnorderedMap<Rom, Vram>,
+    address_per_hi_instr: UnorderedMap<Rom, Vram>,
+    address_per_lo_instr: UnorderedMap<Rom, Vram>,
 
     type_info_per_address: UnorderedMap<Vram, UnorderedMap<(AccessType, bool), u32>>,
-    type_info_per_instr: UnorderedMap<RomAddress, (AccessType, bool)>,
+    type_info_per_instr: UnorderedMap<Rom, (AccessType, bool)>,
 
-    handwritten_instrs: UnorderedSet<RomAddress>,
+    handwritten_instrs: UnorderedSet<Rom>,
 }
 
 impl InstructionAnalysisResult {
@@ -80,40 +79,40 @@ impl InstructionAnalysisResult {
     }
 
     #[must_use]
-    pub fn branch_targets(&self) -> &UnorderedMap<RomAddress, Vram> {
+    pub fn branch_targets(&self) -> &UnorderedMap<Rom, Vram> {
         &self.branch_targets
     }
     #[must_use]
-    pub fn branch_targets_outside(&self) -> &UnorderedMap<RomAddress, Vram> {
+    pub fn branch_targets_outside(&self) -> &UnorderedMap<Rom, Vram> {
         &self.branch_targets_outside
     }
 
     #[must_use]
-    pub fn func_calls(&self) -> &UnorderedMap<RomAddress, Vram> {
+    pub fn func_calls(&self) -> &UnorderedMap<Rom, Vram> {
         &self.func_calls
     }
 
     #[must_use]
-    pub fn hi_instrs(&self) -> &UnorderedMap<RomAddress, (Gpr, u16)> {
+    pub fn hi_instrs(&self) -> &UnorderedMap<Rom, (Gpr, u16)> {
         &self.hi_instrs
     }
 
     #[must_use]
-    pub fn constant_per_instr(&self) -> &UnorderedMap<RomAddress, u32> {
+    pub fn constant_per_instr(&self) -> &UnorderedMap<Rom, u32> {
         &self.constant_per_instr
     }
 
     #[must_use]
-    pub fn address_per_hi_instr(&self) -> &UnorderedMap<RomAddress, Vram> {
+    pub fn address_per_hi_instr(&self) -> &UnorderedMap<Rom, Vram> {
         &self.address_per_hi_instr
     }
     #[must_use]
-    pub fn address_per_lo_instr(&self) -> &UnorderedMap<RomAddress, Vram> {
+    pub fn address_per_lo_instr(&self) -> &UnorderedMap<Rom, Vram> {
         &self.address_per_lo_instr
     }
 
     #[must_use]
-    pub fn referenced_jumptables(&self) -> &UnorderedMap<RomAddress, Vram> {
+    pub fn referenced_jumptables(&self) -> &UnorderedMap<Rom, Vram> {
         &self.referenced_jumptables
     }
 
@@ -125,7 +124,7 @@ impl InstructionAnalysisResult {
     }
 
     #[must_use]
-    pub fn handwritten_instrs(&self) -> &UnorderedSet<RomAddress> {
+    pub fn handwritten_instrs(&self) -> &UnorderedSet<Rom> {
         &self.handwritten_instrs
     }
 }
@@ -196,7 +195,7 @@ impl InstructionAnalysisResult {
         context: &Context,
         regs_tracker: &mut RegisterTracker,
         instr: &Instruction,
-        instr_rom: RomAddress,
+        instr_rom: Rom,
         target_vram: Vram,
     ) {
         regs_tracker.process_branch(instr, instr_rom);
@@ -220,7 +219,7 @@ impl InstructionAnalysisResult {
         &mut self,
         context: &Context,
         _instr: &Instruction,
-        instr_rom: RomAddress,
+        instr_rom: Rom,
         target_vram: Vram,
     ) {
         /*
@@ -243,7 +242,7 @@ impl InstructionAnalysisResult {
         context: &Context,
         regs_tracker: &mut RegisterTracker,
         instr: &Instruction,
-        instr_rom: RomAddress,
+        instr_rom: Rom,
     ) {
         if let Some(jr_reg_data) = regs_tracker.get_jr_reg_data(instr) {
             let lo_rom = jr_reg_data.lo_rom();
@@ -277,7 +276,7 @@ impl InstructionAnalysisResult {
         &mut self,
         _regs_tracker: &mut RegisterTracker,
         _instr: &Instruction,
-        _instr_rom: RomAddress,
+        _instr_rom: Rom,
     ) {
         // TODO
         /*
@@ -297,7 +296,7 @@ impl InstructionAnalysisResult {
         &mut self,
         regs_tracker: &mut RegisterTracker,
         instr: &Instruction,
-        instr_rom: RomAddress,
+        instr_rom: Rom,
         prev_instr: Option<&Instruction>,
     ) {
         regs_tracker.process_hi(instr, instr_rom, prev_instr);
@@ -314,7 +313,7 @@ impl InstructionAnalysisResult {
         &mut self,
         regs_tracker: &mut RegisterTracker,
         instr: &Instruction,
-        instr_rom: RomAddress,
+        instr_rom: Rom,
     ) {
         // Pairing with an `ori`, so we treat this as a constant.
         if let Some(hi_info) = regs_tracker.get_hi_info_for_constant(instr) {
@@ -328,9 +327,9 @@ impl InstructionAnalysisResult {
         &mut self,
         regs_tracker: &mut RegisterTracker,
         instr: &Instruction,
-        instr_rom: RomAddress,
+        instr_rom: Rom,
         hi_imm: u16,
-        hi_rom: RomAddress,
+        hi_rom: Rom,
     ) {
         let upper = hi_imm as u32;
         let lower = instr.get_processed_immediate().unwrap() as u32; // TODO: avoid unwrap
@@ -354,7 +353,7 @@ impl InstructionAnalysisResult {
         context: &Context,
         regs_tracker: &mut RegisterTracker,
         instr: &Instruction,
-        instr_rom: RomAddress,
+        instr_rom: Rom,
         _prev_instr: Option<&Instruction>,
     ) {
         // TODO
@@ -444,7 +443,7 @@ impl InstructionAnalysisResult {
         &mut self,
         regs_tracker: &mut RegisterTracker,
         instr: &Instruction,
-        instr_rom: RomAddress,
+        instr_rom: Rom,
     ) {
         if let Some(address) = regs_tracker.get_address_if_instr_can_set_type(instr, instr_rom) {
             self.process_symbol_type(Vram::new(address), instr, instr_rom);
@@ -456,9 +455,9 @@ impl InstructionAnalysisResult {
     fn pair_hi_lo(
         &mut self,
         context: &Context,
-        upper_info: Option<&(i64, RomAddress)>,
+        upper_info: Option<&(i64, Rom)>,
         instr: &Instruction,
-        _instr_rom: RomAddress,
+        _instr_rom: Rom,
     ) -> Option<Vram> {
         // upper_info being None means this symbol is a $gp access
 
@@ -536,7 +535,7 @@ impl InstructionAnalysisResult {
         }
     }
 
-    fn process_got_symbol(&mut self, _address: Vram, _instr_rom: RomAddress) {
+    fn process_got_symbol(&mut self, _address: Vram, _instr_rom: Rom) {
         // TODO
     }
 
@@ -544,9 +543,9 @@ impl InstructionAnalysisResult {
         &mut self,
         context: &Context,
         address: Vram,
-        upper_info: Option<&(i64, RomAddress)>,
+        upper_info: Option<&(i64, Rom)>,
         instr: &Instruction,
-        instr_rom: RomAddress,
+        instr_rom: Rom,
     ) -> bool {
         /*
         # filter out stuff that may not be a real symbol
@@ -613,7 +612,7 @@ impl InstructionAnalysisResult {
         true
     }
 
-    fn process_symbol_type(&mut self, address: Vram, instr: &Instruction, instr_rom: RomAddress) {
+    fn process_symbol_type(&mut self, address: Vram, instr: &Instruction, instr_rom: Rom) {
         let access_type = instr.opcode().access_type();
         let unsigned_memory_address = instr.opcode().does_unsigned_memory_access();
 
@@ -631,18 +630,13 @@ impl InstructionAnalysisResult {
 }
 
 impl InstructionAnalysisResult {
-    fn rom_from_instr(&self, instr: &Instruction) -> RomAddress {
+    fn rom_from_instr(&self, instr: &Instruction) -> Rom {
         self.ranges
             .rom_from_vram(instr.vram())
             .expect("This should not panic")
     }
 
-    fn add_referenced_vram(
-        &mut self,
-        context: &Context,
-        instr_rom: RomAddress,
-        referenced_vram: Vram,
-    ) {
+    fn add_referenced_vram(&mut self, context: &Context, instr_rom: Rom, referenced_vram: Vram) {
         if !context.global_config().gp_config().is_some_and(|x| x.pic()) {
             self.referenced_vrams.insert(referenced_vram);
             self.referenced_vrams_by_rom

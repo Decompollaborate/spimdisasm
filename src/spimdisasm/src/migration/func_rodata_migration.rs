@@ -7,7 +7,7 @@ use alloc::{collections::vec_deque::VecDeque, string::ToString, vec::Vec};
 use pyo3::prelude::*;
 
 use crate::{
-    address_abstraction::Vram,
+    addresses::Vram,
     collections::unordered_set::UnorderedSet,
     context::Context,
     metadata::{RodataMigrationBehavior, SymbolMetadata, SymbolMetadataNameDisplay},

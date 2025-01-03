@@ -2,16 +2,12 @@
 /* SPDX-License-Identifier: MIT */
 
 use crate::{
-    address_abstraction::Vram,
-    address_range::AddressRange,
+    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     context::Context,
     metadata::{segment_metadata::FindSettings, SymbolMetadata},
     parent_segment_info::ParentSegmentInfo,
     relocation::RelocationInfo,
-    rom_address::RomAddress,
-    rom_vram_range::RomVramRange,
     section_type::SectionType,
-    size::Size,
 };
 
 pub trait Symbol {
@@ -47,7 +43,7 @@ pub trait RomSymbol: Symbol {
     fn rom_vram_range(&self) -> &RomVramRange;
 
     #[must_use]
-    fn rom_range(&self) -> &AddressRange<RomAddress> {
+    fn rom_range(&self) -> &AddressRange<Rom> {
         self.rom_vram_range().rom()
     }
 

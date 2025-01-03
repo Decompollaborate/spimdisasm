@@ -3,9 +3,7 @@
 
 use rabbitizer::Instruction;
 
-use crate::{
-    collections::unordered_set::UnorderedSet, context::Context, rom_vram_range::RomVramRange,
-};
+use crate::{addresses::RomVramRange, collections::unordered_set::UnorderedSet, context::Context};
 
 use super::{InstructionAnalysisResult, RegisterTracker};
 

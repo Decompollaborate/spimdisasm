@@ -3,7 +3,7 @@
 
 use alloc::string::String;
 
-use crate::address_abstraction::Vram;
+use crate::addresses::Vram;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]

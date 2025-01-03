@@ -6,9 +6,9 @@ use core::fmt;
 use alloc::vec::Vec;
 
 use crate::{
+    addresses::Size,
     context::Context,
     sections::{Section, SectionData, SectionExecutable},
-    size::Size,
     symbols::{
         display::{
             FunctionDisplay, FunctionDisplaySettings, InternalSymDisplSettings, SymDataDisplay,

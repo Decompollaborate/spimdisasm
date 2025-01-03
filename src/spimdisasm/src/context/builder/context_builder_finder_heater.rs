@@ -5,12 +5,12 @@
 use pyo3::prelude::*;
 
 use crate::{
-    address_abstraction::Vram,
+    addresses::Rom,
+    addresses::Vram,
     analysis::Preheater,
     collections::unordered_map::UnorderedMap,
     config::GlobalConfig,
     metadata::{OverlayCategory, OverlayCategoryName, SegmentMetadata},
-    rom_address::RomAddress,
     sections::{SectionDataSettings, SectionExecutableSettings},
 };
 
@@ -47,7 +47,7 @@ impl ContextBuilderFinderHeater {
         &mut self,
         settings: &SectionExecutableSettings,
         raw_bytes: &[u8],
-        rom: RomAddress,
+        rom: Rom,
         vram: Vram,
     ) {
         self.preheater.preheat_text(
@@ -64,7 +64,7 @@ impl ContextBuilderFinderHeater {
         &mut self,
         settings: &SectionDataSettings,
         raw_bytes: &[u8],
-        rom: RomAddress,
+        rom: Rom,
         vram: Vram,
     ) {
         self.preheater.preheat_data(
@@ -81,7 +81,7 @@ impl ContextBuilderFinderHeater {
         &mut self,
         settings: &SectionDataSettings,
         raw_bytes: &[u8],
-        rom: RomAddress,
+        rom: Rom,
         vram: Vram,
     ) {
         self.preheater.preheat_rodata(
@@ -98,7 +98,7 @@ impl ContextBuilderFinderHeater {
         &mut self,
         settings: &SectionDataSettings,
         raw_bytes: &[u8],
-        rom: RomAddress,
+        rom: Rom,
         vram: Vram,
     ) {
         self.preheater.preheat_gcc_except_table(
@@ -134,7 +134,7 @@ pub(crate) mod python_bindings {
             &mut self,
             settings: &SectionExecutableSettings,
             raw_bytes: Cow<[u8]>,
-            rom: RomAddress,
+            rom: Rom,
             vram: u32, // Vram, // TODO
         ) {
             self.preanalyze_text(settings, &raw_bytes, rom, Vram::new(vram));
@@ -145,7 +145,7 @@ pub(crate) mod python_bindings {
             &mut self,
             settings: &SectionDataSettings,
             raw_bytes: Cow<[u8]>,
-            rom: RomAddress,
+            rom: Rom,
             vram: u32, // Vram, // TODO
         ) {
             self.preanalyze_data(settings, &raw_bytes, rom, Vram::new(vram));
@@ -156,7 +156,7 @@ pub(crate) mod python_bindings {
             &mut self,
             settings: &SectionDataSettings,
             raw_bytes: Cow<[u8]>,
-            rom: RomAddress,
+            rom: Rom,
             vram: u32, // Vram, // TODO
         ) {
             self.preanalyze_rodata(settings, &raw_bytes, rom, Vram::new(vram));
@@ -167,7 +167,7 @@ pub(crate) mod python_bindings {
             &mut self,
             settings: &SectionDataSettings,
             raw_bytes: Cow<[u8]>,
-            rom: RomAddress,
+            rom: Rom,
             vram: u32, // Vram, // TODO
         ) {
             self.preanalyze_gcc_except_table(settings, &raw_bytes, rom, Vram::new(vram));

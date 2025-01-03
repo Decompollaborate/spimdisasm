@@ -10,10 +10,8 @@ use ::polonius_the_crab::prelude::*;
 #[cfg(feature = "nightly")]
 use core::ops::Bound;
 
-use crate::address_abstraction::Vram;
-use crate::rom_vram_range::RomVramRange;
-use crate::size::Size;
-use crate::{address_range::AddressRange, rom_address::RomAddress, section_type::SectionType};
+use crate::addresses::{AddressRange, Rom, RomVramRange, Size, Vram};
+use crate::section_type::SectionType;
 
 use super::{symbol_metadata::GeneratedBy, OverlayCategoryName};
 use super::{SymbolMetadata, SymbolType};
@@ -29,7 +27,7 @@ pub struct SegmentMetadata {
 
     //
     /// Stuff that looks like pointers. Found referenced by data.
-    new_pointer_in_data: BTreeMap<Vram, Vec<RomAddress>>,
+    new_pointer_in_data: BTreeMap<Vram, Vec<Rom>>,
     //
     // is_the_unknown_segment: bool,
 }
@@ -52,15 +50,15 @@ impl SegmentMetadata {
         &self.ranges
     }
 
-    pub const fn rom_range(&self) -> &AddressRange<RomAddress> {
+    pub const fn rom_range(&self) -> &AddressRange<Rom> {
         self.ranges.rom()
     }
     /*
-    pub(crate) fn rom_range_mut(&mut self) -> &mut AddressRange<RomAddress> {
+    pub(crate) fn rom_range_mut(&mut self) -> &mut AddressRange<Rom> {
         &mut self.rom_range
     }
     */
-    pub fn in_rom_range(&self, rom: RomAddress) -> bool {
+    pub fn in_rom_range(&self, rom: Rom) -> bool {
         self.ranges.rom().in_range(rom)
     }
 
@@ -85,7 +83,7 @@ impl SegmentMetadata {
     }
 
     /*
-    pub fn vram_from_rom(&self, rom: RomAddress) -> Option<Vram> {
+    pub fn vram_from_rom(&self, rom: Rom) -> Option<Vram> {
         if let Some(rom_range) = self.rom_range {
             let offset = VramOffset::new((rom.inner() as i32) - (rom_range.start().inner() as i32));
 
@@ -185,7 +183,7 @@ impl SegmentMetadata {
     pub(crate) fn add_symbol(
         &mut self,
         vram: Vram,
-        rom: Option<RomAddress>,
+        rom: Option<Rom>,
         generated_by: GeneratedBy,
         section_type: Option<SectionType>,
         allow_sym_with_addend: bool, // false
@@ -203,7 +201,7 @@ impl SegmentMetadata {
     pub(crate) fn add_function(
         &mut self,
         vram: Vram,
-        rom: Option<RomAddress>,
+        rom: Option<Rom>,
         generated_by: GeneratedBy,
     ) -> &mut SymbolMetadata {
         let sym = self.add_symbol(vram, rom, generated_by, Some(SectionType::Text), false);
@@ -214,7 +212,7 @@ impl SegmentMetadata {
     pub(crate) fn add_branch_label(
         &mut self,
         vram: Vram,
-        rom: Option<RomAddress>,
+        rom: Option<Rom>,
         generated_by: GeneratedBy,
     ) -> &mut SymbolMetadata {
         let sym = self.add_symbol(vram, rom, generated_by, Some(SectionType::Text), false);
@@ -243,7 +241,7 @@ impl SegmentMetadata {
     pub(crate) fn add_jumptable(
         &mut self,
         vram: Vram,
-        rom: Option<RomAddress>,
+        rom: Option<Rom>,
         generated_by: GeneratedBy,
     ) -> &mut SymbolMetadata {
         let sym = self.add_symbol(vram, rom, generated_by, Some(SectionType::Rodata), false);
@@ -254,7 +252,7 @@ impl SegmentMetadata {
     pub(crate) fn add_jumptable_label(
         &mut self,
         vram: Vram,
-        rom: Option<RomAddress>,
+        rom: Option<Rom>,
         generated_by: GeneratedBy,
     ) -> &mut SymbolMetadata {
         let sym = self.add_symbol(vram, rom, generated_by, Some(SectionType::Text), false);
@@ -279,7 +277,7 @@ impl SegmentMetadata {
     pub(crate) fn add_gcc_except_table(
         &mut self,
         vram: Vram,
-        rom: Option<RomAddress>,
+        rom: Option<Rom>,
         generated_by: GeneratedBy,
     ) -> &mut SymbolMetadata {
         let sym = self.add_symbol(
@@ -296,7 +294,7 @@ impl SegmentMetadata {
     pub(crate) fn add_gcc_except_table_label(
         &mut self,
         vram: Vram,
-        rom: Option<RomAddress>,
+        rom: Option<Rom>,
         generated_by: GeneratedBy,
     ) -> &mut SymbolMetadata {
         let sym = self.add_symbol(vram, rom, generated_by, Some(SectionType::Text), false);
@@ -433,7 +431,7 @@ impl SegmentMetadata {
     pub(crate) fn add_possible_pointer_in_data(
         &mut self,
         possible_pointer: Vram,
-        rom_address_referencing_pointer: RomAddress,
+        rom_address_referencing_pointer: Rom,
     ) {
         self.new_pointer_in_data
             .entry(possible_pointer)
@@ -451,7 +449,7 @@ mod tests {
 
     #[test]
     fn check_symbol_bounds() {
-        let rom_range = AddressRange::new(RomAddress::new(0), RomAddress::new(0x100));
+        let rom_range = AddressRange::new(Rom::new(0), Rom::new(0x100));
         let vram_range = AddressRange::new(Vram::new(0), Vram::new(0x180));
         let ranges = RomVramRange::new(rom_range, vram_range);
         let mut segment = SegmentMetadata::new(ranges, None);

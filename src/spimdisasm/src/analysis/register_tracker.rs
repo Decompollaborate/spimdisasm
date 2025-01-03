@@ -3,7 +3,7 @@
 
 use rabbitizer::{opcodes::Opcode, registers::Gpr, registers_meta::Register, Instruction};
 
-use crate::rom_address::RomAddress;
+use crate::addresses::Rom;
 
 use super::{tracked_register_state::HiInfo, JrRegData, LoPairingInfo, TrackedRegisterState};
 
@@ -41,7 +41,7 @@ impl RegisterTracker {
         }
     }
 
-    pub(crate) fn process_branch(&mut self, instr: &Instruction, instr_rom: RomAddress) {
+    pub(crate) fn process_branch(&mut self, instr: &Instruction, instr_rom: Rom) {
         assert!(instr.get_branch_offset_generic().is_some());
 
         if let Some(reg) = instr.field_rs() {
@@ -70,7 +70,7 @@ impl RegisterTracker {
     pub(crate) fn process_hi(
         &mut self,
         instr: &Instruction,
-        instr_rom: RomAddress,
+        instr_rom: Rom,
         prev_instr: Option<&Instruction>,
     ) {
         assert!(instr.opcode().can_be_hi());
@@ -90,7 +90,7 @@ impl RegisterTracker {
         );
     }
 
-    pub(crate) fn process_gp_load(&mut self, instr: &Instruction, instr_rom: RomAddress) {
+    pub(crate) fn process_gp_load(&mut self, instr: &Instruction, instr_rom: Rom) {
         assert!(instr.opcode().can_be_lo());
 
         let reg = instr
@@ -115,12 +115,7 @@ impl RegisterTracker {
         }
     }
 
-    pub(crate) fn process_constant(
-        &mut self,
-        instr: &Instruction,
-        value: u32,
-        instr_rom: RomAddress,
-    ) {
+    pub(crate) fn process_constant(&mut self, instr: &Instruction, value: u32, instr_rom: Rom) {
         if let Some(dst_reg) = instr.get_destination_gpr() {
             let state = &mut self.registers[dst_reg.as_index()];
 
@@ -128,7 +123,7 @@ impl RegisterTracker {
         }
     }
 
-    pub(crate) fn process_lo(&mut self, instr: &Instruction, value: u32, instr_rom: RomAddress) {
+    pub(crate) fn process_lo(&mut self, instr: &Instruction, value: u32, instr_rom: Rom) {
         if let Some(dst_reg) = instr.get_destination_gpr() {
             let state = &mut self.registers[dst_reg.as_index()];
             state.set_lo(value, instr_rom);
@@ -146,7 +141,7 @@ impl RegisterTracker {
     pub(crate) fn get_address_if_instr_can_set_type(
         &self,
         instr: &Instruction,
-        instr_rom: RomAddress,
+        instr_rom: Rom,
     ) -> Option<u32> {
         if let Some(rs) = instr.field_rs() {
             let state = &self.registers[rs.as_index()];
@@ -161,7 +156,7 @@ impl RegisterTracker {
         }
     }
 
-    pub(crate) fn overwrite_registers(&mut self, instr: &Instruction, instr_rom: RomAddress) {
+    pub(crate) fn overwrite_registers(&mut self, instr: &Instruction, instr_rom: Rom) {
         if self.move_register(instr) {
             return;
         }
@@ -193,7 +188,7 @@ impl RegisterTracker {
     pub(crate) fn preprocess_lo_and_get_info(
         &mut self,
         instr: &Instruction,
-        instr_rom: RomAddress,
+        instr_rom: Rom,
     ) -> Option<LoPairingInfo> {
         if let Some(reg) = instr.field_rs() {
             let state = &self.registers[reg.as_index()];
@@ -209,7 +204,7 @@ impl RegisterTracker {
                 }
             } else if reg.is_global_pointer(instr.abi()) {
                 return Some(LoPairingInfo {
-                    instr_rom: RomAddress::new(0),
+                    instr_rom: Rom::new(0),
                     value: state.value() as i64,
                     is_gp_rel: true,
                     is_gp_got: false,
@@ -336,7 +331,7 @@ impl RegisterTracker {
         }
     }
 
-    fn clear_reg(&mut self, reg: Gpr, instr: &Instruction, instr_rom: RomAddress) {
+    fn clear_reg(&mut self, reg: Gpr, instr: &Instruction, instr_rom: Rom) {
         let state = &mut self.registers[reg.as_index()];
 
         state.clear_hi();

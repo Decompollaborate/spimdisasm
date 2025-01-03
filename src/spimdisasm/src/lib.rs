@@ -9,14 +9,10 @@
 extern crate alloc;
 pub extern crate rabbitizer;
 
-pub mod address_abstraction;
-pub mod address_range;
+pub mod addresses;
 pub mod analysis;
 pub mod parent_segment_info;
-pub mod rom_address;
-pub mod rom_vram_range;
 pub mod section_type;
-pub mod size;
 pub mod str_decoding;
 
 pub mod config;
@@ -35,9 +31,9 @@ use pyo3::prelude::*;
 #[cfg(feature = "pyo3")]
 #[pymodule]
 fn spimdisasm(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<size::Size>()?;
-    m.add_class::<rom_address::RomAddress>()?;
-    m.add_class::<rom_vram_range::RomVramRange>()?;
+    m.add_class::<addresses::Size>()?;
+    m.add_class::<addresses::Rom>()?;
+    m.add_class::<addresses::RomVramRange>()?;
 
     m.add_class::<metadata::SymbolType>()?;
     m.add_class::<metadata::RodataMigrationBehavior>()?;

@@ -3,13 +3,13 @@
 
 use rabbitizer::Instruction;
 
-use crate::rom_address::RomAddress;
+use crate::addresses::Rom;
 
 use super::JrRegData;
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct HiInfo {
-    pub(crate) instr_rom: RomAddress,
+    pub(crate) instr_rom: Rom,
 
     // If the previous instructions is a branch likely, then nulify
     // the effects of this instruction for future analysis
@@ -23,10 +23,10 @@ pub struct TrackedRegisterState {
 
     // TODO: maybe wrap in an enum?
     hi_info: Option<HiInfo>,
-    gp_info: Option<RomAddress>,
-    lo_info: Option<RomAddress>,
-    dereferenced: Option<RomAddress>,
-    branch_info: Option<RomAddress>,
+    gp_info: Option<Rom>,
+    lo_info: Option<Rom>,
+    dereferenced: Option<Rom>,
+    branch_info: Option<Rom>,
 
     contains_float: bool,
 }
@@ -50,13 +50,13 @@ impl TrackedRegisterState {
     pub(crate) fn hi_info(&self) -> Option<HiInfo> {
         self.hi_info
     }
-    pub(crate) fn gp_info(&self) -> Option<RomAddress> {
+    pub(crate) fn gp_info(&self) -> Option<Rom> {
         self.gp_info
     }
-    pub(crate) fn lo_info(&self) -> Option<RomAddress> {
+    pub(crate) fn lo_info(&self) -> Option<Rom> {
         self.lo_info
     }
-    pub(crate) fn dereferenced(&self) -> Option<RomAddress> {
+    pub(crate) fn dereferenced(&self) -> Option<Rom> {
         self.dereferenced
     }
 
@@ -104,7 +104,7 @@ impl TrackedRegisterState {
 }
 
 impl TrackedRegisterState {
-    pub fn set_hi(&mut self, value: u32, instr_rom: RomAddress, prev_instr: Option<&Instruction>) {
+    pub fn set_hi(&mut self, value: u32, instr_rom: Rom, prev_instr: Option<&Instruction>) {
         assert!(self.gp_info.is_none());
         self.value = value << 16;
 
@@ -117,7 +117,7 @@ impl TrackedRegisterState {
         self.clear_contains_float();
     }
 
-    pub fn set_gp_load(&mut self, value: u32, instr_rom: RomAddress) {
+    pub fn set_gp_load(&mut self, value: u32, instr_rom: Rom) {
         assert!(self.hi_info.is_none());
         self.value = value;
 
@@ -125,7 +125,7 @@ impl TrackedRegisterState {
         self.clear_contains_float();
     }
 
-    pub fn set_lo(&mut self, value: u32, instr_rom: RomAddress) {
+    pub fn set_lo(&mut self, value: u32, instr_rom: Rom) {
         self.value = value;
 
         self.lo_info = Some(instr_rom);
@@ -133,16 +133,16 @@ impl TrackedRegisterState {
         self.clear_contains_float();
     }
 
-    pub fn set_branching(&mut self, instr_rom: RomAddress) {
+    pub fn set_branching(&mut self, instr_rom: Rom) {
         self.branch_info = Some(instr_rom);
     }
 
-    pub fn set_deref(&mut self, instr_rom: RomAddress) {
+    pub fn set_deref(&mut self, instr_rom: Rom) {
         self.dereferenced = Some(instr_rom);
         self.clear_contains_float();
     }
 
-    pub fn dereference_from(&mut self, other: Self, instr_rom: RomAddress) {
+    pub fn dereference_from(&mut self, other: Self, instr_rom: Rom) {
         *self = other;
         self.set_deref(instr_rom);
     }
@@ -158,7 +158,7 @@ impl TrackedRegisterState {
     }
 
     // TODO: rename to was_set_by_current_instr
-    pub fn was_set_in_current_instr(&self, instr_rom: RomAddress) -> bool {
+    pub fn was_set_in_current_instr(&self, instr_rom: Rom) -> bool {
         self.lo_info == Some(instr_rom) || self.dereferenced == Some(instr_rom)
     }
 }

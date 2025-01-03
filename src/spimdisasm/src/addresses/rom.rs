@@ -6,15 +6,15 @@ use core::{fmt, ops};
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::size::Size;
+use super::Size;
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
-pub struct RomAddress {
+pub struct Rom {
     inner: u32,
 }
 
-impl RomAddress {
+impl Rom {
     #[must_use]
     pub const fn new(value: u32) -> Self {
         Self { inner: value }
@@ -25,35 +25,35 @@ impl RomAddress {
     }
 }
 
-impl RomAddress {
+impl Rom {
     pub const fn add_size(&self, size: &Size) -> Self {
         size.add_rom(self)
     }
 
-    pub const fn sub_rom(&self, rhs: &RomAddress) -> Size {
+    pub const fn sub_rom(&self, rhs: &Rom) -> Size {
         Size::new(self.inner - rhs.inner)
     }
 }
 
-impl ops::Sub<RomAddress> for RomAddress {
+impl ops::Sub<Rom> for Rom {
     type Output = Size;
 
-    fn sub(self, rhs: RomAddress) -> Self::Output {
+    fn sub(self, rhs: Rom) -> Self::Output {
         self.sub_rom(&rhs)
     }
 }
 
-impl fmt::Debug for RomAddress {
+impl fmt::Debug for Rom {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "RomAddress {{ 0x{:08X} }}", self.inner)
+        write!(f, "Rom {{ 0x{:08X} }}", self.inner)
     }
 }
 
-impl ops::Index<RomAddress> for [u8] {
+impl ops::Index<Rom> for [u8] {
     type Output = u8;
 
     #[inline]
-    fn index(&self, idx: RomAddress) -> &Self::Output {
+    fn index(&self, idx: Rom) -> &Self::Output {
         &self[idx.inner as usize]
     }
 }
@@ -63,7 +63,7 @@ pub(crate) mod python_bindings {
     use super::*;
 
     #[pymethods]
-    impl RomAddress {
+    impl Rom {
         #[new]
         pub fn py_new(value: u32) -> Self {
             Self::new(value)

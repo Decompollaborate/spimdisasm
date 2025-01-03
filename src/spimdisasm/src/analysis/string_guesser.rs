@@ -4,7 +4,7 @@
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::{address_abstraction::Vram, metadata::SymbolType, str_decoding::Encoding};
+use crate::{addresses::Vram, metadata::SymbolType, str_decoding::Encoding};
 
 use super::ReferenceWrapper;
 

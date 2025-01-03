@@ -1,14 +1,10 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use crate::address_abstraction::Vram;
-use crate::address_range::AddressRange;
+use crate::addresses::{AddressRange, Rom, RomVramRange, Size, Vram};
 use crate::collections::unordered_set::UnorderedSet;
 use crate::parent_segment_info::ParentSegmentInfo;
-use crate::rom_address::RomAddress;
-use crate::rom_vram_range::RomVramRange;
 use crate::section_type::SectionType;
-use crate::size::Size;
 use crate::symbols::Symbol;
 
 pub trait Section {
@@ -39,7 +35,7 @@ pub trait RomSection {
     fn rom_vram_range(&self) -> &RomVramRange;
 
     #[must_use]
-    fn rom_range(&self) -> &AddressRange<RomAddress> {
+    fn rom_range(&self) -> &AddressRange<Rom> {
         self.rom_vram_range().rom()
     }
 

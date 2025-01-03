@@ -10,25 +10,18 @@ use rabbitizer::{Instruction, InstructionFlags, IsaExtension};
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::address_abstraction::{Vram, VramOffset};
+use crate::addresses::{AddressRange, Rom, RomVramRange, Size, Vram, VramOffset};
 use crate::collections::unordered_set::UnorderedSet;
 use crate::config::Compiler;
-use crate::metadata::ParentSectionMetadata;
-use crate::section_type::SectionType;
-use crate::symbols::symbol_function::SymbolFunctionProperties;
-use crate::{
-    address_range::AddressRange,
-    context::Context,
-    context::OwnedSegmentNotFoundError,
-    metadata::segment_metadata::FindSettings,
-    metadata::GeneratedBy,
-    metadata::SymbolMetadata,
-    parent_segment_info::ParentSegmentInfo,
-    rom_address::RomAddress,
-    rom_vram_range::RomVramRange,
-    size::Size,
-    symbols::{Symbol, SymbolFunction},
+use crate::context::{Context, OwnedSegmentNotFoundError};
+use crate::metadata::{
+    segment_metadata::FindSettings, GeneratedBy, ParentSectionMetadata, SymbolMetadata,
 };
+use crate::parent_segment_info::ParentSegmentInfo;
+use crate::section_type::SectionType;
+
+use crate::symbols::symbol_function::SymbolFunctionProperties;
+use crate::symbols::{Symbol, SymbolFunction};
 
 use super::trait_section::RomSection;
 use super::Section;
@@ -58,7 +51,7 @@ impl SectionExecutable {
         settings: &SectionExecutableSettings,
         name: String,
         raw_bytes: &[u8],
-        rom: RomAddress,
+        rom: Rom,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
     ) -> Result<Self, OwnedSegmentNotFoundError> {
@@ -474,7 +467,7 @@ fn find_functions_check_function_ended(
     instr: &Instruction,
     _index: usize,
     _instrs: &[Instruction],
-    current_rom: RomAddress,
+    current_rom: Rom,
     current_vram: Vram,
     current_function_sym: Option<&SymbolMetadata>,
     farthest_branch: VramOffset,
@@ -611,7 +604,7 @@ pub(crate) mod python_bindings {
             index: usize,
         ) -> Option<(
             u32,
-            Option<RomAddress>,
+            Option<Rom>,
             String,
             Option<SymbolType>,
             Option<Size>,

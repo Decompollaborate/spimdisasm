@@ -6,10 +6,9 @@ use core::fmt;
 use alloc::string::String;
 
 use crate::{
-    address_abstraction::Vram,
+    addresses::{Rom, Vram},
     config::{Compiler, GlobalConfig},
     metadata::{SegmentMetadata, SymbolMetadata, SymbolMetadataNameDisplay, SymbolType},
-    rom_address::RomAddress,
 };
 
 pub(crate) enum WordComment {
@@ -341,7 +340,7 @@ impl SymCommonDisplaySettings {
     pub fn display_asm_comment(
         &self,
         f: &mut fmt::Formatter<'_>,
-        rom: Option<RomAddress>,
+        rom: Option<Rom>,
         vram: Vram,
         word_comment: WordComment,
     ) -> fmt::Result {
@@ -376,7 +375,7 @@ impl SymCommonDisplaySettings {
 
         write!(f, "/* ")?;
         if let Some(rom) = rom {
-            // TODO: implement display for RomAddress
+            // TODO: implement display for Rom
             write!(f, "{:06X} ", rom.inner())?;
         }
         write!(f, "{} ", vram)?;

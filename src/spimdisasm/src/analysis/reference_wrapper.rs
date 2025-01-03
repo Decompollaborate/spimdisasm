@@ -2,9 +2,8 @@
 /* SPDX-License-Identifier: MIT */
 
 use crate::{
-    address_abstraction::Vram,
+    addresses::{Size, Vram},
     metadata::{segment_metadata::FindSettings, SegmentMetadata, SymbolMetadata, SymbolType},
-    size::Size,
 };
 
 use super::{Preheater, ReferencedAddress};
