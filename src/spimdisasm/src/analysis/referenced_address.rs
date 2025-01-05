@@ -2,8 +2,8 @@
 /* SPDX-License-Identifier: MIT */
 
 use core::hash::Hash;
-
 use alloc::vec::Vec;
+use rabbitizer::access_type::AccessType;
 
 use crate::{
     addresses::{Size, SizedAddress, Vram},
@@ -17,12 +17,12 @@ pub struct ReferencedAddress {
 
     referenced_by: Vec<Vram>,
 
+    access_types: UnorderedMap<AccessType, u32>,
+
     user_declared_type: Option<SymbolType>,
-    sym_type: UnorderedMap<SymbolType, u32>,
+    autodetected_types: UnorderedMap<SymbolType, u32>,
 
     user_declared_size: Option<Size>,
-    sizes: UnorderedMap<Option<Size>, u32>,
-    alignments: UnorderedMap<Option<u8>, u32>,
 }
 
 impl ReferencedAddress {
@@ -32,12 +32,12 @@ impl ReferencedAddress {
 
             referenced_by: Vec::new(),
 
+            access_types: UnorderedMap::new(),
+
             user_declared_type: None,
-            sym_type: UnorderedMap::new(),
+            autodetected_types: UnorderedMap::new(),
 
             user_declared_size: None,
-            alignments: UnorderedMap::new(),
-            sizes: UnorderedMap::new(),
         }
     }
 
@@ -48,31 +48,39 @@ impl ReferencedAddress {
         &self.referenced_by
     }
 
+    pub fn access_type(&self) -> Option<AccessType> {
+        if self.access_types.len() == 1 {
+            self.access_types.iter().next().map(|(access, _count)| *access)
+        } else {
+            None
+        }
+    }
+
     pub fn sym_type(&self) -> Option<SymbolType> {
         if let Some(typ) = self.user_declared_type {
             Some(typ)
-        } else if self.sym_type.len() == 1 {
-            self.sym_type.iter().next().map(|(typ, _count)| *typ)
+        } else if self.autodetected_types.len() == 1 {
+            self.autodetected_types.iter().next().map(|(typ, _count)| *typ)
         } else {
-            None
+            self.access_type().and_then(|x| SymbolType::from_access_type(x))
         }
     }
 
     pub fn size(&self) -> Option<Size> {
         if let Some(size) = self.user_declared_size {
             Some(size)
-        } else if self.sizes.len() == 1 {
-            self.sizes.iter().next().and_then(|(siz, _count)| *siz)
-        } else {
+        } else if self.user_declared_type.is_some() || !self.autodetected_types.is_empty() {
             None
+        } else {
+            self.access_type().and_then(|x| x.min_size().map(|x| Size::new(x.into())))
         }
     }
 
     pub fn alignment(&self) -> Option<u8> {
-        if self.alignments.len() == 1 {
-            self.alignments.iter().next().and_then(|(x, _count)| *x)
-        } else {
+        if self.user_declared_type.is_some() || !self.autodetected_types.is_empty() {
             None
+        } else {
+            self.access_type().and_then(|x| x.min_alignment())
         }
     }
 
@@ -84,24 +92,21 @@ impl ReferencedAddress {
         self.referenced_by.push(specific_address);
     }
 
+    pub fn set_access_type(&mut self, access_type: AccessType) {
+        if access_type != AccessType::NONE {
+            *self.access_types.entry(access_type).or_default() += 1;
+        }
+    }
+
     pub fn set_user_declared_type(&mut self, typ: SymbolType) {
         self.user_declared_type = Some(typ);
     }
     pub fn set_sym_type(&mut self, sym_type: SymbolType) {
-        *self.sym_type.entry(sym_type).or_default() += 1;
+        *self.autodetected_types.entry(sym_type).or_default() += 1;
     }
 
     pub fn set_user_declared_size(&mut self, size: Size) {
         self.user_declared_size = Some(size);
-    }
-    pub fn set_size(&mut self, val: Option<u8>) {
-        *self
-            .sizes
-            .entry(val.map(|x| Size::new(x.into())))
-            .or_default() += 1;
-    }
-    pub fn set_alignment(&mut self, val: Option<u8>) {
-        *self.alignments.entry(val).or_default() += 1;
     }
 }
 

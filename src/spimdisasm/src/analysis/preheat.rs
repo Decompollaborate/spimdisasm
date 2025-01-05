@@ -76,12 +76,18 @@ impl Preheater {
                 }
             } else if instr.opcode().is_jump() && instr.opcode().does_link() {
                 // `jalr`. Implicit `!is_jump_with_address`
+                // We can only mark the referenced address as a function if that address was not dereferenced.
+                // i.e. `la $t9, some_func; jalr $t9`.
+                // Dereferenced symbols are usually some kind of callback, like an array of functions.
+                // Currently `get_jr_reg_data` only returns `Some` if the register was dereferenced, so we can't really use it here.
+                /*
                 if let Some(jr_reg_data) = regs_tracker.get_jr_reg_data(&instr) {
                     let address = Vram::new(jr_reg_data.address());
 
                     let reference = self.new_ref(address, None, owned_segment);
                     reference.set_sym_type(SymbolType::Function);
                 }
+                */
             } else if instr.opcode().can_be_hi() {
                 regs_tracker.process_hi(&instr, current_rom, prev_instr.as_ref());
             } else if instr.opcode().is_unsigned() {
@@ -99,12 +105,7 @@ impl Preheater {
                         let reference = self.new_ref(address, Some(current_vram), owned_segment);
 
                         let access_type = instr.opcode().access_type();
-                        reference.set_size(access_type.min_size());
-                        reference.set_alignment(access_type.min_alignment());
-
-                        if let Some(sym_type) = SymbolType::from_access_type(access_type) {
-                            reference.set_sym_type(sym_type);
-                        }
+                        reference.set_access_type(access_type);
 
                         regs_tracker.process_lo(&instr, address.inner(), current_rom);
                     }
@@ -233,16 +234,16 @@ impl Preheater {
             let c_vram = current_vram + Size::new(2);
             let d_vram = current_vram + Size::new(3);
 
-            let a = ReferenceWrapper::find(
-                owned_segment,
-                self,
-                current_vram,
-                FindSettings::default().with_allow_addend(false),
-            );
-
             if remaining_string_size <= 0 {
+                let current_ref = ReferenceWrapper::find(
+                    owned_segment,
+                    self,
+                    current_vram,
+                    FindSettings::default().with_allow_addend(true),
+                );
+
                 if let Some(str_sym_size) = settings.string_guesser_level().guess(
-                    a,
+                    current_ref,
                     current_vram,
                     &raw_bytes[local_offset..],
                     settings.encoding(),
@@ -263,6 +264,12 @@ impl Preheater {
             }
 
             if remaining_string_size <= 0 {
+                let a = ReferenceWrapper::find(
+                    owned_segment,
+                    self,
+                    current_vram,
+                    FindSettings::default().with_allow_addend(false),
+                );
                 let b = ReferenceWrapper::find(
                     owned_segment,
                     self,

@@ -94,15 +94,16 @@ impl SectionData {
             let b_vram = current_vram + Size::new(1);
             let c_vram = current_vram + Size::new(2);
             let d_vram = current_vram + Size::new(3);
-            let a = owned_segment.find_symbol(
-                current_vram,
-                FindSettings::default().with_allow_addend(false),
-            );
 
             // Avoid symbols in the middle of strings
             if remaining_string_size <= 0 {
+                let current_ref = owned_segment.find_symbol(
+                    current_vram,
+                    FindSettings::default().with_allow_addend(true),
+                );
+
                 if let Some(str_sym_size) = settings.string_guesser_level.guess(
-                    a.map(|x| x.into()),
+                    current_ref.map(|x| x.into()),
                     current_vram,
                     &raw_bytes[local_offset..],
                     settings.encoding,
@@ -135,6 +136,10 @@ impl SectionData {
             }
 
             if remaining_string_size <= 0 {
+                let a = owned_segment.find_symbol(
+                    current_vram,
+                    FindSettings::default().with_allow_addend(false),
+                );
                 let b = owned_segment
                     .find_symbol(b_vram, FindSettings::default().with_allow_addend(false));
                 let c = owned_segment
