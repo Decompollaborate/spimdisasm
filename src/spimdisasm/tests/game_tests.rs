@@ -183,7 +183,10 @@ fn init_context(
 
                     match sect {
                         TestSection::Text(rom, _) => finder_heater.preanalyze_text(
-                            &SectionExecutableSettings::new(COMPILER, InstructionFlags::new(IsaVersion::MIPS_III, None)),
+                            &SectionExecutableSettings::new(
+                                COMPILER,
+                                InstructionFlags::new(IsaVersion::MIPS_III, None),
+                            ),
                             &rom_bytes[AddressRange::new(*rom, rom_end)],
                             *rom,
                             info.vram_from_rom(*rom),
