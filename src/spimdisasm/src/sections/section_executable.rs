@@ -320,7 +320,7 @@ fn find_functions(
 
         let instr = &instrs[index];
 
-        if instr.isa_extension() != IsaExtension::RSP && !is_likely_handwritten {
+        if instr.isa_extension() != Some(IsaExtension::RSP) && !is_likely_handwritten {
             is_likely_handwritten = instr.is_likely_handwritten();
         }
 
@@ -573,6 +573,8 @@ impl SectionExecutableSettings {
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
+    use rabbitizer::IsaVersion;
+
     use crate::{
         metadata::SymbolType,
         symbols::display::{FunctionDisplaySettings, SymDisplayError},
@@ -585,7 +587,7 @@ pub(crate) mod python_bindings {
         #[new]
         #[pyo3(signature = (compiler))]
         pub fn py_new(compiler: Option<Compiler>, /*instruction_flags: InstructionFlags*/) -> Self {
-            Self::new(compiler, InstructionFlags::default())
+            Self::new(compiler, InstructionFlags::new(IsaVersion::MIPS_III, None))
         }
     }
 

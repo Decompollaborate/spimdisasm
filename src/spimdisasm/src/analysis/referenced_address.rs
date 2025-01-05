@@ -1,8 +1,8 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use core::hash::Hash;
 use alloc::vec::Vec;
+use core::hash::Hash;
 use rabbitizer::access_type::AccessType;
 
 use crate::{
@@ -50,7 +50,10 @@ impl ReferencedAddress {
 
     pub fn access_type(&self) -> Option<AccessType> {
         if self.access_types.len() == 1 {
-            self.access_types.iter().next().map(|(access, _count)| *access)
+            self.access_types
+                .iter()
+                .next()
+                .map(|(access, _count)| *access)
         } else {
             None
         }
@@ -60,9 +63,12 @@ impl ReferencedAddress {
         if let Some(typ) = self.user_declared_type {
             Some(typ)
         } else if self.autodetected_types.len() == 1 {
-            self.autodetected_types.iter().next().map(|(typ, _count)| *typ)
+            self.autodetected_types
+                .iter()
+                .next()
+                .map(|(typ, _count)| *typ)
         } else {
-            self.access_type().and_then(|x| SymbolType::from_access_type(x))
+            self.access_type().and_then(SymbolType::from_access_type)
         }
     }
 
@@ -72,7 +78,8 @@ impl ReferencedAddress {
         } else if self.user_declared_type.is_some() || !self.autodetected_types.is_empty() {
             None
         } else {
-            self.access_type().and_then(|x| x.min_size().map(|x| Size::new(x.into())))
+            self.access_type()
+                .and_then(|x| x.min_size().map(|x| Size::new(x.into())))
         }
     }
 
@@ -93,9 +100,7 @@ impl ReferencedAddress {
     }
 
     pub fn set_access_type(&mut self, access_type: AccessType) {
-        if access_type != AccessType::NONE {
-            *self.access_types.entry(access_type).or_default() += 1;
-        }
+        *self.access_types.entry(access_type).or_default() += 1;
     }
 
     pub fn set_user_declared_type(&mut self, typ: SymbolType) {

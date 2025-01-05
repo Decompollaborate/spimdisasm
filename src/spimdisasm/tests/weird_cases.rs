@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use rabbitizer::{InstructionDisplayFlags, InstructionFlags};
+use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
 use spimdisasm::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     config::{Endian, GlobalConfig},
@@ -260,7 +260,7 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
     .process()
     .build();
 
-    let text_settings = SectionExecutableSettings::new(None, InstructionFlags::new());
+    let text_settings = SectionExecutableSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III, None));
     let instr_display_flags = InstructionDisplayFlags::default();
 
     let section_text = context

@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use rabbitizer::{InstructionDisplayFlags, InstructionFlags};
+use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
 use spimdisasm::{
     addresses::{AddressRange, RomVramRange},
     config::{Compiler, Endian, GlobalConfig},
@@ -183,7 +183,7 @@ fn init_context(
 
                     match sect {
                         TestSection::Text(rom, _) => finder_heater.preanalyze_text(
-                            &SectionExecutableSettings::new(COMPILER, InstructionFlags::default()),
+                            &SectionExecutableSettings::new(COMPILER, InstructionFlags::new(IsaVersion::MIPS_III, None)),
                             &rom_bytes[AddressRange::new(*rom, rom_end)],
                             *rom,
                             info.vram_from_rom(*rom),
@@ -256,7 +256,7 @@ fn init_segments(
                         TestSection::Text(rom, name) => {
                             let text_settings = SectionExecutableSettings::new(
                                 COMPILER,
-                                InstructionFlags::default(),
+                                InstructionFlags::new(IsaVersion::MIPS_III, None),
                             );
                             text_sections.push(
                                 context

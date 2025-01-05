@@ -104,8 +104,9 @@ impl Preheater {
 
                         let reference = self.new_ref(address, Some(current_vram), owned_segment);
 
-                        let access_type = instr.opcode().access_type();
-                        reference.set_access_type(access_type);
+                        if let Some(access_type) = instr.opcode().access_type() {
+                            reference.set_access_type(access_type);
+                        }
 
                         regs_tracker.process_lo(&instr, address.inner(), current_rom);
                     }

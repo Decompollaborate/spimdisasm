@@ -63,8 +63,6 @@ impl SymbolType {
         // TODO: use AccessType.min_size and AccessType.min_alignment
 
         match access_type {
-            AccessType::NONE => None,
-
             AccessType::BYTE => Some(SymbolType::Byte),
             AccessType::SHORT => Some(SymbolType::Short),
             AccessType::WORD => Some(SymbolType::Word),

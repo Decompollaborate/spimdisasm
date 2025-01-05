@@ -177,7 +177,7 @@ dependencies = [
 [[package]]
 name = "rabbitizer"
 version = "2.0.0-dev0"
-source = "git+https://github.com/Decompollaborate/rabbitizer.git?branch=%F0%9F%A6%80#be118fb89ca4012b522287c2a6d7ae95f4114161"
+source = "git+https://github.com/Decompollaborate/rabbitizer.git?branch=%F0%9F%A6%80#1bb6af375f22f1ba8417e120cbfb12db9a941d79"
 dependencies = [
  "bitflags",
 ]
