@@ -10,8 +10,7 @@ use pyo3::prelude::*;
 
 use crate::{
     addresses::{Rom, Size, Vram},
-    collections::addended_ordered_map::FindSettings,
-    metadata::{GeneratedBy, SegmentMetadata, SymbolMetadata},
+    metadata::{GeneratedBy, SegmentMetadata, SymbolMetadata, SymbolType},
 };
 
 pub struct SegmentModifier<'seg> {
@@ -30,10 +29,13 @@ impl SegmentModifier<'_> {
         name: String,
         vram: Vram,
         rom: Option<Rom>,
+        sym_type: Option<SymbolType>,
     ) -> Result<&mut SymbolMetadata, UserSymbolOverlapError> {
+        let check_addend = !sym_type.is_some_and(|x| x.is_label());
+
         let sym = self
             .segment
-            .add_symbol(vram, rom, GeneratedBy::UserDeclared, None, true);
+            .add_symbol(vram, GeneratedBy::UserDeclared, check_addend);
         if sym.vram() != vram {
             Err(UserSymbolOverlapError {
                 sym_name: name,
@@ -45,136 +47,12 @@ impl SegmentModifier<'_> {
             })
         } else {
             *sym.user_declared_name_mut() = Some(name);
+            *sym.rom_mut() = rom;
+            if let Some(sym_type) = sym_type {
+                sym.set_type_with_priorities(sym_type, GeneratedBy::UserDeclared);
+            }
             Ok(sym)
         }
-    }
-
-    pub fn add_function(
-        &mut self,
-        name: String,
-        vram: Vram,
-        rom: Option<Rom>,
-    ) -> Result<&mut SymbolMetadata, UserSymbolOverlapError> {
-        // TODO: avoid the double symbol fetching due to find_symbol and add_function
-
-        if let Some(sym) = self
-            .segment
-            .find_symbol(vram, FindSettings::default().with_allow_addend(true))
-        {
-            if sym.vram() != vram {
-                return Err(UserSymbolOverlapError {
-                    sym_name: name,
-                    sym_vram: vram,
-
-                    other_name: sym.display_name().to_string(),
-                    other_vram: sym.vram(),
-                    other_size: sym.size().unwrap(),
-                });
-            }
-        }
-
-        let sym = self
-            .segment
-            .add_function(vram, rom, GeneratedBy::UserDeclared);
-        *sym.user_declared_name_mut() = Some(name);
-        Ok(sym)
-    }
-
-    pub fn add_branch_label(
-        &mut self,
-        name: String,
-        vram: Vram,
-        rom: Option<Rom>,
-    ) -> Result<&mut SymbolMetadata, UserSymbolOverlapError> {
-        let sym = self
-            .segment
-            .add_branch_label(vram, rom, GeneratedBy::UserDeclared);
-        *sym.user_declared_name_mut() = Some(name);
-        Ok(sym)
-    }
-
-    pub fn add_jumptable(
-        &mut self,
-        name: String,
-        vram: Vram,
-        rom: Option<Rom>,
-    ) -> Result<&mut SymbolMetadata, UserSymbolOverlapError> {
-        if let Some(sym) = self
-            .segment
-            .find_symbol(vram, FindSettings::default().with_allow_addend(true))
-        {
-            if sym.vram() != vram {
-                return Err(UserSymbolOverlapError {
-                    sym_name: name,
-                    sym_vram: vram,
-
-                    other_name: sym.display_name().to_string(),
-                    other_vram: sym.vram(),
-                    other_size: sym.size().unwrap(),
-                });
-            }
-        }
-
-        let sym = self
-            .segment
-            .add_jumptable(vram, rom, GeneratedBy::UserDeclared);
-        *sym.user_declared_name_mut() = Some(name);
-        Ok(sym)
-    }
-
-    pub fn add_jumptable_label(
-        &mut self,
-        name: String,
-        vram: Vram,
-        rom: Option<Rom>,
-    ) -> Result<&mut SymbolMetadata, UserSymbolOverlapError> {
-        let sym = self
-            .segment
-            .add_jumptable_label(vram, rom, GeneratedBy::UserDeclared);
-        *sym.user_declared_name_mut() = Some(name);
-        Ok(sym)
-    }
-
-    pub fn add_gcc_except_table(
-        &mut self,
-        name: String,
-        vram: Vram,
-        rom: Option<Rom>,
-    ) -> Result<&mut SymbolMetadata, UserSymbolOverlapError> {
-        if let Some(sym) = self
-            .segment
-            .find_symbol(vram, FindSettings::default().with_allow_addend(true))
-        {
-            if sym.vram() != vram {
-                return Err(UserSymbolOverlapError {
-                    sym_name: name,
-                    sym_vram: vram,
-
-                    other_name: sym.display_name().to_string(),
-                    other_vram: sym.vram(),
-                    other_size: sym.size().unwrap(),
-                });
-            }
-        }
-
-        let sym = self
-            .segment
-            .add_gcc_except_table(vram, rom, GeneratedBy::UserDeclared);
-        *sym.user_declared_name_mut() = Some(name);
-        Ok(sym)
-    }
-
-    pub fn add_gcc_except_table_label(
-        &mut self,
-        name: String,
-        vram: Vram,
-        rom: Option<Rom>,
-    ) -> Result<&mut SymbolMetadata, UserSymbolOverlapError> {
-        let sym = self
-            .segment
-            .add_gcc_except_table_label(vram, rom, GeneratedBy::UserDeclared);
-        *sym.user_declared_name_mut() = Some(name);
-        Ok(sym)
     }
 }
 

@@ -1,8 +1,6 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-// use alloc::string::String;
-
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 use rabbitizer::access_type::AccessType;
@@ -40,6 +38,13 @@ impl SymbolType {
                 | SymbolType::BranchLabel
                 | SymbolType::JumptableLabel
                 | SymbolType::GccExceptTableLabel
+        )
+    }
+
+    pub fn is_label(&self) -> bool {
+        matches!(
+            self,
+            SymbolType::BranchLabel | SymbolType::JumptableLabel | SymbolType::GccExceptTableLabel
         )
     }
 

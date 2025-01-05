@@ -6,7 +6,6 @@ use spimdisasm::{
     addresses::{AddressRange, RomVramRange},
     config::{Compiler, Endian, GlobalConfig},
     context::{Context, ContextBuilder},
-    metadata::SymbolType,
     parent_segment_info::ParentSegmentInfo,
     sections::{SectionDataSettings, SectionExecutableSettings, SectionNoloadSettings},
     symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings, SymNoloadDisplaySettings},
@@ -75,68 +74,14 @@ fn init_context(
     for sym in symbols {
         match sym {
             game_tests_info::UserSymbol::Info(user_symbol_info) => {
-                let sym = match user_symbol_info.typ {
-                    Some(SymbolType::Function) => global_segment
-                        .add_function(
-                            user_symbol_info.name,
-                            user_symbol_info.vram,
-                            user_symbol_info.rom,
-                        )
-                        .unwrap(),
-                    Some(SymbolType::BranchLabel) => global_segment
-                        .add_branch_label(
-                            user_symbol_info.name,
-                            user_symbol_info.vram,
-                            user_symbol_info.rom,
-                        )
-                        .unwrap(),
-                    Some(SymbolType::Jumptable) => global_segment
-                        .add_jumptable(
-                            user_symbol_info.name,
-                            user_symbol_info.vram,
-                            user_symbol_info.rom,
-                        )
-                        .unwrap(),
-                    Some(SymbolType::JumptableLabel) => global_segment
-                        .add_jumptable_label(
-                            user_symbol_info.name,
-                            user_symbol_info.vram,
-                            user_symbol_info.rom,
-                        )
-                        .unwrap(),
-                    Some(SymbolType::GccExceptTable) => global_segment
-                        .add_gcc_except_table(
-                            user_symbol_info.name,
-                            user_symbol_info.vram,
-                            user_symbol_info.rom,
-                        )
-                        .unwrap(),
-                    Some(SymbolType::GccExceptTableLabel) => global_segment
-                        .add_gcc_except_table_label(
-                            user_symbol_info.name,
-                            user_symbol_info.vram,
-                            user_symbol_info.rom,
-                        )
-                        .unwrap(),
-                    Some(typ) => {
-                        let sym = global_segment
-                            .add_symbol(
-                                user_symbol_info.name,
-                                user_symbol_info.vram,
-                                user_symbol_info.rom,
-                            )
-                            .unwrap();
-                        *sym.user_declared_type_mut() = Some(typ);
-                        sym
-                    }
-                    None => global_segment
-                        .add_symbol(
-                            user_symbol_info.name,
-                            user_symbol_info.vram,
-                            user_symbol_info.rom,
-                        )
-                        .unwrap(),
-                };
+                let sym = global_segment
+                    .add_symbol(
+                        user_symbol_info.name,
+                        user_symbol_info.vram,
+                        user_symbol_info.rom,
+                        user_symbol_info.typ,
+                    )
+                    .unwrap();
 
                 if let Some(name_end) = user_symbol_info.name_end {
                     *sym.user_declared_name_end_mut() = Some(name_end);
