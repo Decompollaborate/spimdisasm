@@ -10,14 +10,14 @@ use crate::{
     addresses::{AddressRange, Vram},
     collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
     config::Compiler,
-    context::{Context, OwnedSegmentNotFoundError},
+    context::Context,
     metadata::ParentSectionMetadata,
     parent_segment_info::ParentSegmentInfo,
     section_type::SectionType,
     symbols::{symbol_noload::SymbolNoloadProperties, Symbol, SymbolNoload},
 };
 
-use super::Section;
+use super::{Section, SectionCreationError};
 
 #[derive(Debug, Clone, PartialEq)]
 #[must_use]
@@ -44,12 +44,10 @@ impl SectionNoload {
         name: String,
         vram_range: AddressRange<Vram>,
         parent_segment_info: ParentSegmentInfo,
-    ) -> Result<Self, OwnedSegmentNotFoundError> {
-        assert!(
-            vram_range.size().inner() != 0,
-            "Can't initialize zero-sized noload section. {:?}",
-            vram_range
-        );
+    ) -> Result<Self, SectionCreationError> {
+        if vram_range.size().inner() == 0 {
+            return Err(SectionCreationError::EmptySection { name });
+        }
 
         let mut noload_symbols = Vec::new();
         let mut symbol_vrams = UnorderedSet::new();

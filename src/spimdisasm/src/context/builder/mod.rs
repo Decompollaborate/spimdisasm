@@ -13,4 +13,4 @@ pub use context_builder_finder_heater::ContextBuilderFinderHeater;
 pub use context_builder_finder_heater_overlays::ContextBuilderFinderHeaterOverlays;
 pub use context_builder_overlay::ContextBuilderOverlay;
 pub use overlays_builder::OverlaysBuilder;
-pub use segment_modifier::{SegmentModifier, UserSymbolOverlapError};
+pub use segment_modifier::{AddUserSymbolError, SegmentModifier};

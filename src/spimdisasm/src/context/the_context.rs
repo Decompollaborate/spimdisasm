@@ -17,8 +17,8 @@ use crate::{
     parent_segment_info::ParentSegmentInfo,
     section_type::SectionType,
     sections::{
-        SectionData, SectionDataSettings, SectionExecutable, SectionExecutableSettings,
-        SectionNoload, SectionNoloadSettings,
+        SectionCreationError, SectionData, SectionDataSettings, SectionExecutable,
+        SectionExecutableSettings, SectionNoload, SectionNoloadSettings,
     },
 };
 
@@ -84,7 +84,7 @@ impl Context {
         rom: Rom,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
-    ) -> Result<SectionExecutable, OwnedSegmentNotFoundError> {
+    ) -> Result<SectionExecutable, SectionCreationError> {
         SectionExecutable::new(
             self,
             settings,
@@ -104,7 +104,7 @@ impl Context {
         rom: Rom,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
-    ) -> Result<SectionData, OwnedSegmentNotFoundError> {
+    ) -> Result<SectionData, SectionCreationError> {
         SectionData::new(
             self,
             settings,
@@ -125,7 +125,7 @@ impl Context {
         rom: Rom,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
-    ) -> Result<SectionData, OwnedSegmentNotFoundError> {
+    ) -> Result<SectionData, SectionCreationError> {
         SectionData::new(
             self,
             settings,
@@ -144,7 +144,7 @@ impl Context {
         name: String,
         vram_range: AddressRange<Vram>,
         parent_segment_info: ParentSegmentInfo,
-    ) -> Result<SectionNoload, OwnedSegmentNotFoundError> {
+    ) -> Result<SectionNoload, SectionCreationError> {
         SectionNoload::new(self, settings, name, vram_range, parent_segment_info)
     }
 
@@ -156,7 +156,7 @@ impl Context {
         rom: Rom,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
-    ) -> Result<SectionData, OwnedSegmentNotFoundError> {
+    ) -> Result<SectionData, SectionCreationError> {
         SectionData::new(
             self,
             settings,
@@ -340,7 +340,7 @@ pub(crate) mod python_bindings {
             rom: Rom,
             vram: u32, // Vram, // TODO
             parent_segment_info: ParentSegmentInfo,
-        ) -> Result<SectionExecutable, OwnedSegmentNotFoundError> {
+        ) -> Result<SectionExecutable, SectionCreationError> {
             self.create_section_text(
                 settings,
                 name,
@@ -360,7 +360,7 @@ pub(crate) mod python_bindings {
             rom: Rom,
             vram: u32, // Vram, // TODO
             parent_segment_info: ParentSegmentInfo,
-        ) -> Result<SectionData, OwnedSegmentNotFoundError> {
+        ) -> Result<SectionData, SectionCreationError> {
             self.create_section_data(
                 settings,
                 name,
@@ -380,7 +380,7 @@ pub(crate) mod python_bindings {
             rom: Rom,
             vram: u32, // Vram, // TODO
             parent_segment_info: ParentSegmentInfo,
-        ) -> Result<SectionData, OwnedSegmentNotFoundError> {
+        ) -> Result<SectionData, SectionCreationError> {
             self.create_section_rodata(
                 settings,
                 name,
@@ -399,7 +399,7 @@ pub(crate) mod python_bindings {
             vram_start: u32, // Vram // TODO
             vram_end: u32,   // Vram // TODO
             parent_segment_info: ParentSegmentInfo,
-        ) -> Result<SectionNoload, OwnedSegmentNotFoundError> {
+        ) -> Result<SectionNoload, SectionCreationError> {
             let vram_ranges = AddressRange::new(Vram::new(vram_start), Vram::new(vram_end));
 
             self.create_section_bss(settings, name, vram_ranges, parent_segment_info)
@@ -414,7 +414,7 @@ pub(crate) mod python_bindings {
             rom: Rom,
             vram: u32, // Vram, // TODO
             parent_segment_info: ParentSegmentInfo,
-        ) -> Result<SectionData, OwnedSegmentNotFoundError> {
+        ) -> Result<SectionData, SectionCreationError> {
             self.create_section_gcc_except_table(
                 settings,
                 name,

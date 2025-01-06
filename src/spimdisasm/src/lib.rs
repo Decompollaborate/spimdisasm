@@ -45,7 +45,7 @@ fn spimdisasm(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<analysis::StringGuesserLevel>()?;
     m.add_class::<str_decoding::Encoding>()?;
 
-    m.add_class::<context::builder::UserSymbolOverlapError>()?;
+    m.add_class::<context::builder::AddUserSymbolError>()?;
     m.add_class::<context::builder::context_builder::python_bindings::SymAttributes>()?;
     m.add_class::<context::ContextBuilder>()?;
     // m.add_class::<context::ContextBuilderOverlay>()?;

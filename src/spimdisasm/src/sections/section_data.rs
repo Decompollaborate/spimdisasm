@@ -14,7 +14,7 @@ use crate::{
         unordered_set::UnorderedSet,
     },
     config::Compiler,
-    context::{Context, OwnedSegmentNotFoundError},
+    context::Context,
     metadata::{ParentSectionMetadata, SymbolMetadata, SymbolType},
     parent_segment_info::ParentSegmentInfo,
     section_type::SectionType,
@@ -22,7 +22,7 @@ use crate::{
     symbols::{symbol_data::SymbolDataProperties, Symbol, SymbolData},
 };
 
-use super::{trait_section::RomSection, Section};
+use super::{trait_section::RomSection, Section, SectionCreationError};
 
 #[derive(Debug, Clone, PartialEq)]
 #[must_use]
@@ -55,13 +55,11 @@ impl SectionData {
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
         section_type: SectionType,
-    ) -> Result<Self, OwnedSegmentNotFoundError> {
-        assert!(
-            !raw_bytes.is_empty(),
-            "Can't initialize a section with empty bytes. {:?} {:?}",
-            rom,
-            vram
-        );
+    ) -> Result<Self, SectionCreationError> {
+        if raw_bytes.is_empty() {
+            return Err(SectionCreationError::EmptySection { name });
+        }
+
         let size = Size::new(raw_bytes.len() as u32);
         let rom_range = AddressRange::new(rom, rom + size);
         let vram_range = AddressRange::new(vram, vram + size);

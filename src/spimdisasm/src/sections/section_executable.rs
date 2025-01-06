@@ -14,7 +14,7 @@ use crate::addresses::{AddressRange, Rom, RomVramRange, Size, Vram, VramOffset};
 use crate::collections::addended_ordered_map::FindSettings;
 use crate::collections::unordered_set::UnorderedSet;
 use crate::config::{Compiler, Endian};
-use crate::context::{Context, OwnedSegmentNotFoundError};
+use crate::context::Context;
 use crate::metadata::{ParentSectionMetadata, SegmentMetadata, SymbolMetadata};
 use crate::parent_segment_info::ParentSegmentInfo;
 use crate::section_type::SectionType;
@@ -23,7 +23,7 @@ use crate::symbols::symbol_function::SymbolFunctionProperties;
 use crate::symbols::{Symbol, SymbolFunction};
 
 use super::trait_section::RomSection;
-use super::Section;
+use super::{Section, SectionCreationError};
 
 #[derive(Debug, Clone, PartialEq)]
 #[must_use]
@@ -53,27 +53,32 @@ impl SectionExecutable {
         rom: Rom,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
-    ) -> Result<Self, OwnedSegmentNotFoundError> {
-        assert!(
-            !raw_bytes.is_empty(),
-            "Can't initialize a section with empty bytes. {:?} {:?}",
-            rom,
-            vram
-        );
-        assert!(
-            raw_bytes.len() % 4 == 0,
-            "Bytes length must be a multiple of 4. {:?} {:?}",
-            rom,
-            vram
-        );
-        assert!(
-            vram.inner() % 4 == 0,
-            "Vram address must be aligned to 4 bytes"
-        );
-        assert!(
-            rom.inner() % 4 == 0,
-            "Rom address must be aligned to 4 bytes"
-        );
+    ) -> Result<Self, SectionCreationError> {
+        if raw_bytes.is_empty() {
+            return Err(SectionCreationError::EmptySection { name });
+        }
+        if raw_bytes.len() % 4 != 0 {
+            return Err(SectionCreationError::BadBytesSize {
+                name,
+                size: raw_bytes.len(),
+                multiple_of: 4,
+            });
+        }
+        if vram.inner() % 4 != 0 {
+            return Err(SectionCreationError::UnalignedVram {
+                name,
+                vram: vram.inner(),
+                multiple_of: 4,
+            });
+        }
+        if rom.inner() % 4 != 0 {
+            return Err(SectionCreationError::UnalignedRom {
+                name,
+                rom,
+                multiple_of: 4,
+            });
+        }
+
         let size = Size::new(raw_bytes.len() as u32);
         let rom_range = AddressRange::new(rom, rom + size);
         let vram_range = AddressRange::new(vram, vram + size);

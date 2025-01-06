@@ -43,7 +43,7 @@ pub(crate) mod python_bindings {
     use crate::{
         addresses::Vram,
         addresses::{Rom, Size},
-        context::builder::UserSymbolOverlapError,
+        context::builder::AddUserSymbolError,
         metadata::{RodataMigrationBehavior, SymbolMetadata, SymbolType},
     };
 
@@ -63,7 +63,7 @@ pub(crate) mod python_bindings {
             vram: u32, // Vram // TODO
             rom: Option<Rom>,
             attributes: &SymAttributes,
-        ) -> Result<(), UserSymbolOverlapError> {
+        ) -> Result<(), AddUserSymbolError> {
             let mut segment = self.global_segment();
             let sym = segment.add_symbol(name, Vram::new(vram), rom, attributes.typ)?;
             attributes.apply_to_sym(sym);
