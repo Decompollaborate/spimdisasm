@@ -12,6 +12,8 @@ use core::ops::Bound;
 
 use crate::addresses::{Size, SizedAddress};
 
+pub type Range<'a, K, V> = btree_map::Range<'a, K, V>;
+
 // TODO: default
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct AddendedOrderedMap<K, V>
@@ -49,16 +51,16 @@ where
             if let Some((other_key, v)) = range.next_back() {
                 if other_key == key {
                     Some(v)
-                } else if settings.check_upper_limit {
-                    v.size().and_then(|siz| {
-                        if *key < *other_key + siz {
-                            Some(v)
-                        } else {
-                            None
-                        }
-                    })
-                } else {
+                } else if let Some(siz) = v.size() {
+                    if *key < *other_key + siz {
+                        Some(v)
+                    } else {
+                        None
+                    }
+                } else if !settings.reject_sizeless_addended {
                     Some(v)
+                } else {
+                    None
                 }
             } else {
                 None
@@ -100,16 +102,16 @@ where
             if let Some((other_key, v)) = range.next_back() {
                 if other_key == key {
                     Some(v)
-                } else if settings.check_upper_limit {
-                    v.size().and_then(|siz| {
-                        if *key < *other_key + siz {
-                            Some(v)
-                        } else {
-                            None
-                        }
-                    })
-                } else {
+                } else if let Some(siz) = v.size() {
+                    if *key < *other_key + siz {
+                        Some(v)
+                    } else {
+                        None
+                    }
+                } else if !settings.reject_sizeless_addended {
                     Some(v)
+                } else {
+                    None
                 }
             } else {
                 None
@@ -121,61 +123,61 @@ where
 #[cfg(not(feature = "nightly"))]
 fn add_impl<'slf, K, V, F>(
     mut slf: &'slf mut AddendedOrderedMap<K, V>,
-    key: &K,
+    key: K,
     settings: FindSettings,
     default: F,
 ) -> &'slf mut V
 where
     K: Ord + Copy + Add<Size, Output = K>,
     V: SizedAddress,
-    F: FnOnce() -> V,
+    F: FnOnce() -> (K, V),
 {
     // TODO: get rid of the polonius stuff when the new borrow checker has been released.
 
     polonius!(|slf| -> &'polonius mut V {
-        if let Some(x) = slf.find_mut(key, settings) {
+        if let Some(x) = slf.find_mut(&key, settings) {
             polonius_return!(x);
         }
     });
 
-    let entry = slf.inner.entry(*key);
+    let (k, v) = default();
+    let entry = slf.inner.entry(k);
 
-    entry.or_insert_with(default)
+    entry.or_insert(v)
 }
 
 #[cfg(feature = "nightly")]
 fn add_impl<'slf, K, V, F>(
     slf: &'slf mut AddendedOrderedMap<K, V>,
-    key: &K,
+    key: K,
     settings: FindSettings,
     default: F,
 ) -> &'slf mut V
 where
     K: Ord + Copy + Add<Size, Output = K>,
     V: SizedAddress,
-    F: FnOnce() -> V,
+    F: FnOnce() -> (K, V),
 {
-    let mut cursor = slf.inner.upper_bound_mut(Bound::Included(key));
+    let mut cursor = slf.inner.upper_bound_mut(Bound::Included(&key));
 
     let must_insert_new = if let Some((other_key, v)) = cursor.peek_prev() {
-        if key == other_key {
+        if &key == other_key {
             false
         } else if !settings.allow_addend {
             true
-        } else if !settings.check_upper_limit {
-            false
         } else if let Some(siz) = v.size() {
-            *key >= *other_key + siz
+            key >= *other_key + siz
         } else {
-            true
+            settings.reject_sizeless_addended
         }
     } else {
         true
     };
 
     if must_insert_new {
+        let (k, v) = default();
         cursor
-            .insert_before(*key, default())
+            .insert_before(k, v)
             .expect("This should not be able to panic");
     }
 
@@ -208,12 +210,12 @@ where
 {
     pub fn find_mut_or_insert_with<F>(
         &mut self,
-        key: &K,
+        key: K,
         settings: FindSettings,
         default: F,
     ) -> &mut V
     where
-        F: FnOnce() -> V,
+        F: FnOnce() -> (K, V),
     {
         add_impl(self, key, settings, default)
     }
@@ -269,7 +271,7 @@ where
     }
     */
 
-    pub fn range<R>(&self, range: R) -> btree_map::Range<'_, K, V>
+    pub fn range<R>(&self, range: R) -> Range<'_, K, V>
     where
         R: RangeBounds<K>,
     {
@@ -389,14 +391,14 @@ where
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct FindSettings {
     allow_addend: bool,
-    check_upper_limit: bool,
+    reject_sizeless_addended: bool,
 }
 
 impl FindSettings {
     pub const fn default() -> Self {
         Self {
             allow_addend: true,
-            check_upper_limit: true,
+            reject_sizeless_addended: true,
         }
     }
 
@@ -411,9 +413,9 @@ impl FindSettings {
         }
     }
 
-    pub const fn with_check_upper_limit(self, check_upper_limit: bool) -> Self {
+    pub const fn with_reject_sizeless_addended(self, reject_sizeless_addended: bool) -> Self {
         Self {
-            check_upper_limit,
+            reject_sizeless_addended,
             ..self
         }
     }

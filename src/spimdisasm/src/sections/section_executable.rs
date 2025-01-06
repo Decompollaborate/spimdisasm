@@ -11,11 +11,11 @@ use rabbitizer::{Instruction, InstructionFlags, IsaExtension};
 use pyo3::prelude::*;
 
 use crate::addresses::{AddressRange, Rom, RomVramRange, Size, Vram, VramOffset};
-use crate::collections::addended_ordered_map::FindSettings;
-use crate::collections::unordered_set::UnorderedSet;
+use crate::analysis::ReferenceWrapper;
+use crate::collections::{addended_ordered_map::FindSettings, unordered_set::UnorderedSet};
 use crate::config::{Compiler, Endian};
 use crate::context::Context;
-use crate::metadata::{ParentSectionMetadata, SegmentMetadata, SymbolMetadata};
+use crate::metadata::{ParentSectionMetadata, SegmentMetadata};
 use crate::parent_segment_info::ParentSegmentInfo;
 use crate::section_type::SectionType;
 
@@ -208,7 +208,7 @@ fn find_functions(
 
     let mut local_offset = 0;
     let mut current_function_start = local_offset;
-    let mut current_function_sym = owned_segment.find_symbol(
+    let mut current_function_ref = owned_segment.find_reference(
         section_ranges.vram().start() + Size::new(local_offset as u32),
         FindSettings::new().with_allow_addend(false),
     );
@@ -223,7 +223,7 @@ fn find_functions(
     if instrs[0].is_nop() {
         // Loop over until we find a instruction that isn't a nop
         while index < instrs.len() {
-            if current_function_sym.is_some() {
+            if current_function_ref.is_some() {
                 break;
             }
 
@@ -234,7 +234,7 @@ fn find_functions(
             index += 1;
             local_offset += 4;
             current_function_start = local_offset;
-            current_function_sym = owned_segment.find_symbol(
+            current_function_ref = owned_segment.find_reference(
                 section_ranges.vram().start() + Size::new(local_offset as u32),
                 FindSettings::new().with_allow_addend(false),
             );
@@ -260,14 +260,14 @@ fn find_functions(
             index += 1;
             local_offset += 4;
 
-            let mut aux_sym = owned_segment.find_symbol(
+            let mut aux_ref = owned_segment.find_reference(
                 section_ranges.vram().start() + Size::new(local_offset as u32),
                 FindSettings::new().with_allow_addend(false),
             );
 
             // Loop over until we find a instruction that isn't a nop
             while index < instrs.len() {
-                if aux_sym.is_some() {
+                if aux_ref.is_some() {
                     break;
                 }
 
@@ -279,14 +279,14 @@ fn find_functions(
                 index += 1;
                 local_offset += 4;
 
-                aux_sym = owned_segment.find_symbol(
+                aux_ref = owned_segment.find_reference(
                     section_ranges.vram().start() + Size::new(local_offset as u32),
                     FindSettings::new().with_allow_addend(false),
                 );
             }
 
             current_function_start = local_offset;
-            current_function_sym = aux_sym;
+            current_function_ref = aux_ref;
 
             starts_data.push((prev_start, auto_pad_by));
             auto_pad_by = if prev_func_had_user_declared_size {
@@ -335,7 +335,7 @@ fn find_functions(
             instrs,
             section_ranges.rom().start() + Size::new(local_offset as u32),
             section_ranges.vram().start() + Size::new(local_offset as u32),
-            current_function_sym,
+            current_function_ref,
             farthest_branch,
             current_function_start,
             is_likely_handwritten,
@@ -374,13 +374,10 @@ fn find_functions_branch_checker(
 
         // TODO
         if let Some(target_vram) = instr.get_instr_index_as_vram() {
-            if let Some(aux_sym) = owned_segment.find_symbol(
-                target_vram,
-                FindSettings::new()
-                    .with_allow_addend(false)
-                    .with_check_upper_limit(false),
-            ) {
-                if aux_sym.is_trustable_function() {
+            if let Some(aux_ref) = owned_segment
+                .find_reference(target_vram, FindSettings::new().with_allow_addend(false))
+            {
+                if aux_ref.is_trustable_function() {
                     return (farthest_branch, halt_function_searching);
                 }
             }
@@ -415,7 +412,7 @@ fn find_functions_branch_checker(
 
                         // TODO: invert check?
                         if let Some(func_symbol) = owned_segment
-                            .find_symbol(vram, FindSettings::new().with_allow_addend(false))
+                            .find_reference(vram, FindSettings::new().with_allow_addend(false))
                         {
                             // TODO
                             if func_symbol.is_trustable_function() {
@@ -446,7 +443,7 @@ fn find_functions_check_function_ended(
     _instrs: &[Instruction],
     current_rom: Rom,
     current_vram: Vram,
-    current_function_sym: Option<&SymbolMetadata>,
+    current_function_ref: Option<ReferenceWrapper>,
     farthest_branch: VramOffset,
     current_function_start: usize,
     _is_likely_handwritten: bool,
@@ -455,8 +452,8 @@ fn find_functions_check_function_ended(
     let mut prev_func_had_user_declared_size = false;
     // TODO
 
-    if let Some(sym) = current_function_sym {
-        if let Some(user_declared_size) = sym.user_declared_size() {
+    if let Some(reference) = current_function_ref {
+        if let Some(user_declared_size) = reference.user_declared_size() {
             // If the function has a size set by the user then only use that and ignore the other ways of determining function-ends
             if local_offset + 8 == current_function_start + user_declared_size.inner() as usize {
                 function_ended = true;
@@ -466,14 +463,13 @@ fn find_functions_check_function_ended(
         }
     }
 
-    let func_sym = owned_segment.find_symbol(
+    if let Some(reference) = owned_segment.find_reference(
         current_vram + VramOffset::new(8),
         FindSettings::new().with_allow_addend(false),
-    );
-    if let Some(sym) = func_sym {
+    ) {
         // # If there's another function after this then the current function has ended
-        if sym.is_trustable_function() {
-            if let Some(sym_rom) = sym.rom() {
+        if reference.is_trustable_function() {
+            if let Some(sym_rom) = reference.rom() {
                 if current_rom + Size::new(8) == sym_rom {
                     return (true, false);
                 }
@@ -504,10 +500,10 @@ fn find_functions_check_function_ended(
             } else {
                 // j is a jump, but it could be jumping to a function
                 if let Some(target_vram) = instr.get_instr_index_as_vram() {
-                    if let Some(aux_sym) = owned_segment
-                        .find_symbol(target_vram, FindSettings::new().with_allow_addend(false))
+                    if let Some(aux_ref) = owned_segment
+                        .find_reference(target_vram, FindSettings::new().with_allow_addend(false))
                     {
-                        if aux_sym.is_trustable_function() && Some(aux_sym) != current_function_sym
+                        if aux_ref.is_trustable_function() && Some(aux_ref) != current_function_ref
                         {
                             return (true, false);
                         }

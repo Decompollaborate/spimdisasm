@@ -100,12 +100,12 @@ impl SymbolData {
                             rom + offset,
                         );
                         true
-                    } else if let Some(sym_metadata) =
-                        owned_segment.find_symbol(word_vram, FindSettings::default())
+                    } else if let Some(reference) =
+                        owned_segment.find_reference(word_vram, FindSettings::default())
                     {
-                        if sym_metadata.vram() == word_vram {
+                        if reference.vram() == word_vram {
                             true
-                        } else if let Some(sym_typ) = sym_metadata.sym_type() {
+                        } else if let Some(sym_typ) = reference.sym_type() {
                             sym_typ.may_have_addend()
                         } else {
                             true

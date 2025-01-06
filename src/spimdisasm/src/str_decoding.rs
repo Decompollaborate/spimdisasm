@@ -282,6 +282,24 @@ mod tests {
 
         assert_eq!(maybe_size, Err(DecodingError::TerminatorNotFound));
     }
+
+    // encoding_rs is silly and decodes those invalid bytes as if they were valid shift-jis strings
+    /*
+    #[test]
+    fn check_valid_string_invalid_2() {
+        static BYTES: [u8; 16] = [
+            0x80, 0x03, 0xD7, 0xCC,
+            0x80, 0x03, 0xD7, 0xCC,
+            0x80, 0x03, 0xD7, 0xB0,
+            0x00, 0x00, 0x00, 0x00,
+        ];
+        let encoding = Encoding::ShiftJis;
+
+        let maybe_size = encoding.check_valid(&BYTES);
+
+        assert_eq!(maybe_size, Err(DecodingError::InvalidMultibyte));
+    }
+    */
 }
 
 #[cfg(feature = "pyo3")]

@@ -14,13 +14,13 @@ use crate::{
 
 use super::{ReferenceWrapper, ReferencedAddress, RegisterTracker};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Hash, PartialEq, PartialOrd)]
 pub struct Preheater {
     references: AddendedOrderedMap<Vram, ReferencedAddress>,
 }
 
 impl Preheater {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             references: AddendedOrderedMap::new(),
         }
@@ -221,6 +221,9 @@ impl Preheater {
             return;
         }
 
+        // Ensure there's a symbol at the start of the segment
+        self.new_ref(vram, None, owned_segment);
+
         let mut remaining_string_size = 0;
 
         let mut prev_sym_type: Option<SymbolType> = None;
@@ -243,23 +246,27 @@ impl Preheater {
                     FindSettings::default().with_allow_addend(true),
                 );
 
-                if let Some(str_sym_size) = settings.string_guesser_level().guess(
-                    current_ref,
-                    current_vram,
-                    &raw_bytes[local_offset..],
-                    settings.encoding(),
-                ) {
-                    if ReferenceWrapper::find(
-                        owned_segment,
-                        self,
-                        current_vram + Size::new(str_sym_size as u32 - 1),
-                        FindSettings::default().with_allow_addend(true),
-                    )
-                    .is_some_and(|x| x.vram() != current_vram)
-                    {
-                        remaining_string_size = str_sym_size as i32;
+                if current_ref.is_none_or(|x| x.vram() == current_vram) {
+                    if let Some(str_sym_size) = settings.string_guesser_level().guess(
+                        current_ref,
+                        current_vram,
+                        &raw_bytes[local_offset..],
+                        settings.encoding(),
+                    ) {
+                        if ReferenceWrapper::find(
+                            owned_segment,
+                            self,
+                            current_vram + Size::new(str_sym_size as u32 - 1),
+                            FindSettings::default()
+                                .with_allow_addend(true)
+                                .with_reject_sizeless_addended(false),
+                        )
+                        .is_none_or(|x| x.vram() == current_vram)
+                        {
+                            remaining_string_size = str_sym_size as i32;
 
-                        references_found.push((current_vram, Some(SymbolType::CString), None));
+                            references_found.push((current_vram, Some(SymbolType::CString), None));
+                        }
                     }
                 }
             }
@@ -333,24 +340,23 @@ impl Preheater {
     ) -> &mut ReferencedAddress {
         let settings = FindSettings::default().with_allow_addend(true);
 
-        let refer = self
-            .references
-            .find_mut_or_insert_with(&vram, settings, || {
-                if let Some(metadata) = owned_segment.find_symbol(vram, settings) {
-                    let mut refer = ReferencedAddress::new(metadata.vram());
+        let refer = self.references.find_mut_or_insert_with(vram, settings, || {
+            if let Some(metadata) = owned_segment.find_symbol(vram, settings) {
+                let vram = metadata.vram();
+                let mut refer = ReferencedAddress::new_user_declared(vram);
 
-                    if let Some(typ) = metadata.user_declared_type() {
-                        refer.set_user_declared_type(typ);
-                    }
-                    if let Some(size) = metadata.user_declared_size() {
-                        refer.set_user_declared_size(size);
-                    }
-
-                    refer
-                } else {
-                    ReferencedAddress::new(vram)
+                if let Some(typ) = metadata.user_declared_type() {
+                    refer.set_user_declared_type(typ);
                 }
-            });
+                if let Some(size) = metadata.user_declared_size() {
+                    refer.set_user_declared_size(size);
+                }
+
+                (vram, refer)
+            } else {
+                (vram, ReferencedAddress::new(vram))
+            }
+        });
 
         if let Some(referenced_by) = referenced_by {
             refer.add_referenced_by(referenced_by);

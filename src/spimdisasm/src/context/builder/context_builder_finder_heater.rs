@@ -111,7 +111,7 @@ impl ContextBuilderFinderHeater {
     }
 
     #[must_use]
-    pub fn process(self) -> ContextBuilderFinderHeaterOverlays {
+    pub fn process(mut self) -> ContextBuilderFinderHeaterOverlays {
         // TODO: remove
         #[cfg(feature = "std")]
         {
@@ -127,8 +127,8 @@ impl ContextBuilderFinderHeater {
                 "vram,type,size,alignment,reference_counter,referenced_by,issues\n".as_bytes(),
             )
             .unwrap();
-            for reference in self.preheater.references().values() {
-                let vram = reference.vram();
+            for (vram, reference) in self.preheater.references().iter() {
+                assert_eq!(*vram, reference.vram());
                 let line = format!(
                     "0x{},{:?},{:?},{:?},{},\"{:?}\",",
                     vram,
@@ -141,7 +141,7 @@ impl ContextBuilderFinderHeater {
                 buf.write_all(line.as_bytes()).unwrap();
 
                 if let Some(size) = reference.size() {
-                    let aux_vram = vram + Size::new(size.inner() - 1);
+                    let aux_vram = *vram + Size::new(size.inner() - 1);
 
                     let maybe_overlapped_sym = self
                         .preheater
@@ -149,7 +149,7 @@ impl ContextBuilderFinderHeater {
                         .find(&aux_vram, FindSettings::default().with_allow_addend(true));
                     if maybe_overlapped_sym.is_none() {
                         buf.write_all("what?".as_bytes()).unwrap();
-                    } else if maybe_overlapped_sym.unwrap().vram() != vram {
+                    } else if maybe_overlapped_sym.unwrap().vram() != *vram {
                         buf.write_all(
                             format!(
                                 "The size of this symbol overlaps with address 0x{}",
@@ -173,6 +173,8 @@ impl ContextBuilderFinderHeater {
                 buf.write_all("\n".as_bytes()).unwrap();
             }
         }
+
+        *self.global_segment.preheater_mut() = self.preheater;
 
         ContextBuilderFinderHeaterOverlays::new(
             self.global_config,

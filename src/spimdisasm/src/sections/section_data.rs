@@ -8,14 +8,14 @@ use pyo3::prelude::*;
 
 use crate::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
-    analysis::StringGuesserLevel,
+    analysis::{ReferenceWrapper, StringGuesserLevel},
     collections::{
         addended_ordered_map::FindSettings, unordered_map::UnorderedMap,
         unordered_set::UnorderedSet,
     },
     config::Compiler,
     context::Context,
-    metadata::{ParentSectionMetadata, SymbolMetadata, SymbolType},
+    metadata::{ParentSectionMetadata, SymbolType},
     parent_segment_info::ParentSegmentInfo,
     section_type::SectionType,
     str_decoding::Encoding,
@@ -80,7 +80,7 @@ impl SectionData {
 
         let mut remaining_string_size = 0;
 
-        let mut prev_sym: Option<&SymbolMetadata> = None;
+        let mut prev_ref: Option<ReferenceWrapper> = None;
 
         // Look for stuff that looks like addresses which point to symbols on this section
         let displacement = (4 - (vram.inner() % 4) as usize) % 4;
@@ -95,61 +95,65 @@ impl SectionData {
 
             // Avoid symbols in the middle of strings
             if remaining_string_size <= 0 {
-                let current_ref = owned_segment.find_symbol(
+                let current_ref = owned_segment.find_reference(
                     current_vram,
                     FindSettings::default().with_allow_addend(true),
                 );
 
-                if let Some(str_sym_size) = settings.string_guesser_level.guess(
-                    current_ref.map(|x| x.into()),
-                    current_vram,
-                    &raw_bytes[local_offset..],
-                    settings.encoding,
-                ) {
-                    // TODO: why `.with_check_upper_limit(false)`?
-                    if owned_segment
-                        .find_symbol(
-                            current_vram + Size::new(str_sym_size as u32 - 1),
-                            FindSettings::default()
-                                .with_allow_addend(true)
-                                .with_check_upper_limit(false),
-                        )
-                        .is_none_or(|x| x.vram() == current_vram)
-                    {
-                        // Check if there is already another symbol after the current one and before the end of the string,
-                        // in which case we say this symbol should not be a string
+                if current_ref.is_none_or(|x| x.vram() == current_vram) {
+                    if let Some(str_sym_size) = settings.string_guesser_level.guess(
+                        current_ref,
+                        current_vram,
+                        &raw_bytes[local_offset..],
+                        settings.encoding,
+                    ) {
+                        if owned_segment
+                            .find_reference(
+                                current_vram + Size::new(str_sym_size as u32 - 1),
+                                FindSettings::default()
+                                    .with_allow_addend(true)
+                                    .with_reject_sizeless_addended(false),
+                            )
+                            .is_none_or(|x| x.vram() == current_vram)
+                        {
+                            // Check if there is already another symbol after the current one and before the end of the string,
+                            // in which case we say this symbol should not be a string
 
-                        remaining_string_size = str_sym_size as i32;
+                            remaining_string_size = str_sym_size as i32;
 
-                        symbols_info.insert(current_vram, (Some(SymbolType::CString),));
+                            symbols_info.insert(current_vram, (Some(SymbolType::CString),));
+                            if !auto_pads.contains_key(&current_vram) {
+                                auto_pads.insert(current_vram, current_vram);
+                            }
 
-                        let next_vram = current_vram + Size::new(str_sym_size as u32);
-                        if ((next_vram - vram).inner() as usize) < raw_bytes.len() {
-                            // Avoid generating a symbol at the end of the section
-                            symbols_info.insert(next_vram, (None,));
-                            auto_pads.insert(next_vram, current_vram);
+                            let next_vram = current_vram + Size::new(str_sym_size as u32);
+                            if ((next_vram - vram).inner() as usize) < raw_bytes.len() {
+                                // Avoid generating a symbol at the end of the section
+                                symbols_info.insert(next_vram, (None,));
+                                auto_pads.insert(next_vram, current_vram);
+                            }
                         }
                     }
                 }
             }
 
             if remaining_string_size <= 0 {
-                let a = owned_segment.find_symbol(
+                let a = owned_segment.find_reference(
                     current_vram,
                     FindSettings::default().with_allow_addend(false),
                 );
                 let b = owned_segment
-                    .find_symbol(b_vram, FindSettings::default().with_allow_addend(false));
+                    .find_reference(b_vram, FindSettings::default().with_allow_addend(false));
                 let c = owned_segment
-                    .find_symbol(c_vram, FindSettings::default().with_allow_addend(false));
+                    .find_reference(c_vram, FindSettings::default().with_allow_addend(false));
                 let d = owned_segment
-                    .find_symbol(d_vram, FindSettings::default().with_allow_addend(false));
+                    .find_reference(d_vram, FindSettings::default().with_allow_addend(false));
 
                 if b.is_none() && c.is_none() && d.is_none() {
                     // There's no symbol in between
 
                     let should_search_for_address = match a {
-                        None => prev_sym
+                        None => prev_ref
                             .is_none_or(|s| s.sym_type().is_none_or(|x| x.can_reference_symbols())),
                         Some(metadata) => metadata
                             .sym_type()
@@ -162,11 +166,11 @@ impl SectionData {
                         let word_vram = Vram::new(word);
                         if vram_range.in_range(word_vram) {
                             // Vram is contained in this section
-                            if let Some(sym) = owned_segment.find_symbol(
+                            if let Some(reference) = owned_segment.find_reference(
                                 word_vram,
                                 FindSettings::default().with_allow_addend(true),
                             ) {
-                                if sym.vram() == word_vram {
+                                if reference.vram() == word_vram {
                                     // Only count this symbol if it doesn't have an addend.
                                     // If it does have an addend then it may be part of a larger symbol.
                                     symbols_info.insert(word_vram, (None,));
@@ -176,12 +180,12 @@ impl SectionData {
                             }
                         } else {
                             let current_rom = rom + (current_vram - vram).try_into().expect("This should not panic because `current_vram` should always be greter or equal to `vram`");
-                            let sym = context
+                            let reference = context
                                 .find_referenced_segment(word_vram, &parent_segment_info)
                                 .and_then(|seg| {
-                                    seg.find_symbol(word_vram, FindSettings::default())
+                                    seg.find_reference(word_vram, FindSettings::default())
                                 });
-                            if sym.is_none() {
+                            if reference.is_none() {
                                 maybe_pointers_to_other_sections.push((word_vram, current_rom));
                             }
                         }
@@ -189,17 +193,17 @@ impl SectionData {
                 }
 
                 for (x_vram, x) in [(current_vram, a), (b_vram, b), (c_vram, c), (d_vram, d)] {
-                    if let Some(sym) = x {
-                        symbols_info.insert(sym.vram(), (None,));
-                        if let Some(size) = sym.user_declared_size() {
-                            let next_vram = sym.vram() + size;
+                    if let Some(reference) = x {
+                        symbols_info.insert(reference.vram(), (None,));
+                        if let Some(size) = reference.user_declared_size() {
+                            let next_vram = reference.vram() + size;
                             if ((next_vram - vram).inner() as usize) < raw_bytes.len() {
                                 // Avoid generating a symbol at the end of the section
                                 symbols_info.insert(next_vram, (None,));
-                                auto_pads.insert(next_vram, sym.vram());
+                                auto_pads.insert(next_vram, reference.vram());
                             }
                         }
-                        prev_sym = Some(sym);
+                        prev_ref = Some(reference);
                     } else if owned_segment.is_vram_a_possible_pointer_in_data(x_vram) {
                         symbols_info.insert(x_vram, (None,));
                     }
