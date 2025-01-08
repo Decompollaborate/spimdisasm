@@ -68,7 +68,7 @@ where
             self.end = value;
         }
     }
-    pub(crate) fn expand_range(&mut self, other: &AddressRange<T>) {
+    pub fn expand_range(&mut self, other: &AddressRange<T>) {
         self.decrease_start(other.start);
         self.increase_end(other.end);
     }

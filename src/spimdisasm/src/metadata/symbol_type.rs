@@ -48,6 +48,10 @@ impl SymbolType {
         )
     }
 
+    pub fn is_table(&self) -> bool {
+        matches!(self, SymbolType::Jumptable | SymbolType::GccExceptTable)
+    }
+
     pub fn can_reference_symbols(&self) -> bool {
         match self {
             SymbolType::Function

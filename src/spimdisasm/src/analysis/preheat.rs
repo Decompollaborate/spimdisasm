@@ -2,7 +2,7 @@
 /* SPDX-License-Identifier: MIT */
 
 use alloc::vec::Vec;
-use rabbitizer::Instruction;
+use rabbitizer::{access_type::AccessType, Instruction};
 
 use crate::{
     addresses::{Rom, Size, Vram, VramOffset},
@@ -99,10 +99,23 @@ impl Preheater {
                     if pairing_info.is_gp_got {
                         // TODO
                     } else if let Some(lower_half) = instr.get_processed_immediate() {
+                        let access_type = instr.opcode().access_type();
                         let address =
                             Vram::new(pairing_info.value as u32) + VramOffset::new(lower_half);
 
-                        let reference = self.new_ref(address, Some(current_vram), owned_segment);
+                        let realigned_symbol_vram = match access_type {
+                            // Align down the Vram
+                            Some(AccessType::WORD_LEFT | AccessType::WORD_RIGHT) => {
+                                Vram::new(address.inner() - (address.inner() % 4))
+                            }
+                            Some(AccessType::DOUBLEWORD_LEFT | AccessType::DOUBLEWORD_RIGHT) => {
+                                Vram::new(address.inner() - (address.inner() % 8))
+                            }
+                            None | Some(_) => address,
+                        };
+
+                        let reference =
+                            self.new_ref(realigned_symbol_vram, Some(current_vram), owned_segment);
 
                         if let Some(access_type) = instr.opcode().access_type() {
                             reference.set_access_type(access_type);
@@ -117,11 +130,9 @@ impl Preheater {
 
             if let Some(prev) = &prev_instr {
                 if prev.is_function_call() {
-                    regs_tracker.unset_registers_after_func_call(&instr, prev);
-                } else if prev.is_unconditional_branch()
-                    || prev.is_jumptable_jump()
-                    || prev.is_return()
-                    || prev.opcode().is_branch_likely()
+                    regs_tracker.unset_registers_after_func_call(prev);
+                } else if (prev.opcode().is_jump() && !prev.opcode().does_link())
+                    || prev.is_unconditional_branch()
                 {
                     regs_tracker.clear();
                 }
@@ -272,6 +283,8 @@ impl Preheater {
             }
 
             if remaining_string_size <= 0 {
+                let mut table_label = None;
+
                 let a = ReferenceWrapper::find(
                     owned_segment,
                     self,
@@ -300,11 +313,12 @@ impl Preheater {
                 if b.is_none() && c.is_none() && d.is_none() {
                     // There's no symbol in between
 
-                    let should_search_for_address = match a {
+                    let current_type = match a {
                         None => prev_sym_type,
-                        Some(metadata) => metadata.sym_type(),
-                    }
-                    .is_none_or(|x| x.can_reference_symbols());
+                        Some(wrapper) => wrapper.sym_type(),
+                    };
+                    let should_search_for_address =
+                        current_type.is_none_or(|x| x.can_reference_symbols());
 
                     if should_search_for_address {
                         let word = global_config.endian().word_from_bytes(word_bytes);
@@ -312,12 +326,27 @@ impl Preheater {
 
                         if owned_segment.in_vram_range(word_vram) {
                             references_found.push((word_vram, None, Some(current_vram)));
+
+                            if current_type.is_some_and(|x| x.is_table()) {
+                                table_label = Some(word_vram);
+                            }
                         }
                     }
                 }
 
                 for x in [a, b, c, d].into_iter().flatten() {
                     prev_sym_type = x.sym_type();
+                }
+
+                if let Some(table_label) = table_label {
+                    if let Some(current_reference_mut) = self.references.find_mut(
+                        &current_vram,
+                        FindSettings::new()
+                            .with_allow_addend(true)
+                            .with_reject_sizeless_addended(false),
+                    ) {
+                        current_reference_mut.add_table_label(table_label);
+                    }
                 }
             }
 

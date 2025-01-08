@@ -3,7 +3,12 @@
 
 use rabbitizer::Instruction;
 
-use crate::{addresses::RomVramRange, collections::unordered_set::UnorderedSet, context::Context};
+use crate::{
+    addresses::{RomVramRange, Vram},
+    collections::{addended_ordered_map::FindSettings, unordered_set::UnorderedSet},
+    context::{Context, OwnedSegmentNotFoundError},
+    parent_segment_info::ParentSegmentInfo,
+};
 
 use super::{InstructionAnalysisResult, RegisterTracker};
 
@@ -15,12 +20,12 @@ pub struct InstructionAnalyzer {
 }
 
 impl InstructionAnalyzer {
-    #[must_use]
     pub(crate) fn analyze(
         context: &Context,
+        parent_info: &ParentSegmentInfo,
         ranges: RomVramRange,
         instrs: &[Instruction],
-    ) -> InstructionAnalysisResult {
+    ) -> Result<InstructionAnalysisResult, OwnedSegmentNotFoundError> {
         assert!(!instrs.is_empty(), "Empty instruction list?. {:?}", ranges,);
 
         let mut analyzer = Self {
@@ -30,6 +35,7 @@ impl InstructionAnalyzer {
         let mut regs_tracker = RegisterTracker::new();
         let mut result = InstructionAnalysisResult::new(ranges);
 
+        // The below iteration skips the first instruction so we have to process it explicitly here.
         result.process_instr(context, &mut regs_tracker, &instrs[0], None);
 
         // TODO: maybe implement a way to know which instructions have been processed?
@@ -59,31 +65,34 @@ impl InstructionAnalyzer {
 
             analyzer.look_ahead(
                 context,
+                parent_info,
                 &mut result,
                 &regs_tracker,
                 instrs,
                 &instr,
                 &prev_instr,
                 local_offset,
-            );
+            )?;
 
-            if prev_instr_opcode.is_jump_with_address() && !prev_instr_opcode.does_link() {
-                if let Some(target_vram) = prev_instr.get_branch_vram_generic() {
-                    if !ranges.in_vram_range(target_vram) {
-                        // The instruction is jumping outside the current function, meaning the
-                        // current state of the registers will be garbage for the rest of the
-                        // function, so we just reset the tracker.
-                        // Jumping outside the current function and skip linking usually is caused
-                        // by tail call optimizations.
-                        regs_tracker.clear();
-                    }
-                }
+            analyzer.follow_jumptable(
+                context,
+                parent_info,
+                &mut result,
+                &regs_tracker,
+                instrs,
+                &prev_instr,
+            )?;
+
+            if (prev_instr_opcode.is_jump() && !prev_instr_opcode.does_link())
+                || prev_instr.is_unconditional_branch()
+            {
+                regs_tracker.clear();
             }
 
-            result.process_prev_func_call(&mut regs_tracker, &instr, &prev_instr);
+            result.process_prev_func_call(&mut regs_tracker, &prev_instr);
         }
 
-        result
+        Ok(result)
     }
 
     // TODO
@@ -91,30 +100,31 @@ impl InstructionAnalyzer {
     fn look_ahead(
         &mut self,
         context: &Context,
+        parent_info: &ParentSegmentInfo,
         result: &mut InstructionAnalysisResult,
         original_regs_tracker: &RegisterTracker,
         instrs: &[Instruction],
         instr: &Instruction,
         prev_instr: &Instruction,
         local_offset: usize,
-    ) {
+    ) -> Result<(), OwnedSegmentNotFoundError> {
         let branch_offset = if let Some(offset) = prev_instr.get_branch_offset_generic() {
             offset
         } else {
-            return;
+            return Ok(());
         };
 
         if !self.branches_taken.insert(local_offset as u32) {
             // If we already processed this branch then don't do it again.
-            return;
+            return Ok(());
         }
 
         let prev_local_offset = local_offset - 4;
-        let mut target_local_offset = {
+        let target_local_offset = {
             let temp = prev_local_offset as i32 + branch_offset.inner();
             if temp <= 0 {
                 // Avoid jumping outside of the function.
-                return;
+                return Ok(());
             }
             temp as usize
         };
@@ -128,6 +138,78 @@ impl InstructionAnalyzer {
             result.process_instr(context, &mut regs_tracker, instr, Some(prev_instr));
         }
 
+        self.look_ahead_impl(
+            context,
+            parent_info,
+            result,
+            regs_tracker,
+            instrs,
+            target_local_offset,
+        )
+    }
+
+    fn follow_jumptable(
+        &mut self,
+        context: &Context,
+        parent_info: &ParentSegmentInfo,
+        result: &mut InstructionAnalysisResult,
+        original_regs_tracker: &RegisterTracker,
+        instrs: &[Instruction],
+        prev_instr: &Instruction,
+    ) -> Result<(), OwnedSegmentNotFoundError> {
+        let jumptable_address =
+            if let Some(jr_reg_data) = original_regs_tracker.get_jr_reg_data(prev_instr) {
+                if jr_reg_data.branch_info().is_none() {
+                    Vram::new(jr_reg_data.address())
+                } else {
+                    return Ok(());
+                }
+            } else {
+                return Ok(());
+            };
+
+        // sprintln!("jumptable_address: {}", jumptable_address);
+
+        let jumptable_ref = if let Some(jumptable_ref) =
+            context.find_owned_segment(parent_info)?.find_reference(
+                jumptable_address,
+                FindSettings::new().with_allow_addend(false),
+            ) {
+            jumptable_ref
+        } else {
+            return Ok(());
+        };
+
+        for jtbl_label_vram in jumptable_ref.table_labels() {
+            // println!("        {}", jtbl_label_vram);
+
+            if result.ranges().in_vram_range(*jtbl_label_vram) {
+                let target_local_offset =
+                    (*jtbl_label_vram - result.ranges().vram().start()).inner() as usize;
+
+                self.look_ahead_impl(
+                    context,
+                    parent_info,
+                    result,
+                    *original_regs_tracker,
+                    instrs,
+                    target_local_offset,
+                )?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn look_ahead_impl(
+        &mut self,
+        context: &Context,
+        parent_info: &ParentSegmentInfo,
+        result: &mut InstructionAnalysisResult,
+        mut regs_tracker: RegisterTracker,
+        instrs: &[Instruction],
+        mut target_local_offset: usize,
+    ) -> Result<(), OwnedSegmentNotFoundError> {
         while target_local_offset / 4 < instrs.len() {
             let prev_target_instr = instrs[target_local_offset / 4 - 1];
             let target_instr = instrs[target_local_offset / 4];
@@ -144,27 +226,37 @@ impl InstructionAnalyzer {
             }
             self.look_ahead(
                 context,
+                parent_info,
                 result,
                 &regs_tracker,
                 instrs,
                 &target_instr,
                 &prev_target_instr,
                 target_local_offset,
-            );
+            )?;
 
-            if prev_target_instr.is_unconditional_branch() {
+            self.follow_jumptable(
+                context,
+                parent_info,
+                result,
+                &regs_tracker,
+                instrs,
+                &prev_target_instr,
+            )?;
+
+            if prev_target_instr.is_unconditional_branch()
+                || (prev_target_instr.opcode().is_jump() && !prev_target_instr.opcode().does_link())
+            {
                 // Since we took the branch on the previous `look_ahead` call then we don't have
                 // anything else to process here.
-                return;
-            }
-            if prev_target_instr.opcode().is_jump() && !prev_target_instr.opcode().does_link() {
-                // Technically this is another form of unconditional branching.
-                return;
+                return Ok(());
             }
 
-            result.process_prev_func_call(&mut regs_tracker, &target_instr, &prev_target_instr);
+            result.process_prev_func_call(&mut regs_tracker, &prev_target_instr);
 
             target_local_offset += 4;
         }
+
+        Ok(())
     }
 }

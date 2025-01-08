@@ -25,17 +25,13 @@ impl RegisterTracker {
         self.registers.iter_mut().for_each(|state| state.clear());
     }
 
-    pub(crate) fn unset_registers_after_func_call(
-        &mut self,
-        instr: &Instruction,
-        prev_instr: &Instruction,
-    ) {
+    pub(crate) fn unset_registers_after_func_call(&mut self, prev_instr: &Instruction) {
         if !prev_instr.is_function_call() {
             return;
         }
 
         for reg in Gpr::iter() {
-            if reg.is_clobbered_by_func_call(instr.abi()) {
+            if reg.is_clobbered_by_func_call(prev_instr.abi()) {
                 self.registers[reg.as_index()].clear();
             }
         }
@@ -62,9 +58,13 @@ impl RegisterTracker {
     }
 
     pub(crate) fn get_jr_reg_data(&self, instr: &Instruction) -> Option<JrRegData> {
-        instr
-            .field_rs()
-            .and_then(|reg| self.registers[reg.as_index()].get_jr_reg_data())
+        if instr.is_jumptable_jump() || instr.is_return() {
+            instr
+                .field_rs()
+                .and_then(|reg| self.registers[reg.as_index()].get_jr_reg_data())
+        } else {
+            None
+        }
     }
 
     pub(crate) fn process_hi(

@@ -4,7 +4,7 @@
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use super::{AddressRange, Rom, Size, Vram};
+use super::{AddressRange, Rom, Vram};
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
@@ -21,16 +21,6 @@ impl RomVramRange {
             "vram ({:?}) can't be smaller than rom ({:?})",
             vram,
             rom
-        );
-        assert!(
-            rom.size() > Size::new(0),
-            "rom ({:?}) must have non-zero size",
-            rom
-        );
-        assert!(
-            vram.size() > Size::new(0),
-            "vram ({:?}) must have non-zero size",
-            vram
         );
         assert!(
             vram.start().inner() % 4 == rom.start().inner() % 4,
@@ -80,10 +70,10 @@ impl RomVramRange {
 }
 
 impl RomVramRange {
-    pub fn expand_rom_range(&mut self, other: &AddressRange<Rom>) {
+    fn expand_rom_range(&mut self, other: &AddressRange<Rom>) {
         self.rom.expand_range(other);
     }
-    pub fn expand_vram_range(&mut self, other: &AddressRange<Vram>) {
+    fn expand_vram_range(&mut self, other: &AddressRange<Vram>) {
         self.vram.expand_range(other);
     }
     pub fn expand_ranges(&mut self, other: &Self) {

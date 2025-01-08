@@ -121,6 +121,14 @@ impl ReferenceWrapper<'_, '_> {
             ReferenceWrapper::Both(metadata, _address) => metadata.is_trustable_function(),
         }
     }
+
+    pub fn table_labels(&self) -> &[Vram] {
+        match self {
+            ReferenceWrapper::Metadata(_metadata) => &[],
+            ReferenceWrapper::Address(address) => address.table_labels(),
+            ReferenceWrapper::Both(_metadata, address) => address.table_labels(),
+        }
+    }
 }
 
 impl<'seg> From<&'seg SymbolMetadata> for ReferenceWrapper<'seg, '_> {

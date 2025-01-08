@@ -447,7 +447,7 @@ glabel func_8081CE54
     /* 001268 8081D06C A4820240 */  sh          $v0, 0x240($a0)
     /* 00126C 8081D070 0C2066FD */  jal         /* ERROR: segment for address 0x80819BF4 not found */
     /* 001270 8081D074 8C86014C */   lw         $a2, 0x14C($a0)
-    /* 001274 8081D078 3C128010 */  lui         $s2, %hi(/* ERROR: segment for address 0x80100220 not found */)
+    /* 001274 8081D078 3C128010 */  lui         $s2, %hi(/* ERROR: segment for address 0x801043A0 not found */)
     /* 001278 8081D07C 3C0F8010 */  lui         $t7, %hi(/* ERROR: segment for address 0x801043A8 not found */)
     /* 00127C 8081D080 264743A0 */  addiu       $a3, $s2, %lo(/* ERROR: segment for address 0x801043A0 not found */)
     /* 001280 8081D084 25EF43A8 */  addiu       $t7, $t7, %lo(/* ERROR: segment for address 0x801043A8 not found */)
@@ -465,22 +465,22 @@ glabel func_8081CE54
     /* 0012AC 8081D0B0 8FB1004C */   lw         $s1, 0x4C($sp)
   .L8081D0B4:
     /* 0012B0 8081D0B4 AFB2004C */  sw          $s2, 0x4C($sp)
-    /* 0012B4 8081D0B8 86580214 */  lh          $t8, %lo(/* ERROR: segment for address 0x80100214 not found */)($s2)
+    /* 0012B4 8081D0B8 86580214 */  lh          $t8, 0x214($s2)
     /* 0012B8 8081D0BC 2419000B */  addiu       $t9, $zero, 0xB
     /* 0012BC 8081D0C0 2B01FFE2 */  slti        $at, $t8, -0x1E
     /* 0012C0 8081D0C4 50200026 */  beql        $at, $zero, .L8081D160
     /* 0012C4 8081D0C8 8FB1004C */   lw         $s1, 0x4C($sp)
-    /* 0012C8 8081D0CC A6590220 */  sh          $t9, %lo(/* ERROR: segment for address 0x80100220 not found */)($s2)
-    /* 0012CC 8081D0D0 86420220 */  lh          $v0, %lo(/* ERROR: segment for address 0x80100220 not found */)($s2)
-    /* 0012D0 8081D0D4 A6400238 */  sh          $zero, %lo(/* ERROR: segment for address 0x80100238 not found */)($s2)
+    /* 0012C8 8081D0CC A6590220 */  sh          $t9, 0x220($s2)
+    /* 0012CC 8081D0D0 86420220 */  lh          $v0, 0x220($s2)
+    /* 0012D0 8081D0D4 A6400238 */  sh          $zero, 0x238($s2)
     /* 0012D4 8081D0D8 AFB2004C */  sw          $s2, 0x4C($sp)
     /* 0012D8 8081D0DC 02427021 */  addu        $t6, $s2, $v0
     /* 0012DC 8081D0E0 91CF0266 */  lbu         $t7, 0x266($t6)
     /* 0012E0 8081D0E4 15E00008 */  bnez        $t7, .L8081D108
     /* 0012E4 8081D0E8 2458FFFF */   addiu      $t8, $v0, -0x1
   .L8081D0EC:
-    /* 0012E8 8081D0EC A6580220 */  sh          $t8, %lo(/* ERROR: segment for address 0x80100220 not found */)($s2)
-    /* 0012EC 8081D0F0 86420220 */  lh          $v0, %lo(/* ERROR: segment for address 0x80100220 not found */)($s2)
+    /* 0012E8 8081D0EC A6580220 */  sh          $t8, 0x220($s2)
+    /* 0012EC 8081D0F0 86420220 */  lh          $v0, 0x220($s2)
     /* 0012F0 8081D0F4 0242C821 */  addu        $t9, $s2, $v0
     /* 0012F4 8081D0F8 932E0266 */  lbu         $t6, 0x266($t9)
     /* 0012F8 8081D0FC 51C0FFFB */  beql        $t6, $zero, .L8081D0EC

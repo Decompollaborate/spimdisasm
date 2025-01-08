@@ -24,6 +24,8 @@ pub struct ReferencedAddress {
     autodetected_types: UnorderedMap<SymbolType, u32>,
 
     user_declared_size: Option<Size>,
+
+    table_labels: Vec<Vram>,
 }
 
 impl ReferencedAddress {
@@ -40,6 +42,8 @@ impl ReferencedAddress {
             autodetected_types: UnorderedMap::new(),
 
             user_declared_size: None,
+
+            table_labels: Vec::new(),
         }
     }
 
@@ -143,6 +147,10 @@ impl ReferencedAddress {
         return False
         */
     }
+
+    pub fn table_labels(&self) -> &[Vram] {
+        &self.table_labels
+    }
 }
 
 impl ReferencedAddress {
@@ -163,6 +171,10 @@ impl ReferencedAddress {
 
     pub fn set_user_declared_size(&mut self, size: Size) {
         self.user_declared_size = Some(size);
+    }
+
+    pub fn add_table_label(&mut self, label: Vram) {
+        self.table_labels.push(label);
     }
 }
 

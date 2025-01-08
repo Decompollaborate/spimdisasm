@@ -26,6 +26,11 @@ impl Size {
     }
 
     #[must_use]
+    pub const fn is_empty(&self) -> bool {
+        self.inner == 0
+    }
+
+    #[must_use]
     pub const fn add_size(&self, rhs: &Self) -> Self {
         Self::new(self.inner() + rhs.inner())
     }

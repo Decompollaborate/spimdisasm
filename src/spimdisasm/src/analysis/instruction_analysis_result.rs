@@ -74,6 +74,11 @@ impl InstructionAnalysisResult {
     }
 
     #[must_use]
+    pub fn ranges(&self) -> &RomVramRange {
+        &self.ranges
+    }
+
+    #[must_use]
     pub fn referenced_vrams(&self) -> &UnorderedSet<Vram> {
         &self.referenced_vrams
     }
@@ -133,10 +138,9 @@ impl InstructionAnalysisResult {
     pub(crate) fn process_prev_func_call(
         &mut self,
         regs_tracker: &mut RegisterTracker,
-        instr: &Instruction,
         prev_instr: &Instruction,
     ) {
-        regs_tracker.unset_registers_after_func_call(instr, prev_instr);
+        regs_tracker.unset_registers_after_func_call(prev_instr);
     }
 
     pub(crate) fn process_instr(

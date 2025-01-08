@@ -11,7 +11,7 @@ use rabbitizer::{Instruction, InstructionFlags, IsaExtension};
 use pyo3::prelude::*;
 
 use crate::addresses::{AddressRange, Rom, RomVramRange, Size, Vram, VramOffset};
-use crate::analysis::ReferenceWrapper;
+use crate::analysis::{ReferenceWrapper, RegisterTracker};
 use crate::collections::{addended_ordered_map::FindSettings, unordered_set::UnorderedSet};
 use crate::config::{Compiler, Endian};
 use crate::context::Context;
@@ -257,6 +257,8 @@ fn find_functions(
     }
 
     let mut auto_pad_by = None;
+    let mut regs_tracker = RegisterTracker::new();
+    let mut prev_instr = None;
 
     while index < instrs.len() {
         if !instrs[index].is_valid() {
@@ -320,9 +322,16 @@ fn find_functions(
             is_likely_handwritten = instr.is_likely_handwritten();
         }
 
-        if instr.opcode().is_branch() || instr.is_unconditional_branch() {
+        let current_rom = section_ranges.rom().start() + Size::new(index as u32 * 4);
+        run_register_tracker_start(&mut regs_tracker, instr, prev_instr, current_rom);
+
+        if instr.opcode().is_branch()
+            || instr.is_unconditional_branch()
+            || instr.is_jumptable_jump()
+        {
             (farthest_branch, halt_function_searching) = find_functions_branch_checker(
                 owned_segment,
+                &regs_tracker,
                 section_ranges,
                 local_offset,
                 instr,
@@ -351,6 +360,14 @@ fn find_functions(
             is_likely_handwritten,
         );
 
+        run_register_tracker_end(&mut regs_tracker, instr, prev_instr, current_rom);
+
+        if instr.is_valid() {
+            prev_instr = Some(instr);
+        } else {
+            prev_instr = None;
+        }
+
         index += 1;
         //farthest_branch -= 4;
         farthest_branch = VramOffset::new(farthest_branch.inner() - 4);
@@ -367,6 +384,7 @@ fn find_functions(
 #[allow(clippy::too_many_arguments)]
 fn find_functions_branch_checker(
     owned_segment: &SegmentMetadata,
+    regs_tracker: &RegisterTracker,
     section_ranges: RomVramRange,
     local_offset: usize,
     instr: &Instruction,
@@ -435,6 +453,22 @@ fn find_functions_branch_checker(
                         break;
                     }
                     j -= 1;
+                }
+            }
+        }
+    } else if let Some(jr_reg_data) = regs_tracker.get_jr_reg_data(instr) {
+        if jr_reg_data.branch_info().is_none() {
+            let jumptable_address = Vram::new(jr_reg_data.address());
+            if let Some(jumptable_ref) = owned_segment.find_reference(
+                jumptable_address,
+                FindSettings::new().with_allow_addend(false),
+            ) {
+                for jtbl_label_vram in jumptable_ref.table_labels() {
+                    let branch_offset = *jtbl_label_vram - instr.vram();
+
+                    if branch_offset > farthest_branch {
+                        farthest_branch = branch_offset;
+                    }
                 }
             }
         }
@@ -524,6 +558,76 @@ fn find_functions_check_function_ended(
     }
 
     (function_ended, prev_func_had_user_declared_size)
+}
+
+fn run_register_tracker_start(
+    regs_tracker: &mut RegisterTracker,
+    instr: &Instruction,
+    prev_instr: Option<&Instruction>,
+    current_rom: Rom,
+) {
+    if !instr.is_valid() {
+        return;
+    }
+
+    if let Some(_target_vram) = instr.get_branch_vram_generic() {
+        // instr.opcode().is_branch() or instr.is_unconditional_branch()
+        regs_tracker.process_branch(instr, current_rom);
+    } else if let Some(_target_vram) = instr.get_instr_index_as_vram() {
+        // instr.opcode().is_jump_with_address()
+    } else if instr.is_jumptable_jump() {
+        //self.process_jumptable_jump(context, regs_tracker, instr, instr_rom);
+        if let Some(_jr_reg_data) = regs_tracker.get_jr_reg_data(instr) {}
+    } else if instr.opcode().is_jump() && instr.opcode().does_link() {
+        // `jalr`. Implicit `!is_jump_with_address`
+        // We can only mark the referenced address as a function if that address was not dereferenced.
+        // i.e. `la $t9, some_func; jalr $t9`.
+        // Dereferenced symbols are usually some kind of callback, like an array of functions.
+        // Currently `get_jr_reg_data` only returns `Some` if the register was dereferenced, so we can't really use it here.
+        /*
+        if let Some(jr_reg_data) = regs_tracker.get_jr_reg_data(&instr) {
+            let address = Vram::new(jr_reg_data.address());
+
+            let reference = self.new_ref(address, None, owned_segment);
+            reference.set_sym_type(SymbolType::Function);
+        }
+        */
+    } else if instr.opcode().can_be_hi() {
+        regs_tracker.process_hi(instr, current_rom, prev_instr);
+    } else if instr.opcode().is_unsigned() {
+        // TODO
+    } else if instr.opcode().can_be_lo() {
+        if let Some(pairing_info) = regs_tracker.preprocess_lo_and_get_info(instr, current_rom) {
+            if pairing_info.is_gp_got {
+                // TODO
+            } else if let Some(lower_half) = instr.get_processed_immediate() {
+                let address = Vram::new(pairing_info.value as u32) + VramOffset::new(lower_half);
+
+                regs_tracker.process_lo(instr, address.inner(), current_rom);
+            }
+        }
+    }
+}
+
+fn run_register_tracker_end(
+    regs_tracker: &mut RegisterTracker,
+    instr: &Instruction,
+    prev_instr: Option<&Instruction>,
+    current_rom: Rom,
+) {
+    if instr.is_valid() {
+        regs_tracker.overwrite_registers(instr, current_rom);
+    }
+
+    if let Some(prev) = &prev_instr {
+        if prev.is_function_call() {
+            regs_tracker.unset_registers_after_func_call(prev);
+        } else if (prev.opcode().is_jump() && !prev.opcode().does_link())
+            || prev.is_unconditional_branch()
+        {
+            regs_tracker.clear();
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
