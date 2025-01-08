@@ -291,6 +291,10 @@ fn init_segments(
         }
     }
 
+    for seg in segments.iter_mut() {
+        seg.post_process(context);
+    }
+
     segments
 }
 

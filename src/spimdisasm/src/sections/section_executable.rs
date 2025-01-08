@@ -22,6 +22,7 @@ use crate::section_type::SectionType;
 use crate::symbols::symbol_function::SymbolFunctionProperties;
 use crate::symbols::{Symbol, SymbolFunction};
 
+use super::section_post_process_error::SectionPostProcessError;
 use super::trait_section::RomSection;
 use super::{Section, SectionCreationError};
 
@@ -134,10 +135,15 @@ impl SectionExecutable {
     }
 }
 
-/*
-impl SectionExecutable<'_, '_> {
+impl SectionExecutable {
+    pub fn post_process(&mut self, context: &Context) -> Result<(), SectionPostProcessError> {
+        for func in self.functions.iter_mut() {
+            func.post_process(context)?;
+        }
+
+        Ok(())
+    }
 }
-*/
 
 impl Section for SectionExecutable {
     fn name(&self) -> &str {
@@ -163,6 +169,10 @@ impl Section for SectionExecutable {
 
     fn symbols_vrams(&self) -> &UnorderedSet<Vram> {
         &self.symbol_vrams
+    }
+
+    fn post_process(&mut self, context: &Context) -> Result<(), SectionPostProcessError> {
+        self.post_process(context)
     }
 }
 
@@ -566,6 +576,11 @@ pub(crate) mod python_bindings {
 
     #[pymethods]
     impl SectionExecutable {
+        #[pyo3(name = "post_process")]
+        fn py_post_process(&mut self, context: &Context) -> Result<(), SectionPostProcessError> {
+            self.post_process(context)
+        }
+
         #[pyo3(name = "sym_count")]
         pub fn py_sym_count(&self) -> usize {
             self.functions.len()

@@ -14,7 +14,7 @@ use super::{
     display::{
         InternalSymDisplSettings, SymDisplayError, SymNoloadDisplay, SymNoloadDisplaySettings,
     },
-    Symbol, SymbolCreationError,
+    Symbol, SymbolCreationError, SymbolPostProcessError,
 };
 
 const SECTION_TYPE: SectionType = SectionType::Bss;
@@ -50,7 +50,11 @@ impl SymbolNoload {
     }
 }
 
-impl SymbolNoload {}
+impl SymbolNoload {
+    pub fn post_process(&mut self, _context: &Context) -> Result<(), SymbolPostProcessError> {
+        Ok(())
+    }
+}
 
 impl<'ctx, 'sym, 'flg> SymbolNoload {
     pub fn display(

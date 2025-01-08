@@ -3,9 +3,12 @@
 
 use crate::addresses::{AddressRange, Rom, RomVramRange, Size, Vram};
 use crate::collections::unordered_set::UnorderedSet;
+use crate::context::Context;
 use crate::parent_segment_info::ParentSegmentInfo;
 use crate::section_type::SectionType;
 use crate::symbols::Symbol;
+
+use super::SectionPostProcessError;
 
 pub trait Section {
     #[must_use]
@@ -28,6 +31,8 @@ pub trait Section {
     fn symbol_list(&self) -> &[impl Symbol];
     #[must_use]
     fn symbols_vrams(&self) -> &UnorderedSet<Vram>;
+
+    fn post_process(&mut self, context: &Context) -> Result<(), SectionPostProcessError>;
 }
 
 pub trait RomSection {

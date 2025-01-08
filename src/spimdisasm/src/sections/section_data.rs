@@ -22,7 +22,7 @@ use crate::{
     symbols::{symbol_data::SymbolDataProperties, Symbol, SymbolData},
 };
 
-use super::{trait_section::RomSection, Section, SectionCreationError};
+use super::{trait_section::RomSection, Section, SectionCreationError, SectionPostProcessError};
 
 #[derive(Debug, Clone, PartialEq)]
 #[must_use]
@@ -275,6 +275,16 @@ impl SectionData {
     }
 }
 
+impl SectionData {
+    pub fn post_process(&mut self, context: &Context) -> Result<(), SectionPostProcessError> {
+        for sym in self.data_symbols.iter_mut() {
+            sym.post_process(context)?;
+        }
+
+        Ok(())
+    }
+}
+
 impl Section for SectionData {
     fn name(&self) -> &str {
         &self.name
@@ -299,6 +309,10 @@ impl Section for SectionData {
 
     fn symbols_vrams(&self) -> &UnorderedSet<Vram> {
         &self.symbol_vrams
+    }
+
+    fn post_process(&mut self, context: &Context) -> Result<(), SectionPostProcessError> {
+        self.post_process(context)
     }
 }
 
@@ -380,6 +394,11 @@ pub(crate) mod python_bindings {
 
     #[pymethods]
     impl SectionData {
+        #[pyo3(name = "post_process")]
+        fn py_post_process(&mut self, context: &Context) -> Result<(), SectionPostProcessError> {
+            self.post_process(context)
+        }
+
         #[pyo3(name = "sym_count")]
         pub fn py_sym_count(&self) -> usize {
             self.data_symbols.len()

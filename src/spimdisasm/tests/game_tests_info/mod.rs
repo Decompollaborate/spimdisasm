@@ -5,6 +5,7 @@
 
 use spimdisasm::{
     addresses::{Rom, Size, Vram},
+    context::Context,
     metadata::{RodataMigrationBehavior, SymbolType},
     sections::{SectionData, SectionExecutable, SectionNoload},
 };
@@ -50,6 +51,23 @@ pub struct SegmentData {
     pub data_sections: Vec<SectionData>,
     pub rodata_sections: Vec<SectionData>,
     pub bss_sections: Vec<SectionNoload>,
+}
+
+impl SegmentData {
+    pub fn post_process(&mut self, context: &Context) {
+        for section in self.text_sections.iter_mut() {
+            section.post_process(context).unwrap();
+        }
+        for section in self.data_sections.iter_mut() {
+            section.post_process(context).unwrap();
+        }
+        for section in self.rodata_sections.iter_mut() {
+            section.post_process(context).unwrap();
+        }
+        for section in self.bss_sections.iter_mut() {
+            section.post_process(context).unwrap();
+        }
+    }
 }
 
 pub struct UserSymbolInfo {

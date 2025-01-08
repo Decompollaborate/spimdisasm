@@ -140,7 +140,7 @@ fn test_section_text_1() {
 
     let instr_display_flags = InstructionDisplayFlags::default();
 
-    let section_text = context
+    let mut section_text = context
         .create_section_text(
             &text_settings,
             "test".into(),
@@ -150,6 +150,8 @@ fn test_section_text_1() {
             ParentSegmentInfo::new(rom, vram, None),
         )
         .unwrap();
+
+    section_text.post_process(&context).unwrap();
 
     let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
     for func in section_text.functions() {
@@ -239,7 +241,7 @@ fn test_section_text_lui_delay_slot() {
 
     let instr_display_flags = InstructionDisplayFlags::default();
 
-    let section_text = context
+    let mut section_text = context
         .create_section_text(
             &text_settings,
             "test".into(),
@@ -249,6 +251,8 @@ fn test_section_text_lui_delay_slot() {
             ParentSegmentInfo::new(rom, vram, None),
         )
         .unwrap();
+
+    section_text.post_process(&context).unwrap();
 
     let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
     for func in section_text.functions() {

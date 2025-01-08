@@ -17,7 +17,7 @@ use crate::{
     symbols::{symbol_noload::SymbolNoloadProperties, Symbol, SymbolNoload},
 };
 
-use super::{Section, SectionCreationError};
+use super::{Section, SectionCreationError, SectionPostProcessError};
 
 #[derive(Debug, Clone, PartialEq)]
 #[must_use]
@@ -132,6 +132,16 @@ impl SectionNoload {
     }
 }
 
+impl SectionNoload {
+    pub fn post_process(&mut self, context: &Context) -> Result<(), SectionPostProcessError> {
+        for sym in self.noload_symbols.iter_mut() {
+            sym.post_process(context)?;
+        }
+
+        Ok(())
+    }
+}
+
 impl Section for SectionNoload {
     fn name(&self) -> &str {
         &self.name
@@ -156,6 +166,10 @@ impl Section for SectionNoload {
 
     fn symbols_vrams(&self) -> &UnorderedSet<Vram> {
         &self.symbol_vrams
+    }
+
+    fn post_process(&mut self, context: &Context) -> Result<(), SectionPostProcessError> {
+        self.post_process(context)
     }
 }
 
@@ -192,6 +206,11 @@ pub(crate) mod python_bindings {
 
     #[pymethods]
     impl SectionNoload {
+        #[pyo3(name = "post_process")]
+        fn py_post_process(&mut self, context: &Context) -> Result<(), SectionPostProcessError> {
+            self.post_process(context)
+        }
+
         #[pyo3(name = "sym_count")]
         pub fn py_sym_count(&self) -> usize {
             self.noload_symbols.len()
