@@ -361,8 +361,8 @@ impl SymbolFunction {
                     continue
             */
 
-            if let Some(branch_sym) = owned_segment
-                .find_symbol(*target_vram, FindSettings::new().with_allow_addend(false))
+            if let Some(branch_sym) =
+                owned_segment.find_symbol(*target_vram, FindSettings::new(false))
             {
                 debug_assert!(branch_sym.vram() == *target_vram);
                 if branch_sym
@@ -393,8 +393,8 @@ impl SymbolFunction {
                     continue
             */
 
-            if let Some(branch_sym) = owned_segment
-                .find_symbol(*target_vram, FindSettings::new().with_allow_addend(false))
+            if let Some(branch_sym) =
+                owned_segment.find_symbol(*target_vram, FindSettings::new(false))
             {
                 debug_assert!(branch_sym.vram() == *target_vram);
                 if branch_sym

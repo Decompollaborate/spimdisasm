@@ -95,10 +95,8 @@ impl SectionData {
 
             // Avoid symbols in the middle of strings
             if remaining_string_size <= 0 {
-                let current_ref = owned_segment.find_reference(
-                    current_vram,
-                    FindSettings::default().with_allow_addend(true),
-                );
+                let current_ref =
+                    owned_segment.find_reference(current_vram, FindSettings::new(true));
 
                 if current_ref.is_none_or(|x| x.vram() == current_vram) {
                     if let Some(str_sym_size) = settings.string_guesser_level.guess(
@@ -110,9 +108,7 @@ impl SectionData {
                         if owned_segment
                             .find_reference(
                                 current_vram + Size::new(str_sym_size as u32 - 1),
-                                FindSettings::default()
-                                    .with_allow_addend(true)
-                                    .with_reject_sizeless_addended(false),
+                                FindSettings::new(true).with_reject_sizeless_addended(false),
                             )
                             .is_none_or(|x| x.vram() == current_vram)
                         {
@@ -138,16 +134,10 @@ impl SectionData {
             }
 
             if remaining_string_size <= 0 {
-                let a = owned_segment.find_reference(
-                    current_vram,
-                    FindSettings::default().with_allow_addend(false),
-                );
-                let b = owned_segment
-                    .find_reference(b_vram, FindSettings::default().with_allow_addend(false));
-                let c = owned_segment
-                    .find_reference(c_vram, FindSettings::default().with_allow_addend(false));
-                let d = owned_segment
-                    .find_reference(d_vram, FindSettings::default().with_allow_addend(false));
+                let a = owned_segment.find_reference(current_vram, FindSettings::new(false));
+                let b = owned_segment.find_reference(b_vram, FindSettings::new(false));
+                let c = owned_segment.find_reference(c_vram, FindSettings::new(false));
+                let d = owned_segment.find_reference(d_vram, FindSettings::new(false));
 
                 if b.is_none() && c.is_none() && d.is_none() {
                     // There's no symbol in between
@@ -166,10 +156,9 @@ impl SectionData {
                         let word_vram = Vram::new(word);
                         if vram_range.in_range(word_vram) {
                             // Vram is contained in this section
-                            if let Some(reference) = owned_segment.find_reference(
-                                word_vram,
-                                FindSettings::default().with_allow_addend(true),
-                            ) {
+                            if let Some(reference) =
+                                owned_segment.find_reference(word_vram, FindSettings::new(true))
+                            {
                                 if reference.vram() == word_vram {
                                     // Only count this symbol if it doesn't have an addend.
                                     // If it does have an addend then it may be part of a larger symbol.
@@ -183,7 +172,7 @@ impl SectionData {
                             let reference = context
                                 .find_referenced_segment(word_vram, &parent_segment_info)
                                 .and_then(|seg| {
-                                    seg.find_reference(word_vram, FindSettings::default())
+                                    seg.find_reference(word_vram, FindSettings::new(true))
                                 });
                             if reference.is_none() {
                                 maybe_pointers_to_other_sections.push((word_vram, current_rom));

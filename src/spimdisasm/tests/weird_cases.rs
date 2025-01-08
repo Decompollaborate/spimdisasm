@@ -548,9 +548,6 @@ glabel func_8081CE54
 .size func_8081CE54, . - func_8081CE54
 ";
 
-    assert_eq!(
-        disassembled,
-        expected_str
-    );
+    assert_eq!(disassembled, expected_str);
     // None::<u32>.unwrap();
 }

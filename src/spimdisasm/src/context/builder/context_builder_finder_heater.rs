@@ -146,7 +146,7 @@ impl ContextBuilderFinderHeater {
                     let maybe_overlapped_sym = self
                         .preheater
                         .references()
-                        .find(&aux_vram, FindSettings::default().with_allow_addend(true));
+                        .find(&aux_vram, FindSettings::new(true));
                     if maybe_overlapped_sym.is_none() {
                         buf.write_all("what?".as_bytes()).unwrap();
                     } else if maybe_overlapped_sym.unwrap().vram() != *vram {

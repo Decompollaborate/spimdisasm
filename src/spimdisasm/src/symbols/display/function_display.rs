@@ -66,7 +66,7 @@ impl<'ctx, 'sym, 'flg> FunctionDisplay<'ctx, 'sym, 'flg> {
         internal_settings: InternalSymDisplSettings,
     ) -> Result<Self, SymDisplayError> {
         let owned_segment = context.find_owned_segment(sym.parent_segment_info())?;
-        let find_settings = FindSettings::default().with_allow_addend(false);
+        let find_settings = FindSettings::new(false);
         let metadata = owned_segment
             .find_symbol(sym.vram_range().start(), find_settings)
             .ok_or(SymDisplayError::SelfSymNotFound())?;
@@ -101,7 +101,7 @@ impl FunctionDisplay<'_, '_, '_> {
 
         if let Some(sym_label) = self
             .owned_segment
-            .find_symbol(current_vram, FindSettings::new().with_allow_addend(false))
+            .find_symbol(current_vram, FindSettings::new(false))
         {
             if self.settings.asm_label_indentation > 0 {
                 write!(
@@ -172,8 +172,7 @@ impl FunctionDisplay<'_, '_, '_> {
             0
         };
 
-        let find_settings =
-            FindSettings::default().with_allow_addend(self.metadata.allow_ref_with_addend());
+        let find_settings = FindSettings::new(self.metadata.allow_ref_with_addend());
         let imm_override = self.get_reloc(instr).and_then(|x| {
             x.display(
                 self.context,

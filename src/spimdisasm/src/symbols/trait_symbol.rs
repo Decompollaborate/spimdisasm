@@ -33,7 +33,7 @@ pub trait Symbol {
             .expect("Finding the owned segment shouldn't fail, otherwise there's a bug on the corresponding `Section*`, not here.")
             .find_symbol(
                 self.vram_range().start(),
-                FindSettings::default().with_allow_addend(false),
+                FindSettings::new(false),
             )
             .expect("Each `Symbol*` should make sure it creates its own metadata, so if this fails it means the corresponding `Symbol*` failed to do so.")
     }

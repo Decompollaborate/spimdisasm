@@ -220,7 +220,7 @@ fn find_functions(
     let mut current_function_start = local_offset;
     let mut current_function_ref = owned_segment.find_reference(
         section_ranges.vram().start() + Size::new(local_offset as u32),
-        FindSettings::new().with_allow_addend(false),
+        FindSettings::new(false),
     );
     let mut index = 0;
 
@@ -246,7 +246,7 @@ fn find_functions(
             current_function_start = local_offset;
             current_function_ref = owned_segment.find_reference(
                 section_ranges.vram().start() + Size::new(local_offset as u32),
-                FindSettings::new().with_allow_addend(false),
+                FindSettings::new(false),
             );
         }
 
@@ -274,7 +274,7 @@ fn find_functions(
 
             let mut aux_ref = owned_segment.find_reference(
                 section_ranges.vram().start() + Size::new(local_offset as u32),
-                FindSettings::new().with_allow_addend(false),
+                FindSettings::new(false),
             );
 
             // Loop over until we find a instruction that isn't a nop
@@ -293,7 +293,7 @@ fn find_functions(
 
                 aux_ref = owned_segment.find_reference(
                     section_ranges.vram().start() + Size::new(local_offset as u32),
-                    FindSettings::new().with_allow_addend(false),
+                    FindSettings::new(false),
                 );
             }
 
@@ -402,8 +402,8 @@ fn find_functions_branch_checker(
 
         // TODO
         if let Some(target_vram) = instr.get_instr_index_as_vram() {
-            if let Some(aux_ref) = owned_segment
-                .find_reference(target_vram, FindSettings::new().with_allow_addend(false))
+            if let Some(aux_ref) =
+                owned_segment.find_reference(target_vram, FindSettings::new(false))
             {
                 if aux_ref.is_trustable_function() {
                     return (farthest_branch, halt_function_searching);
@@ -439,8 +439,8 @@ fn find_functions_branch_checker(
                         let vram = section_ranges.vram().start() + Size::new(local_offset as u32);
 
                         // TODO: invert check?
-                        if let Some(func_symbol) = owned_segment
-                            .find_reference(vram, FindSettings::new().with_allow_addend(false))
+                        if let Some(func_symbol) =
+                            owned_segment.find_reference(vram, FindSettings::new(false))
                         {
                             // TODO
                             if func_symbol.is_trustable_function() {
@@ -459,10 +459,9 @@ fn find_functions_branch_checker(
     } else if let Some(jr_reg_data) = regs_tracker.get_jr_reg_data(instr) {
         if jr_reg_data.branch_info().is_none() {
             let jumptable_address = Vram::new(jr_reg_data.address());
-            if let Some(jumptable_ref) = owned_segment.find_reference(
-                jumptable_address,
-                FindSettings::new().with_allow_addend(false),
-            ) {
+            if let Some(jumptable_ref) =
+                owned_segment.find_reference(jumptable_address, FindSettings::new(false))
+            {
                 for jtbl_label_vram in jumptable_ref.table_labels() {
                     let branch_offset = *jtbl_label_vram - instr.vram();
 
@@ -507,10 +506,9 @@ fn find_functions_check_function_ended(
         }
     }
 
-    if let Some(reference) = owned_segment.find_reference(
-        current_vram + VramOffset::new(8),
-        FindSettings::new().with_allow_addend(false),
-    ) {
+    if let Some(reference) =
+        owned_segment.find_reference(current_vram + VramOffset::new(8), FindSettings::new(false))
+    {
         // # If there's another function after this then the current function has ended
         if reference.is_trustable_function() {
             if let Some(sym_rom) = reference.rom() {
@@ -544,8 +542,8 @@ fn find_functions_check_function_ended(
             } else {
                 // j is a jump, but it could be jumping to a function
                 if let Some(target_vram) = instr.get_instr_index_as_vram() {
-                    if let Some(aux_ref) = owned_segment
-                        .find_reference(target_vram, FindSettings::new().with_allow_addend(false))
+                    if let Some(aux_ref) =
+                        owned_segment.find_reference(target_vram, FindSettings::new(false))
                     {
                         if aux_ref.is_trustable_function() && Some(aux_ref) != current_function_ref
                         {

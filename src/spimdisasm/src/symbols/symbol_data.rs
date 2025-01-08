@@ -127,10 +127,7 @@ impl SymbolData {
 
         let owned_segment = context.find_owned_segment(&self.parent_segment_info)?;
         let metadata = owned_segment
-            .find_symbol(
-                self.vram_range().start(),
-                FindSettings::new().with_allow_addend(false),
-            )
+            .find_symbol(self.vram_range().start(), FindSettings::new(false))
             .map_or_else(|| Err(OwnedSymbolNotFoundError::new()), Ok)?;
         let endian = context.global_config().endian();
 
@@ -138,7 +135,7 @@ impl SymbolData {
 
         let should_search_for_address = sym_type.is_none_or(|x| x.can_reference_symbols());
         let is_jtbl = sym_type == Some(SymbolType::Jumptable);
-        let find_settings = FindSettings::new().with_allow_addend(!is_jtbl);
+        let find_settings = FindSettings::new(!is_jtbl);
 
         // TODO: improve heuristic to determine if should search for symbols
         if should_search_for_address {

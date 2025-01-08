@@ -254,7 +254,7 @@ impl Preheater {
                     owned_segment,
                     self,
                     current_vram,
-                    FindSettings::default().with_allow_addend(true),
+                    FindSettings::new(true),
                 );
 
                 if current_ref.is_none_or(|x| x.vram() == current_vram) {
@@ -268,9 +268,7 @@ impl Preheater {
                             owned_segment,
                             self,
                             current_vram + Size::new(str_sym_size as u32 - 1),
-                            FindSettings::default()
-                                .with_allow_addend(true)
-                                .with_reject_sizeless_addended(false),
+                            FindSettings::new(true).with_reject_sizeless_addended(false),
                         )
                         .is_none_or(|x| x.vram() == current_vram)
                         {
@@ -289,26 +287,14 @@ impl Preheater {
                     owned_segment,
                     self,
                     current_vram,
-                    FindSettings::default().with_allow_addend(false),
+                    FindSettings::new(false),
                 );
-                let b = ReferenceWrapper::find(
-                    owned_segment,
-                    self,
-                    b_vram,
-                    FindSettings::default().with_allow_addend(false),
-                );
-                let c = ReferenceWrapper::find(
-                    owned_segment,
-                    self,
-                    c_vram,
-                    FindSettings::default().with_allow_addend(false),
-                );
-                let d = ReferenceWrapper::find(
-                    owned_segment,
-                    self,
-                    d_vram,
-                    FindSettings::default().with_allow_addend(false),
-                );
+                let b =
+                    ReferenceWrapper::find(owned_segment, self, b_vram, FindSettings::new(false));
+                let c =
+                    ReferenceWrapper::find(owned_segment, self, c_vram, FindSettings::new(false));
+                let d =
+                    ReferenceWrapper::find(owned_segment, self, d_vram, FindSettings::new(false));
 
                 if b.is_none() && c.is_none() && d.is_none() {
                     // There's no symbol in between
@@ -341,9 +327,7 @@ impl Preheater {
                 if let Some(table_label) = table_label {
                     if let Some(current_reference_mut) = self.references.find_mut(
                         &current_vram,
-                        FindSettings::new()
-                            .with_allow_addend(true)
-                            .with_reject_sizeless_addended(false),
+                        FindSettings::new(true).with_reject_sizeless_addended(false),
                     ) {
                         current_reference_mut.add_table_label(table_label);
                     }
@@ -367,7 +351,7 @@ impl Preheater {
         referenced_by: Option<Vram>,
         owned_segment: &SegmentMetadata,
     ) -> &mut ReferencedAddress {
-        let settings = FindSettings::default().with_allow_addend(true);
+        let settings = FindSettings::new(true);
 
         let refer = self.references.find_mut_or_insert_with(vram, settings, || {
             if let Some(metadata) = owned_segment.find_symbol(vram, settings) {

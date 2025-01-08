@@ -119,7 +119,7 @@ impl SegmentMetadata {
         if self.in_vram_range(vram) {
             let sym = self.symbols.find_mut_or_insert_with(
                 vram,
-                FindSettings::new().with_allow_addend(allow_sym_with_addend),
+                FindSettings::new(allow_sym_with_addend),
                 || (vram, SymbolMetadata::new(generated_by, vram)),
             );
 
@@ -221,38 +221,35 @@ mod tests {
 
         assert_eq!(
             segment
-                .find_symbol(Vram::new(0x1000), FindSettings::new())
+                .find_symbol(Vram::new(0x1000), FindSettings::new(true))
                 .map(|sym| sym.vram()),
             Some(Vram::new(0x1000))
         );
 
         assert_eq!(
             segment
-                .find_symbol(Vram::new(0x1002), FindSettings::new())
+                .find_symbol(Vram::new(0x1002), FindSettings::new(true))
                 .map(|sym| sym.vram()),
             Some(Vram::new(0x1000))
         );
 
         assert_eq!(
             segment
-                .find_symbol(Vram::new(0x0F00), FindSettings::new())
+                .find_symbol(Vram::new(0x0F00), FindSettings::new(true))
                 .map(|sym| sym.vram()),
             None
         );
 
         assert_eq!(
             segment
-                .find_symbol(Vram::new(0x2000), FindSettings::new())
+                .find_symbol(Vram::new(0x2000), FindSettings::new(true))
                 .map(|sym| sym.vram()),
             None
         );
 
         assert_eq!(
             segment
-                .find_symbol(
-                    Vram::new(0x1002),
-                    FindSettings::new().with_allow_addend(false)
-                )
+                .find_symbol(Vram::new(0x1002), FindSettings::new(false))
                 .map(|sym| sym.vram()),
             None
         );
@@ -261,7 +258,7 @@ mod tests {
             segment
                 .find_symbol(
                     Vram::new(0x1100),
-                    FindSettings::new().with_reject_sizeless_addended(false)
+                    FindSettings::new(true).with_reject_sizeless_addended(false)
                 )
                 .map(|sym| sym.vram()),
             Some(Vram::new(0x100C))
@@ -269,7 +266,7 @@ mod tests {
 
         assert_eq!(
             segment
-                .find_symbol(Vram::new(0x1008), FindSettings::new())
+                .find_symbol(Vram::new(0x1008), FindSettings::new(true))
                 .map(|sym| sym.vram()),
             None
         );

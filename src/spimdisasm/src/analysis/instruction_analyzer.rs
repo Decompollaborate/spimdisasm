@@ -170,11 +170,10 @@ impl InstructionAnalyzer {
 
         // sprintln!("jumptable_address: {}", jumptable_address);
 
-        let jumptable_ref = if let Some(jumptable_ref) =
-            context.find_owned_segment(parent_info)?.find_reference(
-                jumptable_address,
-                FindSettings::new().with_allow_addend(false),
-            ) {
+        let jumptable_ref = if let Some(jumptable_ref) = context
+            .find_owned_segment(parent_info)?
+            .find_reference(jumptable_address, FindSettings::new(false))
+        {
             jumptable_ref
         } else {
             return Ok(());

@@ -63,7 +63,7 @@ impl<'ctx, 'sym, 'flg> SymDataDisplay<'ctx, 'sym, 'flg> {
         internal_settings: InternalSymDisplSettings,
     ) -> Result<Self, SymDisplayError> {
         let owned_segment = context.find_owned_segment(sym.parent_segment_info())?;
-        let find_settings = FindSettings::default().with_allow_addend(false);
+        let find_settings = FindSettings::new(false);
         let metadata = owned_segment
             .find_symbol(sym.vram_range().start(), find_settings)
             .ok_or(SymDisplayError::SelfSymNotFound())?;
@@ -245,8 +245,7 @@ impl SymDataDisplay<'_, '_, '_> {
             WordComment::U32(word),
         )?;
 
-        let find_settings =
-            FindSettings::default().with_allow_addend(self.metadata.allow_ref_with_addend());
+        let find_settings = FindSettings::new(self.metadata.allow_ref_with_addend());
         if let Some(rel) = self.sym.relocs()[i / 4]
             .as_ref()
             .filter(|x| !x.reloc_type().is_none())

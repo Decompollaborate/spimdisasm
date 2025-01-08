@@ -395,15 +395,11 @@ pub struct FindSettings {
 }
 
 impl FindSettings {
-    pub const fn default() -> Self {
+    pub const fn new(allow_addend: bool) -> Self {
         Self {
-            allow_addend: true,
+            allow_addend,
             reject_sizeless_addended: true,
         }
-    }
-
-    pub const fn new() -> Self {
-        Self::default()
     }
 
     pub const fn with_allow_addend(self, allow_addend: bool) -> Self {
@@ -418,10 +414,5 @@ impl FindSettings {
             reject_sizeless_addended,
             ..self
         }
-    }
-}
-impl Default for FindSettings {
-    fn default() -> Self {
-        Self::default()
     }
 }
