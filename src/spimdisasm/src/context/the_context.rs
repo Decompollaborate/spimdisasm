@@ -170,14 +170,29 @@ impl Context {
     }
 }
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
-pub struct OwnedSegmentNotFoundError {}
+pub struct OwnedSegmentNotFoundError {
+    info: ParentSegmentInfo,
+}
 impl fmt::Display for OwnedSegmentNotFoundError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // TODO: more info
-        write!(f, "Can't find segment")
+        write!(f, "Can't find owned segment for ")?;
+        if let Some(overlay_name) = self.info.overlay_category_name() {
+            write!(f, "overlay '{}'", overlay_name)?;
+        } else {
+            write!(f, "global segment")?;
+        }
+        write!(
+            f,
+            ". Addresses of the expected parent segment: Rom: 0x{:08X}, Vram: 0x{:08X}",
+            self.info.segment_rom().inner(),
+            self.info.segment_vram().inner()
+        )?;
+
+        Ok(())
     }
 }
 impl error::Error for OwnedSegmentNotFoundError {}
@@ -203,7 +218,7 @@ impl Context {
             // This can be required by segments that only have bss sections.
             return Ok(&self.global_segment);
         }
-        Err(OwnedSegmentNotFoundError {})
+        Err(OwnedSegmentNotFoundError { info: info.clone() })
     }
     pub(crate) fn find_owned_segment_mut(
         &mut self,
@@ -226,7 +241,7 @@ impl Context {
             // This can be required by segments that only have bss sections.
             return Ok(&mut self.global_segment);
         }
-        Err(OwnedSegmentNotFoundError {})
+        Err(OwnedSegmentNotFoundError { info: info.clone() })
     }
 
     #[must_use]

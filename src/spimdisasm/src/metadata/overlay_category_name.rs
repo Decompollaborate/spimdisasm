@@ -1,6 +1,8 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use core::fmt;
+
 use alloc::string::String;
 
 #[cfg(feature = "pyo3")]
@@ -19,6 +21,12 @@ impl OverlayCategoryName {
 
     pub fn inner(&self) -> &str {
         &self.inner
+    }
+}
+
+impl fmt::Display for OverlayCategoryName {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.inner)
     }
 }
 

@@ -16,7 +16,7 @@ use super::{InstructionAnalysisResult, RegisterTracker};
 pub struct InstructionAnalyzer {
     ranges: RomVramRange,
 
-    branches_taken: UnorderedSet<u32>,
+    branches_taken: UnorderedSet<Vram>,
 }
 
 impl InstructionAnalyzer {
@@ -114,7 +114,7 @@ impl InstructionAnalyzer {
             return Ok(());
         };
 
-        if !self.branches_taken.insert(local_offset as u32) {
+        if !self.branches_taken.insert(prev_instr.vram()) {
             // If we already processed this branch then don't do it again.
             return Ok(());
         }
@@ -168,7 +168,10 @@ impl InstructionAnalyzer {
                 return Ok(());
             };
 
-        // sprintln!("jumptable_address: {}", jumptable_address);
+        if !self.branches_taken.insert(prev_instr.vram()) {
+            // If we already processed this branch then don't do it again.
+            return Ok(());
+        }
 
         let jumptable_ref = if let Some(jumptable_ref) = context
             .find_owned_segment(parent_info)?
@@ -180,8 +183,6 @@ impl InstructionAnalyzer {
         };
 
         for jtbl_label_vram in jumptable_ref.table_labels() {
-            // println!("        {}", jtbl_label_vram);
-
             if result.ranges().in_vram_range(*jtbl_label_vram) {
                 let target_local_offset =
                     (*jtbl_label_vram - result.ranges().vram().start()).inner() as usize;

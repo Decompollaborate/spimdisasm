@@ -27,7 +27,7 @@ impl fmt::Display for OwnedSymbolNotFoundError {
 
 impl error::Error for OwnedSymbolNotFoundError {}
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub enum SymbolPostProcessError {
