@@ -5,7 +5,7 @@ use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
 use spimdisasm::{
     addresses::{AddressRange, RomVramRange},
     config::{Compiler, Endian, GlobalConfig},
-    context::{Context, ContextBuilder},
+    context::{Context, ContextBuilder, GlobalSegmentBuilder},
     parent_segment_info::ParentSegmentInfo,
     sections::{SectionDataSettings, SectionExecutableSettings, SectionNoloadSettings},
     symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings, SymNoloadDisplaySettings},
@@ -68,9 +68,9 @@ fn init_context(
 ) -> Context {
     assert!(user_segments.len() >= 2);
 
-    let mut builder = ContextBuilder::new(GlobalConfig::new(Endian::Big), global_ranges);
+    let global_config = GlobalConfig::new(Endian::Big);
+    let mut global_segment = GlobalSegmentBuilder::new(global_ranges);
 
-    let mut global_segment = builder.global_segment();
     for sym in symbols {
         match sym {
             game_tests_info::UserSymbol::Info(user_symbol_info) => {
@@ -98,7 +98,7 @@ fn init_context(
         }
     }
 
-    let mut finder_heater = builder.process();
+    let mut global_segment_heater = global_segment.finish_symbols();
 
     for w in user_segments.windows(2) {
         let a = &w[0];
@@ -127,7 +127,8 @@ fn init_context(
                     };
 
                     match sect {
-                        TestSection::Text(rom, _) => finder_heater.preanalyze_text(
+                        TestSection::Text(rom, _) => global_segment_heater.preanalyze_text(
+                            &global_config,
                             &SectionExecutableSettings::new(
                                 COMPILER,
                                 InstructionFlags::new(IsaVersion::MIPS_III, None),
@@ -136,13 +137,15 @@ fn init_context(
                             *rom,
                             info.vram_from_rom(*rom),
                         ),
-                        TestSection::Data(rom, _) => finder_heater.preanalyze_data(
+                        TestSection::Data(rom, _) => global_segment_heater.preanalyze_data(
+                            &global_config,
                             &SectionDataSettings::new(COMPILER),
                             &rom_bytes[AddressRange::new(*rom, rom_end)],
                             *rom,
                             info.vram_from_rom(*rom),
                         ),
-                        TestSection::Rodata(rom, _) => finder_heater.preanalyze_rodata(
+                        TestSection::Rodata(rom, _) => global_segment_heater.preanalyze_rodata(
+                            &global_config,
                             &SectionDataSettings::new(COMPILER),
                             &rom_bytes[AddressRange::new(*rom, rom_end)],
                             *rom,
@@ -155,7 +158,8 @@ fn init_context(
         }
     }
 
-    finder_heater.process().process().build()
+    let builder = ContextBuilder::new(global_segment_heater);
+    builder.build(global_config)
 }
 
 fn init_segments(

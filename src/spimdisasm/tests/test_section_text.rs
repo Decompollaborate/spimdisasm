@@ -5,7 +5,7 @@ use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
 use spimdisasm::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     config::{Endian, GlobalConfig},
-    context::ContextBuilder,
+    context::{ContextBuilder, GlobalSegmentBuilder, OverlaySegmentBuilder},
     metadata::OverlayCategoryName,
     parent_segment_info::ParentSegmentInfo,
     sections::SectionExecutableSettings,
@@ -101,22 +101,18 @@ fn test_section_text_1() {
 
     let global_config = GlobalConfig::new(Endian::Big);
     let mut context = {
-        let mut heater = ContextBuilder::new(
-            global_config,
-            RomVramRange::new(
-                AddressRange::new(rom, rom + size),
-                AddressRange::new(vram, vram + size),
-            ),
-        )
-        .process();
+        let global_ranges = RomVramRange::new(
+            AddressRange::new(rom, rom + size),
+            AddressRange::new(vram, vram + size),
+        );
+        let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
 
-        heater.preanalyze_text(&text_settings, &bytes, rom, vram);
+        global_segment.preanalyze_text(&global_config, &text_settings, &bytes, rom, vram);
 
-        let mut overlays_builder = heater.process();
+        let mut builder = ContextBuilder::new(global_segment);
 
         for i in 0x0..=0xF {
             let category_name = OverlayCategoryName::new(format!("segment_0{:X}", i));
-            let mut overlay_builder = overlays_builder.add_overlay_category(category_name.clone());
 
             let magic_number = 0x01000000;
             let segment_size = Size::new(magic_number);
@@ -131,11 +127,14 @@ fn test_section_text_1() {
                 category_name, rom_range, vram_range
             );
 
-            let _overlay = overlay_builder.add_overlay(RomVramRange::new(rom_range, vram_range));
-            overlay_builder.build().unwrap();
+            let ranges = RomVramRange::new(rom_range, vram_range);
+
+            let overlay_builder = OverlaySegmentBuilder::new(ranges, category_name);
+
+            builder.add_overlay(overlay_builder.finish_symbols());
         }
 
-        overlays_builder.process().build()
+        builder.build(global_config)
     };
 
     let instr_display_flags = InstructionDisplayFlags::default();
@@ -224,18 +223,17 @@ fn test_section_text_lui_delay_slot() {
 
     let global_config = GlobalConfig::new(Endian::Big);
     let mut context = {
-        let mut heater = ContextBuilder::new(
-            global_config,
-            RomVramRange::new(
-                AddressRange::new(rom, rom + size),
-                AddressRange::new(vram, vram + size),
-            ),
-        )
-        .process();
+        let global_ranges = RomVramRange::new(
+            AddressRange::new(rom, rom + size),
+            AddressRange::new(vram, vram + size),
+        );
+        let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
 
-        heater.preanalyze_text(&text_settings, &bytes, rom, vram);
+        global_segment.preanalyze_text(&global_config, &text_settings, &bytes, rom, vram);
 
-        heater.process().process().build()
+        let builder = ContextBuilder::new(global_segment);
+
+        builder.build(global_config)
     };
 
     let instr_display_flags = InstructionDisplayFlags::default();

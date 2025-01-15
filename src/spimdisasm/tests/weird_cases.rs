@@ -5,7 +5,7 @@ use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
 use spimdisasm::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     config::{Endian, GlobalConfig},
-    context::ContextBuilder,
+    context::{ContextBuilder, GlobalSegmentBuilder},
     parent_segment_info::ParentSegmentInfo,
     sections::SectionExecutableSettings,
     symbols::display::FunctionDisplaySettings,
@@ -248,17 +248,12 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
     let size = Size::new(bytes.len() as u32);
 
     let global_config = GlobalConfig::new(Endian::Big);
-    let mut context = ContextBuilder::new(
-        global_config,
-        RomVramRange::new(
-            AddressRange::new(rom, rom + size),
-            AddressRange::new(vram, vram + size),
-        ),
-    )
-    .process()
-    .process()
-    .process()
-    .build();
+    let global_ranges = RomVramRange::new(
+        AddressRange::new(rom, rom + size),
+        AddressRange::new(vram, vram + size),
+    );
+    let global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
+    let mut context = ContextBuilder::new(global_segment).build(global_config);
 
     let text_settings =
         SectionExecutableSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III, None));

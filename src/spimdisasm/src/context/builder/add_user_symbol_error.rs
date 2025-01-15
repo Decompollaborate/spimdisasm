@@ -1,9 +1,9 @@
-/* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
+/* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
 use core::{error, fmt};
 
-use alloc::string::{String, ToString};
+use alloc::string::String;
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
@@ -11,62 +11,8 @@ use pyo3::prelude::*;
 use crate::{
     addresses::{AddressRange, Rom, Size, Vram},
     context::OwnedSegmentNotFoundError,
-    metadata::{
-        segment_metadata::AddSymbolError, GeneratedBy, SegmentMetadata, SymbolMetadata, SymbolType,
-    },
+    metadata::segment_metadata::AddSymbolError,
 };
-
-pub struct SegmentModifier<'seg> {
-    segment: &'seg mut SegmentMetadata,
-}
-
-impl<'seg> SegmentModifier<'seg> {
-    pub(crate) const fn new(segment: &'seg mut SegmentMetadata) -> Self {
-        Self { segment }
-    }
-}
-
-impl SegmentModifier<'_> {
-    pub fn add_symbol(
-        &mut self,
-        name: String,
-        vram: Vram,
-        rom: Option<Rom>,
-        sym_type: Option<SymbolType>,
-    ) -> Result<&mut SymbolMetadata, AddUserSymbolError> {
-        if let Some(rom) = rom {
-            if !self.segment.in_rom_range(rom) {
-                return Err(AddUserSymbolError::RomOutOfRange(RomOutOfRangeError {
-                    rom,
-                    segment_ranges: *self.segment.rom_range(),
-                }));
-            }
-        }
-
-        let check_addend = !sym_type.is_some_and(|x| x.is_label());
-
-        let sym = self
-            .segment
-            .add_symbol(vram, GeneratedBy::UserDeclared, check_addend)?;
-        if sym.vram() != vram {
-            Err(AddUserSymbolError::Overlap(UserSymbolOverlapError {
-                sym_name: name,
-                sym_vram: vram,
-
-                other_name: sym.display_name().to_string(),
-                other_vram: sym.vram(),
-                other_size: sym.size().unwrap(),
-            }))
-        } else {
-            *sym.user_declared_name_mut() = Some(name);
-            *sym.rom_mut() = rom;
-            if let Some(sym_type) = sym_type {
-                sym.set_type_with_priorities(sym_type, GeneratedBy::UserDeclared);
-            }
-            Ok(sym)
-        }
-    }
-}
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
@@ -80,12 +26,39 @@ pub struct UserSymbolOverlapError {
     other_size: Size,
 }
 
+impl UserSymbolOverlapError {
+    pub(crate) fn new(
+        sym_name: String,
+        sym_vram: Vram,
+        other_name: String,
+        other_vram: Vram,
+        other_size: Size,
+    ) -> Self {
+        Self {
+            sym_name,
+            sym_vram,
+            other_name,
+            other_vram,
+            other_size,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct RomOutOfRangeError {
     rom: Rom,
     segment_ranges: AddressRange<Rom>,
+}
+
+impl RomOutOfRangeError {
+    pub(crate) fn new(rom: Rom, segment_ranges: AddressRange<Rom>) -> Self {
+        Self {
+            rom,
+            segment_ranges,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]

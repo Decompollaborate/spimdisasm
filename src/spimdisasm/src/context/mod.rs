@@ -4,5 +4,5 @@
 pub mod builder;
 mod the_context;
 
-pub use builder::ContextBuilder;
+pub use builder::{ContextBuilder, GlobalSegmentBuilder, OverlaySegmentBuilder};
 pub use the_context::{Context, OwnedSegmentNotFoundError};

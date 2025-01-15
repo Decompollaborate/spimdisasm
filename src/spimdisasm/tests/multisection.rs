@@ -5,7 +5,7 @@ use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
 use spimdisasm::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     config::{Endian, GlobalConfig},
-    context::{Context, ContextBuilder},
+    context::{Context, ContextBuilder, GlobalSegmentBuilder},
     parent_segment_info::ParentSegmentInfo,
     sections::{
         SectionData, SectionDataSettings, SectionExecutable, SectionExecutableSettings,
@@ -77,34 +77,39 @@ impl Sections {
 
         let global_config = GlobalConfig::new(endian);
         let mut context = {
-            let mut heater = ContextBuilder::new(global_config, global_ranges).process();
+            let mut global_heater = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
 
-            heater.preanalyze_text(
+            global_heater.preanalyze_text(
+                &global_config,
                 &text_info.1,
                 &text_info.0.bytes,
                 text_info.0.rom,
                 text_info.0.vram,
             );
-            heater.preanalyze_data(
+            global_heater.preanalyze_data(
+                &global_config,
                 &data_info.1,
                 &data_info.0.bytes,
                 data_info.0.rom,
                 data_info.0.vram,
             );
-            heater.preanalyze_rodata(
+            global_heater.preanalyze_rodata(
+                &global_config,
                 &rodata_info.1,
                 &rodata_info.0.bytes,
                 rodata_info.0.rom,
                 rodata_info.0.vram,
             );
-            heater.preanalyze_gcc_except_table(
+            global_heater.preanalyze_gcc_except_table(
+                &global_config,
                 &gcc_except_table_info.1,
                 &gcc_except_table_info.0.bytes,
                 gcc_except_table_info.0.rom,
                 gcc_except_table_info.0.vram,
             );
 
-            heater.process().process().build()
+            let builder = ContextBuilder::new(global_heater);
+            builder.build(global_config)
         };
 
         let parent_info = ParentSegmentInfo::new(

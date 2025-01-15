@@ -46,11 +46,10 @@ fn spimdisasm(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<str_decoding::Encoding>()?;
 
     m.add_class::<context::builder::AddUserSymbolError>()?;
-    m.add_class::<context::builder::context_builder::python_bindings::SymAttributes>()?;
+    m.add_class::<context::builder::segment_builder::python_bindings::SymAttributes>()?;
+    m.add_class::<context::builder::GlobalSegmentBuilder>()?;
+    m.add_class::<context::builder::OverlaySegmentBuilder>()?;
     m.add_class::<context::ContextBuilder>()?;
-    // m.add_class::<context::ContextBuilderOverlay>()?;
-    // m.add_class::<context::ContextBuilderFinderHeater>()?;
-    // m.add_class::<context::ContextBuilderFinderHeaterOverlays>()?;
     m.add_class::<context::Context>()?;
 
     m.add_class::<metadata::OverlayCategoryName>()?;
