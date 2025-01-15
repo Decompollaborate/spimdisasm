@@ -77,9 +77,7 @@ impl Sections {
 
         let global_config = GlobalConfig::new(endian);
         let mut context = {
-            let mut heater = ContextBuilder::new(global_config, global_ranges)
-                .process()
-                .process();
+            let mut heater = ContextBuilder::new(global_config, global_ranges).process();
 
             heater.preanalyze_text(
                 &text_info.1,
@@ -106,7 +104,7 @@ impl Sections {
                 gcc_except_table_info.0.vram,
             );
 
-            heater.process().build()
+            heater.process().process().build()
         };
 
         let parent_info = ParentSegmentInfo::new(

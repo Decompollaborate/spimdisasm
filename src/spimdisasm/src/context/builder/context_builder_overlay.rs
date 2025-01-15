@@ -10,7 +10,7 @@ use crate::{
     metadata::{OverlayCategory, OverlayCategoryName, SegmentMetadata},
 };
 
-use super::{ContextBuilderFinderHeater, OverlaysBuilder};
+use super::{ContextBuilderFinderHeaterOverlays, OverlaysBuilder};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
@@ -37,8 +37,8 @@ impl ContextBuilderOverlay {
     }
 
     #[must_use]
-    pub fn process(self) -> ContextBuilderFinderHeater {
-        ContextBuilderFinderHeater::new(
+    pub fn process(self) -> ContextBuilderFinderHeaterOverlays {
+        ContextBuilderFinderHeaterOverlays::new(
             self.global_config,
             self.global_segment,
             self.overlay_segments,
@@ -53,7 +53,7 @@ pub(crate) mod python_bindings {
     #[pymethods]
     impl ContextBuilderOverlay {
         #[pyo3(name = "process")]
-        pub fn py_process(&self) -> ContextBuilderFinderHeater {
+        pub fn py_process(&self) -> ContextBuilderFinderHeaterOverlays {
             self.clone().process()
         }
     }

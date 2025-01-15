@@ -7,13 +7,12 @@ use pyo3::prelude::*;
 use crate::{
     addresses::{Rom, Vram},
     analysis::Preheater,
-    collections::unordered_map::UnorderedMap,
     config::GlobalConfig,
-    metadata::{OverlayCategory, OverlayCategoryName, SegmentMetadata},
+    metadata::SegmentMetadata,
     sections::{SectionDataSettings, SectionExecutableSettings},
 };
 
-use super::ContextBuilderFinderHeaterOverlays;
+use super::ContextBuilderOverlay;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
@@ -21,22 +20,15 @@ pub struct ContextBuilderFinderHeater {
     global_config: GlobalConfig,
 
     global_segment: SegmentMetadata,
-    overlay_segments: UnorderedMap<OverlayCategoryName, OverlayCategory>,
 
     preheater: Preheater,
 }
 
 impl ContextBuilderFinderHeater {
-    pub(crate) fn new(
-        global_config: GlobalConfig,
-
-        global_segment: SegmentMetadata,
-        overlay_segments: UnorderedMap<OverlayCategoryName, OverlayCategory>,
-    ) -> Self {
+    pub(crate) fn new(global_config: GlobalConfig, global_segment: SegmentMetadata) -> Self {
         Self {
             global_config,
             global_segment,
-            overlay_segments,
 
             preheater: Preheater::new(),
         }
@@ -111,7 +103,7 @@ impl ContextBuilderFinderHeater {
     }
 
     #[must_use]
-    pub fn process(mut self) -> ContextBuilderFinderHeaterOverlays {
+    pub fn process(mut self) -> ContextBuilderOverlay {
         // TODO: remove
         #[cfg(feature = "std")]
         {
@@ -176,11 +168,7 @@ impl ContextBuilderFinderHeater {
 
         *self.global_segment.preheater_mut() = self.preheater;
 
-        ContextBuilderFinderHeaterOverlays::new(
-            self.global_config,
-            self.global_segment,
-            self.overlay_segments,
-        )
+        ContextBuilderOverlay::new(self.global_config, self.global_segment)
     }
 }
 
@@ -237,7 +225,7 @@ pub(crate) mod python_bindings {
         }
 
         #[pyo3(name = "process")]
-        pub fn py_process(&self) -> ContextBuilderFinderHeaterOverlays {
+        pub fn py_process(&self) -> ContextBuilderOverlay {
             self.clone().process()
         }
     }

@@ -98,7 +98,7 @@ fn init_context(
         }
     }
 
-    let mut finder_heater = builder.process().process();
+    let mut finder_heater = builder.process();
 
     for w in user_segments.windows(2) {
         let a = &w[0];
@@ -155,7 +155,7 @@ fn init_context(
         }
     }
 
-    finder_heater.process().build()
+    finder_heater.process().process().build()
 }
 
 fn init_segments(

@@ -6,7 +6,7 @@ use pyo3::prelude::*;
 
 use crate::{addresses::RomVramRange, config::GlobalConfig, metadata::SegmentMetadata};
 
-use super::{ContextBuilderOverlay, SegmentModifier};
+use super::{ContextBuilderFinderHeater, SegmentModifier};
 
 #[derive(Debug, Clone, Hash, PartialEq)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
@@ -33,8 +33,8 @@ impl ContextBuilder {
     }
 
     #[must_use]
-    pub fn process(self) -> ContextBuilderOverlay {
-        ContextBuilderOverlay::new(self.global_config, self.global_segment)
+    pub fn process(self) -> ContextBuilderFinderHeater {
+        ContextBuilderFinderHeater::new(self.global_config, self.global_segment)
     }
 }
 
@@ -71,7 +71,7 @@ pub(crate) mod python_bindings {
         }
 
         #[pyo3(name = "process")]
-        pub fn py_process(&self) -> ContextBuilderOverlay {
+        pub fn py_process(&self) -> ContextBuilderFinderHeater {
             // Silly clone because we can't move from a Python instance
             self.clone().process()
         }
