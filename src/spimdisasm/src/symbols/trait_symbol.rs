@@ -37,6 +37,18 @@ pub trait Symbol {
             )
             .expect("Each `Symbol*` should make sure it creates its own metadata, so if this fails it means the corresponding `Symbol*` failed to do so.")
     }
+
+    #[must_use]
+    fn find_own_metadata_mut<'ctx>(&self, context: &'ctx mut Context) -> &'ctx mut SymbolMetadata {
+        context
+            .find_owned_segment_mut(self.parent_segment_info())
+            .expect("Finding the owned segment shouldn't fail, otherwise there's a bug on the corresponding `Section*`, not here.")
+            .find_symbol_mut(
+                self.vram_range().start(),
+                FindSettings::new(false),
+            )
+            .expect("Each `Symbol*` should make sure it creates its own metadata, so if this fails it means the corresponding `Symbol*` failed to do so.")
+    }
 }
 
 pub trait RomSymbol: Symbol {

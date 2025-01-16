@@ -697,7 +697,6 @@ pub(crate) mod python_bindings {
         ) -> Option<(
             u32,
             Option<Rom>,
-            String,
             Option<SymbolType>,
             Option<Size>,
             bool,
@@ -712,7 +711,6 @@ pub(crate) mod python_bindings {
                 Some((
                     metadata.vram().inner(),
                     metadata.rom(),
-                    metadata.display_name().to_string(),
                     metadata.sym_type(),
                     metadata.size(),
                     metadata.is_defined(),
@@ -725,6 +723,17 @@ pub(crate) mod python_bindings {
                 ))
             } else {
                 None
+            }
+        }
+
+        #[pyo3(name = "set_sym_name")]
+        pub fn py_set_sym_name(&mut self, context: &mut Context, index: usize, new_name: String) {
+            let sym = self.functions.get(index);
+
+            if let Some(sym) = sym {
+                let metadata = sym.find_own_metadata_mut(context);
+
+                *metadata.user_declared_name_mut() = Some(new_name);
             }
         }
 
@@ -742,6 +751,86 @@ pub(crate) mod python_bindings {
             } else {
                 None
             })
+        }
+
+        #[pyo3(name = "label_count_for_sym")]
+        pub fn py_label_count_for_sym(&self, sym_index: usize) -> usize {
+            let sym = self.functions.get(sym_index);
+
+            if let Some(sym) = sym {
+                sym.labels().len()
+            } else {
+                0
+            }
+        }
+
+        #[pyo3(name = "get_label_info")]
+        pub fn py_get_label_info(
+            &self,
+            context: &Context,
+            sym_index: usize,
+            label_index: usize,
+        ) -> Option<(
+            u32,
+            Option<Rom>,
+            Option<SymbolType>,
+            Option<Size>,
+            bool,
+            usize,
+            Option<String>,
+        )> {
+            let sym = self.functions.get(sym_index);
+
+            if let Some(sym) = sym {
+                if let Some(label_vram) = sym.labels().get(label_index) {
+                    let metadata = context
+                        .find_owned_segment(&self.parent_segment_info)
+                        .unwrap()
+                        .find_symbol(*label_vram, FindSettings::new(false))
+                        .unwrap();
+
+                    Some((
+                        metadata.vram().inner(),
+                        metadata.rom(),
+                        metadata.sym_type(),
+                        metadata.size(),
+                        metadata.is_defined(),
+                        metadata.reference_counter(),
+                        metadata.parent_metadata().and_then(|x| {
+                            x.parent_segment_info()
+                                .overlay_category_name()
+                                .map(|x| x.inner().to_owned())
+                        }),
+                    ))
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        }
+
+        #[pyo3(name = "set_label_name")]
+        pub fn py_set_label_name(
+            &mut self,
+            context: &mut Context,
+            sym_index: usize,
+            label_index: usize,
+            new_name: String,
+        ) {
+            let sym = self.functions.get(sym_index);
+
+            if let Some(sym) = sym {
+                if let Some(label_vram) = sym.labels().get(label_index) {
+                    let metadata = context
+                        .find_owned_segment_mut(&self.parent_segment_info)
+                        .unwrap()
+                        .find_symbol_mut(*label_vram, FindSettings::new(false))
+                        .unwrap();
+
+                    *metadata.user_declared_name_mut() = Some(new_name);
+                }
+            }
         }
     }
 }

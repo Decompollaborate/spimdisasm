@@ -227,7 +227,6 @@ pub(crate) mod python_bindings {
         ) -> Option<(
             u32,
             Option<Rom>,
-            String,
             Option<SymbolType>,
             Option<Size>,
             bool,
@@ -242,7 +241,6 @@ pub(crate) mod python_bindings {
                 Some((
                     metadata.vram().inner(),
                     metadata.rom(),
-                    metadata.display_name().to_string(),
                     metadata.sym_type(),
                     metadata.size(),
                     metadata.is_defined(),
@@ -255,6 +253,17 @@ pub(crate) mod python_bindings {
                 ))
             } else {
                 None
+            }
+        }
+
+        #[pyo3(name = "set_sym_name")]
+        pub fn py_set_sym_name(&mut self, context: &mut Context, index: usize, new_name: String) {
+            let sym = self.noload_symbols.get(index);
+
+            if let Some(sym) = sym {
+                let metadata = sym.find_own_metadata_mut(context);
+
+                *metadata.user_declared_name_mut() = Some(new_name);
             }
         }
 
@@ -272,6 +281,11 @@ pub(crate) mod python_bindings {
             } else {
                 None
             })
+        }
+
+        #[pyo3(name = "label_count_for_sym")]
+        pub fn py_label_count_for_sym(&self, _sym_index: usize) -> usize {
+            0
         }
     }
 }

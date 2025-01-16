@@ -11,7 +11,7 @@ use pyo3::prelude::*;
 
 use crate::addresses::{AddressRange, Rom, RomVramRange, Size, Vram};
 use crate::analysis::{reference_wrapper, Preheater, ReferenceWrapper};
-use crate::collections::addended_ordered_map::{AddendedOrderedMap, FindSettings};
+use crate::collections::addended_ordered_map::{self, AddendedOrderedMap, FindSettings};
 
 use super::SymbolMetadata;
 use super::{symbol_metadata::GeneratedBy, OverlayCategoryName};
@@ -197,6 +197,13 @@ impl SegmentMetadata {
         settings: FindSettings,
     ) -> Option<&mut SymbolMetadata> {
         self.symbols.find_mut(&vram, settings)
+    }
+
+    pub(crate) fn find_symbol_ranges_mut(
+        &mut self,
+        vram_range: AddressRange<Vram>,
+    ) -> addended_ordered_map::RangeMut<Vram, SymbolMetadata> {
+        self.symbols.range_mut(vram_range)
     }
 }
 

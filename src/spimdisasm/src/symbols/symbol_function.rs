@@ -34,6 +34,7 @@ pub struct SymbolFunction {
 
     instr_analysis: InstructionAnalysisResult,
     relocs: Vec<Option<RelocationInfo>>,
+    labels: Vec<Vram>,
 }
 
 impl SymbolFunction {
@@ -88,6 +89,7 @@ impl SymbolFunction {
             parent_segment_info,
             instr_analysis,
             relocs,
+            labels: Vec::new(),
         })
     }
 
@@ -648,22 +650,20 @@ impl SymbolFunction {
             .unwrap();
         let in_overlay = owned_metadata.in_overlay();
 
-        // TODO: Implement an iterator for AddressRange
-        let mut vram = self.ranges.vram().start();
-        let mut rom = self.ranges.rom().start();
-        while vram < self.ranges.vram().end() {
-            if let Some(sym) = owned_segment.find_symbol_mut(vram, FindSettings::new(false)) {
-                if sym.sym_type().is_some_and(|x| x.is_label()) {
-                    sym.set_defined();
-                    *sym.rom_mut() = Some(rom);
-                    if let Some(in_overlay) = in_overlay {
-                        sym.set_in_overlay(in_overlay);
-                    }
-                }
-            }
+        for (vram, sym) in owned_segment.find_symbol_ranges_mut(*self.ranges.vram()) {
+            if sym.sym_type().is_some_and(|x| x.is_label()) {
+                sym.set_defined();
 
-            vram += Size::new(4);
-            rom += Size::new(4);
+                let rom = Size::new((*vram - self.ranges.vram().start()).inner() as u32)
+                    + self.ranges.rom().start();
+                *sym.rom_mut() = Some(rom);
+
+                if let Some(in_overlay) = in_overlay {
+                    sym.set_in_overlay(in_overlay);
+                }
+
+                self.labels.push(*vram);
+            }
         }
 
         Ok(())
@@ -684,6 +684,12 @@ impl SymbolFunction {
     #[must_use]
     pub fn referenced_vrams(&self) -> &UnorderedSet<Vram> {
         self.instr_analysis.referenced_vrams()
+    }
+
+    #[must_use]
+    #[allow(dead_code)]
+    pub(crate) fn labels(&self) -> &[Vram] {
+        &self.labels
     }
 }
 

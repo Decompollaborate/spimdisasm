@@ -13,6 +13,7 @@ use core::ops::Bound;
 use crate::addresses::{Size, SizedAddress};
 
 pub type Range<'a, K, V> = btree_map::Range<'a, K, V>;
+pub type RangeMut<'a, K, V> = btree_map::RangeMut<'a, K, V>;
 
 // TODO: default
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -276,6 +277,13 @@ where
         R: RangeBounds<K>,
     {
         self.inner.range(range)
+    }
+
+    pub fn range_mut<R>(&mut self, range: R) -> RangeMut<'_, K, V>
+    where
+        R: RangeBounds<K>,
+    {
+        self.inner.range_mut(range)
     }
 
     pub fn keys(&self) -> btree_map::Keys<K, V> {
