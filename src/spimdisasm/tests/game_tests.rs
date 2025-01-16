@@ -131,7 +131,7 @@ fn init_context(
                             &global_config,
                             &SectionExecutableSettings::new(
                                 COMPILER,
-                                InstructionFlags::new(IsaVersion::MIPS_III, None),
+                                InstructionFlags::new(IsaVersion::MIPS_III),
                             ),
                             &rom_bytes[AddressRange::new(*rom, rom_end)],
                             *rom,
@@ -208,7 +208,7 @@ fn init_segments(
                         TestSection::Text(rom, name) => {
                             let text_settings = SectionExecutableSettings::new(
                                 COMPILER,
-                                InstructionFlags::new(IsaVersion::MIPS_III, None),
+                                InstructionFlags::new(IsaVersion::MIPS_III),
                             );
                             text_sections.push(
                                 context

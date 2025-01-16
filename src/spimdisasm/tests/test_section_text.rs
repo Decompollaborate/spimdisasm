@@ -97,7 +97,7 @@ fn test_section_text_1() {
     let size = Size::new(0x21FC00);
 
     let text_settings =
-        SectionExecutableSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III, None));
+        SectionExecutableSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
 
     let global_config = GlobalConfig::new(Endian::Big);
     let mut context = {
@@ -112,7 +112,8 @@ fn test_section_text_1() {
         let mut builder = ContextBuilder::new(global_segment);
 
         for i in 0x0..=0xF {
-            let category_name = OverlayCategoryName::new(format!("segment_0{:X}", i));
+            let segment_name = format!("segment_0{:X}", i);
+            let category_name = OverlayCategoryName::new(segment_name.clone());
 
             let magic_number = 0x01000000;
             let segment_size = Size::new(magic_number);
@@ -129,7 +130,7 @@ fn test_section_text_1() {
 
             let ranges = RomVramRange::new(rom_range, vram_range);
 
-            let overlay_builder = OverlaySegmentBuilder::new(ranges, category_name);
+            let overlay_builder = OverlaySegmentBuilder::new(ranges, category_name, segment_name);
 
             builder.add_overlay(overlay_builder.finish_symbols());
         }
@@ -219,7 +220,7 @@ fn test_section_text_lui_delay_slot() {
     let size = Size::new(0x1000);
 
     let text_settings =
-        SectionExecutableSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III, None));
+        SectionExecutableSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
 
     let global_config = GlobalConfig::new(Endian::Big);
     let mut context = {

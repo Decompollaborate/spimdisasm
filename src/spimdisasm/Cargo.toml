@@ -26,7 +26,7 @@ hash_tables = ["std"]
 
 nightly = [] # Evil stuff, do not use.
 game_tests = [] # Tests that require game roms to run
-pyo3 = ["dep:pyo3", "std"] # TODO: "rabbitizer/pyo3"
+pyo3 = ["std", "dep:pyo3", "rabbitizer/pyo3"]
 
 [dependencies]
 rabbitizer = { git = "https://github.com/Decompollaborate/rabbitizer.git", branch = "🦀" }

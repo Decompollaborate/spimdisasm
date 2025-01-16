@@ -52,10 +52,10 @@ pub(crate) mod python_bindings {
         #[pyo3(signature = (segment_rom, segment_vram, overlay_category_name))]
         pub fn py_new(
             segment_rom: Rom,
-            segment_vram: u32, // Vram,
+            segment_vram: Vram,
             overlay_category_name: Option<OverlayCategoryName>,
         ) -> Self {
-            Self::new(segment_rom, Vram::new(segment_vram), overlay_category_name)
+            Self::new(segment_rom, segment_vram, overlay_category_name)
         }
     }
 }

@@ -104,7 +104,13 @@ impl SegmentHeater {
 
             use crate::{addresses::Size, collections::addended_ordered_map::FindSettings};
 
-            let mut buf = BufWriter::new(File::create("gathered_global_references.csv").unwrap());
+            let mut buf = BufWriter::new(
+                File::create(&format!(
+                    "gathered_{}_references.csv",
+                    self.segment.name().unwrap_or("global")
+                ))
+                .unwrap(),
+            );
             buf.write_all(
                 "vram,type,size,alignment,reference_counter,referenced_by,issues\n".as_bytes(),
             )
@@ -305,9 +311,9 @@ pub(crate) mod python_bindings {
             settings: &SectionExecutableSettings,
             raw_bytes: &[u8],
             rom: Rom,
-            vram: u32, // TODO: Vram,
+            vram: Vram,
         ) {
-            self.preanalyze_text(global_config, settings, raw_bytes, rom, Vram::new(vram));
+            self.preanalyze_text(global_config, settings, raw_bytes, rom, vram);
         }
 
         #[pyo3(name = "preanalyze_data")]
@@ -317,9 +323,9 @@ pub(crate) mod python_bindings {
             settings: &SectionDataSettings,
             raw_bytes: &[u8],
             rom: Rom,
-            vram: u32, // TODO: Vram,
+            vram: Vram,
         ) {
-            self.preanalyze_data(global_config, settings, raw_bytes, rom, Vram::new(vram));
+            self.preanalyze_data(global_config, settings, raw_bytes, rom, vram);
         }
 
         #[pyo3(name = "preanalyze_rodata")]
@@ -329,9 +335,9 @@ pub(crate) mod python_bindings {
             settings: &SectionDataSettings,
             raw_bytes: &[u8],
             rom: Rom,
-            vram: u32, // TODO: Vram,
+            vram: Vram,
         ) {
-            self.preanalyze_rodata(global_config, settings, raw_bytes, rom, Vram::new(vram));
+            self.preanalyze_rodata(global_config, settings, raw_bytes, rom, vram);
         }
 
         #[pyo3(name = "preanalyze_gcc_except_table")]
@@ -341,15 +347,9 @@ pub(crate) mod python_bindings {
             settings: &SectionDataSettings,
             raw_bytes: &[u8],
             rom: Rom,
-            vram: u32, // TODO: Vram,
+            vram: Vram,
         ) {
-            self.preanalyze_gcc_except_table(
-                global_config,
-                settings,
-                raw_bytes,
-                rom,
-                Vram::new(vram),
-            );
+            self.preanalyze_gcc_except_table(global_config, settings, raw_bytes, rom, vram);
         }
     }
 
@@ -362,9 +362,9 @@ pub(crate) mod python_bindings {
             settings: &SectionExecutableSettings,
             raw_bytes: &[u8],
             rom: Rom,
-            vram: u32, // TODO: Vram,
+            vram: Vram,
         ) {
-            self.preanalyze_text(global_config, settings, raw_bytes, rom, Vram::new(vram));
+            self.preanalyze_text(global_config, settings, raw_bytes, rom, vram);
         }
 
         #[pyo3(name = "preanalyze_data")]
@@ -374,9 +374,9 @@ pub(crate) mod python_bindings {
             settings: &SectionDataSettings,
             raw_bytes: &[u8],
             rom: Rom,
-            vram: u32, // TODO: Vram,
+            vram: Vram,
         ) {
-            self.preanalyze_data(global_config, settings, raw_bytes, rom, Vram::new(vram));
+            self.preanalyze_data(global_config, settings, raw_bytes, rom, vram);
         }
 
         #[pyo3(name = "preanalyze_rodata")]
@@ -386,9 +386,9 @@ pub(crate) mod python_bindings {
             settings: &SectionDataSettings,
             raw_bytes: &[u8],
             rom: Rom,
-            vram: u32, // TODO: Vram,
+            vram: Vram,
         ) {
-            self.preanalyze_rodata(global_config, settings, raw_bytes, rom, Vram::new(vram));
+            self.preanalyze_rodata(global_config, settings, raw_bytes, rom, vram);
         }
 
         #[pyo3(name = "preanalyze_gcc_except_table")]
@@ -398,15 +398,9 @@ pub(crate) mod python_bindings {
             settings: &SectionDataSettings,
             raw_bytes: &[u8],
             rom: Rom,
-            vram: u32, // TODO: Vram,
+            vram: Vram,
         ) {
-            self.preanalyze_gcc_except_table(
-                global_config,
-                settings,
-                raw_bytes,
-                rom,
-                Vram::new(vram),
-            );
+            self.preanalyze_gcc_except_table(global_config, settings, raw_bytes, rom, vram);
         }
     }
 }

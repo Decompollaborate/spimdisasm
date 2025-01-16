@@ -352,17 +352,10 @@ pub(crate) mod python_bindings {
             name: String,
             raw_bytes: Cow<[u8]>,
             rom: Rom,
-            vram: u32, // Vram, // TODO
+            vram: Vram,
             parent_segment_info: ParentSegmentInfo,
         ) -> Result<SectionExecutable, SectionCreationError> {
-            self.create_section_text(
-                settings,
-                name,
-                &raw_bytes,
-                rom,
-                Vram::new(vram),
-                parent_segment_info,
-            )
+            self.create_section_text(settings, name, &raw_bytes, rom, vram, parent_segment_info)
         }
 
         #[pyo3(name = "create_section_data")]
@@ -372,17 +365,10 @@ pub(crate) mod python_bindings {
             name: String,
             raw_bytes: Cow<[u8]>,
             rom: Rom,
-            vram: u32, // Vram, // TODO
+            vram: Vram,
             parent_segment_info: ParentSegmentInfo,
         ) -> Result<SectionData, SectionCreationError> {
-            self.create_section_data(
-                settings,
-                name,
-                &raw_bytes,
-                rom,
-                Vram::new(vram),
-                parent_segment_info,
-            )
+            self.create_section_data(settings, name, &raw_bytes, rom, vram, parent_segment_info)
         }
 
         #[pyo3(name = "create_section_rodata")]
@@ -392,17 +378,10 @@ pub(crate) mod python_bindings {
             name: String,
             raw_bytes: Cow<[u8]>,
             rom: Rom,
-            vram: u32, // Vram, // TODO
+            vram: Vram,
             parent_segment_info: ParentSegmentInfo,
         ) -> Result<SectionData, SectionCreationError> {
-            self.create_section_rodata(
-                settings,
-                name,
-                &raw_bytes,
-                rom,
-                Vram::new(vram),
-                parent_segment_info,
-            )
+            self.create_section_rodata(settings, name, &raw_bytes, rom, vram, parent_segment_info)
         }
 
         #[pyo3(name = "create_section_bss")]
@@ -410,11 +389,11 @@ pub(crate) mod python_bindings {
             &mut self,
             settings: &SectionNoloadSettings,
             name: String,
-            vram_start: u32, // Vram // TODO
-            vram_end: u32,   // Vram // TODO
+            vram_start: Vram,
+            vram_end: Vram,
             parent_segment_info: ParentSegmentInfo,
         ) -> Result<SectionNoload, SectionCreationError> {
-            let vram_ranges = AddressRange::new(Vram::new(vram_start), Vram::new(vram_end));
+            let vram_ranges = AddressRange::new(vram_start, vram_end);
 
             self.create_section_bss(settings, name, vram_ranges, parent_segment_info)
         }
@@ -426,7 +405,7 @@ pub(crate) mod python_bindings {
             name: String,
             raw_bytes: Cow<[u8]>,
             rom: Rom,
-            vram: u32, // Vram, // TODO
+            vram: Vram,
             parent_segment_info: ParentSegmentInfo,
         ) -> Result<SectionData, SectionCreationError> {
             self.create_section_gcc_except_table(
@@ -434,7 +413,7 @@ pub(crate) mod python_bindings {
                 name,
                 &raw_bytes,
                 rom,
-                Vram::new(vram),
+                vram,
                 parent_segment_info,
             )
         }

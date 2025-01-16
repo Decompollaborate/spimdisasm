@@ -34,6 +34,7 @@ fn spimdisasm(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<addresses::Size>()?;
     m.add_class::<addresses::Rom>()?;
     m.add_class::<addresses::RomVramRange>()?;
+    m.add_class::<addresses::Vram>()?;
 
     m.add_class::<metadata::SymbolType>()?;
     m.add_class::<metadata::RodataMigrationBehavior>()?;
@@ -69,6 +70,14 @@ fn spimdisasm(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     m.add_class::<migration::FuncRodataPairing>()?;
     m.add_class::<migration::PairingError>()?;
+
+    // rabbitizer types
+    m.add_class::<rabbitizer::display_flags::InstructionDisplayFlags>()?;
+
+    m.add_class::<rabbitizer::instr::InstructionFlags>()?;
+
+    m.add_class::<rabbitizer::isa::IsaVersion>()?;
+    m.add_class::<rabbitizer::isa::IsaExtension>()?;
 
     Ok(())
 }

@@ -256,7 +256,7 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
     let mut context = ContextBuilder::new(global_segment).build(global_config);
 
     let text_settings =
-        SectionExecutableSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III, None));
+        SectionExecutableSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
     let instr_display_flags = InstructionDisplayFlags::default();
 
     let mut section_text = context

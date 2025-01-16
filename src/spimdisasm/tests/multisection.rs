@@ -376,7 +376,7 @@ fn test_jumptable_with_lo_in_each_case_for_same_hi() {
     let bss_vram = Vram::new(0x800040A0);
 
     let executable_settings =
-        SectionExecutableSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III, None));
+        SectionExecutableSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
     let data_settings = SectionDataSettings::new(None);
     let noload_settings = SectionNoloadSettings::new(None);
 

@@ -57,7 +57,8 @@ impl ContextBuilder {
                 segments.insert(seg.rom_range().start(), seg);
             }
 
-            let placeholder_segment = SegmentMetadata::new(ranges, Some(name.clone()));
+            let placeholder_segment =
+                SegmentMetadata::new_overlay(ranges, name.clone(), format!("{}_placeholder", name));
             overlay_segments
                 .entry(name)
                 .or_insert(OverlayCategory::new(placeholder_segment, segments));

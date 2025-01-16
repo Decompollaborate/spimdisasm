@@ -89,10 +89,10 @@ pub(crate) mod python_bindings {
     #[pymethods]
     impl RomVramRange {
         #[new]
-        pub fn py_new(rom_start: u32, rom_end: u32, vram_start: u32, vram_end: u32) -> Self {
+        pub fn py_new(rom_start: Rom, rom_end: Rom, vram_start: Vram, vram_end: Vram) -> Self {
             Self::new(
-                AddressRange::new(Rom::new(rom_start), Rom::new(rom_end)),
-                AddressRange::new(Vram::new(vram_start), Vram::new(vram_end)),
+                AddressRange::new(rom_start, rom_end),
+                AddressRange::new(vram_start, vram_end),
             )
         }
     }

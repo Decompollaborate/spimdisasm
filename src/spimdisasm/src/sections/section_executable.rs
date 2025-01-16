@@ -658,8 +658,6 @@ impl SectionExecutableSettings {
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
-    use rabbitizer::IsaVersion;
-
     use crate::{
         metadata::SymbolType,
         symbols::display::{FunctionDisplaySettings, SymDisplayError},
@@ -670,9 +668,9 @@ pub(crate) mod python_bindings {
     #[pymethods]
     impl SectionExecutableSettings {
         #[new]
-        #[pyo3(signature = (compiler))]
-        pub fn py_new(compiler: Option<Compiler>, /*instruction_flags: InstructionFlags*/) -> Self {
-            Self::new(compiler, InstructionFlags::new(IsaVersion::MIPS_III, None))
+        #[pyo3(signature = (compiler, instruction_flags))]
+        pub fn py_new(compiler: Option<Compiler>, instruction_flags: InstructionFlags) -> Self {
+            Self::new(compiler, instruction_flags)
         }
     }
 

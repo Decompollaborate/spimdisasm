@@ -22,10 +22,8 @@ struct SegmentBuilder {
 }
 
 impl SegmentBuilder {
-    fn new(ranges: RomVramRange, category_name: Option<OverlayCategoryName>) -> Self {
-        Self {
-            segment: SegmentMetadata::new(ranges, category_name),
-        }
+    fn new(segment: SegmentMetadata) -> Self {
+        Self { segment }
     }
 
     fn add_symbol(
@@ -77,7 +75,7 @@ pub struct GlobalSegmentBuilder {
 impl GlobalSegmentBuilder {
     pub fn new(ranges: RomVramRange) -> Self {
         Self {
-            inner: SegmentBuilder::new(ranges, None),
+            inner: SegmentBuilder::new(SegmentMetadata::new_global(ranges)),
         }
     }
 
@@ -103,9 +101,17 @@ pub struct OverlaySegmentBuilder {
 }
 
 impl OverlaySegmentBuilder {
-    pub fn new(ranges: RomVramRange, category_name: OverlayCategoryName) -> Self {
+    pub fn new(
+        ranges: RomVramRange,
+        category_name: OverlayCategoryName,
+        segment_name: String,
+    ) -> Self {
         Self {
-            inner: SegmentBuilder::new(ranges, Some(category_name)),
+            inner: SegmentBuilder::new(SegmentMetadata::new_overlay(
+                ranges,
+                category_name,
+                segment_name,
+            )),
         }
     }
 
@@ -141,12 +147,11 @@ pub(crate) mod python_bindings {
         pub fn py_add_symbol(
             &mut self,
             name: String,
-            // vram: Vram,
-            vram: u32, // TODO: Use Vram instead
+            vram: Vram,
             rom: Option<Rom>,
             attributes: &SymAttributes,
         ) -> Result<(), AddUserSymbolError> {
-            let sym = self.inner.add_symbol(name, Vram::new(vram), rom, None)?;
+            let sym = self.inner.add_symbol(name, vram, rom, None)?;
             attributes.apply_to_sym(sym);
             Ok(())
         }
@@ -160,20 +165,23 @@ pub(crate) mod python_bindings {
     #[pymethods]
     impl OverlaySegmentBuilder {
         #[new]
-        pub fn py_new(ranges: RomVramRange, category_name: OverlayCategoryName) -> Self {
-            Self::new(ranges, category_name)
+        pub fn py_new(
+            ranges: RomVramRange,
+            category_name: OverlayCategoryName,
+            segment_name: String,
+        ) -> Self {
+            Self::new(ranges, category_name, segment_name)
         }
 
         #[pyo3(name = "add_symbol", signature = (name, vram, rom, attributes))]
         pub fn py_add_symbol(
             &mut self,
             name: String,
-            // vram: Vram,
-            vram: u32, // TODO: Use Vram instead
+            vram: Vram,
             rom: Option<Rom>,
             attributes: &SymAttributes,
         ) -> Result<(), AddUserSymbolError> {
-            let sym = self.inner.add_symbol(name, Vram::new(vram), rom, None)?;
+            let sym = self.inner.add_symbol(name, vram, rom, None)?;
             attributes.apply_to_sym(sym);
             Ok(())
         }
