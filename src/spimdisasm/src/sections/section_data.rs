@@ -265,7 +265,7 @@ impl SectionData {
 }
 
 impl SectionData {
-    pub fn post_process(&mut self, context: &Context) -> Result<(), SectionPostProcessError> {
+    pub fn post_process(&mut self, context: &mut Context) -> Result<(), SectionPostProcessError> {
         for sym in self.data_symbols.iter_mut() {
             sym.post_process(context)?;
         }
@@ -300,7 +300,7 @@ impl Section for SectionData {
         &self.symbol_vrams
     }
 
-    fn post_process(&mut self, context: &Context) -> Result<(), SectionPostProcessError> {
+    fn post_process(&mut self, context: &mut Context) -> Result<(), SectionPostProcessError> {
         self.post_process(context)
     }
 }
@@ -384,7 +384,10 @@ pub(crate) mod python_bindings {
     #[pymethods]
     impl SectionData {
         #[pyo3(name = "post_process")]
-        fn py_post_process(&mut self, context: &Context) -> Result<(), SectionPostProcessError> {
+        fn py_post_process(
+            &mut self,
+            context: &mut Context,
+        ) -> Result<(), SectionPostProcessError> {
             self.post_process(context)
         }
 

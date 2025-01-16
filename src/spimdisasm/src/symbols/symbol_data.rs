@@ -68,6 +68,7 @@ impl SymbolData {
             endian,
             rom,
         ));
+        metadata.set_in_overlay(parent_segment_info.overlay_category_name().is_some());
 
         let encoding = properties.encoding;
         properties.apply_to_metadata(metadata);
@@ -169,7 +170,7 @@ impl SymbolData {
         Ok(())
     }
 
-    pub fn post_process(&mut self, context: &Context) -> Result<(), SymbolPostProcessError> {
+    pub fn post_process(&mut self, context: &mut Context) -> Result<(), SymbolPostProcessError> {
         self.generate_relocs(context)?;
 
         Ok(())

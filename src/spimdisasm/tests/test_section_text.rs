@@ -151,7 +151,7 @@ fn test_section_text_1() {
         )
         .unwrap();
 
-    section_text.post_process(&context).unwrap();
+    section_text.post_process(&mut context).unwrap();
 
     let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
     for func in section_text.functions() {
@@ -250,7 +250,7 @@ fn test_section_text_lui_delay_slot() {
         )
         .unwrap();
 
-    section_text.post_process(&context).unwrap();
+    section_text.post_process(&mut context).unwrap();
 
     let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
     for func in section_text.functions() {

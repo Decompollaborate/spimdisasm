@@ -189,6 +189,15 @@ impl SegmentMetadata {
     ) -> Option<&SymbolMetadata> {
         self.symbols.find(&vram, settings)
     }
+
+    #[must_use]
+    pub(crate) fn find_symbol_mut(
+        &mut self,
+        vram: Vram,
+        settings: FindSettings,
+    ) -> Option<&mut SymbolMetadata> {
+        self.symbols.find_mut(&vram, settings)
+    }
 }
 
 impl SegmentMetadata {

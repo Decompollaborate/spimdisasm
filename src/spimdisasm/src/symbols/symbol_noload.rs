@@ -40,6 +40,7 @@ impl SymbolNoload {
         *metadata.autodetected_size_mut() = Some(vram_range.size());
         metadata.set_defined();
         metadata.set_trailing_padding_size(Size::new(0));
+        metadata.set_in_overlay(parent_segment_info.overlay_category_name().is_some());
 
         properties.apply_to_metadata(metadata);
 

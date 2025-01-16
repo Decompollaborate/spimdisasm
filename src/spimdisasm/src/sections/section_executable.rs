@@ -136,7 +136,7 @@ impl SectionExecutable {
 }
 
 impl SectionExecutable {
-    pub fn post_process(&mut self, context: &Context) -> Result<(), SectionPostProcessError> {
+    pub fn post_process(&mut self, context: &mut Context) -> Result<(), SectionPostProcessError> {
         for func in self.functions.iter_mut() {
             func.post_process(context)?;
         }
@@ -171,7 +171,7 @@ impl Section for SectionExecutable {
         &self.symbol_vrams
     }
 
-    fn post_process(&mut self, context: &Context) -> Result<(), SectionPostProcessError> {
+    fn post_process(&mut self, context: &mut Context) -> Result<(), SectionPostProcessError> {
         self.post_process(context)
     }
 }
@@ -677,7 +677,10 @@ pub(crate) mod python_bindings {
     #[pymethods]
     impl SectionExecutable {
         #[pyo3(name = "post_process")]
-        fn py_post_process(&mut self, context: &Context) -> Result<(), SectionPostProcessError> {
+        fn py_post_process(
+            &mut self,
+            context: &mut Context,
+        ) -> Result<(), SectionPostProcessError> {
             self.post_process(context)
         }
 

@@ -24,6 +24,7 @@ pub struct SymCommonDisplaySettings {
     emit_asm_comment: bool,
 
     asm_indentation: u8,
+    rom_comment_width: u8,
 }
 
 impl SymCommonDisplaySettings {
@@ -33,6 +34,7 @@ impl SymCommonDisplaySettings {
             line_end: None,
             emit_asm_comment: true,
             asm_indentation: 4,
+            rom_comment_width: 6,
         }
     }
 
@@ -43,6 +45,12 @@ impl SymCommonDisplaySettings {
         } else {
             "\n"
         }
+    }
+}
+
+impl SymCommonDisplaySettings {
+    pub fn set_rom_comment_width(&mut self, rom_comment_width: u8) {
+        self.rom_comment_width = rom_comment_width;
     }
 }
 
@@ -352,31 +360,15 @@ impl SymCommonDisplaySettings {
             return Ok(());
         }
 
-        // TODO:
-        /*
-        if emitRomOffset:
-            offsetHex = "{0:0{1}X} ".format(localOffset + self.inFileOffset + self.commentOffset, common.GlobalConfig.ASM_COMMENT_OFFSET_WIDTH)
-        else:
-            offsetHex = ""
-
-        currentVram = self.getVramOffset(localOffset)
-        vramHex = f"{currentVram:08X}"
-
-        wordValueHex = ""
-        if wordValue is not None:
-            if isDouble:
-                wordValueHex = f"{common.Utils.qwordToCurrenEndian(wordValue):016X} "
-            else:
-                wordValueHex = f"{common.Utils.wordToCurrenEndian(wordValue):08X} "
-
-        return f"{indentation}/* {offsetHex}{vramHex} {wordValueHex}*/
-"
-        */
-
         write!(f, "/* ")?;
         if let Some(rom) = rom {
             // TODO: implement display for Rom
-            write!(f, "{:06X} ", rom.inner())?;
+            write!(
+                f,
+                "{:0width$X} ",
+                rom.inner(),
+                width = self.rom_comment_width as usize
+            )?;
         }
         write!(f, "{} ", vram)?;
 

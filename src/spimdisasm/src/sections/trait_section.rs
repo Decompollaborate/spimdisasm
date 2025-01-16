@@ -32,7 +32,7 @@ pub trait Section {
     #[must_use]
     fn symbols_vrams(&self) -> &UnorderedSet<Vram>;
 
-    fn post_process(&mut self, context: &Context) -> Result<(), SectionPostProcessError>;
+    fn post_process(&mut self, context: &mut Context) -> Result<(), SectionPostProcessError>;
 }
 
 pub trait RomSection {

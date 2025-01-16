@@ -133,7 +133,7 @@ impl SectionNoload {
 }
 
 impl SectionNoload {
-    pub fn post_process(&mut self, context: &Context) -> Result<(), SectionPostProcessError> {
+    pub fn post_process(&mut self, context: &mut Context) -> Result<(), SectionPostProcessError> {
         for sym in self.noload_symbols.iter_mut() {
             sym.post_process(context)?;
         }
@@ -168,7 +168,7 @@ impl Section for SectionNoload {
         &self.symbol_vrams
     }
 
-    fn post_process(&mut self, context: &Context) -> Result<(), SectionPostProcessError> {
+    fn post_process(&mut self, context: &mut Context) -> Result<(), SectionPostProcessError> {
         self.post_process(context)
     }
 }
@@ -207,7 +207,10 @@ pub(crate) mod python_bindings {
     #[pymethods]
     impl SectionNoload {
         #[pyo3(name = "post_process")]
-        fn py_post_process(&mut self, context: &Context) -> Result<(), SectionPostProcessError> {
+        fn py_post_process(
+            &mut self,
+            context: &mut Context,
+        ) -> Result<(), SectionPostProcessError> {
             self.post_process(context)
         }
 

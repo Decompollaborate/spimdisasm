@@ -54,7 +54,7 @@ pub struct SegmentData {
 }
 
 impl SegmentData {
-    pub fn post_process(&mut self, context: &Context) {
+    pub fn post_process(&mut self, context: &mut Context) {
         for section in self.text_sections.iter_mut() {
             section.post_process(context).unwrap();
         }

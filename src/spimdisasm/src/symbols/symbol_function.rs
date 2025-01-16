@@ -65,6 +65,7 @@ impl SymbolFunction {
         metadata.set_defined();
         metadata
             .set_trailing_padding_size(count_padding(&instructions, metadata.user_declared_size()));
+        metadata.set_in_overlay(parent_segment_info.overlay_category_name().is_some());
 
         properties.apply_to_metadata(metadata);
 
@@ -638,8 +639,32 @@ impl SymbolFunction {
         Ok(())
     }
 
-    pub fn post_process(&mut self, context: &Context) -> Result<(), SymbolPostProcessError> {
+    pub fn post_process(&mut self, context: &mut Context) -> Result<(), SymbolPostProcessError> {
         self.generate_relocs(context)?;
+
+        let owned_segment = context.find_owned_segment_mut(&self.parent_segment_info)?;
+        let owned_metadata = owned_segment
+            .find_symbol(self.ranges.vram().start(), FindSettings::new(false))
+            .unwrap();
+        let in_overlay = owned_metadata.in_overlay();
+
+        // TODO: Implement an iterator for AddressRange
+        let mut vram = self.ranges.vram().start();
+        let mut rom = self.ranges.rom().start();
+        while vram < self.ranges.vram().end() {
+            if let Some(sym) = owned_segment.find_symbol_mut(vram, FindSettings::new(false)) {
+                if sym.sym_type().is_some_and(|x| x.is_label()) {
+                    sym.set_defined();
+                    *sym.rom_mut() = Some(rom);
+                    if let Some(in_overlay) = in_overlay {
+                        sym.set_in_overlay(in_overlay);
+                    }
+                }
+            }
+
+            vram += Size::new(4);
+            rom += Size::new(4);
+        }
 
         Ok(())
     }

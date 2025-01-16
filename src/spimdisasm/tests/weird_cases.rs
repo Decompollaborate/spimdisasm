@@ -270,7 +270,7 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
         )
         .unwrap();
 
-    section_text.post_process(&context).unwrap();
+    section_text.post_process(&mut context).unwrap();
 
     assert_eq!(section_text.functions().len(), 1);
 

@@ -44,6 +44,10 @@ impl FunctionDisplaySettings {
             _gp_rel_hack: false,
         }
     }
+
+    pub fn set_rom_comment_width(&mut self, rom_comment_width: u8) {
+        self.common.set_rom_comment_width(rom_comment_width);
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -286,6 +290,11 @@ pub(crate) mod python_bindings {
         #[new]
         pub fn py_new(display_flags: InstructionDisplayFlags) -> Self {
             Self::new(display_flags)
+        }
+
+        #[pyo3(name = "set_rom_comment_width")]
+        pub fn py_set_rom_comment_width(&mut self, rom_comment_width: u8) {
+            self.set_rom_comment_width(rom_comment_width);
         }
     }
 }

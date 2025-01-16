@@ -322,9 +322,6 @@ impl<'text_label, 'ro_label, 'late_ro_label>
         self.section_label_rodata.unwrap_or(".rodata")
     }
     pub fn section_label_late_rodata(&self) -> &'late_ro_label str {
-        self.section_label_late_rodata.unwrap_or(
-            ".late_rodata
-        ",
-        )
+        self.section_label_late_rodata.unwrap_or(".late_rodata")
     }
 }

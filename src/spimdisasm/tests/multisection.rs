@@ -178,23 +178,23 @@ impl Sections {
         });
 
         let text = text.map(|mut x| {
-            x.post_process(&context).unwrap();
+            x.post_process(&mut context).unwrap();
             x
         });
         let data = data.map(|mut x| {
-            x.post_process(&context).unwrap();
+            x.post_process(&mut context).unwrap();
             x
         });
         let rodata = rodata.map(|mut x| {
-            x.post_process(&context).unwrap();
+            x.post_process(&mut context).unwrap();
             x
         });
         let gcc_except_table = gcc_except_table.map(|mut x| {
-            x.post_process(&context).unwrap();
+            x.post_process(&mut context).unwrap();
             x
         });
         let bss = bss.map(|mut x| {
-            x.post_process(&context).unwrap();
+            x.post_process(&mut context).unwrap();
             x
         });
 

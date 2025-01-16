@@ -93,14 +93,15 @@ impl SymbolMetadataNameDisplay<'_> {
         }
     }
 
-    fn display_suffix(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        /*
-        suffix = ""
-        if self.overlayCategory is not None:
-            suffix = "_"
-            if self.vromAddress is not None:
-                suffix += f"{self.vromAddress:06X}"
+    fn display_suffix(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.sym.in_overlay().is_some_and(|x| x) {
+            if let Some(rom) = self.sym.rom() {
+                // TODO: change to 08X
+                write!(f, "_{:06X}", rom.inner())?;
+            }
+        }
 
+        /*
         if GlobalConfig.CUSTOM_SUFFIX:
             suffix += GlobalConfig.CUSTOM_SUFFIX
         */
