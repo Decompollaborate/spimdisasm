@@ -13,6 +13,7 @@ pub struct GlobalConfig {
     gp_config: Option<GpConfig>,
 
     macro_labels: Option<MacroLabels>,
+    // TODO: Maybe move to each section's disassembly settings
     emit_size_directive: bool,
     // ASM_USE_PRELUDE: bool = True
     // ASM_PRELUDE_USE_INCLUDES: bool = True
@@ -90,6 +91,16 @@ pub(crate) mod python_bindings {
         #[new]
         pub fn py_new(endian: Endian) -> Self {
             Self::new(endian)
+        }
+
+        #[pyo3(name = "set_macro_labels", signature=(macro_labels))]
+        pub fn py_set_macro_labels(&mut self, macro_labels: Option<MacroLabels>) {
+            self.macro_labels = macro_labels;
+        }
+
+        #[pyo3(name = "set_emit_size_directive")]
+        pub fn py_set_emit_size_directive(&mut self, emit_size_directive: bool) {
+            self.emit_size_directive = emit_size_directive;
         }
     }
 }

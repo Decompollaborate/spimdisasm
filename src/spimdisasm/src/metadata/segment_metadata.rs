@@ -142,9 +142,10 @@ pub struct AddSymbolError {
 }
 impl fmt::Display for AddSymbolError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Error when trying to add symbol to the segment: ")?;
         write!(
             f,
-            "Vram 0x{} is out of range `{}`",
+            "Symbol's vram 0x{} is out of the segment's range `{}`",
             self.vram, self.segment_ranges
         )
     }

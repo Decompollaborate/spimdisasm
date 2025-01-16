@@ -40,6 +40,7 @@ fn spimdisasm(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     m.add_class::<config::Compiler>()?;
     m.add_class::<config::Endian>()?;
+    m.add_class::<config::MacroLabels>()?;
     m.add_class::<config::GlobalConfig>()?;
 
     m.add_class::<analysis::StringGuesserLevel>()?;
