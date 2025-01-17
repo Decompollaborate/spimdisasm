@@ -476,14 +476,15 @@ fn find_functions_branch_checker(
     (farthest_branch, halt_function_searching)
 }
 
+// returns `(function_ended, prev_func_had_user_declared_size)`
 #[allow(clippy::too_many_arguments)]
 fn find_functions_check_function_ended(
     owned_segment: &SegmentMetadata,
     settings: &SectionExecutableSettings,
     local_offset: usize,
     instr: &Instruction,
-    _index: usize,
-    _instrs: &[Instruction],
+    index: usize,
+    instrs: &[Instruction],
     current_rom: Rom,
     current_vram: Vram,
     current_function_ref: Option<ReferenceWrapper>,
@@ -493,7 +494,6 @@ fn find_functions_check_function_ended(
 ) -> (bool, bool) {
     let mut function_ended = false;
     let mut prev_func_had_user_declared_size = false;
-    // TODO
 
     if let Some(reference) = current_function_ref {
         if let Some(user_declared_size) = reference.user_declared_size() {
@@ -524,8 +524,33 @@ fn find_functions_check_function_ended(
     if !farthest_branch.is_positive() && instr.opcode().is_jump() {
         if instr.is_return() {
             // Found a jr $ra and there are no branches outside of this function
-            if false { // redundant function end detection
-                 // TODO
+            if settings.detect_redundant_end() {
+                // The IDO compiler may generate a a redundant and unused `jr $ra; nop` at the end of the functions the
+                // flags `-g`, `-g1` or `-g2` are used.
+                // In normal conditions this would be detected as its own separate empty function, which may cause
+                // issues on a decompilation project.
+                // In other words, we try to detect the following pattern:
+                // ```
+                // jr         $ra
+                //  nop
+                // jr         $ra
+                //  nop
+                // ```
+                // where the last two instructions do not belong to being an already existing function (either
+                // referenced by code or user-declared).
+                let mut redundant_pattern_detected = false;
+                if index + 3 < instrs.len() {
+                    let instr1 = instrs[index + 1];
+                    let instr2 = instrs[index + 2];
+                    let instr3 = instrs[index + 3];
+                    // We already checked if there is a function in the previous block, so we don't need to check it again.
+                    if instr1.is_nop() && instr2.is_return() && instr3.is_nop() {
+                        redundant_pattern_detected = true;
+                    }
+                }
+                if !redundant_pattern_detected {
+                    return (true, false);
+                }
             } else {
                 return (true, false);
             }
@@ -634,6 +659,10 @@ pub struct SectionExecutableSettings {
     compiler: Option<Compiler>,
     instruction_flags: InstructionFlags,
     is_handwritten: bool,
+
+    /// Tries to detect one or more redundants and unreferenced function ends and merge them to the previous function.
+    /// This option is ignored if the compiler is not set to IDO.
+    detect_redundant_end: bool,
 }
 
 impl SectionExecutableSettings {
@@ -642,6 +671,7 @@ impl SectionExecutableSettings {
             compiler,
             instruction_flags,
             is_handwritten: false,
+            detect_redundant_end: false,
         }
     }
 
@@ -653,6 +683,20 @@ impl SectionExecutableSettings {
     }
     pub fn is_handwritten(&self) -> bool {
         self.is_handwritten
+    }
+    pub fn detect_redundant_end(&self) -> bool {
+        self.compiler
+            .is_some_and(|x| x == Compiler::IDO && self.detect_redundant_end)
+    }
+
+    pub fn set_is_handwritten(&mut self, is_handwritten: bool) {
+        self.is_handwritten = is_handwritten;
+    }
+
+    /// Tries to detect one or more redundants and unreferenced function ends and merge them to the previous function.
+    /// This option is ignored if the compiler is not set to IDO.
+    pub fn set_detect_redundant_end(&mut self, detect_redundant_end: bool) {
+        self.detect_redundant_end = detect_redundant_end;
     }
 }
 
@@ -671,6 +715,15 @@ pub(crate) mod python_bindings {
         #[pyo3(signature = (compiler, instruction_flags))]
         pub fn py_new(compiler: Option<Compiler>, instruction_flags: InstructionFlags) -> Self {
             Self::new(compiler, instruction_flags)
+        }
+
+        #[pyo3(name = "set_is_handwritten")]
+        pub fn py_set_is_handwritten(&mut self, is_handwritten: bool) {
+            self.set_is_handwritten(is_handwritten)
+        }
+        #[pyo3(name = "set_detect_redundant_end")]
+        pub fn py_set_detect_redundant_end(&mut self, detect_redundant_end: bool) {
+            self.set_detect_redundant_end(detect_redundant_end)
         }
     }
 
