@@ -216,13 +216,12 @@ fn find_functions(
     let mut farthest_branch = VramOffset::new(0);
     let mut halt_function_searching;
 
-    let mut local_offset = 0;
-    let mut current_function_start = local_offset;
+    let mut index: usize = 0;
+    let mut current_function_start = index * 4;
     let mut current_function_ref = owned_segment.find_reference(
-        section_ranges.vram().start() + Size::new(local_offset as u32),
+        section_ranges.vram().start() + Size::new(index as u32 * 4),
         FindSettings::new(false),
     );
-    let mut index = 0;
 
     let mut prev_start = index;
     let mut contains_invalid = false;
@@ -242,10 +241,9 @@ fn find_functions(
             }
 
             index += 1;
-            local_offset += 4;
-            current_function_start = local_offset;
+            current_function_start = index * 4;
             current_function_ref = owned_segment.find_reference(
-                section_ranges.vram().start() + Size::new(local_offset as u32),
+                section_ranges.vram().start() + Size::new(index as u32 * 4),
                 FindSettings::new(false),
             );
         }
@@ -262,7 +260,7 @@ fn find_functions(
 
     while index < instrs.len() {
         if !instrs[index].is_valid() {
-            contains_invalid = false;
+            contains_invalid = true;
         }
 
         if function_ended {
@@ -270,10 +268,9 @@ fn find_functions(
 
             is_likely_handwritten = settings.is_handwritten;
             index += 1;
-            local_offset += 4;
 
             let mut aux_ref = owned_segment.find_reference(
-                section_ranges.vram().start() + Size::new(local_offset as u32),
+                section_ranges.vram().start() + Size::new(index as u32 * 4),
                 FindSettings::new(false),
             );
 
@@ -289,15 +286,14 @@ fn find_functions(
                 }
 
                 index += 1;
-                local_offset += 4;
 
                 aux_ref = owned_segment.find_reference(
-                    section_ranges.vram().start() + Size::new(local_offset as u32),
+                    section_ranges.vram().start() + Size::new(index as u32 * 4),
                     FindSettings::new(false),
                 );
             }
 
-            current_function_start = local_offset;
+            current_function_start = index * 4;
             current_function_ref = aux_ref;
 
             starts_data.push((prev_start, auto_pad_by));
@@ -333,7 +329,7 @@ fn find_functions(
                 owned_segment,
                 &regs_tracker,
                 section_ranges,
-                local_offset,
+                index * 4,
                 instr,
                 &mut starts_data,
                 farthest_branch,
@@ -348,16 +344,14 @@ fn find_functions(
         (function_ended, prev_func_had_user_declared_size) = find_functions_check_function_ended(
             owned_segment,
             settings,
-            local_offset,
             instr,
             index,
             instrs,
-            section_ranges.rom().start() + Size::new(local_offset as u32),
-            section_ranges.vram().start() + Size::new(local_offset as u32),
+            section_ranges.rom().start() + Size::new(index as u32 * 4),
+            section_ranges.vram().start() + Size::new(index as u32 * 4),
             current_function_ref,
             farthest_branch,
             current_function_start,
-            is_likely_handwritten,
         );
 
         run_register_tracker_end(&mut regs_tracker, instr, prev_instr, current_rom);
@@ -371,7 +365,6 @@ fn find_functions(
         index += 1;
         //farthest_branch -= 4;
         farthest_branch = VramOffset::new(farthest_branch.inner() - 4);
-        local_offset += 4;
     }
 
     if prev_start != index {
@@ -481,7 +474,6 @@ fn find_functions_branch_checker(
 fn find_functions_check_function_ended(
     owned_segment: &SegmentMetadata,
     settings: &SectionExecutableSettings,
-    local_offset: usize,
     instr: &Instruction,
     index: usize,
     instrs: &[Instruction],
@@ -490,19 +482,17 @@ fn find_functions_check_function_ended(
     current_function_ref: Option<ReferenceWrapper>,
     farthest_branch: VramOffset,
     current_function_start: usize,
-    _is_likely_handwritten: bool,
 ) -> (bool, bool) {
-    let mut function_ended = false;
-    let mut prev_func_had_user_declared_size = false;
-
     if let Some(reference) = current_function_ref {
         if let Some(user_declared_size) = reference.user_declared_size() {
             // If the function has a size set by the user then only use that and ignore the other ways of determining function-ends
-            if local_offset + 8 == current_function_start + user_declared_size.inner() as usize {
-                function_ended = true;
-                prev_func_had_user_declared_size = true;
-            }
-            return (function_ended, prev_func_had_user_declared_size);
+            return if (index + 2) * 4
+                == current_function_start + user_declared_size.inner() as usize
+            {
+                (true, true)
+            } else {
+                (false, false)
+            };
         }
     }
 
@@ -521,66 +511,67 @@ fn find_functions_check_function_ended(
         }
     }
 
-    if !farthest_branch.is_positive() && instr.opcode().is_jump() {
-        if instr.is_return() {
-            // Found a jr $ra and there are no branches outside of this function
-            if settings.detect_redundant_end() {
-                // The IDO compiler may generate a a redundant and unused `jr $ra; nop` at the end of the functions the
-                // flags `-g`, `-g1` or `-g2` are used.
-                // In normal conditions this would be detected as its own separate empty function, which may cause
-                // issues on a decompilation project.
-                // In other words, we try to detect the following pattern:
-                // ```
-                // jr         $ra
-                //  nop
-                // jr         $ra
-                //  nop
-                // ```
-                // where the last two instructions do not belong to being an already existing function (either
-                // referenced by code or user-declared).
-                let mut redundant_pattern_detected = false;
-                if index + 3 < instrs.len() {
-                    let instr1 = instrs[index + 1];
-                    let instr2 = instrs[index + 2];
-                    let instr3 = instrs[index + 3];
-                    // We already checked if there is a function in the previous block, so we don't need to check it again.
-                    if instr1.is_nop() && instr2.is_return() && instr3.is_nop() {
-                        redundant_pattern_detected = true;
-                    }
+    if farthest_branch.is_positive() {
+        return (false, false);
+    }
+    if !instr.opcode().is_jump() {
+        return (false, false);
+    }
+
+    if instr.is_return() {
+        // Found a jr $ra and there are no branches outside of this function
+        if settings.detect_redundant_end() {
+            // The IDO compiler may generate a a redundant and unused `jr $ra; nop` at the end of the functions the
+            // flags `-g`, `-g1` or `-g2` are used.
+            // In normal conditions this would be detected as its own separate empty function, which may cause
+            // issues on a decompilation project.
+            // In other words, we try to detect the following pattern:
+            // ```
+            // jr         $ra
+            //  nop
+            // jr         $ra
+            //  nop
+            // ```
+            // where the last two instructions do not belong to being an already existing function (either
+            // referenced by code or user-declared).
+            let mut redundant_pattern_detected = false;
+            if index + 3 < instrs.len() {
+                let instr1 = instrs[index + 1];
+                let instr2 = instrs[index + 2];
+                let instr3 = instrs[index + 3];
+                // We already checked if there is a function in the previous block, so we don't need to check it again.
+                if instr1.is_nop() && instr2.is_return() && instr3.is_nop() {
+                    redundant_pattern_detected = true;
                 }
-                if !redundant_pattern_detected {
-                    return (true, false);
-                }
-            } else {
+            }
+            if !redundant_pattern_detected {
                 return (true, false);
             }
-        } else if instr.is_jumptable_jump() {
-            // Usually jumptables, ignore
-        } else if instr.opcode().does_link() {
-            // Just a function call, nothing to see here
-        } else if instr.opcode().is_jump_with_address() {
-            // If this instruction is a jump and it is jumping to a function then
-            // we can consider this as a function end. This can happen as a
-            // tail-optimization in "modern" compilers
-            if !settings.instruction_flags.j_as_branch() {
-                return (true, false);
-            } else {
-                // j is a jump, but it could be jumping to a function
-                if let Some(target_vram) = instr.get_instr_index_as_vram() {
-                    if let Some(aux_ref) =
-                        owned_segment.find_reference(target_vram, FindSettings::new(false))
-                    {
-                        if aux_ref.is_trustable_function() && Some(aux_ref) != current_function_ref
-                        {
-                            return (true, false);
-                        }
-                    }
+        } else {
+            return (true, false);
+        }
+    } else if instr.is_jumptable_jump() {
+        // Usually jumptables, ignore
+    } else if instr.opcode().does_link() {
+        // Just a function call, nothing to see here
+    } else if instr.opcode().is_jump_with_address() {
+        // If this instruction is a jump and it is jumping to a function then
+        // we can consider this as a function end. This can happen as a
+        // tail-optimization in "modern" compilers
+        if !settings.instruction_flags.j_as_branch() {
+            return (true, false);
+        } else if let Some(target_vram) = instr.get_instr_index_as_vram() {
+            if let Some(aux_ref) =
+                owned_segment.find_reference(target_vram, FindSettings::new(false))
+            {
+                if aux_ref.is_trustable_function() && Some(aux_ref) != current_function_ref {
+                    return (true, false);
                 }
             }
         }
     }
 
-    (function_ended, prev_func_had_user_declared_size)
+    (false, false)
 }
 
 fn run_register_tracker_start(

@@ -173,6 +173,38 @@ impl SymbolData {
     pub fn post_process(&mut self, context: &mut Context) -> Result<(), SymbolPostProcessError> {
         self.generate_relocs(context)?;
 
+        let rom = self.ranges.rom().start();
+        let vram = self.ranges.vram().start();
+        let endian = context.global_config().endian();
+
+        let owned_segment = context.find_owned_segment_mut(&self.parent_segment_info)?;
+        let metadata = owned_segment.find_symbol(vram, FindSettings::new(false));
+
+        let should_search_for_address =
+            metadata.is_some_and(|x| x.sym_type().is_none_or(|x| x.can_reference_symbols()));
+
+        if rom.inner() % 4 == 0 && should_search_for_address {
+            for (i, word_bytes) in self.raw_bytes.chunks_exact(4).enumerate() {
+                let word = endian.word_from_bytes(word_bytes);
+                let word_vram = Vram::new(word);
+                let offset = Size::new(i as u32);
+
+                if owned_segment.in_vram_range(word_vram) {
+                    if let Some(sym_metadata) =
+                        owned_segment.find_symbol_mut(word_vram, FindSettings::new(true))
+                    {
+                        sym_metadata.add_reference_symbol(
+                            vram,
+                            self.parent_segment_info.clone(),
+                            rom + offset,
+                        );
+                    }
+                } else {
+                    // TODO
+                }
+            }
+        }
+
         Ok(())
     }
 }
