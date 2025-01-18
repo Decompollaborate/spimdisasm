@@ -179,11 +179,11 @@ impl SectionData {
                             }
                         } else {
                             let current_rom = rom + (current_vram - vram).try_into().expect("This should not panic because `current_vram` should always be greter or equal to `vram`");
-                            let reference = context
-                                .find_referenced_segment(word_vram, &parent_segment_info)
-                                .and_then(|seg| {
-                                    seg.find_reference(word_vram, FindSettings::new(true))
-                                });
+                            let reference = context.find_symbol_from_any_segment(
+                                word_vram,
+                                &parent_segment_info,
+                                FindSettings::new(true),
+                            );
                             if reference.is_none() {
                                 maybe_pointers_to_other_sections.push((word_vram, current_rom));
                             }

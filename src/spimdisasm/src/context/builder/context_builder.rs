@@ -59,9 +59,7 @@ impl ContextBuilder {
 
             let placeholder_segment =
                 SegmentMetadata::new_overlay(ranges, name.clone(), format!("{}_placeholder", name));
-            overlay_segments
-                .entry(name)
-                .or_insert(OverlayCategory::new(placeholder_segment, segments));
+            overlay_segments.insert(name, OverlayCategory::new(placeholder_segment, segments));
         }
 
         Context::new(global_config, self.global_segment, overlay_segments)

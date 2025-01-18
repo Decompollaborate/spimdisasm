@@ -147,9 +147,11 @@ impl SymbolData {
                 let valid_reference = if owned_segment.in_vram_range(word_vram) {
                     owned_segment.find_symbol(word_vram, find_settings)
                 } else {
-                    context
-                        .find_referenced_segment(word_vram, &self.parent_segment_info)
-                        .and_then(|x| x.find_symbol(word_vram, find_settings))
+                    context.find_symbol_from_any_segment(
+                        word_vram,
+                        &self.parent_segment_info,
+                        find_settings,
+                    )
                 }
                 .is_some_and(|reference| {
                     reference.vram() == word_vram

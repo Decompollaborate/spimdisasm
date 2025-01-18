@@ -112,6 +112,19 @@ impl RelocationType {
     }
 
     #[must_use]
+    pub fn allow_addends_on_ref(&self) -> bool {
+        // TODO: should R_MIPS_LITERAL be in this list?
+        !matches!(
+            self,
+            RelocationType::R_MIPS_26
+                | RelocationType::R_MIPS_PC16
+                | RelocationType::R_MIPS_CALL16
+                | RelocationType::R_MIPS_CALL_HI16
+                | RelocationType::R_MIPS_CALL_LO16
+        )
+    }
+
+    #[must_use]
     pub fn new_reloc_info(self, referenced_sym: RelocReferencedSym) -> RelocationInfo {
         RelocationInfo::new(self, referenced_sym)
     }

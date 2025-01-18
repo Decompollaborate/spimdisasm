@@ -249,7 +249,6 @@ impl SymDataDisplay<'_, '_, '_> {
             WordComment::U32(word),
         )?;
 
-        let find_settings = FindSettings::new(self.metadata.allow_ref_with_addend());
         if let Some(rel) = self.sym.relocs()[i / 4]
             .as_ref()
             .filter(|x| !x.reloc_type().is_none())
@@ -257,7 +256,7 @@ impl SymDataDisplay<'_, '_, '_> {
                 x.display(
                     self.context,
                     self.sym.parent_segment_info(),
-                    find_settings,
+                    self.metadata.allow_ref_with_addend(),
                     self.metadata.compiler(),
                     self.internal_settings,
                 )

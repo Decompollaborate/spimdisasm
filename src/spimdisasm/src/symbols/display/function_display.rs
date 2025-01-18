@@ -176,12 +176,11 @@ impl FunctionDisplay<'_, '_, '_> {
             0
         };
 
-        let find_settings = FindSettings::new(self.metadata.allow_ref_with_addend());
         let imm_override = self.get_reloc(instr).and_then(|x| {
             x.display(
                 self.context,
                 self.sym.parent_segment_info(),
-                find_settings,
+                self.metadata.allow_ref_with_addend(),
                 self.metadata.compiler(),
                 self.internal_settings,
             )

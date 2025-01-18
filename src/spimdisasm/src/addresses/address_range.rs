@@ -72,6 +72,11 @@ where
         self.decrease_start(other.start);
         self.increase_end(other.end);
     }
+
+    #[must_use]
+    pub fn overlaps(&self, other: &AddressRange<T>) -> bool {
+        self.start < other.end && other.start < self.end
+    }
 }
 
 impl<T> fmt::Display for AddressRange<T>
@@ -99,5 +104,43 @@ impl<T> ops::RangeBounds<T> for AddressRange<T> {
 
     fn end_bound(&self) -> ops::Bound<&T> {
         ops::Bound::Excluded(&self.end)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_address_range_overlaps_no() {
+        let x = AddressRange::new(0, 0x10);
+        let y = AddressRange::new(0x10, 0x20);
+
+        assert_eq!(x.overlaps(&y), false);
+        assert_eq!(y.overlaps(&x), false);
+    }
+
+    #[test]
+    fn test_address_range_overlaps_embedded() {
+        let x = AddressRange::new(0, 0x10);
+        let y = AddressRange::new(0x4, 0x8);
+
+        assert_eq!(x.overlaps(&y), true);
+        assert_eq!(y.overlaps(&x), true);
+    }
+
+    #[test]
+    fn test_address_range_overlaps_half() {
+        let x = AddressRange::new(0x4, 0x10);
+        let y = AddressRange::new(0x8, 0x18);
+
+        assert_eq!(x.overlaps(&y), true);
+        assert_eq!(y.overlaps(&x), true);
+
+        let x = AddressRange::new(0x4, 0x10);
+        let y = AddressRange::new(0x2, 0x8);
+
+        assert_eq!(x.overlaps(&y), true);
+        assert_eq!(y.overlaps(&x), true);
     }
 }

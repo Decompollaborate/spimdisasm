@@ -40,7 +40,7 @@ impl RelocationInfo {
         &'rel self,
         context: &'ctx Context,
         segment_info: &'prnt ParentSegmentInfo,
-        find_settings: FindSettings,
+        allow_ref_with_addend: bool,
         compiler: Option<Compiler>,
         internal_settings: InternalSymDisplSettings,
     ) -> Option<RelocationInfoDisplay<'ctx, 'rel, 'prnt>> {
@@ -48,7 +48,7 @@ impl RelocationInfo {
             context,
             self,
             segment_info,
-            find_settings,
+            allow_ref_with_addend,
             compiler,
             internal_settings,
         )
@@ -59,8 +59,6 @@ impl RelocationInfo {
 enum RelocSymState<'name, 'meta> {
     LiteralSymName(&'name str, i32),
     Sym(Vram, &'meta SymbolMetadata),
-    // Kinda useful for debugging
-    SymbolNotFound(Vram),
     // Kinda useful for debugging
     SegmentNotFound(Vram),
 }
@@ -79,7 +77,7 @@ impl<'ctx, 'rel, 'prnt> RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
         context: &'ctx Context,
         rel: &'rel RelocationInfo,
         segment_info: &'prnt ParentSegmentInfo,
-        find_settings: FindSettings,
+        allow_ref_with_addend: bool,
         compiler: Option<Compiler>,
         internal_settings: InternalSymDisplSettings,
     ) -> Option<Self> {
@@ -88,19 +86,13 @@ impl<'ctx, 'rel, 'prnt> RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
                 RelocSymState::LiteralSymName(name, *addend)
             }
             RelocReferencedSym::Address(vram) => {
-                if let Some(referenced_segment) =
-                    context.find_referenced_segment(*vram, segment_info)
+                let find_settings = FindSettings::new(
+                    allow_ref_with_addend && rel.reloc_type.allow_addends_on_ref(),
+                );
+                if let Some(sym_metadata) =
+                    context.find_symbol_from_any_segment(*vram, segment_info, find_settings)
                 {
-                    if let Some(sym_metadata) = referenced_segment.find_symbol(*vram, find_settings)
-                    {
-                        RelocSymState::Sym(*vram, sym_metadata)
-                    } else {
-                        // TODO: make this a setting
-                        if false {
-                            return None;
-                        }
-                        RelocSymState::SymbolNotFound(*vram)
-                    }
+                    RelocSymState::Sym(*vram, sym_metadata)
                 } else {
                     if false {
                         return None;
@@ -185,10 +177,6 @@ impl fmt::Display for RelocationInfoDisplay<'_, '_, '_> {
             RelocSymState::Sym(vram, sym_metadata) => {
                 write!(f, "{}", sym_metadata.display_name())?;
                 (*vram - sym_metadata.vram()).inner()
-            }
-            RelocSymState::SymbolNotFound(vram) => {
-                write!(f, "/* ERROR: symbol for address 0x{} not found */", vram)?;
-                0
             }
             RelocSymState::SegmentNotFound(vram) => {
                 write!(f, "/* ERROR: segment for address 0x{} not found */", vram)?;

@@ -11,9 +11,9 @@ use pyo3::prelude::*;
 
 use crate::{
     addresses::{AddressRange, Rom, Vram},
-    collections::unordered_map::UnorderedMap,
+    collections::{addended_ordered_map::FindSettings, unordered_map::UnorderedMap},
     config::GlobalConfig,
-    metadata::{OverlayCategory, OverlayCategoryName, SegmentMetadata},
+    metadata::{OverlayCategory, OverlayCategoryName, SegmentMetadata, SymbolMetadata},
     parent_segment_info::ParentSegmentInfo,
     section_type::SectionType,
     sections::{
@@ -245,14 +245,14 @@ impl Context {
     }
 
     #[must_use]
-    pub(crate) fn find_referenced_segment(
+    pub(crate) fn find_symbol_from_any_segment(
         &self,
         vram: Vram,
         info: &ParentSegmentInfo,
-    ) -> Option<&SegmentMetadata> {
-        // TODO: Maybe remove Option and actually implement the unknown_segment?
+        settings: FindSettings,
+    ) -> Option<&SymbolMetadata> {
         if self.global_segment.in_vram_range(vram) {
-            return Some(&self.global_segment);
+            return self.global_segment.find_symbol(vram, settings);
         }
 
         if let Some(overlay_category_name) = info.overlay_category_name() {
@@ -260,21 +260,65 @@ impl Context {
             if let Some(segments_per_rom) = self.overlay_segments.get(overlay_category_name) {
                 if let Some(segment) = segments_per_rom.segments().get(&info.segment_rom()) {
                     if segment.in_vram_range(vram) {
-                        return Some(segment);
+                        return segment.find_symbol(vram, settings);
                     }
                 }
             }
         }
 
-        let overlay_category_name = info.overlay_category_name();
         // If not found, then we should check every category except the one that associated to the parent segment.
+
+        // First we look for segments categories that only contain a single segment, since it is less likely to grab the wrong symbol.
+        let overlay_category_name = info.overlay_category_name();
         for (ovl_cat, segments_per_rom) in self.overlay_segments.iter() {
             if overlay_category_name == Some(ovl_cat) {
                 continue;
             }
-            let segment = &segments_per_rom.placeholder_segment();
+
+            let segments = segments_per_rom.segments();
+            if segments.len() == 1 {
+                let (_, segment) = segments
+                    .into_iter()
+                    .next()
+                    .expect("Should exist since we already checked the length");
+                if segment.in_vram_range(vram) {
+                    if let Some(sym) = segment.find_symbol(vram, settings) {
+                        return Some(sym);
+                    }
+                }
+            }
+        }
+
+        // If we haven't found the symbol yet then we just look everywhere
+        for (ovl_cat, segments_per_rom) in self.overlay_segments.iter() {
+            if overlay_category_name == Some(ovl_cat) {
+                continue;
+            }
+
+            let segments = segments_per_rom.segments();
+            if segments.len() != 1 {
+                for (_, segment) in segments {
+                    if segment.in_vram_range(vram) {
+                        if let Some(sym) = segment.find_symbol(vram, settings) {
+                            return Some(sym);
+                        }
+                    }
+                }
+            }
+        }
+
+        // If we still can't find it, fall back to the placeholders
+        // TODO: is this actually fine? or should we do something else?
+        for (ovl_cat, segments_per_rom) in self.overlay_segments.iter() {
+            if overlay_category_name == Some(ovl_cat) {
+                continue;
+            }
+
+            let segment = segments_per_rom.placeholder_segment();
             if segment.in_vram_range(vram) {
-                return Some(segment);
+                if let Some(sym) = segment.find_symbol(vram, settings) {
+                    return Some(sym);
+                }
             }
         }
 
