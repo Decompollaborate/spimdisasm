@@ -19,7 +19,7 @@ pub enum Encoding {
 }
 
 // Escape characters that are unlikely to be used
-static BANNED_ESCAPE_CHARACTERS: [u8; 26] = [
+static BANNED_ESCAPE_CHARACTERS: [u8; 27] = [
     0x00, // '\0'
     0x01, //
     0x02, //
@@ -32,7 +32,7 @@ static BANNED_ESCAPE_CHARACTERS: [u8; 26] = [
     // 0x09, // '\t'
     // 0x0A, // '\n'
     0x0B, // '\v'
-    // 0x0C, // '\f'
+    0x0C, // '\f'
     // 0x0D, // '\r'
     0x0E, //
     0x0F, //
@@ -94,10 +94,6 @@ impl Encoding {
         while i < bytes.len() && bytes[i] != 0 {
             let char = bytes[i];
 
-            if BANNED_ESCAPE_CHARACTERS.contains(&char) {
-                return Err(DecodingError::InvalidEscapeCharacter);
-            }
-
             if char > 0x7F {
                 // `char` is the first character of a multibyte glyph.
 
@@ -151,6 +147,10 @@ impl Encoding {
                 i += sequence_length;
                 continue;
             } else {
+                if BANNED_ESCAPE_CHARACTERS.contains(&char) {
+                    return Err(DecodingError::InvalidEscapeCharacter);
+                }
+
                 i += 1;
                 continue;
             }

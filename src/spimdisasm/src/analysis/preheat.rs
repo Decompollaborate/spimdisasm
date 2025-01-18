@@ -302,6 +302,11 @@ impl Preheater {
                 let d =
                     ReferenceWrapper::find(owned_segment, self, d_vram, FindSettings::new(false));
 
+                let a_type  = a.map(|x| x.sym_type());
+                let b_type  = b.map(|x| x.sym_type());
+                let c_type  = c.map(|x| x.sym_type());
+                let d_type  = d.map(|x| x.sym_type());
+
                 if b.is_none() && c.is_none() && d.is_none() {
                     // There's no symbol in between
 
@@ -326,8 +331,8 @@ impl Preheater {
                     }
                 }
 
-                for x in [a, b, c, d].into_iter().flatten() {
-                    prev_sym_type = x.sym_type();
+                for x in [a_type, b_type, c_type, d_type].into_iter().flatten() {
+                    prev_sym_type = x;
                 }
 
                 if let Some(table_label) = table_label {
