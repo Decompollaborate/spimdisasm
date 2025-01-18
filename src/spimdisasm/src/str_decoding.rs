@@ -101,20 +101,54 @@ impl Encoding {
             if char > 0x7F {
                 // `char` is the first character of a multibyte glyph.
 
-                if *self == Encoding::Ascii {
-                    // ASCII CHECK: prevent decoding bytes outside the ASCII range as ASCII.
-                    return Err(DecodingError::AsciiOutOfRange);
+                // We have to manually checks for the validity of many multibyte combinations because encoding_rs is not strict enough.
+                let sequence_length = match *self {
+                    Encoding::Ascii => {
+                        // ASCII CHECK: prevent decoding bytes outside the ASCII range as ASCII.
+                        return Err(DecodingError::AsciiOutOfRange);
+                    }
+                    Encoding::ShiftJis => {
+                        // Invalid first byte according to https://en.wikipedia.org/wiki/Shift_JIS#Shift_JIS_byte_map
+                        match char {
+                            0x80 | 0xA0 | 0xFD..=0xFF => {
+                                return Err(DecodingError::InvalidFirstByteOfMultibyte);
+                            }
+                            _ => 2,
+                        }
+                    }
+                    Encoding::EucJp => {
+                        // Invalid first byte according to https://uic.io/en/charset/show/euc-jp/
+                        match char {
+                            0x8F => 3,
+                            0x80..=0x8D | 0x8F..=0xA0 | 0xA9..=0xAF | 0xF5..=0xFF => {
+                                return Err(DecodingError::InvalidFirstByteOfMultibyte);
+                            }
+                            _ => 2,
+                        }
+                    }
+                    Encoding::EucCn => {
+                        // Invalid first byte according to https://uic.io/en/charset/show/euc-cn/
+                        match char {
+                            0x80..=0xA0 | 0xAA..=0xAF | 0xF8..=0xFF => {
+                                return Err(DecodingError::InvalidFirstByteOfMultibyte);
+                            }
+                            _ => 0,
+                        }
+                    }
+                };
+
+                if i + sequence_length > bytes.len() {
+                    return Err(DecodingError::MultibyteNotLongEnough);
                 }
 
-                if i + 1 >= bytes.len() {
-                    return Err(DecodingError::MultibyteMissingSecondByte);
-                }
-
-                if self.decode_to_string(&bytes[i..i + 2]).is_none() {
+                if self
+                    .decode_to_string(&bytes[i..i + sequence_length])
+                    .is_none()
+                {
                     return Err(DecodingError::InvalidMultibyte);
                 }
 
-                i += 2;
+                i += sequence_length;
                 continue;
             } else {
                 i += 1;
@@ -166,7 +200,8 @@ impl Default for Encoding {
 pub(crate) enum DecodingError {
     InvalidEscapeCharacter,
     AsciiOutOfRange,
-    MultibyteMissingSecondByte,
+    MultibyteNotLongEnough,
+    InvalidFirstByteOfMultibyte,
     InvalidMultibyte,
     TerminatorNotFound,
     InvalidPad,
@@ -284,22 +319,36 @@ mod tests {
     }
 
     // encoding_rs is silly and decodes those invalid bytes as if they were valid shift-jis strings
-    /*
     #[test]
     fn check_valid_string_invalid_2() {
         static BYTES: [u8; 16] = [
-            0x80, 0x03, 0xD7, 0xCC,
-            0x80, 0x03, 0xD7, 0xCC,
-            0x80, 0x03, 0xD7, 0xB0,
-            0x00, 0x00, 0x00, 0x00,
+            0x80, 0x03, 0xD7, 0xCC, //
+            0x80, 0x03, 0xD7, 0xCC, //
+            0x80, 0x03, 0xD7, 0xB0, //
+            0x00, 0x00, 0x00, 0x00, //
         ];
         let encoding = Encoding::ShiftJis;
 
         let maybe_size = encoding.check_valid(&BYTES);
 
-        assert_eq!(maybe_size, Err(DecodingError::InvalidMultibyte));
+        #[cfg(feature = "std")]
+        println!("{:?}", encoding.decode_to_string(&BYTES));
+
+        assert_eq!(maybe_size, Err(DecodingError::InvalidFirstByteOfMultibyte));
     }
-    */
+
+    #[test]
+    fn check_valid_string_invalid_3() {
+        static BYTES: [u8; 4] = [0x80, 0x2C, 0x5E, 0x68];
+        let encoding = Encoding::ShiftJis;
+
+        let maybe_size = encoding.check_valid(&BYTES);
+
+        #[cfg(feature = "std")]
+        println!("{:?}", encoding.decode_to_string(&BYTES));
+
+        assert_eq!(maybe_size, Err(DecodingError::InvalidFirstByteOfMultibyte));
+    }
 }
 
 #[cfg(feature = "pyo3")]

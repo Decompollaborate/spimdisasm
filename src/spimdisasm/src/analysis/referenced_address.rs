@@ -24,6 +24,7 @@ pub struct ReferencedAddress {
     autodetected_types: UnorderedMap<SymbolType, u32>,
 
     user_declared_size: Option<Size>,
+    autodetected_size: Option<Size>,
 
     table_labels: Vec<Vram>,
 }
@@ -42,6 +43,7 @@ impl ReferencedAddress {
             autodetected_types: UnorderedMap::new(),
 
             user_declared_size: None,
+            autodetected_size: None,
 
             table_labels: Vec::new(),
         }
@@ -88,7 +90,11 @@ impl ReferencedAddress {
     pub fn size(&self) -> Option<Size> {
         if let Some(size) = self.user_declared_size {
             Some(size)
-        } else if self.user_declared_type.is_some() || !self.autodetected_types.is_empty() {
+        } else if self.user_declared_type.is_some() {
+            None
+        } else if let Some(size) = self.autodetected_size {
+            Some(size)
+        } else if !self.autodetected_types.is_empty() {
             None
         } else {
             self.access_type()
@@ -171,6 +177,9 @@ impl ReferencedAddress {
 
     pub fn set_user_declared_size(&mut self, size: Size) {
         self.user_declared_size = Some(size);
+    }
+    pub fn set_autodetected_size(&mut self, size: Size) {
+        self.autodetected_size = Some(size);
     }
 
     pub fn add_table_label(&mut self, label: Vram) {

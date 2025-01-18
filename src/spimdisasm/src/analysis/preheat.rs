@@ -258,23 +258,29 @@ impl Preheater {
                 );
 
                 if current_ref.is_none_or(|x| x.vram() == current_vram) {
-                    if let Some(str_sym_size) = settings.string_guesser_level().guess(
+                    if let Some(str_size) = settings.string_guesser_level().guess(
                         current_ref,
                         current_vram,
                         &raw_bytes[local_offset..],
                         settings.encoding(),
                     ) {
-                        if ReferenceWrapper::find(
+                        let str_sym_size = str_size.next_multiple_of(4);
+                        let in_between_sym = ReferenceWrapper::find(
                             owned_segment,
                             self,
                             current_vram + Size::new(str_sym_size as u32 - 1),
                             FindSettings::new(true).with_reject_sizeless_addended(false),
-                        )
-                        .is_none_or(|x| x.vram() == current_vram)
-                        {
-                            remaining_string_size = str_sym_size as i32;
+                        );
 
-                            references_found.push((current_vram, Some(SymbolType::CString), None));
+                        if in_between_sym.is_none_or(|x| x.vram() == current_vram) {
+                            remaining_string_size = str_size as i32;
+
+                            references_found.push((
+                                current_vram,
+                                Some(SymbolType::CString),
+                                None,
+                                Some(Size::new(str_size as u32)),
+                            ));
                         }
                     }
                 }
@@ -311,7 +317,7 @@ impl Preheater {
                         let word_vram = Vram::new(word);
 
                         if owned_segment.in_vram_range(word_vram) {
-                            references_found.push((word_vram, None, Some(current_vram)));
+                            references_found.push((word_vram, None, Some(current_vram), None));
 
                             if current_type.is_some_and(|x| x.is_table()) {
                                 table_label = Some(word_vram);
@@ -337,10 +343,13 @@ impl Preheater {
             remaining_string_size -= 4;
         }
 
-        for (v, typ, referenced_by) in references_found {
+        for (v, typ, referenced_by, size) in references_found {
             let reference = self.new_ref(v, referenced_by, owned_segment);
             if let Some(typ) = typ {
                 reference.set_sym_type(typ);
+            }
+            if let Some(size) = size {
+                reference.set_autodetected_size(size);
             }
         }
     }

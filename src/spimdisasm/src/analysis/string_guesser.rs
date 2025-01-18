@@ -88,9 +88,9 @@ impl StringGuesserLevel {
         if let Some(ref_wrapper) = ref_wrapper {
             if ref_wrapper.sym_type() == Some(SymbolType::CString) {
                 let size = if let Some(size) = ref_wrapper.user_declared_size() {
-                    size.inner().next_multiple_of(4) as usize
+                    size.inner() as usize
                 } else if let Some(str_end) = bytes.iter().position(|x| *x == 0) {
-                    (str_end + 1).next_multiple_of(4)
+                    str_end + 1
                 } else {
                     return None;
                 };
@@ -141,7 +141,7 @@ impl StringGuesserLevel {
             return None;
         };
 
-        Some(raw_size.next_multiple_of(4))
+        Some(raw_size)
     }
 }
 
@@ -171,7 +171,7 @@ mod tests {
         // println!("{:?}", maybe_size);
 
         //None::<u32>.unwrap();
-        assert_eq!(maybe_size, Some(56));
+        assert_eq!(maybe_size, Some(53));
     }
 
     #[test]

@@ -99,23 +99,23 @@ impl SectionData {
                     owned_segment.find_reference(current_vram, FindSettings::new(true));
 
                 if current_ref.is_none_or(|x| x.vram() == current_vram) {
-                    if let Some(str_sym_size) = settings.string_guesser_level.guess(
+                    if let Some(str_size) = settings.string_guesser_level.guess(
                         current_ref,
                         current_vram,
                         &raw_bytes[local_offset..],
                         settings.encoding,
                     ) {
-                        if owned_segment
-                            .find_reference(
-                                current_vram + Size::new(str_sym_size as u32 - 1),
-                                FindSettings::new(true).with_reject_sizeless_addended(false),
-                            )
-                            .is_none_or(|x| x.vram() == current_vram)
-                        {
+                        let str_sym_size = str_size.next_multiple_of(4);
+                        let in_between_sym = owned_segment.find_reference(
+                            current_vram + Size::new(str_sym_size as u32 - 1),
+                            FindSettings::new(true).with_reject_sizeless_addended(false),
+                        );
+
+                        if in_between_sym.is_none_or(|x| x.vram() == current_vram) {
                             // Check if there is already another symbol after the current one and before the end of the string,
                             // in which case we say this symbol should not be a string
 
-                            remaining_string_size = str_sym_size as i32;
+                            remaining_string_size = str_size as i32;
 
                             symbols_info.insert(current_vram, (Some(SymbolType::CString),));
                             if !auto_pads.contains_key(&current_vram) {
