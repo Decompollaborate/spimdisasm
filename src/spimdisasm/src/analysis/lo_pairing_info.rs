@@ -3,6 +3,7 @@
 
 use crate::addresses::Rom;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct LoPairingInfo {
     pub(crate) instr_rom: Rom,
     pub(crate) value: i64, // TODO: This is fishy

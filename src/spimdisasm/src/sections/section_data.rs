@@ -111,7 +111,17 @@ impl SectionData {
                             FindSettings::new(true).with_reject_sizeless_addended(false),
                         );
 
-                        if in_between_sym.is_none_or(|x| x.vram() == current_vram) {
+                        if in_between_sym.is_none_or(|x| {
+                            let other_sym_vram = x.vram();
+
+                            match other_sym_vram.cmp(&current_vram) {
+                                core::cmp::Ordering::Greater => false,
+                                core::cmp::Ordering::Equal => true,
+                                core::cmp::Ordering::Less => {
+                                    x.size().is_some_and(|x| other_sym_vram + x <= current_vram)
+                                }
+                            }
+                        }) {
                             // Check if there is already another symbol after the current one and before the end of the string,
                             // in which case we say this symbol should not be a string
 

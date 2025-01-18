@@ -124,6 +124,26 @@ impl Preheater {
                         regs_tracker.process_lo(&instr, address.inner(), current_rom);
                     }
                 }
+                if let Some(address) =
+                    regs_tracker.get_address_if_instr_can_set_type(&instr, current_rom)
+                {
+                    if let Some(access_type) = instr.opcode().access_type() {
+                        let realigned_symbol_vram = match access_type {
+                            // Align down the Vram
+                            AccessType::WORD_LEFT | AccessType::WORD_RIGHT => {
+                                Vram::new(address - (address % 4))
+                            }
+                            AccessType::DOUBLEWORD_LEFT | AccessType::DOUBLEWORD_RIGHT => {
+                                Vram::new(address - (address % 8))
+                            }
+                            _ => Vram::new(address),
+                        };
+
+                        let reference = self.new_ref(realigned_symbol_vram, None, owned_segment);
+
+                        reference.set_access_type(access_type);
+                    }
+                }
             }
 
             regs_tracker.overwrite_registers(&instr, current_rom);
@@ -239,7 +259,14 @@ impl Preheater {
 
         let mut prev_sym_type: Option<SymbolType> = None;
 
-        let mut references_found = Vec::new();
+        // TODO
+        #[allow(clippy::type_complexity)]
+        let mut references_found: Vec<(
+            Vram,
+            Option<SymbolType>,
+            Option<Vram>,
+            Option<Size>,
+        )> = Vec::new();
 
         for (i, word_bytes) in raw_bytes.chunks_exact(4).enumerate() {
             let local_offset = i * 4;
@@ -272,14 +299,40 @@ impl Preheater {
                             FindSettings::new(true).with_reject_sizeless_addended(false),
                         );
 
-                        if in_between_sym.is_none_or(|x| x.vram() == current_vram) {
+                        if in_between_sym.is_none_or(|x| {
+                            let other_sym_vram = x.vram();
+
+                            match other_sym_vram.cmp(&current_vram) {
+                                core::cmp::Ordering::Greater => false,
+                                core::cmp::Ordering::Equal => true,
+                                core::cmp::Ordering::Less => {
+                                    if x.size().is_some_and(|x| other_sym_vram + x <= current_vram)
+                                    {
+                                        true
+                                    } else {
+                                        // Hack to try to find unreferenced strings.
+                                        // We need this hack because size information for previous symbols on this section
+                                        // is not known yet, because we add it lazily.
+                                        // Not doing it lazily yields some weird hallucinated symbols. Maybe someday I'll
+                                        // properly debug why they happen and how to avoid them, in the meantime we have
+                                        // this hack.
+                                        references_found.last().is_some_and(|x| {
+                                            x.0 == other_sym_vram
+                                                && x.3.is_some_and(|size| {
+                                                    other_sym_vram + size <= current_vram
+                                                })
+                                        })
+                                    }
+                                }
+                            }
+                        }) {
                             remaining_string_size = str_size as i32;
 
                             references_found.push((
                                 current_vram,
                                 Some(SymbolType::CString),
                                 None,
-                                Some(Size::new(str_size as u32)),
+                                Some(Size::new(str_sym_size as u32)),
                             ));
                         }
                     }
@@ -302,10 +355,10 @@ impl Preheater {
                 let d =
                     ReferenceWrapper::find(owned_segment, self, d_vram, FindSettings::new(false));
 
-                let a_type  = a.map(|x| x.sym_type());
-                let b_type  = b.map(|x| x.sym_type());
-                let c_type  = c.map(|x| x.sym_type());
-                let d_type  = d.map(|x| x.sym_type());
+                let a_type = a.map(|x| x.sym_type());
+                let b_type = b.map(|x| x.sym_type());
+                let c_type = c.map(|x| x.sym_type());
+                let d_type = d.map(|x| x.sym_type());
 
                 if b.is_none() && c.is_none() && d.is_none() {
                     // There's no symbol in between

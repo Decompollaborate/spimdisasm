@@ -105,7 +105,7 @@ impl SegmentHeater {
             use crate::{addresses::Size, collections::addended_ordered_map::FindSettings};
 
             let mut buf = BufWriter::new(
-                File::create(&format!(
+                File::create(format!(
                     "gathered_{}_references.csv",
                     self.segment.name().unwrap_or("global")
                 ))

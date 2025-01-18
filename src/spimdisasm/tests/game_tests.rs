@@ -364,7 +364,7 @@ fn drmario64_us_without_symbols() {
         }
     }
 
-    assert_eq!(context.global_segment().symbols().len(), 10439);
+    assert_eq!(context.global_segment().symbols().len(), 10457);
 
     /*
     for seg in &segments {
@@ -393,7 +393,7 @@ fn drmario64_us_without_symbols() {
                 .sum::<usize>()
         })
         .sum();
-    assert_eq!(data_syms_count, 547);
+    assert_eq!(data_syms_count, 549);
 }
 
 #[cfg_attr(feature = "game_tests", test)]

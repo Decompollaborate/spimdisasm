@@ -32,7 +32,32 @@ impl<'seg, 'addr> ReferenceWrapper<'seg, 'addr> {
             (None, None) => None,
             (None, Some(reference)) => Some(ReferenceWrapper::Address(reference)),
             (Some(metadata), None) => Some(ReferenceWrapper::Metadata(metadata)),
-            (Some(metadata), Some(reference)) => Some(ReferenceWrapper::Both(metadata, reference)),
+            (Some(metadata), Some(reference)) => {
+                // Return the symbol that is nearest to the actual address
+
+                let metadata_vram = metadata.vram();
+                let reference_vram = reference.vram();
+
+                if metadata_vram == reference_vram {
+                    Some(ReferenceWrapper::Both(metadata, reference))
+                } else if metadata_vram == vram {
+                    Some(ReferenceWrapper::Metadata(metadata))
+                } else if reference_vram == vram {
+                    Some(ReferenceWrapper::Address(reference))
+                } else if metadata_vram > vram {
+                    if reference_vram < vram || metadata_vram < reference_vram {
+                        Some(ReferenceWrapper::Metadata(metadata))
+                    } else {
+                        Some(ReferenceWrapper::Address(reference))
+                    }
+                } else if reference_vram > vram {
+                    Some(ReferenceWrapper::Address(reference))
+                } else if metadata_vram > reference_vram {
+                    Some(ReferenceWrapper::Metadata(metadata))
+                } else {
+                    Some(ReferenceWrapper::Address(reference))
+                }
+            }
         }
     }
 
@@ -70,6 +95,14 @@ impl ReferenceWrapper<'_, '_> {
             ReferenceWrapper::Metadata(metadata) => metadata.user_declared_size(),
             ReferenceWrapper::Address(_address) => None,
             ReferenceWrapper::Both(metadata, _address) => metadata.user_declared_size(),
+        }
+    }
+
+    pub fn size(&self) -> Option<Size> {
+        match self {
+            ReferenceWrapper::Metadata(metadata) => metadata.size(),
+            ReferenceWrapper::Address(address) => address.size(),
+            ReferenceWrapper::Both(metadata, _address) => metadata.size(),
         }
     }
 
