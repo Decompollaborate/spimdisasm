@@ -110,8 +110,7 @@ impl TrackedRegisterState {
 
         self.hi_info = Some(HiInfo {
             instr_rom,
-            set_on_branch_likely: prev_instr
-                .is_some_and(|x| x.opcode().is_branch_likely() || x.is_unconditional_branch()),
+            set_on_branch_likely: prev_instr.is_some_and(|x| x.opcode().is_branch_likely()),
         });
         self.dereferenced = None;
         self.clear_contains_float();

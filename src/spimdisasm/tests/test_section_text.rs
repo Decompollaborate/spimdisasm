@@ -4,7 +4,7 @@
 use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
 use spimdisasm::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
-    config::{Endian, GlobalConfig},
+    config::{Compiler, Endian, GlobalConfig},
     context::{ContextBuilder, GlobalSegmentBuilder, OverlaySegmentBuilder},
     metadata::OverlayCategoryName,
     parent_segment_info::ParentSegmentInfo,
@@ -294,4 +294,184 @@ glabel func_80081738
             .to_string(),
         expected_str
     );
+}
+
+#[test]
+fn test_section_text_pairing_on_delay_slot() {
+    // from pokemon snap, based on scMain
+    static BYTES: [u8; 208] = [
+        0x27, 0xBD, 0xFF, 0x80, //  addiu
+        0xAF, 0xBF, 0x00, 0x1C, //  sw
+        0xAF, 0xB0, 0x00, 0x18, //  sw
+        0x3C, 0x10, 0x80, 0x05, //  lui
+        0x26, 0x10, 0x88, 0x68, //  addiu
+        0x02, 0x00, 0x20, 0x25, //  or
+        0x27, 0xA5, 0x00, 0x7C, //  addiu
+        0x0C, 0x00, 0xCA, 0x10, //  jal
+        0x24, 0x06, 0x00, 0x01, //   addiu
+        0x8F, 0xA4, 0x00, 0x7C, //  lw
+        0x24, 0x01, 0x00, 0x01, //  addiu
+        0x10, 0x81, 0x00, 0x09, //  beq
+        0x24, 0x01, 0x00, 0x02, //   addiu
+        0x10, 0x81, 0x00, 0x0B, //  beq
+        0x24, 0x01, 0x00, 0x03, //   addiu
+        0x10, 0x81, 0x00, 0x0D, //  beq
+        0x24, 0x01, 0x00, 0x63, //   addiu
+        0x10, 0x81, 0x00, 0x0F, //  beq
+        0x3C, 0x02, 0x80, 0x05, //   lui
+        0x10, 0x00, 0x00, 0x14, //  b
+        0x3C, 0x18, 0x80, 0x05, //   lui
+        0x0C, 0x00, 0x07, 0xE3, //  jal
+        0x00, 0x00, 0x00, 0x00, //   nop
+        0x10, 0x00, 0xFF, 0xEE, //  b
+        0x02, 0x00, 0x20, 0x25, //   or
+        0x0C, 0x00, 0x07, 0xF9, //  jal
+        0x00, 0x00, 0x00, 0x00, //   nop
+        0x10, 0x00, 0xFF, 0xEA, //  b
+        0x02, 0x00, 0x20, 0x25, //   or
+        0x0C, 0x00, 0x08, 0x95, //  jal
+        0x00, 0x00, 0x00, 0x00, //   nop
+        0x10, 0x00, 0xFF, 0xE6, //  b
+        0x02, 0x00, 0x20, 0x25, //   or
+        0x8C, 0x42, 0x88, 0x88, //  lw
+        0x50, 0x40, 0xFF, 0xE3, //  beql
+        0x02, 0x00, 0x20, 0x25, //   or
+        0x00, 0x40, 0xF8, 0x09, //  jalr
+        0x00, 0x00, 0x00, 0x00, //   nop
+        0x10, 0x00, 0xFF, 0xDF, //  b
+        0x02, 0x00, 0x20, 0x25, //   or
+        0x8F, 0x18, 0x88, 0x8C, //  lw
+        0x57, 0x00, 0xFF, 0xDC, //  bnel
+        0x02, 0x00, 0x20, 0x25, //   or
+        0x0C, 0x00, 0x09, 0x39, //  jal
+        0x00, 0x00, 0x00, 0x00, //   nop
+        0x10, 0x00, 0xFF, 0xD8, //  b
+        0x02, 0x00, 0x20, 0x25, //   or
+        0x8F, 0xBF, 0x00, 0x1C, //  lw
+        0x8F, 0xB0, 0x00, 0x18, //  lw
+        0x27, 0xBD, 0x00, 0x80, //  addiu
+        0x03, 0xE0, 0x00, 0x08, //  jr
+        0x00, 0x00, 0x00, 0x00, //   nop
+    ];
+
+    let rom = Rom::new(0x3118);
+    let vram = Vram::new(0x80002518);
+
+    let segment_rom = Rom::new(0x1000);
+    let segment_vram = Vram::new(0x80000400);
+
+    let text_settings = SectionExecutableSettings::new(
+        Some(Compiler::IDO),
+        InstructionFlags::new(IsaVersion::MIPS_III),
+    );
+
+    let mut context = {
+        let global_config = GlobalConfig::new(Endian::Big);
+
+        let global_ranges = RomVramRange::new(
+            AddressRange::new(segment_rom, Rom::new(0x46270)),
+            AddressRange::new(segment_vram, Vram::new(0x8009A8C0)),
+        );
+        let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
+
+        global_segment.preanalyze_text(&global_config, &text_settings, &BYTES, rom, vram);
+
+        let builder = ContextBuilder::new(global_segment);
+
+        builder.build(global_config)
+    };
+
+    let parent_segment_info = ParentSegmentInfo::new(segment_rom, segment_vram, None);
+    let mut section_text = context
+        .create_section_text(
+            &text_settings,
+            "text".to_string(),
+            &BYTES,
+            rom,
+            vram,
+            parent_segment_info,
+        )
+        .unwrap();
+
+    section_text.post_process(&mut context).unwrap();
+
+    let mut disassembly = ".section .text\n".to_string();
+    let display_settings = FunctionDisplaySettings::new(InstructionDisplayFlags::new());
+    for sym in section_text.functions() {
+        disassembly.push('\n');
+        disassembly.push_str(
+            &sym.display(&context, &display_settings)
+                .unwrap()
+                .to_string(),
+        );
+    }
+
+    println!("{}", disassembly);
+
+    let expected_disassembly = "\
+.section .text
+
+glabel func_80002518
+    /* 003118 80002518 27BDFF80 */  addiu       $sp, $sp, -0x80
+    /* 00311C 8000251C AFBF001C */  sw          $ra, 0x1C($sp)
+    /* 003120 80002520 AFB00018 */  sw          $s0, 0x18($sp)
+    /* 003124 80002524 3C108005 */  lui         $s0, %hi(D_80048868)
+    /* 003128 80002528 26108868 */  addiu       $s0, $s0, %lo(D_80048868)
+    /* 00312C 8000252C 02002025 */  or          $a0, $s0, $zero
+  .L80002530:
+    /* 003130 80002530 27A5007C */  addiu       $a1, $sp, 0x7C
+    /* 003134 80002534 0C00CA10 */  jal         func_80032840
+    /* 003138 80002538 24060001 */   addiu      $a2, $zero, 0x1
+    /* 00313C 8000253C 8FA4007C */  lw          $a0, 0x7C($sp)
+    /* 003140 80002540 24010001 */  addiu       $at, $zero, 0x1
+    /* 003144 80002544 10810009 */  beq         $a0, $at, .L8000256C
+    /* 003148 80002548 24010002 */   addiu      $at, $zero, 0x2
+    /* 00314C 8000254C 1081000B */  beq         $a0, $at, .L8000257C
+    /* 003150 80002550 24010003 */   addiu      $at, $zero, 0x3
+    /* 003154 80002554 1081000D */  beq         $a0, $at, .L8000258C
+    /* 003158 80002558 24010063 */   addiu      $at, $zero, 0x63
+    /* 00315C 8000255C 1081000F */  beq         $a0, $at, .L8000259C
+    /* 003160 80002560 3C028005 */   lui        $v0, %hi(D_80048888)
+    /* 003164 80002564 10000014 */  b           .L800025B8
+    /* 003168 80002568 3C188005 */   lui        $t8, %hi(D_8004888C)
+  .L8000256C:
+    /* 00316C 8000256C 0C0007E3 */  jal         func_80001F8C
+    /* 003170 80002570 00000000 */   nop
+    /* 003174 80002574 1000FFEE */  b           .L80002530
+    /* 003178 80002578 02002025 */   or         $a0, $s0, $zero
+  .L8000257C:
+    /* 00317C 8000257C 0C0007F9 */  jal         func_80001FE4
+    /* 003180 80002580 00000000 */   nop
+    /* 003184 80002584 1000FFEA */  b           .L80002530
+    /* 003188 80002588 02002025 */   or         $a0, $s0, $zero
+  .L8000258C:
+    /* 00318C 8000258C 0C000895 */  jal         func_80002254
+    /* 003190 80002590 00000000 */   nop
+    /* 003194 80002594 1000FFE6 */  b           .L80002530
+    /* 003198 80002598 02002025 */   or         $a0, $s0, $zero
+  .L8000259C:
+    /* 00319C 8000259C 8C428888 */  lw          $v0, %lo(D_80048888)($v0)
+    /* 0031A0 800025A0 5040FFE3 */  beql        $v0, $zero, .L80002530
+    /* 0031A4 800025A4 02002025 */   or         $a0, $s0, $zero
+    /* 0031A8 800025A8 0040F809 */  jalr        $v0
+    /* 0031AC 800025AC 00000000 */   nop
+    /* 0031B0 800025B0 1000FFDF */  b           .L80002530
+    /* 0031B4 800025B4 02002025 */   or         $a0, $s0, $zero
+  .L800025B8:
+    /* 0031B8 800025B8 8F18888C */  lw          $t8, %lo(D_8004888C)($t8)
+    /* 0031BC 800025BC 5700FFDC */  bnel        $t8, $zero, .L80002530
+    /* 0031C0 800025C0 02002025 */   or         $a0, $s0, $zero
+    /* 0031C4 800025C4 0C000939 */  jal         func_800024E4
+    /* 0031C8 800025C8 00000000 */   nop
+    /* 0031CC 800025CC 1000FFD8 */  b           .L80002530
+    /* 0031D0 800025D0 02002025 */   or         $a0, $s0, $zero
+    /* 0031D4 800025D4 8FBF001C */  lw          $ra, 0x1C($sp)
+    /* 0031D8 800025D8 8FB00018 */  lw          $s0, 0x18($sp)
+    /* 0031DC 800025DC 27BD0080 */  addiu       $sp, $sp, 0x80
+    /* 0031E0 800025E0 03E00008 */  jr          $ra
+    /* 0031E4 800025E4 00000000 */   nop
+.size func_80002518, . - func_80002518
+";
+
+    assert_eq!(disassembly, expected_disassembly,);
 }
