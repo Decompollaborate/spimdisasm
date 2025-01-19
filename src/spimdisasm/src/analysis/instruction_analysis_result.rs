@@ -168,7 +168,7 @@ impl InstructionAnalysisResult {
             // `jalr`. Implicit `!is_jump_with_address`
             self.process_jump_and_link_register(regs_tracker, instr, instr_rom);
         } else if instr.opcode().can_be_hi() {
-            self.process_hi(regs_tracker, instr, instr_rom, prev_instr);
+            self.process_hi(regs_tracker, instr, instr_rom);
         } else if instr.opcode().is_unsigned() {
             self.process_unsigned_lo(regs_tracker, instr, instr_rom);
         } else if instr.opcode().can_be_lo() {
@@ -301,9 +301,8 @@ impl InstructionAnalysisResult {
         regs_tracker: &mut RegisterTracker,
         instr: &Instruction,
         instr_rom: Rom,
-        prev_instr: Option<&Instruction>,
     ) {
-        regs_tracker.process_hi(instr, instr_rom, prev_instr);
+        regs_tracker.process_hi(instr, instr_rom);
         self.hi_instrs.insert(
             instr_rom,
             (

@@ -1,8 +1,6 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use rabbitizer::Instruction;
-
 use crate::addresses::Rom;
 
 use super::JrRegData;
@@ -10,10 +8,6 @@ use super::JrRegData;
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct HiInfo {
     pub(crate) instr_rom: Rom,
-
-    // If the previous instructions is a branch likely, then nulify
-    // the effects of this instruction for future analysis
-    pub(crate) set_on_branch_likely: bool,
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -104,14 +98,11 @@ impl TrackedRegisterState {
 }
 
 impl TrackedRegisterState {
-    pub fn set_hi(&mut self, value: u32, instr_rom: Rom, prev_instr: Option<&Instruction>) {
+    pub fn set_hi(&mut self, value: u32, instr_rom: Rom) {
         assert!(self.gp_info.is_none());
         self.value = value << 16;
 
-        self.hi_info = Some(HiInfo {
-            instr_rom,
-            set_on_branch_likely: prev_instr.is_some_and(|x| x.opcode().is_branch_likely()),
-        });
+        self.hi_info = Some(HiInfo { instr_rom });
         self.dereferenced = None;
         self.clear_contains_float();
     }

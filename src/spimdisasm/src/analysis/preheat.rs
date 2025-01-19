@@ -55,6 +55,15 @@ impl Preheater {
                 continue;
             }
 
+            if prev_instr.is_some_and(|x| x.opcode().is_branch_likely()) {
+                // We only do a single lineal analysis, no control flow at all,
+                // so if we find a branch likely we skip it to avoid carrying garbage info.
+                prev_instr = Some(instr);
+                current_rom += Size::new(4);
+                current_vram += Size::new(4);
+                continue;
+            }
+
             if let Some(_target_vram) = instr.get_branch_vram_generic() {
                 // instr.opcode().is_branch() or instr.is_unconditional_branch()
                 regs_tracker.process_branch(&instr, current_rom);
@@ -89,7 +98,7 @@ impl Preheater {
                 }
                 */
             } else if instr.opcode().can_be_hi() {
-                regs_tracker.process_hi(&instr, current_rom, prev_instr.as_ref());
+                regs_tracker.process_hi(&instr, current_rom);
             } else if instr.opcode().is_unsigned() {
                 // TODO
             } else if instr.opcode().can_be_lo() {

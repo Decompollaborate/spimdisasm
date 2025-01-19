@@ -319,7 +319,7 @@ fn find_functions(
         }
 
         let current_rom = section_ranges.rom().start() + Size::new(index as u32 * 4);
-        run_register_tracker_start(&mut regs_tracker, instr, prev_instr, current_rom);
+        run_register_tracker_start(&mut regs_tracker, instr, current_rom);
 
         if instr.opcode().is_branch()
             || instr.is_unconditional_branch()
@@ -577,7 +577,6 @@ fn find_functions_check_function_ended(
 fn run_register_tracker_start(
     regs_tracker: &mut RegisterTracker,
     instr: &Instruction,
-    prev_instr: Option<&Instruction>,
     current_rom: Rom,
 ) {
     if !instr.is_valid() {
@@ -607,7 +606,7 @@ fn run_register_tracker_start(
         }
         */
     } else if instr.opcode().can_be_hi() {
-        regs_tracker.process_hi(instr, current_rom, prev_instr);
+        regs_tracker.process_hi(instr, current_rom);
     } else if instr.opcode().is_unsigned() {
         // TODO
     } else if instr.opcode().can_be_lo() {

@@ -67,12 +67,7 @@ impl RegisterTracker {
         }
     }
 
-    pub(crate) fn process_hi(
-        &mut self,
-        instr: &Instruction,
-        instr_rom: Rom,
-        prev_instr: Option<&Instruction>,
-    ) {
+    pub(crate) fn process_hi(&mut self, instr: &Instruction, instr_rom: Rom) {
         assert!(instr.opcode().can_be_hi());
 
         let reg = instr
@@ -86,7 +81,6 @@ impl RegisterTracker {
                 .get_processed_immediate()
                 .expect("lui should have an immediate field") as u32,
             instr_rom,
-            prev_instr,
         );
     }
 
@@ -194,14 +188,12 @@ impl RegisterTracker {
             let state = &self.registers[reg.as_index()];
 
             if let Some(hi_info) = state.hi_info() {
-                if !hi_info.set_on_branch_likely {
-                    return Some(LoPairingInfo {
-                        instr_rom: hi_info.instr_rom,
-                        value: state.value() as i64,
-                        is_gp_rel: false,
-                        is_gp_got: false,
-                    });
-                }
+                return Some(LoPairingInfo {
+                    instr_rom: hi_info.instr_rom,
+                    value: state.value() as i64,
+                    is_gp_rel: false,
+                    is_gp_got: false,
+                });
             } else if reg.is_global_pointer(instr.abi()) {
                 return Some(LoPairingInfo {
                     instr_rom: Rom::new(0),
