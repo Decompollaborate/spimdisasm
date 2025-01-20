@@ -7,26 +7,106 @@ use super::{RelocReferencedSym, RelocationInfo};
 #[non_exhaustive]
 #[allow(non_camel_case_types)] // TODO: remove?
 pub enum RelocationType {
-    R_MIPS_NONE = 0,     // No reloc
-    R_MIPS_16 = 1,       // Direct 16 bit
-    R_MIPS_32 = 2,       // Direct 32 bit
-    R_MIPS_REL32 = 3,    // PC relative 32 bit
-    R_MIPS_26 = 4,       // Direct 26 bit shifted
-    R_MIPS_HI16 = 5,     // High 16 bit
-    R_MIPS_LO16 = 6,     // Low 16 bit
-    R_MIPS_GPREL16 = 7,  // GP relative 16 bit
-    R_MIPS_LITERAL = 8,  // 16 bit literal entry
-    R_MIPS_GOT16 = 9,    // 16 bit GOT entry
-    R_MIPS_PC16 = 10,    // PC relative 16 bit
-    R_MIPS_CALL16 = 11,  // 16 bit GOT entry for function
-    R_MIPS_GPREL32 = 12, // GP relative 32 bit
+    /// Official description: No reloc.
+    ///
+    ///
+    R_MIPS_NONE = 0,
+    /// Official description: Direct 16 bit.
+    ///
+    /// TODO: figure out what is this for. The MIPS ABI pdf doesn't explain it.
+    R_MIPS_16 = 1,
+    /// Official description: Direct 32 bit.
+    ///
+    /// Used for symbols references in `.data`-like sections.
+    R_MIPS_32 = 2,
+    /// Official description: PC relative 32 bit.
+    ///
+    /// Dynamic linker shenanigans.
+    R_MIPS_REL32 = 3,
+    /// Official description: Direct 26 bit shifted.
+    ///
+    /// Direct function calls (`jal`s, `j`s, etc).
+    R_MIPS_26 = 4,
+    /// Official description: High 16 bit.
+    ///
+    /// `%hi` reloc to be used on `lui`s.
+    R_MIPS_HI16 = 5,
+    /// Official description: Low 16 bit.
+    ///
+    /// The `%lo` pairing of either a `R_MIPS_HI16` or a `R_MIPS_GOT16` that is referencing a local symbol.
+    R_MIPS_LO16 = 6,
+    /// Official description: GP relative 16 bit.
+    ///
+    /// Reference "small symbols", symbols present on small data sections (`.sdata`, `.sbss`, `.scommon`, etc.).
+    ///
+    /// `$gp` relative.
+    R_MIPS_GPREL16 = 7,
+    /// Official description: 16 bit literal entry.
+    ///
+    /// TODO: figure out what is this for. The MIPS ABI pdf doesn't explain it.
+    R_MIPS_LITERAL = 8,
+    /// Official description: 16 bit GOT entry.
+    ///
+    /// Used for instructions referencing the "global offset table" (GOT).
+    ///
+    /// `$gp` relative.
+    R_MIPS_GOT16 = 9,
+    /// Official description: PC relative 16 bit.
+    ///
+    /// Branches.
+    R_MIPS_PC16 = 10,
+    /// Official description: 16 bit GOT entry for function.
+    ///
+    /// Used to load the address of a function from the GOT, which will be later called with `jalr`.
+    ///
+    /// `$gp` relative.
+    R_MIPS_CALL16 = 11,
+    /// Official description: GP relative 32 bit.
+    ///
+    /// Like `R_MIPS_GPREL32`, but GOT-relative.
+    R_MIPS_GPREL32 = 12,
 
+    /// Yet another way of loading `$gp` relative symbols.
+    ///
+    /// ```mips
+    /// lui         $reg, %got_hi(sym)
+    /// addu        $reg, $reg, $gp
+    /// lw          $reg2, %got_lo(sym)($reg)
+    /// ```
     R_MIPS_GOT_HI16 = 22,
+    /// Yet another way of loading `$gp` relative symbols.
+    ///
+    /// ```mips
+    /// lui         $reg, %got_hi(sym)
+    /// addu        $reg, $reg, $gp
+    /// lw          $reg2, %got_lo(sym)($reg)
+    /// ```
     R_MIPS_GOT_LO16 = 23,
+
+    /// Yet another way of loading `$gp` relative functions.
+    ///
+    /// ```mips
+    /// lui         $reg, %got_hi(function)
+    /// addu        $reg, $reg, $gp
+    /// lw          $reg2, %got_lo(sym)($reg)
+    /// jalr        $reg2
+    ///  nop
+    /// ```
     R_MIPS_CALL_HI16 = 30,
+    /// Yet another way of loading `$gp` relative functions.
+    ///
+    /// ```mips
+    /// lui         $reg, %got_hi(function)
+    /// addu        $reg, $reg, $gp
+    /// lw          $reg2, %got_lo(sym)($reg)
+    /// jalr        $reg2
+    ///  nop
+    /// ```
     R_MIPS_CALL_LO16 = 31,
 
+    /// A hack to allow emitting hi/lo paired constants.
     R_CUSTOM_CONSTANT_HI = -1,
+    /// A hack to allow emitting hi/lo paired constants.
     R_CUSTOM_CONSTANT_LO = -2,
 }
 

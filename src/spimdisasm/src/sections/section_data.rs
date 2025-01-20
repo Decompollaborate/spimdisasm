@@ -196,6 +196,7 @@ impl SectionData {
                                 word_vram,
                                 &parent_segment_info,
                                 FindSettings::new(true),
+                                |_| true,
                             );
                             if reference.is_none() {
                                 maybe_pointers_to_other_sections.push((word_vram, current_rom));

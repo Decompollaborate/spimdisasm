@@ -151,6 +151,7 @@ impl SymbolData {
                         word_vram,
                         &self.parent_segment_info,
                         find_settings,
+                        |_| true,
                     )
                 }
                 .is_some_and(|reference| {

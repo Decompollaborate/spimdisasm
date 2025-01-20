@@ -245,12 +245,16 @@ impl Context {
     }
 
     #[must_use]
-    pub(crate) fn find_symbol_from_any_segment(
+    pub(crate) fn find_symbol_from_any_segment<F>(
         &self,
         vram: Vram,
         info: &ParentSegmentInfo,
         settings: FindSettings,
-    ) -> Option<&SymbolMetadata> {
+        ovl_sym_validation: F,
+    ) -> Option<&SymbolMetadata>
+    where
+        F: Fn(&SymbolMetadata) -> bool,
+    {
         if self.global_segment.in_vram_range(vram) {
             return self.global_segment.find_symbol(vram, settings);
         }
@@ -283,7 +287,9 @@ impl Context {
                     .expect("Should exist since we already checked the length");
                 if segment.in_vram_range(vram) {
                     if let Some(sym) = segment.find_symbol(vram, settings) {
-                        return Some(sym);
+                        if ovl_sym_validation(sym) {
+                            return Some(sym);
+                        }
                     }
                 }
             }
@@ -300,7 +306,9 @@ impl Context {
                 for (_, segment) in segments {
                     if segment.in_vram_range(vram) {
                         if let Some(sym) = segment.find_symbol(vram, settings) {
-                            return Some(sym);
+                            if ovl_sym_validation(sym) {
+                                return Some(sym);
+                            }
                         }
                     }
                 }
@@ -317,7 +325,9 @@ impl Context {
             let segment = segments_per_rom.placeholder_segment();
             if segment.in_vram_range(vram) {
                 if let Some(sym) = segment.find_symbol(vram, settings) {
-                    return Some(sym);
+                    if ovl_sym_validation(sym) {
+                        return Some(sym);
+                    }
                 }
             }
         }

@@ -4,8 +4,12 @@
 use core::fmt;
 
 use crate::{
-    addresses::Vram, collections::addended_ordered_map::FindSettings, config::Compiler,
-    context::Context, metadata::SymbolMetadata, parent_segment_info::ParentSegmentInfo,
+    addresses::Vram,
+    collections::addended_ordered_map::FindSettings,
+    config::Compiler,
+    context::Context,
+    metadata::{SymbolMetadata, SymbolType},
+    parent_segment_info::ParentSegmentInfo,
     symbols::display::InternalSymDisplSettings,
 };
 
@@ -89,9 +93,53 @@ impl<'ctx, 'rel, 'prnt> RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
                 let find_settings = FindSettings::new(
                     allow_ref_with_addend && rel.reloc_type.allow_addends_on_ref(),
                 );
-                if let Some(sym_metadata) =
-                    context.find_symbol_from_any_segment(*vram, segment_info, find_settings)
-                {
+                if let Some(sym_metadata) = context.find_symbol_from_any_segment(
+                    *vram,
+                    segment_info,
+                    find_settings,
+                    |metadata| {
+                        match rel.reloc_type {
+                            RelocationType::R_MIPS_NONE => true, // Shouldn't be possible, but whatever.
+
+                            RelocationType::R_MIPS_16 => true,
+                            RelocationType::R_MIPS_32 => true,
+
+                            RelocationType::R_MIPS_REL32 => true,
+
+                            RelocationType::R_MIPS_26 => {
+                                metadata.sym_type() == Some(SymbolType::Function)
+                            }
+
+                            RelocationType::R_MIPS_HI16 => true,
+                            RelocationType::R_MIPS_LO16 => true,
+                            RelocationType::R_MIPS_GPREL16 => true,
+
+                            RelocationType::R_MIPS_LITERAL => true,
+
+                            RelocationType::R_MIPS_PC16 => {
+                                metadata.sym_type().is_some_and(|x| x.valid_branch_target())
+                            }
+
+                            RelocationType::R_MIPS_CALL16
+                            | RelocationType::R_MIPS_CALL_HI16
+                            | RelocationType::R_MIPS_CALL_LO16 => {
+                                // TODO: check symbol is present in the GOT.
+                                metadata.sym_type() == Some(SymbolType::Function)
+                            }
+
+                            RelocationType::R_MIPS_GOT16
+                            | RelocationType::R_MIPS_GPREL32
+                            | RelocationType::R_MIPS_GOT_HI16
+                            | RelocationType::R_MIPS_GOT_LO16 => {
+                                // TODO: check symbol is present in the GOT.
+                                true
+                            }
+
+                            RelocationType::R_CUSTOM_CONSTANT_HI => false,
+                            RelocationType::R_CUSTOM_CONSTANT_LO => false,
+                        }
+                    },
+                ) {
                     RelocSymState::Sym(*vram, sym_metadata)
                 } else {
                     if false {
@@ -145,7 +193,7 @@ impl fmt::Display for RelocationInfoDisplay<'_, '_, '_> {
         // TODO: gpRelHack
         let x = match self.rel.reloc_type {
             RelocationType::R_MIPS_NONE => "",
-            RelocationType::R_MIPS_16 => "",
+            RelocationType::R_MIPS_16 => "%half",
             RelocationType::R_MIPS_32 => ".word ",
             RelocationType::R_MIPS_REL32 => "",
             RelocationType::R_MIPS_26 => "",
