@@ -2,6 +2,7 @@
 /* SPDX-License-Identifier: MIT */
 
 use alloc::vec::Vec;
+use core::cmp::Ordering;
 use rabbitizer::{access_type::AccessType, Instruction};
 
 use crate::{
@@ -340,9 +341,9 @@ impl Preheater {
                             let other_sym_vram = x.vram();
 
                             match other_sym_vram.cmp(&current_vram) {
-                                core::cmp::Ordering::Greater => false,
-                                core::cmp::Ordering::Equal => true,
-                                core::cmp::Ordering::Less => {
+                                Ordering::Greater => false,
+                                Ordering::Equal => true,
+                                Ordering::Less => {
                                     if x.size().is_some_and(|x| other_sym_vram + x <= current_vram)
                                     {
                                         true
@@ -354,7 +355,7 @@ impl Preheater {
                                         // properly debug why they happen and how to avoid them, in the meantime we have
                                         // this hack.
                                         references_found.last().is_some_and(|x| {
-                                            x.0 == other_sym_vram
+                                            x.0 >= other_sym_vram
                                                 && x.3.is_some_and(|size| {
                                                     other_sym_vram + size <= current_vram
                                                 })
@@ -363,6 +364,9 @@ impl Preheater {
                                 }
                             }
                         }) {
+                            // Check if there is already another symbol after the current one and before the end of the string,
+                            // in which case we say this symbol should not be a string
+
                             remaining_string_size = str_size as i32;
 
                             references_found.push((

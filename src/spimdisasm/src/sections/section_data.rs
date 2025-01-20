@@ -2,6 +2,7 @@
 /* SPDX-License-Identifier: MIT */
 
 use alloc::{collections::btree_map::BTreeMap, string::String, vec::Vec};
+use core::cmp::Ordering;
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
@@ -72,7 +73,7 @@ impl SectionData {
 
         let mut symbols_info = BTreeMap::new();
         // Ensure there's a symbol at the beginning of the section.
-        symbols_info.insert(vram, (None,));
+        symbols_info.insert(vram, None);
 
         let mut maybe_pointers_to_other_sections = Vec::new();
 
@@ -123,9 +124,9 @@ impl SectionData {
                             let other_sym_vram = x.vram();
 
                             match other_sym_vram.cmp(&current_vram) {
-                                core::cmp::Ordering::Greater => false,
-                                core::cmp::Ordering::Equal => true,
-                                core::cmp::Ordering::Less => {
+                                Ordering::Greater => false,
+                                Ordering::Equal => true,
+                                Ordering::Less => {
                                     x.size().is_some_and(|x| other_sym_vram + x <= current_vram)
                                 }
                             }
@@ -135,7 +136,8 @@ impl SectionData {
 
                             remaining_string_size = str_size as i32;
 
-                            symbols_info.insert(current_vram, (Some(SymbolType::CString),));
+                            *symbols_info.entry(current_vram).or_default() =
+                                Some(SymbolType::CString);
                             if !auto_pads.contains_key(&current_vram) {
                                 auto_pads.insert(current_vram, current_vram);
                             }
@@ -143,7 +145,7 @@ impl SectionData {
                             let next_vram = current_vram + Size::new(str_sym_size as u32);
                             if ((next_vram - vram).inner() as usize) < raw_bytes.len() {
                                 // Avoid generating a symbol at the end of the section
-                                symbols_info.insert(next_vram, (None,));
+                                symbols_info.entry(next_vram).or_default();
                                 auto_pads.insert(next_vram, current_vram);
                             }
 
@@ -183,10 +185,10 @@ impl SectionData {
                                 if reference.vram() == word_vram {
                                     // Only count this symbol if it doesn't have an addend.
                                     // If it does have an addend then it may be part of a larger symbol.
-                                    symbols_info.insert(word_vram, (None,));
+                                    symbols_info.entry(word_vram).or_default();
                                 }
                             } else {
-                                symbols_info.insert(word_vram, (None,));
+                                symbols_info.entry(word_vram).or_default();
                             }
                         } else {
                             let current_rom = rom + (current_vram - vram).try_into().expect("This should not panic because `current_vram` should always be greter or equal to `vram`");
@@ -250,18 +252,18 @@ impl SectionData {
 
                 for (x_vram, x) in [(current_vram, a), (b_vram, b), (c_vram, c), (d_vram, d)] {
                     if let Some(reference) = x {
-                        symbols_info.insert(reference.vram(), (None,));
+                        symbols_info.entry(reference.vram()).or_default();
                         if let Some(size) = reference.user_declared_size() {
                             let next_vram = reference.vram() + size;
                             if ((next_vram - vram).inner() as usize) < raw_bytes.len() {
                                 // Avoid generating a symbol at the end of the section
-                                symbols_info.insert(next_vram, (None,));
+                                symbols_info.entry(next_vram).or_default();
                                 auto_pads.insert(next_vram, reference.vram());
                             }
                         }
                         prev_sym_type = reference.sym_type();
                     } else if owned_segment.is_vram_a_possible_pointer_in_data(x_vram) {
-                        symbols_info.insert(x_vram, (None,));
+                        symbols_info.entry(x_vram).or_default();
                     }
                 }
             }
@@ -285,10 +287,9 @@ impl SectionData {
             remaining_string_size -= 4;
         }
 
-        let symbols_info_vec: Vec<(Vram, (Option<SymbolType>,))> =
-            symbols_info.into_iter().collect();
+        let symbols_info_vec: Vec<(Vram, Option<SymbolType>)> = symbols_info.into_iter().collect();
 
-        for (i, (new_sym_vram, extra_info)) in symbols_info_vec.iter().enumerate() {
+        for (i, (new_sym_vram, sym_type)) in symbols_info_vec.iter().enumerate() {
             let start = new_sym_vram.sub_vram(&vram).inner() as usize;
             let end = if i + 1 < symbols_info_vec.len() {
                 symbols_info_vec[i + 1].0.sub_vram(&vram).inner() as usize
@@ -317,7 +318,7 @@ impl SectionData {
                 ),
                 compiler: settings.compiler,
                 auto_pad_by: auto_pads.get(new_sym_vram).copied(),
-                detected_type: extra_info.0,
+                detected_type: *sym_type,
                 encoding: settings.encoding,
             };
             let /*mut*/ sym = SymbolData::new(context, raw_bytes[start..end].into(), sym_rom, *new_sym_vram, start, parent_segment_info.clone(), section_type, properties)?;

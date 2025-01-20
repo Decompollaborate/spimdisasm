@@ -179,7 +179,9 @@ mod tests {
         let guesser = StringGuesserLevel::MultipleReferences;
 
         let maybe_size = guesser.guess(None, vram, &BYTES, encoding, false);
-        // println!("{:?}", maybe_size);
+
+        #[cfg(feature = "std")]
+        println!("{:?}", maybe_size);
 
         //None::<u32>.unwrap();
         assert_eq!(maybe_size, Some(53));
@@ -193,7 +195,9 @@ mod tests {
         let guesser = StringGuesserLevel::MultipleReferences;
 
         let maybe_size = guesser.guess(None, vram, &BYTES, encoding, false);
-        // println!("{:?}", maybe_size);
+
+        #[cfg(feature = "std")]
+        println!("{:?}", maybe_size);
 
         //None::<u32>.unwrap();
         assert_eq!(maybe_size, Some(4));
