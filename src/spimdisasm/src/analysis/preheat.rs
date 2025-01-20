@@ -9,6 +9,7 @@ use crate::{
     collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
     config::GlobalConfig,
     metadata::{SegmentMetadata, SymbolType},
+    section_type::SectionType,
     sections::{SectionDataSettings, SectionExecutableSettings},
 };
 
@@ -187,7 +188,15 @@ impl Preheater {
             return;
         }
 
-        self.common_data_preheat(global_config, settings, raw_bytes, rom, vram, owned_segment);
+        self.common_data_preheat(
+            global_config,
+            settings,
+            raw_bytes,
+            rom,
+            vram,
+            owned_segment,
+            SectionType::Data,
+        );
     }
 
     pub fn preheat_rodata(
@@ -204,7 +213,15 @@ impl Preheater {
             return;
         }
 
-        self.common_data_preheat(global_config, settings, raw_bytes, rom, vram, owned_segment);
+        self.common_data_preheat(
+            global_config,
+            settings,
+            raw_bytes,
+            rom,
+            vram,
+            owned_segment,
+            SectionType::Rodata,
+        );
     }
 
     pub fn preheat_gcc_except_table(
@@ -247,6 +264,8 @@ impl Preheater {
         }
     }
 
+    // TODO
+    #[allow(clippy::too_many_arguments)]
     fn common_data_preheat(
         &mut self,
         global_config: &GlobalConfig,
@@ -255,6 +274,7 @@ impl Preheater {
         rom: Rom,
         vram: Vram,
         owned_segment: &SegmentMetadata,
+        section_type: SectionType,
     ) {
         if rom.inner() % 4 != 0 || vram.inner() % 4 != 0 {
             // not word-aligned, give up.
@@ -267,6 +287,13 @@ impl Preheater {
         let mut remaining_string_size = 0;
 
         let mut prev_sym_type: Option<SymbolType> = None;
+        // If true: the previous symbol made us thought we may be in late_rodata
+        let mut maybe_reached_late_rodata = false;
+        // If true, we are sure we are in late_rodata
+        let mut reached_late_rodata = false;
+
+        let mut float_counter = 0;
+        let mut float_padding_counter = 0;
 
         // TODO
         #[allow(clippy::type_complexity)]
@@ -299,6 +326,7 @@ impl Preheater {
                         current_vram,
                         &raw_bytes[local_offset..],
                         settings.encoding(),
+                        maybe_reached_late_rodata || reached_late_rodata,
                     ) {
                         let str_sym_size = str_size.next_multiple_of(4);
                         let in_between_sym = ReferenceWrapper::find(
@@ -343,6 +371,9 @@ impl Preheater {
                                 None,
                                 Some(Size::new(str_sym_size as u32)),
                             ));
+
+                            // Next symbol should not be affected by this string.
+                            prev_sym_type = None;
                         }
                     }
                 }
@@ -364,10 +395,10 @@ impl Preheater {
                 let d =
                     ReferenceWrapper::find(owned_segment, self, d_vram, FindSettings::new(false));
 
-                let a_type = a.map(|x| x.sym_type());
-                let b_type = b.map(|x| x.sym_type());
-                let c_type = c.map(|x| x.sym_type());
-                let d_type = d.map(|x| x.sym_type());
+                let a_type = (a.is_some(), a.and_then(|x| x.sym_type()));
+                let b_type = (b.is_some(), b.and_then(|x| x.sym_type()));
+                let c_type = (c.is_some(), c.and_then(|x| x.sym_type()));
+                let d_type = (d.is_some(), d.and_then(|x| x.sym_type()));
 
                 if b.is_none() && c.is_none() && d.is_none() {
                     // There's no symbol in between
@@ -379,8 +410,9 @@ impl Preheater {
                     let should_search_for_address =
                         current_type.is_none_or(|x| x.can_reference_symbols());
 
+                    let endian = global_config.endian();
+                    let word = endian.word_from_bytes(word_bytes);
                     if should_search_for_address {
-                        let word = global_config.endian().word_from_bytes(word_bytes);
                         let word_vram = Vram::new(word);
 
                         if owned_segment.in_vram_range(word_vram) {
@@ -391,10 +423,58 @@ impl Preheater {
                             }
                         }
                     }
+
+                    if maybe_reached_late_rodata
+                        && matches!(
+                            current_type,
+                            Some(SymbolType::Float32 | SymbolType::Float64)
+                        )
+                        && a.is_some()
+                    {
+                        reached_late_rodata = true;
+                    }
+
+                    if let Some(a) = a {
+                        if matches!(
+                            a.sym_type(),
+                            Some(SymbolType::Float32 | SymbolType::Float64)
+                        ) {
+                            float_counter = 1;
+                            float_padding_counter = 0;
+                        } else {
+                            float_counter = 0;
+                            float_padding_counter = 0;
+                        }
+                    } else if current_type == Some(SymbolType::Float32) {
+                        float_counter += 1;
+                        if word == 0 {
+                            float_padding_counter += 1;
+                        }
+                    } else if current_type == Some(SymbolType::Float64) {
+                        if current_vram.inner() % 8 == 0 {
+                            if local_offset + 8 <= raw_bytes.len() {
+                                float_counter += 1;
+                                if endian
+                                    .dword_from_bytes(&raw_bytes[local_offset..local_offset + 8])
+                                    == 0
+                                {
+                                    float_padding_counter += 1;
+                                }
+                            } else {
+                                float_counter = 0;
+                                float_padding_counter = 0;
+                            }
+                        }
+                    } else {
+                        float_counter = 0;
+                        float_padding_counter = 0;
+                    }
                 }
 
-                for x in [a_type, b_type, c_type, d_type].into_iter().flatten() {
-                    prev_sym_type = x;
+                for (exists, sym_type) in [a_type, b_type, c_type, d_type].into_iter() {
+                    if exists {
+                        prev_sym_type = sym_type;
+                    }
                 }
 
                 if let Some(table_label) = table_label {
@@ -407,6 +487,22 @@ impl Preheater {
                 }
             }
 
+            maybe_reached_late_rodata = false;
+            if !reached_late_rodata
+                && section_type == SectionType::Rodata
+                && prev_sym_type.is_some_and(|x| x.is_late_rodata(settings.compiler()))
+            {
+                if prev_sym_type == Some(SymbolType::Jumptable) {
+                    reached_late_rodata = true;
+                } else if float_padding_counter + 1 == float_counter {
+                    // Finding a float or a double is not proof enough to say we are in late_rodata, because we
+                    // can be after a const array of floats/doubles.
+                    // An example of this is the libultra file `xldtob`.
+                    // It is okay for late rodata floats to have padding, but if a float has non-zero padding
+                    // it means it isn't a late_rodata float.
+                    maybe_reached_late_rodata = true;
+                }
+            }
             remaining_string_size -= 4;
         }
 

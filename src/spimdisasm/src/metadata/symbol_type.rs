@@ -5,6 +5,8 @@
 use pyo3::prelude::*;
 use rabbitizer::access_type::AccessType;
 
+use crate::config::Compiler;
+
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", eq))]
@@ -98,5 +100,18 @@ impl SymbolType {
                 | SymbolType::JumptableLabel
                 | SymbolType::GccExceptTableLabel
         )
+    }
+
+    pub(crate) fn is_late_rodata(&self, compiler: Option<Compiler>) -> bool {
+        if compiler.is_some_and(|x| x.has_late_rodata()) {
+            // late rodata only exists in IDO's world
+
+            matches!(
+                self,
+                SymbolType::Jumptable | SymbolType::Float32 | SymbolType::Float64
+            )
+        } else {
+            false
+        }
     }
 }

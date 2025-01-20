@@ -336,9 +336,6 @@ impl SymDataDisplay<'_, '_, '_> {
     ) -> Result<usize, fmt::Error> {
         let bytes = &self.sym.raw_bytes()[i..];
         let str_end = if let Some(str_end) = bytes.iter().position(|x| *x == b'\0') {
-            if str_end == 0 {
-                return self.display_as_word(f, i, current_rom, current_vram);
-            }
             str_end
         } else {
             // write!(f, "/* Invalid string due to missing nul terminator */{}", self.settings.common.line_end())?;
@@ -369,7 +366,21 @@ impl SymDataDisplay<'_, '_, '_> {
             self.settings.common.line_end()
         )?;
 
-        Ok((str_end + 1).next_multiple_of(4))
+        let real_end = (str_end + 1).next_multiple_of(4);
+
+        // Check if there's any non-zero data in the current word after the zero terminator.
+        if str_end + 1 != real_end {
+            let must_show_padding = bytes[str_end + 1..real_end].iter().any(|x| *x != 0);
+
+            if must_show_padding {
+                for i in str_end + 1..real_end {
+                    let offset = Size::new(i as u32);
+                    self.display_as_byte(f, i, current_rom + offset, current_vram + offset)?;
+                }
+            }
+        }
+
+        Ok(real_end)
     }
 }
 

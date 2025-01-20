@@ -8,7 +8,7 @@ use pyo3::prelude::*;
 
 use crate::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
-    analysis::{ReferenceWrapper, StringGuesserLevel},
+    analysis::StringGuesserLevel,
     collections::{
         addended_ordered_map::FindSettings, unordered_map::UnorderedMap,
         unordered_set::UnorderedSet,
@@ -80,7 +80,14 @@ impl SectionData {
 
         let mut remaining_string_size = 0;
 
-        let mut prev_ref: Option<ReferenceWrapper> = None;
+        let mut prev_sym_type: Option<SymbolType> = None;
+        // If true: the previous symbol made us thought we may be in late_rodata
+        let mut maybe_reached_late_rodata = false;
+        // If true, we are sure we are in late_rodata
+        let mut reached_late_rodata = false;
+
+        let mut float_counter = 0;
+        let mut float_padding_counter = 0;
 
         // Look for stuff that looks like addresses which point to symbols on this section
         let displacement = (4 - (vram.inner() % 4) as usize) % 4;
@@ -104,6 +111,7 @@ impl SectionData {
                         current_vram,
                         &raw_bytes[local_offset..],
                         settings.encoding,
+                        maybe_reached_late_rodata || reached_late_rodata,
                     ) {
                         let str_sym_size = str_size.next_multiple_of(4);
                         let in_between_sym = owned_segment.find_reference(
@@ -138,6 +146,9 @@ impl SectionData {
                                 symbols_info.insert(next_vram, (None,));
                                 auto_pads.insert(next_vram, current_vram);
                             }
+
+                            // Next symbol should not be affected by this string.
+                            prev_sym_type = None;
                         }
                     }
                 }
@@ -152,17 +163,17 @@ impl SectionData {
                 if b.is_none() && c.is_none() && d.is_none() {
                     // There's no symbol in between
 
-                    let should_search_for_address = match a {
-                        None => prev_ref
-                            .is_none_or(|s| s.sym_type().is_none_or(|x| x.can_reference_symbols())),
-                        Some(metadata) => metadata
-                            .sym_type()
-                            .is_none_or(|x| x.can_reference_symbols()),
+                    let current_type = match a {
+                        None => prev_sym_type,
+                        Some(wrapper) => wrapper.sym_type(),
                     };
+                    let should_search_for_address =
+                        current_type.is_none_or(|x| x.can_reference_symbols());
 
+                    let endian = context.global_config().endian();
+                    let word = endian.word_from_bytes(word_bytes);
                     if should_search_for_address {
                         // TODO: improve heuristic to determine if should search for symbols
-                        let word = context.global_config().endian().word_from_bytes(word_bytes);
                         let word_vram = Vram::new(word);
                         if vram_range.in_range(word_vram) {
                             // Vram is contained in this section
@@ -189,6 +200,52 @@ impl SectionData {
                             }
                         }
                     }
+
+                    if maybe_reached_late_rodata
+                        && matches!(
+                            current_type,
+                            Some(SymbolType::Float32 | SymbolType::Float64)
+                        )
+                        && a.is_some()
+                    {
+                        reached_late_rodata = true;
+                    }
+
+                    if let Some(a) = a {
+                        if matches!(
+                            a.sym_type(),
+                            Some(SymbolType::Float32 | SymbolType::Float64)
+                        ) {
+                            float_counter = 1;
+                            float_padding_counter = 0;
+                        } else {
+                            float_counter = 0;
+                            float_padding_counter = 0;
+                        }
+                    } else if current_type == Some(SymbolType::Float32) {
+                        float_counter += 1;
+                        if word == 0 {
+                            float_padding_counter += 1;
+                        }
+                    } else if current_type == Some(SymbolType::Float64) {
+                        if current_vram.inner() % 8 == 0 {
+                            if local_offset + 8 <= raw_bytes.len() {
+                                float_counter += 1;
+                                if endian
+                                    .dword_from_bytes(&raw_bytes[local_offset..local_offset + 8])
+                                    == 0
+                                {
+                                    float_padding_counter += 1;
+                                }
+                            } else {
+                                float_counter = 0;
+                                float_padding_counter = 0;
+                            }
+                        }
+                    } else {
+                        float_counter = 0;
+                        float_padding_counter = 0;
+                    }
                 }
 
                 for (x_vram, x) in [(current_vram, a), (b_vram, b), (c_vram, c), (d_vram, d)] {
@@ -202,13 +259,29 @@ impl SectionData {
                                 auto_pads.insert(next_vram, reference.vram());
                             }
                         }
-                        prev_ref = Some(reference);
+                        prev_sym_type = reference.sym_type();
                     } else if owned_segment.is_vram_a_possible_pointer_in_data(x_vram) {
                         symbols_info.insert(x_vram, (None,));
                     }
                 }
             }
 
+            maybe_reached_late_rodata = false;
+            if !reached_late_rodata
+                && section_type == SectionType::Rodata
+                && prev_sym_type.is_some_and(|x| x.is_late_rodata(settings.compiler()))
+            {
+                if prev_sym_type == Some(SymbolType::Jumptable) {
+                    reached_late_rodata = true;
+                } else if float_padding_counter + 1 == float_counter {
+                    // Finding a float or a double is not proof enough to say we are in late_rodata, because we
+                    // can be after a const array of floats/doubles.
+                    // An example of this is the libultra file `xldtob`.
+                    // It is okay for late rodata floats to have padding, but if a float has non-zero padding
+                    // it means it isn't a late_rodata float.
+                    maybe_reached_late_rodata = true;
+                }
+            }
             remaining_string_size -= 4;
         }
 

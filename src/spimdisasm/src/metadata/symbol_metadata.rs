@@ -570,16 +570,8 @@ impl SymbolMetadata {
     }
 
     pub(crate) fn is_late_rodata(&self) -> bool {
-        if self.compiler().is_some_and(|x| x.has_late_rodata()) {
-            // late rodata only exists in IDO's world
-
-            matches!(
-                self.sym_type(),
-                Some(SymbolType::Jumptable | SymbolType::Float32 | SymbolType::Float64)
-            )
-        } else {
-            false
-        }
+        self.sym_type()
+            .is_some_and(|x| x.is_late_rodata(self.compiler))
     }
 
     pub(crate) fn is_migrable(&self) -> bool {

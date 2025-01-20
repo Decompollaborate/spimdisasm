@@ -675,6 +675,7 @@ impl SectionExecutableSettings {
         self.is_handwritten
     }
     pub fn detect_redundant_end(&self) -> bool {
+        // TODO: move hardcoded IDO check to a Compiler function.
         self.compiler
             .is_some_and(|x| x == Compiler::IDO && self.detect_redundant_end)
     }

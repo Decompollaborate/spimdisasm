@@ -79,6 +79,7 @@ impl StringGuesserLevel {
         vram: Vram,
         bytes: &[u8],
         encoding: Encoding,
+        reached_late_rodata: bool,
     ) -> Option<usize> {
         /*
         if contextSym._ranStringCheck:
@@ -86,20 +87,30 @@ impl StringGuesserLevel {
         */
 
         if let Some(ref_wrapper) = ref_wrapper {
+            // Check for user-defined info.
+
             if ref_wrapper.sym_type() == Some(SymbolType::CString) {
+                // User says it is a C string, we gotta believe them.
+
                 let size = if let Some(size) = ref_wrapper.user_declared_size() {
+                    // Blindly believe the user about the size of the string.
                     size.inner() as usize
                 } else if let Some(str_end) = bytes.iter().position(|x| *x == 0) {
+                    // Zero terminator.
                     str_end + 1
                 } else {
                     return None;
                 };
 
-                // TODO: check padding
                 return Some(size);
             } else if ref_wrapper.user_declared_type().is_some() {
+                // User said this symbol is a non string.
                 return None;
             }
+        }
+
+        if reached_late_rodata {
+            return None;
         }
 
         /*
@@ -167,7 +178,7 @@ mod tests {
         let vram = Vram::new(0x80000000);
         let guesser = StringGuesserLevel::MultipleReferences;
 
-        let maybe_size = guesser.guess(None, vram, &BYTES, encoding);
+        let maybe_size = guesser.guess(None, vram, &BYTES, encoding, false);
         // println!("{:?}", maybe_size);
 
         //None::<u32>.unwrap();
@@ -181,7 +192,7 @@ mod tests {
         let vram = Vram::new(0x80000000);
         let guesser = StringGuesserLevel::MultipleReferences;
 
-        let maybe_size = guesser.guess(None, vram, &BYTES, encoding);
+        let maybe_size = guesser.guess(None, vram, &BYTES, encoding, false);
         // println!("{:?}", maybe_size);
 
         //None::<u32>.unwrap();
