@@ -59,6 +59,9 @@ impl ReferencedAddress {
     pub const fn vram(&self) -> Vram {
         self.vram
     }
+    pub const fn user_declared(&self) -> bool {
+        self.user_declared
+    }
     pub fn referenced_by(&self) -> &[Vram] {
         &self.referenced_by
     }
@@ -184,6 +187,30 @@ impl ReferencedAddress {
 
     pub fn add_table_label(&mut self, label: Vram) {
         self.table_labels.push(label);
+    }
+
+    pub(crate) fn set_from_other_reference(&mut self, other: Self) {
+        for other_vram in other.referenced_by {
+            self.add_referenced_by(other_vram);
+        }
+        for (access_type, count) in other.access_types {
+            *self.access_types.entry(access_type).or_default() += count;
+        }
+        if self.user_declared_type.is_none() {
+            self.user_declared_type = other.user_declared_type;
+        }
+        for (sym_type, count) in other.autodetected_types {
+            *self.autodetected_types.entry(sym_type).or_default() += count;
+        }
+        if self.user_declared_size.is_none() {
+            self.user_declared_size = other.user_declared_size;
+        }
+        if self.autodetected_size.is_none() {
+            self.autodetected_size = other.autodetected_size;
+        }
+        for label in other.table_labels {
+            self.add_table_label(label);
+        }
     }
 }
 

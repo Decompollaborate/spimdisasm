@@ -23,6 +23,9 @@ pub struct SegmentMetadata {
     category_name: Option<OverlayCategoryName>,
     name: Option<String>,
 
+    prioritised_overlays: Vec<String>,
+    visible_overlay_ranges: Vec<AddressRange<Vram>>,
+
     symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
     // constants: BTreeMap<Vram, SymbolMetadata>,
 
@@ -44,6 +47,9 @@ impl SegmentMetadata {
             ranges,
             category_name,
             name,
+
+            prioritised_overlays: Vec::new(),
+            visible_overlay_ranges: Vec::new(),
 
             symbols: AddendedOrderedMap::new(),
             new_pointer_in_data: BTreeMap::new(),
@@ -120,16 +126,38 @@ impl SegmentMetadata {
         self.category_name.as_ref()
     }
 
+    pub(crate) fn prioritised_overlays(&self) -> &[String] {
+        &self.prioritised_overlays
+    }
+    pub(crate) fn add_prioritised_overlay(&mut self, segment_name: String) {
+        self.prioritised_overlays.push(segment_name);
+    }
+
+    #[must_use]
+    pub(crate) fn is_vram_in_visible_overlay(&self, vram: Vram) -> bool {
+        self.visible_overlay_ranges.iter().any(|x| x.in_range(vram))
+    }
+
     pub const fn symbols(&self) -> &AddendedOrderedMap<Vram, SymbolMetadata> {
         &self.symbols
     }
 
+    pub(crate) fn preheater(&self) -> &Preheater {
+        &self.preheater
+    }
     pub(crate) fn preheater_mut(&mut self) -> &mut Preheater {
         &mut self.preheater
     }
 }
 
 impl SegmentMetadata {
+    pub(crate) fn set_visible_overlay_ranges(
+        &mut self,
+        visible_overlay_ranges: Vec<AddressRange<Vram>>,
+    ) {
+        self.visible_overlay_ranges = visible_overlay_ranges;
+    }
+
     pub(crate) fn add_symbol(
         &mut self,
         vram: Vram,

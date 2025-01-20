@@ -26,6 +26,10 @@ impl SegmentBuilder {
         Self { segment }
     }
 
+    fn add_prioritised_overlay(&mut self, segment_name: String) {
+        self.segment.add_prioritised_overlay(segment_name);
+    }
+
     fn add_symbol(
         &mut self,
         name: String,
@@ -79,6 +83,10 @@ impl GlobalSegmentBuilder {
         }
     }
 
+    pub fn add_prioritised_overlay(&mut self, segment_name: String) {
+        self.inner.add_prioritised_overlay(segment_name);
+    }
+
     pub fn add_symbol(
         &mut self,
         name: String,
@@ -115,6 +123,10 @@ impl OverlaySegmentBuilder {
         }
     }
 
+    pub fn add_prioritised_overlay(&mut self, segment_name: String) {
+        self.inner.add_prioritised_overlay(segment_name);
+    }
+
     pub fn add_symbol(
         &mut self,
         name: String,
@@ -141,6 +153,11 @@ pub(crate) mod python_bindings {
         #[new]
         pub fn py_new(ranges: RomVramRange) -> Self {
             Self::new(ranges)
+        }
+
+        #[pyo3(name = "add_prioritised_overlay")]
+        pub fn py_add_prioritised_overlay(&mut self, segment_name: String) {
+            self.add_prioritised_overlay(segment_name);
         }
 
         #[pyo3(name = "add_symbol", signature = (name, vram, rom, attributes))]
@@ -171,6 +188,11 @@ pub(crate) mod python_bindings {
             segment_name: String,
         ) -> Self {
             Self::new(ranges, category_name, segment_name)
+        }
+
+        #[pyo3(name = "add_prioritised_overlay")]
+        pub fn py_add_prioritised_overlay(&mut self, segment_name: String) {
+            self.add_prioritised_overlay(segment_name);
         }
 
         #[pyo3(name = "add_symbol", signature = (name, vram, rom, attributes))]

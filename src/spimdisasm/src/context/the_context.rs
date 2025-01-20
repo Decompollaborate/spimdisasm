@@ -262,9 +262,22 @@ impl Context {
         if let Some(overlay_category_name) = info.overlay_category_name() {
             // First check the segment associated to this category that matches the rom address of the parent segment to prioritize it.
             if let Some(segments_per_rom) = self.overlay_segments.get(overlay_category_name) {
-                if let Some(segment) = segments_per_rom.segments().get(&info.segment_rom()) {
-                    if segment.in_vram_range(vram) {
-                        return segment.find_symbol(vram, settings);
+                if let Some(owned_segment) = segments_per_rom.segments().get(&info.segment_rom()) {
+                    if owned_segment.in_vram_range(vram) {
+                        return owned_segment.find_symbol(vram, settings);
+                    }
+
+                    // Check for any prioiritised overlay, if any.
+                    for prioritised_overlay in owned_segment.prioritised_overlays() {
+                        for (_ovl_cat, segments_per_rom) in self.overlay_segments.iter() {
+                            for (_segment_rom, segment) in segments_per_rom.segments() {
+                                if segment.name() == Some(prioritised_overlay)
+                                    && segment.in_vram_range(vram)
+                                {
+                                    return segment.find_symbol(vram, settings);
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -348,16 +361,56 @@ fn find_referenced_segment_mut_impl<'ctx>(
     if let Some(overlay_category_name) = info.overlay_category_name() {
         // First check the segment associated to this category that matches the rom address of the parent segment to prioritize it.
 
+        let mut has_prioritised_overlays = false;
+
         polonius!(|slf| -> Option<&'polonius mut SegmentMetadata> {
             if let Some(segments_per_rom) = slf.overlay_segments.get_mut(overlay_category_name) {
-                if let Some(segment) = segments_per_rom.segments_mut().get_mut(&info.segment_rom())
+                if let Some(owned_segment) =
+                    segments_per_rom.segments_mut().get_mut(&info.segment_rom())
                 {
-                    if segment.in_vram_range(vram) {
-                        polonius_return!(Some(segment));
+                    if owned_segment.in_vram_range(vram) {
+                        polonius_return!(Some(owned_segment));
                     }
+
+                    has_prioritised_overlays = !owned_segment.prioritised_overlays().is_empty();
                 }
             }
         });
+
+        if has_prioritised_overlays {
+            let mut prioritised_overlay_info = None;
+
+            if let Some(segments_per_rom) = slf.overlay_segments.get(overlay_category_name) {
+                if let Some(owned_segment) = segments_per_rom.segments().get(&info.segment_rom()) {
+                    // Check for any prioiritised overlay, if any.
+                    for prioritised_overlay in owned_segment.prioritised_overlays() {
+                        for (ovl_cat, segments_per_rom) in slf.overlay_segments.iter() {
+                            for (segment_rom, segment) in segments_per_rom.segments() {
+                                if segment.name() == Some(prioritised_overlay)
+                                    && segment.in_vram_range(vram)
+                                {
+                                    // We need to clone here to avoid lifetime issues
+                                    prioritised_overlay_info =
+                                        Some((ovl_cat.clone(), *segment_rom));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if let Some((ovl_cat, segment_rom)) = prioritised_overlay_info {
+                polonius!(|slf| -> Option<&'polonius mut SegmentMetadata> {
+                    if let Some(segment) = slf
+                        .overlay_segments
+                        .get_mut(&ovl_cat)
+                        .and_then(|x| x.segments_mut().get_mut(&segment_rom))
+                    {
+                        polonius_return!(Some(segment));
+                    }
+                });
+            }
+        }
     }
 
     let overlay_category_name = info.overlay_category_name();

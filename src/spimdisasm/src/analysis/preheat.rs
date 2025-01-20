@@ -31,6 +31,9 @@ impl Preheater {
     pub(crate) fn references(&self) -> &AddendedOrderedMap<Vram, ReferencedAddress> {
         &self.references
     }
+    pub(crate) fn references_mut(&mut self) -> &mut AddendedOrderedMap<Vram, ReferencedAddress> {
+        &mut self.references
+    }
 
     pub fn preheat_text(
         &mut self,
@@ -322,13 +325,15 @@ impl Preheater {
                 );
 
                 if current_ref.is_none_or(|x| x.vram() == current_vram) {
-                    if let Some(str_size) = settings.string_guesser_level().guess(
+                    let guessed_size = settings.string_guesser_level().guess(
                         current_ref,
                         current_vram,
                         &raw_bytes[local_offset..],
                         settings.encoding(),
                         maybe_reached_late_rodata || reached_late_rodata,
-                    ) {
+                    );
+
+                    if let Some(str_size) = guessed_size {
                         let str_sym_size = str_size.next_multiple_of(4);
                         let in_between_sym = ReferenceWrapper::find(
                             owned_segment,
