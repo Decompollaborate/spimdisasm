@@ -607,8 +607,6 @@ fn run_register_tracker_start(
         */
     } else if instr.opcode().can_be_hi() {
         regs_tracker.process_hi(instr, current_rom);
-    } else if instr.opcode().is_unsigned() {
-        // TODO
     } else if instr.opcode().can_be_lo() {
         if let Some(pairing_info) = regs_tracker.preprocess_lo_and_get_info(instr, current_rom) {
             if pairing_info.is_gp_got {
@@ -619,6 +617,8 @@ fn run_register_tracker_start(
                 regs_tracker.process_lo(instr, address.inner(), current_rom);
             }
         }
+    } else if instr.opcode().can_be_unsigned_lo() {
+        // TODO
     }
 }
 

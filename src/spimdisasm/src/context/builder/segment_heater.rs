@@ -112,16 +112,18 @@ impl SegmentHeater {
                 .unwrap(),
             );
             buf.write_all(
-                "vram,type,size,alignment,reference_counter,referenced_by,issues\n".as_bytes(),
+                "vram,type,size,user_declared_size,autodetected_size,alignment,reference_counter,referenced_by,issues\n".as_bytes(),
             )
             .unwrap();
             for (vram, reference) in self.preheater.references().iter() {
                 assert_eq!(*vram, reference.vram());
                 let line = format!(
-                    "0x{},{:?},{:?},{:?},{},\"{:?}\",",
+                    "0x{},{:?},{:?},{:?},{:?},{:?},{},\"{:?}\",",
                     vram,
                     reference.sym_type(),
                     reference.size(),
+                    reference.user_declared_size(),
+                    reference.autodetected_size(),
                     reference.alignment(),
                     reference.reference_counter(),
                     reference.referenced_by(),

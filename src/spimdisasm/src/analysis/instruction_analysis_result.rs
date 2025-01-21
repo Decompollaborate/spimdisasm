@@ -169,11 +169,11 @@ impl InstructionAnalysisResult {
             self.process_jump_and_link_register(regs_tracker, instr, instr_rom);
         } else if instr.opcode().can_be_hi() {
             self.process_hi(regs_tracker, instr, instr_rom);
-        } else if instr.opcode().is_unsigned() {
-            self.process_unsigned_lo(regs_tracker, instr, instr_rom);
         } else if instr.opcode().can_be_lo() {
             self.process_signed_lo(context, regs_tracker, instr, instr_rom, prev_instr);
             self.process_symbol_dereference_type(regs_tracker, instr, instr_rom);
+        } else if instr.opcode().can_be_unsigned_lo() {
+            self.process_unsigned_lo(regs_tracker, instr, instr_rom);
         } else if instr.opcode() == Opcode::core_addu {
             /*
             # special check for .cpload

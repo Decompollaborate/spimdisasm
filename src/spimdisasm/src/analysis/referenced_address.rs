@@ -104,6 +104,12 @@ impl ReferencedAddress {
                 .and_then(|x| x.min_size().map(|x| Size::new(x.into())))
         }
     }
+    pub fn user_declared_size(&self) -> Option<Size> {
+        self.user_declared_size
+    }
+    pub fn autodetected_size(&self) -> Option<Size> {
+        self.autodetected_size
+    }
 
     pub fn alignment(&self) -> Option<u8> {
         if self.user_declared_type.is_some() || !self.autodetected_types.is_empty() {

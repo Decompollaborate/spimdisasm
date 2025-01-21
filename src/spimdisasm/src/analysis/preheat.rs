@@ -104,8 +104,6 @@ impl Preheater {
                 */
             } else if instr.opcode().can_be_hi() {
                 regs_tracker.process_hi(&instr, current_rom);
-            } else if instr.opcode().is_unsigned() {
-                // TODO
             } else if instr.opcode().can_be_lo() {
                 if let Some(pairing_info) =
                     regs_tracker.preprocess_lo_and_get_info(&instr, current_rom)
@@ -138,26 +136,28 @@ impl Preheater {
                         regs_tracker.process_lo(&instr, address.inner(), current_rom);
                     }
                 }
-                if let Some(address) =
-                    regs_tracker.get_address_if_instr_can_set_type(&instr, current_rom)
-                {
-                    if let Some(access_type) = instr.opcode().access_type() {
-                        let realigned_symbol_vram = match access_type {
-                            // Align down the Vram
-                            AccessType::WORD_LEFT | AccessType::WORD_RIGHT => {
-                                Vram::new(address - (address % 4))
-                            }
-                            AccessType::DOUBLEWORD_LEFT | AccessType::DOUBLEWORD_RIGHT => {
-                                Vram::new(address - (address % 8))
-                            }
-                            _ => Vram::new(address),
-                        };
+            }
+            if let Some(address) =
+                regs_tracker.get_address_if_instr_can_set_type(&instr, current_rom)
+            {
+                if let Some(access_type) = instr.opcode().access_type() {
+                    let realigned_symbol_vram = match access_type {
+                        // Align down the Vram
+                        AccessType::WORD_LEFT | AccessType::WORD_RIGHT => {
+                            Vram::new(address - (address % 4))
+                        }
+                        AccessType::DOUBLEWORD_LEFT | AccessType::DOUBLEWORD_RIGHT => {
+                            Vram::new(address - (address % 8))
+                        }
+                        _ => Vram::new(address),
+                    };
 
-                        let reference = self.new_ref(realigned_symbol_vram, None, owned_segment);
+                    let reference = self.new_ref(realigned_symbol_vram, None, owned_segment);
 
-                        reference.set_access_type(access_type);
-                    }
+                    reference.set_access_type(access_type);
                 }
+            } else if instr.opcode().can_be_unsigned_lo() {
+                // TODO
             }
 
             regs_tracker.overwrite_registers(&instr, current_rom);
