@@ -342,7 +342,7 @@ impl InstructionAnalysisResult {
 
         // self.constantHiInstrOffset[luiOffset] = constant
         // self.constantLoInstrOffset[lowerOffset] = constant
-        self.constant_per_instr.insert(hi_rom, constant);
+        self.constant_per_instr.entry(hi_rom).or_insert(constant);
         self.constant_per_instr.insert(instr_rom, constant);
 
         // self.hiToLowDict[luiOffset] = lowerOffset
@@ -594,7 +594,9 @@ impl InstructionAnalysisResult {
             self.address_per_instr.insert(instr_rom, address);
         }
         if let Some((_upper_half, hi_rom)) = upper_info {
-            if self.address_per_hi_instr.insert(*hi_rom, address).is_none() {
+            let entry = self.address_per_hi_instr.entry(*hi_rom);
+            if entry.is_vacant() {
+                entry.or_insert(address);
                 self.address_per_instr.insert(*hi_rom, address);
                 self.add_referenced_vram(context, *hi_rom, address);
             }

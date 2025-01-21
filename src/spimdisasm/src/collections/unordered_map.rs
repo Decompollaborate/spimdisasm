@@ -343,6 +343,18 @@ where
             inner: self.inner.and_modify(f),
         }
     }
+
+    #[must_use]
+    pub fn is_vacant(&self) -> bool {
+        #[cfg(not(feature = "hash_tables"))]
+        {
+            matches!(self.inner, btree_map::Entry::Vacant(_))
+        }
+        #[cfg(feature = "hash_tables")]
+        {
+            matches!(self.inner, hash_map::Entry::Vacant(_))
+        }
+    }
 }
 
 impl<'a, K, V> Entry<'a, K, V>
