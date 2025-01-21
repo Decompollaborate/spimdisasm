@@ -190,6 +190,11 @@ pub struct AddSymbolError {
     segment_ranges: AddressRange<Vram>,
     name: Option<String>,
 }
+impl AddSymbolError {
+    pub(crate) fn segment_ranges(&self) -> AddressRange<Vram> {
+        self.segment_ranges
+    }
+}
 impl fmt::Display for AddSymbolError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Error when trying to add symbol to ")?;

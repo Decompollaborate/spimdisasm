@@ -11,19 +11,17 @@ use crate::{
     metadata::{GeneratedBy, OverlayCategoryName, SegmentMetadata, SymbolMetadata, SymbolType},
 };
 
-use super::{
-    add_user_symbol_error::{RomOutOfRangeError, UserSymbolOverlapError},
-    AddUserSymbolError, GlobalSegmentHeater, OverlaySegmentHeater,
-};
+use super::{AddUserSymbolError, GlobalSegmentHeater, OverlaySegmentHeater};
 
 #[derive(Debug, Clone, PartialEq)]
 struct SegmentBuilder {
     segment: SegmentMetadata,
+    name: Option<String>,
 }
 
 impl SegmentBuilder {
-    fn new(segment: SegmentMetadata) -> Self {
-        Self { segment }
+    fn new(segment: SegmentMetadata, name: Option<String>) -> Self {
+        Self { segment, name }
     }
 
     fn add_prioritised_overlay(&mut self, segment_name: String) {
@@ -39,26 +37,44 @@ impl SegmentBuilder {
     ) -> Result<&mut SymbolMetadata, AddUserSymbolError> {
         if let Some(rom) = rom {
             if !self.segment.in_rom_range(rom) {
-                return Err(AddUserSymbolError::RomOutOfRange(RomOutOfRangeError::new(
+                return Err(AddUserSymbolError::new_rom_out_of_range(
+                    name,
+                    vram,
+                    self.name.clone(),
                     rom,
                     *self.segment.rom_range(),
-                )));
+                ));
             }
         }
 
         let check_addend = !sym_type.is_some_and(|x| x.is_label());
 
-        let sym = self
+        let sym = match self
             .segment
-            .add_symbol(vram, GeneratedBy::UserDeclared, check_addend)?;
-        if sym.vram() != vram {
-            Err(AddUserSymbolError::Overlap(UserSymbolOverlapError::new(
+            .add_symbol(vram, GeneratedBy::UserDeclared, check_addend)
+        {
+            Ok(sym) => sym,
+            Err(add_symbol_error) => {
+                return Err(AddUserSymbolError::from_add_symbol_error(
+                    name,
+                    vram,
+                    self.name.clone(),
+                    add_symbol_error,
+                ));
+            }
+        };
+
+        if sym.vram() != vram
+            && !(sym.is_trustable_function() && sym_type.is_some_and(|x| x.is_label()))
+        {
+            Err(AddUserSymbolError::new_overlap(
                 name,
                 vram,
+                self.name.clone(),
                 sym.display_name().to_string(),
                 sym.vram(),
                 sym.size().unwrap(),
-            )))
+            ))
         } else {
             *sym.user_declared_name_mut() = Some(name);
             *sym.rom_mut() = rom;
@@ -79,7 +95,7 @@ pub struct GlobalSegmentBuilder {
 impl GlobalSegmentBuilder {
     pub fn new(ranges: RomVramRange) -> Self {
         Self {
-            inner: SegmentBuilder::new(SegmentMetadata::new_global(ranges)),
+            inner: SegmentBuilder::new(SegmentMetadata::new_global(ranges), None),
         }
     }
 
@@ -115,11 +131,11 @@ impl OverlaySegmentBuilder {
         segment_name: String,
     ) -> Self {
         Self {
-            inner: SegmentBuilder::new(SegmentMetadata::new_overlay(
-                ranges,
-                category_name,
-                segment_name,
-            )),
+            // TODO: avoid cloning
+            inner: SegmentBuilder::new(
+                SegmentMetadata::new_overlay(ranges, category_name, segment_name.clone()),
+                Some(segment_name),
+            ),
         }
     }
 
@@ -203,7 +219,7 @@ pub(crate) mod python_bindings {
             rom: Option<Rom>,
             attributes: &SymAttributes,
         ) -> Result<(), AddUserSymbolError> {
-            let sym = self.inner.add_symbol(name, vram, rom, None)?;
+            let sym = self.inner.add_symbol(name, vram, rom, attributes.typ)?;
             attributes.apply_to_sym(sym);
             Ok(())
         }
