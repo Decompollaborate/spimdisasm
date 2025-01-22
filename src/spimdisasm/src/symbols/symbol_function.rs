@@ -651,19 +651,17 @@ impl SymbolFunction {
         let in_overlay = owned_metadata.in_overlay();
 
         for (vram, sym) in owned_segment.find_symbol_ranges_mut(*self.ranges.vram()) {
-            if sym.sym_type().is_some_and(|x| x.is_label()) {
-                sym.set_defined();
+            sym.set_defined();
 
-                let rom = Size::new((*vram - self.ranges.vram().start()).inner() as u32)
-                    + self.ranges.rom().start();
-                *sym.rom_mut() = Some(rom);
+            let rom = Size::new((*vram - self.ranges.vram().start()).inner() as u32)
+                + self.ranges.rom().start();
+            *sym.rom_mut() = Some(rom);
 
-                if let Some(in_overlay) = in_overlay {
-                    sym.set_in_overlay(in_overlay);
-                }
-
-                self.labels.push(*vram);
+            if let Some(in_overlay) = in_overlay {
+                sym.set_in_overlay(in_overlay);
             }
+
+            self.labels.push(*vram);
         }
 
         Ok(())
