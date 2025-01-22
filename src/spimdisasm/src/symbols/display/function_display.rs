@@ -121,7 +121,7 @@ impl FunctionDisplay<'_, '_, '_> {
                 SymbolType::BranchLabel => false,
                 SymbolType::JumptableLabel => !self.internal_settings.migrate(),
                 SymbolType::GccExceptTableLabel => true,
-                _ => false,
+                _ => true,
             });
 
             // TODO:
@@ -135,19 +135,23 @@ impl FunctionDisplay<'_, '_, '_> {
                             break
             */
 
-            let name = sym_label.display_name();
             if use_macro {
                 // label = labelSym.getReferenceeSymbols()
 
                 self.settings.common.display_symbol_name(
                     f,
                     self.context.global_config(),
-                    &name,
                     sym_label,
                     true,
+                    self.metadata.section_type(),
                 )?;
             } else {
-                write!(f, "{}:{}", name, self.settings.common.line_end())?;
+                write!(
+                    f,
+                    "{}:{}",
+                    sym_label.display_name(),
+                    self.settings.common.line_end()
+                )?;
             }
         }
 
@@ -232,8 +236,6 @@ impl fmt::Display for FunctionDisplay<'_, '_, '_> {
             )?;
         }
 
-        let name = self.metadata.display_name();
-
         self.settings
             .common
             .display_sym_property_comments(f, self.metadata, self.owned_segment)?;
@@ -243,9 +245,9 @@ impl fmt::Display for FunctionDisplay<'_, '_, '_> {
         self.settings.common.display_symbol_name(
             f,
             self.context.global_config(),
-            &name,
             self.metadata,
             false,
+            self.metadata.section_type(),
         )?;
 
         let mut size = Size::new(0);
@@ -266,7 +268,6 @@ impl fmt::Display for FunctionDisplay<'_, '_, '_> {
                 self.settings.common.display_sym_end(
                     f,
                     self.context.global_config(),
-                    &name,
                     self.metadata,
                 )?;
             }

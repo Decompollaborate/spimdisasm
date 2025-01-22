@@ -80,8 +80,6 @@ impl<'ctx, 'sym, 'flg> SymNoloadDisplay<'ctx, 'sym, 'flg> {
 
 impl fmt::Display for SymNoloadDisplay<'_, '_, '_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let name = self.metadata.display_name();
-
         self.settings
             .common
             .display_sym_property_comments(f, self.metadata, self.owned_segment)?;
@@ -91,9 +89,9 @@ impl fmt::Display for SymNoloadDisplay<'_, '_, '_> {
         self.settings.common.display_symbol_name(
             f,
             self.context.global_config(),
-            &name,
             self.metadata,
             false,
+            self.metadata.section_type(),
         )?;
 
         self.settings.common.display_asm_comment(

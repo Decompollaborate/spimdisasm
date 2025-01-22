@@ -387,7 +387,6 @@ impl SymDataDisplay<'_, '_, '_> {
 
 impl fmt::Display for SymDataDisplay<'_, '_, '_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let name = self.metadata.display_name();
         let sym_type = self.metadata.sym_type();
 
         self.display_sym_warnings(f)?;
@@ -401,9 +400,9 @@ impl fmt::Display for SymDataDisplay<'_, '_, '_> {
         self.settings.common.display_symbol_name(
             f,
             self.context.global_config(),
-            &name,
             self.metadata,
             false,
+            self.metadata.section_type(),
         )?;
 
         let ranges = self.sym.rom_vram_range();
@@ -513,12 +512,9 @@ impl fmt::Display for SymDataDisplay<'_, '_, '_> {
             .common
             .display_sym_post_alignment(f, self.metadata)?;
 
-        self.settings.common.display_sym_end(
-            f,
-            self.context.global_config(),
-            &name,
-            self.metadata,
-        )?;
+        self.settings
+            .common
+            .display_sym_end(f, self.context.global_config(), self.metadata)?;
 
         #[cfg(not(feature = "pyo3"))]
         self.settings

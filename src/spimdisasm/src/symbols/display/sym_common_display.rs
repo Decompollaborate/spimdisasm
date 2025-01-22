@@ -8,7 +8,8 @@ use alloc::string::String;
 use crate::{
     addresses::{Rom, Vram},
     config::{Compiler, GlobalConfig},
-    metadata::{SegmentMetadata, SymbolMetadata, SymbolMetadataNameDisplay, SymbolType},
+    metadata::{SegmentMetadata, SymbolMetadata, SymbolType},
+    section_type::SectionType,
 };
 
 pub(crate) enum WordComment {
@@ -108,23 +109,27 @@ impl SymCommonDisplaySettings {
         &self,
         f: &mut fmt::Formatter<'_>,
         global_config: &GlobalConfig,
-        sym_name: &SymbolMetadataNameDisplay,
         metadata: &SymbolMetadata,
         in_middle: bool,
+        section_type: Option<SectionType>,
     ) -> fmt::Result {
+        let sym_name = metadata.display_name();
+
         if let Some(macro_labels) = global_config.macro_labels() {
             // Write the label, ie `glabel`, `dlabel`, etc
-            if let Some(sym_type) = metadata.sym_type() {
-                match sym_type {
-                    SymbolType::Function => {
-                        if in_middle {
-                            write!(f, "{}", macro_labels.alt_func())?;
-                        } else {
-                            write!(f, "{}", macro_labels.func())?;
-                        }
+            match metadata.sym_type() {
+                Some(SymbolType::Function) => {
+                    if in_middle {
+                        write!(f, "{}", macro_labels.alt_func())?;
+                    } else {
+                        write!(f, "{}", macro_labels.func())?;
                     }
-                    SymbolType::JumptableLabel => write!(f, "{}", macro_labels.jtbl_label())?,
-                    SymbolType::GccExceptTableLabel => write!(f, "{}", macro_labels.ehtbl_label())?,
+                }
+                Some(SymbolType::JumptableLabel) => write!(f, "{}", macro_labels.jtbl_label())?,
+                Some(SymbolType::GccExceptTableLabel) => {
+                    write!(f, "{}", macro_labels.ehtbl_label())?
+                }
+                Some(
                     SymbolType::BranchLabel
                     | SymbolType::Jumptable
                     | SymbolType::GccExceptTable
@@ -135,10 +140,14 @@ impl SymCommonDisplaySettings {
                     | SymbolType::Float32
                     | SymbolType::Float64
                     | SymbolType::CString
-                    | SymbolType::UserCustom => write!(f, "{}", macro_labels.data())?,
-                }
-            } else {
-                write!(f, "{}", macro_labels.data())?
+                    | SymbolType::UserCustom,
+                )
+                | None => match section_type {
+                    Some(SectionType::Text) if in_middle => {
+                        write!(f, "{}", macro_labels.alt_func())?
+                    }
+                    _ => write!(f, "{}", macro_labels.data())?,
+                },
             }
 
             write!(f, " {}", sym_name)?;
@@ -160,21 +169,23 @@ impl SymCommonDisplaySettings {
             };
             write!(f, ".{} {}{}", vis, sym_name, self.line_end())?;
 
-            if let Some(sym_type) = metadata.sym_type() {
-                match sym_type {
-                    SymbolType::Function => {
-                        write!(f, ".type {}, @function{}", sym_name, self.line_end())?;
-                        if in_middle {
-                            write!(f, ".aent {}{}", sym_name, self.line_end())?;
-                        } else {
-                            write!(f, ".ent {}{}", sym_name, self.line_end())?;
-                        }
+            match metadata.sym_type() {
+                Some(SymbolType::Function) => {
+                    write!(f, ".type {}, @function{}", sym_name, self.line_end())?;
+                    if in_middle {
+                        write!(f, ".aent {}{}", sym_name, self.line_end())?;
+                    } else {
+                        write!(f, ".ent {}{}", sym_name, self.line_end())?;
                     }
+                }
+                Some(
                     SymbolType::JumptableLabel
                     | SymbolType::GccExceptTableLabel
-                    | SymbolType::BranchLabel => {}
+                    | SymbolType::BranchLabel,
+                ) => {}
 
-                    SymbolType::Jumptable | SymbolType::GccExceptTable => {}
+                Some(SymbolType::Jumptable | SymbolType::GccExceptTable) => {}
+                Some(
                     SymbolType::Byte
                     | SymbolType::Short
                     | SymbolType::Word
@@ -182,12 +193,14 @@ impl SymCommonDisplaySettings {
                     | SymbolType::Float32
                     | SymbolType::Float64
                     | SymbolType::CString
-                    | SymbolType::UserCustom => {
-                        write!(f, ".type {}, @object{}", sym_name, self.line_end())?
+                    | SymbolType::UserCustom,
+                )
+                | None => match section_type {
+                    Some(SectionType::Text) if in_middle => {
+                        write!(f, ".aent {}{}", sym_name, self.line_end())?
                     }
-                }
-            } else {
-                write!(f, ".type {}, @object{}", sym_name, self.line_end())?
+                    _ => write!(f, ".type {}, @object{}", sym_name, self.line_end())?,
+                },
             }
 
             write!(f, "{}:", sym_name)?;
@@ -301,9 +314,10 @@ impl SymCommonDisplaySettings {
         &self,
         f: &mut fmt::Formatter<'_>,
         global_config: &GlobalConfig,
-        sym_name: &SymbolMetadataNameDisplay,
         metadata: &SymbolMetadata,
     ) -> fmt::Result {
+        let sym_name = metadata.display_name();
+
         if let Some(macro_labels) = global_config.macro_labels() {
             if let Some(sym_type) = metadata.sym_type() {
                 match sym_type {
