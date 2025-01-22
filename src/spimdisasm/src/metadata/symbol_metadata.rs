@@ -105,7 +105,9 @@ pub struct SymbolMetadata {
     /// This symbol exists (was found) in any of the analyzed sections
     is_defined: bool,
 
+    // TODO: merge these two
     access_type: Option<(AccessType, bool)>,
+    access_types: UnorderedMap<AccessType, u32>,
 
     c_string_info: Option<StringInfo>,
     // pascal_string_info: Option<StringInfo>,
@@ -206,6 +208,7 @@ impl SymbolMetadata {
             is_defined: false,
 
             access_type: None,
+            access_types: UnorderedMap::new(),
             c_string_info: None,
             // pascal_string_info: None,
             reference_functions: UnorderedMap::new(),
@@ -384,7 +387,11 @@ impl SymbolMetadata {
     pub fn access_type(&self) -> Option<(AccessType, bool)> {
         self.access_type
     }
+    pub(crate) fn all_access_types(&self) -> &UnorderedMap<AccessType, u32> {
+        &self.access_types
+    }
     pub(crate) fn set_access_type_if_unset(&mut self, access_type: (AccessType, bool)) {
+        *self.access_types.entry(access_type.0).or_default() += 1;
         if self.access_type.is_none() {
             self.access_type = Some(access_type);
             if self.autodetected_type.is_none() {

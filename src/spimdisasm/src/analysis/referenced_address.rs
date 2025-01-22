@@ -76,6 +76,9 @@ impl ReferencedAddress {
             None
         }
     }
+    pub(crate) fn all_access_types(&self) -> &UnorderedMap<AccessType, u32> {
+        &self.access_types
+    }
 
     pub fn sym_type(&self) -> Option<SymbolType> {
         if let Some(typ) = self.user_declared_type {

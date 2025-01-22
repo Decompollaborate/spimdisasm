@@ -3,9 +3,14 @@
 
 use core::cmp::Ordering;
 
+use rabbitizer::access_type::AccessType;
+
 use crate::{
     addresses::{AddressRange, Rom, Size, Vram},
-    collections::addended_ordered_map::{self, FindSettings},
+    collections::{
+        addended_ordered_map::{self, FindSettings},
+        unordered_map::UnorderedMap,
+    },
     metadata::{SegmentMetadata, SymbolMetadata, SymbolType},
 };
 
@@ -128,6 +133,21 @@ impl ReferenceWrapper<'_, '_> {
             ReferenceWrapper::Address(address) => address.sym_type(),
             ReferenceWrapper::Both(metadata, address) => {
                 metadata.autodetected_type().or_else(|| address.sym_type())
+            }
+        }
+    }
+
+    pub(crate) fn all_access_types(&self) -> &UnorderedMap<AccessType, u32> {
+        match self {
+            ReferenceWrapper::Metadata(metadata) => metadata.all_access_types(),
+            ReferenceWrapper::Address(address) => address.all_access_types(),
+            ReferenceWrapper::Both(metadata, address) => {
+                let accesses = metadata.all_access_types();
+                if !accesses.is_empty() {
+                    accesses
+                } else {
+                    address.all_access_types()
+                }
             }
         }
     }

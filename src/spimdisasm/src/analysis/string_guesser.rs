@@ -3,6 +3,7 @@
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
+use rabbitizer::access_type::AccessType;
 
 use crate::{addresses::Vram, metadata::SymbolType, str_decoding::Encoding};
 
@@ -143,6 +144,27 @@ impl StringGuesserLevel {
         if ref_wrapper.is_some_and(|x| x.autodetected_type().is_some())
             && *self < Self::IgnoreDetectedType
         {
+            return None;
+        }
+        if ref_wrapper.is_some_and(|x| {
+            x.all_access_types()
+                .iter()
+                .filter(|(x, _)| {
+                    !matches!(
+                        x,
+                        AccessType::WORD_LEFT
+                            | AccessType::WORD_RIGHT
+                            | AccessType::DOUBLEWORD_LEFT
+                            | AccessType::DOUBLEWORD_RIGHT
+                    )
+                })
+                .count()
+                != 0
+        }) && *self < Self::IgnoreDetectedType
+        {
+            // Avoid considering something as a string if it has been dereferenced.
+            // But allow LEFT/RIGHT accesses, since that can be used to declare strings on the stack.
+            // TODO: make this thing its own guessing level instead of hyjacking IgnoreDetectedType.
             return None;
         }
 
