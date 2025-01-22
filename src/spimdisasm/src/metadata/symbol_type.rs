@@ -54,6 +54,14 @@ impl SymbolType {
         matches!(self, SymbolType::Jumptable | SymbolType::GccExceptTable)
     }
 
+    pub(crate) fn label_for_table(maybe_table: Option<Self>) -> Option<Self> {
+        maybe_table.and_then(|x| match x {
+            SymbolType::Jumptable => Some(SymbolType::JumptableLabel),
+            SymbolType::GccExceptTable => Some(SymbolType::GccExceptTableLabel),
+            _ => None,
+        })
+    }
+
     pub fn can_reference_symbols(&self) -> bool {
         match self {
             SymbolType::Function
@@ -97,7 +105,9 @@ impl SymbolType {
             self,
             SymbolType::Function
                 | SymbolType::BranchLabel
+                | SymbolType::Jumptable
                 | SymbolType::JumptableLabel
+                | SymbolType::GccExceptTable
                 | SymbolType::GccExceptTableLabel
         )
     }

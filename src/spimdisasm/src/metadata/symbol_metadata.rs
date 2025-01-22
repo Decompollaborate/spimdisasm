@@ -216,7 +216,7 @@ impl SymbolMetadata {
             accessed_as_gp_rel: false,
             auto_created_pad_by: None,
             rodata_migration_behavior: RodataMigrationBehavior::Default(),
-            allow_ref_with_addend: true,
+            allow_ref_with_addend: false,
             is_mips1_double: false,
             visibility: None,
 

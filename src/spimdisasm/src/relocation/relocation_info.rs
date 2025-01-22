@@ -102,7 +102,9 @@ impl<'ctx, 'rel, 'prnt> RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
                             RelocationType::R_MIPS_NONE => true, // Shouldn't be possible, but whatever.
 
                             RelocationType::R_MIPS_16 => true,
-                            RelocationType::R_MIPS_32 => true,
+                            RelocationType::R_MIPS_32 => {
+                                metadata.sym_type() != Some(SymbolType::BranchLabel)
+                            }
 
                             RelocationType::R_MIPS_REL32 => true,
 

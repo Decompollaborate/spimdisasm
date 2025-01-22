@@ -250,13 +250,16 @@ impl Context {
         vram: Vram,
         info: &ParentSegmentInfo,
         settings: FindSettings,
-        ovl_sym_validation: F,
+        sym_validation: F,
     ) -> Option<&SymbolMetadata>
     where
         F: Fn(&SymbolMetadata) -> bool,
     {
         if self.global_segment.in_vram_range(vram) {
-            return self.global_segment.find_symbol(vram, settings);
+            return self
+                .global_segment
+                .find_symbol(vram, settings)
+                .filter(|&sym| sym_validation(sym));
         }
 
         if let Some(overlay_category_name) = info.overlay_category_name() {
@@ -274,7 +277,11 @@ impl Context {
                                 if segment.name() == Some(prioritised_overlay)
                                     && segment.in_vram_range(vram)
                                 {
-                                    return segment.find_symbol(vram, settings);
+                                    if let Some(sym) = segment.find_symbol(vram, settings) {
+                                        if sym_validation(sym) {
+                                            return Some(sym);
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -300,7 +307,7 @@ impl Context {
                     .expect("Should exist since we already checked the length");
                 if segment.in_vram_range(vram) {
                     if let Some(sym) = segment.find_symbol(vram, settings) {
-                        if ovl_sym_validation(sym) {
+                        if sym_validation(sym) {
                             return Some(sym);
                         }
                     }
@@ -319,7 +326,7 @@ impl Context {
                 for (_, segment) in segments {
                     if segment.in_vram_range(vram) {
                         if let Some(sym) = segment.find_symbol(vram, settings) {
-                            if ovl_sym_validation(sym) {
+                            if sym_validation(sym) {
                                 return Some(sym);
                             }
                         }
@@ -338,7 +345,7 @@ impl Context {
             let segment = segments_per_rom.placeholder_segment();
             if segment.in_vram_range(vram) {
                 if let Some(sym) = segment.find_symbol(vram, settings) {
-                    if ovl_sym_validation(sym) {
+                    if sym_validation(sym) {
                         return Some(sym);
                     }
                 }

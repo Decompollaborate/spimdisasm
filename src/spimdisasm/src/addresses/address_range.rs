@@ -116,8 +116,8 @@ mod tests {
         let x = AddressRange::new(0, 0x10);
         let y = AddressRange::new(0x10, 0x20);
 
-        assert_eq!(x.overlaps(&y), false);
-        assert_eq!(y.overlaps(&x), false);
+        assert!(!x.overlaps(&y));
+        assert!(!y.overlaps(&x));
     }
 
     #[test]
@@ -125,8 +125,8 @@ mod tests {
         let x = AddressRange::new(0, 0x10);
         let y = AddressRange::new(0x4, 0x8);
 
-        assert_eq!(x.overlaps(&y), true);
-        assert_eq!(y.overlaps(&x), true);
+        assert!(x.overlaps(&y));
+        assert!(y.overlaps(&x));
     }
 
     #[test]
@@ -134,13 +134,13 @@ mod tests {
         let x = AddressRange::new(0x4, 0x10);
         let y = AddressRange::new(0x8, 0x18);
 
-        assert_eq!(x.overlaps(&y), true);
-        assert_eq!(y.overlaps(&x), true);
+        assert!(x.overlaps(&y));
+        assert!(y.overlaps(&x));
 
         let x = AddressRange::new(0x4, 0x10);
         let y = AddressRange::new(0x2, 0x8);
 
-        assert_eq!(x.overlaps(&y), true);
-        assert_eq!(y.overlaps(&x), true);
+        assert!(x.overlaps(&y));
+        assert!(y.overlaps(&x));
     }
 }

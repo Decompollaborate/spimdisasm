@@ -82,28 +82,28 @@ impl Sections {
             global_heater.preanalyze_text(
                 &global_config,
                 &text_info.1,
-                &text_info.0.bytes,
+                text_info.0.bytes,
                 text_info.0.rom,
                 text_info.0.vram,
             );
             global_heater.preanalyze_data(
                 &global_config,
                 &data_info.1,
-                &data_info.0.bytes,
+                data_info.0.bytes,
                 data_info.0.rom,
                 data_info.0.vram,
             );
             global_heater.preanalyze_rodata(
                 &global_config,
                 &rodata_info.1,
-                &rodata_info.0.bytes,
+                rodata_info.0.bytes,
                 rodata_info.0.rom,
                 rodata_info.0.vram,
             );
             global_heater.preanalyze_gcc_except_table(
                 &global_config,
                 &gcc_except_table_info.1,
-                &gcc_except_table_info.0.bytes,
+                gcc_except_table_info.0.bytes,
                 gcc_except_table_info.0.rom,
                 gcc_except_table_info.0.vram,
             );
@@ -222,7 +222,7 @@ impl Sections {
             out.push_str(".section .text\n\n");
             for sym in section.functions() {
                 out.push_str(
-                    &sym.display(&self.context, &text_display_settings)
+                    &sym.display(&self.context, text_display_settings)
                         .unwrap()
                         .to_string(),
                 );
@@ -234,7 +234,7 @@ impl Sections {
             out.push_str(".section .data\n\n");
             for sym in section.data_symbols() {
                 out.push_str(
-                    &sym.display(&self.context, &data_display_settings)
+                    &sym.display(&self.context, data_display_settings)
                         .unwrap()
                         .to_string(),
                 );
@@ -246,7 +246,7 @@ impl Sections {
             out.push_str(".section .rodata\n\n");
             for sym in section.data_symbols() {
                 out.push_str(
-                    &sym.display(&self.context, &rodata_display_settings)
+                    &sym.display(&self.context, rodata_display_settings)
                         .unwrap()
                         .to_string(),
                 );
@@ -258,7 +258,7 @@ impl Sections {
             out.push_str(".section .gcc_except_table\n\n");
             for sym in section.data_symbols() {
                 out.push_str(
-                    &sym.display(&self.context, &gcc_except_table_display_settings)
+                    &sym.display(&self.context, gcc_except_table_display_settings)
                         .unwrap()
                         .to_string(),
                 );
@@ -270,7 +270,7 @@ impl Sections {
             out.push_str(".section .bss\n\n");
             for sym in section.noload_symbols() {
                 out.push_str(
-                    &sym.display(&self.context, &bss_display_settings)
+                    &sym.display(&self.context, bss_display_settings)
                         .unwrap()
                         .to_string(),
                 );

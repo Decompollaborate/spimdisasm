@@ -180,7 +180,7 @@ impl FunctionDisplay<'_, '_, '_> {
             x.display(
                 self.context,
                 self.sym.parent_segment_info(),
-                self.metadata.allow_ref_with_addend(),
+                true,
                 self.metadata.compiler(),
                 self.internal_settings,
             )

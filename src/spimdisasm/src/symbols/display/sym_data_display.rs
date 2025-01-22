@@ -256,7 +256,8 @@ impl SymDataDisplay<'_, '_, '_> {
                 x.display(
                     self.context,
                     self.sym.parent_segment_info(),
-                    self.metadata.allow_ref_with_addend(),
+                    !self.metadata.sym_type().is_some_and(|x| x.is_table())
+                        && self.metadata.allow_ref_with_addend(),
                     self.metadata.compiler(),
                     self.internal_settings,
                 )
