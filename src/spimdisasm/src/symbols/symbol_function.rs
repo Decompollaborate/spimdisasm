@@ -652,6 +652,7 @@ impl SymbolFunction {
 
         for (vram, sym) in owned_segment.find_symbol_ranges_mut(*self.ranges.vram()) {
             sym.set_defined();
+            *sym.section_type_mut() = Some(self.section_type());
 
             let rom = Size::new((*vram - self.ranges.vram().start()).inner() as u32)
                 + self.ranges.rom().start();

@@ -6,6 +6,7 @@ use spimdisasm::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     config::{Endian, GlobalConfig},
     context::{Context, ContextBuilder, GlobalSegmentBuilder},
+    metadata::SegmentMetadata,
     parent_segment_info::ParentSegmentInfo,
     sections::{
         SectionData, SectionDataSettings, SectionExecutable, SectionExecutableSettings,
@@ -219,66 +220,93 @@ impl Sections {
         let mut out = String::new();
 
         if let Some(section) = &self.text {
-            out.push_str(".section .text\n\n");
+            out.push_str(".section .text\n");
             for sym in section.functions() {
+                out.push('\n');
                 out.push_str(
                     &sym.display(&self.context, text_display_settings)
                         .unwrap()
                         .to_string(),
                 );
-                out.push('\n');
             }
         }
 
         if let Some(section) = &self.data {
-            out.push_str(".section .data\n\n");
+            out.push_str("\n.section .data\n");
             for sym in section.data_symbols() {
+                out.push('\n');
                 out.push_str(
                     &sym.display(&self.context, data_display_settings)
                         .unwrap()
                         .to_string(),
                 );
-                out.push('\n');
             }
         }
 
         if let Some(section) = &self.rodata {
-            out.push_str(".section .rodata\n\n");
+            out.push_str("\n.section .rodata\n");
             for sym in section.data_symbols() {
+                out.push('\n');
                 out.push_str(
                     &sym.display(&self.context, rodata_display_settings)
                         .unwrap()
                         .to_string(),
                 );
-                out.push('\n');
             }
         }
 
         if let Some(section) = &self.gcc_except_table {
-            out.push_str(".section .gcc_except_table\n\n");
+            out.push_str("\n.section .gcc_except_table\n");
             for sym in section.data_symbols() {
+                out.push('\n');
                 out.push_str(
                     &sym.display(&self.context, gcc_except_table_display_settings)
                         .unwrap()
                         .to_string(),
                 );
-                out.push('\n');
             }
         }
 
         if let Some(section) = &self.bss {
-            out.push_str(".section .bss\n\n");
+            out.push_str("\n.section .bss\n");
             for sym in section.noload_symbols() {
+                out.push('\n');
                 out.push_str(
                     &sym.display(&self.context, bss_display_settings)
                         .unwrap()
                         .to_string(),
                 );
-                out.push('\n');
             }
         }
 
         out
+    }
+
+    pub fn print_global_segment_info(&self) {
+        println!();
+        println!("Global segment info:");
+        print_segment_info(self.context.global_segment());
+        println!();
+        println!();
+    }
+}
+
+fn print_segment_info(segment: &SegmentMetadata) {
+    println!("Vram range: {:?}", segment.vram_range());
+    println!("Rom range: {:?}", segment.rom_range());
+    println!();
+
+    println!("Symbols:");
+    for (vram, metadata) in segment.symbols() {
+        println!(
+            "    {:?} {} {:?} {:?} {:?} {:?}",
+            vram,
+            metadata.display_name(),
+            metadata.size(),
+            metadata.sym_type(),
+            metadata.section_type(),
+            metadata.is_defined()
+        );
     }
 }
 
@@ -408,6 +436,8 @@ fn test_jumptable_with_lo_in_each_case_for_same_hi() {
         ),
     );
 
+    sections.print_global_segment_info();
+
     let instr_display_flags = InstructionDisplayFlags::default();
     let text_display_settings = FunctionDisplaySettings::new(instr_display_flags);
 
@@ -430,7 +460,7 @@ fn test_jumptable_with_lo_in_each_case_for_same_hi() {
 glabel func_80004000
     /* 000000 80004000 2C830007 */  sltiu       $v1, $a0, 0x7
     /* 000004 80004004 10600011 */  beqz        $v1, .L8000404C
-    /* 000008 80004008 3C028000 */   lui        $v0, %hi(D_800040A0)
+    /* 000008 80004008 3C028000 */   lui        $v0, %hi(B_800040A0)
     /* 00000C 8000400C 3C038000 */  lui         $v1, %hi(jtbl_80004080)
     /* 000010 80004010 24634080 */  addiu       $v1, $v1, %lo(jtbl_80004080)
     /* 000014 80004014 00042080 */  sll         $a0, $a0, 2
@@ -439,30 +469,30 @@ glabel func_80004000
     /* 000020 80004020 00600008 */  jr          $v1
     /* 000024 80004024 00000000 */   nop
   jlabel .L80004028
-    /* 000028 80004028 244240A0 */  addiu       $v0, $v0, %lo(D_800040A0)
+    /* 000028 80004028 244240A0 */  addiu       $v0, $v0, %lo(B_800040A0)
     /* 00002C 8000402C 03E00008 */  jr          $ra
     /* 000030 80004030 8C420014 */   lw         $v0, 0x14($v0)
   jlabel .L80004034
-    /* 000034 80004034 244240A0 */  addiu       $v0, $v0, %lo(D_800040A0)
+    /* 000034 80004034 244240A0 */  addiu       $v0, $v0, %lo(B_800040A0)
     /* 000038 80004038 03E00008 */  jr          $ra
     /* 00003C 8000403C 8C420004 */   lw         $v0, 0x4($v0)
   jlabel .L80004040
-    /* 000040 80004040 244240A0 */  addiu       $v0, $v0, %lo(D_800040A0)
+    /* 000040 80004040 244240A0 */  addiu       $v0, $v0, %lo(B_800040A0)
     /* 000044 80004044 03E00008 */  jr          $ra
     /* 000048 80004048 8C420008 */   lw         $v0, 0x8($v0)
   jlabel .L8000404C
     /* 00004C 8000404C 03E00008 */  jr          $ra
-    /* 000050 80004050 8C4240A0 */   lw         $v0, %lo(D_800040A0)($v0)
+    /* 000050 80004050 8C4240A0 */   lw         $v0, %lo(B_800040A0)($v0)
   jlabel .L80004054
-    /* 000054 80004054 244240A0 */  addiu       $v0, $v0, %lo(D_800040A0)
+    /* 000054 80004054 244240A0 */  addiu       $v0, $v0, %lo(B_800040A0)
     /* 000058 80004058 03E00008 */  jr          $ra
     /* 00005C 8000405C 8C420010 */   lw         $v0, 0x10($v0)
   jlabel .L80004060
-    /* 000060 80004060 244240A0 */  addiu       $v0, $v0, %lo(D_800040A0)
+    /* 000060 80004060 244240A0 */  addiu       $v0, $v0, %lo(B_800040A0)
     /* 000064 80004064 03E00008 */  jr          $ra
     /* 000068 80004068 8C420018 */   lw         $v0, 0x18($v0)
   jlabel .L8000406C
-    /* 00006C 8000406C 244240A0 */  addiu       $v0, $v0, %lo(D_800040A0)
+    /* 00006C 8000406C 244240A0 */  addiu       $v0, $v0, %lo(B_800040A0)
     /* 000070 80004070 03E00008 */  jr          $ra
     /* 000074 80004074 8C42000C */   lw         $v0, 0xC($v0)
 .size func_80004000, . - func_80004000
@@ -487,9 +517,8 @@ dlabel jtbl_80004080
 
 .section .bss
 
-dlabel D_800040A0
+dlabel B_800040A0
     /* 800040A0 */ .space 0x20
-
 ";
 
     assert_eq!(disassembled_str, expected_str);
