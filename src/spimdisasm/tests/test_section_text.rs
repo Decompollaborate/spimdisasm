@@ -490,3 +490,112 @@ glabel func_80002518
 
     assert_eq!(disassembly, expected_disassembly,);
 }
+
+#[test]
+fn test_section_text_lui_paired_with_lw_and_ori() {
+    // __osSiRawStartDma, but minimized to the point the code doesn't do anything
+    static BYTES: [u8; 64] = [
+        0x3C, 0x03, 0xA4, 0x80, // lui
+        0xAC, 0x62, 0x00, 0x00, // sw
+        0x56, 0x00, 0x00, 0x03, // bnel
+        0x3C, 0x03, 0xA4, 0x80, //  lui
+        0x08, 0x00, 0x1E, 0x1F, // j
+        0x34, 0x63, 0x00, 0x04, //  ori
+        0x34, 0x63, 0x00, 0x10, // ori
+        0x3C, 0x02, 0x1F, 0xC0, // lui
+        0x34, 0x42, 0x07, 0xC0, // ori
+        0xAC, 0x62, 0x00, 0x00, // sw
+        0x16, 0x00, 0x00, 0x03, // bnez
+        0x00, 0x00, 0x10, 0x21, //  addu
+        0x02, 0x20, 0x20, 0x21, // addu
+        0x00, 0x00, 0x10, 0x21, // addu
+        0x03, 0xE0, 0x00, 0x08, // jr
+        0x00, 0x00, 0x00, 0x00, // nop
+    ];
+
+    let rom = Rom::new(0x008460);
+    let vram = Vram::new(0x80007860);
+
+    let segment_rom = Rom::new(0x1000);
+    let segment_vram = Vram::new(0x80000400);
+
+    let text_settings = SectionExecutableSettings::new(
+        Some(Compiler::IDO),
+        InstructionFlags::new(IsaVersion::MIPS_III),
+    );
+
+    let mut context = {
+        let global_config = GlobalConfig::new(Endian::Big);
+
+        let global_ranges = RomVramRange::new(
+            AddressRange::new(segment_rom, Rom::new(0x46270)),
+            AddressRange::new(segment_vram, Vram::new(0x8009A8C0)),
+        );
+        let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
+
+        global_segment.preanalyze_text(&global_config, &text_settings, &BYTES, rom, vram);
+
+        let mut platform_segment = PlatformSegmentBuilder::new();
+        platform_segment.n64_libultra_symbols().unwrap();
+        platform_segment.n64_hardware_registers(true, true).unwrap();
+
+        let builder = ContextBuilder::new(global_segment, platform_segment);
+
+        builder.build(global_config)
+    };
+
+    let parent_segment_info = ParentSegmentInfo::new(segment_rom, segment_vram, None);
+    let mut section_text = context
+        .create_section_text(
+            &text_settings,
+            "text".to_string(),
+            &BYTES,
+            rom,
+            vram,
+            parent_segment_info,
+        )
+        .unwrap();
+
+    section_text.post_process(&mut context).unwrap();
+
+    let mut disassembly = ".section .text\n".to_string();
+    let display_settings = FunctionDisplaySettings::new(InstructionDisplayFlags::new());
+    for sym in section_text.functions() {
+        disassembly.push('\n');
+        disassembly.push_str(
+            &sym.display(&context, &display_settings)
+                .unwrap()
+                .to_string(),
+        );
+    }
+
+    println!("{}", disassembly);
+
+    let expected_disassembly = "\
+.section .text
+
+glabel func_80007860
+    /* 008460 80007860 3C03A480 */  lui         $v1, %hi(SI_DRAM_ADDR_REG)
+    /* 008464 80007864 AC620000 */  sw          $v0, %lo(SI_DRAM_ADDR_REG)($v1)
+    /* 008468 80007868 56000003 */  bnel        $s0, $zero, .L80007878
+    /* 00846C 8000786C 3C03A480 */   lui        $v1, (0xA4800010 >> 16)
+    /* 008470 80007870 08001E1F */  j           .L8000787C
+    /* 008474 80007874 34630004 */   ori        $v1, $v1, (0xA4800004 & 0xFFFF)
+  .L80007878:
+    /* 008478 80007878 34630010 */  ori         $v1, $v1, (0xA4800010 & 0xFFFF)
+  .L8000787C:
+    /* 00847C 8000787C 3C021FC0 */  lui         $v0, (0x1FC007C0 >> 16)
+    /* 008480 80007880 344207C0 */  ori         $v0, $v0, (0x1FC007C0 & 0xFFFF)
+    /* 008484 80007884 AC620000 */  sw          $v0, 0x0($v1)
+    /* 008488 80007888 16000003 */  bnez        $s0, .L80007898
+    /* 00848C 8000788C 00001021 */   addu       $v0, $zero, $zero
+    /* 008490 80007890 02202021 */  addu        $a0, $s1, $zero
+    /* 008494 80007894 00001021 */  addu        $v0, $zero, $zero
+  .L80007898:
+    /* 008498 80007898 03E00008 */  jr          $ra
+    /* 00849C 8000789C 00000000 */   nop
+.size func_80007860, . - func_80007860
+";
+
+    assert_eq!(disassembly, expected_disassembly,);
+}

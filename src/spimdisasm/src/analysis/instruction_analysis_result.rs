@@ -342,7 +342,9 @@ impl InstructionAnalysisResult {
 
         // self.constantHiInstrOffset[luiOffset] = constant
         // self.constantLoInstrOffset[lowerOffset] = constant
-        self.constant_per_instr.entry(hi_rom).or_insert(constant);
+        if self.address_per_hi_instr.get(&hi_rom).is_none() {
+            self.constant_per_instr.entry(hi_rom).or_insert(constant);
+        }
         self.constant_per_instr.insert(instr_rom, constant);
 
         // self.hiToLowDict[luiOffset] = lowerOffset
