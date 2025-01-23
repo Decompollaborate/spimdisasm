@@ -18,22 +18,19 @@ use crate::{
     metadata::{OverlayCategory, OverlayCategoryName, SegmentMetadata},
 };
 
-use super::{GlobalSegmentHeater, OverlaySegmentHeater, PlatformSegmentBuilder};
+use super::{GlobalSegmentHeater, OverlaySegmentHeater, UserSegmentBuilder};
 
 #[derive(Debug, Clone, Hash, PartialEq)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct ContextBuilder {
     global_segment: SegmentMetadata,
-    platform_segment: PlatformSegmentBuilder,
+    platform_segment: UserSegmentBuilder,
     overlays: Vec<SegmentMetadata>,
 }
 
 impl ContextBuilder {
     #[must_use]
-    pub fn new(
-        global_segment: GlobalSegmentHeater,
-        platform_segment: PlatformSegmentBuilder,
-    ) -> Self {
+    pub fn new(global_segment: GlobalSegmentHeater, platform_segment: UserSegmentBuilder) -> Self {
         Self {
             global_segment: global_segment.finish(),
             platform_segment,
@@ -147,7 +144,7 @@ impl ContextBuilder {
                     let references = overlay.preheater_mut().references_mut();
                     for reference in references_for_this_overlay {
                         let reference_vram = reference.vram();
-                        let new_reference = references.find_mut_or_insert_with(
+                        let (new_reference, _) = references.find_mut_or_insert_with(
                             reference_vram,
                             FindSettings::new(true),
                             || {
@@ -210,7 +207,7 @@ pub(crate) mod python_bindings {
         #[new]
         fn py_new(
             global_segment: GlobalSegmentHeater,
-            platform_segment: PlatformSegmentBuilder,
+            platform_segment: UserSegmentBuilder,
         ) -> Self {
             Self::new(global_segment, platform_segment)
         }

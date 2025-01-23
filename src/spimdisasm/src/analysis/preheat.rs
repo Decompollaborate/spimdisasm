@@ -534,7 +534,7 @@ impl Preheater {
     ) -> &mut ReferencedAddress {
         let settings = FindSettings::new(true);
 
-        let refer = self.references.find_mut_or_insert_with(vram, settings, || {
+        let (refer, _) = self.references.find_mut_or_insert_with(vram, settings, || {
             if let Some(metadata) = owned_segment.find_symbol(vram, settings) {
                 let vram = metadata.vram();
                 let mut refer = ReferencedAddress::new_user_declared(vram);

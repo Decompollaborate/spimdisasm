@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::string::ToString;
+use alloc::string::{String, ToString};
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
@@ -9,18 +9,18 @@ use pyo3::prelude::*;
 use crate::{
     addresses::{Size, Vram},
     collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
-    metadata::{GeneratedBy, PlatformSegmentMetadata, SymbolMetadata, SymbolType},
+    metadata::{GeneratedBy, SymbolMetadata, SymbolType, UserSegmentMetadata},
 };
 
-use super::AddPlatformSymbolError;
+use super::AddUserSegmentSymbolError;
 
 #[derive(Debug, Clone, Hash, PartialEq)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
-pub struct PlatformSegmentBuilder {
+pub struct UserSegmentBuilder {
     symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
 }
 
-impl PlatformSegmentBuilder {
+impl UserSegmentBuilder {
     #[must_use]
     #[allow(clippy::new_without_default)]
     pub const fn new() -> Self {
@@ -29,31 +29,87 @@ impl PlatformSegmentBuilder {
         }
     }
 
+    fn add_symbol_impl(
+        &mut self,
+        vram: Vram,
+        size: Size,
+        name: Option<String>,
+        typ: Option<SymbolType>,
+    ) -> Result<&mut SymbolMetadata, AddUserSegmentSymbolError> {
+        let generated_by = GeneratedBy::UserDeclared;
+        let (metadata, newly_created) =
+            self.symbols
+                .find_mut_or_insert_with(vram, FindSettings::new(true), || {
+                    (vram, SymbolMetadata::new(generated_by, vram))
+                });
+
+        if metadata.vram() != vram {
+            return Err(AddUserSegmentSymbolError::new_overlap(
+                vram,
+                name,
+                size,
+                metadata.vram(),
+                metadata.user_declared_name().map(|x| x.to_string()),
+                metadata
+                    .user_declared_size()
+                    .expect("Should have size since it is required for this kind of segment."),
+            ));
+        }
+
+        if !newly_created {
+            return Err(AddUserSegmentSymbolError::new_duplicated(
+                vram,
+                name,
+                size,
+                metadata.vram(),
+                metadata.user_declared_name().map(|x| x.to_string()),
+                metadata
+                    .user_declared_size()
+                    .expect("Should have size since it is required for this kind of segment."),
+            ));
+        }
+
+        metadata.set_defined();
+        *metadata.user_declared_size_mut() = Some(size);
+
+        if let Some(name) = name {
+            *metadata.user_declared_name_mut() = Some(name);
+        }
+        if let Some(typ) = typ {
+            metadata.set_type(typ, generated_by);
+        }
+
+        Ok(metadata)
+    }
+
+    pub fn add_symbol(
+        &mut self,
+        vram: Vram,
+        name: String,
+        size: Size,
+        typ: Option<SymbolType>,
+    ) -> Result<&mut SymbolMetadata, AddUserSegmentSymbolError> {
+        self.add_symbol_impl(vram, size, Some(name), typ)
+    }
+
     fn add_symbols(
         &mut self,
         syms: &[(Vram, SymbolType, Size, &str)],
         set_names: bool,
-    ) -> Result<(), AddPlatformSymbolError> {
+    ) -> Result<(), AddUserSegmentSymbolError> {
         for (vram, typ, size, name) in syms {
-            let generated_by = GeneratedBy::UserDeclared;
-            let metadata =
-                self.symbols
-                    .find_mut_or_insert_with(*vram, FindSettings::new(false), || {
-                        (*vram, SymbolMetadata::new(generated_by, *vram))
-                    });
-
-            if set_names {
-                *metadata.user_declared_name_mut() = Some(name.to_string());
-            }
-            metadata.set_type(*typ, generated_by);
-            *metadata.user_declared_size_mut() = Some(*size);
-            metadata.set_defined();
+            self.add_symbol_impl(
+                *vram,
+                *size,
+                set_names.then(|| name.to_string()),
+                Some(*typ),
+            )?;
         }
 
         Ok(())
     }
 
-    pub fn n64_libultra_symbols(&mut self) -> Result<(), AddPlatformSymbolError> {
+    pub fn n64_libultra_symbols(&mut self) -> Result<(), AddUserSegmentSymbolError> {
         #[rustfmt::skip]
         const SYMS: [(Vram, SymbolType, Size, &str); 9] = [
             (Vram::new(0x800001A0), SymbolType::Word, Size::new(0x4),  "leoBootID"),
@@ -74,9 +130,9 @@ impl PlatformSegmentBuilder {
         &mut self,
         set_names: bool,
         _set_as_constants: bool,
-    ) -> Result<(), AddPlatformSymbolError> {
+    ) -> Result<(), AddUserSegmentSymbolError> {
         #[rustfmt::skip]
-        const SYMS: [(Vram, SymbolType, Size, &str); 130] = [
+        const SYMS: [(Vram, SymbolType, Size, &str); 127] = [
             // Signal Processor Registers
             (Vram::new(0xA4040000), SymbolType::Word, Size::new(0x4), "SP_MEM_ADDR_REG"),
             (Vram::new(0xA4040004), SymbolType::Word, Size::new(0x4), "SP_DRAM_ADDR_REG"),
@@ -174,11 +230,11 @@ impl PlatformSegmentBuilder {
             (Vram::new(0xA46104D0), SymbolType::Word, Size::new(0x4), "PI_AES_IV"),
             (Vram::new(0xA4610500), SymbolType::Word, Size::new(0x4), "PI_ATB_ENTRY"),
             (Vram::new(0xA4620000), SymbolType::Word, Size::new(0x4), "D_A4620000"),
-            (Vram::new(0xA46E0000), SymbolType::Word, Size::new(0x4), "PI_RDB_REQ_HI_REG"),
-            (Vram::new(0xA46E0002), SymbolType::Word, Size::new(0x4), "PI_RDB_REQ_LO_REG"),
+            (Vram::new(0xA46E0000), SymbolType::Short, Size::new(0x2), "PI_RDB_REQ_HI_REG"),
+            (Vram::new(0xA46E0002), SymbolType::Short, Size::new(0x2), "PI_RDB_REQ_LO_REG"),
             (Vram::new(0xA46E0004), SymbolType::Word, Size::new(0x4), "D_A46E0004"),
-            (Vram::new(0xA46E0400), SymbolType::Word, Size::new(0x4), "D_A46E0400"),
-            (Vram::new(0xA46E0402), SymbolType::Word, Size::new(0x4), "D_A46E0402"),
+            (Vram::new(0xA46E0400), SymbolType::Short, Size::new(0x2), "D_A46E0400"),
+            (Vram::new(0xA46E0402), SymbolType::Short, Size::new(0x2), "D_A46E0402"),
             (Vram::new(0xA46E8000), SymbolType::Word, Size::new(0x4), "PI_RDB_STATUS_REG"),
 
             // RDRAM Interface Registers
@@ -203,13 +259,13 @@ impl PlatformSegmentBuilder {
 
             // libleo (64DD) address range
             (Vram::new(0xA5000508), SymbolType::Word, Size::new(0x4), "LEO_CMD"),
-            (Vram::new(0xA5000508), SymbolType::Word, Size::new(0x4), "LEO_STATUS"),
+            // (Vram::new(0xA5000508), SymbolType::Word, Size::new(0x4), "LEO_STATUS"),
 
             (Vram::new(0xA5000510), SymbolType::Word, Size::new(0x4), "LEO_BM_CTL"),
-            (Vram::new(0xA5000510), SymbolType::Word, Size::new(0x4), "LEO_BM_STATUS"),
+            // (Vram::new(0xA5000510), SymbolType::Word, Size::new(0x4), "LEO_BM_STATUS"),
 
             (Vram::new(0xA5000518), SymbolType::Word, Size::new(0x4), "LEO_SEQ_CTL"),
-            (Vram::new(0xA5000518), SymbolType::Word, Size::new(0x4), "LEO_SEQ_STATUS"),
+            // (Vram::new(0xA5000518), SymbolType::Word, Size::new(0x4), "LEO_SEQ_STATUS"),
 
             (Vram::new(0xA5000000), SymbolType::Word, Size::new(0x4), "LEO_C2_BUFF"),      // C2 Sector Buffer
             (Vram::new(0xA5000400), SymbolType::Word, Size::new(0x4), "LEO_SECTOR_BUFF"),  // Data Sector Buffer
@@ -240,7 +296,7 @@ impl PlatformSegmentBuilder {
         Ok(())
     }
 
-    pub fn ique_libultra_symbols(&mut self) -> Result<(), AddPlatformSymbolError> {
+    pub fn ique_libultra_symbols(&mut self) -> Result<(), AddUserSegmentSymbolError> {
         #[rustfmt::skip]
         const SYMS: [(Vram, SymbolType, Size, &str); 15] = [
             (Vram::new(0x8000035C), SymbolType::Word,    Size::new(0x4),     "__osBbEepromAddress"),
@@ -267,7 +323,7 @@ impl PlatformSegmentBuilder {
         &mut self,
         set_names: bool,
         _set_as_constants: bool,
-    ) -> Result<(), AddPlatformSymbolError> {
+    ) -> Result<(), AddUserSegmentSymbolError> {
         // TODO: fill missing ones
         #[rustfmt::skip]
         const SYMS: [(Vram, SymbolType, Size, &str); 4] = [
@@ -282,8 +338,8 @@ impl PlatformSegmentBuilder {
         Ok(())
     }
 
-    pub(crate) fn build(self) -> PlatformSegmentMetadata {
-        PlatformSegmentMetadata::new(self.symbols)
+    pub(crate) fn build(self) -> UserSegmentMetadata {
+        UserSegmentMetadata::new(self.symbols)
     }
 }
 
@@ -292,14 +348,26 @@ pub(crate) mod python_bindings {
     use super::*;
 
     #[pymethods]
-    impl PlatformSegmentBuilder {
+    impl UserSegmentBuilder {
         #[new]
         fn py_new() -> Self {
             Self::new()
         }
 
+        #[pyo3(name = "add_symbol", signature=(vram, name, size, typ))]
+        pub fn py_add_symbol(
+            &mut self,
+            vram: Vram,
+            name: String,
+            size: Size,
+            typ: Option<SymbolType>,
+        ) -> Result<(), AddUserSegmentSymbolError> {
+            self.add_symbol(vram, name, size, typ)?;
+            Ok(())
+        }
+
         #[pyo3(name = "n64_libultra_symbols")]
-        pub fn py_n64_libultra_symbols(&mut self) -> Result<(), AddPlatformSymbolError> {
+        pub fn py_n64_libultra_symbols(&mut self) -> Result<(), AddUserSegmentSymbolError> {
             self.n64_libultra_symbols()
         }
 
@@ -308,12 +376,12 @@ pub(crate) mod python_bindings {
             &mut self,
             set_names: bool,
             set_as_constants: bool,
-        ) -> Result<(), AddPlatformSymbolError> {
+        ) -> Result<(), AddUserSegmentSymbolError> {
             self.n64_hardware_registers(set_names, set_as_constants)
         }
 
         #[pyo3(name = "ique_libultra_symbols")]
-        pub fn py_ique_libultra_symbols(&mut self) -> Result<(), AddPlatformSymbolError> {
+        pub fn py_ique_libultra_symbols(&mut self) -> Result<(), AddUserSegmentSymbolError> {
             self.ique_libultra_symbols()
         }
 
@@ -322,7 +390,7 @@ pub(crate) mod python_bindings {
             &mut self,
             set_names: bool,
             set_as_constants: bool,
-        ) -> Result<(), AddPlatformSymbolError> {
+        ) -> Result<(), AddUserSegmentSymbolError> {
             self.ique_hardware_registers(set_names, set_as_constants)
         }
     }

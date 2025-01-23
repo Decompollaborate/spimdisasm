@@ -5,7 +5,7 @@ use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
 use spimdisasm::{
     addresses::{AddressRange, RomVramRange},
     config::{Compiler, Endian, GlobalConfig},
-    context::{builder::PlatformSegmentBuilder, Context, ContextBuilder, GlobalSegmentBuilder},
+    context::{builder::UserSegmentBuilder, Context, ContextBuilder, GlobalSegmentBuilder},
     parent_segment_info::ParentSegmentInfo,
     sections::{SectionDataSettings, SectionExecutableSettings, SectionNoloadSettings},
     symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings, SymNoloadDisplaySettings},
@@ -158,7 +158,7 @@ fn init_context(
         }
     }
 
-    let mut platform_segment = PlatformSegmentBuilder::new();
+    let mut platform_segment = UserSegmentBuilder::new();
     platform_segment.n64_libultra_symbols().unwrap();
     platform_segment.n64_hardware_registers(true, true).unwrap();
 

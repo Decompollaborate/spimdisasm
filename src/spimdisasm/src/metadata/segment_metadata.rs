@@ -177,7 +177,7 @@ impl SegmentMetadata {
         if self.in_vram_range(vram) {
             // TODO: pass down segment information to the symbol during creation,
             // like telling it if it is part of the global segment, an overlay or the unknown segment.
-            let sym = self.symbols.find_mut_or_insert_with(
+            let (sym, _) = self.symbols.find_mut_or_insert_with(
                 vram,
                 FindSettings::new(allow_sym_with_addend),
                 || (vram, SymbolMetadata::new(generated_by, vram)),

@@ -14,8 +14,7 @@ use crate::{
     collections::{addended_ordered_map::FindSettings, unordered_map::UnorderedMap},
     config::GlobalConfig,
     metadata::{
-        OverlayCategory, OverlayCategoryName, PlatformSegmentMetadata, SegmentMetadata,
-        SymbolMetadata,
+        OverlayCategory, OverlayCategoryName, SegmentMetadata, SymbolMetadata, UserSegmentMetadata,
     },
     parent_segment_info::ParentSegmentInfo,
     section_type::SectionType,
@@ -31,7 +30,7 @@ pub struct Context {
     global_config: GlobalConfig,
 
     global_segment: SegmentMetadata,
-    platform_segment: PlatformSegmentMetadata,
+    platform_segment: UserSegmentMetadata,
 
     //
     overlay_segments: UnorderedMap<OverlayCategoryName, OverlayCategory>,
@@ -55,7 +54,7 @@ impl Context {
     pub(crate) fn new(
         global_config: GlobalConfig,
         global_segment: SegmentMetadata,
-        platform_segment: PlatformSegmentMetadata,
+        platform_segment: UserSegmentMetadata,
         overlay_segments: UnorderedMap<OverlayCategoryName, OverlayCategory>,
     ) -> Self {
         Self {
@@ -263,15 +262,15 @@ impl Context {
     where
         F: Fn(&SymbolMetadata) -> bool,
     {
+        if let Some(metadata) = self.platform_segment.find_symbol(vram, settings) {
+            return Some(metadata);
+        }
+
         if self.global_segment.in_vram_range(vram) {
             return self
                 .global_segment
                 .find_symbol(vram, settings)
                 .filter(|&sym| sym_validation(sym));
-        }
-
-        if let Some(metadata) = self.platform_segment.find_symbol(vram, settings) {
-            return Some(metadata);
         }
 
         if let Some(overlay_category_name) = info.overlay_category_name() {

@@ -6,8 +6,7 @@ use spimdisasm::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     config::{Compiler, Endian, GlobalConfig},
     context::{
-        builder::PlatformSegmentBuilder, ContextBuilder, GlobalSegmentBuilder,
-        OverlaySegmentBuilder,
+        builder::UserSegmentBuilder, ContextBuilder, GlobalSegmentBuilder, OverlaySegmentBuilder,
     },
     metadata::OverlayCategoryName,
     parent_segment_info::ParentSegmentInfo,
@@ -112,7 +111,7 @@ fn test_section_text_1() {
 
         global_segment.preanalyze_text(&global_config, &text_settings, &bytes, rom, vram);
 
-        let mut platform_segment = PlatformSegmentBuilder::new();
+        let mut platform_segment = UserSegmentBuilder::new();
         platform_segment.n64_libultra_symbols().unwrap();
         platform_segment.n64_hardware_registers(true, true).unwrap();
 
@@ -239,7 +238,7 @@ fn test_section_text_lui_delay_slot() {
 
         global_segment.preanalyze_text(&global_config, &text_settings, &bytes, rom, vram);
 
-        let mut platform_segment = PlatformSegmentBuilder::new();
+        let mut platform_segment = UserSegmentBuilder::new();
         platform_segment.n64_libultra_symbols().unwrap();
         platform_segment.n64_hardware_registers(true, true).unwrap();
 
@@ -387,7 +386,7 @@ fn test_section_text_pairing_on_delay_slot() {
 
         global_segment.preanalyze_text(&global_config, &text_settings, &BYTES, rom, vram);
 
-        let mut platform_segment = PlatformSegmentBuilder::new();
+        let mut platform_segment = UserSegmentBuilder::new();
         platform_segment.n64_libultra_symbols().unwrap();
         platform_segment.n64_hardware_registers(true, true).unwrap();
 
@@ -535,7 +534,7 @@ fn test_section_text_lui_paired_with_lw_and_ori() {
 
         global_segment.preanalyze_text(&global_config, &text_settings, &BYTES, rom, vram);
 
-        let mut platform_segment = PlatformSegmentBuilder::new();
+        let mut platform_segment = UserSegmentBuilder::new();
         platform_segment.n64_libultra_symbols().unwrap();
         platform_segment.n64_hardware_registers(true, true).unwrap();
 

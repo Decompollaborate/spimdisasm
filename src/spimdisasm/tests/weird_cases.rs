@@ -5,7 +5,7 @@ use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
 use spimdisasm::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     config::{Endian, GlobalConfig},
-    context::{builder::PlatformSegmentBuilder, ContextBuilder, GlobalSegmentBuilder},
+    context::{builder::UserSegmentBuilder, ContextBuilder, GlobalSegmentBuilder},
     parent_segment_info::ParentSegmentInfo,
     sections::SectionExecutableSettings,
     symbols::display::FunctionDisplaySettings,
@@ -254,7 +254,7 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
     );
     let global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
 
-    let mut platform_segment = PlatformSegmentBuilder::new();
+    let mut platform_segment = UserSegmentBuilder::new();
     platform_segment.n64_libultra_symbols().unwrap();
     platform_segment.n64_hardware_registers(true, true).unwrap();
 

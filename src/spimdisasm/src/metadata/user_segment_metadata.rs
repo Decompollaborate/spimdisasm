@@ -9,11 +9,11 @@ use crate::{
 use super::SymbolMetadata;
 
 #[derive(Debug, Clone, Hash, PartialEq, PartialOrd)]
-pub(crate) struct PlatformSegmentMetadata {
+pub(crate) struct UserSegmentMetadata {
     symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
 }
 
-impl PlatformSegmentMetadata {
+impl UserSegmentMetadata {
     pub(crate) fn new(symbols: AddendedOrderedMap<Vram, SymbolMetadata>) -> Self {
         Self { symbols }
     }

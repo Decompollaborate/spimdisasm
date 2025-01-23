@@ -127,7 +127,7 @@ fn add_impl<'slf, K, V, F>(
     key: K,
     settings: FindSettings,
     default: F,
-) -> &'slf mut V
+) -> (&'slf mut V, bool)
 where
     K: Ord + Copy + Add<Size, Output = K>,
     V: SizedAddress,
@@ -135,16 +135,17 @@ where
 {
     // TODO: get rid of the polonius stuff when the new borrow checker has been released.
 
-    polonius!(|slf| -> &'polonius mut V {
+    polonius!(|slf| -> (&'polonius mut V, bool) {
         if let Some(x) = slf.find_mut(&key, settings) {
-            polonius_return!(x);
+            polonius_return!((x, false));
         }
     });
 
     let (k, v) = default();
     let entry = slf.inner.entry(k);
 
-    entry.or_insert(v)
+    let newly_created = matches!(entry, btree_map::Entry::Vacant(_));
+    (entry.or_insert(v), newly_created)
 }
 
 #[cfg(feature = "nightly")]
@@ -153,7 +154,7 @@ fn add_impl<'slf, K, V, F>(
     key: K,
     settings: FindSettings,
     default: F,
-) -> &'slf mut V
+) -> (&'slf mut V, bool)
 where
     K: Ord + Copy + Add<Size, Output = K>,
     V: SizedAddress,
@@ -183,7 +184,7 @@ where
     }
 
     //let sym = unsafe { &mut *(cursor.peek_prev().unwrap().1 as *mut SymbolMetadata) };
-    into_prev_and_next(cursor).0.unwrap().1
+    (into_prev_and_next(cursor).0.unwrap().1, must_insert_new)
 }
 
 #[cfg(feature = "nightly")]
@@ -214,7 +215,7 @@ where
         key: K,
         settings: FindSettings,
         default: F,
-    ) -> &mut V
+    ) -> (&mut V, bool)
     where
         F: FnOnce() -> (K, V),
     {
