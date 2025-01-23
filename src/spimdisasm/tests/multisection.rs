@@ -5,7 +5,7 @@ use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
 use spimdisasm::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     config::{Endian, GlobalConfig},
-    context::{Context, ContextBuilder, GlobalSegmentBuilder},
+    context::{builder::PlatformSegmentBuilder, Context, ContextBuilder, GlobalSegmentBuilder},
     metadata::SegmentMetadata,
     parent_segment_info::ParentSegmentInfo,
     sections::{
@@ -109,7 +109,11 @@ impl Sections {
                 gcc_except_table_info.0.vram,
             );
 
-            let builder = ContextBuilder::new(global_heater);
+            let mut platform_segment = PlatformSegmentBuilder::new();
+            platform_segment.n64_libultra_symbols().unwrap();
+            platform_segment.n64_hardware_registers(true, true).unwrap();
+
+            let builder = ContextBuilder::new(global_heater, platform_segment);
             builder.build(global_config)
         };
 

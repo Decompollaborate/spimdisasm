@@ -18,25 +18,31 @@ use crate::{
     metadata::{OverlayCategory, OverlayCategoryName, SegmentMetadata},
 };
 
-use super::{GlobalSegmentHeater, OverlaySegmentHeater};
+use super::{GlobalSegmentHeater, OverlaySegmentHeater, PlatformSegmentBuilder};
 
 #[derive(Debug, Clone, Hash, PartialEq)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct ContextBuilder {
     global_segment: SegmentMetadata,
+    platform_segment: PlatformSegmentBuilder,
     overlays: Vec<SegmentMetadata>,
 }
 
 impl ContextBuilder {
     #[must_use]
-    pub fn new(global_segment: GlobalSegmentHeater) -> Self {
+    pub fn new(
+        global_segment: GlobalSegmentHeater,
+        platform_segment: PlatformSegmentBuilder,
+    ) -> Self {
         Self {
             global_segment: global_segment.finish(),
+            platform_segment,
             overlays: Vec::new(),
         }
     }
 
     pub fn add_overlay(&mut self, overlay: OverlaySegmentHeater) {
+        // TODO: add checks like: unique overlay name, overlay's vram does not overlap with the global segment's vram
         self.overlays.push(overlay.finish());
     }
 
@@ -187,7 +193,12 @@ impl ContextBuilder {
             overlay_segments.insert(name, OverlayCategory::new(placeholder_segment, segments));
         }
 
-        Context::new(global_config, global_segment, overlay_segments)
+        Context::new(
+            global_config,
+            global_segment,
+            self.platform_segment.build(),
+            overlay_segments,
+        )
     }
 }
 
@@ -198,8 +209,11 @@ pub(crate) mod python_bindings {
     #[pymethods]
     impl ContextBuilder {
         #[new]
-        fn py_new(global_segment: GlobalSegmentHeater) -> Self {
-            Self::new(global_segment)
+        fn py_new(
+            global_segment: GlobalSegmentHeater,
+            platform_segment: PlatformSegmentBuilder,
+        ) -> Self {
+            Self::new(global_segment, platform_segment)
         }
 
         #[pyo3(name = "add_overlay")]

@@ -13,7 +13,10 @@ use crate::{
     addresses::{AddressRange, Rom, Vram},
     collections::{addended_ordered_map::FindSettings, unordered_map::UnorderedMap},
     config::GlobalConfig,
-    metadata::{OverlayCategory, OverlayCategoryName, SegmentMetadata, SymbolMetadata},
+    metadata::{
+        OverlayCategory, OverlayCategoryName, PlatformSegmentMetadata, SegmentMetadata,
+        SymbolMetadata,
+    },
     parent_segment_info::ParentSegmentInfo,
     section_type::SectionType,
     sections::{
@@ -28,6 +31,7 @@ pub struct Context {
     global_config: GlobalConfig,
 
     global_segment: SegmentMetadata,
+    platform_segment: PlatformSegmentMetadata,
     // unknown_segment: SegmentMetadata,
 
     //
@@ -50,11 +54,13 @@ impl Context {
     pub(crate) fn new(
         global_config: GlobalConfig,
         global_segment: SegmentMetadata,
+        platform_segment: PlatformSegmentMetadata,
         overlay_segments: UnorderedMap<OverlayCategoryName, OverlayCategory>,
     ) -> Self {
         Self {
             global_config,
             global_segment,
+            platform_segment,
             overlay_segments,
         }
     }
@@ -260,6 +266,10 @@ impl Context {
                 .global_segment
                 .find_symbol(vram, settings)
                 .filter(|&sym| sym_validation(sym));
+        }
+
+        if let Some(metadata) = self.platform_segment.find_symbol(vram, settings) {
+            return Some(metadata);
         }
 
         if let Some(overlay_category_name) = info.overlay_category_name() {

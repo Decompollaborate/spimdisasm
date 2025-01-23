@@ -5,7 +5,10 @@ use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
 use spimdisasm::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     config::{Compiler, Endian, GlobalConfig},
-    context::{ContextBuilder, GlobalSegmentBuilder, OverlaySegmentBuilder},
+    context::{
+        builder::PlatformSegmentBuilder, ContextBuilder, GlobalSegmentBuilder,
+        OverlaySegmentBuilder,
+    },
     metadata::OverlayCategoryName,
     parent_segment_info::ParentSegmentInfo,
     sections::SectionExecutableSettings,
@@ -109,7 +112,11 @@ fn test_section_text_1() {
 
         global_segment.preanalyze_text(&global_config, &text_settings, &bytes, rom, vram);
 
-        let mut builder = ContextBuilder::new(global_segment);
+        let mut platform_segment = PlatformSegmentBuilder::new();
+        platform_segment.n64_libultra_symbols().unwrap();
+        platform_segment.n64_hardware_registers(true, true).unwrap();
+
+        let mut builder = ContextBuilder::new(global_segment, platform_segment);
 
         for i in 0x0..=0xF {
             let segment_name = format!("segment_0{:X}", i);
@@ -232,7 +239,11 @@ fn test_section_text_lui_delay_slot() {
 
         global_segment.preanalyze_text(&global_config, &text_settings, &bytes, rom, vram);
 
-        let builder = ContextBuilder::new(global_segment);
+        let mut platform_segment = PlatformSegmentBuilder::new();
+        platform_segment.n64_libultra_symbols().unwrap();
+        platform_segment.n64_hardware_registers(true, true).unwrap();
+
+        let builder = ContextBuilder::new(global_segment, platform_segment);
 
         builder.build(global_config)
     };
@@ -376,7 +387,11 @@ fn test_section_text_pairing_on_delay_slot() {
 
         global_segment.preanalyze_text(&global_config, &text_settings, &BYTES, rom, vram);
 
-        let builder = ContextBuilder::new(global_segment);
+        let mut platform_segment = PlatformSegmentBuilder::new();
+        platform_segment.n64_libultra_symbols().unwrap();
+        platform_segment.n64_hardware_registers(true, true).unwrap();
+
+        let builder = ContextBuilder::new(global_segment, platform_segment);
 
         builder.build(global_config)
     };
