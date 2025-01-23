@@ -32,10 +32,11 @@ pub struct Context {
 
     global_segment: SegmentMetadata,
     platform_segment: PlatformSegmentMetadata,
-    // unknown_segment: SegmentMetadata,
 
     //
     overlay_segments: UnorderedMap<OverlayCategoryName, OverlayCategory>,
+
+    unknown_segment: SegmentMetadata,
     //
     // totalVramRange: SymbolsRanges
 
@@ -62,6 +63,7 @@ impl Context {
             global_segment,
             platform_segment,
             overlay_segments,
+            unknown_segment: SegmentMetadata::new_unknown_segment(),
         }
     }
 }
@@ -283,6 +285,9 @@ impl Context {
                     // Check for any prioiritised overlay, if any.
                     for prioritised_overlay in owned_segment.prioritised_overlays() {
                         for (_ovl_cat, segments_per_rom) in self.overlay_segments.iter() {
+                            if !segments_per_rom.ranges().in_vram_range(vram) {
+                                continue;
+                            }
                             for (_segment_rom, segment) in segments_per_rom.segments() {
                                 if segment.name() == Some(prioritised_overlay)
                                     && segment.in_vram_range(vram)
@@ -305,7 +310,9 @@ impl Context {
         // First we look for segments categories that only contain a single segment, since it is less likely to grab the wrong symbol.
         let overlay_category_name = info.overlay_category_name();
         for (ovl_cat, segments_per_rom) in self.overlay_segments.iter() {
-            if overlay_category_name == Some(ovl_cat) {
+            if overlay_category_name == Some(ovl_cat)
+                || !segments_per_rom.ranges().in_vram_range(vram)
+            {
                 continue;
             }
 
@@ -327,7 +334,9 @@ impl Context {
 
         // If we haven't found the symbol yet then we just look everywhere
         for (ovl_cat, segments_per_rom) in self.overlay_segments.iter() {
-            if overlay_category_name == Some(ovl_cat) {
+            if overlay_category_name == Some(ovl_cat)
+                || !segments_per_rom.ranges().in_vram_range(vram)
+            {
                 continue;
             }
 
@@ -345,23 +354,12 @@ impl Context {
             }
         }
 
-        // If we still can't find it, fall back to the placeholders
-        // TODO: is this actually fine? or should we do something else?
-        for (ovl_cat, segments_per_rom) in self.overlay_segments.iter() {
-            if overlay_category_name == Some(ovl_cat) {
-                continue;
-            }
-
-            let segment = segments_per_rom.placeholder_segment();
-            if segment.in_vram_range(vram) {
-                if let Some(sym) = segment.find_symbol(vram, settings) {
-                    if sym_validation(sym) {
-                        return Some(sym);
-                    }
-                }
+        // If we still can't find it, fall back to the unknown segment
+        if let Some(sym) = self.unknown_segment.find_symbol(vram, settings) {
+            if sym_validation(sym) {
+                return Some(sym);
             }
         }
-
         None
     }
 }
@@ -370,9 +368,9 @@ fn find_referenced_segment_mut_impl<'ctx>(
     mut slf: &'ctx mut Context,
     vram: Vram,
     info: &ParentSegmentInfo,
-) -> Option<&'ctx mut SegmentMetadata> {
+) -> &'ctx mut SegmentMetadata {
     if slf.global_segment.in_vram_range(vram) {
-        return Some(&mut slf.global_segment);
+        return &mut slf.global_segment;
     }
 
     if let Some(overlay_category_name) = info.overlay_category_name() {
@@ -380,13 +378,13 @@ fn find_referenced_segment_mut_impl<'ctx>(
 
         let mut has_prioritised_overlays = false;
 
-        polonius!(|slf| -> Option<&'polonius mut SegmentMetadata> {
+        polonius!(|slf| -> &'polonius mut SegmentMetadata {
             if let Some(segments_per_rom) = slf.overlay_segments.get_mut(overlay_category_name) {
                 if let Some(owned_segment) =
                     segments_per_rom.segments_mut().get_mut(&info.segment_rom())
                 {
                     if owned_segment.in_vram_range(vram) {
-                        polonius_return!(Some(owned_segment));
+                        polonius_return!(owned_segment);
                     }
 
                     has_prioritised_overlays = !owned_segment.prioritised_overlays().is_empty();
@@ -402,6 +400,9 @@ fn find_referenced_segment_mut_impl<'ctx>(
                     // Check for any prioiritised overlay, if any.
                     for prioritised_overlay in owned_segment.prioritised_overlays() {
                         for (ovl_cat, segments_per_rom) in slf.overlay_segments.iter() {
+                            if !segments_per_rom.ranges().in_vram_range(vram) {
+                                continue;
+                            }
                             for (segment_rom, segment) in segments_per_rom.segments() {
                                 if segment.name() == Some(prioritised_overlay)
                                     && segment.in_vram_range(vram)
@@ -409,52 +410,45 @@ fn find_referenced_segment_mut_impl<'ctx>(
                                     // We need to clone here to avoid lifetime issues
                                     prioritised_overlay_info =
                                         Some((ovl_cat.clone(), *segment_rom));
+                                    break;
                                 }
                             }
+                            if prioritised_overlay_info.is_some() {
+                                break;
+                            }
+                        }
+                        if prioritised_overlay_info.is_some() {
+                            break;
                         }
                     }
                 }
             }
 
             if let Some((ovl_cat, segment_rom)) = prioritised_overlay_info {
-                polonius!(|slf| -> Option<&'polonius mut SegmentMetadata> {
+                polonius!(|slf| -> &'polonius mut SegmentMetadata {
                     if let Some(segment) = slf
                         .overlay_segments
                         .get_mut(&ovl_cat)
                         .and_then(|x| x.segments_mut().get_mut(&segment_rom))
                     {
-                        polonius_return!(Some(segment));
+                        polonius_return!(segment);
                     }
                 });
             }
         }
     }
 
-    let overlay_category_name = info.overlay_category_name();
-    // If not found, then we should check every category except the one that associated to the parent segment.
-    for (ovl_cat, segments_per_rom) in slf.overlay_segments.iter_mut() {
-        if overlay_category_name == Some(ovl_cat) {
-            continue;
-        }
-        let segment = segments_per_rom.placeholder_segment_mut();
-        if segment.in_vram_range(vram) {
-            return Some(segment);
-        }
-    }
-
-    None
+    // Fallback to the unknown segment
+    &mut slf.unknown_segment
 }
 
 impl Context {
-    // TODO: remove `allow`
-    #[allow(dead_code)]
     #[must_use]
     pub(crate) fn find_referenced_segment_mut(
         &mut self,
         vram: Vram,
         info: &ParentSegmentInfo,
-    ) -> Option<&mut SegmentMetadata> {
-        // TODO: Maybe remove Option and actually implement the unknown_segment?
+    ) -> &mut SegmentMetadata {
         find_referenced_segment_mut_impl(self, vram, info)
     }
 }

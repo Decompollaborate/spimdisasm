@@ -1,32 +1,38 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use crate::{addresses::Rom, collections::unordered_map::UnorderedMap};
+use crate::{
+    addresses::{Rom, RomVramRange},
+    collections::unordered_map::UnorderedMap,
+};
 
-use super::SegmentMetadata;
+use super::{OverlayCategoryName, SegmentMetadata};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct OverlayCategory {
-    placeholder_segment: SegmentMetadata,
+    name: OverlayCategoryName,
+    ranges: RomVramRange,
     segments: UnorderedMap<Rom, SegmentMetadata>,
 }
 
 impl OverlayCategory {
     pub(crate) fn new(
-        placeholder_segment: SegmentMetadata,
+        name: OverlayCategoryName,
+        ranges: RomVramRange,
         segments: UnorderedMap<Rom, SegmentMetadata>,
     ) -> Self {
         Self {
-            placeholder_segment,
+            name,
+            ranges,
             segments,
         }
     }
 
-    pub(crate) fn placeholder_segment(&self) -> &SegmentMetadata {
-        &self.placeholder_segment
-    }
-    pub(crate) fn placeholder_segment_mut(&mut self) -> &mut SegmentMetadata {
-        &mut self.placeholder_segment
+    // pub(crate) fn name(&self) -> &OverlayCategoryName {
+    //     &self.name
+    // }
+    pub(crate) fn ranges(&self) -> &RomVramRange {
+        &self.ranges
     }
 
     pub(crate) fn segments(&self) -> &UnorderedMap<Rom, SegmentMetadata> {

@@ -32,9 +32,9 @@ pub struct SegmentMetadata {
     //
     /// Stuff that looks like pointers. Found referenced by data.
     new_pointer_in_data: BTreeMap<Vram, Vec<Rom>>,
-    //
-    // is_the_unknown_segment: bool,
     preheater: Preheater,
+
+    is_the_unknown_segment: bool,
 }
 
 impl SegmentMetadata {
@@ -55,6 +55,8 @@ impl SegmentMetadata {
             new_pointer_in_data: BTreeMap::new(),
 
             preheater: Preheater::new(),
+
+            is_the_unknown_segment: false,
         }
     }
 
@@ -68,6 +70,14 @@ impl SegmentMetadata {
         name: String,
     ) -> Self {
         Self::new(ranges, Some(category_name), Some(name))
+    }
+
+    pub(crate) fn new_unknown_segment() -> Self {
+        let rom_range = AddressRange::new(Rom::new(0x00000000), Rom::new(0xFFFFFFFF));
+        let vram_range = AddressRange::new(Vram::new(0x00000000), Vram::new(0xFFFFFFFF));
+        Self {
+            ..Self::new(RomVramRange::new(rom_range, vram_range), None, None)
+        }
     }
 
     pub fn name(&self) -> Option<&str> {
@@ -165,6 +175,8 @@ impl SegmentMetadata {
         allow_sym_with_addend: bool, // false
     ) -> Result<&mut SymbolMetadata, AddSymbolError> {
         if self.in_vram_range(vram) {
+            // TODO: pass down segment information to the symbol during creation,
+            // like telling it if it is part of the global segment, an overlay or the unknown segment.
             let sym = self.symbols.find_mut_or_insert_with(
                 vram,
                 FindSettings::new(allow_sym_with_addend),

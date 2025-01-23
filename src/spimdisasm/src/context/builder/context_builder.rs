@@ -180,6 +180,7 @@ impl ContextBuilder {
 
         let mut overlay_segments = UnorderedMap::new();
         for (name, overlays) in grouped_segments {
+            // TODO: move the body of this loop to OverlayCategory::new?
             let mut segments = UnorderedMap::new();
             let mut ranges = *overlays[0].rom_vram_range();
 
@@ -188,9 +189,7 @@ impl ContextBuilder {
                 segments.insert(seg.rom_range().start(), seg);
             }
 
-            let placeholder_segment =
-                SegmentMetadata::new_overlay(ranges, name.clone(), format!("{}_placeholder", name));
-            overlay_segments.insert(name, OverlayCategory::new(placeholder_segment, segments));
+            overlay_segments.insert(name.clone(), OverlayCategory::new(name, ranges, segments));
         }
 
         Context::new(
