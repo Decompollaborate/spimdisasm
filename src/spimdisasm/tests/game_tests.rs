@@ -75,7 +75,7 @@ fn init_context(
         match sym {
             game_tests_info::UserSymbol::Info(user_symbol_info) => {
                 let sym = global_segment
-                    .add_symbol(
+                    .add_user_symbol(
                         user_symbol_info.name,
                         user_symbol_info.vram,
                         user_symbol_info.rom,

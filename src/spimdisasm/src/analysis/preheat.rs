@@ -6,10 +6,10 @@ use core::cmp::Ordering;
 use rabbitizer::{access_type::AccessType, Instruction};
 
 use crate::{
-    addresses::{Rom, Size, Vram, VramOffset},
+    addresses::{Rom, RomVramRange, Size, Vram, VramOffset},
     collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
     config::GlobalConfig,
-    metadata::{SegmentMetadata, SymbolType},
+    metadata::{SymbolMetadata, SymbolType},
     section_type::SectionType,
     sections::{SectionDataSettings, SectionExecutableSettings},
 };
@@ -17,13 +17,15 @@ use crate::{
 use super::{ReferenceWrapper, ReferencedAddress, RegisterTracker};
 
 #[derive(Debug, Clone, Hash, PartialEq, PartialOrd)]
-pub struct Preheater {
+pub(crate) struct Preheater {
+    ranges: RomVramRange,
     references: AddendedOrderedMap<Vram, ReferencedAddress>,
 }
 
 impl Preheater {
-    pub const fn new() -> Self {
+    pub(crate) const fn new(ranges: RomVramRange) -> Self {
         Self {
+            ranges,
             references: AddendedOrderedMap::new(),
         }
     }
@@ -35,14 +37,14 @@ impl Preheater {
         &mut self.references
     }
 
-    pub fn preheat_text(
+    pub(crate) fn preheat_text(
         &mut self,
         global_config: &GlobalConfig,
         settings: &SectionExecutableSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
-        owned_segment: &SegmentMetadata,
+        user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
     ) {
         let mut current_rom = rom;
         let mut current_vram = vram;
@@ -74,7 +76,7 @@ impl Preheater {
                 regs_tracker.process_branch(&instr, current_rom);
             } else if let Some(target_vram) = instr.get_instr_index_as_vram() {
                 // instr.opcode().is_jump_with_address()
-                let reference = self.new_ref(target_vram, Some(current_vram), owned_segment);
+                let reference = self.new_ref(target_vram, Some(current_vram), user_symbols);
 
                 reference.set_sym_type(SymbolType::Function);
             } else if instr.is_jumptable_jump() {
@@ -83,7 +85,7 @@ impl Preheater {
                     let address = Vram::new(jr_reg_data.address());
 
                     if jr_reg_data.branch_info().is_none() {
-                        let reference = self.new_ref(address, None, owned_segment);
+                        let reference = self.new_ref(address, None, user_symbols);
 
                         reference.set_sym_type(SymbolType::Jumptable);
                     }
@@ -98,7 +100,7 @@ impl Preheater {
                 if let Some(jr_reg_data) = regs_tracker.get_jr_reg_data(&instr) {
                     let address = Vram::new(jr_reg_data.address());
 
-                    let reference = self.new_ref(address, None, owned_segment);
+                    let reference = self.new_ref(address, None, user_symbols);
                     reference.set_sym_type(SymbolType::Function);
                 }
                 */
@@ -127,7 +129,7 @@ impl Preheater {
                         };
 
                         let reference =
-                            self.new_ref(realigned_symbol_vram, Some(current_vram), owned_segment);
+                            self.new_ref(realigned_symbol_vram, Some(current_vram), user_symbols);
 
                         if let Some(access_type) = instr.opcode().access_type() {
                             reference.set_access_type(access_type);
@@ -152,7 +154,7 @@ impl Preheater {
                         _ => Vram::new(address),
                     };
 
-                    let reference = self.new_ref(realigned_symbol_vram, None, owned_segment);
+                    let reference = self.new_ref(realigned_symbol_vram, None, user_symbols);
 
                     reference.set_access_type(access_type);
                 }
@@ -178,14 +180,14 @@ impl Preheater {
         }
     }
 
-    pub fn preheat_data(
+    pub(crate) fn preheat_data(
         &mut self,
         global_config: &GlobalConfig,
         settings: &SectionDataSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
-        owned_segment: &SegmentMetadata,
+        user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
     ) {
         if rom.inner() % 4 != 0 || vram.inner() % 4 != 0 {
             // not word-aligned, give up.
@@ -198,19 +200,19 @@ impl Preheater {
             raw_bytes,
             rom,
             vram,
-            owned_segment,
+            user_symbols,
             SectionType::Data,
         );
     }
 
-    pub fn preheat_rodata(
+    pub(crate) fn preheat_rodata(
         &mut self,
         global_config: &GlobalConfig,
         settings: &SectionDataSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
-        owned_segment: &SegmentMetadata,
+        user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
     ) {
         if rom.inner() % 4 != 0 || vram.inner() % 4 != 0 {
             // not word-aligned, give up.
@@ -223,19 +225,19 @@ impl Preheater {
             raw_bytes,
             rom,
             vram,
-            owned_segment,
+            user_symbols,
             SectionType::Rodata,
         );
     }
 
-    pub fn preheat_gcc_except_table(
+    pub(crate) fn preheat_gcc_except_table(
         &mut self,
         global_config: &GlobalConfig,
         _settings: &SectionDataSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
-        owned_segment: &SegmentMetadata,
+        user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
     ) {
         if rom.inner() % 4 != 0 || vram.inner() % 4 != 0 {
             // not word-aligned, give up.
@@ -249,7 +251,7 @@ impl Preheater {
             let word = global_config.endian().word_from_bytes(word_bytes);
             let word_vram = Vram::new(word);
 
-            if owned_segment.in_vram_range(word_vram) {
+            if self.ranges.in_vram_range(word_vram) {
                 references_found.push((
                     word_vram,
                     Some(SymbolType::GccExceptTableLabel),
@@ -261,7 +263,7 @@ impl Preheater {
         }
 
         for (v, typ, referenced_by) in references_found {
-            let reference = self.new_ref(v, Some(referenced_by), owned_segment);
+            let reference = self.new_ref(v, Some(referenced_by), user_symbols);
             if let Some(typ) = typ {
                 reference.set_sym_type(typ);
             }
@@ -277,7 +279,7 @@ impl Preheater {
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
-        owned_segment: &SegmentMetadata,
+        user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
         section_type: SectionType,
     ) {
         if rom.inner() % 4 != 0 || vram.inner() % 4 != 0 {
@@ -286,7 +288,7 @@ impl Preheater {
         }
 
         // Ensure there's a symbol at the start of the segment
-        self.new_ref(vram, None, owned_segment);
+        self.new_ref(vram, None, user_symbols);
 
         let mut remaining_string_size = 0;
 
@@ -318,7 +320,7 @@ impl Preheater {
 
             if remaining_string_size <= 0 {
                 let current_ref = ReferenceWrapper::find(
-                    owned_segment,
+                    user_symbols,
                     self,
                     current_vram,
                     FindSettings::new(true),
@@ -336,7 +338,7 @@ impl Preheater {
                     if let Some(str_size) = guessed_size {
                         let str_sym_size = str_size.next_multiple_of(4);
                         let in_between_sym = ReferenceWrapper::find(
-                            owned_segment,
+                            user_symbols,
                             self,
                             current_vram + Size::new(str_sym_size as u32 - 1),
                             FindSettings::new(true).with_reject_sizeless_addended(false),
@@ -392,17 +394,17 @@ impl Preheater {
                 let mut table_label = None;
 
                 let a = ReferenceWrapper::find(
-                    owned_segment,
+                    user_symbols,
                     self,
                     current_vram,
                     FindSettings::new(false),
                 );
                 let b =
-                    ReferenceWrapper::find(owned_segment, self, b_vram, FindSettings::new(false));
+                    ReferenceWrapper::find(user_symbols, self, b_vram, FindSettings::new(false));
                 let c =
-                    ReferenceWrapper::find(owned_segment, self, c_vram, FindSettings::new(false));
+                    ReferenceWrapper::find(user_symbols, self, c_vram, FindSettings::new(false));
                 let d =
-                    ReferenceWrapper::find(owned_segment, self, d_vram, FindSettings::new(false));
+                    ReferenceWrapper::find(user_symbols, self, d_vram, FindSettings::new(false));
 
                 let a_type = (a.is_some(), a.and_then(|x| x.sym_type()));
                 let b_type = (b.is_some(), b.and_then(|x| x.sym_type()));
@@ -424,7 +426,7 @@ impl Preheater {
                     if should_search_for_address {
                         let word_vram = Vram::new(word);
 
-                        if owned_segment.in_vram_range(word_vram) {
+                        if self.ranges.in_vram_range(word_vram) {
                             references_found.push((word_vram, None, Some(current_vram), None));
 
                             if current_type.is_some_and(|x| x.is_table()) {
@@ -516,7 +518,7 @@ impl Preheater {
         }
 
         for (v, typ, referenced_by, size) in references_found {
-            let reference = self.new_ref(v, referenced_by, owned_segment);
+            let reference = self.new_ref(v, referenced_by, user_symbols);
             if let Some(typ) = typ {
                 reference.set_sym_type(typ);
             }
@@ -530,12 +532,12 @@ impl Preheater {
         &mut self,
         vram: Vram,
         referenced_by: Option<Vram>,
-        owned_segment: &SegmentMetadata,
+        user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
     ) -> &mut ReferencedAddress {
         let settings = FindSettings::new(true);
 
         let (refer, _) = self.references.find_mut_or_insert_with(vram, settings, || {
-            if let Some(metadata) = owned_segment.find_symbol(vram, settings) {
+            if let Some(metadata) = user_symbols.find(&vram, settings) {
                 let vram = metadata.vram();
                 let mut refer = ReferencedAddress::new_user_declared(vram);
 
@@ -557,11 +559,5 @@ impl Preheater {
         }
 
         refer
-    }
-}
-
-impl Default for Preheater {
-    fn default() -> Self {
-        Self::new()
     }
 }

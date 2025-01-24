@@ -82,7 +82,7 @@ impl UserSegmentBuilder {
         Ok(metadata)
     }
 
-    pub fn add_symbol(
+    pub fn add_user_symbol(
         &mut self,
         vram: Vram,
         name: String,
@@ -354,7 +354,7 @@ pub(crate) mod python_bindings {
             Self::new()
         }
 
-        #[pyo3(name = "add_symbol", signature=(vram, name, size, typ))]
+        #[pyo3(name = "add_user_symbol", signature=(vram, name, size, typ))]
         pub fn py_add_symbol(
             &mut self,
             vram: Vram,
@@ -362,7 +362,7 @@ pub(crate) mod python_bindings {
             size: Size,
             typ: Option<SymbolType>,
         ) -> Result<(), AddUserSegmentSymbolError> {
-            self.add_symbol(vram, name, size, typ)?;
+            self.add_user_symbol(vram, name, size, typ)?;
             Ok(())
         }
 

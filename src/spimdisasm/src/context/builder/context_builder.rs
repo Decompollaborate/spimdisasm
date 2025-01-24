@@ -18,21 +18,21 @@ use crate::{
     metadata::{OverlayCategory, OverlayCategoryName, SegmentMetadata},
 };
 
-use super::{GlobalSegmentHeater, OverlaySegmentHeater, UserSegmentBuilder};
+use super::{GlobalSegmentHeater, OverlaySegmentHeater, SegmentHeater, UserSegmentBuilder};
 
 #[derive(Debug, Clone, Hash, PartialEq)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct ContextBuilder {
-    global_segment: SegmentMetadata,
+    global_segment: GlobalSegmentHeater,
     platform_segment: UserSegmentBuilder,
-    overlays: Vec<SegmentMetadata>,
+    overlays: Vec<OverlaySegmentHeater>,
 }
 
 impl ContextBuilder {
     #[must_use]
     pub fn new(global_segment: GlobalSegmentHeater, platform_segment: UserSegmentBuilder) -> Self {
         Self {
-            global_segment: global_segment.finish(),
+            global_segment,
             platform_segment,
             overlays: Vec::new(),
         }
@@ -40,20 +40,20 @@ impl ContextBuilder {
 
     pub fn add_overlay(&mut self, overlay: OverlaySegmentHeater) {
         // TODO: add checks like: unique overlay name, overlay's vram does not overlap with the global segment's vram
-        self.overlays.push(overlay.finish());
+        self.overlays.push(overlay);
     }
 
     #[must_use]
     fn get_visible_vram_ranges_for_segment(
-        segment: &SegmentMetadata,
-        overlays: &[SegmentMetadata],
+        segment: &SegmentHeater,
+        overlays: &[OverlaySegmentHeater],
     ) -> Vec<AddressRange<Vram>> {
-        let mut all_ranges = vec![*segment.vram_range()];
+        let mut all_ranges = vec![*segment.ranges().vram()];
 
         for other_name in segment.prioritised_overlays() {
             for other_overlay in overlays {
-                if other_overlay.name() == Some(other_name) {
-                    all_ranges.push(*other_overlay.vram_range());
+                if other_overlay.name() == other_name {
+                    all_ranges.push(*other_overlay.ranges().vram());
                     break;
                 }
             }
@@ -61,7 +61,7 @@ impl ContextBuilder {
 
         let mut overlapping_ranges = UnorderedSet::new();
         for (i, x) in all_ranges.iter().enumerate() {
-            if x.overlaps(segment.vram_range()) {
+            if x.overlaps(segment.ranges().vram()) {
                 overlapping_ranges.insert(*x);
                 continue;
             }
@@ -90,41 +90,36 @@ impl ContextBuilder {
     pub fn build(self, global_config: GlobalConfig) -> Context {
         // A lot of the code in this function should probably be moved somewhere else, this is such a mess.
 
-        let mut global_segment = self.global_segment;
-        global_segment.set_visible_overlay_ranges(Self::get_visible_vram_ranges_for_segment(
-            &global_segment,
-            &self.overlays,
-        ));
+        let visible_ranges_for_global =
+            Self::get_visible_vram_ranges_for_segment(self.global_segment.inner(), &self.overlays);
+        let global_segment = self.global_segment.finish(visible_ranges_for_global);
 
         let mut visible_ranges_for_overlays = Vec::new();
         for overlay in &self.overlays {
             visible_ranges_for_overlays.push(Self::get_visible_vram_ranges_for_segment(
-                overlay,
+                overlay.inner(),
                 &self.overlays,
             ));
         }
 
-        let mut overlays: Vec<SegmentMetadata> = self
+        let mut overlays: Vec<(OverlaySegmentHeater, Vec<AddressRange<Vram>>)> = self
             .overlays
             .into_iter()
             .zip(visible_ranges_for_overlays)
-            .map(|(mut segment, visible_ranges)| {
-                segment.set_visible_overlay_ranges(visible_ranges);
-                segment
-            })
             .collect();
 
         let mut new_references: UnorderedMap<String, Vec<ReferencedAddress>> = UnorderedMap::new();
-        for overlay in &overlays {
+        for (overlay, visible_ranges) in &overlays {
             for (vram, reference) in overlay.preheater().references() {
-                if overlay.is_vram_in_visible_overlay(*vram) {
+                if visible_ranges.iter().any(|x| x.in_range(*vram)) {
                     let mut found = false;
                     for other_name in overlay.prioritised_overlays() {
-                        for other_overlay in &overlays {
+                        for (other_overlay, _) in &overlays {
                             let ovl_name = other_overlay.name();
-                            if ovl_name == Some(other_name) && other_overlay.in_vram_range(*vram) {
+                            if ovl_name == other_name && other_overlay.ranges().in_vram_range(*vram)
+                            {
                                 new_references
-                                    .entry(ovl_name.expect("msg").to_owned())
+                                    .entry(ovl_name.to_owned())
                                     .or_default()
                                     .push(reference.clone());
                                 found = true;
@@ -138,29 +133,27 @@ impl ContextBuilder {
                 }
             }
         }
-        for overlay in &mut overlays {
-            if let Some(name) = overlay.name() {
-                if let Some(references_for_this_overlay) = new_references.remove(name) {
-                    let references = overlay.preheater_mut().references_mut();
-                    for reference in references_for_this_overlay {
-                        let reference_vram = reference.vram();
-                        let (new_reference, _) = references.find_mut_or_insert_with(
-                            reference_vram,
-                            FindSettings::new(true),
-                            || {
-                                if reference.user_declared() {
-                                    (
-                                        reference_vram,
-                                        ReferencedAddress::new_user_declared(reference_vram),
-                                    )
-                                } else {
-                                    (reference_vram, ReferencedAddress::new(reference_vram))
-                                }
-                            },
-                        );
+        for (overlay, _) in &mut overlays {
+            if let Some(references_for_this_overlay) = new_references.remove(overlay.name()) {
+                let references = overlay.preheater_mut().references_mut();
+                for reference in references_for_this_overlay {
+                    let reference_vram = reference.vram();
+                    let (new_reference, _) = references.find_mut_or_insert_with(
+                        reference_vram,
+                        FindSettings::new(true),
+                        || {
+                            if reference.user_declared() {
+                                (
+                                    reference_vram,
+                                    ReferencedAddress::new_user_declared(reference_vram),
+                                )
+                            } else {
+                                (reference_vram, ReferencedAddress::new(reference_vram))
+                            }
+                        },
+                    );
 
-                        new_reference.set_from_other_reference(reference);
-                    }
+                    new_reference.set_from_other_reference(reference);
                 }
             }
         }
@@ -168,11 +161,11 @@ impl ContextBuilder {
         let mut grouped_segments: UnorderedMap<OverlayCategoryName, Vec<SegmentMetadata>> =
             UnorderedMap::new();
 
-        for overlay in overlays {
+        for (overlay, visible_ranges) in overlays {
             grouped_segments
-                .entry(overlay.category_name().expect("How?").clone())
+                .entry(overlay.category_name().clone())
                 .or_default()
-                .push(overlay);
+                .push(overlay.finish(visible_ranges));
         }
 
         let mut overlay_segments = UnorderedMap::new();

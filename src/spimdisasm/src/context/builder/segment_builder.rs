@@ -1,34 +1,45 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::string::{String, ToString};
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
+};
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
     addresses::{Rom, RomVramRange, Vram},
-    metadata::{GeneratedBy, OverlayCategoryName, SegmentMetadata, SymbolMetadata, SymbolType},
+    collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
+    metadata::{GeneratedBy, OverlayCategoryName, SymbolMetadata, SymbolType},
 };
 
 use super::{AddUserSymbolError, GlobalSegmentHeater, OverlaySegmentHeater};
 
 #[derive(Debug, Clone, PartialEq)]
 struct SegmentBuilder {
-    segment: SegmentMetadata,
+    ranges: RomVramRange,
     name: Option<String>,
+    prioritised_overlays: Vec<String>,
+    user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
 }
 
 impl SegmentBuilder {
-    fn new(segment: SegmentMetadata, name: Option<String>) -> Self {
-        Self { segment, name }
+    fn new(ranges: RomVramRange, name: Option<String>) -> Self {
+        Self {
+            ranges,
+            name,
+            user_symbols: AddendedOrderedMap::new(),
+            prioritised_overlays: Vec::new(),
+        }
     }
 
     fn add_prioritised_overlay(&mut self, segment_name: String) {
-        self.segment.add_prioritised_overlay(segment_name);
+        self.prioritised_overlays.push(segment_name);
     }
 
-    fn add_symbol(
+    fn add_user_symbol(
         &mut self,
         name: String,
         vram: Vram,
@@ -36,33 +47,35 @@ impl SegmentBuilder {
         sym_type: Option<SymbolType>,
     ) -> Result<&mut SymbolMetadata, AddUserSymbolError> {
         if let Some(rom) = rom {
-            if !self.segment.in_rom_range(rom) {
+            if !self.ranges.in_rom_range(rom) {
                 return Err(AddUserSymbolError::new_rom_out_of_range(
                     name,
                     vram,
                     self.name.clone(),
                     rom,
-                    *self.segment.rom_range(),
+                    *self.ranges.rom(),
                 ));
             }
         }
 
+        if !self.ranges.in_vram_range(vram) {
+            return Err(AddUserSymbolError::new_vram_out_of_range(
+                name,
+                vram,
+                self.name.clone(),
+                *self.ranges.vram(),
+            ));
+        }
+
         let check_addend = !sym_type.is_some_and(|x| x.is_label());
 
-        let sym = match self
-            .segment
-            .add_symbol(vram, GeneratedBy::UserDeclared, check_addend)
-        {
-            Ok(sym) => sym,
-            Err(add_symbol_error) => {
-                return Err(AddUserSymbolError::from_add_symbol_error(
-                    name,
-                    vram,
-                    self.name.clone(),
-                    add_symbol_error,
-                ));
-            }
-        };
+        // TODO: pass down segment information to the symbol during creation,
+        // like telling it if it is part of the global segment, an overlay or the unknown segment.
+        let (sym, newly_created) = self.user_symbols.find_mut_or_insert_with(
+            vram,
+            FindSettings::new(check_addend),
+            || (vram, SymbolMetadata::new(GeneratedBy::UserDeclared, vram)),
+        );
 
         if sym.vram() != vram
             && !(sym.is_trustable_function() && sym_type.is_some_and(|x| x.is_label()))
@@ -74,6 +87,14 @@ impl SegmentBuilder {
                 sym.display_name().to_string(),
                 sym.vram(),
                 sym.size().unwrap(),
+            ))
+        } else if !newly_created {
+            Err(AddUserSymbolError::new_duplicated(
+                name,
+                vram,
+                self.name.clone(),
+                sym.display_name().to_string(),
+                sym.vram(),
             ))
         } else {
             *sym.user_declared_name_mut() = Some(name);
@@ -95,7 +116,7 @@ pub struct GlobalSegmentBuilder {
 impl GlobalSegmentBuilder {
     pub fn new(ranges: RomVramRange) -> Self {
         Self {
-            inner: SegmentBuilder::new(SegmentMetadata::new_global(ranges), None),
+            inner: SegmentBuilder::new(ranges, None),
         }
     }
 
@@ -103,18 +124,22 @@ impl GlobalSegmentBuilder {
         self.inner.add_prioritised_overlay(segment_name);
     }
 
-    pub fn add_symbol(
+    pub fn add_user_symbol(
         &mut self,
         name: String,
         vram: Vram,
         rom: Option<Rom>,
         sym_type: Option<SymbolType>,
     ) -> Result<&mut SymbolMetadata, AddUserSymbolError> {
-        self.inner.add_symbol(name, vram, rom, sym_type)
+        self.inner.add_user_symbol(name, vram, rom, sym_type)
     }
 
     pub fn finish_symbols(self) -> GlobalSegmentHeater {
-        GlobalSegmentHeater::new(self.inner.segment)
+        GlobalSegmentHeater::new(
+            self.inner.ranges,
+            self.inner.prioritised_overlays,
+            self.inner.user_symbols,
+        )
     }
 }
 
@@ -122,6 +147,7 @@ impl GlobalSegmentBuilder {
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct OverlaySegmentBuilder {
     inner: SegmentBuilder,
+    category_name: OverlayCategoryName,
 }
 
 impl OverlaySegmentBuilder {
@@ -131,11 +157,8 @@ impl OverlaySegmentBuilder {
         segment_name: String,
     ) -> Self {
         Self {
-            // TODO: avoid cloning
-            inner: SegmentBuilder::new(
-                SegmentMetadata::new_overlay(ranges, category_name, segment_name.clone()),
-                Some(segment_name),
-            ),
+            inner: SegmentBuilder::new(ranges, Some(segment_name)),
+            category_name,
         }
     }
 
@@ -143,18 +166,26 @@ impl OverlaySegmentBuilder {
         self.inner.add_prioritised_overlay(segment_name);
     }
 
-    pub fn add_symbol(
+    pub fn add_user_symbol(
         &mut self,
         name: String,
         vram: Vram,
         rom: Option<Rom>,
         sym_type: Option<SymbolType>,
     ) -> Result<&mut SymbolMetadata, AddUserSymbolError> {
-        self.inner.add_symbol(name, vram, rom, sym_type)
+        self.inner.add_user_symbol(name, vram, rom, sym_type)
     }
 
     pub fn finish_symbols(self) -> OverlaySegmentHeater {
-        OverlaySegmentHeater::new(self.inner.segment)
+        OverlaySegmentHeater::new(
+            self.inner.ranges,
+            self.inner.name.expect(
+                "Should not be None since that's the only way to create an object of this struct",
+            ),
+            self.inner.prioritised_overlays,
+            self.inner.user_symbols,
+            self.category_name,
+        )
     }
 }
 
@@ -176,7 +207,7 @@ pub(crate) mod python_bindings {
             self.add_prioritised_overlay(segment_name);
         }
 
-        #[pyo3(name = "add_symbol", signature = (name, vram, rom, attributes))]
+        #[pyo3(name = "add_user_symbol", signature = (name, vram, rom, attributes))]
         pub fn py_add_symbol(
             &mut self,
             name: String,
@@ -184,7 +215,7 @@ pub(crate) mod python_bindings {
             rom: Option<Rom>,
             attributes: &SymAttributes,
         ) -> Result<(), AddUserSymbolError> {
-            let sym = self.inner.add_symbol(name, vram, rom, None)?;
+            let sym = self.inner.add_user_symbol(name, vram, rom, None)?;
             attributes.apply_to_sym(sym);
             Ok(())
         }
@@ -211,7 +242,7 @@ pub(crate) mod python_bindings {
             self.add_prioritised_overlay(segment_name);
         }
 
-        #[pyo3(name = "add_symbol", signature = (name, vram, rom, attributes))]
+        #[pyo3(name = "add_user_symbol", signature = (name, vram, rom, attributes))]
         pub fn py_add_symbol(
             &mut self,
             name: String,
@@ -219,7 +250,9 @@ pub(crate) mod python_bindings {
             rom: Option<Rom>,
             attributes: &SymAttributes,
         ) -> Result<(), AddUserSymbolError> {
-            let sym = self.inner.add_symbol(name, vram, rom, attributes.typ)?;
+            let sym = self
+                .inner
+                .add_user_symbol(name, vram, rom, attributes.typ)?;
             attributes.apply_to_sym(sym);
             Ok(())
         }

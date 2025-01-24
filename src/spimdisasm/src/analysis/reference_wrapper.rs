@@ -8,10 +8,10 @@ use rabbitizer::access_type::AccessType;
 use crate::{
     addresses::{AddressRange, Rom, Size, Vram},
     collections::{
-        addended_ordered_map::{self, FindSettings},
+        addended_ordered_map::{self, AddendedOrderedMap, FindSettings},
         unordered_map::UnorderedMap,
     },
-    metadata::{SegmentMetadata, SymbolMetadata, SymbolType},
+    metadata::{SymbolMetadata, SymbolType},
 };
 
 use super::{Preheater, ReferencedAddress};
@@ -25,12 +25,12 @@ pub enum ReferenceWrapper<'seg, 'addr> {
 
 impl<'seg, 'addr> ReferenceWrapper<'seg, 'addr> {
     pub(crate) fn find(
-        owned_segment: &'seg SegmentMetadata,
+        symbols: &'seg AddendedOrderedMap<Vram, SymbolMetadata>,
         preheater: &'addr Preheater,
         vram: Vram,
         settings: FindSettings,
     ) -> Option<Self> {
-        let metadata = owned_segment.find_symbol(vram, settings);
+        let metadata = symbols.find(&vram, settings);
         let reference = preheater.references().find(&vram, settings);
 
         match (metadata, reference) {
@@ -67,12 +67,12 @@ impl<'seg, 'addr> ReferenceWrapper<'seg, 'addr> {
     }
 
     pub(crate) fn range(
-        owned_segment: &'seg SegmentMetadata,
+        symbols: &'seg AddendedOrderedMap<Vram, SymbolMetadata>,
         preheater: &'addr Preheater,
         vram_range: AddressRange<Vram>,
     ) -> Range<'seg, 'addr> {
         Range::new(
-            owned_segment.symbols().range(vram_range),
+            symbols.range(vram_range),
             preheater.references().range(vram_range),
         )
     }

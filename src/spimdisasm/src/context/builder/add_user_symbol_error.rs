@@ -8,10 +8,7 @@ use alloc::string::String;
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::{
-    addresses::{AddressRange, Rom, Size, Vram},
-    metadata::segment_metadata::AddSymbolError,
-};
+use crate::addresses::{AddressRange, Rom, Size, Vram};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
@@ -20,6 +17,10 @@ enum AddUserSymbolErrorVariant {
         other_name: String,
         other_vram: Vram,
         other_size: Size,
+    },
+    Duplicated {
+        other_name: String,
+        other_vram: Vram,
     },
     VramOutOfRnage {
         segment_ranges: AddressRange<Vram>,
@@ -61,6 +62,24 @@ impl AddUserSymbolError {
         }
     }
 
+    pub(crate) fn new_duplicated(
+        sym_name: String,
+        sym_vram: Vram,
+        segment_name: Option<String>,
+        other_name: String,
+        other_vram: Vram,
+    ) -> Self {
+        Self {
+            sym_name,
+            sym_vram,
+            segment_name,
+            variant: AddUserSymbolErrorVariant::Duplicated {
+                other_name,
+                other_vram,
+            },
+        }
+    }
+
     pub(crate) fn new_vram_out_of_range(
         sym_name: String,
         sym_vram: Vram,
@@ -92,20 +111,6 @@ impl AddUserSymbolError {
             },
         }
     }
-
-    pub(crate) fn from_add_symbol_error(
-        sym_name: String,
-        sym_vram: Vram,
-        segment_name: Option<String>,
-        add_symbol_error: AddSymbolError,
-    ) -> Self {
-        Self::new_vram_out_of_range(
-            sym_name,
-            sym_vram,
-            segment_name,
-            add_symbol_error.segment_ranges(),
-        )
-    }
 }
 
 impl fmt::Display for AddUserSymbolError {
@@ -134,6 +139,16 @@ impl fmt::Display for AddUserSymbolError {
                     other_vram,
                     other_name,
                     other_size,
+                )
+            }
+            AddUserSymbolErrorVariant::Duplicated {
+                other_name,
+                other_vram,
+            } => {
+                write!(
+                    f,
+                    "It has the same Vram as the symbol `{}` (vram: 0x{}).",
+                    other_name, other_vram,
                 )
             }
             AddUserSymbolErrorVariant::VramOutOfRnage { segment_ranges } => {

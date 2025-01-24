@@ -1,30 +1,48 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use alloc::{string::String, vec::Vec};
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
-    addresses::{Rom, Vram},
+    addresses::{AddressRange, Rom, RomVramRange, Vram},
     analysis::Preheater,
+    collections::addended_ordered_map::AddendedOrderedMap,
     config::GlobalConfig,
-    metadata::SegmentMetadata,
+    metadata::{OverlayCategoryName, SegmentMetadata, SymbolMetadata},
     sections::{SectionDataSettings, SectionExecutableSettings},
 };
 
-#[derive(Debug, Clone, PartialEq)]
-struct SegmentHeater {
-    segment: SegmentMetadata,
+#[derive(Debug, Clone, Hash, PartialEq)]
+pub(crate) struct SegmentHeater {
+    ranges: RomVramRange,
+    prioritised_overlays: Vec<String>,
+    user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
 
     preheater: Preheater,
 }
 
 impl SegmentHeater {
-    const fn new(segment: SegmentMetadata) -> Self {
+    const fn new(
+        ranges: RomVramRange,
+        prioritised_overlays: Vec<String>,
+        user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+    ) -> Self {
         Self {
-            segment,
-            preheater: Preheater::new(),
+            ranges,
+            prioritised_overlays,
+            user_symbols,
+
+            preheater: Preheater::new(ranges),
         }
+    }
+
+    pub(crate) const fn ranges(&self) -> &RomVramRange {
+        &self.ranges
+    }
+    pub(crate) fn prioritised_overlays(&self) -> &[String] {
+        &self.prioritised_overlays
     }
 }
 
@@ -37,8 +55,14 @@ impl SegmentHeater {
         rom: Rom,
         vram: Vram,
     ) {
-        self.preheater
-            .preheat_text(global_config, settings, raw_bytes, rom, vram, &self.segment);
+        self.preheater.preheat_text(
+            global_config,
+            settings,
+            raw_bytes,
+            rom,
+            vram,
+            &self.user_symbols,
+        );
     }
 
     fn preanalyze_data(
@@ -49,8 +73,14 @@ impl SegmentHeater {
         rom: Rom,
         vram: Vram,
     ) {
-        self.preheater
-            .preheat_data(global_config, settings, raw_bytes, rom, vram, &self.segment);
+        self.preheater.preheat_data(
+            global_config,
+            settings,
+            raw_bytes,
+            rom,
+            vram,
+            &self.user_symbols,
+        );
     }
 
     fn preanalyze_rodata(
@@ -61,8 +91,14 @@ impl SegmentHeater {
         rom: Rom,
         vram: Vram,
     ) {
-        self.preheater
-            .preheat_rodata(global_config, settings, raw_bytes, rom, vram, &self.segment);
+        self.preheater.preheat_rodata(
+            global_config,
+            settings,
+            raw_bytes,
+            rom,
+            vram,
+            &self.user_symbols,
+        );
     }
 
     fn preanalyze_gcc_except_table(
@@ -79,21 +115,13 @@ impl SegmentHeater {
             raw_bytes,
             rom,
             vram,
-            &self.segment,
+            &self.user_symbols,
         );
     }
 
-    #[must_use]
-    fn finish(self) -> SegmentMetadata {
-        self.dump_info();
+    fn dump_info(&self, segment_name: Option<&str>) {
+        let _avoid_unused_warning = segment_name;
 
-        let mut segment = self.segment;
-        *segment.preheater_mut() = self.preheater;
-
-        segment
-    }
-
-    fn dump_info(&self) {
         // TODO: remove
         #[cfg(feature = "std")]
         {
@@ -107,7 +135,7 @@ impl SegmentHeater {
             let mut buf = BufWriter::new(
                 File::create(format!(
                     "gathered_{}_references.csv",
-                    self.segment.name().unwrap_or("global")
+                    segment_name.unwrap_or("global")
                 ))
                 .unwrap(),
             );
@@ -166,17 +194,25 @@ impl SegmentHeater {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Hash, PartialEq)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct GlobalSegmentHeater {
     inner: SegmentHeater,
 }
 
 impl GlobalSegmentHeater {
-    pub(crate) const fn new(segment: SegmentMetadata) -> Self {
+    pub(crate) const fn new(
+        ranges: RomVramRange,
+        prioritised_overlays: Vec<String>,
+        user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+    ) -> Self {
         Self {
-            inner: SegmentHeater::new(segment),
+            inner: SegmentHeater::new(ranges, prioritised_overlays, user_symbols),
         }
+    }
+
+    pub(crate) const fn inner(&self) -> &SegmentHeater {
+        &self.inner
     }
 
     pub fn preanalyze_text(
@@ -228,22 +264,63 @@ impl GlobalSegmentHeater {
     }
 
     #[must_use]
-    pub(crate) fn finish(self) -> SegmentMetadata {
-        self.inner.finish()
+    pub(crate) fn finish(self, visible_overlay_ranges: Vec<AddressRange<Vram>>) -> SegmentMetadata {
+        self.inner.dump_info(None);
+
+        SegmentMetadata::new_global(
+            self.inner.ranges,
+            self.inner.prioritised_overlays,
+            self.inner.user_symbols,
+            self.inner.preheater,
+            visible_overlay_ranges,
+        )
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Hash, PartialEq)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct OverlaySegmentHeater {
     inner: SegmentHeater,
+    name: String,
+    category_name: OverlayCategoryName,
 }
 
 impl OverlaySegmentHeater {
-    pub(crate) const fn new(segment: SegmentMetadata) -> Self {
+    pub(crate) const fn new(
+        ranges: RomVramRange,
+        name: String,
+        prioritised_overlays: Vec<String>,
+        user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+        category_name: OverlayCategoryName,
+    ) -> Self {
         Self {
-            inner: SegmentHeater::new(segment),
+            inner: SegmentHeater::new(ranges, prioritised_overlays, user_symbols),
+            name,
+            category_name,
         }
+    }
+
+    pub(crate) const fn inner(&self) -> &SegmentHeater {
+        &self.inner
+    }
+
+    pub(crate) fn name(&self) -> &str {
+        &self.name
+    }
+    pub(crate) fn category_name(&self) -> &OverlayCategoryName {
+        &self.category_name
+    }
+    pub(crate) const fn ranges(&self) -> &RomVramRange {
+        self.inner.ranges()
+    }
+    pub(crate) fn prioritised_overlays(&self) -> &[String] {
+        self.inner.prioritised_overlays()
+    }
+    pub(crate) const fn preheater(&self) -> &Preheater {
+        &self.inner.preheater
+    }
+    pub(crate) const fn preheater_mut(&mut self) -> &mut Preheater {
+        &mut self.inner.preheater
     }
 
     pub fn preanalyze_text(
@@ -295,8 +372,18 @@ impl OverlaySegmentHeater {
     }
 
     #[must_use]
-    pub(crate) fn finish(self) -> SegmentMetadata {
-        self.inner.finish()
+    pub(crate) fn finish(self, visible_overlay_ranges: Vec<AddressRange<Vram>>) -> SegmentMetadata {
+        self.inner.dump_info(Some(&self.name));
+
+        SegmentMetadata::new_overlay(
+            self.inner.ranges,
+            self.inner.prioritised_overlays,
+            self.inner.user_symbols,
+            self.inner.preheater,
+            visible_overlay_ranges,
+            self.category_name,
+            self.name,
+        )
     }
 }
 
