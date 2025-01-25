@@ -10,12 +10,14 @@ use alloc::{
 use pyo3::prelude::*;
 
 use crate::{
-    addresses::{Rom, RomVramRange, Vram},
+    addresses::{Rom, RomVramRange, Size, Vram},
     collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
-    metadata::{GeneratedBy, OverlayCategoryName, SymbolMetadata, SymbolType},
+    metadata::{GeneratedBy, IgnoredAddressRange, OverlayCategoryName, SymbolMetadata, SymbolType},
 };
 
-use super::{AddUserSymbolError, GlobalSegmentHeater, OverlaySegmentHeater};
+use super::{
+    AddIgnoredAddressRangeError, AddUserSymbolError, GlobalSegmentHeater, OverlaySegmentHeater,
+};
 
 #[derive(Debug, Clone, PartialEq)]
 struct SegmentBuilder {
@@ -23,6 +25,7 @@ struct SegmentBuilder {
     name: Option<String>,
     prioritised_overlays: Vec<String>,
     user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+    ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
 }
 
 impl SegmentBuilder {
@@ -30,8 +33,9 @@ impl SegmentBuilder {
         Self {
             ranges,
             name,
-            user_symbols: AddendedOrderedMap::new(),
             prioritised_overlays: Vec::new(),
+            user_symbols: AddendedOrderedMap::new(),
+            ignored_addresses: AddendedOrderedMap::new(),
         }
     }
 
@@ -105,6 +109,38 @@ impl SegmentBuilder {
             Ok(sym)
         }
     }
+
+    fn add_ignored_address_range(
+        &mut self,
+        vram: Vram,
+        size: Size,
+    ) -> Result<(), AddIgnoredAddressRangeError> {
+        let (ignored_address, newly_created) =
+            self.ignored_addresses
+                .find_mut_or_insert_with(vram, FindSettings::new(true), || {
+                    (vram, IgnoredAddressRange::new(vram, size))
+                });
+
+        if ignored_address.vram() != vram {
+            return Err(AddIgnoredAddressRangeError::new_overlap(
+                vram,
+                size,
+                ignored_address.vram(),
+                ignored_address.size(),
+            ));
+        }
+
+        if !newly_created {
+            return Err(AddIgnoredAddressRangeError::new_duplicated(
+                vram,
+                size,
+                ignored_address.vram(),
+                ignored_address.size(),
+            ));
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -134,11 +170,20 @@ impl GlobalSegmentBuilder {
         self.inner.add_user_symbol(name, vram, rom, sym_type)
     }
 
+    pub fn add_ignored_address_range(
+        &mut self,
+        vram: Vram,
+        size: Size,
+    ) -> Result<(), AddIgnoredAddressRangeError> {
+        self.inner.add_ignored_address_range(vram, size)
+    }
+
     pub fn finish_symbols(self) -> GlobalSegmentHeater {
         GlobalSegmentHeater::new(
             self.inner.ranges,
             self.inner.prioritised_overlays,
             self.inner.user_symbols,
+            self.inner.ignored_addresses,
         )
     }
 }
@@ -176,6 +221,14 @@ impl OverlaySegmentBuilder {
         self.inner.add_user_symbol(name, vram, rom, sym_type)
     }
 
+    pub fn add_ignored_address_range(
+        &mut self,
+        vram: Vram,
+        size: Size,
+    ) -> Result<(), AddIgnoredAddressRangeError> {
+        self.inner.add_ignored_address_range(vram, size)
+    }
+
     pub fn finish_symbols(self) -> OverlaySegmentHeater {
         OverlaySegmentHeater::new(
             self.inner.ranges,
@@ -184,6 +237,7 @@ impl OverlaySegmentBuilder {
             ),
             self.inner.prioritised_overlays,
             self.inner.user_symbols,
+            self.inner.ignored_addresses,
             self.category_name,
         )
     }
@@ -218,6 +272,15 @@ pub(crate) mod python_bindings {
             let sym = self.inner.add_user_symbol(name, vram, rom, None)?;
             attributes.apply_to_sym(sym);
             Ok(())
+        }
+
+        #[pyo3(name = "add_ignored_address_range")]
+        pub fn py_add_ignored_address_range(
+            &mut self,
+            vram: Vram,
+            size: Size,
+        ) -> Result<(), AddIgnoredAddressRangeError> {
+            self.add_ignored_address_range(vram, size)
         }
 
         #[pyo3(name = "finish_symbols")]
@@ -255,6 +318,15 @@ pub(crate) mod python_bindings {
                 .add_user_symbol(name, vram, rom, attributes.typ)?;
             attributes.apply_to_sym(sym);
             Ok(())
+        }
+
+        #[pyo3(name = "add_ignored_address_range")]
+        pub fn py_add_ignored_address_range(
+            &mut self,
+            vram: Vram,
+            size: Size,
+        ) -> Result<(), AddIgnoredAddressRangeError> {
+            self.add_ignored_address_range(vram, size)
         }
 
         #[pyo3(name = "finish_symbols")]

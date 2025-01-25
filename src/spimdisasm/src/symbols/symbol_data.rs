@@ -155,7 +155,7 @@ impl SymbolData {
                         && other_metadata.sym_type() != Some(SymbolType::BranchLabel)
                 });
 
-                if valid_reference {
+                if valid_reference && !owned_segment.is_vram_ignored(word_vram) {
                     self.relocs[i] = Some(
                         RelocationType::R_MIPS_32
                             .new_reloc_info(RelocReferencedSym::Address(word_vram)),

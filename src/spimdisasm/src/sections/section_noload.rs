@@ -72,11 +72,13 @@ impl SectionNoload {
         */
 
         for reference in owned_segment.find_references_range(vram_range) {
-            symbols_info.insert(reference.vram());
+            if !owned_segment.is_vram_ignored(reference.vram()) {
+                symbols_info.insert(reference.vram());
+            }
 
             if let Some(size) = reference.user_declared_size() {
                 let next_vram = reference.vram() + size;
-                if next_vram != vram_range.end() {
+                if next_vram != vram_range.end() && !owned_segment.is_vram_ignored(next_vram) {
                     // Avoid generating a symbol at the end of the section
                     symbols_info.insert(next_vram);
                     auto_pads.insert(next_vram, reference.vram());

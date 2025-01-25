@@ -1,2 +1,4 @@
-yeet placeholder segments
-implement unknown segment
+Implement constants
+Implement reloc overrides
+Implement default ignored addresses
+Change post_process to consume self and return a new struct

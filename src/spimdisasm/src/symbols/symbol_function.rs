@@ -194,6 +194,13 @@ impl SymbolFunction {
         parent_segment_info: &ParentSegmentInfo,
     ) -> Result<(), SymbolCreationError> {
         for (instr_rom, target_vram) in instr_analysis.func_calls() {
+            if context
+                .find_owned_segment(parent_segment_info)?
+                .is_vram_ignored(*target_vram)
+            {
+                continue;
+            }
+
             /*
             if self.context.isAddressBanned(targetVram):
                 continue
@@ -261,6 +268,13 @@ impl SymbolFunction {
                 }
                 None | Some(_) => *symbol_vram,
             };
+            if context
+                .find_owned_segment(parent_segment_info)?
+                .is_vram_ignored(realigned_symbol_vram)
+            {
+                continue;
+            }
+
             let referenced_segment =
                 context.find_referenced_segment_mut(realigned_symbol_vram, parent_segment_info);
 
@@ -409,25 +423,10 @@ impl SymbolFunction {
         }
 
         for (instr_rom, target_vram) in self.instr_analysis.func_calls() {
-            /*
-            if self.context.isAddressBanned(targetVram):
-                continue
-            */
+            if owned_segment.is_vram_ignored(*target_vram) {
+                continue;
+            }
 
-            /*
-            if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
-                if self.getVromOffset(instrOffset) in self.context.globalRelocationOverrides:
-                    # Avoid creating wrong symbols on elf files
-                    continue
-            */
-
-            let instr_index = (*instr_rom - self.ranges.rom().start()).inner() / 4;
-            self.relocs[instr_index as usize] = Some(
-                RelocationType::R_MIPS_26.new_reloc_info(RelocReferencedSym::Address(*target_vram)),
-            );
-        }
-
-        for (instr_rom, target_vram) in self.instr_analysis.func_calls() {
             /*
             if self.context.isAddressBanned(targetVram):
                 continue
@@ -447,10 +446,8 @@ impl SymbolFunction {
         }
 
         for (instr_rom, symbol_vram) in self.instr_analysis.address_per_lo_instr() {
-            /*
-            if self.context.isAddressBanned(symVram):
-                continue
-            */
+            let instr_index = (*instr_rom - self.ranges.rom().start()).inner() / 4;
+
             /*
             if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
                 if self.getVromOffset(loOffset) in self.context.globalRelocationOverrides:
@@ -458,7 +455,14 @@ impl SymbolFunction {
                     continue
             */
 
-            let instr_index = (*instr_rom - self.ranges.rom().start()).inner() / 4;
+            if owned_segment.is_vram_ignored(*symbol_vram) {
+                self.relocs[instr_index as usize] =
+                    Some(RelocationType::R_CUSTOM_CONSTANT_LO.new_reloc_info(
+                        RelocReferencedSym::SymName(format!("0x{:08X}", symbol_vram.inner()), 0),
+                    ));
+                continue;
+            }
+
             self.relocs[instr_index as usize] = Some(
                 RelocationType::R_MIPS_LO16
                     .new_reloc_info(RelocReferencedSym::Address(*symbol_vram)),
@@ -466,6 +470,16 @@ impl SymbolFunction {
         }
 
         for (instr_rom, symbol_vram) in self.instr_analysis.address_per_hi_instr() {
+            let instr_index = (*instr_rom - self.ranges.rom().start()).inner() / 4;
+
+            if owned_segment.is_vram_ignored(*symbol_vram) {
+                self.relocs[instr_index as usize] =
+                    Some(RelocationType::R_CUSTOM_CONSTANT_HI.new_reloc_info(
+                        RelocReferencedSym::SymName(format!("0x{:08X}", symbol_vram.inner()), 0),
+                    ));
+                continue;
+            }
+
             let instr_index = (*instr_rom - self.ranges.rom().start()).inner() / 4;
             self.relocs[instr_index as usize] = Some(
                 RelocationType::R_MIPS_HI16

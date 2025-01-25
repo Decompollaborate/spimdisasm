@@ -9,7 +9,7 @@ use crate::{
     addresses::{Rom, RomVramRange, Size, Vram, VramOffset},
     collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
     config::GlobalConfig,
-    metadata::{SymbolMetadata, SymbolType},
+    metadata::{IgnoredAddressRange, SymbolMetadata, SymbolType},
     section_type::SectionType,
     sections::{SectionDataSettings, SectionExecutableSettings},
 };
@@ -37,6 +37,7 @@ impl Preheater {
         &mut self.references
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn preheat_text(
         &mut self,
         global_config: &GlobalConfig,
@@ -45,6 +46,7 @@ impl Preheater {
         rom: Rom,
         vram: Vram,
         user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
+        ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
     ) {
         let mut current_rom = rom;
         let mut current_vram = vram;
@@ -76,18 +78,25 @@ impl Preheater {
                 regs_tracker.process_branch(&instr, current_rom);
             } else if let Some(target_vram) = instr.get_instr_index_as_vram() {
                 // instr.opcode().is_jump_with_address()
-                let reference = self.new_ref(target_vram, Some(current_vram), user_symbols);
-
-                reference.set_sym_type(SymbolType::Function);
+                if let Some(reference) = self.new_ref(
+                    target_vram,
+                    Some(current_vram),
+                    user_symbols,
+                    ignored_addresses,
+                ) {
+                    reference.set_sym_type(SymbolType::Function);
+                }
             } else if instr.is_jumptable_jump() {
                 //self.process_jumptable_jump(context, regs_tracker, instr, instr_rom);
                 if let Some(jr_reg_data) = regs_tracker.get_jr_reg_data(&instr) {
                     let address = Vram::new(jr_reg_data.address());
 
                     if jr_reg_data.branch_info().is_none() {
-                        let reference = self.new_ref(address, None, user_symbols);
-
-                        reference.set_sym_type(SymbolType::Jumptable);
+                        if let Some(reference) =
+                            self.new_ref(address, None, user_symbols, ignored_addresses)
+                        {
+                            reference.set_sym_type(SymbolType::Jumptable);
+                        }
                     }
                 }
             } else if instr.opcode().is_jump() && instr.opcode().does_link() {
@@ -128,10 +137,15 @@ impl Preheater {
                             None | Some(_) => address,
                         };
 
-                        let reference =
-                            self.new_ref(realigned_symbol_vram, Some(current_vram), user_symbols);
-
-                        if let Some(access_type) = instr.opcode().access_type() {
+                        if let (Some(reference), Some(access_type)) = (
+                            self.new_ref(
+                                realigned_symbol_vram,
+                                Some(current_vram),
+                                user_symbols,
+                                ignored_addresses,
+                            ),
+                            instr.opcode().access_type(),
+                        ) {
                             reference.set_access_type(access_type);
                         }
 
@@ -154,9 +168,11 @@ impl Preheater {
                         _ => Vram::new(address),
                     };
 
-                    let reference = self.new_ref(realigned_symbol_vram, None, user_symbols);
-
-                    reference.set_access_type(access_type);
+                    if let Some(reference) =
+                        self.new_ref(realigned_symbol_vram, None, user_symbols, ignored_addresses)
+                    {
+                        reference.set_access_type(access_type);
+                    }
                 }
             } else if instr.opcode().can_be_unsigned_lo() {
                 // TODO
@@ -180,6 +196,7 @@ impl Preheater {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn preheat_data(
         &mut self,
         global_config: &GlobalConfig,
@@ -188,6 +205,7 @@ impl Preheater {
         rom: Rom,
         vram: Vram,
         user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
+        ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
     ) {
         if rom.inner() % 4 != 0 || vram.inner() % 4 != 0 {
             // not word-aligned, give up.
@@ -202,9 +220,11 @@ impl Preheater {
             vram,
             user_symbols,
             SectionType::Data,
+            ignored_addresses,
         );
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn preheat_rodata(
         &mut self,
         global_config: &GlobalConfig,
@@ -213,6 +233,7 @@ impl Preheater {
         rom: Rom,
         vram: Vram,
         user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
+        ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
     ) {
         if rom.inner() % 4 != 0 || vram.inner() % 4 != 0 {
             // not word-aligned, give up.
@@ -227,9 +248,11 @@ impl Preheater {
             vram,
             user_symbols,
             SectionType::Rodata,
+            ignored_addresses,
         );
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn preheat_gcc_except_table(
         &mut self,
         global_config: &GlobalConfig,
@@ -238,6 +261,7 @@ impl Preheater {
         rom: Rom,
         vram: Vram,
         user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
+        ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
     ) {
         if rom.inner() % 4 != 0 || vram.inner() % 4 != 0 {
             // not word-aligned, give up.
@@ -263,8 +287,10 @@ impl Preheater {
         }
 
         for (v, typ, referenced_by) in references_found {
-            let reference = self.new_ref(v, Some(referenced_by), user_symbols);
-            if let Some(typ) = typ {
+            if let (Some(reference), Some(typ)) = (
+                self.new_ref(v, Some(referenced_by), user_symbols, ignored_addresses),
+                typ,
+            ) {
                 reference.set_sym_type(typ);
             }
         }
@@ -281,6 +307,7 @@ impl Preheater {
         vram: Vram,
         user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
         section_type: SectionType,
+        ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
     ) {
         if rom.inner() % 4 != 0 || vram.inner() % 4 != 0 {
             // not word-aligned, give up.
@@ -288,7 +315,7 @@ impl Preheater {
         }
 
         // Ensure there's a symbol at the start of the segment
-        self.new_ref(vram, None, user_symbols);
+        self.new_ref(vram, None, user_symbols, ignored_addresses);
 
         let mut remaining_string_size = 0;
 
@@ -518,12 +545,14 @@ impl Preheater {
         }
 
         for (v, typ, referenced_by, size) in references_found {
-            let reference = self.new_ref(v, referenced_by, user_symbols);
-            if let Some(typ) = typ {
-                reference.set_sym_type(typ);
-            }
-            if let Some(size) = size {
-                reference.set_autodetected_size(size);
+            if let Some(reference) = self.new_ref(v, referenced_by, user_symbols, ignored_addresses)
+            {
+                if let Some(typ) = typ {
+                    reference.set_sym_type(typ);
+                }
+                if let Some(size) = size {
+                    reference.set_autodetected_size(size);
+                }
             }
         }
     }
@@ -533,31 +562,39 @@ impl Preheater {
         vram: Vram,
         referenced_by: Option<Vram>,
         user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
-    ) -> &mut ReferencedAddress {
-        let settings = FindSettings::new(true);
+        ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
+    ) -> Option<&mut ReferencedAddress> {
+        if ignored_addresses
+            .find(&vram, FindSettings::new(true))
+            .is_some()
+        {
+            None
+        } else {
+            let settings = FindSettings::new(true);
 
-        let (refer, _) = self.references.find_mut_or_insert_with(vram, settings, || {
-            if let Some(metadata) = user_symbols.find(&vram, settings) {
-                let vram = metadata.vram();
-                let mut refer = ReferencedAddress::new_user_declared(vram);
+            let (refer, _) = self.references.find_mut_or_insert_with(vram, settings, || {
+                if let Some(metadata) = user_symbols.find(&vram, settings) {
+                    let vram = metadata.vram();
+                    let mut refer = ReferencedAddress::new_user_declared(vram);
 
-                if let Some(typ) = metadata.user_declared_type() {
-                    refer.set_user_declared_type(typ);
+                    if let Some(typ) = metadata.user_declared_type() {
+                        refer.set_user_declared_type(typ);
+                    }
+                    if let Some(size) = metadata.user_declared_size() {
+                        refer.set_user_declared_size(size);
+                    }
+
+                    (vram, refer)
+                } else {
+                    (vram, ReferencedAddress::new(vram))
                 }
-                if let Some(size) = metadata.user_declared_size() {
-                    refer.set_user_declared_size(size);
-                }
+            });
 
-                (vram, refer)
-            } else {
-                (vram, ReferencedAddress::new(vram))
+            if let Some(referenced_by) = referenced_by {
+                refer.add_referenced_by(referenced_by);
             }
-        });
 
-        if let Some(referenced_by) = referenced_by {
-            refer.add_referenced_by(referenced_by);
+            Some(refer)
         }
-
-        refer
     }
 }

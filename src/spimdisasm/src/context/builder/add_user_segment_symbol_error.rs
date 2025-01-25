@@ -95,14 +95,14 @@ impl fmt::Display for AddUserSegmentSymbolError {
 
         match self.variant {
             AddUserSegmentSymbolErrorVariant::Overlap => {
-                write!(f, "This symbol overlaps with the previously added symbol ")?
+                write!(f, "This symbol overlaps with the previously added symbol")?
             }
             AddUserSegmentSymbolErrorVariant::Duplicated => {
-                write!(f, "It has the same Vram as the previously added symbol ")?
+                write!(f, "It has the same Vram as the previously added symbol")?
             }
         }
 
-        write!(f, "\"")?;
+        write!(f, " \"")?;
         if let Some(name) = &self.other_sym_name {
             write!(f, "{} ", name)?;
         }

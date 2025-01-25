@@ -30,7 +30,7 @@ pub struct Context {
     global_config: GlobalConfig,
 
     global_segment: SegmentMetadata,
-    platform_segment: UserSegmentMetadata,
+    user_segment: UserSegmentMetadata,
 
     //
     overlay_segments: UnorderedMap<OverlayCategoryName, OverlayCategory>,
@@ -54,13 +54,13 @@ impl Context {
     pub(crate) fn new(
         global_config: GlobalConfig,
         global_segment: SegmentMetadata,
-        platform_segment: UserSegmentMetadata,
+        user_segment: UserSegmentMetadata,
         overlay_segments: UnorderedMap<OverlayCategoryName, OverlayCategory>,
     ) -> Self {
         Self {
             global_config,
             global_segment,
-            platform_segment,
+            user_segment,
             overlay_segments,
             unknown_segment: SegmentMetadata::new_unknown_segment(),
         }
@@ -262,7 +262,7 @@ impl Context {
     where
         F: Fn(&SymbolMetadata) -> bool,
     {
-        if let Some(metadata) = self.platform_segment.find_symbol(vram, settings) {
+        if let Some(metadata) = self.user_segment.find_symbol(vram, settings) {
             return Some(metadata);
         }
 

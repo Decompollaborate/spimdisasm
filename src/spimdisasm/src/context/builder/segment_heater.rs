@@ -10,7 +10,7 @@ use crate::{
     analysis::Preheater,
     collections::addended_ordered_map::AddendedOrderedMap,
     config::GlobalConfig,
-    metadata::{OverlayCategoryName, SegmentMetadata, SymbolMetadata},
+    metadata::{IgnoredAddressRange, OverlayCategoryName, SegmentMetadata, SymbolMetadata},
     sections::{SectionDataSettings, SectionExecutableSettings},
 };
 
@@ -19,6 +19,7 @@ pub(crate) struct SegmentHeater {
     ranges: RomVramRange,
     prioritised_overlays: Vec<String>,
     user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+    ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
 
     preheater: Preheater,
 }
@@ -28,11 +29,13 @@ impl SegmentHeater {
         ranges: RomVramRange,
         prioritised_overlays: Vec<String>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+        ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
     ) -> Self {
         Self {
             ranges,
             prioritised_overlays,
             user_symbols,
+            ignored_addresses,
 
             preheater: Preheater::new(ranges),
         }
@@ -62,6 +65,7 @@ impl SegmentHeater {
             rom,
             vram,
             &self.user_symbols,
+            &self.ignored_addresses,
         );
     }
 
@@ -80,6 +84,7 @@ impl SegmentHeater {
             rom,
             vram,
             &self.user_symbols,
+            &self.ignored_addresses,
         );
     }
 
@@ -98,6 +103,7 @@ impl SegmentHeater {
             rom,
             vram,
             &self.user_symbols,
+            &self.ignored_addresses,
         );
     }
 
@@ -116,6 +122,7 @@ impl SegmentHeater {
             rom,
             vram,
             &self.user_symbols,
+            &self.ignored_addresses,
         );
     }
 
@@ -205,9 +212,15 @@ impl GlobalSegmentHeater {
         ranges: RomVramRange,
         prioritised_overlays: Vec<String>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+        ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
     ) -> Self {
         Self {
-            inner: SegmentHeater::new(ranges, prioritised_overlays, user_symbols),
+            inner: SegmentHeater::new(
+                ranges,
+                prioritised_overlays,
+                user_symbols,
+                ignored_addresses,
+            ),
         }
     }
 
@@ -271,6 +284,7 @@ impl GlobalSegmentHeater {
             self.inner.ranges,
             self.inner.prioritised_overlays,
             self.inner.user_symbols,
+            self.inner.ignored_addresses,
             self.inner.preheater,
             visible_overlay_ranges,
         )
@@ -291,10 +305,16 @@ impl OverlaySegmentHeater {
         name: String,
         prioritised_overlays: Vec<String>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+        ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
         category_name: OverlayCategoryName,
     ) -> Self {
         Self {
-            inner: SegmentHeater::new(ranges, prioritised_overlays, user_symbols),
+            inner: SegmentHeater::new(
+                ranges,
+                prioritised_overlays,
+                user_symbols,
+                ignored_addresses,
+            ),
             name,
             category_name,
         }
@@ -379,6 +399,7 @@ impl OverlaySegmentHeater {
             self.inner.ranges,
             self.inner.prioritised_overlays,
             self.inner.user_symbols,
+            self.inner.ignored_addresses,
             self.inner.preheater,
             visible_overlay_ranges,
             self.category_name,

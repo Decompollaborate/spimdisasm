@@ -105,7 +105,7 @@ impl SectionData {
             let d_vram = current_vram + Size::new(3);
 
             // Avoid symbols in the middle of strings
-            if remaining_string_size <= 0 {
+            if remaining_string_size <= 0 && !owned_segment.is_vram_ignored(current_vram) {
                 let current_ref =
                     owned_segment.find_reference(current_vram, FindSettings::new(true));
 
@@ -146,7 +146,9 @@ impl SectionData {
                             }
 
                             let next_vram = current_vram + Size::new(str_sym_size as u32);
-                            if ((next_vram - vram).inner() as usize) < raw_bytes.len() {
+                            if ((next_vram - vram).inner() as usize) < raw_bytes.len()
+                                && !owned_segment.is_vram_ignored(next_vram)
+                            {
                                 // Avoid generating a symbol at the end of the section
                                 symbols_info.entry(next_vram).or_default();
                                 auto_pads.insert(next_vram, current_vram);
@@ -185,12 +187,14 @@ impl SectionData {
                             if let Some(reference) =
                                 owned_segment.find_reference(word_vram, FindSettings::new(true))
                             {
-                                if reference.vram() == word_vram {
+                                if reference.vram() == word_vram
+                                    && !owned_segment.is_vram_ignored(word_vram)
+                                {
                                     // Only count this symbol if it doesn't have an addend.
                                     // If it does have an addend then it may be part of a larger symbol.
                                     symbols_info.entry(word_vram).or_default();
                                 }
-                            } else {
+                            } else if !owned_segment.is_vram_ignored(word_vram) {
                                 symbols_info.entry(word_vram).or_default();
                             }
                         } else {
@@ -255,6 +259,9 @@ impl SectionData {
                 }
 
                 for (x_vram, x) in [(current_vram, a), (b_vram, b), (c_vram, c), (d_vram, d)] {
+                    if owned_segment.is_vram_ignored(x_vram) {
+                        continue;
+                    }
                     if let Some(reference) = x {
                         symbols_info.entry(reference.vram()).or_default();
                         if let Some(size) = reference.user_declared_size() {

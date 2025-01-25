@@ -296,12 +296,16 @@ fn find_functions(
             current_function_start = index * 4;
             current_function_ref = aux_ref;
 
-            starts_data.push((prev_start, auto_pad_by));
-            auto_pad_by = if prev_func_had_user_declared_size {
-                Some(prev_start)
-            } else {
-                None
-            };
+            if !owned_segment
+                .is_vram_ignored(section_ranges.vram().start() + Size::new(prev_start as u32 * 4))
+            {
+                starts_data.push((prev_start, auto_pad_by));
+                auto_pad_by = if prev_func_had_user_declared_size {
+                    Some(prev_start)
+                } else {
+                    None
+                };
+            }
 
             prev_start = index;
 
@@ -367,7 +371,10 @@ fn find_functions(
         farthest_branch = VramOffset::new(farthest_branch.inner() - 4);
     }
 
-    if prev_start != index {
+    if prev_start != index
+        && !owned_segment
+            .is_vram_ignored(section_ranges.vram().start() + Size::new(prev_start as u32 * 4))
+    {
         starts_data.push((prev_start, auto_pad_by));
     }
 

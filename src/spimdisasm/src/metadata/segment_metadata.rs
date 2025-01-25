@@ -13,8 +13,8 @@ use crate::addresses::{AddressRange, Rom, RomVramRange, Size, Vram};
 use crate::analysis::{reference_wrapper, Preheater, ReferenceWrapper};
 use crate::collections::addended_ordered_map::{self, AddendedOrderedMap, FindSettings};
 
-use super::SymbolMetadata;
 use super::{symbol_metadata::GeneratedBy, OverlayCategoryName};
+use super::{IgnoredAddressRange, SymbolMetadata};
 
 #[derive(Debug, Clone, Hash, PartialEq, PartialOrd)]
 pub struct SegmentMetadata {
@@ -28,6 +28,7 @@ pub struct SegmentMetadata {
 
     symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
     // constants: BTreeMap<Vram, SymbolMetadata>,
+    ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
 
     //
     /// Stuff that looks like pointers. Found referenced by data.
@@ -38,10 +39,12 @@ pub struct SegmentMetadata {
 }
 
 impl SegmentMetadata {
+    #[allow(clippy::too_many_arguments)]
     fn new(
         ranges: RomVramRange,
         prioritised_overlays: Vec<String>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+        ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
         preheater: Preheater,
         visible_overlay_ranges: Vec<AddressRange<Vram>>,
         category_name: Option<OverlayCategoryName>,
@@ -56,8 +59,9 @@ impl SegmentMetadata {
             visible_overlay_ranges,
 
             symbols: user_symbols,
-            new_pointer_in_data: BTreeMap::new(),
+            ignored_addresses,
 
+            new_pointer_in_data: BTreeMap::new(),
             preheater,
 
             is_the_unknown_segment: false,
@@ -68,6 +72,7 @@ impl SegmentMetadata {
         ranges: RomVramRange,
         prioritised_overlays: Vec<String>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+        ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
         preheater: Preheater,
         visible_overlay_ranges: Vec<AddressRange<Vram>>,
     ) -> Self {
@@ -75,6 +80,7 @@ impl SegmentMetadata {
             ranges,
             prioritised_overlays,
             user_symbols,
+            ignored_addresses,
             preheater,
             visible_overlay_ranges,
             None,
@@ -82,10 +88,12 @@ impl SegmentMetadata {
         )
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn new_overlay(
         ranges: RomVramRange,
         prioritised_overlays: Vec<String>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+        ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
         preheater: Preheater,
         visible_overlay_ranges: Vec<AddressRange<Vram>>,
         category_name: OverlayCategoryName,
@@ -95,6 +103,7 @@ impl SegmentMetadata {
             ranges,
             prioritised_overlays,
             user_symbols,
+            ignored_addresses,
             preheater,
             visible_overlay_ranges,
             Some(category_name),
@@ -110,6 +119,7 @@ impl SegmentMetadata {
             ..Self::new(
                 ranges,
                 Vec::new(),
+                AddendedOrderedMap::new(),
                 AddendedOrderedMap::new(),
                 Preheater::new(ranges),
                 Vec::new(),
@@ -184,6 +194,13 @@ impl SegmentMetadata {
     #[must_use]
     pub(crate) fn is_vram_in_visible_overlay(&self, vram: Vram) -> bool {
         self.visible_overlay_ranges.iter().any(|x| x.in_range(vram))
+    }
+
+    #[must_use]
+    pub(crate) fn is_vram_ignored(&self, vram: Vram) -> bool {
+        self.ignored_addresses
+            .find(&vram, FindSettings::new(true))
+            .is_some()
     }
 
     pub const fn symbols(&self) -> &AddendedOrderedMap<Vram, SymbolMetadata> {
@@ -316,6 +333,7 @@ mod tests {
         let mut segment = SegmentMetadata::new_global(
             ranges,
             Vec::new(),
+            AddendedOrderedMap::new(),
             AddendedOrderedMap::new(),
             Preheater::new(ranges),
             Vec::new(),
