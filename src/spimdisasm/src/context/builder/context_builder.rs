@@ -86,24 +86,18 @@ impl ContextBuilder {
         non_overlapping_ranges
     }
 
-    #[must_use]
-    pub fn build(self, global_config: GlobalConfig) -> Context {
-        // A lot of the code in this function should probably be moved somewhere else, this is such a mess.
-
-        let visible_ranges_for_global =
-            Self::get_visible_vram_ranges_for_segment(self.global_segment.inner(), &self.overlays);
-        let global_segment = self.global_segment.finish(visible_ranges_for_global);
-
+    fn build_overlays(
+        overlays: Vec<OverlaySegmentHeater>,
+    ) -> UnorderedMap<OverlayCategoryName, OverlayCategory> {
         let mut visible_ranges_for_overlays = Vec::new();
-        for overlay in &self.overlays {
+        for overlay in &overlays {
             visible_ranges_for_overlays.push(Self::get_visible_vram_ranges_for_segment(
                 overlay.inner(),
-                &self.overlays,
+                &overlays,
             ));
         }
 
-        let mut overlays: Vec<(OverlaySegmentHeater, Vec<AddressRange<Vram>>)> = self
-            .overlays
+        let mut overlays: Vec<(OverlaySegmentHeater, Vec<AddressRange<Vram>>)> = overlays
             .into_iter()
             .zip(visible_ranges_for_overlays)
             .collect();
@@ -181,6 +175,19 @@ impl ContextBuilder {
 
             overlay_segments.insert(name.clone(), OverlayCategory::new(name, ranges, segments));
         }
+
+        overlay_segments
+    }
+
+    #[must_use]
+    pub fn build(self, global_config: GlobalConfig) -> Context {
+        // A lot of the code in this function should probably be moved somewhere else, this is such a mess.
+
+        let visible_ranges_for_global =
+            Self::get_visible_vram_ranges_for_segment(self.global_segment.inner(), &self.overlays);
+        let global_segment = self.global_segment.finish(visible_ranges_for_global);
+
+        let overlay_segments = Self::build_overlays(self.overlays);
 
         Context::new(
             global_config,

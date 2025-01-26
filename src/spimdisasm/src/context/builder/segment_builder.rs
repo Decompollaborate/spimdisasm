@@ -141,6 +141,22 @@ impl SegmentBuilder {
 
         Ok(())
     }
+
+    fn n64_default_banned_addresses(&mut self) -> Result<(), AddIgnoredAddressRangeError> {
+        const ADDRESSES: [Vram; 5] = [
+            Vram::new(0x7FFFFFE0), // osInvalICache
+            Vram::new(0x7FFFFFF0), // osInvalDCache, osWritebackDCache, osWritebackDCacheAll
+            Vram::new(0x7FFFFFFF),
+            Vram::new(0x80000010),
+            Vram::new(0x80000020),
+        ];
+
+        for addr in ADDRESSES {
+            self.add_ignored_address_range(addr, Size::new(1))?;
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -176,6 +192,10 @@ impl GlobalSegmentBuilder {
         size: Size,
     ) -> Result<(), AddIgnoredAddressRangeError> {
         self.inner.add_ignored_address_range(vram, size)
+    }
+
+    pub fn n64_default_banned_addresses(&mut self) -> Result<(), AddIgnoredAddressRangeError> {
+        self.inner.n64_default_banned_addresses()
     }
 
     pub fn finish_symbols(self) -> GlobalSegmentHeater {
@@ -227,6 +247,10 @@ impl OverlaySegmentBuilder {
         size: Size,
     ) -> Result<(), AddIgnoredAddressRangeError> {
         self.inner.add_ignored_address_range(vram, size)
+    }
+
+    pub fn n64_default_banned_addresses(&mut self) -> Result<(), AddIgnoredAddressRangeError> {
+        self.inner.n64_default_banned_addresses()
     }
 
     pub fn finish_symbols(self) -> OverlaySegmentHeater {
@@ -283,6 +307,13 @@ pub(crate) mod python_bindings {
             self.add_ignored_address_range(vram, size)
         }
 
+        #[pyo3(name = "n64_default_banned_addresses")]
+        pub fn py_n64_default_banned_addresses(
+            &mut self,
+        ) -> Result<(), AddIgnoredAddressRangeError> {
+            self.n64_default_banned_addresses()
+        }
+
         #[pyo3(name = "finish_symbols")]
         pub fn py_finish_symbols(&self) -> GlobalSegmentHeater {
             self.clone().finish_symbols()
@@ -327,6 +358,13 @@ pub(crate) mod python_bindings {
             size: Size,
         ) -> Result<(), AddIgnoredAddressRangeError> {
             self.add_ignored_address_range(vram, size)
+        }
+
+        #[pyo3(name = "n64_default_banned_addresses")]
+        pub fn py_n64_default_banned_addresses(
+            &mut self,
+        ) -> Result<(), AddIgnoredAddressRangeError> {
+            self.n64_default_banned_addresses()
         }
 
         #[pyo3(name = "finish_symbols")]
