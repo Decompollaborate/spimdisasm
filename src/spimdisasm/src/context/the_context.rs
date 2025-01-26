@@ -19,8 +19,11 @@ use crate::{
     parent_segment_info::ParentSegmentInfo,
     section_type::SectionType,
     sections::{
-        SectionCreationError, SectionData, SectionDataSettings, SectionExecutable,
-        SectionExecutableSettings, SectionNoload, SectionNoloadSettings,
+        preprocessed::{
+            DataSection, DataSectionSettings, ExecutableSection, ExecutableSectionSettings,
+            NoloadSection, NoloadSectionSettings,
+        },
+        SectionCreationError,
     },
 };
 
@@ -85,14 +88,14 @@ impl Context {
 impl Context {
     pub fn create_section_text(
         &mut self,
-        settings: &SectionExecutableSettings,
+        settings: &ExecutableSectionSettings,
         name: String,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
-    ) -> Result<SectionExecutable, SectionCreationError> {
-        SectionExecutable::new(
+    ) -> Result<ExecutableSection, SectionCreationError> {
+        ExecutableSection::new(
             self,
             settings,
             name,
@@ -105,14 +108,14 @@ impl Context {
 
     pub fn create_section_data(
         &mut self,
-        settings: &SectionDataSettings,
+        settings: &DataSectionSettings,
         name: String,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
-    ) -> Result<SectionData, SectionCreationError> {
-        SectionData::new(
+    ) -> Result<DataSection, SectionCreationError> {
+        DataSection::new(
             self,
             settings,
             name,
@@ -126,14 +129,14 @@ impl Context {
 
     pub fn create_section_rodata(
         &mut self,
-        settings: &SectionDataSettings,
+        settings: &DataSectionSettings,
         name: String,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
-    ) -> Result<SectionData, SectionCreationError> {
-        SectionData::new(
+    ) -> Result<DataSection, SectionCreationError> {
+        DataSection::new(
             self,
             settings,
             name,
@@ -147,24 +150,24 @@ impl Context {
 
     pub fn create_section_bss(
         &mut self,
-        settings: &SectionNoloadSettings,
+        settings: &NoloadSectionSettings,
         name: String,
         vram_range: AddressRange<Vram>,
         parent_segment_info: ParentSegmentInfo,
-    ) -> Result<SectionNoload, SectionCreationError> {
-        SectionNoload::new(self, settings, name, vram_range, parent_segment_info)
+    ) -> Result<NoloadSection, SectionCreationError> {
+        NoloadSection::new(self, settings, name, vram_range, parent_segment_info)
     }
 
     pub fn create_section_gcc_except_table(
         &mut self,
-        settings: &SectionDataSettings,
+        settings: &DataSectionSettings,
         name: String,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
-    ) -> Result<SectionData, SectionCreationError> {
-        SectionData::new(
+    ) -> Result<DataSection, SectionCreationError> {
+        DataSection::new(
             self,
             settings,
             name,
@@ -458,6 +461,11 @@ pub(crate) mod python_bindings {
 
     use pyo3::{exceptions::PyRuntimeError, prelude::*};
 
+    use crate::sections::python_bindings::{
+        py_data_section::PyDataSection, py_executable_section::PyExecutableSection,
+        py_noload_section::PyNoloadSection,
+    };
+
     use super::*;
 
     #[pymethods]
@@ -465,74 +473,100 @@ pub(crate) mod python_bindings {
         #[pyo3(name = "create_section_text")]
         pub fn py_create_section_text(
             &mut self,
-            settings: &SectionExecutableSettings,
+            settings: &ExecutableSectionSettings,
             name: String,
             raw_bytes: Cow<[u8]>,
             rom: Rom,
             vram: Vram,
             parent_segment_info: ParentSegmentInfo,
-        ) -> Result<SectionExecutable, SectionCreationError> {
-            self.create_section_text(settings, name, &raw_bytes, rom, vram, parent_segment_info)
-        }
-
-        #[pyo3(name = "create_section_data")]
-        pub fn py_create_section_data(
-            &mut self,
-            settings: &SectionDataSettings,
-            name: String,
-            raw_bytes: Cow<[u8]>,
-            rom: Rom,
-            vram: Vram,
-            parent_segment_info: ParentSegmentInfo,
-        ) -> Result<SectionData, SectionCreationError> {
-            self.create_section_data(settings, name, &raw_bytes, rom, vram, parent_segment_info)
-        }
-
-        #[pyo3(name = "create_section_rodata")]
-        pub fn py_create_section_rodata(
-            &mut self,
-            settings: &SectionDataSettings,
-            name: String,
-            raw_bytes: Cow<[u8]>,
-            rom: Rom,
-            vram: Vram,
-            parent_segment_info: ParentSegmentInfo,
-        ) -> Result<SectionData, SectionCreationError> {
-            self.create_section_rodata(settings, name, &raw_bytes, rom, vram, parent_segment_info)
-        }
-
-        #[pyo3(name = "create_section_bss")]
-        pub fn py_create_section_bss(
-            &mut self,
-            settings: &SectionNoloadSettings,
-            name: String,
-            vram_start: Vram,
-            vram_end: Vram,
-            parent_segment_info: ParentSegmentInfo,
-        ) -> Result<SectionNoload, SectionCreationError> {
-            let vram_ranges = AddressRange::new(vram_start, vram_end);
-
-            self.create_section_bss(settings, name, vram_ranges, parent_segment_info)
-        }
-
-        #[pyo3(name = "create_section_gcc_except_table")]
-        pub fn py_create_section_gcc_except_table(
-            &mut self,
-            settings: &SectionDataSettings,
-            name: String,
-            raw_bytes: Cow<[u8]>,
-            rom: Rom,
-            vram: Vram,
-            parent_segment_info: ParentSegmentInfo,
-        ) -> Result<SectionData, SectionCreationError> {
-            self.create_section_gcc_except_table(
+        ) -> Result<PyExecutableSection, SectionCreationError> {
+            Ok(PyExecutableSection::new(self.create_section_text(
                 settings,
                 name,
                 &raw_bytes,
                 rom,
                 vram,
                 parent_segment_info,
-            )
+            )?))
+        }
+
+        #[pyo3(name = "create_section_data")]
+        pub fn py_create_section_data(
+            &mut self,
+            settings: &DataSectionSettings,
+            name: String,
+            raw_bytes: Cow<[u8]>,
+            rom: Rom,
+            vram: Vram,
+            parent_segment_info: ParentSegmentInfo,
+        ) -> Result<PyDataSection, SectionCreationError> {
+            Ok(PyDataSection::new(self.create_section_data(
+                settings,
+                name,
+                &raw_bytes,
+                rom,
+                vram,
+                parent_segment_info,
+            )?))
+        }
+
+        #[pyo3(name = "create_section_rodata")]
+        pub fn py_create_section_rodata(
+            &mut self,
+            settings: &DataSectionSettings,
+            name: String,
+            raw_bytes: Cow<[u8]>,
+            rom: Rom,
+            vram: Vram,
+            parent_segment_info: ParentSegmentInfo,
+        ) -> Result<PyDataSection, SectionCreationError> {
+            Ok(PyDataSection::new(self.create_section_rodata(
+                settings,
+                name,
+                &raw_bytes,
+                rom,
+                vram,
+                parent_segment_info,
+            )?))
+        }
+
+        #[pyo3(name = "create_section_bss")]
+        pub fn py_create_section_bss(
+            &mut self,
+            settings: &NoloadSectionSettings,
+            name: String,
+            vram_start: Vram,
+            vram_end: Vram,
+            parent_segment_info: ParentSegmentInfo,
+        ) -> Result<PyNoloadSection, SectionCreationError> {
+            let vram_ranges = AddressRange::new(vram_start, vram_end);
+
+            Ok(PyNoloadSection::new(self.create_section_bss(
+                settings,
+                name,
+                vram_ranges,
+                parent_segment_info,
+            )?))
+        }
+
+        #[pyo3(name = "create_section_gcc_except_table")]
+        pub fn py_create_section_gcc_except_table(
+            &mut self,
+            settings: &DataSectionSettings,
+            name: String,
+            raw_bytes: Cow<[u8]>,
+            rom: Rom,
+            vram: Vram,
+            parent_segment_info: ParentSegmentInfo,
+        ) -> Result<PyDataSection, SectionCreationError> {
+            Ok(PyDataSection::new(self.create_section_gcc_except_table(
+                settings,
+                name,
+                &raw_bytes,
+                rom,
+                vram,
+                parent_segment_info,
+            )?))
         }
     }
 

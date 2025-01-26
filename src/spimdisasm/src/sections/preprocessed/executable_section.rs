@@ -1,9 +1,8 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::string::String;
-use alloc::vec;
-use alloc::vec::Vec;
+use alloc::{string::String, vec::Vec};
+use core::hash;
 
 use rabbitizer::{Instruction, InstructionFlags, IsaExtension};
 
@@ -18,18 +17,23 @@ use crate::context::Context;
 use crate::metadata::{ParentSectionMetadata, SegmentMetadata};
 use crate::parent_segment_info::ParentSegmentInfo;
 use crate::section_type::SectionType;
+use crate::sections::processed::ExecutableSectionProcessed;
+use crate::sections::{RomSectionPreprocessed, SectionPreprocessed};
+use crate::symbols::SymbolPreprocessed;
+use crate::symbols::{
+    preprocessed::{function_sym::FunctionSymProperties, FunctionSym},
+    Symbol,
+};
 
-use crate::symbols::symbol_function::SymbolFunctionProperties;
-use crate::symbols::{Symbol, SymbolFunction};
+use crate::sections::{
+    section_post_process_error::SectionPostProcessError,
+    trait_section::RomSection,
+    {Section, SectionCreationError},
+};
 
-use super::section_post_process_error::SectionPostProcessError;
-use super::trait_section::RomSection;
-use super::{Section, SectionCreationError};
-
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 #[must_use]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
-pub struct SectionExecutable {
+pub struct ExecutableSection {
     name: String,
 
     ranges: RomVramRange,
@@ -40,15 +44,15 @@ pub struct SectionExecutable {
     // section_type: SectionType,
 
     //
-    functions: Vec<SymbolFunction>,
+    functions: Vec<FunctionSym>,
 
     symbol_vrams: UnorderedSet<Vram>,
 }
 
-impl SectionExecutable {
+impl ExecutableSection {
     pub(crate) fn new(
         context: &mut Context,
-        settings: &SectionExecutableSettings,
+        settings: &ExecutableSectionSettings,
         name: String,
         raw_bytes: &[u8],
         rom: Rom,
@@ -107,7 +111,7 @@ impl SectionExecutable {
 
             symbol_vrams.insert(vram);
 
-            let properties = SymbolFunctionProperties {
+            let properties = FunctionSymProperties {
                 parent_metadata: ParentSectionMetadata::new(
                     name.clone(),
                     vram,
@@ -116,7 +120,7 @@ impl SectionExecutable {
                 compiler: settings.compiler,
                 auto_pad_by: auto_pad_by.map(|x| ranges.vram().start() + Size::new(x as u32)),
             };
-            let /*mut*/ func = SymbolFunction::new(context, instrs[*start..end].into(), current_rom, current_vram, local_offset, parent_segment_info.clone(), properties)?;
+            let /*mut*/ func = FunctionSym::new(context, instrs[*start..end].into(), current_rom, current_vram, local_offset, parent_segment_info.clone(), properties)?;
 
             functions.push(func);
         }
@@ -129,23 +133,31 @@ impl SectionExecutable {
             symbol_vrams,
         })
     }
+}
 
-    pub fn functions(&self) -> &[SymbolFunction] {
+impl ExecutableSection {
+    pub fn functions(&self) -> &[FunctionSym] {
         &self.functions
     }
 }
 
-impl SectionExecutable {
-    pub fn post_process(&mut self, context: &mut Context) -> Result<(), SectionPostProcessError> {
-        for func in self.functions.iter_mut() {
-            func.post_process(context)?;
-        }
-
-        Ok(())
+impl ExecutableSection {
+    pub fn post_process(
+        self,
+        context: &mut Context,
+    ) -> Result<ExecutableSectionProcessed, SectionPostProcessError> {
+        ExecutableSectionProcessed::new(
+            context,
+            self.name,
+            self.ranges,
+            self.parent_segment_info,
+            self.functions,
+            self.symbol_vrams,
+        )
     }
 }
 
-impl Section for SectionExecutable {
+impl Section for ExecutableSection {
     fn name(&self) -> &str {
         &self.name
     }
@@ -170,20 +182,46 @@ impl Section for SectionExecutable {
     fn symbols_vrams(&self) -> &UnorderedSet<Vram> {
         &self.symbol_vrams
     }
-
-    fn post_process(&mut self, context: &mut Context) -> Result<(), SectionPostProcessError> {
-        self.post_process(context)
-    }
 }
-
-impl RomSection for SectionExecutable {
+impl RomSection for ExecutableSection {
     fn rom_vram_range(&self) -> &RomVramRange {
         &self.ranges
     }
 }
+impl SectionPreprocessed for ExecutableSection {
+    fn symbol_list(&self) -> &[impl SymbolPreprocessed] {
+        &self.functions
+    }
+}
+impl RomSectionPreprocessed for ExecutableSection {}
+
+impl hash::Hash for ExecutableSection {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.parent_segment_info.hash(state);
+        self.ranges.hash(state);
+    }
+}
+impl PartialEq for ExecutableSection {
+    fn eq(&self, other: &Self) -> bool {
+        self.parent_segment_info == other.parent_segment_info && self.ranges == other.ranges
+    }
+}
+impl PartialOrd for ExecutableSection {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        // Compare segment info first, so symbols get sorted by segment
+        match self
+            .parent_segment_info
+            .partial_cmp(&other.parent_segment_info)
+        {
+            Some(core::cmp::Ordering::Equal) => {}
+            ord => return ord,
+        }
+        self.ranges.partial_cmp(&other.ranges)
+    }
+}
 
 fn instrs_from_bytes(
-    settings: &SectionExecutableSettings,
+    settings: &ExecutableSectionSettings,
     endian: Endian,
     raw_bytes: &[u8],
     mut vram: Vram,
@@ -201,7 +239,7 @@ fn instrs_from_bytes(
 }
 
 fn find_functions(
-    settings: &SectionExecutableSettings,
+    settings: &ExecutableSectionSettings,
     owned_segment: &SegmentMetadata,
     section_ranges: RomVramRange,
     instrs: &[Instruction],
@@ -480,7 +518,7 @@ fn find_functions_branch_checker(
 #[allow(clippy::too_many_arguments)]
 fn find_functions_check_function_ended(
     owned_segment: &SegmentMetadata,
-    settings: &SectionExecutableSettings,
+    settings: &ExecutableSectionSettings,
     instr: &Instruction,
     index: usize,
     instrs: &[Instruction],
@@ -652,7 +690,7 @@ fn run_register_tracker_end(
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
-pub struct SectionExecutableSettings {
+pub struct ExecutableSectionSettings {
     compiler: Option<Compiler>,
     instruction_flags: InstructionFlags,
     is_handwritten: bool,
@@ -662,7 +700,7 @@ pub struct SectionExecutableSettings {
     detect_redundant_end: bool,
 }
 
-impl SectionExecutableSettings {
+impl ExecutableSectionSettings {
     pub fn new(compiler: Option<Compiler>, instruction_flags: InstructionFlags) -> Self {
         Self {
             compiler,
@@ -700,15 +738,10 @@ impl SectionExecutableSettings {
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
-    use crate::{
-        metadata::SymbolType,
-        symbols::display::{FunctionDisplaySettings, SymDisplayError},
-    };
-
     use super::*;
 
     #[pymethods]
-    impl SectionExecutableSettings {
+    impl ExecutableSectionSettings {
         #[new]
         #[pyo3(signature = (compiler, instruction_flags))]
         pub fn py_new(compiler: Option<Compiler>, instruction_flags: InstructionFlags) -> Self {
@@ -722,166 +755,6 @@ pub(crate) mod python_bindings {
         #[pyo3(name = "set_detect_redundant_end")]
         pub fn py_set_detect_redundant_end(&mut self, detect_redundant_end: bool) {
             self.set_detect_redundant_end(detect_redundant_end)
-        }
-    }
-
-    #[pymethods]
-    impl SectionExecutable {
-        #[pyo3(name = "post_process")]
-        fn py_post_process(
-            &mut self,
-            context: &mut Context,
-        ) -> Result<(), SectionPostProcessError> {
-            self.post_process(context)
-        }
-
-        #[pyo3(name = "sym_count")]
-        pub fn py_sym_count(&self) -> usize {
-            self.functions.len()
-        }
-
-        #[pyo3(name = "get_sym_info")]
-        pub fn py_get_sym_info(
-            &self,
-            context: &Context,
-            index: usize,
-        ) -> Option<(
-            u32,
-            Option<Rom>,
-            Option<SymbolType>,
-            Option<Size>,
-            bool,
-            usize,
-            Option<String>,
-        )> {
-            let sym = self.functions.get(index);
-
-            if let Some(sym) = sym {
-                let metadata = sym.find_own_metadata(context);
-
-                Some((
-                    metadata.vram().inner(),
-                    metadata.rom(),
-                    metadata.sym_type(),
-                    metadata.size(),
-                    metadata.is_defined(),
-                    metadata.reference_counter(),
-                    metadata.parent_metadata().and_then(|x| {
-                        x.parent_segment_info()
-                            .overlay_category_name()
-                            .map(|x| x.inner().to_owned())
-                    }),
-                ))
-            } else {
-                None
-            }
-        }
-
-        #[pyo3(name = "set_sym_name")]
-        pub fn py_set_sym_name(&mut self, context: &mut Context, index: usize, new_name: String) {
-            let sym = self.functions.get(index);
-
-            if let Some(sym) = sym {
-                let metadata = sym.find_own_metadata_mut(context);
-
-                *metadata.user_declared_name_mut() = Some(new_name);
-            }
-        }
-
-        #[pyo3(name = "display_sym")]
-        pub fn py_display_sym(
-            &self,
-            context: &Context,
-            index: usize,
-            settings: &FunctionDisplaySettings,
-        ) -> Result<Option<String>, SymDisplayError> {
-            let sym = self.functions.get(index);
-
-            Ok(if let Some(sym) = sym {
-                Some(sym.display(context, settings)?.to_string())
-            } else {
-                None
-            })
-        }
-
-        #[pyo3(name = "label_count_for_sym")]
-        pub fn py_label_count_for_sym(&self, sym_index: usize) -> usize {
-            let sym = self.functions.get(sym_index);
-
-            if let Some(sym) = sym {
-                sym.labels().len()
-            } else {
-                0
-            }
-        }
-
-        #[pyo3(name = "get_label_info")]
-        pub fn py_get_label_info(
-            &self,
-            context: &Context,
-            sym_index: usize,
-            label_index: usize,
-        ) -> Option<(
-            u32,
-            Option<Rom>,
-            Option<SymbolType>,
-            Option<Size>,
-            bool,
-            usize,
-            Option<String>,
-        )> {
-            let sym = self.functions.get(sym_index);
-
-            if let Some(sym) = sym {
-                if let Some(label_vram) = sym.labels().get(label_index) {
-                    let metadata = context
-                        .find_owned_segment(&self.parent_segment_info)
-                        .unwrap()
-                        .find_symbol(*label_vram, FindSettings::new(false))
-                        .unwrap();
-
-                    Some((
-                        metadata.vram().inner(),
-                        metadata.rom(),
-                        metadata.sym_type(),
-                        metadata.size(),
-                        metadata.is_defined(),
-                        metadata.reference_counter(),
-                        metadata.parent_metadata().and_then(|x| {
-                            x.parent_segment_info()
-                                .overlay_category_name()
-                                .map(|x| x.inner().to_owned())
-                        }),
-                    ))
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        }
-
-        #[pyo3(name = "set_label_name")]
-        pub fn py_set_label_name(
-            &mut self,
-            context: &mut Context,
-            sym_index: usize,
-            label_index: usize,
-            new_name: String,
-        ) {
-            let sym = self.functions.get(sym_index);
-
-            if let Some(sym) = sym {
-                if let Some(label_vram) = sym.labels().get(label_index) {
-                    let metadata = context
-                        .find_owned_segment_mut(&self.parent_segment_info)
-                        .unwrap()
-                        .find_symbol_mut(*label_vram, FindSettings::new(false))
-                        .unwrap();
-
-                    *metadata.user_declared_name_mut() = Some(new_name);
-                }
-            }
         }
     }
 }

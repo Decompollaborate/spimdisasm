@@ -10,7 +10,7 @@ use crate::{
     collections::addended_ordered_map::FindSettings,
     context::Context,
     metadata::{SegmentMetadata, SymbolMetadata},
-    symbols::{Symbol, SymbolNoload},
+    symbols::{processed::NoloadSymProcessed, Symbol},
 };
 
 use super::{
@@ -45,7 +45,7 @@ impl SymNoloadDisplaySettings {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SymNoloadDisplay<'ctx, 'sym, 'flg> {
     context: &'ctx Context,
-    sym: &'sym SymbolNoload,
+    sym: &'sym NoloadSymProcessed,
     settings: &'flg SymNoloadDisplaySettings,
 
     owned_segment: &'ctx SegmentMetadata,
@@ -57,7 +57,7 @@ pub struct SymNoloadDisplay<'ctx, 'sym, 'flg> {
 impl<'ctx, 'sym, 'flg> SymNoloadDisplay<'ctx, 'sym, 'flg> {
     pub(crate) fn new(
         context: &'ctx Context,
-        sym: &'sym SymbolNoload,
+        sym: &'sym NoloadSymProcessed,
         settings: &'flg SymNoloadDisplaySettings,
         internal_settings: InternalSymDisplSettings,
     ) -> Result<Self, SymDisplayError> {

@@ -7,14 +7,16 @@ use spimdisasm::{
     config::{Compiler, Endian, GlobalConfig},
     context::{builder::UserSegmentBuilder, Context, ContextBuilder, GlobalSegmentBuilder},
     parent_segment_info::ParentSegmentInfo,
-    sections::{SectionDataSettings, SectionExecutableSettings, SectionNoloadSettings},
+    sections::preprocessed::{
+        DataSectionSettings, ExecutableSectionSettings, NoloadSectionSettings,
+    },
     symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings, SymNoloadDisplaySettings},
 };
 
 mod game_tests_info;
 use game_tests_info::{
-    create_drmario64_us_segments, create_drmario64_us_symbols, SegmentData, TestSection,
-    TestSegment, TestSegmentInfo, UserSymbol,
+    create_drmario64_us_segments, create_drmario64_us_symbols, SegmentData, SegmentDataProcessed,
+    TestSection, TestSegment, TestSegmentInfo, UserSymbol,
 };
 
 const COMPILER: Option<Compiler> = Some(Compiler::KMC);
@@ -129,7 +131,7 @@ fn init_context(
                     match sect {
                         TestSection::Text(rom, _) => global_segment_heater.preanalyze_text(
                             &global_config,
-                            &SectionExecutableSettings::new(
+                            &ExecutableSectionSettings::new(
                                 COMPILER,
                                 InstructionFlags::new(IsaVersion::MIPS_III),
                             ),
@@ -139,14 +141,14 @@ fn init_context(
                         ),
                         TestSection::Data(rom, _) => global_segment_heater.preanalyze_data(
                             &global_config,
-                            &SectionDataSettings::new(COMPILER),
+                            &DataSectionSettings::new(COMPILER),
                             &rom_bytes[AddressRange::new(*rom, rom_end)],
                             *rom,
                             info.vram_from_rom(*rom),
                         ),
                         TestSection::Rodata(rom, _) => global_segment_heater.preanalyze_rodata(
                             &global_config,
-                            &SectionDataSettings::new(COMPILER),
+                            &DataSectionSettings::new(COMPILER),
                             &rom_bytes[AddressRange::new(*rom, rom_end)],
                             *rom,
                             info.vram_from_rom(*rom),
@@ -170,7 +172,7 @@ fn init_segments(
     context: &mut Context,
     rom_bytes: &[u8],
     user_segments: Vec<TestSegment>,
-) -> Vec<SegmentData> {
+) -> Vec<SegmentDataProcessed> {
     assert!(user_segments.len() >= 2);
 
     let mut segments = Vec::new();
@@ -210,7 +212,7 @@ fn init_segments(
 
                     match sect {
                         TestSection::Text(rom, name) => {
-                            let text_settings = SectionExecutableSettings::new(
+                            let text_settings = ExecutableSectionSettings::new(
                                 COMPILER,
                                 InstructionFlags::new(IsaVersion::MIPS_III),
                             );
@@ -228,7 +230,7 @@ fn init_segments(
                             );
                         }
                         TestSection::Data(rom, name) => {
-                            let data_settings = SectionDataSettings::new(COMPILER);
+                            let data_settings = DataSectionSettings::new(COMPILER);
                             data_sections.push(
                                 context
                                     .create_section_data(
@@ -243,7 +245,7 @@ fn init_segments(
                             );
                         }
                         TestSection::Rodata(rom, name) => {
-                            let rodata_settings = SectionDataSettings::new(COMPILER);
+                            let rodata_settings = DataSectionSettings::new(COMPILER);
                             rodata_sections.push(
                                 context
                                     .create_section_rodata(
@@ -258,7 +260,7 @@ fn init_segments(
                             );
                         }
                         TestSection::Bss(vram, name) => {
-                            let bss_settings = SectionNoloadSettings::new(COMPILER);
+                            let bss_settings = NoloadSectionSettings::new(COMPILER);
 
                             let bss_section_vram_end = if i + 1 < info.sections.len() {
                                 match info.sections[i + 1] {
@@ -299,11 +301,10 @@ fn init_segments(
         }
     }
 
-    for seg in segments.iter_mut() {
-        seg.post_process(context);
-    }
-
     segments
+        .into_iter()
+        .map(|x| x.post_process(context))
+        .collect()
 }
 
 #[cfg_attr(feature = "game_tests", test)]

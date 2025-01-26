@@ -11,7 +11,7 @@ use crate::{
     collections::addended_ordered_map::AddendedOrderedMap,
     config::GlobalConfig,
     metadata::{IgnoredAddressRange, OverlayCategoryName, SegmentMetadata, SymbolMetadata},
-    sections::{SectionDataSettings, SectionExecutableSettings},
+    sections::preprocessed::{DataSectionSettings, ExecutableSectionSettings},
 };
 
 #[derive(Debug, Clone, Hash, PartialEq)]
@@ -53,7 +53,7 @@ impl SegmentHeater {
     fn preanalyze_text(
         &mut self,
         global_config: &GlobalConfig,
-        settings: &SectionExecutableSettings,
+        settings: &ExecutableSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
@@ -72,7 +72,7 @@ impl SegmentHeater {
     fn preanalyze_data(
         &mut self,
         global_config: &GlobalConfig,
-        settings: &SectionDataSettings,
+        settings: &DataSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
@@ -91,7 +91,7 @@ impl SegmentHeater {
     fn preanalyze_rodata(
         &mut self,
         global_config: &GlobalConfig,
-        settings: &SectionDataSettings,
+        settings: &DataSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
@@ -110,7 +110,7 @@ impl SegmentHeater {
     fn preanalyze_gcc_except_table(
         &mut self,
         global_config: &GlobalConfig,
-        settings: &SectionDataSettings,
+        settings: &DataSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
@@ -231,7 +231,7 @@ impl GlobalSegmentHeater {
     pub fn preanalyze_text(
         &mut self,
         global_config: &GlobalConfig,
-        settings: &SectionExecutableSettings,
+        settings: &ExecutableSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
@@ -243,7 +243,7 @@ impl GlobalSegmentHeater {
     pub fn preanalyze_data(
         &mut self,
         global_config: &GlobalConfig,
-        settings: &SectionDataSettings,
+        settings: &DataSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
@@ -255,7 +255,7 @@ impl GlobalSegmentHeater {
     pub fn preanalyze_rodata(
         &mut self,
         global_config: &GlobalConfig,
-        settings: &SectionDataSettings,
+        settings: &DataSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
@@ -267,7 +267,7 @@ impl GlobalSegmentHeater {
     pub fn preanalyze_gcc_except_table(
         &mut self,
         global_config: &GlobalConfig,
-        settings: &SectionDataSettings,
+        settings: &DataSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
@@ -346,7 +346,7 @@ impl OverlaySegmentHeater {
     pub fn preanalyze_text(
         &mut self,
         global_config: &GlobalConfig,
-        settings: &SectionExecutableSettings,
+        settings: &ExecutableSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
@@ -358,7 +358,7 @@ impl OverlaySegmentHeater {
     pub fn preanalyze_data(
         &mut self,
         global_config: &GlobalConfig,
-        settings: &SectionDataSettings,
+        settings: &DataSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
@@ -370,7 +370,7 @@ impl OverlaySegmentHeater {
     pub fn preanalyze_rodata(
         &mut self,
         global_config: &GlobalConfig,
-        settings: &SectionDataSettings,
+        settings: &DataSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
@@ -382,7 +382,7 @@ impl OverlaySegmentHeater {
     pub fn preanalyze_gcc_except_table(
         &mut self,
         global_config: &GlobalConfig,
-        settings: &SectionDataSettings,
+        settings: &DataSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
@@ -418,7 +418,7 @@ pub(crate) mod python_bindings {
         pub fn py_preanalyze_text(
             &mut self,
             global_config: &GlobalConfig,
-            settings: &SectionExecutableSettings,
+            settings: &ExecutableSectionSettings,
             raw_bytes: &[u8],
             rom: Rom,
             vram: Vram,
@@ -430,7 +430,7 @@ pub(crate) mod python_bindings {
         pub fn py_preanalyze_data(
             &mut self,
             global_config: &GlobalConfig,
-            settings: &SectionDataSettings,
+            settings: &DataSectionSettings,
             raw_bytes: &[u8],
             rom: Rom,
             vram: Vram,
@@ -442,7 +442,7 @@ pub(crate) mod python_bindings {
         pub fn py_preanalyze_rodata(
             &mut self,
             global_config: &GlobalConfig,
-            settings: &SectionDataSettings,
+            settings: &DataSectionSettings,
             raw_bytes: &[u8],
             rom: Rom,
             vram: Vram,
@@ -454,7 +454,7 @@ pub(crate) mod python_bindings {
         pub fn py_preanalyze_gcc_except_table(
             &mut self,
             global_config: &GlobalConfig,
-            settings: &SectionDataSettings,
+            settings: &DataSectionSettings,
             raw_bytes: &[u8],
             rom: Rom,
             vram: Vram,
@@ -469,7 +469,7 @@ pub(crate) mod python_bindings {
         pub fn py_preanalyze_text(
             &mut self,
             global_config: &GlobalConfig,
-            settings: &SectionExecutableSettings,
+            settings: &ExecutableSectionSettings,
             raw_bytes: &[u8],
             rom: Rom,
             vram: Vram,
@@ -481,7 +481,7 @@ pub(crate) mod python_bindings {
         pub fn py_preanalyze_data(
             &mut self,
             global_config: &GlobalConfig,
-            settings: &SectionDataSettings,
+            settings: &DataSectionSettings,
             raw_bytes: &[u8],
             rom: Rom,
             vram: Vram,
@@ -493,7 +493,7 @@ pub(crate) mod python_bindings {
         pub fn py_preanalyze_rodata(
             &mut self,
             global_config: &GlobalConfig,
-            settings: &SectionDataSettings,
+            settings: &DataSectionSettings,
             raw_bytes: &[u8],
             rom: Rom,
             vram: Vram,
@@ -505,7 +505,7 @@ pub(crate) mod python_bindings {
         pub fn py_preanalyze_gcc_except_table(
             &mut self,
             global_config: &GlobalConfig,
-            settings: &SectionDataSettings,
+            settings: &DataSectionSettings,
             raw_bytes: &[u8],
             rom: Rom,
             vram: Vram,

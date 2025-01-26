@@ -2,7 +2,7 @@
 /* SPDX-License-Identifier: MIT */
 
 use alloc::{collections::btree_map::BTreeMap, string::String, vec::Vec};
-use core::cmp::Ordering;
+use core::{cmp::Ordering, hash};
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
@@ -19,16 +19,20 @@ use crate::{
     metadata::{ParentSectionMetadata, SymbolType},
     parent_segment_info::ParentSegmentInfo,
     section_type::SectionType,
+    sections::{
+        processed::DataSectionProcessed, RomSection, RomSectionPreprocessed, Section,
+        SectionCreationError, SectionPostProcessError, SectionPreprocessed,
+    },
     str_decoding::Encoding,
-    symbols::{symbol_data::SymbolDataProperties, Symbol, SymbolData},
+    symbols::{
+        preprocessed::{data_sym::DataSymProperties, DataSym},
+        Symbol, SymbolPreprocessed,
+    },
 };
 
-use super::{trait_section::RomSection, Section, SectionCreationError, SectionPostProcessError};
-
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 #[must_use]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
-pub struct SectionData {
+pub struct DataSection {
     name: String,
 
     ranges: RomVramRange,
@@ -39,17 +43,17 @@ pub struct SectionData {
     section_type: SectionType,
 
     //
-    data_symbols: Vec<SymbolData>,
+    data_symbols: Vec<DataSym>,
 
     symbol_vrams: UnorderedSet<Vram>,
 }
 
-impl SectionData {
+impl DataSection {
     // TODO: fix
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn new(
         context: &mut Context,
-        settings: &SectionDataSettings,
+        settings: &DataSectionSettings,
         name: String,
         raw_bytes: &[u8],
         rom: Rom,
@@ -321,7 +325,7 @@ impl SectionData {
 
             symbol_vrams.insert(*new_sym_vram);
 
-            let properties = SymbolDataProperties {
+            let properties = DataSymProperties {
                 parent_metadata: ParentSectionMetadata::new(
                     name.clone(),
                     vram,
@@ -332,7 +336,7 @@ impl SectionData {
                 detected_type: *sym_type,
                 encoding: settings.encoding,
             };
-            let /*mut*/ sym = SymbolData::new(context, raw_bytes[start..end].into(), sym_rom, *new_sym_vram, start, parent_segment_info.clone(), section_type, properties)?;
+            let /*mut*/ sym = DataSym::new(context, raw_bytes[start..end].into(), sym_rom, *new_sym_vram, start, parent_segment_info.clone(), section_type, properties)?;
 
             data_symbols.push(sym);
         }
@@ -353,23 +357,32 @@ impl SectionData {
             symbol_vrams,
         })
     }
+}
 
-    pub fn data_symbols(&self) -> &[SymbolData] {
+impl DataSection {
+    pub fn data_symbols(&self) -> &[DataSym] {
         &self.data_symbols
     }
 }
 
-impl SectionData {
-    pub fn post_process(&mut self, context: &mut Context) -> Result<(), SectionPostProcessError> {
-        for sym in self.data_symbols.iter_mut() {
-            sym.post_process(context)?;
-        }
-
-        Ok(())
+impl DataSection {
+    pub fn post_process(
+        self,
+        context: &mut Context,
+    ) -> Result<DataSectionProcessed, SectionPostProcessError> {
+        DataSectionProcessed::new(
+            context,
+            self.name,
+            self.ranges,
+            self.parent_segment_info,
+            self.section_type,
+            self.data_symbols,
+            self.symbol_vrams,
+        )
     }
 }
 
-impl Section for SectionData {
+impl Section for DataSection {
     fn name(&self) -> &str {
         &self.name
     }
@@ -394,27 +407,53 @@ impl Section for SectionData {
     fn symbols_vrams(&self) -> &UnorderedSet<Vram> {
         &self.symbol_vrams
     }
-
-    fn post_process(&mut self, context: &mut Context) -> Result<(), SectionPostProcessError> {
-        self.post_process(context)
-    }
 }
-
-impl RomSection for SectionData {
+impl RomSection for DataSection {
     fn rom_vram_range(&self) -> &RomVramRange {
         &self.ranges
+    }
+}
+impl SectionPreprocessed for DataSection {
+    fn symbol_list(&self) -> &[impl SymbolPreprocessed] {
+        &self.data_symbols
+    }
+}
+impl RomSectionPreprocessed for DataSection {}
+
+impl hash::Hash for DataSection {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.parent_segment_info.hash(state);
+        self.ranges.hash(state);
+    }
+}
+impl PartialEq for DataSection {
+    fn eq(&self, other: &Self) -> bool {
+        self.parent_segment_info == other.parent_segment_info && self.ranges == other.ranges
+    }
+}
+impl PartialOrd for DataSection {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        // Compare segment info first, so symbols get sorted by segment
+        match self
+            .parent_segment_info
+            .partial_cmp(&other.parent_segment_info)
+        {
+            Some(core::cmp::Ordering::Equal) => {}
+            ord => return ord,
+        }
+        self.ranges.partial_cmp(&other.ranges)
     }
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
-pub struct SectionDataSettings {
+pub struct DataSectionSettings {
     compiler: Option<Compiler>,
     string_guesser_level: StringGuesserLevel,
     encoding: Encoding,
 }
 
-impl SectionDataSettings {
+impl DataSectionSettings {
     pub fn new(compiler: Option<Compiler>) -> Self {
         Self {
             compiler,
@@ -453,12 +492,10 @@ impl SectionDataSettings {
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
-    use crate::symbols::display::{SymDataDisplaySettings, SymDisplayError};
-
     use super::*;
 
     #[pymethods]
-    impl SectionDataSettings {
+    impl DataSectionSettings {
         #[new]
         #[pyo3(signature = (compiler))]
         pub fn py_new(compiler: Option<Compiler>) -> Self {
@@ -473,91 +510,6 @@ pub(crate) mod python_bindings {
         #[pyo3(name = "set_encoding")]
         pub fn py_set_encoding(&mut self, encoding: Encoding) {
             self.set_encoding(encoding);
-        }
-    }
-
-    #[pymethods]
-    impl SectionData {
-        #[pyo3(name = "post_process")]
-        fn py_post_process(
-            &mut self,
-            context: &mut Context,
-        ) -> Result<(), SectionPostProcessError> {
-            self.post_process(context)
-        }
-
-        #[pyo3(name = "sym_count")]
-        pub fn py_sym_count(&self) -> usize {
-            self.data_symbols.len()
-        }
-
-        #[pyo3(name = "get_sym_info")]
-        pub fn py_get_sym_info(
-            &self,
-            context: &Context,
-            index: usize,
-        ) -> Option<(
-            u32,
-            Option<Rom>,
-            Option<SymbolType>,
-            Option<Size>,
-            bool,
-            usize,
-            Option<String>,
-        )> {
-            let sym = self.data_symbols.get(index);
-
-            if let Some(sym) = sym {
-                let metadata = sym.find_own_metadata(context);
-
-                Some((
-                    metadata.vram().inner(),
-                    metadata.rom(),
-                    metadata.sym_type(),
-                    metadata.size(),
-                    metadata.is_defined(),
-                    metadata.reference_counter(),
-                    metadata.parent_metadata().and_then(|x| {
-                        x.parent_segment_info()
-                            .overlay_category_name()
-                            .map(|x| x.inner().to_owned())
-                    }),
-                ))
-            } else {
-                None
-            }
-        }
-
-        #[pyo3(name = "set_sym_name")]
-        pub fn py_set_sym_name(&mut self, context: &mut Context, index: usize, new_name: String) {
-            let sym = self.data_symbols.get(index);
-
-            if let Some(sym) = sym {
-                let metadata = sym.find_own_metadata_mut(context);
-
-                *metadata.user_declared_name_mut() = Some(new_name);
-            }
-        }
-
-        #[pyo3(name = "display_sym")]
-        pub fn py_display_sym(
-            &self,
-            context: &Context,
-            index: usize,
-            settings: &SymDataDisplaySettings,
-        ) -> Result<Option<String>, SymDisplayError> {
-            let sym = self.data_symbols.get(index);
-
-            Ok(if let Some(sym) = sym {
-                Some(sym.display(context, settings)?.to_string())
-            } else {
-                None
-            })
-        }
-
-        #[pyo3(name = "label_count_for_sym")]
-        pub fn py_label_count_for_sym(&self, _sym_index: usize) -> usize {
-            0
         }
     }
 }

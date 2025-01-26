@@ -9,8 +9,8 @@ use spimdisasm::{
     metadata::SegmentMetadata,
     parent_segment_info::ParentSegmentInfo,
     sections::{
-        SectionData, SectionDataSettings, SectionExecutable, SectionExecutableSettings,
-        SectionNoload, SectionNoloadSettings,
+        preprocessed::{DataSectionSettings, ExecutableSectionSettings, NoloadSectionSettings},
+        processed::{DataSectionProcessed, ExecutableSectionProcessed, NoloadSectionProcessed},
     },
     symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings, SymNoloadDisplaySettings},
 };
@@ -54,20 +54,20 @@ impl RawNoloadSectionInfo {
 
 struct Sections {
     context: Context,
-    text: Option<SectionExecutable>,
-    data: Option<SectionData>,
-    rodata: Option<SectionData>,
-    gcc_except_table: Option<SectionData>,
-    bss: Option<SectionNoload>,
+    text: Option<ExecutableSectionProcessed>,
+    data: Option<DataSectionProcessed>,
+    rodata: Option<DataSectionProcessed>,
+    gcc_except_table: Option<DataSectionProcessed>,
+    bss: Option<NoloadSectionProcessed>,
 }
 impl Sections {
     pub fn new(
         endian: Endian,
-        text_info: (RawSectionInfo, SectionExecutableSettings),
-        data_info: (RawSectionInfo, SectionDataSettings),
-        rodata_info: (RawSectionInfo, SectionDataSettings),
-        gcc_except_table_info: (RawSectionInfo, SectionDataSettings),
-        bss_info: (RawNoloadSectionInfo, SectionNoloadSettings),
+        text_info: (RawSectionInfo, ExecutableSectionSettings),
+        data_info: (RawSectionInfo, DataSectionSettings),
+        rodata_info: (RawSectionInfo, DataSectionSettings),
+        gcc_except_table_info: (RawSectionInfo, DataSectionSettings),
+        bss_info: (RawNoloadSectionInfo, NoloadSectionSettings),
     ) -> Self {
         let mut global_ranges = text_info.0.ranges();
 
@@ -182,26 +182,11 @@ impl Sections {
                 .unwrap()
         });
 
-        let text = text.map(|mut x| {
-            x.post_process(&mut context).unwrap();
-            x
-        });
-        let data = data.map(|mut x| {
-            x.post_process(&mut context).unwrap();
-            x
-        });
-        let rodata = rodata.map(|mut x| {
-            x.post_process(&mut context).unwrap();
-            x
-        });
-        let gcc_except_table = gcc_except_table.map(|mut x| {
-            x.post_process(&mut context).unwrap();
-            x
-        });
-        let bss = bss.map(|mut x| {
-            x.post_process(&mut context).unwrap();
-            x
-        });
+        let text = text.map(|x| x.post_process(&mut context).unwrap());
+        let data = data.map(|x| x.post_process(&mut context).unwrap());
+        let rodata = rodata.map(|x| x.post_process(&mut context).unwrap());
+        let gcc_except_table = gcc_except_table.map(|x| x.post_process(&mut context).unwrap());
+        let bss = bss.map(|x| x.post_process(&mut context).unwrap());
 
         Self {
             context,
@@ -408,9 +393,9 @@ fn test_jumptable_with_lo_in_each_case_for_same_hi() {
     let bss_vram = Vram::new(0x800040A0);
 
     let executable_settings =
-        SectionExecutableSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
-    let data_settings = SectionDataSettings::new(None);
-    let noload_settings = SectionNoloadSettings::new(None);
+        ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
+    let data_settings = DataSectionSettings::new(None);
+    let noload_settings = NoloadSectionSettings::new(None);
 
     let sections = Sections::new(
         Endian::Big,

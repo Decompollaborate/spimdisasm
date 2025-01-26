@@ -7,6 +7,7 @@ use core::{error, fmt};
 use pyo3::prelude::*;
 
 use crate::{
+    addresses::Vram,
     context::OwnedSegmentNotFoundError,
     symbols::{OwnedSymbolNotFoundError, SymbolPostProcessError},
 };
@@ -17,6 +18,15 @@ use crate::{
 pub enum SectionPostProcessError {
     OwnedSegmentNotFound(OwnedSegmentNotFoundError),
     OwnedSymbolNotFound(OwnedSymbolNotFoundError),
+
+    #[cfg(feature = "pyo3")]
+    AlreadyPostProcessed {
+        name: String,
+        vram_start: Vram,
+        vram_end: Vram,
+    },
+    #[cfg(feature = "pyo3")]
+    InvalidState(),
 }
 
 impl fmt::Display for SectionPostProcessError {
@@ -27,6 +37,22 @@ impl fmt::Display for SectionPostProcessError {
             }
             SectionPostProcessError::OwnedSymbolNotFound(owned_symbol_not_found) => {
                 write!(f, "{}", owned_symbol_not_found)
+            }
+            #[cfg(feature = "pyo3")]
+            SectionPostProcessError::AlreadyPostProcessed {
+                name,
+                vram_start,
+                vram_end,
+            } => {
+                write!(
+                    f,
+                    "The section {} ({:?} {:?}) has already been post-processed.",
+                    name, vram_start, vram_end
+                )
+            }
+            #[cfg(feature = "pyo3")]
+            SectionPostProcessError::InvalidState() => {
+                write!(f, "This section is somehow in an invalid state.")
             }
         }
     }

@@ -1,6 +1,8 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use core::hash;
+
 use crate::{
     addresses::{AddressRange, Size, Vram},
     config::Compiler,
@@ -8,30 +10,26 @@ use crate::{
     metadata::{ParentSectionMetadata, SymbolMetadata},
     parent_segment_info::ParentSegmentInfo,
     section_type::SectionType,
+    symbols::{processed::NoloadSymProcessed, SymbolPreprocessed},
 };
 
-use super::{
-    display::{
-        InternalSymDisplSettings, SymDisplayError, SymNoloadDisplay, SymNoloadDisplaySettings,
-    },
-    Symbol, SymbolCreationError, SymbolPostProcessError,
-};
+use crate::symbols::{Symbol, SymbolCreationError, SymbolPostProcessError};
 
 const SECTION_TYPE: SectionType = SectionType::Bss;
 
-#[derive(Debug, Clone, Hash, PartialEq)]
-pub struct SymbolNoload {
+#[derive(Debug, Clone)]
+pub struct NoloadSym {
     vram_range: AddressRange<Vram>,
     parent_segment_info: ParentSegmentInfo,
 }
 
-impl SymbolNoload {
+impl NoloadSym {
     pub(crate) fn new(
         context: &mut Context,
         vram_range: AddressRange<Vram>,
         _in_section_offset: usize,
         parent_segment_info: ParentSegmentInfo,
-        properties: SymbolNoloadProperties,
+        properties: NoloadSymProperties,
     ) -> Result<Self, SymbolCreationError> {
         let metadata = context
             .find_owned_segment_mut(&parent_segment_info)?
@@ -51,32 +49,16 @@ impl SymbolNoload {
     }
 }
 
-impl SymbolNoload {
-    pub fn post_process(&mut self, _context: &Context) -> Result<(), SymbolPostProcessError> {
-        Ok(())
+impl NoloadSym {
+    pub fn post_process(
+        self,
+        context: &mut Context,
+    ) -> Result<NoloadSymProcessed, SymbolPostProcessError> {
+        NoloadSymProcessed::new(context, self.vram_range, self.parent_segment_info)
     }
 }
 
-impl<'ctx, 'sym, 'flg> SymbolNoload {
-    pub fn display(
-        &'sym self,
-        context: &'ctx Context,
-        settings: &'flg SymNoloadDisplaySettings,
-    ) -> Result<SymNoloadDisplay<'ctx, 'sym, 'flg>, SymDisplayError> {
-        self.display_internal(context, settings, InternalSymDisplSettings::new(false))
-    }
-
-    pub(crate) fn display_internal(
-        &'sym self,
-        context: &'ctx Context,
-        settings: &'flg SymNoloadDisplaySettings,
-        internal_settings: InternalSymDisplSettings,
-    ) -> Result<SymNoloadDisplay<'ctx, 'sym, 'flg>, SymDisplayError> {
-        SymNoloadDisplay::new(context, self, settings, internal_settings)
-    }
-}
-
-impl Symbol for SymbolNoload {
+impl Symbol for NoloadSym {
     fn vram_range(&self) -> &AddressRange<Vram> {
         &self.vram_range
     }
@@ -90,15 +72,41 @@ impl Symbol for SymbolNoload {
         SECTION_TYPE
     }
 }
+impl SymbolPreprocessed for NoloadSym {}
+
+impl hash::Hash for NoloadSym {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.parent_segment_info.hash(state);
+        self.vram_range.hash(state);
+    }
+}
+impl PartialEq for NoloadSym {
+    fn eq(&self, other: &Self) -> bool {
+        self.parent_segment_info == other.parent_segment_info && self.vram_range == other.vram_range
+    }
+}
+impl PartialOrd for NoloadSym {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        // Compare segment info first, so symbols get sorted by segment
+        match self
+            .parent_segment_info
+            .partial_cmp(&other.parent_segment_info)
+        {
+            Some(core::cmp::Ordering::Equal) => {}
+            ord => return ord,
+        }
+        self.vram_range.partial_cmp(&other.vram_range)
+    }
+}
 
 #[derive(Debug, Clone, Hash, PartialEq)]
-pub(crate) struct SymbolNoloadProperties {
+pub(crate) struct NoloadSymProperties {
     pub parent_metadata: ParentSectionMetadata,
     pub compiler: Option<Compiler>,
     pub auto_pad_by: Option<Vram>,
 }
 
-impl SymbolNoloadProperties {
+impl NoloadSymProperties {
     fn apply_to_metadata(self, metadata: &mut SymbolMetadata) {
         metadata.set_parent_metadata(self.parent_metadata);
 

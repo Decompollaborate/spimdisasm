@@ -11,10 +11,14 @@ use crate::{
     collections::unordered_set::UnorderedSet,
     context::Context,
     metadata::{RodataMigrationBehavior, SymbolMetadata, SymbolMetadataNameDisplay},
-    sections::{Section, SectionData, SectionExecutable},
+    sections::{
+        processed::{DataSectionProcessed, ExecutableSectionProcessed},
+        Section,
+    },
     symbols::{
         display::{FunctionDisplaySettings, SymDataDisplaySettings},
-        Symbol, SymbolData, SymbolFunction,
+        processed::{DataSymProcessed, FunctionSymProcessed},
+        Symbol,
     },
 };
 
@@ -38,8 +42,8 @@ pub enum FuncRodataPairing {
 impl FuncRodataPairing {
     pub fn pair_sections(
         context: &Context,
-        text_section: Option<&SectionExecutable>,
-        rodata_section: Option<&SectionData>,
+        text_section: Option<&ExecutableSectionProcessed>,
+        rodata_section: Option<&DataSectionProcessed>,
     ) -> Vec<Self> {
         let mut all_entries = Vec::new();
 
@@ -66,8 +70,8 @@ impl FuncRodataPairing {
         // # symbol).
         // # We use deque instead of a plain list because we want fast removal of
         // # the first symbol.
-        let all_rodata_syms: &[SymbolData] = rodata_section.map_or(&[], |x| x.data_symbols());
-        let mut remaining_rodata_symbols: VecDeque<(usize, &SymbolData)> = rodata_section
+        let all_rodata_syms: &[DataSymProcessed] = rodata_section.map_or(&[], |x| x.data_symbols());
+        let mut remaining_rodata_symbols: VecDeque<(usize, &DataSymProcessed)> = rodata_section
             .iter()
             .flat_map(|x| x.data_symbols().iter().enumerate())
             .collect();
@@ -134,8 +138,8 @@ impl FuncRodataPairing {
     fn pair_function_to_rodata_section(
         context: &Context,
         function_index: usize,
-        function: &SymbolFunction,
-        rodata_section: Option<&SectionData>,
+        function: &FunctionSymProcessed,
+        rodata_section: Option<&DataSectionProcessed>,
     ) -> Self {
         /*
         """
@@ -286,8 +290,8 @@ impl<'ctx> FuncRodataPairing {
     pub fn display_name(
         &self,
         context: &'ctx Context,
-        text_section: Option<&SectionExecutable>,
-        rodata_section: Option<&SectionData>,
+        text_section: Option<&ExecutableSectionProcessed>,
+        rodata_section: Option<&DataSectionProcessed>,
     ) -> Result<SymbolMetadataNameDisplay<'ctx>, PairingError> {
         let metadata = match &self {
             FuncRodataPairing::Pairing { function_index, .. } => {
@@ -333,7 +337,7 @@ impl<'ctx> FuncRodataPairing {
 impl<'pairing, 'rodata> FuncRodataPairing {
     pub fn iter_rodata(
         &'pairing self,
-        rodata_section: Option<&'rodata SectionData>,
+        rodata_section: Option<&'rodata DataSectionProcessed>,
     ) -> RodataIterator<'pairing, 'rodata> {
         RodataIterator::new(self, rodata_section)
     }
@@ -353,9 +357,9 @@ impl<
     pub fn display(
         &self,
         context: &'ctx Context,
-        text_section: Option<&'text SectionExecutable>,
+        text_section: Option<&'text ExecutableSectionProcessed>,
         function_display_settings: &'text_settings FunctionDisplaySettings,
-        rodata_section: Option<&'rodata SectionData>,
+        rodata_section: Option<&'rodata DataSectionProcessed>,
         rodata_display_settings: &'rodata_settings SymDataDisplaySettings,
         settings: FuncRodataPairingDisplaySettings<'text_label, 'ro_label, 'late_ro_label>,
     ) -> Result<
@@ -385,6 +389,10 @@ impl<
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
+    use crate::sections::python_bindings::{
+        py_data_section::PyDataSection, py_executable_section::PyExecutableSection,
+    };
+
     use super::*;
 
     #[pymethods]
@@ -393,22 +401,27 @@ pub(crate) mod python_bindings {
         #[staticmethod]
         pub fn py_pair_sections(
             context: &Context,
-            text_section: Option<&SectionExecutable>,
-            rodata_section: Option<&SectionData>,
+            text_section: Option<&PyExecutableSection>,
+            rodata_section: Option<&PyDataSection>,
         ) -> Vec<Self> {
-            Self::pair_sections(context, text_section, rodata_section)
+            Self::pair_sections(
+                context,
+                text_section.map(|x| x.unwrap_processed()),
+                rodata_section.map(|x| x.unwrap_processed()),
+            )
         }
 
         #[pyo3(name = "get_function_name_and_vram", signature = (context, text_section=None))]
         pub fn py_get_function_name_and_vram(
             &self,
             context: &Context,
-            text_section: Option<&SectionExecutable>,
+            text_section: Option<&PyExecutableSection>,
         ) -> Option<(String, u32)> {
             match self {
                 FuncRodataPairing::Pairing { function_index, .. } => {
                     if let Some(text_section) = text_section {
                         text_section
+                            .unwrap_processed()
                             .functions()
                             .get(*function_index)
                             .map(|function| {
@@ -432,13 +445,14 @@ pub(crate) mod python_bindings {
         pub fn py_get_single_rodata_name_and_vram(
             &self,
             context: &Context,
-            rodata_section: Option<&SectionData>,
+            rodata_section: Option<&PyDataSection>,
         ) -> Option<(String, u32)> {
             match self {
                 FuncRodataPairing::Pairing { .. } => None,
                 FuncRodataPairing::SingleRodata { rodata_index } => {
                     if let Some(rodata_section) = rodata_section {
                         rodata_section
+                            .unwrap_processed()
                             .data_symbols()
                             .get(*rodata_index)
                             .map(|function| {
@@ -461,9 +475,9 @@ pub(crate) mod python_bindings {
         pub fn py_display(
             &self,
             context: &Context,
-            text_section: Option<&SectionExecutable>,
+            text_section: Option<&PyExecutableSection>,
             function_display_settings: &FunctionDisplaySettings,
-            rodata_section: Option<&SectionData>,
+            rodata_section: Option<&PyDataSection>,
             rodata_display_settings: &SymDataDisplaySettings,
             section_label_text: Option<&str>,
             section_label_rodata: Option<&str>,
@@ -471,9 +485,9 @@ pub(crate) mod python_bindings {
         ) -> Result<String, PairingError> {
             let disp = self.display(
                 context,
-                text_section,
+                text_section.map(|x| x.unwrap_processed()),
                 function_display_settings,
-                rodata_section,
+                rodata_section.map(|x| x.unwrap_processed()),
                 rodata_display_settings,
                 FuncRodataPairingDisplaySettings::new(
                     section_label_text,

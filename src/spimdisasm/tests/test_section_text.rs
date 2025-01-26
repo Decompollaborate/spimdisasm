@@ -10,7 +10,7 @@ use spimdisasm::{
     },
     metadata::OverlayCategoryName,
     parent_segment_info::ParentSegmentInfo,
-    sections::SectionExecutableSettings,
+    sections::preprocessed::ExecutableSectionSettings,
     symbols::display::FunctionDisplaySettings,
 };
 
@@ -99,7 +99,7 @@ fn test_section_text_1() {
     let size = Size::new(0x21FC00);
 
     let text_settings =
-        SectionExecutableSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
+        ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
 
     let global_config = GlobalConfig::new(Endian::Big);
     let mut context = {
@@ -146,7 +146,7 @@ fn test_section_text_1() {
 
     let instr_display_flags = InstructionDisplayFlags::default();
 
-    let mut section_text = context
+    let section_text = context
         .create_section_text(
             &text_settings,
             "test".into(),
@@ -157,7 +157,7 @@ fn test_section_text_1() {
         )
         .unwrap();
 
-    section_text.post_process(&mut context).unwrap();
+    let section_text = section_text.post_process(&mut context).unwrap();
 
     let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
     for func in section_text.functions() {
@@ -226,7 +226,7 @@ fn test_section_text_lui_delay_slot() {
     let size = Size::new(0x1000);
 
     let text_settings =
-        SectionExecutableSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
+        ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
 
     let global_config = GlobalConfig::new(Endian::Big);
     let mut context = {
@@ -249,7 +249,7 @@ fn test_section_text_lui_delay_slot() {
 
     let instr_display_flags = InstructionDisplayFlags::default();
 
-    let mut section_text = context
+    let section_text = context
         .create_section_text(
             &text_settings,
             "test".into(),
@@ -260,7 +260,7 @@ fn test_section_text_lui_delay_slot() {
         )
         .unwrap();
 
-    section_text.post_process(&mut context).unwrap();
+    let section_text = section_text.post_process(&mut context).unwrap();
 
     let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
     for func in section_text.functions() {
@@ -370,7 +370,7 @@ fn test_section_text_pairing_on_delay_slot() {
     let segment_rom = Rom::new(0x1000);
     let segment_vram = Vram::new(0x80000400);
 
-    let text_settings = SectionExecutableSettings::new(
+    let text_settings = ExecutableSectionSettings::new(
         Some(Compiler::IDO),
         InstructionFlags::new(IsaVersion::MIPS_III),
     );
@@ -396,7 +396,7 @@ fn test_section_text_pairing_on_delay_slot() {
     };
 
     let parent_segment_info = ParentSegmentInfo::new(segment_rom, segment_vram, None);
-    let mut section_text = context
+    let section_text = context
         .create_section_text(
             &text_settings,
             "text".to_string(),
@@ -407,7 +407,7 @@ fn test_section_text_pairing_on_delay_slot() {
         )
         .unwrap();
 
-    section_text.post_process(&mut context).unwrap();
+    let section_text = section_text.post_process(&mut context).unwrap();
 
     let mut disassembly = ".section .text\n".to_string();
     let display_settings = FunctionDisplaySettings::new(InstructionDisplayFlags::new());
@@ -518,7 +518,7 @@ fn test_section_text_lui_paired_with_lw_and_ori() {
     let segment_rom = Rom::new(0x1000);
     let segment_vram = Vram::new(0x80000400);
 
-    let text_settings = SectionExecutableSettings::new(
+    let text_settings = ExecutableSectionSettings::new(
         Some(Compiler::IDO),
         InstructionFlags::new(IsaVersion::MIPS_III),
     );
@@ -544,7 +544,7 @@ fn test_section_text_lui_paired_with_lw_and_ori() {
     };
 
     let parent_segment_info = ParentSegmentInfo::new(segment_rom, segment_vram, None);
-    let mut section_text = context
+    let section_text = context
         .create_section_text(
             &text_settings,
             "text".to_string(),
@@ -555,7 +555,7 @@ fn test_section_text_lui_paired_with_lw_and_ori() {
         )
         .unwrap();
 
-    section_text.post_process(&mut context).unwrap();
+    let section_text = section_text.post_process(&mut context).unwrap();
 
     let mut disassembly = ".section .text\n".to_string();
     let display_settings = FunctionDisplaySettings::new(InstructionDisplayFlags::new());

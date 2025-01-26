@@ -11,7 +11,7 @@ use crate::{
     config::GlobalConfig,
     metadata::{IgnoredAddressRange, SymbolMetadata, SymbolType},
     section_type::SectionType,
-    sections::{SectionDataSettings, SectionExecutableSettings},
+    sections::preprocessed::{DataSectionSettings, ExecutableSectionSettings},
 };
 
 use super::{ReferenceWrapper, ReferencedAddress, RegisterTracker};
@@ -41,7 +41,7 @@ impl Preheater {
     pub(crate) fn preheat_text(
         &mut self,
         global_config: &GlobalConfig,
-        settings: &SectionExecutableSettings,
+        settings: &ExecutableSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
@@ -200,7 +200,7 @@ impl Preheater {
     pub(crate) fn preheat_data(
         &mut self,
         global_config: &GlobalConfig,
-        settings: &SectionDataSettings,
+        settings: &DataSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
@@ -228,7 +228,7 @@ impl Preheater {
     pub(crate) fn preheat_rodata(
         &mut self,
         global_config: &GlobalConfig,
-        settings: &SectionDataSettings,
+        settings: &DataSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
@@ -256,7 +256,7 @@ impl Preheater {
     pub(crate) fn preheat_gcc_except_table(
         &mut self,
         global_config: &GlobalConfig,
-        _settings: &SectionDataSettings,
+        _settings: &DataSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
@@ -301,7 +301,7 @@ impl Preheater {
     fn common_data_preheat(
         &mut self,
         global_config: &GlobalConfig,
-        settings: &SectionDataSettings,
+        settings: &DataSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,

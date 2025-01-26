@@ -8,7 +8,10 @@ use alloc::vec::Vec;
 use crate::{
     addresses::Size,
     context::Context,
-    sections::{Section, SectionData, SectionExecutable},
+    sections::{
+        processed::{DataSectionProcessed, ExecutableSectionProcessed},
+        Section,
+    },
     symbols::{
         display::{
             FunctionDisplay, FunctionDisplaySettings, InternalSymDisplSettings, SymDataDisplay,
@@ -62,9 +65,9 @@ impl<
     pub(super) fn new(
         pairing: &FuncRodataPairing,
         context: &'ctx Context,
-        text_section: Option<&'text SectionExecutable>,
+        text_section: Option<&'text ExecutableSectionProcessed>,
         function_display_settings: &'text_settings FunctionDisplaySettings,
-        rodata_section: Option<&'rodata SectionData>,
+        rodata_section: Option<&'rodata DataSectionProcessed>,
         rodata_display_settings: &'rodata_settings SymDataDisplaySettings,
         settings: FuncRodataPairingDisplaySettings<'text_label, 'ro_label, 'late_ro_label>,
     ) -> Result<Self, PairingError> {
@@ -132,7 +135,7 @@ impl<
 
     fn do_rodata_section(
         context: &'ctx Context,
-        rodata_section: Option<&'rodata SectionData>,
+        rodata_section: Option<&'rodata DataSectionProcessed>,
         rodata_display_settings: &'rodata_settings SymDataDisplaySettings,
         rodata_indices: &[usize],
         late_rodata_indices: &[usize],
@@ -172,7 +175,7 @@ impl<
 
     fn do_rodata_displays(
         context: &'ctx Context,
-        rodata_section: &'rodata SectionData,
+        rodata_section: &'rodata DataSectionProcessed,
         rodata_display_settings: &'rodata_settings SymDataDisplaySettings,
         indices: &[usize],
     ) -> Result<Vec<SymDataDisplay<'ctx, 'rodata, 'rodata_settings>>, PairingError> {

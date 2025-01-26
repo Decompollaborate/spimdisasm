@@ -64,7 +64,15 @@ pub trait RomSymbol: Symbol {
     fn rom_size(&self) -> Size {
         self.rom_range().size()
     }
+}
 
+pub trait SymbolPreprocessed: Symbol {}
+
+pub trait RomSymbolPreprocessed: RomSymbol + SymbolPreprocessed {}
+
+pub trait SymbolProcessed: Symbol {}
+
+pub trait RomSymbolProcessed: RomSymbol + SymbolProcessed {
     #[must_use]
     fn relocs(&self) -> &[Option<RelocationInfo>];
 }

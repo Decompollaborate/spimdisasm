@@ -1,14 +1,14 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use crate::{sections::SectionData, symbols::SymbolData};
+use crate::{sections::processed::DataSectionProcessed, symbols::processed::DataSymProcessed};
 
 use super::FuncRodataPairing;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct RodataIterator<'pairing, 'rodata> {
     pairing: &'pairing FuncRodataPairing,
-    rodata_section: Option<&'rodata SectionData>,
+    rodata_section: Option<&'rodata DataSectionProcessed>,
     rodata_index: usize,
     late_rodata_index: usize,
 }
@@ -16,7 +16,7 @@ pub struct RodataIterator<'pairing, 'rodata> {
 impl<'pairing, 'rodata> RodataIterator<'pairing, 'rodata> {
     pub(super) fn new(
         pairing: &'pairing FuncRodataPairing,
-        rodata_section: Option<&'rodata SectionData>,
+        rodata_section: Option<&'rodata DataSectionProcessed>,
     ) -> Self {
         Self {
             pairing,
@@ -28,7 +28,7 @@ impl<'pairing, 'rodata> RodataIterator<'pairing, 'rodata> {
 }
 
 impl<'rodata> Iterator for RodataIterator<'_, 'rodata> {
-    type Item = &'rodata SymbolData;
+    type Item = &'rodata DataSymProcessed;
 
     fn next(&mut self) -> Option<Self::Item> {
         match &self.pairing {

@@ -7,7 +7,7 @@ use spimdisasm::{
     config::{Endian, GlobalConfig},
     context::{builder::UserSegmentBuilder, ContextBuilder, GlobalSegmentBuilder},
     parent_segment_info::ParentSegmentInfo,
-    sections::SectionExecutableSettings,
+    sections::preprocessed::ExecutableSectionSettings,
     symbols::display::FunctionDisplaySettings,
 };
 
@@ -261,10 +261,10 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
     let mut context = ContextBuilder::new(global_segment, platform_segment).build(global_config);
 
     let text_settings =
-        SectionExecutableSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
+        ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
     let instr_display_flags = InstructionDisplayFlags::default();
 
-    let mut section_text = context
+    let section_text = context
         .create_section_text(
             &text_settings,
             "test".into(),
@@ -275,7 +275,7 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
         )
         .unwrap();
 
-    section_text.post_process(&mut context).unwrap();
+    let section_text = section_text.post_process(&mut context).unwrap();
 
     assert_eq!(section_text.functions().len(), 1);
 

@@ -13,7 +13,7 @@ use crate::{
     context::Context,
     metadata::{SegmentMetadata, SymbolMetadata, SymbolType},
     str_decoding,
-    symbols::{RomSymbol, Symbol, SymbolData},
+    symbols::{processed::DataSymProcessed, RomSymbol, RomSymbolProcessed, Symbol},
 };
 
 use super::{
@@ -48,7 +48,7 @@ impl SymDataDisplaySettings {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SymDataDisplay<'ctx, 'sym, 'flg> {
     context: &'ctx Context,
-    sym: &'sym SymbolData,
+    sym: &'sym DataSymProcessed,
     settings: &'flg SymDataDisplaySettings,
     endian: Endian,
 
@@ -61,7 +61,7 @@ pub struct SymDataDisplay<'ctx, 'sym, 'flg> {
 impl<'ctx, 'sym, 'flg> SymDataDisplay<'ctx, 'sym, 'flg> {
     pub(crate) fn new(
         context: &'ctx Context,
-        sym: &'sym SymbolData,
+        sym: &'sym DataSymProcessed,
         settings: &'flg SymDataDisplaySettings,
 
         internal_settings: InternalSymDisplSettings,
@@ -85,7 +85,7 @@ impl<'ctx, 'sym, 'flg> SymDataDisplay<'ctx, 'sym, 'flg> {
     }
 
     #[must_use]
-    pub(crate) fn sym(&self) -> &'sym SymbolData {
+    pub(crate) fn sym(&self) -> &'sym DataSymProcessed {
         self.sym
     }
 

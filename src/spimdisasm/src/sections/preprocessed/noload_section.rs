@@ -1,6 +1,8 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use core::hash;
+
 use alloc::{collections::btree_set::BTreeSet, string::String, vec::Vec};
 
 #[cfg(feature = "pyo3")]
@@ -14,15 +16,18 @@ use crate::{
     metadata::ParentSectionMetadata,
     parent_segment_info::ParentSegmentInfo,
     section_type::SectionType,
-    symbols::{symbol_noload::SymbolNoloadProperties, Symbol, SymbolNoload},
+    sections::{processed::NoloadSectionProcessed, SectionPreprocessed},
+    symbols::{
+        preprocessed::{noload_sym::NoloadSymProperties, NoloadSym},
+        Symbol, SymbolPreprocessed,
+    },
 };
 
-use super::{Section, SectionCreationError, SectionPostProcessError};
+use crate::sections::{Section, SectionCreationError, SectionPostProcessError};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 #[must_use]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
-pub struct SectionNoload {
+pub struct NoloadSection {
     name: String,
 
     vram_range: AddressRange<Vram>,
@@ -32,15 +37,15 @@ pub struct SectionNoload {
     // in_section_offset: u32,
 
     //
-    noload_symbols: Vec<SymbolNoload>,
+    noload_symbols: Vec<NoloadSym>,
 
     symbol_vrams: UnorderedSet<Vram>,
 }
 
-impl SectionNoload {
+impl NoloadSection {
     pub(crate) fn new(
         context: &mut Context,
-        settings: &SectionNoloadSettings,
+        settings: &NoloadSectionSettings,
         name: String,
         vram_range: AddressRange<Vram>,
         parent_segment_info: ParentSegmentInfo,
@@ -105,7 +110,7 @@ impl SectionNoload {
 
             symbol_vrams.insert(*new_sym_vram);
 
-            let properties = SymbolNoloadProperties {
+            let properties = NoloadSymProperties {
                 parent_metadata: ParentSectionMetadata::new(
                     name.clone(),
                     vram_range.start(),
@@ -114,7 +119,7 @@ impl SectionNoload {
                 compiler: settings.compiler,
                 auto_pad_by: auto_pads.get(new_sym_vram).copied(),
             };
-            let /*mut*/ sym = SymbolNoload::new(context, AddressRange::new(*new_sym_vram, new_sym_vram_end), start, parent_segment_info.clone(), properties)?;
+            let /*mut*/ sym = NoloadSym::new(context, AddressRange::new(*new_sym_vram, new_sym_vram_end), start, parent_segment_info.clone(), properties)?;
 
             noload_symbols.push(sym);
         }
@@ -127,24 +132,31 @@ impl SectionNoload {
             symbol_vrams,
         })
     }
+}
 
-    // TODO: remove
-    pub fn noload_symbols(&self) -> &[SymbolNoload] {
+impl NoloadSection {
+    pub fn noload_symbols(&self) -> &[NoloadSym] {
         &self.noload_symbols
     }
 }
 
-impl SectionNoload {
-    pub fn post_process(&mut self, context: &mut Context) -> Result<(), SectionPostProcessError> {
-        for sym in self.noload_symbols.iter_mut() {
-            sym.post_process(context)?;
-        }
-
-        Ok(())
+impl NoloadSection {
+    pub fn post_process(
+        self,
+        context: &mut Context,
+    ) -> Result<NoloadSectionProcessed, SectionPostProcessError> {
+        NoloadSectionProcessed::new(
+            context,
+            self.name,
+            self.vram_range,
+            self.parent_segment_info,
+            self.noload_symbols,
+            self.symbol_vrams,
+        )
     }
 }
 
-impl Section for SectionNoload {
+impl Section for NoloadSection {
     fn name(&self) -> &str {
         &self.name
     }
@@ -169,19 +181,45 @@ impl Section for SectionNoload {
     fn symbols_vrams(&self) -> &UnorderedSet<Vram> {
         &self.symbol_vrams
     }
+}
+impl SectionPreprocessed for NoloadSection {
+    fn symbol_list(&self) -> &[impl SymbolPreprocessed] {
+        &self.noload_symbols
+    }
+}
 
-    fn post_process(&mut self, context: &mut Context) -> Result<(), SectionPostProcessError> {
-        self.post_process(context)
+impl hash::Hash for NoloadSection {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.parent_segment_info.hash(state);
+        self.vram_range.hash(state);
+    }
+}
+impl PartialEq for NoloadSection {
+    fn eq(&self, other: &Self) -> bool {
+        self.parent_segment_info == other.parent_segment_info && self.vram_range == other.vram_range
+    }
+}
+impl PartialOrd for NoloadSection {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        // Compare segment info first, so symbols get sorted by segment
+        match self
+            .parent_segment_info
+            .partial_cmp(&other.parent_segment_info)
+        {
+            Some(core::cmp::Ordering::Equal) => {}
+            ord => return ord,
+        }
+        self.vram_range.partial_cmp(&other.vram_range)
     }
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
-pub struct SectionNoloadSettings {
+pub struct NoloadSectionSettings {
     compiler: Option<Compiler>,
 }
 
-impl SectionNoloadSettings {
+impl NoloadSectionSettings {
     pub fn new(compiler: Option<Compiler>) -> Self {
         Self { compiler }
     }
@@ -189,105 +227,14 @@ impl SectionNoloadSettings {
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
-    use crate::{
-        addresses::{Rom, Size},
-        metadata::SymbolType,
-        symbols::display::{SymDisplayError, SymNoloadDisplaySettings},
-    };
-
     use super::*;
 
     #[pymethods]
-    impl SectionNoloadSettings {
+    impl NoloadSectionSettings {
         #[new]
         #[pyo3(signature = (compiler))]
         pub fn py_new(compiler: Option<Compiler>) -> Self {
             Self::new(compiler)
-        }
-    }
-
-    #[pymethods]
-    impl SectionNoload {
-        #[pyo3(name = "post_process")]
-        fn py_post_process(
-            &mut self,
-            context: &mut Context,
-        ) -> Result<(), SectionPostProcessError> {
-            self.post_process(context)
-        }
-
-        #[pyo3(name = "sym_count")]
-        pub fn py_sym_count(&self) -> usize {
-            self.noload_symbols.len()
-        }
-
-        #[pyo3(name = "get_sym_info")]
-        pub fn py_get_sym_info(
-            &self,
-            context: &Context,
-            index: usize,
-        ) -> Option<(
-            u32,
-            Option<Rom>,
-            Option<SymbolType>,
-            Option<Size>,
-            bool,
-            usize,
-            Option<String>,
-        )> {
-            let sym = self.noload_symbols.get(index);
-
-            if let Some(sym) = sym {
-                let metadata = sym.find_own_metadata(context);
-
-                Some((
-                    metadata.vram().inner(),
-                    metadata.rom(),
-                    metadata.sym_type(),
-                    metadata.size(),
-                    metadata.is_defined(),
-                    metadata.reference_counter(),
-                    metadata.parent_metadata().and_then(|x| {
-                        x.parent_segment_info()
-                            .overlay_category_name()
-                            .map(|x| x.inner().to_owned())
-                    }),
-                ))
-            } else {
-                None
-            }
-        }
-
-        #[pyo3(name = "set_sym_name")]
-        pub fn py_set_sym_name(&mut self, context: &mut Context, index: usize, new_name: String) {
-            let sym = self.noload_symbols.get(index);
-
-            if let Some(sym) = sym {
-                let metadata = sym.find_own_metadata_mut(context);
-
-                *metadata.user_declared_name_mut() = Some(new_name);
-            }
-        }
-
-        #[pyo3(name = "display_sym")]
-        pub fn py_display_sym(
-            &self,
-            context: &Context,
-            index: usize,
-            settings: &SymNoloadDisplaySettings,
-        ) -> Result<Option<String>, SymDisplayError> {
-            let sym = self.noload_symbols.get(index);
-
-            Ok(if let Some(sym) = sym {
-                Some(sym.display(context, settings)?.to_string())
-            } else {
-                None
-            })
-        }
-
-        #[pyo3(name = "label_count_for_sym")]
-        pub fn py_label_count_for_sym(&self, _sym_index: usize) -> usize {
-            0
         }
     }
 }

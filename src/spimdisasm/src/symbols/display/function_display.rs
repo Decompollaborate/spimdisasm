@@ -15,7 +15,8 @@ use crate::{
     metadata::{SegmentMetadata, SymbolMetadata, SymbolType},
     relocation::RelocationInfo,
     symbols::{
-        display::sym_common_display::WordComment, trait_symbol::RomSymbol, Symbol, SymbolFunction,
+        display::sym_common_display::WordComment, processed::FunctionSymProcessed,
+        trait_symbol::RomSymbol, RomSymbolProcessed, Symbol,
     },
 };
 
@@ -53,7 +54,7 @@ impl FunctionDisplaySettings {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FunctionDisplay<'ctx, 'sym, 'flg> {
     context: &'ctx Context,
-    sym: &'sym SymbolFunction,
+    sym: &'sym FunctionSymProcessed,
     settings: &'flg FunctionDisplaySettings,
 
     owned_segment: &'ctx SegmentMetadata,
@@ -65,7 +66,7 @@ pub struct FunctionDisplay<'ctx, 'sym, 'flg> {
 impl<'ctx, 'sym, 'flg> FunctionDisplay<'ctx, 'sym, 'flg> {
     pub(crate) fn new(
         context: &'ctx Context,
-        sym: &'sym SymbolFunction,
+        sym: &'sym FunctionSymProcessed,
         settings: &'flg FunctionDisplaySettings,
         internal_settings: InternalSymDisplSettings,
     ) -> Result<Self, SymDisplayError> {
@@ -86,7 +87,7 @@ impl<'ctx, 'sym, 'flg> FunctionDisplay<'ctx, 'sym, 'flg> {
     }
 
     #[must_use]
-    pub(crate) fn sym(&self) -> &'sym SymbolFunction {
+    pub(crate) fn sym(&self) -> &'sym FunctionSymProcessed {
         self.sym
     }
 

@@ -2,38 +2,33 @@
 /* SPDX-License-Identifier: MIT */
 
 use alloc::vec::Vec;
+use core::hash;
 
 use crate::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
-    collections::addended_ordered_map::FindSettings,
     config::{Compiler, Endian},
     context::Context,
     metadata::{GeneratedBy, ParentSectionMetadata, SymbolMetadata, SymbolType},
     parent_segment_info::ParentSegmentInfo,
-    relocation::{RelocReferencedSym, RelocationInfo, RelocationType},
     section_type::SectionType,
     str_decoding::Encoding,
+    symbols::{processed::DataSymProcessed, RomSymbolPreprocessed, SymbolPreprocessed},
 };
 
-use super::{
-    display::{InternalSymDisplSettings, SymDataDisplay, SymDataDisplaySettings, SymDisplayError},
-    symbol_post_process_error::OwnedSymbolNotFoundError,
-    trait_symbol::RomSymbol,
-    Symbol, SymbolCreationError, SymbolPostProcessError,
+use crate::symbols::{
+    trait_symbol::RomSymbol, Symbol, SymbolCreationError, SymbolPostProcessError,
 };
 
-#[derive(Debug, Clone, Hash, PartialEq)]
-pub struct SymbolData {
+#[derive(Debug, Clone)]
+pub struct DataSym {
     ranges: RomVramRange,
     raw_bytes: Vec<u8>,
     parent_segment_info: ParentSegmentInfo,
     section_type: SectionType,
-    relocs: Vec<Option<RelocationInfo>>,
-
     encoding: Encoding,
 }
 
-impl SymbolData {
+impl DataSym {
     // TODO
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn new(
@@ -44,14 +39,12 @@ impl SymbolData {
         _in_section_offset: usize,
         parent_segment_info: ParentSegmentInfo,
         section_type: SectionType,
-        properties: SymbolDataProperties,
+        properties: DataSymProperties,
     ) -> Result<Self, SymbolCreationError> {
         let size = Size::new(raw_bytes.len() as u32);
         let rom_range = AddressRange::new(rom, rom + size);
         let vram_range = AddressRange::new(vram, vram + size);
         let ranges = RomVramRange::new(rom_range, vram_range);
-
-        let relocs = vec![None; raw_bytes.len() / 4];
 
         let endian = context.global_config().endian();
 
@@ -106,136 +99,28 @@ impl SymbolData {
             raw_bytes,
             parent_segment_info,
             section_type,
-            relocs,
-
             encoding,
         })
     }
 }
 
-impl SymbolData {
-    fn generate_relocs(&mut self, context: &Context) -> Result<(), SymbolPostProcessError> {
-        if self.ranges.rom().start().inner() % 4 != 0 {
-            return Ok(());
-        }
-
-        let owned_segment = context.find_owned_segment(&self.parent_segment_info)?;
-        let metadata = owned_segment
-            .find_symbol(self.vram_range().start(), FindSettings::new(false))
-            .map_or_else(|| Err(OwnedSymbolNotFoundError::new()), Ok)?;
-        let endian = context.global_config().endian();
-
-        let sym_type = metadata.sym_type();
-
-        let should_search_for_address = sym_type.is_none_or(|x| x.can_reference_symbols());
-        let is_table = sym_type.is_some_and(|x| x.is_table());
-        let find_settings = FindSettings::new(!is_table && metadata.allow_ref_with_addend());
-
-        // TODO: improve heuristic to determine if should search for symbols
-        if should_search_for_address {
-            for (i, word_bytes) in self.raw_bytes.chunks_exact(4).enumerate() {
-                let word = endian.word_from_bytes(word_bytes);
-                let word_vram = Vram::new(word);
-
-                let valid_reference = if owned_segment.in_vram_range(word_vram) {
-                    owned_segment.find_symbol(word_vram, find_settings)
-                } else {
-                    context.find_symbol_from_any_segment(
-                        word_vram,
-                        &self.parent_segment_info,
-                        find_settings,
-                        |other_metadata| other_metadata.sym_type() != Some(SymbolType::BranchLabel),
-                    )
-                }
-                .is_some_and(|other_metadata| {
-                    (other_metadata.vram() == word_vram
-                        || other_metadata
-                            .sym_type()
-                            .is_none_or(|sym_typ| sym_typ.may_have_addend()))
-                        && other_metadata.sym_type() != Some(SymbolType::BranchLabel)
-                });
-
-                if valid_reference && !owned_segment.is_vram_ignored(word_vram) {
-                    self.relocs[i] = Some(
-                        RelocationType::R_MIPS_32
-                            .new_reloc_info(RelocReferencedSym::Address(word_vram)),
-                    );
-                }
-            }
-        }
-
-        Ok(())
-    }
-
-    pub fn post_process(&mut self, context: &mut Context) -> Result<(), SymbolPostProcessError> {
-        self.generate_relocs(context)?;
-
-        let rom = self.ranges.rom().start();
-        let vram = self.ranges.vram().start();
-        let endian = context.global_config().endian();
-
-        let owned_segment = context.find_owned_segment_mut(&self.parent_segment_info)?;
-        let metadata = owned_segment.find_symbol(vram, FindSettings::new(false));
-
-        let should_search_for_address =
-            metadata.is_some_and(|x| x.sym_type().is_none_or(|x| x.can_reference_symbols()));
-
-        if rom.inner() % 4 == 0 && should_search_for_address {
-            for (i, word_bytes) in self.raw_bytes.chunks_exact(4).enumerate() {
-                let word = endian.word_from_bytes(word_bytes);
-                let word_vram = Vram::new(word);
-                let offset = Size::new(i as u32);
-
-                if owned_segment.in_vram_range(word_vram) {
-                    if let Some(sym_metadata) =
-                        owned_segment.find_symbol_mut(word_vram, FindSettings::new(true))
-                    {
-                        sym_metadata.add_reference_symbol(
-                            vram,
-                            self.parent_segment_info.clone(),
-                            rom + offset,
-                        );
-                    }
-                } else {
-                    // TODO
-                }
-            }
-        }
-
-        Ok(())
+impl DataSym {
+    pub fn post_process(
+        self,
+        context: &mut Context,
+    ) -> Result<DataSymProcessed, SymbolPostProcessError> {
+        DataSymProcessed::new(
+            context,
+            self.ranges,
+            self.raw_bytes,
+            self.parent_segment_info,
+            self.section_type,
+            self.encoding,
+        )
     }
 }
 
-impl SymbolData {
-    pub(crate) fn raw_bytes(&self) -> &[u8] {
-        &self.raw_bytes
-    }
-
-    pub(crate) fn encoding(&self) -> Encoding {
-        self.encoding
-    }
-}
-
-impl<'ctx, 'sym, 'flg> SymbolData {
-    pub fn display(
-        &'sym self,
-        context: &'ctx Context,
-        settings: &'flg SymDataDisplaySettings,
-    ) -> Result<SymDataDisplay<'ctx, 'sym, 'flg>, SymDisplayError> {
-        self.display_internal(context, settings, InternalSymDisplSettings::new(false))
-    }
-
-    pub(crate) fn display_internal(
-        &'sym self,
-        context: &'ctx Context,
-        settings: &'flg SymDataDisplaySettings,
-        internal_settings: InternalSymDisplSettings,
-    ) -> Result<SymDataDisplay<'ctx, 'sym, 'flg>, SymDisplayError> {
-        SymDataDisplay::new(context, self, settings, internal_settings)
-    }
-}
-
-impl Symbol for SymbolData {
+impl Symbol for DataSym {
     fn vram_range(&self) -> &AddressRange<Vram> {
         self.ranges.vram()
     }
@@ -250,19 +135,43 @@ impl Symbol for SymbolData {
     }
 }
 
-impl RomSymbol for SymbolData {
+impl RomSymbol for DataSym {
     #[must_use]
     fn rom_vram_range(&self) -> &RomVramRange {
         &self.ranges
     }
+}
 
-    fn relocs(&self) -> &[Option<RelocationInfo>] {
-        &self.relocs
+impl SymbolPreprocessed for DataSym {}
+impl RomSymbolPreprocessed for DataSym {}
+
+impl hash::Hash for DataSym {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.parent_segment_info.hash(state);
+        self.ranges.hash(state);
+    }
+}
+impl PartialEq for DataSym {
+    fn eq(&self, other: &Self) -> bool {
+        self.parent_segment_info == other.parent_segment_info && self.ranges == other.ranges
+    }
+}
+impl PartialOrd for DataSym {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        // Compare segment info first, so symbols get sorted by segment
+        match self
+            .parent_segment_info
+            .partial_cmp(&other.parent_segment_info)
+        {
+            Some(core::cmp::Ordering::Equal) => {}
+            ord => return ord,
+        }
+        self.ranges.partial_cmp(&other.ranges)
     }
 }
 
 #[derive(Debug, Clone, Hash, PartialEq)]
-pub(crate) struct SymbolDataProperties {
+pub(crate) struct DataSymProperties {
     pub parent_metadata: ParentSectionMetadata,
     pub compiler: Option<Compiler>,
     pub auto_pad_by: Option<Vram>,
@@ -270,7 +179,7 @@ pub(crate) struct SymbolDataProperties {
     pub encoding: Encoding,
 }
 
-impl SymbolDataProperties {
+impl DataSymProperties {
     fn apply_to_metadata(self, metadata: &mut SymbolMetadata) {
         metadata.set_parent_metadata(self.parent_metadata);
 

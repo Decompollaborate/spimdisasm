@@ -7,7 +7,11 @@ use spimdisasm::{
     addresses::{Rom, Size, Vram},
     context::Context,
     metadata::{RodataMigrationBehavior, SymbolType},
-    sections::{SectionData, SectionExecutable, SectionNoload},
+    sections::{
+        preprocessed::{DataSection, ExecutableSection, NoloadSection},
+        processed::{DataSectionProcessed, ExecutableSectionProcessed, NoloadSectionProcessed},
+        SectionPostProcessError,
+    },
 };
 
 pub enum TestSection {
@@ -47,27 +51,50 @@ impl TestSegmentInfo {
 
 pub struct SegmentData {
     pub name: String,
-    pub text_sections: Vec<SectionExecutable>,
-    pub data_sections: Vec<SectionData>,
-    pub rodata_sections: Vec<SectionData>,
-    pub bss_sections: Vec<SectionNoload>,
+    pub text_sections: Vec<ExecutableSection>,
+    pub data_sections: Vec<DataSection>,
+    pub rodata_sections: Vec<DataSection>,
+    pub bss_sections: Vec<NoloadSection>,
 }
 
 impl SegmentData {
-    pub fn post_process(&mut self, context: &mut Context) {
-        for section in self.text_sections.iter_mut() {
-            section.post_process(context).unwrap();
-        }
-        for section in self.data_sections.iter_mut() {
-            section.post_process(context).unwrap();
-        }
-        for section in self.rodata_sections.iter_mut() {
-            section.post_process(context).unwrap();
-        }
-        for section in self.bss_sections.iter_mut() {
-            section.post_process(context).unwrap();
+    pub fn post_process(self, context: &mut Context) -> SegmentDataProcessed {
+        SegmentDataProcessed {
+            name: self.name,
+            text_sections: self
+                .text_sections
+                .into_iter()
+                .map(|x| x.post_process(context))
+                .collect::<Result<Vec<ExecutableSectionProcessed>, SectionPostProcessError>>()
+                .unwrap(),
+            data_sections: self
+                .data_sections
+                .into_iter()
+                .map(|x| x.post_process(context))
+                .collect::<Result<Vec<DataSectionProcessed>, SectionPostProcessError>>()
+                .unwrap(),
+            rodata_sections: self
+                .rodata_sections
+                .into_iter()
+                .map(|x| x.post_process(context))
+                .collect::<Result<Vec<DataSectionProcessed>, SectionPostProcessError>>()
+                .unwrap(),
+            bss_sections: self
+                .bss_sections
+                .into_iter()
+                .map(|x| x.post_process(context))
+                .collect::<Result<Vec<NoloadSectionProcessed>, SectionPostProcessError>>()
+                .unwrap(),
         }
     }
+}
+
+pub struct SegmentDataProcessed {
+    pub name: String,
+    pub text_sections: Vec<ExecutableSectionProcessed>,
+    pub data_sections: Vec<DataSectionProcessed>,
+    pub rodata_sections: Vec<DataSectionProcessed>,
+    pub bss_sections: Vec<NoloadSectionProcessed>,
 }
 
 pub struct UserSymbolInfo {

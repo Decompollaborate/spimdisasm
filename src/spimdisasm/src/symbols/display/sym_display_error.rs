@@ -6,7 +6,7 @@ use core::{error, fmt};
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::context::OwnedSegmentNotFoundError;
+use crate::{addresses::Vram, context::OwnedSegmentNotFoundError};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
@@ -14,6 +14,13 @@ use crate::context::OwnedSegmentNotFoundError;
 pub enum SymDisplayError {
     OwnedSegmentNotFound(OwnedSegmentNotFoundError),
     SelfSymNotFound(),
+
+    #[cfg(feature = "pyo3")]
+    NotPostProcessedYet {
+        name: String,
+        vram_start: Vram,
+        vram_end: Vram,
+    },
 }
 
 impl fmt::Display for SymDisplayError {
@@ -24,6 +31,16 @@ impl fmt::Display for SymDisplayError {
                 // TODO: more info
                 write!(f, "Can't find symbol")
             }
+            #[cfg(feature = "pyo3")]
+            SymDisplayError::NotPostProcessedYet {
+                name,
+                vram_start,
+                vram_end,
+            } => write!(
+                f,
+                "Section {} ({:?} {:?}) has not been processed yet.",
+                name, vram_start, vram_end
+            ),
         }
     }
 }
@@ -46,6 +63,7 @@ pub(crate) mod python_bindings {
 
     pyo3::create_exception!(spimdisasm, OwnedSegmentNotFound, SymDisplayError);
     pyo3::create_exception!(spimdisasm, SelfSymNotFound, SymDisplayError);
+    pyo3::create_exception!(spimdisasm, NotPostProcessedYet, SymDisplayError);
 
     impl std::convert::From<super::SymDisplayError> for PyErr {
         fn from(err: super::SymDisplayError) -> PyErr {
@@ -55,6 +73,9 @@ pub(crate) mod python_bindings {
                 }
                 super::SymDisplayError::SelfSymNotFound(..) => {
                     SelfSymNotFound::new_err(err.to_string())
+                }
+                super::SymDisplayError::NotPostProcessedYet { .. } => {
+                    NotPostProcessedYet::new_err(err.to_string())
                 }
             }
         }
