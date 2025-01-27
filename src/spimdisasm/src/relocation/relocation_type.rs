@@ -1,11 +1,15 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+#[cfg(feature = "pyo3")]
+use pyo3::prelude::*;
+
 use super::{RelocReferencedSym, RelocationInfo};
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-#[allow(non_camel_case_types)] // TODO: remove?
+#[allow(non_camel_case_types)]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", eq))]
 pub enum RelocationType {
     /// Official description: No reloc.
     ///
@@ -162,8 +166,8 @@ impl RelocationType {
     }
 
     #[must_use]
-    pub fn is_none(&self) -> bool {
-        *self == RelocationType::R_MIPS_NONE
+    pub const fn is_none(&self) -> bool {
+        matches!(self, RelocationType::R_MIPS_NONE)
     }
 
     #[must_use]
@@ -205,7 +209,71 @@ impl RelocationType {
     }
 
     #[must_use]
+    pub(crate) fn valid_for_function(&self) -> bool {
+        match *self {
+            RelocationType::R_MIPS_NONE => true,
+            RelocationType::R_MIPS_16 => true, // TODO: check
+            RelocationType::R_MIPS_32 => false,
+            RelocationType::R_MIPS_REL32 => false, // TODO: check
+            RelocationType::R_MIPS_26 => true,
+            RelocationType::R_MIPS_HI16 => true,
+            RelocationType::R_MIPS_LO16 => true,
+            RelocationType::R_MIPS_GPREL16 => true,
+            RelocationType::R_MIPS_LITERAL => true, // TODO: check
+            RelocationType::R_MIPS_GOT16 => true,
+            RelocationType::R_MIPS_PC16 => true,
+            RelocationType::R_MIPS_CALL16 => true,
+            RelocationType::R_MIPS_GPREL32 => false,
+            RelocationType::R_MIPS_GOT_HI16 => true,
+            RelocationType::R_MIPS_GOT_LO16 => true,
+            RelocationType::R_MIPS_CALL_HI16 => true,
+            RelocationType::R_MIPS_CALL_LO16 => true,
+            RelocationType::R_CUSTOM_CONSTANT_HI => true,
+            RelocationType::R_CUSTOM_CONSTANT_LO => true,
+        }
+    }
+
+    #[must_use]
+    pub(crate) fn valid_for_data_sym(&self) -> bool {
+        match *self {
+            RelocationType::R_MIPS_NONE => true,
+            RelocationType::R_MIPS_16 => true, // TODO: check
+            RelocationType::R_MIPS_32 => true,
+            RelocationType::R_MIPS_REL32 => true, // TODO: check
+            RelocationType::R_MIPS_26 => false,
+            RelocationType::R_MIPS_HI16 => false,
+            RelocationType::R_MIPS_LO16 => false,
+            RelocationType::R_MIPS_GPREL16 => false,
+            RelocationType::R_MIPS_LITERAL => true, // TODO: check
+            RelocationType::R_MIPS_GOT16 => false,
+            RelocationType::R_MIPS_PC16 => false,
+            RelocationType::R_MIPS_CALL16 => false,
+            RelocationType::R_MIPS_GPREL32 => true,
+            RelocationType::R_MIPS_GOT_HI16 => false,
+            RelocationType::R_MIPS_GOT_LO16 => false,
+            RelocationType::R_MIPS_CALL_HI16 => false,
+            RelocationType::R_MIPS_CALL_LO16 => false,
+            RelocationType::R_CUSTOM_CONSTANT_HI => false,
+            RelocationType::R_CUSTOM_CONSTANT_LO => false,
+        }
+    }
+
+    #[must_use]
     pub fn new_reloc_info(self, referenced_sym: RelocReferencedSym) -> RelocationInfo {
         RelocationInfo::new(self, referenced_sym)
+    }
+}
+
+#[cfg(feature = "pyo3")]
+pub(crate) mod python_bindings {
+    use super::*;
+
+    #[pymethods]
+    impl RelocationType {
+        #[pyo3(name = "from_name")]
+        #[staticmethod]
+        pub fn py_from_name(name: &str) -> Option<Self> {
+            Self::from_name(name)
+        }
     }
 }

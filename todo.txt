@@ -1,7 +1,7 @@
 Implement constants
-Implement reloc overrides
 Address #[allow(dead_code)]
-Figure out how to address padding strings between 8-aligned strings
+Figure out how to deal with padding between 8-aligned strings
+Make the string guesser less agressive
 Test pic code
 Test gp_rel code
 Test `j func` code

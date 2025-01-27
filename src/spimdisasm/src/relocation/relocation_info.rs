@@ -3,6 +3,9 @@
 
 use core::fmt;
 
+#[cfg(feature = "pyo3")]
+use pyo3::prelude::*;
+
 use crate::{
     addresses::Vram,
     collections::addended_ordered_map::FindSettings,
@@ -16,6 +19,7 @@ use crate::{
 use super::{RelocReferencedSym, RelocationType};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct RelocationInfo {
     reloc_type: RelocationType,
     referenced_sym: RelocReferencedSym,

@@ -55,6 +55,9 @@ fn spimdisasm(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<context::ContextBuilder>()?;
     m.add_class::<context::Context>()?;
 
+    m.add_class::<relocation::RelocationType>()?;
+    m.add_class::<relocation::python_bindings::py_user_relocs::PyUserRelocs>()?;
+
     m.add_class::<metadata::OverlayCategoryName>()?;
     m.add_class::<parent_segment_info::ParentSegmentInfo>()?;
 

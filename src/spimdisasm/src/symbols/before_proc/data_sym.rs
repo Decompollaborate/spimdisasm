@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::vec::Vec;
+use alloc::{collections::btree_map::BTreeMap, vec::Vec};
 use core::hash;
 
 use crate::{
@@ -10,6 +10,7 @@ use crate::{
     context::Context,
     metadata::{GeneratedBy, ParentSectionMetadata, SymbolMetadata, SymbolType},
     parent_segment_info::ParentSegmentInfo,
+    relocation::RelocationInfo,
     section_type::SectionType,
     str_decoding::Encoding,
     symbols::{processed::DataSymProcessed, RomSymbolPreprocessed, SymbolPreprocessed},
@@ -109,9 +110,10 @@ impl DataSym {
 }
 
 impl DataSym {
-    pub fn post_process(
+    pub(crate) fn post_process(
         self,
         context: &mut Context,
+        user_relocs: &BTreeMap<Rom, RelocationInfo>,
     ) -> Result<DataSymProcessed, SymbolPostProcessError> {
         DataSymProcessed::new(
             context,
@@ -120,6 +122,7 @@ impl DataSym {
             self.parent_segment_info,
             self.section_type,
             self.encoding,
+            user_relocs,
         )
     }
 }

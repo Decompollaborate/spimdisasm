@@ -1,6 +1,8 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use std::collections::BTreeMap;
+
 use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
 use spimdisasm::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
@@ -157,7 +159,10 @@ fn test_section_text_1() {
         )
         .unwrap();
 
-    let section_text = section_text.post_process(&mut context).unwrap();
+    let user_relocs = BTreeMap::new();
+    let section_text = section_text
+        .post_process(&mut context, &user_relocs)
+        .unwrap();
 
     let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
     for func in section_text.functions() {
@@ -260,7 +265,10 @@ fn test_section_text_lui_delay_slot() {
         )
         .unwrap();
 
-    let section_text = section_text.post_process(&mut context).unwrap();
+    let user_relocs = BTreeMap::new();
+    let section_text = section_text
+        .post_process(&mut context, &user_relocs)
+        .unwrap();
 
     let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
     for func in section_text.functions() {
@@ -407,7 +415,10 @@ fn test_section_text_pairing_on_delay_slot() {
         )
         .unwrap();
 
-    let section_text = section_text.post_process(&mut context).unwrap();
+    let user_relocs = BTreeMap::new();
+    let section_text = section_text
+        .post_process(&mut context, &user_relocs)
+        .unwrap();
 
     let mut disassembly = ".section .text\n".to_string();
     let display_settings = FunctionDisplaySettings::new(InstructionDisplayFlags::new());
@@ -555,7 +566,10 @@ fn test_section_text_lui_paired_with_lw_and_ori() {
         )
         .unwrap();
 
-    let section_text = section_text.post_process(&mut context).unwrap();
+    let user_relocs = BTreeMap::new();
+    let section_text = section_text
+        .post_process(&mut context, &user_relocs)
+        .unwrap();
 
     let mut disassembly = ".section .text\n".to_string();
     let display_settings = FunctionDisplaySettings::new(InstructionDisplayFlags::new());

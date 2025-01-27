@@ -1,6 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use alloc::collections::btree_map::BTreeMap;
 use alloc::{string::String, vec::Vec};
 use core::hash;
 
@@ -16,6 +17,7 @@ use crate::config::{Compiler, Endian};
 use crate::context::Context;
 use crate::metadata::{ParentSectionMetadata, SegmentMetadata};
 use crate::parent_segment_info::ParentSegmentInfo;
+use crate::relocation::RelocationInfo;
 use crate::section_type::SectionType;
 use crate::sections::processed::ExecutableSectionProcessed;
 use crate::sections::{RomSectionPreprocessed, SectionPreprocessed};
@@ -145,6 +147,7 @@ impl ExecutableSection {
     pub fn post_process(
         self,
         context: &mut Context,
+        user_relocs: &BTreeMap<Rom, RelocationInfo>,
     ) -> Result<ExecutableSectionProcessed, SectionPostProcessError> {
         ExecutableSectionProcessed::new(
             context,
@@ -153,6 +156,7 @@ impl ExecutableSection {
             self.parent_segment_info,
             self.functions,
             self.symbol_vrams,
+            user_relocs,
         )
     }
 }

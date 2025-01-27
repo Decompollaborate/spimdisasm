@@ -10,7 +10,10 @@ use pyo3::prelude::*;
 
 use crate::{
     context::OwnedSegmentNotFoundError,
-    symbols::{OwnedSymbolNotFoundError, SymbolPostProcessError},
+    symbols::{
+        InvalidRelocForSectionError, OwnedSymbolNotFoundError, SymbolPostProcessError,
+        UnalignedUserRelocError,
+    },
 };
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -19,6 +22,8 @@ use crate::{
 pub enum SectionPostProcessError {
     OwnedSegmentNotFound(OwnedSegmentNotFoundError),
     OwnedSymbolNotFound(OwnedSymbolNotFoundError),
+    UnalignedUserReloc(UnalignedUserRelocError),
+    InvalidRelocForSection(InvalidRelocForSectionError),
 
     #[cfg(feature = "pyo3")]
     AlreadyPostProcessed {
@@ -38,6 +43,12 @@ impl fmt::Display for SectionPostProcessError {
             }
             SectionPostProcessError::OwnedSymbolNotFound(owned_symbol_not_found) => {
                 write!(f, "{}", owned_symbol_not_found)
+            }
+            SectionPostProcessError::UnalignedUserReloc(unaligned_user_reloc_error) => {
+                write!(f, "{}", unaligned_user_reloc_error)
+            }
+            SectionPostProcessError::InvalidRelocForSection(invalid_reloc_for_section_error) => {
+                write!(f, "{}", invalid_reloc_for_section_error)
             }
             #[cfg(feature = "pyo3")]
             SectionPostProcessError::AlreadyPostProcessed {
@@ -69,6 +80,12 @@ impl From<SymbolPostProcessError> for SectionPostProcessError {
             }
             SymbolPostProcessError::OwnedSymbolNotFound(owned_symbol_not_found) => {
                 SectionPostProcessError::OwnedSymbolNotFound(owned_symbol_not_found)
+            }
+            SymbolPostProcessError::UnalignedUserReloc(unaligned_user_reloc_error) => {
+                SectionPostProcessError::UnalignedUserReloc(unaligned_user_reloc_error)
+            }
+            SymbolPostProcessError::InvalidRelocForSection(invalid_reloc_for_section_error) => {
+                SectionPostProcessError::InvalidRelocForSection(invalid_reloc_for_section_error)
             }
         }
     }

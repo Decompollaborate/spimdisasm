@@ -1,11 +1,11 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::vec::Vec;
+use alloc::{collections::btree_map::BTreeMap, vec::Vec};
 use core::hash;
 
 use crate::{
-    addresses::{AddressRange, RomVramRange, Size, Vram},
+    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     collections::addended_ordered_map::FindSettings,
     context::Context,
     metadata::SymbolType,
@@ -17,8 +17,8 @@ use crate::{
         display::{
             InternalSymDisplSettings, SymDataDisplay, SymDataDisplaySettings, SymDisplayError,
         },
-        OwnedSymbolNotFoundError, RomSymbol, RomSymbolProcessed, Symbol, SymbolPostProcessError,
-        SymbolProcessed,
+        InvalidRelocForSectionError, OwnedSymbolNotFoundError, RomSymbol, RomSymbolProcessed,
+        Symbol, SymbolPostProcessError, SymbolProcessed, UnalignedUserRelocError,
     },
 };
 
@@ -41,8 +41,37 @@ impl DataSymProcessed {
         parent_segment_info: ParentSegmentInfo,
         section_type: SectionType,
         encoding: Encoding,
+        user_relocs: &BTreeMap<Rom, RelocationInfo>,
     ) -> Result<Self, SymbolPostProcessError> {
-        let relocs = Self::generate_relocs(context, &ranges, &raw_bytes, &parent_segment_info)?;
+        let mut relocs = Self::generate_relocs(context, &ranges, &raw_bytes, &parent_segment_info)?;
+
+        if !relocs.is_empty() {
+            for (reloc_rom, reloc_info) in user_relocs.range(*ranges.rom()) {
+                if reloc_rom.inner() % 4 != 0 {
+                    return Err(SymbolPostProcessError::UnalignedUserReloc(
+                        UnalignedUserRelocError::new(*reloc_rom, reloc_info.reloc_type()),
+                    ));
+                }
+
+                if !reloc_info.reloc_type().valid_for_data_sym() {
+                    return Err(SymbolPostProcessError::InvalidRelocForSection(
+                        InvalidRelocForSectionError::new(
+                            *reloc_rom,
+                            reloc_info.reloc_type(),
+                            section_type,
+                        ),
+                    ));
+                }
+
+                let reloc_index = (*reloc_rom - ranges.rom().start()).inner() as usize / 4;
+                assert!(reloc_index < relocs.len());
+                relocs[reloc_index] = if reloc_info.reloc_type().is_none() {
+                    None
+                } else {
+                    Some(reloc_info.clone())
+                };
+            }
+        }
 
         Self::update_referenced_symbols(context, &ranges, &raw_bytes, &parent_segment_info)?;
 

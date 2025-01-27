@@ -1,6 +1,8 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use std::collections::BTreeMap;
+
 use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
 use spimdisasm::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
@@ -275,7 +277,10 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
         )
         .unwrap();
 
-    let section_text = section_text.post_process(&mut context).unwrap();
+    let user_relocs = BTreeMap::new();
+    let section_text = section_text
+        .post_process(&mut context, &user_relocs)
+        .unwrap();
 
     assert_eq!(section_text.functions().len(), 1);
 

@@ -52,7 +52,7 @@ impl NoloadSym {
 }
 
 impl NoloadSym {
-    pub fn post_process(
+    pub(crate) fn post_process(
         self,
         context: &mut Context,
     ) -> Result<NoloadSymProcessed, SymbolPostProcessError> {

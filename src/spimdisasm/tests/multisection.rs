@@ -1,6 +1,8 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use std::collections::BTreeMap;
+
 use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
 use spimdisasm::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
@@ -182,10 +184,12 @@ impl Sections {
                 .unwrap()
         });
 
-        let text = text.map(|x| x.post_process(&mut context).unwrap());
-        let data = data.map(|x| x.post_process(&mut context).unwrap());
-        let rodata = rodata.map(|x| x.post_process(&mut context).unwrap());
-        let gcc_except_table = gcc_except_table.map(|x| x.post_process(&mut context).unwrap());
+        let user_relocs = BTreeMap::new();
+        let text = text.map(|x| x.post_process(&mut context, &user_relocs).unwrap());
+        let data = data.map(|x| x.post_process(&mut context, &user_relocs).unwrap());
+        let rodata = rodata.map(|x| x.post_process(&mut context, &user_relocs).unwrap());
+        let gcc_except_table =
+            gcc_except_table.map(|x| x.post_process(&mut context, &user_relocs).unwrap());
         let bss = bss.map(|x| x.post_process(&mut context).unwrap());
 
         Self {

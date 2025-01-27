@@ -7,6 +7,7 @@ use crate::{
     addresses::{Rom, Size},
     context::Context,
     metadata::SymbolType,
+    relocation::python_bindings::py_user_relocs::PyUserRelocs,
     sections::{
         before_proc::DataSection, processed::DataSectionProcessed, Section, SectionPostProcessError,
     },
@@ -48,12 +49,18 @@ impl PyDataSection {
 #[pymethods]
 impl PyDataSection {
     #[pyo3(name = "post_process")]
-    fn py_post_process(&mut self, context: &mut Context) -> Result<(), SectionPostProcessError> {
+    fn py_post_process(
+        &mut self,
+        context: &mut Context,
+        user_relocs: &PyUserRelocs,
+    ) -> Result<(), SectionPostProcessError> {
         let section = core::mem::replace(&mut self.inner, PyDataSectionInner::Invalid);
 
         let new_value = match section {
             PyDataSectionInner::Invalid => return Err(SectionPostProcessError::InvalidState()),
-            PyDataSectionInner::Preprocessed(data_section) => data_section.post_process(context)?,
+            PyDataSectionInner::Preprocessed(data_section) => {
+                data_section.post_process(context, user_relocs.inner())?
+            }
             PyDataSectionInner::Processed(data_section_processed) => {
                 return Err(SectionPostProcessError::AlreadyPostProcessed {
                     name: data_section_processed.name().to_string(),

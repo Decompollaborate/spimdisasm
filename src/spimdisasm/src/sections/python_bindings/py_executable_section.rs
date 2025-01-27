@@ -8,6 +8,7 @@ use crate::{
     collections::addended_ordered_map::FindSettings,
     context::Context,
     metadata::SymbolType,
+    relocation::python_bindings::py_user_relocs::PyUserRelocs,
     sections::{
         before_proc::ExecutableSection, processed::ExecutableSectionProcessed, Section,
         SectionPostProcessError,
@@ -53,14 +54,20 @@ impl PyExecutableSection {
 #[pymethods]
 impl PyExecutableSection {
     #[pyo3(name = "post_process")]
-    fn py_post_process(&mut self, context: &mut Context) -> Result<(), SectionPostProcessError> {
+    fn py_post_process(
+        &mut self,
+        context: &mut Context,
+        user_relocs: &PyUserRelocs,
+    ) -> Result<(), SectionPostProcessError> {
         let section = core::mem::replace(&mut self.inner, PyExecutableSectionInner::Invalid);
 
         let new_value = match section {
             PyExecutableSectionInner::Invalid => {
                 return Err(SectionPostProcessError::InvalidState())
             }
-            PyExecutableSectionInner::Preprocessed(section) => section.post_process(context)?,
+            PyExecutableSectionInner::Preprocessed(section) => {
+                section.post_process(context, user_relocs.inner())?
+            }
             PyExecutableSectionInner::Processed(section) => {
                 return Err(SectionPostProcessError::AlreadyPostProcessed {
                     name: section.name().to_string(),

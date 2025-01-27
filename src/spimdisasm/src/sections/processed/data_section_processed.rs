@@ -1,14 +1,15 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{string::String, vec::Vec};
+use alloc::{collections::btree_map::BTreeMap, string::String, vec::Vec};
 use core::hash;
 
 use crate::{
-    addresses::{AddressRange, RomVramRange, Vram},
+    addresses::{AddressRange, Rom, RomVramRange, Vram},
     collections::unordered_set::UnorderedSet,
     context::Context,
     parent_segment_info::ParentSegmentInfo,
+    relocation::RelocationInfo,
     section_type::SectionType,
     sections::{
         RomSection, RomSectionProcessed, Section, SectionPostProcessError, SectionProcessed,
@@ -31,6 +32,7 @@ pub struct DataSectionProcessed {
 }
 
 impl DataSectionProcessed {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         context: &mut Context,
         name: String,
@@ -39,10 +41,11 @@ impl DataSectionProcessed {
         section_type: SectionType,
         data_symbols: Vec<DataSym>,
         symbol_vrams: UnorderedSet<Vram>,
+        user_relocs: &BTreeMap<Rom, RelocationInfo>,
     ) -> Result<Self, SectionPostProcessError> {
         let data_symbols = data_symbols
             .into_iter()
-            .map(|x| x.post_process(context))
+            .map(|x| x.post_process(context, user_relocs))
             .collect::<Result<Vec<DataSymProcessed>, SymbolPostProcessError>>()?;
 
         Ok(Self {

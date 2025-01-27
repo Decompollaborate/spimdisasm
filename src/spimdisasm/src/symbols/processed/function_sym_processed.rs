@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::vec::Vec;
+use alloc::{collections::btree_map::BTreeMap, vec::Vec};
 use core::hash;
 use rabbitizer::Instruction;
 
@@ -17,7 +17,8 @@ use crate::{
         display::{
             FunctionDisplay, FunctionDisplaySettings, InternalSymDisplSettings, SymDisplayError,
         },
-        RomSymbol, RomSymbolProcessed, Symbol, SymbolPostProcessError, SymbolProcessed,
+        InvalidRelocForSectionError, RomSymbol, RomSymbolProcessed, Symbol, SymbolPostProcessError,
+        SymbolProcessed, UnalignedUserRelocError,
     },
 };
 
@@ -41,8 +42,9 @@ impl FunctionSymProcessed {
         instructions: Vec<Instruction>,
         parent_segment_info: ParentSegmentInfo,
         instr_analysis: InstructionAnalysisResult,
+        user_relocs: &BTreeMap<Rom, RelocationInfo>,
     ) -> Result<Self, SymbolPostProcessError> {
-        let relocs = Self::generate_relocs(
+        let mut relocs = Self::generate_relocs(
             context,
             &ranges,
             &instructions,
@@ -50,6 +52,34 @@ impl FunctionSymProcessed {
             &instr_analysis,
         )?;
         let labels = Self::find_and_update_labels(context, &ranges, &parent_segment_info)?;
+
+        if !relocs.is_empty() {
+            for (reloc_rom, reloc_info) in user_relocs.range(*ranges.rom()) {
+                if reloc_rom.inner() % 4 != 0 {
+                    return Err(SymbolPostProcessError::UnalignedUserReloc(
+                        UnalignedUserRelocError::new(*reloc_rom, reloc_info.reloc_type()),
+                    ));
+                }
+
+                if !reloc_info.reloc_type().valid_for_function() {
+                    return Err(SymbolPostProcessError::InvalidRelocForSection(
+                        InvalidRelocForSectionError::new(
+                            *reloc_rom,
+                            reloc_info.reloc_type(),
+                            SECTION_TYPE,
+                        ),
+                    ));
+                }
+
+                let reloc_index = (*reloc_rom - ranges.rom().start()).inner() as usize / 4;
+                assert!(reloc_index < relocs.len());
+                relocs[reloc_index] = if reloc_info.reloc_type().is_none() {
+                    None
+                } else {
+                    Some(reloc_info.clone())
+                };
+            }
+        }
 
         Ok(Self {
             ranges,

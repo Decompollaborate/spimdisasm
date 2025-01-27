@@ -18,6 +18,7 @@ use crate::{
     context::Context,
     metadata::{ParentSectionMetadata, SegmentMetadata, SymbolType},
     parent_segment_info::ParentSegmentInfo,
+    relocation::RelocationInfo,
     section_type::SectionType,
     sections::{
         processed::DataSectionProcessed, RomSection, RomSectionPreprocessed, Section,
@@ -393,6 +394,7 @@ impl DataSection {
     pub fn post_process(
         self,
         context: &mut Context,
+        user_relocs: &BTreeMap<Rom, RelocationInfo>,
     ) -> Result<DataSectionProcessed, SectionPostProcessError> {
         DataSectionProcessed::new(
             context,
@@ -402,6 +404,7 @@ impl DataSection {
             self.section_type,
             self.data_symbols,
             self.symbol_vrams,
+            user_relocs,
         )
     }
 }

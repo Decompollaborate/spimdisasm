@@ -3,6 +3,8 @@
 
 #![allow(dead_code)]
 
+use std::collections::BTreeMap;
+
 use spimdisasm::{
     addresses::{Rom, Size, Vram},
     context::Context,
@@ -59,24 +61,25 @@ pub struct SegmentData {
 
 impl SegmentData {
     pub fn post_process(self, context: &mut Context) -> SegmentDataProcessed {
+        let user_relocs = BTreeMap::new();
         SegmentDataProcessed {
             name: self.name,
             text_sections: self
                 .text_sections
                 .into_iter()
-                .map(|x| x.post_process(context))
+                .map(|x| x.post_process(context, &user_relocs))
                 .collect::<Result<Vec<ExecutableSectionProcessed>, SectionPostProcessError>>()
                 .unwrap(),
             data_sections: self
                 .data_sections
                 .into_iter()
-                .map(|x| x.post_process(context))
+                .map(|x| x.post_process(context, &user_relocs))
                 .collect::<Result<Vec<DataSectionProcessed>, SectionPostProcessError>>()
                 .unwrap(),
             rodata_sections: self
                 .rodata_sections
                 .into_iter()
-                .map(|x| x.post_process(context))
+                .map(|x| x.post_process(context, &user_relocs))
                 .collect::<Result<Vec<DataSectionProcessed>, SectionPostProcessError>>()
                 .unwrap(),
             bss_sections: self

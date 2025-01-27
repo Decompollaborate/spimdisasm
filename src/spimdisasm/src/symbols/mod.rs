@@ -9,7 +9,10 @@ mod symbol_post_process_error;
 mod trait_symbol;
 
 pub use symbol_creation_error::SymbolCreationError;
-pub use symbol_post_process_error::{OwnedSymbolNotFoundError, SymbolPostProcessError};
+pub use symbol_post_process_error::{
+    InvalidRelocForSectionError, OwnedSymbolNotFoundError, SymbolPostProcessError,
+    UnalignedUserRelocError,
+};
 pub use trait_symbol::{
     RomSymbol, RomSymbolPreprocessed, RomSymbolProcessed, Symbol, SymbolPreprocessed,
     SymbolProcessed,

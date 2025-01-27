@@ -7,6 +7,7 @@ use crate::{
     addresses::{Rom, Size},
     context::Context,
     metadata::SymbolType,
+    relocation::python_bindings::py_user_relocs::PyUserRelocs,
     sections::{
         before_proc::NoloadSection, processed::NoloadSectionProcessed, Section,
         SectionPostProcessError,
@@ -25,7 +26,10 @@ enum PyNoloadSectionInner {
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, PartialOrd)]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", name = "DataSection"))]
+#[cfg_attr(
+    feature = "pyo3",
+    pyclass(module = "spimdisasm", name = "NoloadSection")
+)]
 pub struct PyNoloadSection {
     inner: PyNoloadSectionInner,
 }
@@ -41,7 +45,11 @@ impl PyNoloadSection {
 #[pymethods]
 impl PyNoloadSection {
     #[pyo3(name = "post_process")]
-    fn py_post_process(&mut self, context: &mut Context) -> Result<(), SectionPostProcessError> {
+    fn py_post_process(
+        &mut self,
+        context: &mut Context,
+        _user_relocs: &PyUserRelocs,
+    ) -> Result<(), SectionPostProcessError> {
         let section = core::mem::replace(&mut self.inner, PyNoloadSectionInner::Invalid);
 
         let new_value = match section {

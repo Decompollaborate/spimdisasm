@@ -8,3 +8,6 @@ mod relocation_type;
 pub use reloc_referenced_sym::RelocReferencedSym;
 pub use relocation_info::RelocationInfo;
 pub use relocation_type::RelocationType;
+
+#[cfg(feature = "pyo3")]
+pub mod python_bindings;
