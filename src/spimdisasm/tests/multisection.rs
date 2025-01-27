@@ -9,7 +9,7 @@ use spimdisasm::{
     metadata::SegmentMetadata,
     parent_segment_info::ParentSegmentInfo,
     sections::{
-        preprocessed::{DataSectionSettings, ExecutableSectionSettings, NoloadSectionSettings},
+        before_proc::{DataSectionSettings, ExecutableSectionSettings, NoloadSectionSettings},
         processed::{DataSectionProcessed, ExecutableSectionProcessed, NoloadSectionProcessed},
     },
     symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings, SymNoloadDisplaySettings},

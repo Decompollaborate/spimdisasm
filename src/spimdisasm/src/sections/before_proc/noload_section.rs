@@ -18,7 +18,7 @@ use crate::{
     section_type::SectionType,
     sections::{processed::NoloadSectionProcessed, SectionPreprocessed},
     symbols::{
-        preprocessed::{noload_sym::NoloadSymProperties, NoloadSym},
+        before_proc::{noload_sym::NoloadSymProperties, NoloadSym},
         Symbol, SymbolPreprocessed,
     },
 };

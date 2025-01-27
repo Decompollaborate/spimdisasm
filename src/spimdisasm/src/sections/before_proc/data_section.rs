@@ -25,7 +25,7 @@ use crate::{
     },
     str_decoding::Encoding,
     symbols::{
-        preprocessed::{data_sym::DataSymProperties, DataSym},
+        before_proc::{data_sym::DataSymProperties, DataSym},
         Symbol, SymbolPreprocessed,
     },
 };

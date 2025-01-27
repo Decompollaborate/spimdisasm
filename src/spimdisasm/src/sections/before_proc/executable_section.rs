@@ -21,7 +21,7 @@ use crate::sections::processed::ExecutableSectionProcessed;
 use crate::sections::{RomSectionPreprocessed, SectionPreprocessed};
 use crate::symbols::SymbolPreprocessed;
 use crate::symbols::{
-    preprocessed::{function_sym::FunctionSymProperties, FunctionSym},
+    before_proc::{function_sym::FunctionSymProperties, FunctionSym},
     Symbol,
 };
 

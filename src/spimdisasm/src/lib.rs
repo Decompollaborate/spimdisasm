@@ -58,9 +58,9 @@ fn spimdisasm(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<metadata::OverlayCategoryName>()?;
     m.add_class::<parent_segment_info::ParentSegmentInfo>()?;
 
-    m.add_class::<sections::preprocessed::ExecutableSectionSettings>()?;
-    m.add_class::<sections::preprocessed::DataSectionSettings>()?;
-    m.add_class::<sections::preprocessed::NoloadSectionSettings>()?;
+    m.add_class::<sections::before_proc::ExecutableSectionSettings>()?;
+    m.add_class::<sections::before_proc::DataSectionSettings>()?;
+    m.add_class::<sections::before_proc::NoloadSectionSettings>()?;
 
     m.add_class::<symbols::display::FunctionDisplaySettings>()?;
     m.add_class::<symbols::display::SymDataDisplaySettings>()?;

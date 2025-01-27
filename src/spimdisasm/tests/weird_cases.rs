@@ -7,7 +7,7 @@ use spimdisasm::{
     config::{Endian, GlobalConfig},
     context::{builder::UserSegmentBuilder, ContextBuilder, GlobalSegmentBuilder},
     parent_segment_info::ParentSegmentInfo,
-    sections::preprocessed::ExecutableSectionSettings,
+    sections::before_proc::ExecutableSectionSettings,
     symbols::display::FunctionDisplaySettings,
 };
 

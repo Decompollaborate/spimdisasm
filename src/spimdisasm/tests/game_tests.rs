@@ -7,7 +7,7 @@ use spimdisasm::{
     config::{Compiler, Endian, GlobalConfig},
     context::{builder::UserSegmentBuilder, Context, ContextBuilder, GlobalSegmentBuilder},
     parent_segment_info::ParentSegmentInfo,
-    sections::preprocessed::{
+    sections::before_proc::{
         DataSectionSettings, ExecutableSectionSettings, NoloadSectionSettings,
     },
     symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings, SymNoloadDisplaySettings},

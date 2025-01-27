@@ -1,8 +1,8 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+pub mod before_proc;
 pub mod display;
-pub mod preprocessed;
 pub mod processed;
 mod symbol_creation_error;
 mod symbol_post_process_error;

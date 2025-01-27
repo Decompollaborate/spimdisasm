@@ -8,7 +8,7 @@ use crate::{
     context::Context,
     metadata::SymbolType,
     sections::{
-        preprocessed::NoloadSection, processed::NoloadSectionProcessed, Section,
+        before_proc::NoloadSection, processed::NoloadSectionProcessed, Section,
         SectionPostProcessError,
     },
     symbols::{

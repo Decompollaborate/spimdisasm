@@ -19,7 +19,7 @@ use crate::{
     parent_segment_info::ParentSegmentInfo,
     section_type::SectionType,
     sections::{
-        preprocessed::{
+        before_proc::{
             DataSection, DataSectionSettings, ExecutableSection, ExecutableSectionSettings,
             NoloadSection, NoloadSectionSettings,
         },

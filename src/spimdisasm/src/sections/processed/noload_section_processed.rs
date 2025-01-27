@@ -12,7 +12,7 @@ use crate::{
     section_type::SectionType,
     sections::{Section, SectionPostProcessError, SectionProcessed},
     symbols::{
-        preprocessed::NoloadSym, processed::NoloadSymProcessed, Symbol, SymbolPostProcessError,
+        before_proc::NoloadSym, processed::NoloadSymProcessed, Symbol, SymbolPostProcessError,
         SymbolProcessed,
     },
 };

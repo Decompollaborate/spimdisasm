@@ -10,7 +10,7 @@ use spimdisasm::{
     },
     metadata::OverlayCategoryName,
     parent_segment_info::ParentSegmentInfo,
-    sections::preprocessed::ExecutableSectionSettings,
+    sections::before_proc::ExecutableSectionSettings,
     symbols::display::FunctionDisplaySettings,
 };
 

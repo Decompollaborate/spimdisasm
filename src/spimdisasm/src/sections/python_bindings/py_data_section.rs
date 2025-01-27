@@ -8,8 +8,7 @@ use crate::{
     context::Context,
     metadata::SymbolType,
     sections::{
-        preprocessed::DataSection, processed::DataSectionProcessed, Section,
-        SectionPostProcessError,
+        before_proc::DataSection, processed::DataSectionProcessed, Section, SectionPostProcessError,
     },
     symbols::{
         display::{SymDataDisplaySettings, SymDisplayError},

@@ -14,7 +14,7 @@ use crate::{
         RomSection, RomSectionProcessed, Section, SectionPostProcessError, SectionProcessed,
     },
     symbols::{
-        preprocessed::DataSym, processed::DataSymProcessed, Symbol, SymbolPostProcessError,
+        before_proc::DataSym, processed::DataSymProcessed, Symbol, SymbolPostProcessError,
         SymbolProcessed,
     },
 };

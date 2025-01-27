@@ -11,7 +11,7 @@ use crate::{
     collections::addended_ordered_map::AddendedOrderedMap,
     config::GlobalConfig,
     metadata::{IgnoredAddressRange, OverlayCategoryName, SegmentMetadata, SymbolMetadata},
-    sections::preprocessed::{DataSectionSettings, ExecutableSectionSettings},
+    sections::before_proc::{DataSectionSettings, ExecutableSectionSettings},
 };
 
 #[derive(Debug, Clone, Hash, PartialEq)]

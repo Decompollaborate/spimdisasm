@@ -11,7 +11,7 @@ use crate::{
     config::GlobalConfig,
     metadata::{IgnoredAddressRange, SymbolMetadata, SymbolType},
     section_type::SectionType,
-    sections::preprocessed::{DataSectionSettings, ExecutableSectionSettings},
+    sections::before_proc::{DataSectionSettings, ExecutableSectionSettings},
 };
 
 use super::{ReferenceWrapper, ReferencedAddress, RegisterTracker};

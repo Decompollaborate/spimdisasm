@@ -9,7 +9,7 @@ use crate::{
     context::Context,
     metadata::SymbolType,
     sections::{
-        preprocessed::ExecutableSection, processed::ExecutableSectionProcessed, Section,
+        before_proc::ExecutableSection, processed::ExecutableSectionProcessed, Section,
         SectionPostProcessError,
     },
     symbols::{

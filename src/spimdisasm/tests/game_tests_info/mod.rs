@@ -8,7 +8,7 @@ use spimdisasm::{
     context::Context,
     metadata::{RodataMigrationBehavior, SymbolType},
     sections::{
-        preprocessed::{DataSection, ExecutableSection, NoloadSection},
+        before_proc::{DataSection, ExecutableSection, NoloadSection},
         processed::{DataSectionProcessed, ExecutableSectionProcessed, NoloadSectionProcessed},
         SectionPostProcessError,
     },
