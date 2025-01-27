@@ -14,9 +14,9 @@ use crate::{
         addended_ordered_map::FindSettings, unordered_map::UnorderedMap,
         unordered_set::UnorderedSet,
     },
-    config::Compiler,
+    config::{Compiler, Endian},
     context::Context,
-    metadata::{ParentSectionMetadata, SymbolType},
+    metadata::{ParentSectionMetadata, SegmentMetadata, SymbolType},
     parent_segment_info::ParentSegmentInfo,
     section_type::SectionType,
     sections::{
@@ -62,7 +62,16 @@ impl DataSection {
         section_type: SectionType,
     ) -> Result<Self, SectionCreationError> {
         if raw_bytes.is_empty() {
-            return Err(SectionCreationError::EmptySection { name });
+            return Err(SectionCreationError::EmptySection { name, vram });
+        }
+        if (rom.inner() % 4) != (vram.inner() % 4) {
+            // TODO: Does this check make sense? It would be weird if this kind of section existed, wouldn't it?
+            return Err(SectionCreationError::RomVramAlignmentMismatch {
+                name,
+                rom,
+                vram,
+                multiple_of: 4,
+            });
         }
 
         let size = Size::new(raw_bytes.len() as u32);
@@ -70,19 +79,104 @@ impl DataSection {
         let vram_range = AddressRange::new(vram, vram + size);
         let ranges = RomVramRange::new(rom_range, vram_range);
 
-        let mut data_symbols = Vec::new();
-        let mut symbol_vrams = UnorderedSet::new();
-
-        let mut symbols_info = BTreeMap::new();
         // Ensure there's a symbol at the beginning of the section.
         context
             .find_owned_segment_mut(&parent_segment_info)?
             .add_symbol(vram, false)?;
-        symbols_info.insert(vram, None);
 
         let owned_segment = context.find_owned_segment(&parent_segment_info)?;
 
-        let mut auto_pads: UnorderedMap<Vram, Vram> = UnorderedMap::new();
+        let (symbols_info_vec, auto_pads) = Self::find_symbols(
+            owned_segment,
+            settings,
+            raw_bytes,
+            vram_range,
+            section_type,
+            context.global_config().endian(),
+        );
+
+        let mut data_symbols = Vec::new();
+        let mut symbol_vrams = UnorderedSet::new();
+
+        for (i, (new_sym_vram, sym_type)) in symbols_info_vec.iter().enumerate() {
+            let start = new_sym_vram.sub_vram(&vram).inner() as usize;
+            let end = if i + 1 < symbols_info_vec.len() {
+                symbols_info_vec[i + 1].0.sub_vram(&vram).inner() as usize
+            } else {
+                raw_bytes.len()
+            };
+            debug_assert!(
+                start < end,
+                "{:?} {} {} {} {}",
+                rom,
+                vram,
+                start,
+                end,
+                raw_bytes.len()
+            );
+
+            let sym_rom = rom + Size::new(start as u32);
+
+            symbol_vrams.insert(*new_sym_vram);
+
+            let properties = DataSymProperties {
+                parent_metadata: ParentSectionMetadata::new(
+                    name.clone(),
+                    vram,
+                    parent_segment_info.clone(),
+                ),
+                compiler: settings.compiler,
+                auto_pad_by: auto_pads.get(new_sym_vram).copied(),
+                detected_type: *sym_type,
+                encoding: settings.encoding,
+            };
+            let /*mut*/ sym = DataSym::new(context, raw_bytes[start..end].into(), sym_rom, *new_sym_vram, start, parent_segment_info.clone(), section_type, properties)?;
+
+            data_symbols.push(sym);
+        }
+
+        Ok(Self {
+            name,
+            ranges,
+            parent_segment_info,
+            section_type,
+            data_symbols,
+            symbol_vrams,
+        })
+    }
+
+    #[allow(clippy::type_complexity)]
+    fn find_symbols(
+        owned_segment: &SegmentMetadata,
+        settings: &DataSectionSettings,
+        raw_bytes: &[u8],
+        vram_range: AddressRange<Vram>,
+        section_type: SectionType,
+        endian: Endian,
+    ) -> (Vec<(Vram, Option<SymbolType>)>, UnorderedMap<Vram, Vram>) {
+        let mut symbols_info = BTreeMap::new();
+        // Ensure there's a symbol at the beginning of the section.
+        symbols_info.insert(vram_range.start(), None);
+        let mut auto_pads = UnorderedMap::new();
+
+        if vram_range.start().inner() % 4 != 0 {
+            // Not word-aligned, so I don't think it would make sense to look for pointers.
+            // Fallback to a simpler algorithm.
+
+            for reference in owned_segment.find_references_range(vram_range) {
+                let reference_vram = reference.vram();
+                symbols_info.insert(reference_vram, None);
+                if let Some(size) = reference.size() {
+                    let next_vram = reference_vram + size;
+                    if vram_range.in_range(next_vram) {
+                        symbols_info.insert(next_vram, None);
+                        auto_pads.insert(next_vram, reference_vram);
+                    }
+                }
+            }
+
+            return (symbols_info.into_iter().collect(), auto_pads);
+        }
 
         let mut remaining_string_size = 0;
 
@@ -96,12 +190,10 @@ impl DataSection {
         let mut float_padding_counter = 0;
 
         // Look for stuff that looks like addresses which point to symbols on this section
-        let displacement = (4 - (vram.inner() % 4) as usize) % 4;
-        // TODO: check for symbols in the displacement and everything that the `chunk_exact` may have left out
-        for (i, word_bytes) in raw_bytes[displacement..].chunks_exact(4).enumerate() {
-            let local_offset = i * 4 + displacement;
+        for (i, word_bytes) in raw_bytes.chunks_exact(4).enumerate() {
+            let local_offset = i * 4;
 
-            let current_vram = vram + Size::new(local_offset as u32);
+            let current_vram = vram_range.start() + Size::new(local_offset as u32);
             let b_vram = current_vram + Size::new(1);
             let c_vram = current_vram + Size::new(2);
             let d_vram = current_vram + Size::new(3);
@@ -148,7 +240,7 @@ impl DataSection {
                             }
 
                             let next_vram = current_vram + Size::new(str_sym_size as u32);
-                            if ((next_vram - vram).inner() as usize) < raw_bytes.len()
+                            if ((next_vram - vram_range.start()).inner() as usize) < raw_bytes.len()
                                 && !owned_segment.is_vram_ignored(next_vram)
                             {
                                 // Avoid generating a symbol at the end of the section
@@ -179,7 +271,6 @@ impl DataSection {
                     let should_search_for_address =
                         current_type.is_none_or(|x| x.can_reference_symbols());
 
-                    let endian = context.global_config().endian();
                     let word = endian.word_from_bytes(word_bytes);
                     if should_search_for_address {
                         // TODO: improve heuristic to determine if should search for symbols
@@ -257,7 +348,8 @@ impl DataSection {
                         symbols_info.entry(reference.vram()).or_default();
                         if let Some(size) = reference.user_declared_size() {
                             let next_vram = reference.vram() + size;
-                            if ((next_vram - vram).inner() as usize) < raw_bytes.len() {
+                            if ((next_vram - vram_range.start()).inner() as usize) < raw_bytes.len()
+                            {
                                 // Avoid generating a symbol at the end of the section
                                 symbols_info.entry(next_vram).or_default();
                                 auto_pads.insert(next_vram, reference.vram());
@@ -287,53 +379,7 @@ impl DataSection {
             remaining_string_size -= 4;
         }
 
-        let symbols_info_vec: Vec<(Vram, Option<SymbolType>)> = symbols_info.into_iter().collect();
-
-        for (i, (new_sym_vram, sym_type)) in symbols_info_vec.iter().enumerate() {
-            let start = new_sym_vram.sub_vram(&vram).inner() as usize;
-            let end = if i + 1 < symbols_info_vec.len() {
-                symbols_info_vec[i + 1].0.sub_vram(&vram).inner() as usize
-            } else {
-                raw_bytes.len()
-            };
-            debug_assert!(
-                start < end,
-                "{:?} {} {} {} {}",
-                rom,
-                vram,
-                start,
-                end,
-                raw_bytes.len()
-            );
-
-            let sym_rom = rom + Size::new(start as u32);
-
-            symbol_vrams.insert(*new_sym_vram);
-
-            let properties = DataSymProperties {
-                parent_metadata: ParentSectionMetadata::new(
-                    name.clone(),
-                    vram,
-                    parent_segment_info.clone(),
-                ),
-                compiler: settings.compiler,
-                auto_pad_by: auto_pads.get(new_sym_vram).copied(),
-                detected_type: *sym_type,
-                encoding: settings.encoding,
-            };
-            let /*mut*/ sym = DataSym::new(context, raw_bytes[start..end].into(), sym_rom, *new_sym_vram, start, parent_segment_info.clone(), section_type, properties)?;
-
-            data_symbols.push(sym);
-        }
-
-        Ok(Self {
-            name,
-            ranges,
-            parent_segment_info,
-            section_type,
-            data_symbols,
-            symbol_vrams,
-        })
+        (symbols_info.into_iter().collect(), auto_pads)
     }
 }
 

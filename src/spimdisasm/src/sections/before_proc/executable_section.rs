@@ -60,7 +60,7 @@ impl ExecutableSection {
         parent_segment_info: ParentSegmentInfo,
     ) -> Result<Self, SectionCreationError> {
         if raw_bytes.is_empty() {
-            return Err(SectionCreationError::EmptySection { name });
+            return Err(SectionCreationError::EmptySection { name, vram });
         }
         if raw_bytes.len() % 4 != 0 {
             return Err(SectionCreationError::BadBytesSize {
@@ -72,7 +72,7 @@ impl ExecutableSection {
         if vram.inner() % 4 != 0 {
             return Err(SectionCreationError::UnalignedVram {
                 name,
-                vram: vram.inner(),
+                vram,
                 multiple_of: 4,
             });
         }

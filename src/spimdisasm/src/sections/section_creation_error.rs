@@ -8,7 +8,9 @@ use core::{error, fmt};
 use pyo3::prelude::*;
 
 use crate::{
-    addresses::Rom, context::OwnedSegmentNotFoundError, metadata::segment_metadata::AddSymbolError,
+    addresses::{Rom, Vram},
+    context::OwnedSegmentNotFoundError,
+    metadata::segment_metadata::AddSymbolError,
     symbols::SymbolCreationError,
 };
 
@@ -20,23 +22,27 @@ pub enum SectionCreationError {
     AddSymbol(AddSymbolError),
     EmptySection {
         name: String,
-        // TODO: implement pyo3 stuff on Vram
-        // vram: Vram,
+        vram: Vram,
     },
     BadBytesSize {
         name: String,
         size: usize,
         multiple_of: usize,
     },
-    // TODO: use Vram instead of u32
     UnalignedVram {
         name: String,
-        vram: u32,
+        vram: Vram,
         multiple_of: usize,
     },
     UnalignedRom {
         name: String,
         rom: Rom,
+        multiple_of: usize,
+    },
+    RomVramAlignmentMismatch {
+        name: String,
+        rom: Rom,
+        vram: Vram,
         multiple_of: usize,
     },
 }
@@ -48,10 +54,11 @@ impl fmt::Display for SectionCreationError {
                 write!(f, "{}", owned_segment_not_found_error)
             }
             SectionCreationError::AddSymbol(add_symbol_error) => write!(f, "{}", add_symbol_error),
-            SectionCreationError::EmptySection { name } => write!(f, "Can't initialize section '{}' with empty bytes.", name),
+            SectionCreationError::EmptySection { name, vram } => write!(f, "Can't initialize section '{}' ({:?}) with empty bytes.", name, vram),
             SectionCreationError::BadBytesSize { name, size, multiple_of} => write!(f, "Can't create section {} because the bytes length (0x{:X}) is not a multiple of 0x{:X}.", name, size, multiple_of),
-            SectionCreationError::UnalignedVram { name, vram, multiple_of} => write!(f, "Can't create section {} because the vram (0x{:X}) is not aligned to 0x{:X}.", name, vram, multiple_of),
+            SectionCreationError::UnalignedVram { name, vram, multiple_of} => write!(f, "Can't create section {} because the vram ({:?}) is not aligned to 0x{:X}.", name, vram, multiple_of),
             SectionCreationError::UnalignedRom { name, rom, multiple_of} => write!(f, "Can't create section {} because the rom (0x{:X}) is not aligned to 0x{:X}.", name, rom.inner(), multiple_of),
+            SectionCreationError::RomVramAlignmentMismatch {name, rom, vram, multiple_of} => write!(f, "Can't create section {} because the alignment of its rom ({:?}) and vram ({:?}) mod {} does not match.", name, rom, vram, multiple_of),
         }
     }
 }

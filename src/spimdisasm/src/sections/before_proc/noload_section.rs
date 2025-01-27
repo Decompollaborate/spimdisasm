@@ -51,7 +51,10 @@ impl NoloadSection {
         parent_segment_info: ParentSegmentInfo,
     ) -> Result<Self, SectionCreationError> {
         if vram_range.size().inner() == 0 {
-            return Err(SectionCreationError::EmptySection { name });
+            return Err(SectionCreationError::EmptySection {
+                name,
+                vram: vram_range.start(),
+            });
         }
 
         let mut noload_symbols = Vec::new();
