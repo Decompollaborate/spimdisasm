@@ -31,14 +31,16 @@ impl NoloadSym {
         parent_segment_info: ParentSegmentInfo,
         properties: NoloadSymProperties,
     ) -> Result<Self, SymbolCreationError> {
-        let metadata = context
-            .find_owned_segment_mut(&parent_segment_info)?
-            .add_symbol(vram_range.start(), false)?;
-        *metadata.section_type_mut() = Some(SECTION_TYPE);
-        *metadata.autodetected_size_mut() = Some(vram_range.size());
-        metadata.set_defined();
-        metadata.set_trailing_padding_size(Size::new(0));
-        metadata.set_in_overlay(parent_segment_info.overlay_category_name().is_some());
+        let owned_segment = context.find_owned_segment_mut(&parent_segment_info)?;
+        let metadata = owned_segment.add_self_symbol(
+            vram_range.start(),
+            None,
+            vram_range.size(),
+            SECTION_TYPE,
+            &parent_segment_info,
+            None,
+            |_| Size::new(0),
+        )?;
 
         properties.apply_to_metadata(metadata);
 

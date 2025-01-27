@@ -47,23 +47,27 @@ impl DataSym {
         let ranges = RomVramRange::new(rom_range, vram_range);
 
         let endian = context.global_config().endian();
+        let encoding = properties.encoding;
 
         let owned_segment = context.find_owned_segment_mut(&parent_segment_info)?;
-        let metadata = owned_segment.add_symbol(vram, false)?;
-        *metadata.rom_mut() = Some(rom);
-        *metadata.section_type_mut() = Some(section_type);
-        *metadata.autodetected_size_mut() = Some(size);
-        metadata.set_defined();
-        metadata.set_trailing_padding_size(count_padding(
-            &raw_bytes,
-            metadata.user_declared_size(),
-            metadata.sym_type(),
-            endian,
-            rom,
-        ));
-        metadata.set_in_overlay(parent_segment_info.overlay_category_name().is_some());
+        let metadata = owned_segment.add_self_symbol(
+            vram,
+            Some(rom),
+            size,
+            section_type,
+            &parent_segment_info,
+            None,
+            |metadata| {
+                count_padding(
+                    &raw_bytes,
+                    metadata.user_declared_size(),
+                    metadata.sym_type(),
+                    endian,
+                    rom,
+                )
+            },
+        )?;
 
-        let encoding = properties.encoding;
         properties.apply_to_metadata(metadata);
 
         let sym_type = metadata.sym_type();

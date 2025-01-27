@@ -4,9 +4,11 @@
 use core::{error, fmt};
 
 #[cfg(feature = "pyo3")]
+use crate::addresses::Vram;
+#[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::{addresses::Vram, context::OwnedSegmentNotFoundError};
+use crate::context::OwnedSegmentNotFoundError;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
