@@ -1,9 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::collections::btree_map::BTreeMap;
-use alloc::string::String;
-use alloc::vec::Vec;
+use alloc::{string::String, vec::Vec};
 use core::{error, fmt};
 
 #[cfg(feature = "pyo3")]
@@ -32,9 +30,6 @@ pub struct SegmentMetadata {
     // constants: BTreeMap<Vram, SymbolMetadata>,
     ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
 
-    //
-    /// Stuff that looks like pointers. Found referenced by data.
-    new_pointer_in_data: BTreeMap<Vram, Vec<Rom>>,
     preheater: Preheater,
 
     is_the_unknown_segment: bool,
@@ -63,7 +58,6 @@ impl SegmentMetadata {
             symbols: user_symbols,
             ignored_addresses,
 
-            new_pointer_in_data: BTreeMap::new(),
             preheater,
 
             is_the_unknown_segment: false,
@@ -334,22 +328,6 @@ impl SegmentMetadata {
         vram_range: AddressRange<Vram>,
     ) -> reference_wrapper::Range {
         ReferenceWrapper::range(&self.symbols, &self.preheater, vram_range)
-    }
-}
-
-impl SegmentMetadata {
-    pub(crate) fn add_possible_pointer_in_data(
-        &mut self,
-        possible_pointer: Vram,
-        rom_address_referencing_pointer: Rom,
-    ) {
-        self.new_pointer_in_data
-            .entry(possible_pointer)
-            .or_default()
-            .push(rom_address_referencing_pointer);
-    }
-    pub(crate) fn is_vram_a_possible_pointer_in_data(&self, vram: Vram) -> bool {
-        self.new_pointer_in_data.contains_key(&vram)
     }
 }
 

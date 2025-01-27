@@ -82,8 +82,6 @@ impl DataSection {
 
         let owned_segment = context.find_owned_segment(&parent_segment_info)?;
 
-        let mut maybe_pointers_to_other_sections = Vec::new();
-
         let mut auto_pads: UnorderedMap<Vram, Vram> = UnorderedMap::new();
 
         let mut remaining_string_size = 0;
@@ -201,17 +199,6 @@ impl DataSection {
                             } else if !owned_segment.is_vram_ignored(word_vram) {
                                 symbols_info.entry(word_vram).or_default();
                             }
-                        } else {
-                            let current_rom = rom + (current_vram - vram).try_into().expect("This should not panic because `current_vram` should always be greter or equal to `vram`");
-                            let reference = context.find_symbol_from_any_segment(
-                                word_vram,
-                                &parent_segment_info,
-                                FindSettings::new(true),
-                                |_| true,
-                            );
-                            if reference.is_none() {
-                                maybe_pointers_to_other_sections.push((word_vram, current_rom));
-                            }
                         }
                     }
 
@@ -277,8 +264,6 @@ impl DataSection {
                             }
                         }
                         prev_sym_type = reference.sym_type();
-                    } else if owned_segment.is_vram_a_possible_pointer_in_data(x_vram) {
-                        symbols_info.entry(x_vram).or_default();
                     }
                 }
             }
@@ -339,13 +324,6 @@ impl DataSection {
             let /*mut*/ sym = DataSym::new(context, raw_bytes[start..end].into(), sym_rom, *new_sym_vram, start, parent_segment_info.clone(), section_type, properties)?;
 
             data_symbols.push(sym);
-        }
-
-        let owned_segment_mut = context.find_owned_segment_mut(&parent_segment_info)?;
-        for (possible_pointer, rom_address_referencing_pointer) in maybe_pointers_to_other_sections
-        {
-            owned_segment_mut
-                .add_possible_pointer_in_data(possible_pointer, rom_address_referencing_pointer);
         }
 
         Ok(Self {
