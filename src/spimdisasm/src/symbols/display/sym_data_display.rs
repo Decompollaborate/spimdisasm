@@ -240,13 +240,18 @@ impl SymDataDisplay<'_, '_, '_> {
         current_rom: Rom,
         current_vram: Vram,
     ) -> Result<usize, fmt::Error> {
-        let word = self.endian.word_from_bytes(&self.sym.raw_bytes()[i..i + 4]);
+        let arr_bytes = &self.sym.raw_bytes()[i..i + 4];
+        let word = self.endian.word_from_bytes(arr_bytes);
 
         self.settings.common.display_asm_comment(
             f,
             Some(current_rom),
             current_vram,
-            WordComment::U32(word),
+            WordComment::U32(
+                arr_bytes
+                    .try_into()
+                    .expect("Should be an array of the correct dimensions"),
+            ),
         )?;
 
         if let Some(rel) = self.sym.relocs()[i / 4]
@@ -280,7 +285,8 @@ impl SymDataDisplay<'_, '_, '_> {
         current_rom: Rom,
         current_vram: Vram,
     ) -> Result<usize, fmt::Error> {
-        let word = self.endian.word_from_bytes(&self.sym.raw_bytes()[i..i + 4]);
+        let arr_bytes = &self.sym.raw_bytes()[i..i + 4];
+        let word = self.endian.word_from_bytes(arr_bytes);
         let float32 = f32::from_bits(word);
         if float32.is_nan() || float32.is_infinite() {
             return self.display_as_word(f, i, current_rom, current_vram);
@@ -290,7 +296,11 @@ impl SymDataDisplay<'_, '_, '_> {
             f,
             Some(current_rom),
             current_vram,
-            WordComment::U32(word),
+            WordComment::U32(
+                arr_bytes
+                    .try_into()
+                    .expect("Should be an array of the correct dimensions"),
+            ),
         )?;
         write!(f, ".float {:?}{}", float32, self.settings.common.line_end())?;
 
@@ -304,9 +314,8 @@ impl SymDataDisplay<'_, '_, '_> {
         current_rom: Rom,
         current_vram: Vram,
     ) -> Result<usize, fmt::Error> {
-        let dword = self
-            .endian
-            .dword_from_bytes(&self.sym.raw_bytes()[i..i + 8]);
+        let arr_bytes = &self.sym.raw_bytes()[i..i + 8];
+        let dword = self.endian.dword_from_bytes(arr_bytes);
         let float64 = f64::from_bits(dword);
         if float64.is_nan() || float64.is_infinite() {
             return self.display_as_word(f, i, current_rom, current_vram);
@@ -316,7 +325,11 @@ impl SymDataDisplay<'_, '_, '_> {
             f,
             Some(current_rom),
             current_vram,
-            WordComment::U64(dword),
+            WordComment::U64(
+                arr_bytes
+                    .try_into()
+                    .expect("Should be an array of the correct dimensions"),
+            ),
         )?;
         write!(
             f,

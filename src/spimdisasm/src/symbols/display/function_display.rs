@@ -165,11 +165,16 @@ impl FunctionDisplay<'_, '_, '_> {
         instr: &Instruction,
         prev_instr_had_delay_slot: bool,
     ) -> fmt::Result {
+        let arr_bytes = self
+            .context
+            .global_config()
+            .endian()
+            .bytes_from_word(instr.word());
         let vram = instr.vram();
         let rom = self.sym.rom_vram_range().rom_from_vram(vram);
         self.settings
             .common
-            .display_asm_comment(f, rom, vram, WordComment::U32(instr.word()))?;
+            .display_asm_comment(f, rom, vram, WordComment::U32(arr_bytes))?;
 
         // TODO: why an extra space?
         write!(f, " ")?;

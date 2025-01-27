@@ -14,8 +14,8 @@ use crate::{
 
 pub(crate) enum WordComment {
     No,
-    U32(u32),
-    U64(u64),
+    U32([u8; 4]),
+    U64([u8; 8]),
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -386,13 +386,23 @@ impl SymCommonDisplaySettings {
         }
         write!(f, "{} ", vram)?;
 
-        // TODO: endian
         match word_comment {
             WordComment::No => {}
-            WordComment::U32(word) => write!(f, "{:08X} ", word)?,
-            WordComment::U64(dword) => write!(f, "{:016X} ", dword)?,
+            WordComment::U32(arr) => Self::display_byte_array(f, arr)?,
+            WordComment::U64(arr) => Self::display_byte_array(f, arr)?,
         }
 
         write!(f, "*/ ")
+    }
+
+    fn display_byte_array<const LENGTH: usize>(
+        f: &mut fmt::Formatter<'_>,
+        arr: [u8; LENGTH],
+    ) -> fmt::Result {
+        for x in arr {
+            write!(f, "{:02X}", x)?;
+        }
+        write!(f, " ")?;
+        Ok(())
     }
 }

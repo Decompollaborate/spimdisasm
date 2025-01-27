@@ -4,7 +4,7 @@
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", eq))]
 pub enum Endian {
     Big,
@@ -34,6 +34,13 @@ impl Endian {
         match self {
             Endian::Big => u64::from_be_bytes(x),
             Endian::Little => u64::from_le_bytes(x),
+        }
+    }
+
+    pub fn bytes_from_word(self, word: u32) -> [u8; 4] {
+        match self {
+            Endian::Big => word.to_be_bytes(),
+            Endian::Little => word.to_le_bytes(),
         }
     }
 }
