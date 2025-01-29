@@ -5,3 +5,18 @@ Make the string guesser less agressive
 Test pic code
 Test gp_rel code
 Test `j func` code
+
+Does the following pattern make sense with a pointer?
+    /* 00C140 0001B940 B800A68F */  lw          $a2, 0xB8($sp)
+
+    /* 00C158 0001B958 F00FC630 */  andi        $a2, $a2, 0xFF0
+    /* 00C15C 0001B95C F00FC638 */  xori        $a2, $a2, 0xFF0
+    /* 00C160 0001B960 02310600 */  srl         $a2, $a2, 4
+    /* 00C164 0001B964 00420600 */  sll         $t0, $a2, 8
+    /* 00C168 0001B968 2530C800 */  or          $a2, $a2, $t0
+    /* 00C16C 0001B96C 00420800 */  sll         $t0, $t0, 8
+    /* 00C170 0001B970 2530C800 */  or          $a2, $a2, $t0
+
+    /* 00C174 0001B974 00FF083C */  lui         $t0, %hi(UNK_FF000001)
+    /* 00C178 0001B978 2530C800 */  or          $a2, $a2, $t0
+    /* 00C17C 0001B97C 0100C624 */  addiu       $a2, $a2, %lo(UNK_FF000001)

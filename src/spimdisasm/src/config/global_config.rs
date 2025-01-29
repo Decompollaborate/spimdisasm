@@ -93,6 +93,10 @@ pub(crate) mod python_bindings {
             Self::new(endian)
         }
 
+        pub fn set_gp_config(&mut self, gp_config: GpConfig) {
+            self.gp_config = Some(gp_config);
+        }
+
         #[pyo3(name = "set_macro_labels", signature=(macro_labels))]
         pub fn py_set_macro_labels(&mut self, macro_labels: Option<MacroLabels>) {
             self.macro_labels = macro_labels;

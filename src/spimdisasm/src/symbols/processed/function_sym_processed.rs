@@ -1,14 +1,15 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{collections::btree_map::BTreeMap, vec::Vec};
+use alloc::{collections::btree_map::BTreeMap, string::ToString, vec::Vec};
 use core::hash;
-use rabbitizer::Instruction;
+use rabbitizer::{registers_meta::Register, Instruction};
 
 use crate::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     analysis::InstructionAnalysisResult,
     collections::{addended_ordered_map::FindSettings, unordered_set::UnorderedSet},
+    config::GlobalConfig,
     context::Context,
     parent_segment_info::ParentSegmentInfo,
     relocation::{RelocReferencedSym, RelocationInfo, RelocationType},
@@ -192,7 +193,7 @@ impl FunctionSymProcessed {
         }
 
         for (instr_rom, symbol_vram) in instr_analysis.address_per_lo_instr() {
-            let instr_index = (*instr_rom - ranges.rom().start()).inner() / 4;
+            let instr_index = (*instr_rom - ranges.rom().start()).inner() as usize / 4;
 
             /*
             if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
@@ -202,35 +203,32 @@ impl FunctionSymProcessed {
             */
 
             if owned_segment.is_vram_ignored(*symbol_vram) {
-                relocs[instr_index as usize] =
-                    Some(RelocationType::R_CUSTOM_CONSTANT_LO.new_reloc_info(
-                        RelocReferencedSym::SymName(format!("0x{:08X}", symbol_vram.inner()), 0),
-                    ));
+                relocs[instr_index] = Some(RelocationType::R_CUSTOM_CONSTANT_LO.new_reloc_info(
+                    RelocReferencedSym::SymName(format!("0x{:08X}", symbol_vram.inner()), 0),
+                ));
                 continue;
             }
 
-            relocs[instr_index as usize] = Some(
-                RelocationType::R_MIPS_LO16
-                    .new_reloc_info(RelocReferencedSym::Address(*symbol_vram)),
-            );
+            let reloc_type =
+                Self::reloc_for_instruction(context.global_config(), &instructions[instr_index]);
+            relocs[instr_index] =
+                Some(reloc_type.new_reloc_info(RelocReferencedSym::Address(*symbol_vram)));
         }
 
         for (instr_rom, symbol_vram) in instr_analysis.address_per_hi_instr() {
-            let instr_index = (*instr_rom - ranges.rom().start()).inner() / 4;
+            let instr_index = (*instr_rom - ranges.rom().start()).inner() as usize / 4;
 
             if owned_segment.is_vram_ignored(*symbol_vram) {
-                relocs[instr_index as usize] =
-                    Some(RelocationType::R_CUSTOM_CONSTANT_HI.new_reloc_info(
-                        RelocReferencedSym::SymName(format!("0x{:08X}", symbol_vram.inner()), 0),
-                    ));
+                relocs[instr_index] = Some(RelocationType::R_CUSTOM_CONSTANT_HI.new_reloc_info(
+                    RelocReferencedSym::SymName(format!("0x{:08X}", symbol_vram.inner()), 0),
+                ));
                 continue;
             }
 
-            let instr_index = (*instr_rom - ranges.rom().start()).inner() / 4;
-            relocs[instr_index as usize] = Some(
-                RelocationType::R_MIPS_HI16
-                    .new_reloc_info(RelocReferencedSym::Address(*symbol_vram)),
-            );
+            let reloc_type =
+                Self::reloc_for_instruction(context.global_config(), &instructions[instr_index]);
+            relocs[instr_index] =
+                Some(reloc_type.new_reloc_info(RelocReferencedSym::Address(*symbol_vram)));
         }
 
         /*
@@ -279,30 +277,38 @@ impl FunctionSymProcessed {
             relocs[instrOffset] = common.RelocationInfo(relocType, "_gp_disp")
         */
 
-        /*
-        for instrOffset, gpInfo in instrAnalyzer.gpSets.items():
-            hiInstrOffset = gpInfo.hiOffset
-            hiInstr = instructions[hiInstrOffset//4]
-            instr = instructions[instrOffset//4]
+        for gp_set_info in instr_analysis.gp_sets().values() {
+            let hi_index = (gp_set_info.hi_rom() - ranges.rom().start()).inner() as usize / 4;
+            let lo_index = (gp_set_info.lo_rom() - ranges.rom().start()).inner() as usize / 4;
+            let hi_instr = &instructions[hi_index];
+            let lo_instr = &instructions[lo_index];
 
-            hiRelocType = _getRelocTypeForInstruction(hiInstr, hiInstrOffset)
-            relocType = _getRelocTypeForInstruction(instr, instrOffset)
-            if not common.GlobalConfig.PIC and gpInfo.value == common.GlobalConfig.GP_VALUE:
-                relocs[hiInstrOffset] = common.RelocationInfo(hiRelocType, "_gp")
-                relocs[instrOffset] = common.RelocationInfo(relocType, "_gp")
-            else:
-                # TODO: consider reusing the logic of the instrAnalyzer.symbolInstrOffset loop
-                address = gpInfo.value
-                if context.isAddressBanned(address):
-                    continue
+            let hi_reloc_type = Self::reloc_for_instruction(context.global_config(), hi_instr);
+            let lo_reloc_type = Self::reloc_for_instruction(context.global_config(), lo_instr);
+            if context
+                .global_config()
+                .gp_config()
+                .is_some_and(|x| !x.pic() && x.gp_value() == gp_set_info.value())
+            {
+                relocs[hi_index] = Some(
+                    hi_reloc_type.new_reloc_info(RelocReferencedSym::SymName("_gp".to_string(), 0)),
+                );
+                relocs[lo_index] = Some(
+                    lo_reloc_type.new_reloc_info(RelocReferencedSym::SymName("_gp".to_string(), 0)),
+                );
+            } else {
+                // TODO: some kind of conversion method for GpValue -> Vram?
+                let address = Vram::new(gp_set_info.value().inner());
+                if owned_segment.is_vram_ignored(address) {
+                    continue;
+                }
 
-                contextSym = getSymbol(address)
-                if contextSym is None:
-                    continue
-
-                relocs[hiInstrOffset] = common.RelocationInfo(hiRelocType, contextSym)
-                relocs[instrOffset] = common.RelocationInfo(relocType, contextSym)
-        */
+                relocs[hi_index] =
+                    Some(hi_reloc_type.new_reloc_info(RelocReferencedSym::Address(address)));
+                relocs[lo_index] =
+                    Some(lo_reloc_type.new_reloc_info(RelocReferencedSym::Address(address)));
+            }
+        }
 
         for (instr_rom, constant) in instr_analysis.constant_per_instr() {
             let instr_index = (*instr_rom - ranges.rom().start()).inner() / 4;
@@ -369,18 +375,77 @@ impl FunctionSymProcessed {
                 .contains_key(instr_rom)
                 && !instr_analysis.constant_per_instr().contains_key(instr_rom)
             {
-                let instr_index = (*instr_rom - ranges.rom().start()).inner() / 4;
+                let instr_index = (*instr_rom - ranges.rom().start()).inner() as usize / 4;
                 let constant = (*hi_imm as u32) << 16;
 
-                // TODO: use `:08X`.
-                relocs[instr_index as usize] =
-                    Some(RelocationType::R_CUSTOM_CONSTANT_HI.new_reloc_info(
-                        RelocReferencedSym::SymName(format!("0x{:X}", constant), 0),
-                    ));
+                if relocs[instr_index].is_none() {
+                    // TODO: use `:08X`.
+                    relocs[instr_index] =
+                        Some(RelocationType::R_CUSTOM_CONSTANT_HI.new_reloc_info(
+                            RelocReferencedSym::SymName(format!("0x{:X}", constant), 0),
+                        ));
+                }
             }
         }
 
         Ok(relocs)
+    }
+
+    // Maybe split this function into two, one for hi and another for lo?
+    fn reloc_for_instruction(global_config: &GlobalConfig, instr: &Instruction) -> RelocationType {
+        let opcode = instr.opcode();
+        let is_pic = global_config.gp_config().is_some_and(|x| x.pic());
+
+        if opcode.can_be_hi() {
+            if is_pic {
+                /*
+                if contextSym is not None and gotHiLo:
+                    if contextSym.isGotGlobal and contextSym.getTypeSpecial() == common.SymbolSpecialType.function:
+                        return common.RelocType.MIPS_CALL_HI16
+                    else:
+                        return common.RelocType.MIPS_GOT_HI16
+                */
+            }
+            RelocationType::R_MIPS_HI16
+        } else if opcode.can_be_lo() {
+            let rs = instr.field_rs();
+
+            if rs.is_some_and(|x| x.is_global_pointer(instr.abi())) {
+                if !is_pic
+                /* || gotSmall */
+                {
+                    return if instr
+                        .get_destination_gpr()
+                        .is_some_and(|x| x.is_global_pointer(instr.abi()))
+                    {
+                        // Shouldn't make a gprel access if the dst register is $gp too
+                        RelocationType::R_MIPS_LO16
+                    } else {
+                        RelocationType::R_MIPS_GPREL16
+                    };
+                }
+                /*
+                if contextSym is not None:
+                    if contextSym.isGotGlobal and contextSym.getTypeSpecial() == common.SymbolSpecialType.function and instrOffset in self.instrAnalyzer.indirectFunctionCallOffsets:
+                        return common.RelocType.MIPS_CALL16
+                    elif contextSym.isGot:
+                        return common.RelocType.MIPS_GOT16
+                    else:
+                        return common.RelocType.MIPS_GPREL16
+                */
+            } else if is_pic {
+                /*
+                if contextSym is not None and gotHiLo:
+                    if contextSym.isGotGlobal and contextSym.getTypeSpecial() == common.SymbolSpecialType.function:
+                        return common.RelocType.MIPS_CALL_LO16
+                    else:
+                        return common.RelocType.MIPS_GOT_LO16
+                */
+            }
+            RelocationType::R_MIPS_LO16
+        } else {
+            panic!("what")
+        }
     }
 
     pub fn find_and_update_labels(

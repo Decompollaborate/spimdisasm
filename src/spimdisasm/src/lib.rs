@@ -31,6 +31,7 @@ use pyo3::prelude::*;
 #[cfg(feature = "pyo3")]
 #[pymodule]
 fn spimdisasm(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<addresses::GpValue>()?;
     m.add_class::<addresses::Size>()?;
     m.add_class::<addresses::Rom>()?;
     m.add_class::<addresses::RomVramRange>()?;
@@ -42,6 +43,7 @@ fn spimdisasm(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<config::Compiler>()?;
     m.add_class::<config::Endian>()?;
     m.add_class::<config::MacroLabels>()?;
+    m.add_class::<config::GpConfig>()?;
     m.add_class::<config::GlobalConfig>()?;
 
     m.add_class::<analysis::StringGuesserLevel>()?;

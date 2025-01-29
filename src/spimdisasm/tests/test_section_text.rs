@@ -3,10 +3,10 @@
 
 use std::collections::BTreeMap;
 
-use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
+use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaExtension, IsaVersion};
 use spimdisasm::{
-    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
-    config::{Compiler, Endian, GlobalConfig},
+    addresses::{AddressRange, GpValue, Rom, RomVramRange, Size, Vram},
+    config::{Compiler, Endian, GlobalConfig, GpConfig},
     context::{
         builder::UserSegmentBuilder, ContextBuilder, GlobalSegmentBuilder, OverlaySegmentBuilder,
     },
@@ -530,7 +530,7 @@ fn test_section_text_lui_paired_with_lw_and_ori() {
     let segment_vram = Vram::new(0x80000400);
 
     let text_settings = ExecutableSectionSettings::new(
-        Some(Compiler::IDO),
+        Some(Compiler::KMC),
         InstructionFlags::new(IsaVersion::MIPS_III),
     );
 
@@ -608,6 +608,104 @@ glabel func_80007860
     /* 008498 80007898 03E00008 */  jr          $ra
     /* 00849C 8000789C 00000000 */   nop
 .size func_80007860, . - func_80007860
+";
+
+    assert_eq!(disassembly, expected_disassembly,);
+}
+
+#[test]
+fn test_section_text_gp_rels() {
+    static BYTES: [u8; 36] = [
+        // func_80000000
+        0x01, 0x80, 0x1C, 0x3C, // lui
+        0x14, 0x80, 0x9C, 0x27, // addiu
+        0x21, 0xF0, 0xA0, 0x03, // addu
+        0x06, 0x00, 0x00, 0x0C, // jal
+        0x00, 0x00, 0x00, 0x00, // nop
+        0x4D, 0x00, 0x00, 0x00, // break
+        // func_80000018
+        0x10, 0x80, 0x82, 0x8F, // lw
+        0x08, 0x00, 0xE0, 0x03, // jr
+        0x00, 0x00, 0x00, 0x00, // nop
+    ];
+
+    let rom = Rom::new(0x00000000);
+    let vram = Vram::new(0x80000000);
+
+    let segment_rom = Rom::new(0x00000000);
+    let segment_vram = Vram::new(0x80000000);
+
+    let text_settings = ExecutableSectionSettings::new(
+        Some(Compiler::PSYQ),
+        InstructionFlags::new_extension(IsaExtension::R3000GTE),
+    );
+
+    let mut context = {
+        let global_config = GlobalConfig::new(Endian::Little)
+            .with_gp_config(Some(GpConfig::new_sdata(GpValue::new(0x80008014))));
+
+        let global_ranges = RomVramRange::new(
+            AddressRange::new(segment_rom, Rom::new(0x00008000)),
+            AddressRange::new(segment_vram, Vram::new(0x80008000)),
+        );
+        let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
+
+        global_segment.preanalyze_text(&global_config, &text_settings, &BYTES, rom, vram);
+
+        let platform_segment = UserSegmentBuilder::new();
+
+        let builder = ContextBuilder::new(global_segment, platform_segment);
+
+        builder.build(global_config)
+    };
+
+    let parent_segment_info = ParentSegmentInfo::new(segment_rom, segment_vram, None);
+    let section_text = context
+        .create_section_text(
+            &text_settings,
+            "text".to_string(),
+            &BYTES,
+            rom,
+            vram,
+            parent_segment_info,
+        )
+        .unwrap();
+
+    let user_relocs = BTreeMap::new();
+    let section_text = section_text
+        .post_process(&mut context, &user_relocs)
+        .unwrap();
+
+    let mut disassembly = ".section .text\n".to_string();
+    let display_settings = FunctionDisplaySettings::new(InstructionDisplayFlags::new());
+    for sym in section_text.functions() {
+        disassembly.push('\n');
+        disassembly.push_str(
+            &sym.display(&context, &display_settings)
+                .unwrap()
+                .to_string(),
+        );
+    }
+
+    println!("{}", disassembly);
+
+    let expected_disassembly = "\
+.section .text
+
+glabel func_80000000
+    /* 000000 80000000 01801C3C */  lui         $gp, %hi(_gp)
+    /* 000004 80000004 14809C27 */  addiu       $gp, $gp, %lo(_gp)
+    /* 000008 80000008 21F0A003 */  addu        $s8, $sp, $zero
+    /* 00000C 8000000C 0600000C */  jal         func_80000018
+    /* 000010 80000010 00000000 */   nop
+    /* 000014 80000014 4D000000 */  break       0, 1
+.size func_80000000, . - func_80000000
+
+glabel func_80000018
+    /* 000018 80000018 1080828F */  lw          $v0, %gp_rel(UNK_80000024)($gp)
+    /* 00001C 8000001C 0800E003 */  jr          $ra
+    /* 000020 80000020 00000000 */   nop
+.size func_80000018, . - func_80000018
 ";
 
     assert_eq!(disassembly, expected_disassembly,);

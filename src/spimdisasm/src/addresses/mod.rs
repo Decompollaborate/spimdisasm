@@ -4,11 +4,13 @@
 pub use rabbitizer::{vram::VramOffset, Vram};
 
 mod address_range;
+mod gp_value;
 mod rom;
 mod rom_vram_range;
 mod size;
 
 pub use address_range::AddressRange;
+pub use gp_value::GpValue;
 pub use rom::Rom;
 pub use rom_vram_range::RomVramRange;
 pub use size::{Size, SizedAddress};

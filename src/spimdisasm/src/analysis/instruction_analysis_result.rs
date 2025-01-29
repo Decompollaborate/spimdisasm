@@ -7,12 +7,39 @@ use rabbitizer::{
 };
 
 use crate::{
-    addresses::{Rom, RomVramRange},
+    addresses::{GpValue, Rom, RomVramRange},
     collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
     context::Context,
 };
 
 use super::RegisterTracker;
+
+/// Info for tracking when a $gp register is set
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct GpSetInfo {
+    hi_rom: Rom,
+    lo_rom: Rom,
+    value: GpValue,
+}
+impl GpSetInfo {
+    fn new(hi_rom: Rom, lo_rom: Rom, value: GpValue) -> Self {
+        Self {
+            hi_rom,
+            lo_rom,
+            value,
+        }
+    }
+
+    pub(crate) fn hi_rom(&self) -> Rom {
+        self.hi_rom
+    }
+    pub(crate) fn lo_rom(&self) -> Rom {
+        self.lo_rom
+    }
+    pub(crate) fn value(&self) -> GpValue {
+        self.value
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InstructionAnalysisResult {
@@ -47,6 +74,9 @@ pub struct InstructionAnalysisResult {
     type_info_per_instr: UnorderedMap<Rom, (AccessType, bool)>,
 
     handwritten_instrs: UnorderedSet<Rom>,
+
+    /// Instructions setting the $gp register, key: offset of the low instruction
+    gp_sets: UnorderedMap<Rom, GpSetInfo>,
 }
 
 impl InstructionAnalysisResult {
@@ -70,6 +100,7 @@ impl InstructionAnalysisResult {
             type_info_per_address: UnorderedMap::new(),
             type_info_per_instr: UnorderedMap::new(),
             handwritten_instrs: UnorderedSet::new(),
+            gp_sets: UnorderedMap::new(),
         }
     }
 
@@ -131,6 +162,11 @@ impl InstructionAnalysisResult {
     #[must_use]
     pub fn handwritten_instrs(&self) -> &UnorderedSet<Rom> {
         &self.handwritten_instrs
+    }
+
+    #[must_use]
+    pub(crate) fn gp_sets(&self) -> &UnorderedMap<Rom, GpSetInfo> {
+        &self.gp_sets
     }
 }
 
@@ -395,7 +431,7 @@ impl InstructionAnalysisResult {
         };
 
         if let Some((_upper_half, hi_rom)) = upper_info {
-            if let Some((hi_reg, _hi_imm)) = self.hi_instrs.get(&hi_rom) {
+            if let Some((hi_reg, hi_imm)) = self.hi_instrs.get(&hi_rom) {
                 if hi_reg.is_global_pointer(instr.abi()) {
                     if let Some(lo_rs) = instr.field_rs() {
                         if instr.opcode().reads_rs() && lo_rs.is_global_pointer(instr.abi()) {
@@ -409,14 +445,18 @@ impl InstructionAnalysisResult {
                                         # cpload
                                         self.unpairedCploads.append(CploadInfo(luiOffset, instrOffset))
                                         */
-                                    } else {
-                                        /*
-                                        hiGpValue = luiInstr.getProcessedImmediate() << 16
-                                        loGpValue = instr.getProcessedImmediate()
-                                        self.gpSets[instrOffset] = GpSetInfo(luiOffset, instrOffset, hiGpValue+loGpValue)
-                                        self.gpSetsOffsets.add(luiOffset)
-                                        self.gpSetsOffsets.add(instrOffset)
-                                        */
+                                    } else if let Some(lo_gp_value) =
+                                        instr.get_processed_immediate()
+                                    {
+                                        let hi_gp_value = (*hi_imm as u32) << 16;
+                                        let gp_set = GpSetInfo::new(
+                                            hi_rom,
+                                            instr_rom,
+                                            GpValue::new(
+                                                hi_gp_value.wrapping_add_signed(lo_gp_value),
+                                            ),
+                                        );
+                                        self.gp_sets.insert(instr_rom, gp_set);
                                     }
                                     // Early return to avoid counting this pairing as a normal symbol
                                     return;
@@ -533,7 +573,10 @@ impl InstructionAnalysisResult {
             if lower_half.is_negative() && lower_half.inner().unsigned_abs() > gp_value.inner() {
                 None
             } else {
-                Some(gp_value + lower_half)
+                // TODO: proper abstraction
+                Some(Vram::new(
+                    gp_value.inner().wrapping_add_signed(lower_half.inner()),
+                ))
             }
         } else {
             None

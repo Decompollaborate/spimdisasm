@@ -13,7 +13,7 @@ use pyo3::prelude::*;
 use crate::addresses::{AddressRange, Rom, RomVramRange, Size, Vram, VramOffset};
 use crate::analysis::{ReferenceWrapper, RegisterTracker};
 use crate::collections::{addended_ordered_map::FindSettings, unordered_set::UnorderedSet};
-use crate::config::{Compiler, Endian};
+use crate::config::{Compiler, Endian, GlobalConfig};
 use crate::context::Context;
 use crate::metadata::{ParentSectionMetadata, SegmentMetadata};
 use crate::parent_segment_info::ParentSegmentInfo;
@@ -93,7 +93,13 @@ impl ExecutableSection {
 
         let instrs = instrs_from_bytes(settings, context.global_config().endian(), raw_bytes, vram);
         let owned_segment = context.find_owned_segment(&parent_segment_info)?;
-        let funcs_start_data = find_functions(settings, owned_segment, ranges, &instrs);
+        let funcs_start_data = find_functions(
+            context.global_config(),
+            settings,
+            owned_segment,
+            ranges,
+            &instrs,
+        );
 
         let mut functions = Vec::new();
         let mut symbol_vrams = UnorderedSet::new();
@@ -243,6 +249,7 @@ fn instrs_from_bytes(
 }
 
 fn find_functions(
+    global_config: &GlobalConfig,
     settings: &ExecutableSectionSettings,
     owned_segment: &SegmentMetadata,
     section_ranges: RomVramRange,
@@ -365,7 +372,7 @@ fn find_functions(
         }
 
         let current_rom = section_ranges.rom().start() + Size::new(index as u32 * 4);
-        run_register_tracker_start(&mut regs_tracker, instr, current_rom);
+        run_register_tracker_start(global_config, &mut regs_tracker, instr, current_rom);
 
         if instr.opcode().is_branch()
             || instr.is_unconditional_branch()
@@ -624,6 +631,7 @@ fn find_functions_check_function_ended(
 }
 
 fn run_register_tracker_start(
+    global_config: &GlobalConfig,
     regs_tracker: &mut RegisterTracker,
     instr: &Instruction,
     current_rom: Rom,
@@ -661,9 +669,20 @@ fn run_register_tracker_start(
             if pairing_info.is_gp_got {
                 // TODO
             } else if let Some(lower_half) = instr.get_processed_immediate() {
-                let address = Vram::new(pairing_info.value as u32) + VramOffset::new(lower_half);
+                let address = if pairing_info.is_gp_got {
+                    None
+                } else if pairing_info.is_gp_rel {
+                    // TODO: should check for global_config.gp_config().is_some_and(|x| !x.pic())?
+                    global_config.gp_config().map(|gp_config| {
+                        Vram::new(gp_config.gp_value().inner().wrapping_add_signed(lower_half))
+                    })
+                } else {
+                    Some(Vram::new(pairing_info.value as u32) + VramOffset::new(lower_half))
+                };
 
-                regs_tracker.process_lo(instr, address.inner(), current_rom);
+                if let Some(address) = address {
+                    regs_tracker.process_lo(instr, address.inner(), current_rom);
+                }
             }
         }
     } else if instr.opcode().can_be_unsigned_lo() {

@@ -119,37 +119,50 @@ impl Preheater {
                 if let Some(pairing_info) =
                     regs_tracker.preprocess_lo_and_get_info(&instr, current_rom)
                 {
-                    if pairing_info.is_gp_got {
-                        // TODO
-                    } else if let Some(lower_half) = instr.get_processed_immediate() {
-                        let access_type = instr.opcode().access_type();
-                        let address =
-                            Vram::new(pairing_info.value as u32) + VramOffset::new(lower_half);
-
-                        let realigned_symbol_vram = match access_type {
-                            // Align down the Vram
-                            Some(AccessType::WORD_LEFT | AccessType::WORD_RIGHT) => {
-                                Vram::new(address.inner() - (address.inner() % 4))
-                            }
-                            Some(AccessType::DOUBLEWORD_LEFT | AccessType::DOUBLEWORD_RIGHT) => {
-                                Vram::new(address.inner() - (address.inner() % 8))
-                            }
-                            None | Some(_) => address,
+                    if let Some(lower_half) = instr.get_processed_immediate() {
+                        let address = if pairing_info.is_gp_got {
+                            // TODO
+                            // global_config.gp_config().is_some_and(|x| x.pic())
+                            None
+                        } else if pairing_info.is_gp_rel {
+                            // TODO: should check for global_config.gp_config().is_some_and(|x| !x.pic())?
+                            global_config.gp_config().map(|gp_config| {
+                                Vram::new(
+                                    gp_config.gp_value().inner().wrapping_add_signed(lower_half),
+                                )
+                            })
+                        } else {
+                            Some(Vram::new(pairing_info.value as u32) + VramOffset::new(lower_half))
                         };
 
-                        if let (Some(reference), Some(access_type)) = (
-                            self.new_ref(
-                                realigned_symbol_vram,
-                                Some(current_vram),
-                                user_symbols,
-                                ignored_addresses,
-                            ),
-                            instr.opcode().access_type(),
-                        ) {
-                            reference.set_access_type(access_type);
-                        }
+                        if let Some(address) = address {
+                            let access_type = instr.opcode().access_type();
 
-                        regs_tracker.process_lo(&instr, address.inner(), current_rom);
+                            let realigned_symbol_vram = match access_type {
+                                // Align down the Vram
+                                Some(AccessType::WORD_LEFT | AccessType::WORD_RIGHT) => {
+                                    Vram::new(address.inner() - (address.inner() % 4))
+                                }
+                                Some(
+                                    AccessType::DOUBLEWORD_LEFT | AccessType::DOUBLEWORD_RIGHT,
+                                ) => Vram::new(address.inner() - (address.inner() % 8)),
+                                None | Some(_) => address,
+                            };
+
+                            if let (Some(reference), Some(access_type)) = (
+                                self.new_ref(
+                                    realigned_symbol_vram,
+                                    Some(current_vram),
+                                    user_symbols,
+                                    ignored_addresses,
+                                ),
+                                instr.opcode().access_type(),
+                            ) {
+                                reference.set_access_type(access_type);
+                            }
+
+                            regs_tracker.process_lo(&instr, address.inner(), current_rom);
+                        }
                     }
                 }
             }
