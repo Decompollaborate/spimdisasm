@@ -203,7 +203,11 @@ impl FunctionDisplay<'_, '_, '_> {
             use alloc::string::ToString;
 
             // TODO: hack for splat diffs
-            instr_display.to_string().replace("$s8", "$fp")
+            let mut temp = instr_display.to_string().replace("$s8", "$fp");
+            if !self.settings.display_flags.named_gpr() {
+                temp = temp.replace("$zero", "$0").replace("$ra", "$31");
+            }
+            temp
         };
 
         write!(f, "{}", instr_display)

@@ -20,6 +20,8 @@ pub struct GlobalConfig {
     // ASM_PRELUDE_USE_INSTRUCTION_DIRECTIVES: bool = True
     // ASM_PRELUDE_USE_SECTION_START: bool = True
     // ASM_GENERATED_BY: bool = True
+
+    // TODO: ABI
 }
 
 impl GlobalConfig {

@@ -30,12 +30,22 @@ struct SegmentBuilder {
 
 impl SegmentBuilder {
     fn new(ranges: RomVramRange, name: Option<String>) -> Self {
+        let mut ignored_addresses = AddendedOrderedMap::new();
+
+        // Hardcode the address 0 to always be ignored.
+        ignored_addresses.find_mut_or_insert_with(Vram::new(0), FindSettings::new(false), || {
+            (
+                Vram::new(0),
+                IgnoredAddressRange::new(Vram::new(0), Size::new(1)),
+            )
+        });
+
         Self {
             ranges,
             name,
             prioritised_overlays: Vec::new(),
             user_symbols: AddendedOrderedMap::new(),
-            ignored_addresses: AddendedOrderedMap::new(),
+            ignored_addresses,
         }
     }
 

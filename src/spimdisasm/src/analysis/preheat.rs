@@ -585,6 +585,7 @@ impl Preheater {
         } else {
             let settings = FindSettings::new(true);
 
+            // TODO: write an find_mut_or_insert_another that allows inserting a different key than the original
             let (refer, _) = self.references.find_mut_or_insert_with(vram, settings, || {
                 if let Some(metadata) = user_symbols.find(&vram, settings) {
                     let vram = metadata.vram();

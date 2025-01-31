@@ -22,7 +22,7 @@ impl OwnedSymbolNotFoundError {
 }
 impl fmt::Display for OwnedSymbolNotFoundError {
     fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        todo!("TODO: display OwnedSymbolNotFoundError")
     }
 }
 impl error::Error for OwnedSymbolNotFoundError {}

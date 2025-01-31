@@ -96,7 +96,7 @@ impl SymbolType {
             | AccessType::DOUBLEWORD_LEFT
             | AccessType::DOUBLEWORD_RIGHT => None,
 
-            _ => todo!(),
+            _ => unimplemented!("A new AccessType was added to rabbitizer?"),
         }
     }
 
