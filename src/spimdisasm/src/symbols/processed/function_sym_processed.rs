@@ -203,9 +203,6 @@ impl FunctionSymProcessed {
             */
 
             if owned_segment.is_vram_ignored(*symbol_vram) {
-                relocs[instr_index] = Some(RelocationType::R_CUSTOM_CONSTANT_LO.new_reloc_info(
-                    RelocReferencedSym::SymName(format!("0x{:08X}", symbol_vram.inner()), 0),
-                ));
                 continue;
             }
 
@@ -219,9 +216,12 @@ impl FunctionSymProcessed {
             let instr_index = (*instr_rom - ranges.rom().start()).inner() as usize / 4;
 
             if owned_segment.is_vram_ignored(*symbol_vram) {
-                relocs[instr_index] = Some(RelocationType::R_CUSTOM_CONSTANT_HI.new_reloc_info(
-                    RelocReferencedSym::SymName(format!("0x{:08X}", symbol_vram.inner()), 0),
-                ));
+                if let Some(imm) = instructions[instr_index].get_processed_immediate() {
+                    relocs[instr_index] =
+                        Some(RelocationType::R_CUSTOM_CONSTANT_HI.new_reloc_info(
+                            RelocReferencedSym::SymName(format!("0x{:08X}", imm << 16), 0),
+                        ));
+                }
                 continue;
             }
 
