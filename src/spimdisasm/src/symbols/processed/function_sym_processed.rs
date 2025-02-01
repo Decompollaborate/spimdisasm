@@ -456,10 +456,6 @@ impl FunctionSymProcessed {
         let mut labels = Vec::new();
 
         let owned_segment = context.find_owned_segment_mut(parent_segment_info)?;
-        let owned_metadata = owned_segment
-            .find_symbol(ranges.vram().start(), FindSettings::new(false))
-            .unwrap();
-        let in_overlay = owned_metadata.in_overlay();
 
         for (vram, sym) in owned_segment.find_symbol_ranges_mut(*ranges.vram()) {
             sym.set_defined();
@@ -468,10 +464,6 @@ impl FunctionSymProcessed {
             let rom =
                 Size::new((*vram - ranges.vram().start()).inner() as u32) + ranges.rom().start();
             *sym.rom_mut() = Some(rom);
-
-            if let Some(in_overlay) = in_overlay {
-                sym.set_in_overlay(in_overlay);
-            }
 
             labels.push(*vram);
         }

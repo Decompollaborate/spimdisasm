@@ -37,7 +37,6 @@ impl NoloadSym {
             None,
             vram_range.size(),
             SECTION_TYPE,
-            &parent_segment_info,
             None,
             |_| Size::new(0),
         )?;

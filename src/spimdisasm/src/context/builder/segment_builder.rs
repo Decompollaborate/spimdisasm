@@ -12,7 +12,10 @@ use pyo3::prelude::*;
 use crate::{
     addresses::{Rom, RomVramRange, Size, Vram},
     collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
-    metadata::{GeneratedBy, IgnoredAddressRange, OverlayCategoryName, SymbolMetadata, SymbolType},
+    metadata::{
+        GeneratedBy, IgnoredAddressRange, OverlayCategoryName, OwnerSegmentKind, SymbolMetadata,
+        SymbolType,
+    },
 };
 
 use super::{
@@ -83,12 +86,20 @@ impl SegmentBuilder {
 
         let check_addend = !sym_type.is_some_and(|x| x.is_label());
 
-        // TODO: pass down segment information to the symbol during creation,
-        // like telling it if it is part of the global segment, an overlay or the unknown segment.
         let (sym, newly_created) = self.user_symbols.find_mut_or_insert_with(
             vram,
             FindSettings::new(check_addend),
-            || (vram, SymbolMetadata::new(GeneratedBy::UserDeclared, vram)),
+            || {
+                let owner_segment_kind = if let Some(name) = &self.name {
+                    OwnerSegmentKind::Overlay(name.clone())
+                } else {
+                    OwnerSegmentKind::Global
+                };
+                (
+                    vram,
+                    SymbolMetadata::new(GeneratedBy::UserDeclared, vram, owner_segment_kind),
+                )
+            },
         );
 
         if sym.vram() != vram

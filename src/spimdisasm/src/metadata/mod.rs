@@ -16,6 +16,7 @@ pub use overlay_category::OverlayCategory;
 pub use overlay_category_name::OverlayCategoryName;
 pub(crate) use parent_section_metadata::ParentSectionMetadata;
 pub use segment_metadata::SegmentMetadata;
+pub(crate) use symbol_metadata::OwnerSegmentKind;
 pub use symbol_metadata::{GeneratedBy, RodataMigrationBehavior, SymbolMetadata};
 pub use symbol_metadata_name_display::SymbolMetadataNameDisplay;
 pub use symbol_type::SymbolType;

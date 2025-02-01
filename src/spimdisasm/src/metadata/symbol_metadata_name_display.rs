@@ -5,7 +5,7 @@ use core::fmt;
 
 use crate::section_type::SectionType;
 
-use super::{SymbolMetadata, SymbolType};
+use super::{OwnerSegmentKind, SymbolMetadata, SymbolType};
 
 fn should_escape_symbol(name: &str) -> bool {
     name.contains('@')
@@ -99,11 +99,8 @@ impl SymbolMetadataNameDisplay<'_> {
     }
 
     fn display_suffix(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.sym.in_overlay().is_some_and(|x| x) {
-            if let Some(rom) = self.sym.rom() {
-                // TODO: change to 08X
-                write!(f, "_{:06X}", rom.inner())?;
-            }
+        if let OwnerSegmentKind::Overlay(name) = self.sym.owner_segment_kind() {
+            write!(f, "_{}", name)?;
         }
 
         /*

@@ -56,7 +56,6 @@ impl DataSym {
             Some(rom),
             size,
             section_type,
-            &parent_segment_info,
             None,
             |metadata| {
                 count_padding(

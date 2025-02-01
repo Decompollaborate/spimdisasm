@@ -56,7 +56,6 @@ impl FunctionSym {
             Some(rom),
             size,
             SECTION_TYPE,
-            &parent_segment_info,
             Some(SymbolType::Function),
             |metadata| count_padding(&instructions, metadata.user_declared_size()),
         )?;
@@ -284,6 +283,27 @@ impl FunctionSym {
                 parent_segment_info.clone(),
                 *instr_rom,
             );
+            if sym_metadata.owner_segment_kind().is_unknown_segment() {
+                match sym_access {
+                    // Set a dummy min size to allow relocs to properly reference this symbol from the unknown segment.
+                    // This may not be real tho, I need to properly check.
+                    Some((AccessType::WORD_LEFT | AccessType::WORD_RIGHT, _)) => {
+                        let siz = sym_metadata
+                            .autodetected_size()
+                            .unwrap_or(Size::new(4))
+                            .max(Size::new(4));
+                        *sym_metadata.autodetected_size_mut() = Some(siz);
+                    }
+                    Some((AccessType::DOUBLEWORD_LEFT | AccessType::DOUBLEWORD_RIGHT, _)) => {
+                        let siz = sym_metadata
+                            .autodetected_size()
+                            .unwrap_or(Size::new(8))
+                            .max(Size::new(8));
+                        *sym_metadata.autodetected_size_mut() = Some(siz);
+                    }
+                    None | Some(_) => {}
+                }
+            }
             /*
             contextSym = sym_metadata
             # TODO: do this in a less ugly way
