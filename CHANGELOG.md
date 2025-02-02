@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.32.1] - 2025-02-02
+
 ### Changed
 
 - Tweak symbol pairing system a bit.
@@ -1740,6 +1742,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.32.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.32.0...1.32.1
 [1.32.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.31.3...1.32.0
 [1.31.3]: https://github.com/Decompollaborate/spimdisasm/compare/1.31.2...1.31.3
 [1.31.2]: https://github.com/Decompollaborate/spimdisasm/compare/1.31.1...1.31.2
