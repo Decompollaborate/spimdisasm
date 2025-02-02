@@ -433,7 +433,9 @@ class SymbolFunction(SymbolText):
                 self.endOfLineComment[instrOffset//4] = f" /* {comment} */"
 
         for instrOffset, targetVram in self.instrAnalyzer.funcCallInstrOffsets.items():
-            funcSym = self.getSymbolFromAnySegment(targetVram, lambda contextSym: contextSym.type == common.SymbolSpecialType.function or contextSym.type is None, tryPlusOffset=False)
+            instr = self.instructions[instrOffset//4]
+            is_j = instr.isJumpWithAddress() and not instr.doesLink()
+            funcSym = self.getSymbolFromAnySegment(targetVram, lambda contextSym: contextSym.type == common.SymbolSpecialType.function or contextSym.type is None or (is_j and isinstance(contextSym.type, common.SymbolSpecialType) and contextSym.type.isTargetLabel()), tryPlusOffset=False)
             if funcSym is None:
                 continue
             self.relocs[instrOffset] = common.RelocationInfo(common.RelocType.MIPS_26, funcSym)
