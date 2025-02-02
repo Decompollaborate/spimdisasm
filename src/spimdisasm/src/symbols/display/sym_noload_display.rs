@@ -107,10 +107,6 @@ impl fmt::Display for SymNoloadDisplay<'_, '_, '_> {
             self.settings.common.line_end()
         )?;
 
-        self.settings
-            .common
-            .display_sym_post_alignment(f, self.metadata)?;
-
         Ok(())
     }
 }

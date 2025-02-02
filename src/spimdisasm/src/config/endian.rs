@@ -12,32 +12,41 @@ pub enum Endian {
 }
 
 impl Endian {
-    pub fn word_from_bytes(self, bytes: &[u8]) -> u32 {
-        let x = bytes.try_into().expect("Wrong input");
+    #[must_use]
+    pub const fn word_from_bytes(self, bytes: &[u8]) -> u32 {
+        assert!(bytes.len() >= 4, "Not big enough");
+        let arr = [bytes[0], bytes[1], bytes[2], bytes[3]];
 
         match self {
-            Endian::Big => u32::from_be_bytes(x),
-            Endian::Little => u32::from_le_bytes(x),
+            Endian::Big => u32::from_be_bytes(arr),
+            Endian::Little => u32::from_le_bytes(arr),
         }
     }
-    pub fn short_from_bytes(self, bytes: &[u8]) -> u16 {
-        let x = bytes.try_into().expect("Wrong input");
+    #[must_use]
+    pub const fn short_from_bytes(self, bytes: &[u8]) -> u16 {
+        assert!(bytes.len() >= 2, "Not big enough");
+        let arr = [bytes[0], bytes[1]];
 
         match self {
-            Endian::Big => u16::from_be_bytes(x),
-            Endian::Little => u16::from_le_bytes(x),
+            Endian::Big => u16::from_be_bytes(arr),
+            Endian::Little => u16::from_le_bytes(arr),
         }
     }
-    pub fn dword_from_bytes(self, bytes: &[u8]) -> u64 {
-        let x = bytes.try_into().expect("Wrong input");
+    #[must_use]
+    pub const fn dword_from_bytes(self, bytes: &[u8]) -> u64 {
+        assert!(bytes.len() >= 8, "Not big enough");
+        let arr = [
+            bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+        ];
 
         match self {
-            Endian::Big => u64::from_be_bytes(x),
-            Endian::Little => u64::from_le_bytes(x),
+            Endian::Big => u64::from_be_bytes(arr),
+            Endian::Little => u64::from_le_bytes(arr),
         }
     }
 
-    pub fn bytes_from_word(self, word: u32) -> [u8; 4] {
+    #[must_use]
+    pub const fn bytes_from_word(self, word: u32) -> [u8; 4] {
         match self {
             Endian::Big => word.to_be_bytes(),
             Endian::Little => word.to_le_bytes(),

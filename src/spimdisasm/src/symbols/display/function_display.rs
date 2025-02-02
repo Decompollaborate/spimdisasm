@@ -283,10 +283,6 @@ impl fmt::Display for FunctionDisplay<'_, '_, '_> {
             }
         }
 
-        self.settings
-            .common
-            .display_sym_post_alignment(f, self.metadata)?;
-
         Ok(())
     }
 }

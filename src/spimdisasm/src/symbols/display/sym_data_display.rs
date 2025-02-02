@@ -394,6 +394,15 @@ impl SymDataDisplay<'_, '_, '_> {
             }
         }
 
+        if let Some(compiler) = self.metadata.compiler() {
+            self.settings.common.display_alignment_directive(
+                f,
+                self.metadata,
+                compiler,
+                Some(2),
+            )?;
+        }
+
         Ok(real_end)
     }
 }
@@ -519,20 +528,9 @@ impl fmt::Display for SymDataDisplay<'_, '_, '_> {
             i += advance;
         }
 
-        // TODO: hack to minimize diffs to spimdisasm 1.X
-        #[cfg(feature = "pyo3")]
-        self.settings
-            .common
-            .display_sym_post_alignment(f, self.metadata)?;
-
         self.settings
             .common
             .display_sym_end(f, self.context.global_config(), self.metadata)?;
-
-        #[cfg(not(feature = "pyo3"))]
-        self.settings
-            .common
-            .display_sym_post_alignment(f, self.metadata)?;
 
         Ok(())
     }

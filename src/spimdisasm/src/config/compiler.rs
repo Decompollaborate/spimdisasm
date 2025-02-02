@@ -201,27 +201,6 @@ impl Compiler {
             SymbolType::UserCustom => None,
         }
     }
-
-    const fn post_align_c_string(&self) -> Option<u8> {
-        Some(2)
-    }
-
-    pub(crate) const fn post_align_for_type(&self, sym_type: SymbolType) -> Option<u8> {
-        match sym_type {
-            SymbolType::Function => None,
-            SymbolType::Jumptable => None,
-            SymbolType::GccExceptTable => None,
-            SymbolType::BranchLabel
-            | SymbolType::JumptableLabel
-            | SymbolType::GccExceptTableLabel => None,
-            SymbolType::Byte | SymbolType::Short | SymbolType::Word => None,
-            SymbolType::DWord => None,
-            SymbolType::Float32 => None,
-            SymbolType::Float64 => None,
-            SymbolType::CString => self.post_align_c_string(),
-            SymbolType::UserCustom => None,
-        }
-    }
 }
 
 #[cfg(feature = "pyo3")]

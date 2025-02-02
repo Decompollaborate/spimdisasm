@@ -240,8 +240,49 @@ impl DataSection {
                                 auto_pads.insert(current_vram, current_vram);
                             }
 
-                            let next_vram = current_vram + Size::new(str_sym_size as u32);
-                            if ((next_vram - vram_range.start()).inner() as usize) < raw_bytes.len()
+                            let mut next_vram = current_vram + Size::new(str_sym_size as u32);
+                            if next_vram.inner() % 8 == 4 {
+                                // Some compilers align strings to 8, leaving some annoying padding.
+                                // We try to check if the next symbol is aligned, and if that's the case then grab the
+                                // padding into this symbol.
+                                if local_offset + str_sym_size + 4 <= raw_bytes.len() {
+                                    let next_word = endian
+                                        .word_from_bytes(&raw_bytes[local_offset + str_sym_size..]);
+                                    if next_word == 0 {
+                                        // Next word is zero, which means it could be padding bytes, so we have to check
+                                        // if it may be an actual symbol by checking if anything references it
+                                        if owned_segment
+                                            .find_reference(next_vram, FindSettings::new(false))
+                                            .is_none_or(|x| x.reference_counter() == 0)
+                                        {
+                                            let next_next_vram =
+                                                Vram::new(next_vram.inner().next_multiple_of(8));
+                                            if vram_range.in_range(next_next_vram) {
+                                                let next_next_ref = owned_segment.find_reference(
+                                                    next_next_vram,
+                                                    FindSettings::new(false),
+                                                );
+
+                                                if let Some(compiler) = settings.compiler {
+                                                    if next_next_ref.is_some_and(|x| {
+                                                        x.sym_type().is_some_and(|sym_type| {
+                                                            compiler.prev_align_for_type(sym_type)
+                                                                >= Some(3)
+                                                        })
+                                                    }) {
+                                                        next_vram += Size::new(4);
+                                                    }
+                                                }
+                                            } else if vram_range.end() == next_next_vram {
+                                                // trailing padding, lets just add it here
+                                                next_vram += Size::new(4);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            if vram_range.in_range(next_vram)
                                 && !owned_segment.is_vram_ignored(next_vram)
                             {
                                 // Avoid generating a symbol at the end of the section

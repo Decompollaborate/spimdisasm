@@ -229,7 +229,7 @@ impl SymCommonDisplaySettings {
     }
     */
 
-    fn display_alignment_directive(
+    pub(crate) fn display_alignment_directive(
         &self,
         f: &mut fmt::Formatter<'_>,
         metadata: &SymbolMetadata,
@@ -284,25 +284,6 @@ impl SymCommonDisplaySettings {
                     metadata,
                     compiler,
                     compiler.prev_align_for_type(sym_type),
-                )?;
-            }
-        }
-
-        Ok(())
-    }
-
-    pub fn display_sym_post_alignment(
-        &self,
-        f: &mut fmt::Formatter<'_>,
-        metadata: &SymbolMetadata,
-    ) -> fmt::Result {
-        if let Some(compiler) = metadata.compiler() {
-            if let Some(sym_type) = metadata.sym_type() {
-                self.display_alignment_directive(
-                    f,
-                    metadata,
-                    compiler,
-                    compiler.post_align_for_type(sym_type),
                 )?;
             }
         }
