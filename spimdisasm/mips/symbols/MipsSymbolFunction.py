@@ -85,8 +85,32 @@ class SymbolFunction(SymbolText):
     def _runInstructionAnalyzer(self) -> None:
         regsTracker = rabbitizer.RegistersTracker()
 
+        sizew = len(self.instructions)*4
+
         instructionOffset = 0
-        for instr in self.instructions:
+        if instructionOffset < sizew:
+            # First process the first instruction. We do this separately because the first one doesn't have a prev instruction.
+
+            currentVram = self.getVramOffset(instructionOffset)
+            instr = self.instructions[instructionOffset//4]
+
+            if instr.isLikelyHandwritten() and not self.isRsp:
+                self.isLikelyHandwritten = True
+                self.endOfLineComment[instructionOffset//4] = " /* handwritten instruction */"
+
+            if not common.GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS and not instr.isImplemented():
+                # Abort analysis
+                self.hasUnimplementedIntrs = True
+                return
+
+            self.instrAnalyzer.processInstr(regsTracker, instr, instructionOffset, currentVram, None)
+            instructionOffset += 4
+
+        while instructionOffset < sizew:
+            currentVram = self.getVramOffset(instructionOffset)
+            prevInstr = self.instructions[instructionOffset//4 - 1]
+            instr = self.instructions[instructionOffset//4]
+
             currentVram = self.getVramOffset(instructionOffset)
             prevInstr = self.instructions[instructionOffset//4 - 1]
 
@@ -118,6 +142,10 @@ class SymbolFunction(SymbolText):
                     regsTracker = rabbitizer.RegistersTracker()
 
             self.instrAnalyzer.processPrevFuncCall(regsTracker, instr, prevInstr, currentVram)
+
+            if prevInstr.isUnconditionalBranch() or (prevInstr.isJumpWithAddress() and not prevInstr.doesLink()) or prevInstr.isReturn():
+                # Execution diverges here, so it doesn't make sense to keep the current state.
+                regsTracker = rabbitizer.RegistersTracker()
 
             instructionOffset += 4
 
@@ -405,7 +433,9 @@ class SymbolFunction(SymbolText):
                 self.endOfLineComment[instrOffset//4] = f" /* {comment} */"
 
         for instrOffset, targetVram in self.instrAnalyzer.funcCallInstrOffsets.items():
-            funcSym = self.getSymbol(targetVram, tryPlusOffset=False)
+            instr = self.instructions[instrOffset//4]
+            is_j = instr.isJumpWithAddress() and not instr.doesLink()
+            funcSym = self.getSymbolFromAnySegment(targetVram, lambda contextSym: contextSym.type == common.SymbolSpecialType.function or contextSym.type is None or (is_j and isinstance(contextSym.type, common.SymbolSpecialType) and contextSym.type.isTargetLabel()), tryPlusOffset=False)
             if funcSym is None:
                 continue
             self.relocs[instrOffset] = common.RelocationInfo(common.RelocType.MIPS_26, funcSym)
