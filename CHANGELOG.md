@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tweak symbol pairing system a bit.
   - Should reduce the amount of fake pairings emitted in the generated assembly.
 
+### Fixed
+
+- Prevent emitting `jal`s to symbols that aren't functions.
+
 ## [1.32.0] - 2024-12-28
 
 ### Added
