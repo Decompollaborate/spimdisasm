@@ -380,58 +380,63 @@ impl Preheater {
                         maybe_reached_late_rodata || reached_late_rodata,
                     );
 
-                    if let Some(str_size) = guessed_size {
-                        let str_sym_size = str_size.next_multiple_of(4);
-                        let in_between_sym = ReferenceWrapper::find(
-                            user_symbols,
-                            self,
-                            current_vram + Size::new(str_sym_size as u32 - 1),
-                            FindSettings::new(true).with_reject_sizeless_addended(false),
-                        );
+                    match guessed_size {
+                        Ok(str_size) => {
+                            let str_sym_size = str_size.next_multiple_of(4);
+                            let in_between_sym = ReferenceWrapper::find(
+                                user_symbols,
+                                self,
+                                current_vram + Size::new(str_sym_size as u32 - 1),
+                                FindSettings::new(true).with_reject_sizeless_addended(false),
+                            );
 
-                        if in_between_sym.is_none_or(|x| {
-                            let other_sym_vram = x.vram();
+                            if in_between_sym.is_none_or(|x| {
+                                let other_sym_vram = x.vram();
 
-                            match other_sym_vram.cmp(&current_vram) {
-                                Ordering::Greater => false,
-                                Ordering::Equal => true,
-                                Ordering::Less => {
-                                    if x.size().is_some_and(|x| other_sym_vram + x <= current_vram)
-                                    {
-                                        true
-                                    } else {
-                                        // Hack to try to find unreferenced strings.
-                                        // We need this hack because size information for previous symbols on this section
-                                        // is not known yet, because we add it lazily.
-                                        // Not doing it lazily yields some weird hallucinated symbols. Maybe someday I'll
-                                        // properly debug why they happen and how to avoid them, in the meantime we have
-                                        // this hack.
-                                        references_found.last().is_some_and(|x| {
-                                            x.0 >= other_sym_vram
-                                                && x.3.is_some_and(|size| {
-                                                    other_sym_vram + size <= current_vram
-                                                })
-                                        })
+                                match other_sym_vram.cmp(&current_vram) {
+                                    Ordering::Greater => false,
+                                    Ordering::Equal => true,
+                                    Ordering::Less => {
+                                        if x.size()
+                                            .is_some_and(|x| other_sym_vram + x <= current_vram)
+                                        {
+                                            true
+                                        } else {
+                                            // Hack to try to find unreferenced strings.
+                                            // We need this hack because size information for previous symbols on this section
+                                            // is not known yet, because we add it lazily.
+                                            // Not doing it lazily yields some weird hallucinated symbols. Maybe someday I'll
+                                            // properly debug why they happen and how to avoid them, in the meantime we have
+                                            // this hack.
+                                            references_found.last().is_some_and(|x| {
+                                                x.0 >= other_sym_vram
+                                                    && x.3.is_some_and(|size| {
+                                                        other_sym_vram + size <= current_vram
+                                                    })
+                                            })
+                                        }
                                     }
                                 }
+                            }) {
+                                // Check if there is already another symbol after the current one and before the end of the string,
+                                // in which case we say this symbol should not be a string
+
+                                remaining_string_size = str_size as i32;
+
+                                references_found.push((
+                                    current_vram,
+                                    Some(SymbolType::CString),
+                                    None,
+                                    Some(Size::new(str_sym_size as u32)),
+                                ));
+                                new_ref_scheduled_due_to_jtbl_ended = false;
+
+                                // Next symbol should not be affected by this string.
+                                prev_sym_info = None;
                             }
-                        }) {
-                            // Check if there is already another symbol after the current one and before the end of the string,
-                            // in which case we say this symbol should not be a string
-
-                            remaining_string_size = str_size as i32;
-
-                            references_found.push((
-                                current_vram,
-                                Some(SymbolType::CString),
-                                None,
-                                Some(Size::new(str_sym_size as u32)),
-                            ));
-                            new_ref_scheduled_due_to_jtbl_ended = false;
-
-                            // Next symbol should not be affected by this string.
-                            prev_sym_info = None;
                         }
+
+                        Err(_e) => {}
                     }
                 }
             }

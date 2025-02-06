@@ -1,6 +1,8 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use core::{error, fmt};
+
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 use rabbitizer::access_type::AccessType;
@@ -68,20 +70,55 @@ pub enum StringGuesserLevel {
     Full,
 }
 
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
+pub(crate) enum StringGuessError {
+    UserTypeMissingTerminatorAndNoGivenSize,
+    GivenUserTypeIsNotCString,
+    ReachedLateRodata,
+    NotProperAlignment,
+    GuesserDisabled,
+    ReferencedMoreThanOnce,
+    EmptyString,
+    HasAutodetectedType,
+    HasBeenDereferenced,
+    InvalidString,
+}
+
+impl fmt::Display for StringGuessError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // TODO: write a proper display
+        match self {
+            StringGuessError::UserTypeMissingTerminatorAndNoGivenSize => {
+                write!(f, "UserTypeMissingTerminatorAndNoGivenSize")
+            }
+            StringGuessError::GivenUserTypeIsNotCString => write!(f, "GivenUserTypeIsNotCString"),
+            StringGuessError::ReachedLateRodata => write!(f, "ReachedLateRodata"),
+            StringGuessError::NotProperAlignment => write!(f, "NotProperAlignment"),
+            StringGuessError::GuesserDisabled => write!(f, "GuesserDisabled"),
+            StringGuessError::ReferencedMoreThanOnce => write!(f, "ReferencedMoreThanOnce"),
+            StringGuessError::EmptyString => write!(f, "EmptyString"),
+            StringGuessError::HasAutodetectedType => write!(f, "HasAutodetectedType"),
+            StringGuessError::HasBeenDereferenced => write!(f, "HasBeenDereferenced"),
+            StringGuessError::InvalidString => write!(f, "InvalidString"),
+        }
+    }
+}
+impl error::Error for StringGuessError {}
+
 impl StringGuesserLevel {
     pub const fn default() -> Self {
         StringGuesserLevel::MultipleReferences
     }
 
-    #[must_use]
-    pub fn guess(
+    pub(crate) fn guess(
         &self,
         ref_wrapper: Option<ReferenceWrapper>,
         vram: Vram,
         bytes: &[u8],
         encoding: Encoding,
         reached_late_rodata: bool,
-    ) -> Option<usize> {
+    ) -> Result<usize, StringGuessError> {
         /*
         if contextSym._ranStringCheck:
             return contextSym.isMaybeString
@@ -100,18 +137,18 @@ impl StringGuesserLevel {
                     // Zero terminator.
                     str_end + 1
                 } else {
-                    return None;
+                    return Err(StringGuessError::UserTypeMissingTerminatorAndNoGivenSize);
                 };
 
-                return Some(size);
+                return Ok(size);
             } else if ref_wrapper.user_declared_type().is_some() {
                 // User said this symbol is a non string.
-                return None;
+                return Err(StringGuessError::GivenUserTypeIsNotCString);
             }
         }
 
         if reached_late_rodata {
-            return None;
+            return Err(StringGuessError::ReachedLateRodata);
         }
 
         /*
@@ -121,30 +158,32 @@ impl StringGuesserLevel {
 
         if vram.inner() % 4 != 0 {
             // A C string must start at a 0x4-aligned region
-            return None;
+            return Err(StringGuessError::NotProperAlignment);
         }
 
         if *self <= Self::No {
-            return None;
+            return Err(StringGuessError::GuesserDisabled);
         }
 
         if ref_wrapper.is_some_and(|x| x.reference_counter() > 1)
             && *self < Self::MultipleReferences
         {
-            return None;
+            return Err(StringGuessError::ReferencedMoreThanOnce);
         }
 
         if bytes[0] == b'\0' {
             // Empty strings are pretty rare and unlikely.
             if *self < Self::EmptyStrings {
-                return None;
+                return Err(StringGuessError::EmptyString);
             }
         }
 
-        if ref_wrapper.is_some_and(|x| x.autodetected_type().is_some())
-            && *self < Self::IgnoreDetectedType
+        if ref_wrapper.is_some_and(|x| {
+            x.autodetected_type()
+                .is_some_and(|x| x != SymbolType::CString)
+        }) && *self < Self::IgnoreDetectedType
         {
-            return None;
+            return Err(StringGuessError::HasAutodetectedType);
         }
         if ref_wrapper.is_some_and(|x| {
             x.all_access_types()
@@ -165,16 +204,16 @@ impl StringGuesserLevel {
             // Avoid considering something as a string if it has been dereferenced.
             // But allow LEFT/RIGHT accesses, since that can be used to declare strings on the stack.
             // TODO: make this thing its own guessing level instead of hyjacking IgnoreDetectedType.
-            return None;
+            return Err(StringGuessError::HasBeenDereferenced);
         }
 
         let raw_size = if let Ok(raw_size) = encoding.check_valid(bytes) {
             raw_size
         } else {
-            return None;
+            return Err(StringGuessError::InvalidString);
         };
 
-        Some(raw_size)
+        Ok(raw_size)
     }
 }
 
@@ -206,7 +245,7 @@ mod tests {
         println!("{:?}", maybe_size);
 
         //None::<u32>.unwrap();
-        assert_eq!(maybe_size, Some(53));
+        assert_eq!(maybe_size, Ok(53));
     }
 
     #[test]
@@ -222,6 +261,6 @@ mod tests {
         println!("{:?}", maybe_size);
 
         //None::<u32>.unwrap();
-        assert_eq!(maybe_size, Some(4));
+        assert_eq!(maybe_size, Ok(4));
     }
 }
