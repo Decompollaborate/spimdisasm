@@ -332,7 +332,7 @@ impl Preheater {
 
         let mut remaining_string_size = 0;
 
-        let mut prev_sym_type: Option<SymbolType> = None;
+        let mut prev_sym_info: Option<(Vram, Option<SymbolType>)> = None;
         // If true: the previous symbol made us thought we may be in late_rodata
         let mut maybe_reached_late_rodata = false;
         // If true, we are sure we are in late_rodata
@@ -340,6 +340,11 @@ impl Preheater {
 
         let mut float_counter = 0;
         let mut float_padding_counter = 0;
+
+        let mut first_table_label: Option<u32> = None;
+        let mut new_ref_scheduled_due_to_jtbl_ended = false;
+
+        let endian = global_config.endian();
 
         // TODO
         #[allow(clippy::type_complexity)]
@@ -422,9 +427,10 @@ impl Preheater {
                                 None,
                                 Some(Size::new(str_sym_size as u32)),
                             ));
+                            new_ref_scheduled_due_to_jtbl_ended = false;
 
                             // Next symbol should not be affected by this string.
-                            prev_sym_type = None;
+                            prev_sym_info = None;
                         }
                     }
                 }
@@ -446,30 +452,70 @@ impl Preheater {
                 let d =
                     ReferenceWrapper::find(user_symbols, self, d_vram, FindSettings::new(false));
 
-                let a_type = (a.is_some(), a.and_then(|x| x.sym_type()));
-                let b_type = (b.is_some(), b.and_then(|x| x.sym_type()));
-                let c_type = (c.is_some(), c.and_then(|x| x.sym_type()));
-                let d_type = (d.is_some(), d.and_then(|x| x.sym_type()));
+                let a_type = (a.is_some(), current_vram, a.and_then(|x| x.sym_type()));
+                let b_type = (b.is_some(), b_vram, b.and_then(|x| x.sym_type()));
+                let c_type = (c.is_some(), c_vram, c.and_then(|x| x.sym_type()));
+                let d_type = (d.is_some(), d_vram, d.and_then(|x| x.sym_type()));
+
+                let word = endian.word_from_bytes(word_bytes);
+
+                if new_ref_scheduled_due_to_jtbl_ended && word != 0 {
+                    references_found.push((current_vram, None, None, None));
+                    new_ref_scheduled_due_to_jtbl_ended = false;
+                }
 
                 if b.is_none() && c.is_none() && d.is_none() {
                     // There's no symbol in between
 
                     let current_type = match a {
-                        None => prev_sym_type,
+                        None => prev_sym_info.and_then(|x| x.1),
                         Some(wrapper) => wrapper.sym_type(),
                     };
                     let should_search_for_address =
                         current_type.is_none_or(|x| x.can_reference_symbols());
 
-                    let endian = global_config.endian();
-                    let word = endian.word_from_bytes(word_bytes);
                     if should_search_for_address {
                         let word_vram = Vram::new(word);
 
-                        if self.ranges.in_vram_range(word_vram) {
+                        let in_range = self.ranges.in_vram_range(word_vram);
+                        if in_range {
                             references_found.push((word_vram, None, Some(current_vram), None));
+                            new_ref_scheduled_due_to_jtbl_ended = false;
+                        }
 
-                            if current_type.is_some_and(|x| x.is_table()) {
+                        if current_type.is_some_and(|x| x.is_table()) {
+                            let still_valid_table = if let Some(first) = first_table_label {
+                                let mask = 0xFF800000;
+                                if word == 0 || ((first & mask) != (word & mask)) || !in_range {
+                                    // We are past the end of the jumptable, so we trash `prev_sym_info` to avoid
+                                    // seeing the rest of the symbol as a jumptable
+
+                                    // If the word is zero then do not add this address as a reference immediately,
+                                    // so we can keep this as trailing padding into this symbol
+                                    new_ref_scheduled_due_to_jtbl_ended = word == 0;
+
+                                    if word != 0 {
+                                        references_found.push((
+                                            current_vram,
+                                            None,
+                                            prev_sym_info.map(|x| x.0),
+                                            None,
+                                        ));
+                                    }
+
+                                    table_label = None;
+                                    first_table_label = None;
+                                    prev_sym_info = None;
+                                    false
+                                } else {
+                                    true
+                                }
+                            } else {
+                                first_table_label = Some(word);
+                                true
+                            };
+
+                            if still_valid_table {
                                 table_label = Some(word_vram);
                             }
                         }
@@ -522,9 +568,9 @@ impl Preheater {
                     }
                 }
 
-                for (exists, sym_type) in [a_type, b_type, c_type, d_type].into_iter() {
+                for (exists, sym_vram, sym_type) in [a_type, b_type, c_type, d_type].into_iter() {
                     if exists {
-                        prev_sym_type = sym_type;
+                        prev_sym_info = Some((sym_vram, sym_type));
                     }
                 }
 
@@ -541,9 +587,10 @@ impl Preheater {
             maybe_reached_late_rodata = false;
             if !reached_late_rodata
                 && section_type == SectionType::Rodata
-                && prev_sym_type.is_some_and(|x| x.is_late_rodata(settings.compiler()))
+                && prev_sym_info
+                    .is_some_and(|x| x.1.is_some_and(|x| x.is_late_rodata(settings.compiler())))
             {
-                if prev_sym_type == Some(SymbolType::Jumptable) {
+                if prev_sym_info.is_some_and(|x| x.1 == Some(SymbolType::Jumptable)) {
                     reached_late_rodata = true;
                 } else if float_padding_counter + 1 == float_counter {
                     // Finding a float or a double is not proof enough to say we are in late_rodata, because we

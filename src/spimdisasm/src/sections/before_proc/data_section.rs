@@ -181,7 +181,7 @@ impl DataSection {
 
         let mut remaining_string_size = 0;
 
-        let mut prev_sym_type: Option<SymbolType> = None;
+        let mut prev_sym_info: Option<(Vram, Option<SymbolType>)> = None;
         // If true: the previous symbol made us thought we may be in late_rodata
         let mut maybe_reached_late_rodata = false;
         // If true, we are sure we are in late_rodata
@@ -291,7 +291,7 @@ impl DataSection {
                             }
 
                             // Next symbol should not be affected by this string.
-                            prev_sym_type = None;
+                            prev_sym_info = None;
                         }
                     }
                 }
@@ -307,7 +307,7 @@ impl DataSection {
                     // There's no symbol in between
 
                     let current_type = match a {
-                        None => prev_sym_type,
+                        None => prev_sym_info.and_then(|x| x.1),
                         Some(wrapper) => wrapper.sym_type(),
                     };
                     let should_search_for_address =
@@ -317,19 +317,16 @@ impl DataSection {
                     if should_search_for_address {
                         // TODO: improve heuristic to determine if should search for symbols
                         let word_vram = Vram::new(word);
-                        if vram_range.in_range(word_vram) {
+                        if !owned_segment.is_vram_ignored(word_vram)
+                            && vram_range.in_range(word_vram)
+                        {
                             // Vram is contained in this section
-                            if let Some(reference) =
-                                owned_segment.find_reference(word_vram, FindSettings::new(true))
-                            {
-                                if reference.vram() == word_vram
-                                    && !owned_segment.is_vram_ignored(word_vram)
-                                {
-                                    // Only count this symbol if it doesn't have an addend.
-                                    // If it does have an addend then it may be part of a larger symbol.
-                                    symbols_info.entry(word_vram).or_default();
-                                }
-                            } else if !owned_segment.is_vram_ignored(word_vram) {
+
+                            let word_ref =
+                                owned_segment.find_reference(word_vram, FindSettings::new(true));
+                            if word_ref.is_none_or(|x| x.vram() == word_vram) {
+                                // Only count this symbol if it doesn't have an addend.
+                                // If it does have an addend then it may be part of a larger symbol.
                                 symbols_info.entry(word_vram).or_default();
                             }
                         }
@@ -397,7 +394,7 @@ impl DataSection {
                                 auto_pads.insert(next_vram, reference.vram());
                             }
                         }
-                        prev_sym_type = reference.sym_type();
+                        prev_sym_info = Some((x_vram, reference.sym_type()));
                     }
                 }
             }
@@ -405,9 +402,10 @@ impl DataSection {
             maybe_reached_late_rodata = false;
             if !reached_late_rodata
                 && section_type == SectionType::Rodata
-                && prev_sym_type.is_some_and(|x| x.is_late_rodata(settings.compiler()))
+                && prev_sym_info
+                    .is_some_and(|x| x.1.is_some_and(|x| x.is_late_rodata(settings.compiler())))
             {
-                if prev_sym_type == Some(SymbolType::Jumptable) {
+                if prev_sym_info.is_some_and(|x| x.1 == Some(SymbolType::Jumptable)) {
                     reached_late_rodata = true;
                 } else if float_padding_counter + 1 == float_counter {
                     // Finding a float or a double is not proof enough to say we are in late_rodata, because we
