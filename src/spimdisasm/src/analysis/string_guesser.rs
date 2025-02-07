@@ -106,6 +106,8 @@ impl fmt::Display for StringGuessError {
 }
 impl error::Error for StringGuessError {}
 
+// TODO: add an option to avoid guessing strings on unreferenced symbols
+
 impl StringGuesserLevel {
     pub const fn default() -> Self {
         StringGuesserLevel::MultipleReferences

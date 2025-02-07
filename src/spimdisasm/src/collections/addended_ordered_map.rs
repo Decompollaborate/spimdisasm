@@ -58,8 +58,6 @@ where
                     } else {
                         None
                     }
-                } else if !settings.reject_sizeless_addended {
-                    Some(v)
                 } else {
                     None
                 }
@@ -109,8 +107,6 @@ where
                     } else {
                         None
                     }
-                } else if !settings.reject_sizeless_addended {
-                    Some(v)
                 } else {
                     None
                 }
@@ -170,7 +166,7 @@ where
         } else if let Some(siz) = v.size() {
             key >= *other_key + siz
         } else {
-            settings.reject_sizeless_addended
+            true
         }
     } else {
         true
@@ -397,31 +393,16 @@ where
 }
 */
 
+// TODO: use the bitflags crate instead of a plain struct
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct FindSettings {
     allow_addend: bool,
-    reject_sizeless_addended: bool,
 }
 
 impl FindSettings {
     pub const fn new(allow_addend: bool) -> Self {
         Self {
             allow_addend,
-            reject_sizeless_addended: true,
-        }
-    }
-
-    pub const fn with_allow_addend(self, allow_addend: bool) -> Self {
-        Self {
-            allow_addend,
-            ..self
-        }
-    }
-
-    pub const fn with_reject_sizeless_addended(self, reject_sizeless_addended: bool) -> Self {
-        Self {
-            reject_sizeless_addended,
-            ..self
         }
     }
 }

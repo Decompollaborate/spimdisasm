@@ -404,16 +404,6 @@ mod tests {
 
         assert_eq!(
             segment
-                .find_symbol(
-                    Vram::new(0x1100),
-                    FindSettings::new(true).with_reject_sizeless_addended(false)
-                )
-                .map(|sym| sym.vram()),
-            Some(Vram::new(0x100C))
-        );
-
-        assert_eq!(
-            segment
                 .find_symbol(Vram::new(0x1008), FindSettings::new(true))
                 .map(|sym| sym.vram()),
             None

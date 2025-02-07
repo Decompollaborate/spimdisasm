@@ -2,7 +2,7 @@
 /* SPDX-License-Identifier: MIT */
 
 use alloc::{collections::btree_map::BTreeMap, string::String, vec::Vec};
-use core::{cmp::Ordering, hash};
+use core::hash;
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
@@ -199,114 +199,6 @@ impl DataSection {
             let c_vram = current_vram + Size::new(2);
             let d_vram = current_vram + Size::new(3);
 
-            // Avoid symbols in the middle of strings
-            if remaining_string_size <= 0 && !owned_segment.is_vram_ignored(current_vram) {
-                let current_ref =
-                    owned_segment.find_reference(current_vram, FindSettings::new(true));
-
-                if current_ref.is_none_or(|x| x.vram() == current_vram) {
-                    let guessed_size = settings.string_guesser_level.guess(
-                        current_ref,
-                        current_vram,
-                        &raw_bytes[local_offset..],
-                        settings.encoding,
-                        maybe_reached_late_rodata || reached_late_rodata,
-                    );
-
-                    match guessed_size {
-                        Ok(str_size) => {
-                            let str_sym_size = str_size.next_multiple_of(4);
-                            let in_between_sym = owned_segment.find_reference(
-                                current_vram + Size::new(str_sym_size as u32 - 1),
-                                FindSettings::new(true).with_reject_sizeless_addended(false),
-                            );
-
-                            if in_between_sym.is_none_or(|x| {
-                                let other_sym_vram = x.vram();
-
-                                match other_sym_vram.cmp(&current_vram) {
-                                    Ordering::Greater => false,
-                                    Ordering::Equal => true,
-                                    Ordering::Less => {
-                                        x.size().is_some_and(|x| other_sym_vram + x <= current_vram)
-                                    }
-                                }
-                            }) {
-                                // Check if there is already another symbol after the current one and before the end of the string,
-                                // in which case we say this symbol should not be a string
-
-                                remaining_string_size = str_size as i32;
-
-                                *symbols_info.entry(current_vram).or_default() =
-                                    Some(SymbolType::CString);
-                                if !auto_pads.contains_key(&current_vram) {
-                                    auto_pads.insert(current_vram, current_vram);
-                                }
-
-                                let mut next_vram = current_vram + Size::new(str_sym_size as u32);
-                                if next_vram.inner() % 8 == 4 {
-                                    // Some compilers align strings to 8, leaving some annoying padding.
-                                    // We try to check if the next symbol is aligned, and if that's the case then grab the
-                                    // padding into this symbol.
-                                    if local_offset + str_sym_size + 4 <= raw_bytes.len() {
-                                        let next_word = endian.word_from_bytes(
-                                            &raw_bytes[local_offset + str_sym_size..],
-                                        );
-                                        if next_word == 0 {
-                                            // Next word is zero, which means it could be padding bytes, so we have to check
-                                            // if it may be an actual symbol by checking if anything references it
-                                            if owned_segment
-                                                .find_reference(next_vram, FindSettings::new(false))
-                                                .is_none_or(|x| x.reference_counter() == 0)
-                                            {
-                                                let next_next_vram = Vram::new(
-                                                    next_vram.inner().next_multiple_of(8),
-                                                );
-                                                if vram_range.in_range(next_next_vram) {
-                                                    let next_next_ref = owned_segment
-                                                        .find_reference(
-                                                            next_next_vram,
-                                                            FindSettings::new(false),
-                                                        );
-
-                                                    if let Some(compiler) = settings.compiler {
-                                                        if next_next_ref.is_some_and(|x| {
-                                                            x.sym_type().is_some_and(|sym_type| {
-                                                                compiler
-                                                                    .prev_align_for_type(sym_type)
-                                                                    >= Some(3)
-                                                            })
-                                                        }) {
-                                                            next_vram += Size::new(4);
-                                                        }
-                                                    }
-                                                } else if vram_range.end() == next_next_vram {
-                                                    // trailing padding, lets just add it here
-                                                    next_vram += Size::new(4);
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                if vram_range.in_range(next_vram)
-                                    && !owned_segment.is_vram_ignored(next_vram)
-                                {
-                                    // Avoid generating a symbol at the end of the section
-                                    symbols_info.entry(next_vram).or_default();
-                                    auto_pads.insert(next_vram, current_vram);
-                                }
-
-                                // Next symbol should not be affected by this string.
-                                prev_sym_info = None;
-                            }
-                        }
-
-                        Err(_e) => {}
-                    }
-                }
-            }
-
             if remaining_string_size <= 0 {
                 let a = owned_segment.find_reference(current_vram, FindSettings::new(false));
                 let b = owned_segment.find_reference(b_vram, FindSettings::new(false));
@@ -315,32 +207,12 @@ impl DataSection {
 
                 if b.is_none() && c.is_none() && d.is_none() {
                     // There's no symbol in between
+                    let word = endian.word_from_bytes(word_bytes);
 
                     let current_type = match a {
                         None => prev_sym_info.and_then(|x| x.1),
                         Some(wrapper) => wrapper.sym_type(),
                     };
-                    let should_search_for_address =
-                        current_type.is_none_or(|x| x.can_reference_symbols());
-
-                    let word = endian.word_from_bytes(word_bytes);
-                    if should_search_for_address {
-                        // TODO: improve heuristic to determine if should search for symbols
-                        let word_vram = Vram::new(word);
-                        if !owned_segment.is_vram_ignored(word_vram)
-                            && vram_range.in_range(word_vram)
-                        {
-                            // Vram is contained in this section
-
-                            let word_ref =
-                                owned_segment.find_reference(word_vram, FindSettings::new(true));
-                            if word_ref.is_none_or(|x| x.vram() == word_vram) {
-                                // Only count this symbol if it doesn't have an addend.
-                                // If it does have an addend then it may be part of a larger symbol.
-                                symbols_info.entry(word_vram).or_default();
-                            }
-                        }
-                    }
 
                     if maybe_reached_late_rodata
                         && matches!(
@@ -387,21 +259,170 @@ impl DataSection {
                         float_counter = 0;
                         float_padding_counter = 0;
                     }
+
+                    let should_search_for_address =
+                        current_type.is_none_or(|x| x.can_reference_symbols());
+
+                    let word_vram = Vram::new(word);
+                    if should_search_for_address {
+                        // TODO: improve heuristic to determine if should search for symbols
+                        if !owned_segment.is_vram_ignored(word_vram)
+                            && vram_range.in_range(word_vram)
+                        {
+                            // Vram is contained in this section
+                            let word_ref =
+                                owned_segment.find_reference(word_vram, FindSettings::new(true));
+                            if word_ref.is_none_or(|x| {
+                                x.vram() == word_vram || current_type.is_some_and(|t| t.is_table())
+                            }) {
+                                // Only count this symbol if it doesn't have an addend.
+                                // If it does have an addend then it may be part of a larger symbol.
+                                symbols_info.entry(word_vram).or_default();
+                            }
+                        }
+                    }
+
+                    let word_ref = owned_segment.find_reference(word_vram, FindSettings::new(true));
+
+                    if !owned_segment.is_vram_ignored(current_vram)
+                        && word_ref.is_none_or(|x| match x.sym_type() {
+                            Some(SymbolType::Function) => x.vram() != word_vram,
+                            Some(t) => {
+                                if t.is_label() {
+                                    x.vram() != word_vram
+                                } else {
+                                    false
+                                }
+                            }
+                            _ => false,
+                        })
+                    {
+                        let current_ref =
+                            owned_segment.find_reference(current_vram, FindSettings::new(true));
+
+                        if current_ref.is_none_or(|x| x.vram() == current_vram) {
+                            let guessed_size = settings.string_guesser_level.guess(
+                                current_ref,
+                                current_vram,
+                                &raw_bytes[local_offset..],
+                                settings.encoding,
+                                maybe_reached_late_rodata || reached_late_rodata,
+                            );
+
+                            match guessed_size {
+                                Ok(str_size) => {
+                                    let str_sym_size = str_size.next_multiple_of(4);
+                                    let mut in_between_range =
+                                        owned_segment.find_references_range(AddressRange::new(
+                                            current_vram + Size::new(1),
+                                            current_vram + Size::new(str_sym_size as u32),
+                                        ));
+
+                                    if in_between_range.next().is_none() {
+                                        // Check if there is already another symbol after the current one and before the end of the string,
+                                        // in which case we say this symbol should not be a string
+
+                                        remaining_string_size = str_size as i32;
+
+                                        *symbols_info.entry(current_vram).or_default() =
+                                            Some(SymbolType::CString);
+                                        if !auto_pads.contains_key(&current_vram) {
+                                            auto_pads.insert(current_vram, current_vram);
+                                        }
+
+                                        let mut next_vram =
+                                            current_vram + Size::new(str_sym_size as u32);
+                                        if next_vram.inner() % 8 == 4 {
+                                            // Some compilers align strings to 8, leaving some annoying padding.
+                                            // We try to check if the next symbol is aligned, and if that's the case then grab the
+                                            // padding into this symbol.
+                                            if local_offset + str_sym_size + 4 <= raw_bytes.len() {
+                                                let next_word = endian.word_from_bytes(
+                                                    &raw_bytes[local_offset + str_sym_size..],
+                                                );
+                                                if next_word == 0 {
+                                                    // Next word is zero, which means it could be padding bytes, so we have to check
+                                                    // if it may be an actual symbol by checking if anything references it
+                                                    if owned_segment
+                                                        .find_reference(
+                                                            next_vram,
+                                                            FindSettings::new(false),
+                                                        )
+                                                        .is_none_or(|x| x.reference_counter() == 0)
+                                                    {
+                                                        let next_next_vram = Vram::new(
+                                                            next_vram.inner().next_multiple_of(8),
+                                                        );
+                                                        if vram_range.in_range(next_next_vram) {
+                                                            let next_next_ref = owned_segment
+                                                                .find_reference(
+                                                                    next_next_vram,
+                                                                    FindSettings::new(false),
+                                                                );
+
+                                                            if let Some(compiler) =
+                                                                settings.compiler
+                                                            {
+                                                                if next_next_ref.is_some_and(|x| {
+                                                                    x.sym_type().is_some_and(|sym_type| {
+                                                                        compiler
+                                                                            .prev_align_for_type(sym_type)
+                                                                            >= Some(3)
+                                                                    })
+                                                                }) {
+                                                                    next_vram += Size::new(4);
+                                                                }
+                                                            }
+                                                        } else if vram_range.end() == next_next_vram
+                                                        {
+                                                            // trailing padding, lets just add it here
+                                                            next_vram += Size::new(4);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        if vram_range.in_range(next_vram)
+                                            && !owned_segment.is_vram_ignored(next_vram)
+                                        {
+                                            // Avoid generating a symbol at the end of the section
+                                            symbols_info.entry(next_vram).or_default();
+                                            auto_pads.insert(next_vram, current_vram);
+                                        }
+
+                                        // Next symbol should not be affected by this string.
+                                        prev_sym_info = None;
+                                    }
+                                }
+
+                                Err(_e) => {}
+                            }
+                        }
+                    }
                 }
 
                 for (x_vram, x) in [(current_vram, a), (b_vram, b), (c_vram, c), (d_vram, d)] {
                     if owned_segment.is_vram_ignored(x_vram) {
                         continue;
                     }
+
                     if let Some(reference) = x {
                         symbols_info.entry(reference.vram()).or_default();
+
                         if let Some(size) = reference.user_declared_size() {
                             let next_vram = reference.vram() + size;
-                            if ((next_vram - vram_range.start()).inner() as usize) < raw_bytes.len()
-                            {
-                                // Avoid generating a symbol at the end of the section
-                                symbols_info.entry(next_vram).or_default();
-                                auto_pads.insert(next_vram, reference.vram());
+
+                            // Avoid generating a symbol at the end of the section
+                            if vram_range.in_range(next_vram) {
+                                let allow_next = match reference.sym_type() {
+                                    Some(SymbolType::CString) => next_vram.inner() % 4 == 0,
+                                    _ => true,
+                                };
+                                if allow_next {
+                                    symbols_info.entry(next_vram).or_default();
+                                    auto_pads.insert(next_vram, reference.vram());
+                                }
                             }
                         }
                         prev_sym_info = Some((x_vram, reference.sym_type()));

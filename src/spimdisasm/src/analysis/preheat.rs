@@ -2,11 +2,10 @@
 /* SPDX-License-Identifier: MIT */
 
 use alloc::vec::Vec;
-use core::cmp::Ordering;
 use rabbitizer::{access_type::AccessType, Instruction};
 
 use crate::{
-    addresses::{Rom, RomVramRange, Size, Vram, VramOffset},
+    addresses::{AddressRange, Rom, RomVramRange, Size, Vram, VramOffset},
     collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
     config::GlobalConfig,
     metadata::{IgnoredAddressRange, SymbolMetadata, SymbolType},
@@ -73,9 +72,18 @@ impl Preheater {
                 continue;
             }
 
-            if let Some(_target_vram) = instr.get_branch_vram_generic() {
+            if let Some(target_vram) = instr.get_branch_vram_generic() {
                 // instr.opcode().is_branch() or instr.is_unconditional_branch()
+
                 regs_tracker.process_branch(&instr, current_rom);
+                if let Some(new_ref) = self.new_ref_no_addend(
+                    target_vram,
+                    Some(current_vram),
+                    user_symbols,
+                    ignored_addresses,
+                ) {
+                    new_ref.set_sym_type(SymbolType::BranchLabel);
+                }
             } else if let Some(target_vram) = instr.get_instr_index_as_vram() {
                 // instr.opcode().is_jump_with_address()
                 if let Some(reference) = self.new_ref(
@@ -346,15 +354,6 @@ impl Preheater {
 
         let endian = global_config.endian();
 
-        // TODO
-        #[allow(clippy::type_complexity)]
-        let mut references_found: Vec<(
-            Vram,
-            Option<SymbolType>,
-            Option<Vram>,
-            Option<Size>,
-        )> = Vec::new();
-
         for (i, word_bytes) in raw_bytes.chunks_exact(4).enumerate() {
             let local_offset = i * 4;
 
@@ -364,85 +363,14 @@ impl Preheater {
             let d_vram = current_vram + Size::new(3);
 
             if remaining_string_size <= 0 {
-                let current_ref = ReferenceWrapper::find(
-                    user_symbols,
-                    self,
-                    current_vram,
-                    FindSettings::new(true),
-                );
-
-                if current_ref.is_none_or(|x| x.vram() == current_vram) {
-                    let guessed_size = settings.string_guesser_level().guess(
-                        current_ref,
-                        current_vram,
-                        &raw_bytes[local_offset..],
-                        settings.encoding(),
-                        maybe_reached_late_rodata || reached_late_rodata,
-                    );
-
-                    match guessed_size {
-                        Ok(str_size) => {
-                            let str_sym_size = str_size.next_multiple_of(4);
-                            let in_between_sym = ReferenceWrapper::find(
-                                user_symbols,
-                                self,
-                                current_vram + Size::new(str_sym_size as u32 - 1),
-                                FindSettings::new(true).with_reject_sizeless_addended(false),
-                            );
-
-                            if in_between_sym.is_none_or(|x| {
-                                let other_sym_vram = x.vram();
-
-                                match other_sym_vram.cmp(&current_vram) {
-                                    Ordering::Greater => false,
-                                    Ordering::Equal => true,
-                                    Ordering::Less => {
-                                        if x.size()
-                                            .is_some_and(|x| other_sym_vram + x <= current_vram)
-                                        {
-                                            true
-                                        } else {
-                                            // Hack to try to find unreferenced strings.
-                                            // We need this hack because size information for previous symbols on this section
-                                            // is not known yet, because we add it lazily.
-                                            // Not doing it lazily yields some weird hallucinated symbols. Maybe someday I'll
-                                            // properly debug why they happen and how to avoid them, in the meantime we have
-                                            // this hack.
-                                            references_found.last().is_some_and(|x| {
-                                                x.0 >= other_sym_vram
-                                                    && x.3.is_some_and(|size| {
-                                                        other_sym_vram + size <= current_vram
-                                                    })
-                                            })
-                                        }
-                                    }
-                                }
-                            }) {
-                                // Check if there is already another symbol after the current one and before the end of the string,
-                                // in which case we say this symbol should not be a string
-
-                                remaining_string_size = str_size as i32;
-
-                                references_found.push((
-                                    current_vram,
-                                    Some(SymbolType::CString),
-                                    None,
-                                    Some(Size::new(str_sym_size as u32)),
-                                ));
-                                new_ref_scheduled_due_to_jtbl_ended = false;
-
-                                // Next symbol should not be affected by this string.
-                                prev_sym_info = None;
-                            }
-                        }
-
-                        Err(_e) => {}
-                    }
-                }
-            }
-
-            if remaining_string_size <= 0 {
                 let mut table_label = None;
+
+                let word = endian.word_from_bytes(word_bytes);
+
+                if new_ref_scheduled_due_to_jtbl_ended && word != 0 {
+                    self.new_ref(current_vram, None, user_symbols, ignored_addresses);
+                    new_ref_scheduled_due_to_jtbl_ended = false;
+                }
 
                 let a = ReferenceWrapper::find(
                     user_symbols,
@@ -462,13 +390,6 @@ impl Preheater {
                 let c_type = (c.is_some(), c_vram, c.and_then(|x| x.sym_type()));
                 let d_type = (d.is_some(), d_vram, d.and_then(|x| x.sym_type()));
 
-                let word = endian.word_from_bytes(word_bytes);
-
-                if new_ref_scheduled_due_to_jtbl_ended && word != 0 {
-                    references_found.push((current_vram, None, None, None));
-                    new_ref_scheduled_due_to_jtbl_ended = false;
-                }
-
                 if b.is_none() && c.is_none() && d.is_none() {
                     // There's no symbol in between
 
@@ -476,55 +397,6 @@ impl Preheater {
                         None => prev_sym_info.and_then(|x| x.1),
                         Some(wrapper) => wrapper.sym_type(),
                     };
-                    let should_search_for_address =
-                        current_type.is_none_or(|x| x.can_reference_symbols());
-
-                    if should_search_for_address {
-                        let word_vram = Vram::new(word);
-
-                        let in_range = self.ranges.in_vram_range(word_vram);
-                        if in_range {
-                            references_found.push((word_vram, None, Some(current_vram), None));
-                            new_ref_scheduled_due_to_jtbl_ended = false;
-                        }
-
-                        if current_type.is_some_and(|x| x.is_table()) {
-                            let still_valid_table = if let Some(first) = first_table_label {
-                                let mask = 0xFF800000;
-                                if word == 0 || ((first & mask) != (word & mask)) || !in_range {
-                                    // We are past the end of the jumptable, so we trash `prev_sym_info` to avoid
-                                    // seeing the rest of the symbol as a jumptable
-
-                                    // If the word is zero then do not add this address as a reference immediately,
-                                    // so we can keep this as trailing padding into this symbol
-                                    new_ref_scheduled_due_to_jtbl_ended = word == 0;
-
-                                    if word != 0 {
-                                        references_found.push((
-                                            current_vram,
-                                            None,
-                                            prev_sym_info.map(|x| x.0),
-                                            None,
-                                        ));
-                                    }
-
-                                    table_label = None;
-                                    first_table_label = None;
-                                    prev_sym_info = None;
-                                    false
-                                } else {
-                                    true
-                                }
-                            } else {
-                                first_table_label = Some(word);
-                                true
-                            };
-
-                            if still_valid_table {
-                                table_label = Some(word_vram);
-                            }
-                        }
-                    }
 
                     if maybe_reached_late_rodata
                         && matches!(
@@ -571,6 +443,169 @@ impl Preheater {
                         float_counter = 0;
                         float_padding_counter = 0;
                     }
+
+                    let should_search_for_address =
+                        current_type.is_none_or(|x| x.can_reference_symbols());
+
+                    let mut reference_found = false;
+                    let mut reference_is_in_function = false;
+                    if should_search_for_address {
+                        let word_vram = Vram::new(word);
+                        let is_table = current_type.is_some_and(|x| x.is_table());
+
+                        let in_range = self.ranges.in_vram_range(word_vram);
+                        if in_range {
+                            let new_ref = if is_table {
+                                if let Some(x) = self.new_ref_no_addend(
+                                    word_vram,
+                                    Some(current_vram),
+                                    user_symbols,
+                                    ignored_addresses,
+                                ) {
+                                    x.set_sym_type(
+                                        SymbolType::label_for_table(current_type).unwrap(),
+                                    );
+                                    Some(x)
+                                } else {
+                                    None
+                                }
+                            } else {
+                                self.new_ref(
+                                    word_vram,
+                                    Some(current_vram),
+                                    user_symbols,
+                                    ignored_addresses,
+                                )
+                            };
+
+                            if let Some(new_ref) = new_ref {
+                                new_ref_scheduled_due_to_jtbl_ended = false;
+                                reference_found = true;
+                                if new_ref.vram() != word_vram {
+                                    if let Some(ref_type) = new_ref.sym_type() {
+                                        if ref_type == SymbolType::Function {
+                                            reference_is_in_function = !is_table;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if is_table {
+                            let still_valid_table = if let Some(first) = first_table_label {
+                                let mask = 0xFF800000;
+                                if word == 0 || ((first & mask) != (word & mask)) || !in_range {
+                                    // We are past the end of the jumptable, so we trash `prev_sym_info` to avoid
+                                    // seeing the rest of the symbol as a jumptable
+
+                                    // If the word is zero then do not add this address as a reference immediately,
+                                    // so we can keep this as trailing padding into this symbol
+                                    new_ref_scheduled_due_to_jtbl_ended = word == 0;
+
+                                    if word != 0 {
+                                        self.new_ref(
+                                            current_vram,
+                                            prev_sym_info.map(|x| x.0),
+                                            user_symbols,
+                                            ignored_addresses,
+                                        );
+                                    }
+
+                                    if let Some((jtbl_vram, _)) = prev_sym_info {
+                                        if let Some(jtbl_ref) = self.new_ref(
+                                            jtbl_vram,
+                                            None,
+                                            user_symbols,
+                                            ignored_addresses,
+                                        ) {
+                                            jtbl_ref.set_autodetected_size(
+                                                (current_vram - jtbl_vram).try_into().unwrap(),
+                                            );
+                                        }
+                                    }
+
+                                    table_label = None;
+                                    first_table_label = None;
+                                    prev_sym_info = None;
+                                    false
+                                } else {
+                                    true
+                                }
+                            } else {
+                                first_table_label = Some(word);
+                                true
+                            };
+
+                            if still_valid_table {
+                                table_label = Some(word_vram);
+                            }
+                        }
+                    }
+
+                    if ignored_addresses
+                        .find(&current_vram, FindSettings::new(true))
+                        .is_none()
+                        && (!reference_found || (reference_is_in_function && table_label.is_none()))
+                    {
+                        let current_ref = ReferenceWrapper::find(
+                            user_symbols,
+                            self,
+                            current_vram,
+                            FindSettings::new(true),
+                        );
+
+                        if current_ref.is_none_or(|x| x.vram() == current_vram) {
+                            let guessed_size = settings.string_guesser_level().guess(
+                                current_ref,
+                                current_vram,
+                                &raw_bytes[local_offset..],
+                                settings.encoding(),
+                                maybe_reached_late_rodata || reached_late_rodata,
+                            );
+
+                            match guessed_size {
+                                Ok(str_size) => {
+                                    let str_sym_size = str_size.next_multiple_of(4);
+                                    let mut in_between_range = ReferenceWrapper::range(
+                                        user_symbols,
+                                        self,
+                                        AddressRange::new(
+                                            current_vram + Size::new(1),
+                                            current_vram + Size::new(str_sym_size as u32),
+                                        ),
+                                    );
+
+                                    if in_between_range.next().is_none() {
+                                        // Check if there is already another symbol after the current one and before the end of the string,
+                                        // in which case we say this symbol should not be a string
+
+                                        remaining_string_size = str_size as i32;
+
+                                        if let Some(reference) = self.new_ref(
+                                            current_vram,
+                                            None,
+                                            user_symbols,
+                                            ignored_addresses,
+                                        ) {
+                                            reference.set_sym_type(SymbolType::CString);
+                                            reference.set_autodetected_size(Size::new(
+                                                str_sym_size as u32,
+                                            ));
+                                            new_ref_scheduled_due_to_jtbl_ended = false;
+                                        }
+                                        // Do not create a symbol at `current_vram + Size::new(str_sym_size as u32)` here,
+                                        // because it can mess the logic to merge trailing padding due to next's symbol alignment
+                                        // that is done in DataSection
+
+                                        // Next symbol should not be affected by this string.
+                                        prev_sym_info = None;
+                                    }
+                                }
+
+                                Err(_e) => {}
+                            }
+                        }
+                    }
                 }
 
                 for (exists, sym_vram, sym_type) in [a_type, b_type, c_type, d_type].into_iter() {
@@ -579,10 +614,10 @@ impl Preheater {
                     }
                 }
 
-                if let Some(table_label) = table_label {
+                if let (Some((table_vram, _)), Some(table_label)) = (prev_sym_info, table_label) {
                     if let Some(current_reference_mut) = self.references.find_mut(
-                        &current_vram,
-                        FindSettings::new(true).with_reject_sizeless_addended(false),
+                        &table_vram,
+                        FindSettings::new(false),
                     ) {
                         current_reference_mut.add_table_label(table_label);
                     }
@@ -608,18 +643,6 @@ impl Preheater {
             }
             remaining_string_size -= 4;
         }
-
-        for (v, typ, referenced_by, size) in references_found {
-            if let Some(reference) = self.new_ref(v, referenced_by, user_symbols, ignored_addresses)
-            {
-                if let Some(typ) = typ {
-                    reference.set_sym_type(typ);
-                }
-                if let Some(size) = size {
-                    reference.set_autodetected_size(size);
-                }
-            }
-        }
     }
 
     fn new_ref(
@@ -637,30 +660,59 @@ impl Preheater {
         } else {
             let settings = FindSettings::new(true);
 
-            // TODO: write an find_mut_or_insert_another that allows inserting a different key than the original
-            let (refer, _) = self.references.find_mut_or_insert_with(vram, settings, || {
-                if let Some(metadata) = user_symbols.find(&vram, settings) {
-                    let vram = metadata.vram();
-                    let mut refer = ReferencedAddress::new_user_declared(vram);
-
-                    if let Some(typ) = metadata.user_declared_type() {
-                        refer.set_user_declared_type(typ);
-                    }
-                    if let Some(size) = metadata.user_declared_size() {
-                        refer.set_user_declared_size(size);
-                    }
-
-                    (vram, refer)
-                } else {
-                    (vram, ReferencedAddress::new(vram))
-                }
-            });
-
-            if let Some(referenced_by) = referenced_by {
-                refer.add_referenced_by(referenced_by);
-            }
-
-            Some(refer)
+            Some(self.new_ref_impl(vram, referenced_by, user_symbols, settings))
         }
+    }
+
+    fn new_ref_no_addend(
+        &mut self,
+        vram: Vram,
+        referenced_by: Option<Vram>,
+        user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
+        ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
+    ) -> Option<&mut ReferencedAddress> {
+        if ignored_addresses
+            .find(&vram, FindSettings::new(true))
+            .is_some()
+        {
+            None
+        } else {
+            let settings = FindSettings::new(false);
+
+            Some(self.new_ref_impl(vram, referenced_by, user_symbols, settings))
+        }
+    }
+
+    fn new_ref_impl(
+        &mut self,
+        vram: Vram,
+        referenced_by: Option<Vram>,
+        user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
+        settings: FindSettings,
+    ) -> &mut ReferencedAddress {
+        // TODO: write an find_mut_or_insert_another that allows inserting a different key than the original
+        let (refer, _) = self.references.find_mut_or_insert_with(vram, settings, || {
+            if let Some(metadata) = user_symbols.find(&vram, settings) {
+                let vram = metadata.vram();
+                let mut refer = ReferencedAddress::new_user_declared(vram);
+
+                if let Some(typ) = metadata.user_declared_type() {
+                    refer.set_user_declared_type(typ);
+                }
+                if let Some(size) = metadata.user_declared_size() {
+                    refer.set_user_declared_size(size);
+                }
+
+                (vram, refer)
+            } else {
+                (vram, ReferencedAddress::new(vram))
+            }
+        });
+
+        if let Some(referenced_by) = referenced_by {
+            refer.add_referenced_by(referenced_by);
+        }
+
+        refer
     }
 }

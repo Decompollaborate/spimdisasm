@@ -384,6 +384,7 @@ impl SymDataDisplay<'_, '_, '_> {
 
         // Check if there's any non-zero data in the current word after the zero terminator.
         if str_end + 1 != real_end {
+            assert!(real_end <= bytes.len());
             let must_show_padding = bytes[str_end + 1..real_end].iter().any(|x| *x != 0);
 
             if must_show_padding {

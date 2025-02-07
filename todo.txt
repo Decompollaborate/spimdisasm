@@ -12,6 +12,7 @@ Try to break out from non word-aligned symbols
 String guesser: Reject typeless symbols that have user-defined size and the size doesn't match the string
 Add vtable as symbol type? (.align 3 on EEGCC)
 Sealed functions for traits / seal traits
+Escape string special characters
 
 Does the following pattern make sense with a pointer?
     /* 00C140 0001B940 B800A68F */  lw          $a2, 0xB8($sp)
