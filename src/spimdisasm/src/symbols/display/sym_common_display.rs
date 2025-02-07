@@ -140,6 +140,7 @@ impl SymCommonDisplaySettings {
                     | SymbolType::Float32
                     | SymbolType::Float64
                     | SymbolType::CString
+                    | SymbolType::VirtualTable
                     | SymbolType::UserCustom,
                 )
                 | None => match section_type {
@@ -193,6 +194,7 @@ impl SymCommonDisplaySettings {
                     | SymbolType::Float32
                     | SymbolType::Float64
                     | SymbolType::CString
+                    | SymbolType::VirtualTable
                     | SymbolType::UserCustom,
                 )
                 | None => match section_type {
@@ -320,6 +322,7 @@ impl SymCommonDisplaySettings {
                     | SymbolType::Float32
                     | SymbolType::Float64
                     | SymbolType::CString
+                    | SymbolType::VirtualTable
                     | SymbolType::UserCustom => {
                         if let Some(data_end) = macro_labels.data_end() {
                             write!(f, "{} {}{}", data_end, sym_name, self.line_end())?;

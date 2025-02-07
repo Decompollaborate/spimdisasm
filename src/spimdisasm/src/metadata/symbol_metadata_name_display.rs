@@ -91,6 +91,13 @@ impl SymbolMetadataNameDisplay<'_> {
                     Ok(())
                 }
             }
+            Some(SymbolType::VirtualTable) => {
+                if false {
+                    write!(f, "VTBL_")
+                } else {
+                    Ok(())
+                }
+            }
 
             Some(SymbolType::UserCustom) => Ok(()),
 

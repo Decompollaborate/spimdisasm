@@ -401,8 +401,6 @@ pub struct FindSettings {
 
 impl FindSettings {
     pub const fn new(allow_addend: bool) -> Self {
-        Self {
-            allow_addend,
-        }
+        Self { allow_addend }
     }
 }

@@ -29,6 +29,8 @@ pub enum SymbolType {
     Float64,
     CString,
 
+    VirtualTable,
+
     UserCustom,
 }
 
@@ -74,6 +76,7 @@ impl SymbolType {
             SymbolType::DWord => false,
             SymbolType::Float32 | SymbolType::Float64 => false,
             SymbolType::CString => false,
+            SymbolType::VirtualTable => true,
             SymbolType::UserCustom => true,
         }
     }
@@ -109,6 +112,7 @@ impl SymbolType {
                 | SymbolType::JumptableLabel
                 | SymbolType::GccExceptTable
                 | SymbolType::GccExceptTableLabel
+                | SymbolType::VirtualTable
         )
     }
 

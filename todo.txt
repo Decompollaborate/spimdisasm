@@ -10,7 +10,6 @@ Avoid guessing a string if the current word happens to be an existing symbol
 Option to disallow guessing a string if the word happens to be valid as a Vram on the current segment
 Try to break out from non word-aligned symbols
 String guesser: Reject typeless symbols that have user-defined size and the size doesn't match the string
-Add vtable as symbol type? (.align 3 on EEGCC)
 Sealed functions for traits / seal traits
 Escape string special characters
 

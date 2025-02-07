@@ -184,6 +184,12 @@ impl Compiler {
             _ => Some(2),
         }
     }
+    const fn prev_align_virtual_table(&self) -> Option<u8> {
+        match self {
+            Compiler::EEGCC => Some(3),
+            _ => None,
+        }
+    }
 
     pub(crate) const fn prev_align_for_type(&self, sym_type: SymbolType) -> Option<u8> {
         match sym_type {
@@ -198,6 +204,7 @@ impl Compiler {
             SymbolType::Float32 => None,
             SymbolType::Float64 => self.prev_align_float64(),
             SymbolType::CString => self.prev_align_c_string(),
+            SymbolType::VirtualTable => self.prev_align_virtual_table(),
             SymbolType::UserCustom => None,
         }
     }

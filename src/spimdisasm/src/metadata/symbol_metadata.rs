@@ -580,6 +580,7 @@ impl SymbolMetadata {
                     }
                 }
                 SymbolType::CString => false,
+                SymbolType::VirtualTable => true,
                 SymbolType::UserCustom => !self.compiler.is_some_and(|x| x.forbids_const_structs()),
             }
         } else {

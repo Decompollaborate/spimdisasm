@@ -261,6 +261,7 @@ fn count_padding(
             SymbolType::BranchLabel | SymbolType::JumptableLabel | SymbolType::GccExceptTableLabel,
         ) => {}
         Some(SymbolType::Function) => {}
+        Some(SymbolType::VirtualTable) => {}
         None => {
             // Treat it as word-sized if the alignement and size allow it.
             if raw_bytes.len() > 4 && raw_bytes.len() % 4 == 0 && rom.inner() % 4 == 0 {

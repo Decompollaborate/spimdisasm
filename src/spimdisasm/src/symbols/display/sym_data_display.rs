@@ -138,6 +138,7 @@ impl SymDataDisplay<'_, '_, '_> {
                     | SymbolType::Word
                     | SymbolType::Float32
                     | SymbolType::CString
+                    | SymbolType::VirtualTable
                     | SymbolType::Function
                     | SymbolType::BranchLabel
                     | SymbolType::JumptableLabel
@@ -478,6 +479,9 @@ impl fmt::Display for SymDataDisplay<'_, '_, '_> {
 
                         // TODO: consider adding a specialized thing for tables?
                         Some(SymbolType::Jumptable | SymbolType::GccExceptTable) => {
+                            self.display_as_word(f, i, current_rom, current_vram)?
+                        }
+                        Some(SymbolType::VirtualTable) => {
                             self.display_as_word(f, i, current_rom, current_vram)?
                         }
 

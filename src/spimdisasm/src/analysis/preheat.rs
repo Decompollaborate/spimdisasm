@@ -615,10 +615,10 @@ impl Preheater {
                 }
 
                 if let (Some((table_vram, _)), Some(table_label)) = (prev_sym_info, table_label) {
-                    if let Some(current_reference_mut) = self.references.find_mut(
-                        &table_vram,
-                        FindSettings::new(false),
-                    ) {
+                    if let Some(current_reference_mut) = self
+                        .references
+                        .find_mut(&table_vram, FindSettings::new(false))
+                    {
                         current_reference_mut.add_table_label(table_label);
                     }
                 }
