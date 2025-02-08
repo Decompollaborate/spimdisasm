@@ -7,7 +7,7 @@ use core::{error, fmt};
 use pyo3::prelude::*;
 use rabbitizer::access_type::AccessType;
 
-use crate::{addresses::Vram, metadata::SymbolType, str_decoding::Encoding};
+use crate::{addresses::Vram, config::Compiler, metadata::SymbolType, str_decoding::Encoding};
 
 use super::ReferenceWrapper;
 
@@ -17,6 +17,7 @@ use super::ReferenceWrapper;
 ///
 /// A C string must start at a 0x4-aligned region, it must be '\\0'-terminated and padded with
 /// '\\0's until the next 0x4 boundary. There's no way to bypass this hard restriction.
+/// Some compilers may even impose an stricter alignement than 0x4.
 ///
 /// - Level [`No`]: Completely disable the guessing feature.
 /// - Level [`Conservative`]: The most conservative guessing level. Imposes the following restrictions:
@@ -119,6 +120,7 @@ impl StringGuesserLevel {
         vram: Vram,
         bytes: &[u8],
         encoding: Encoding,
+        compiler: Option<Compiler>,
         reached_late_rodata: bool,
     ) -> Result<usize, StringGuessError> {
         /*
@@ -158,7 +160,15 @@ impl StringGuesserLevel {
             return False
         */
 
-        if vram.inner() % 4 != 0 {
+        let expected_alignement = {
+            let alignment_shift = compiler
+                .and_then(|x| x.prev_align_for_type(SymbolType::CString))
+                .unwrap_or(2);
+
+            1 << alignment_shift
+        };
+
+        if vram.inner() % expected_alignement != 0 {
             // A C string must start at a 0x4-aligned region
             return Err(StringGuessError::NotProperAlignment);
         }
@@ -241,7 +251,7 @@ mod tests {
         let vram = Vram::new(0x80000000);
         let guesser = StringGuesserLevel::MultipleReferences;
 
-        let maybe_size = guesser.guess(None, vram, &BYTES, encoding, false);
+        let maybe_size = guesser.guess(None, vram, &BYTES, encoding, None, false);
 
         #[cfg(feature = "std")]
         println!("{:?}", maybe_size);
@@ -257,7 +267,7 @@ mod tests {
         let vram = Vram::new(0x80000000);
         let guesser = StringGuesserLevel::MultipleReferences;
 
-        let maybe_size = guesser.guess(None, vram, &BYTES, encoding, false);
+        let maybe_size = guesser.guess(None, vram, &BYTES, encoding, None, false);
 
         #[cfg(feature = "std")]
         println!("{:?}", maybe_size);

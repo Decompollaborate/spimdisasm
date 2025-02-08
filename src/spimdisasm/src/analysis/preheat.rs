@@ -561,6 +561,7 @@ impl Preheater {
                                 current_vram,
                                 &raw_bytes[local_offset..],
                                 settings.encoding(),
+                                settings.compiler(),
                                 maybe_reached_late_rodata || reached_late_rodata,
                             );
 
