@@ -341,7 +341,7 @@ impl Preheater {
 
         let mut remaining_string_size = 0;
 
-        let mut prev_sym_info: Option<(Vram, Option<SymbolType>)> = None;
+        let mut prev_sym_info: Option<(Vram, Option<SymbolType>, Option<Size>)> = None;
         // If true: the previous symbol made us thought we may be in late_rodata
         let mut maybe_reached_late_rodata = false;
         // If true, we are sure we are in late_rodata
@@ -362,6 +362,11 @@ impl Preheater {
             let b_vram = current_vram + Size::new(1);
             let c_vram = current_vram + Size::new(2);
             let d_vram = current_vram + Size::new(3);
+
+            if prev_sym_info.is_some_and(|(v, _, s)| s.is_some_and(|s| current_vram >= v + s)) {
+                // If symbol has a given size then get rid of the info as soon as we pass the end of it.
+                prev_sym_info = None;
+            }
 
             if remaining_string_size <= 0 {
                 let mut table_label = None;
@@ -386,10 +391,30 @@ impl Preheater {
                 let d =
                     ReferenceWrapper::find(user_symbols, self, d_vram, FindSettings::new(false));
 
-                let a_type = (a.is_some(), current_vram, a.and_then(|x| x.sym_type()));
-                let b_type = (b.is_some(), b_vram, b.and_then(|x| x.sym_type()));
-                let c_type = (c.is_some(), c_vram, c.and_then(|x| x.sym_type()));
-                let d_type = (d.is_some(), d_vram, d.and_then(|x| x.sym_type()));
+                let a_type = (
+                    a.is_some(),
+                    current_vram,
+                    a.and_then(|x| x.sym_type()),
+                    a.and_then(|x| x.user_declared_size()),
+                );
+                let b_type = (
+                    b.is_some(),
+                    b_vram,
+                    b.and_then(|x| x.sym_type()),
+                    b.and_then(|x| x.user_declared_size()),
+                );
+                let c_type = (
+                    c.is_some(),
+                    c_vram,
+                    c.and_then(|x| x.sym_type()),
+                    c.and_then(|x| x.user_declared_size()),
+                );
+                let d_type = (
+                    d.is_some(),
+                    d_vram,
+                    d.and_then(|x| x.sym_type()),
+                    d.and_then(|x| x.user_declared_size()),
+                );
 
                 if b.is_none() && c.is_none() && d.is_none() {
                     // There's no symbol in between
@@ -512,7 +537,7 @@ impl Preheater {
                                         );
                                     }
 
-                                    if let Some((jtbl_vram, _)) = prev_sym_info {
+                                    if let Some((jtbl_vram, _, _)) = prev_sym_info {
                                         if let Some(jtbl_ref) = self.new_ref(
                                             jtbl_vram,
                                             None,
@@ -604,19 +629,24 @@ impl Preheater {
                                     }
                                 }
 
-                                Err(_e) => {}
+                                Err(_e) => {
+                                    // For debugging
+                                }
                             }
                         }
                     }
                 }
 
-                for (exists, sym_vram, sym_type) in [a_type, b_type, c_type, d_type].into_iter() {
+                for (exists, sym_vram, sym_type, sym_size) in
+                    [a_type, b_type, c_type, d_type].into_iter()
+                {
                     if exists {
-                        prev_sym_info = Some((sym_vram, sym_type));
+                        prev_sym_info = Some((sym_vram, sym_type, sym_size));
                     }
                 }
 
-                if let (Some((table_vram, _)), Some(table_label)) = (prev_sym_info, table_label) {
+                if let (Some((table_vram, _, _)), Some(table_label)) = (prev_sym_info, table_label)
+                {
                     if let Some(current_reference_mut) = self
                         .references
                         .find_mut(&table_vram, FindSettings::new(false))

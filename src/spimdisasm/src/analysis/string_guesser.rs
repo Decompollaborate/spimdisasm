@@ -75,6 +75,8 @@ pub enum StringGuesserLevel {
 #[non_exhaustive]
 pub(crate) enum StringGuessError {
     UserTypeMissingTerminatorAndNoGivenSize,
+    UserSizeButTerminatorMismatch,
+    UserSizeMissingTerminator,
     GivenUserTypeIsNotCString,
     ReachedLateRodata,
     NotProperAlignment,
@@ -93,6 +95,10 @@ impl fmt::Display for StringGuessError {
             StringGuessError::UserTypeMissingTerminatorAndNoGivenSize => {
                 write!(f, "UserTypeMissingTerminatorAndNoGivenSize")
             }
+            StringGuessError::UserSizeButTerminatorMismatch => {
+                write!(f, "UserSizeButTerminatorMismatch")
+            }
+            StringGuessError::UserSizeMissingTerminator => write!(f, "UserSizeMissingTerminator"),
             StringGuessError::GivenUserTypeIsNotCString => write!(f, "GivenUserTypeIsNotCString"),
             StringGuessError::ReachedLateRodata => write!(f, "ReachedLateRodata"),
             StringGuessError::NotProperAlignment => write!(f, "NotProperAlignment"),
@@ -106,8 +112,6 @@ impl fmt::Display for StringGuessError {
     }
 }
 impl error::Error for StringGuessError {}
-
-// TODO: add an option to avoid guessing strings on unreferenced symbols
 
 impl StringGuesserLevel {
     pub const fn default() -> Self {
@@ -148,6 +152,21 @@ impl StringGuesserLevel {
             } else if ref_wrapper.user_declared_type().is_some() {
                 // User said this symbol is a non string.
                 return Err(StringGuessError::GivenUserTypeIsNotCString);
+            } else if let Some(user_size) = ref_wrapper.user_declared_size() {
+                // No user type, but user size?
+
+                if let Some(str_end) = bytes.iter().position(|x| *x == 0) {
+                    // User may give us the precise size or a word-aligned size, accept both
+                    if user_size.inner().next_multiple_of(4) as usize
+                        == (str_end + 1).next_multiple_of(4)
+                    {
+                        // Do not return the size here, we still have to check if this is a valid string
+                    } else {
+                        return Err(StringGuessError::UserSizeButTerminatorMismatch);
+                    }
+                } else {
+                    return Err(StringGuessError::UserSizeMissingTerminator);
+                }
             }
         }
 
