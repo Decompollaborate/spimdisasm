@@ -160,13 +160,16 @@ impl DataSection {
         symbols_info.insert(vram_range.start(), None);
         let mut auto_pads = UnorderedMap::new();
 
-        if vram_range.start().inner() % 4 != 0 {
+        if vram_range.start().inner() % 4 != 0 || section_type == SectionType::GccExceptTable {
             // Not word-aligned, so I don't think it would make sense to look for pointers.
             // Fallback to a simpler algorithm.
+            // Alternatively, if this is a except table section then avoid looking doing analisys,
+            // since we know it can only contain table(s) and DataSym will make sure to produce the
+            // labels.
 
             for reference in owned_segment.find_references_range(vram_range) {
                 let reference_vram = reference.vram();
-                symbols_info.insert(reference_vram, None);
+                symbols_info.insert(reference_vram, reference.sym_type());
                 if let Some(size) = reference.size() {
                     let next_vram = reference_vram + size;
                     if vram_range.in_range(next_vram) {

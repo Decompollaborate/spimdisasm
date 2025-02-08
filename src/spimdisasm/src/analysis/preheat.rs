@@ -1,7 +1,6 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::vec::Vec;
 use rabbitizer::{access_type::AccessType, Instruction};
 
 use crate::{
@@ -289,31 +288,33 @@ impl Preheater {
             return;
         }
 
+        // Make sure there's a table at the start of the section
+        if let Some(table) = self.new_ref_no_addend(vram, None, user_symbols, ignored_addresses) {
+            table.set_sym_type(SymbolType::GccExceptTable);
+        }
+
         let mut current_vram = vram;
-        let mut references_found = Vec::new();
 
         for word_bytes in raw_bytes.chunks_exact(4) {
             let word = global_config.endian().word_from_bytes(word_bytes);
             let word_vram = Vram::new(word);
 
-            if self.ranges.in_vram_range(word_vram) {
-                references_found.push((
+            if ignored_addresses
+                .find(&word_vram, FindSettings::new(true))
+                .is_none()
+                && self.ranges.in_vram_range(word_vram)
+            {
+                if let Some(label) = self.new_ref_no_addend(
                     word_vram,
-                    Some(SymbolType::GccExceptTableLabel),
-                    current_vram,
-                ));
+                    Some(current_vram),
+                    user_symbols,
+                    ignored_addresses,
+                ) {
+                    label.set_sym_type(SymbolType::GccExceptTableLabel);
+                }
             }
 
             current_vram += Size::new(4);
-        }
-
-        for (v, typ, referenced_by) in references_found {
-            if let (Some(reference), Some(typ)) = (
-                self.new_ref(v, Some(referenced_by), user_symbols, ignored_addresses),
-                typ,
-            ) {
-                reference.set_sym_type(typ);
-            }
         }
     }
 

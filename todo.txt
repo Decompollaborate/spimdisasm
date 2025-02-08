@@ -5,13 +5,13 @@ Allow string guesser to allow strings referenced with lwl/lwr+sh/sb/etc
 Test pic code
 Test `j func` code
 String guesser should take the compiler's string alignment into consideration
-Fix gcc_except_table section
 Avoid guessing a string if the current word happens to be an existing symbol
 Option to disallow guessing a string if the word happens to be valid as a Vram on the current segment
 Try to break out from non word-aligned symbols
 String guesser: Reject typeless symbols that have user-defined size and the size doesn't match the string
 Sealed functions for traits / seal traits
 Escape string special characters
+Move labels out of symbols
 
 Does the following pattern make sense with a pointer?
     /* 00C140 0001B940 B800A68F */  lw          $a2, 0xB8($sp)
