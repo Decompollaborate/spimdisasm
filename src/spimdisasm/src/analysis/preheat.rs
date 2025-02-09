@@ -581,7 +581,7 @@ impl Preheater {
                         );
 
                         if current_ref.is_none_or(|x| x.vram() == current_vram) {
-                            let guessed_size = settings.string_guesser_level().guess(
+                            let guessed_size = settings.string_guesser_flags().guess(
                                 current_ref,
                                 current_vram,
                                 &raw_bytes[local_offset..],

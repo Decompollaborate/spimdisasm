@@ -1,74 +1,75 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use bitflags::bitflags;
 use core::{error, fmt};
+use rabbitizer::access_type::AccessType;
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
-use rabbitizer::access_type::AccessType;
 
 use crate::{addresses::Vram, config::Compiler, metadata::SymbolType, str_decoding::Encoding};
 
 use super::ReferenceWrapper;
 
-/// Sets the level for the rodata C string guesser. Smaller values mean more conservative methods
-/// to guess a string, while higher values are more agressive. The first level ([`No`]) completely
-/// disables the guessing feature.
-///
-/// A C string must start at a 0x4-aligned region, it must be '\\0'-terminated and padded with
-/// '\\0's until the next 0x4 boundary. There's no way to bypass this hard restriction.
-/// Some compilers may even impose an stricter alignement than 0x4.
-///
-/// - Level [`No`]: Completely disable the guessing feature.
-/// - Level [`Conservative`]: The most conservative guessing level. Imposes the following restrictions:
-///     - Do not try to guess if the user provided a type for the symbol.
-///     - Do not try to guess if type information for the symbol can be inferred by other means.
-///     - A string symbol must be referenced only once.
-///     - Strings must not be empty.
-/// - Level [`MultipleReferences`]: A string no longer needs to be referenced only once to be
-///   considered a string candidate. This may happen because of a deduplication optimization or by
-///   plain `data` strings.
-/// - Level [`EmptyStrings`]: Allow empty strings. Likely to yield false positives.
-/// - Level [`IgnoreDetectedType`]: Symbols with autodetected type information but no user type
-///   information can still be guessed as strings.
-/// - Level [`Full`]: (Almost) always try to guess if something is a string. Only avoids checking
-///   if something is a string if it has a user-declared type.
-///
-/// [`No`]: StringGuesserLevel::No
-/// [`Conservative`]: StringGuesserLevel::Conservative
-/// [`MultipleReferences`]: StringGuesserLevel::MultipleReferences
-/// [`EmptyStrings`]: StringGuesserLevel::EmptyStrings
-/// [`IgnoreDetectedType`]: StringGuesserLevel::IgnoreDetectedType
-/// [`Full`]: StringGuesserLevel::Full
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[non_exhaustive]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", eq))]
-pub enum StringGuesserLevel {
-    /// Completely disable the guessing feature.
-    No,
-
-    /// The most conservative guessing level. Imposes the following restrictions:
-    /// - Do not try to guess if the user provided a type for the symbol.
-    /// - Do not try to guess if type information for the symbol can be inferred by other means.
-    /// - A string symbol must be referenced only once.
-    /// - Strings must not be empty.
-    Conservative,
-
-    /// A string no longer needs to be referenced only once to be considered a string candidate.
-    /// This may happen because of a deduplication optimization or by plain `data` strings.
-    MultipleReferences,
-
-    /// Allow empty strings. Likely to yield false positives.
-    EmptyStrings,
-
-    /// Symbols with autodetected type information but no user type information can still be
-    /// guessed as strings.
-    IgnoreDetectedType,
-
-    /// (Almost) always try to guess if something is a string.
+bitflags! {
+    /// Sets flags for tweaking for the C string guesser.
     ///
-    /// Only avoids checking if something is a string if it has a user-declared type.
-    Full,
+    /// A C string must start at a 0x4-aligned region, it must be '\\0'-terminated and padded with
+    /// '\\0's until the next 0x4 boundary. There's no way to bypass this hard restriction.
+    /// Some compilers may even impose an stricter alignement than 0x4.
+    ///
+    /// Flag combinations are additive, meaning that enabling more flag allows for more wiggle room
+    /// while trying to guess for strings. Flags are build on top of [`Basic`].
+    ///
+    /// - [`Basic`]: The most conservative setting. Imposes the following restrictions:
+    ///     - Do not try to guess if the user provided a type for the symbol.
+    ///     - Do not try to guess if the user provided just a size for the symbol, but that size
+    ///       doesn't match the one of a correct string (i.e. missing terminator).
+    ///     - Do not try to guess if type information for the symbol can be inferred by other means.
+    ///     - A string symbol must be referenced only once.
+    ///     - Strings must not be empty.
+    /// - [`MultipleReferences`]: A string no longer needs to be referenced only once to be
+    ///   considered a string candidate. This may happen because of a deduplication optimization or by
+    ///   plain `data` strings.
+    /// - [`EmptyStrings`]: Allow empty strings. Likely to yield false positives.
+    /// - [`IgnoreDetectedType`]: Symbols with autodetected type information but no user type
+    ///   information can still be guessed as strings.
+    ///
+    /// Additionally it is possible to completely disable guessing for strings with the [`no`]
+    /// function. On the hand it is possible to enable all settings and almost always try to guess
+    /// if something is a string with the [`full`] function, this only avoids guessing if the
+    /// user provided a type or a size for the symbol.
+    ///
+    /// [`no`]: StringGuesserFlags::no
+    /// [`Basic`]: StringGuesserFlags::Basic
+    /// [`MultipleReferences`]: StringGuesserFlags::MultipleReferences
+    /// [`EmptyStrings`]: StringGuesserFlags::EmptyStrings
+    /// [`IgnoreDetectedType`]: StringGuesserFlags::IgnoreDetectedType
+    /// [`full`]: StringGuesserFlags::full
+    #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+    #[non_exhaustive]
+    #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", eq))]
+    pub struct StringGuesserFlags: u32 {
+        /// The most conservative setting. Imposes the following restrictions:
+        /// - Do not try to guess if the user provided a type for the symbol.
+        /// - Do not try to guess if the user provided just a size for the symbol, but that size
+        ///   doesn't match the one of a correct string (i.e. missing terminator).
+        /// - Do not try to guess if type information for the symbol can be inferred by other means.
+        /// - A string symbol must be referenced only once.
+        /// - Strings must not be empty.
+        const Basic = 1 << 0;
+
+        /// A string no longer needs to be referenced only once to be considered a string candidate.
+        /// This may happen because of a deduplication optimization or by plain `data` strings.
+        const MultipleReferences = 1 << 1;
+
+        /// Allow empty strings. Likely to yield false positives.
+        const EmptyStrings = 1 << 2;
+
+        /// Symbols with autodetected type information but no user type information can still be guessed as strings.
+        const IgnoreDetectedType = 1 << 3;
+    }
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -113,9 +114,17 @@ impl fmt::Display for StringGuessError {
 }
 impl error::Error for StringGuessError {}
 
-impl StringGuesserLevel {
+impl StringGuesserFlags {
     pub const fn default() -> Self {
-        StringGuesserLevel::MultipleReferences
+        Self::Basic.union(Self::MultipleReferences)
+    }
+
+    pub const fn full() -> Self {
+        Self::all()
+    }
+
+    pub const fn no() -> Self {
+        Self::empty()
     }
 
     pub(crate) fn guess(
@@ -192,45 +201,45 @@ impl StringGuesserLevel {
             return Err(StringGuessError::NotProperAlignment);
         }
 
-        if *self <= Self::No {
+        if self.is_empty() {
             return Err(StringGuessError::GuesserDisabled);
         }
 
-        if ref_wrapper.is_some_and(|x| x.reference_counter() > 1)
-            && *self < Self::MultipleReferences
+        if !self.contains(Self::MultipleReferences)
+            && ref_wrapper.is_some_and(|x| x.reference_counter() > 1)
         {
             return Err(StringGuessError::ReferencedMoreThanOnce);
         }
 
-        if bytes[0] == b'\0' {
+        if !self.contains(Self::EmptyStrings) && bytes[0] == b'\0' {
             // Empty strings are pretty rare and unlikely.
-            if *self < Self::EmptyStrings {
-                return Err(StringGuessError::EmptyString);
-            }
+            return Err(StringGuessError::EmptyString);
         }
 
-        if ref_wrapper.is_some_and(|x| {
-            x.autodetected_type()
-                .is_some_and(|x| x != SymbolType::CString)
-        }) && *self < Self::IgnoreDetectedType
+        if !self.contains(Self::IgnoreDetectedType)
+            && ref_wrapper.is_some_and(|x| {
+                x.autodetected_type()
+                    .is_some_and(|x| x != SymbolType::CString)
+            })
         {
             return Err(StringGuessError::HasAutodetectedType);
         }
-        if ref_wrapper.is_some_and(|x| {
-            x.all_access_types()
-                .iter()
-                .filter(|(x, _)| {
-                    !matches!(
-                        x,
-                        AccessType::WORD_LEFT
-                            | AccessType::WORD_RIGHT
-                            | AccessType::DOUBLEWORD_LEFT
-                            | AccessType::DOUBLEWORD_RIGHT
-                    )
-                })
-                .count()
-                != 0
-        }) && *self < Self::IgnoreDetectedType
+        if !self.contains(Self::IgnoreDetectedType)
+            && ref_wrapper.is_some_and(|x| {
+                x.all_access_types()
+                    .iter()
+                    .filter(|(x, _)| {
+                        !matches!(
+                            x,
+                            AccessType::WORD_LEFT
+                                | AccessType::WORD_RIGHT
+                                | AccessType::DOUBLEWORD_LEFT
+                                | AccessType::DOUBLEWORD_RIGHT
+                        )
+                    })
+                    .count()
+                    != 0
+            })
         {
             // Avoid considering something as a string if it has been dereferenced.
             // But allow LEFT/RIGHT accesses, since that can be used to declare strings on the stack.
@@ -248,7 +257,7 @@ impl StringGuesserLevel {
     }
 }
 
-impl Default for StringGuesserLevel {
+impl Default for StringGuesserFlags {
     fn default() -> Self {
         Self::default()
     }
@@ -268,7 +277,7 @@ mod tests {
         ];
         let encoding = Encoding::ShiftJis;
         let vram = Vram::new(0x80000000);
-        let guesser = StringGuesserLevel::MultipleReferences;
+        let guesser = StringGuesserFlags::default();
 
         let maybe_size = guesser.guess(None, vram, &BYTES, encoding, None, false);
 
@@ -284,7 +293,7 @@ mod tests {
         static BYTES: [u8; 4] = [0x4E, 0x41, 0x4E, 0x00];
         let encoding = Encoding::ShiftJis;
         let vram = Vram::new(0x80000000);
-        let guesser = StringGuesserLevel::MultipleReferences;
+        let guesser = StringGuesserFlags::default();
 
         let maybe_size = guesser.guess(None, vram, &BYTES, encoding, None, false);
 
@@ -293,5 +302,50 @@ mod tests {
 
         //None::<u32>.unwrap();
         assert_eq!(maybe_size, Ok(4));
+    }
+}
+
+#[cfg(feature = "pyo3")]
+pub(crate) mod python_bindings {
+    use super::*;
+
+    #[pymethods]
+    impl StringGuesserFlags {
+        #[staticmethod]
+        #[pyo3(name = "full")]
+        pub const fn py_full() -> Self {
+            Self::full()
+        }
+
+        #[staticmethod]
+        #[pyo3(name = "no")]
+        pub const fn py_no() -> Self {
+            Self::no()
+        }
+
+        #[staticmethod]
+        #[pyo3(name = "Basic")]
+        pub const fn py_basic() -> Self {
+            Self::Basic
+        }
+        #[staticmethod]
+        #[pyo3(name = "MultipleReferences")]
+        pub const fn py_multiple_references() -> Self {
+            Self::MultipleReferences
+        }
+        #[staticmethod]
+        #[pyo3(name = "EmptyStrings")]
+        pub const fn py_empty_strings() -> Self {
+            Self::EmptyStrings
+        }
+        #[staticmethod]
+        #[pyo3(name = "IgnoreDetectedType")]
+        pub const fn py_ignore_detected_type() -> Self {
+            Self::IgnoreDetectedType
+        }
+
+        pub fn __or__(&self, other: Self) -> Self {
+            *self | other
+        }
     }
 }

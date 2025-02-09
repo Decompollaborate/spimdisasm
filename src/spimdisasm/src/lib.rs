@@ -46,7 +46,7 @@ fn spimdisasm(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<config::GpConfig>()?;
     m.add_class::<config::GlobalConfig>()?;
 
-    m.add_class::<analysis::StringGuesserLevel>()?;
+    m.add_class::<analysis::StringGuesserFlags>()?;
     m.add_class::<str_decoding::Encoding>()?;
 
     m.add_class::<context::builder::AddUserSymbolError>()?;

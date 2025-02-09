@@ -9,7 +9,7 @@ use pyo3::prelude::*;
 
 use crate::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
-    analysis::StringGuesserLevel,
+    analysis::StringGuesserFlags,
     collections::{
         addended_ordered_map::FindSettings, unordered_map::UnorderedMap,
         unordered_set::UnorderedSet,
@@ -304,7 +304,7 @@ impl DataSection {
                             owned_segment.find_reference(current_vram, FindSettings::new(true));
 
                         if current_ref.is_none_or(|x| x.vram() == current_vram) {
-                            let guessed_size = settings.string_guesser_level.guess(
+                            let guessed_size = settings.string_guesser_flags.guess(
                                 current_ref,
                                 current_vram,
                                 &raw_bytes[local_offset..],
@@ -550,7 +550,7 @@ impl PartialOrd for DataSection {
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct DataSectionSettings {
     compiler: Option<Compiler>,
-    string_guesser_level: StringGuesserLevel,
+    string_guesser_flags: StringGuesserFlags,
     encoding: Encoding,
 }
 
@@ -558,7 +558,7 @@ impl DataSectionSettings {
     pub fn new(compiler: Option<Compiler>) -> Self {
         Self {
             compiler,
-            string_guesser_level: StringGuesserLevel::default(),
+            string_guesser_flags: StringGuesserFlags::default(),
             encoding: Encoding::default(),
         }
     }
@@ -567,15 +567,15 @@ impl DataSectionSettings {
         self.compiler
     }
 
-    pub fn string_guesser_level(&self) -> StringGuesserLevel {
-        self.string_guesser_level
+    pub fn string_guesser_flags(&self) -> StringGuesserFlags {
+        self.string_guesser_flags
     }
-    pub fn set_string_guesser_level(&mut self, string_guesser_level: StringGuesserLevel) {
-        self.string_guesser_level = string_guesser_level;
+    pub fn set_string_guesser_flags(&mut self, string_guesser_flags: StringGuesserFlags) {
+        self.string_guesser_flags = string_guesser_flags;
     }
-    pub fn with_string_guesser_level(self, string_guesser_level: StringGuesserLevel) -> Self {
+    pub fn with_string_guesser_flags(self, string_guesser_flags: StringGuesserFlags) -> Self {
         Self {
-            string_guesser_level,
+            string_guesser_flags,
             ..self
         }
     }
@@ -603,9 +603,9 @@ pub(crate) mod python_bindings {
             Self::new(compiler)
         }
 
-        #[pyo3(name = "set_string_guesser_level")]
-        pub fn py_set_string_guesser_level(&mut self, string_guesser_level: StringGuesserLevel) {
-            self.set_string_guesser_level(string_guesser_level)
+        #[pyo3(name = "set_string_guesser_flags")]
+        pub fn py_set_string_guesser_flags(&mut self, string_guesser_flags: StringGuesserFlags) {
+            self.set_string_guesser_flags(string_guesser_flags)
         }
 
         #[pyo3(name = "set_encoding")]
