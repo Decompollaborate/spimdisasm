@@ -343,6 +343,14 @@ impl SymCommonDisplaySettings {
         Ok(())
     }
 
+    pub fn display_asm_indendation(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.asm_indentation > 0 {
+            write!(f, "{:width$}", " ", width = self.asm_indentation as usize)
+        } else {
+            Ok(())
+        }
+    }
+
     pub fn display_asm_comment(
         &self,
         f: &mut fmt::Formatter<'_>,
@@ -350,9 +358,7 @@ impl SymCommonDisplaySettings {
         vram: Vram,
         word_comment: WordComment,
     ) -> fmt::Result {
-        if self.asm_indentation > 0 {
-            write!(f, "{:width$}", " ", width = self.asm_indentation as usize)?;
-        }
+        self.display_asm_indendation(f)?;
 
         if !self.emit_asm_comment {
             return Ok(());

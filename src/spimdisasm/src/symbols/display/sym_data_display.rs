@@ -12,7 +12,6 @@ use crate::{
     config::Endian,
     context::Context,
     metadata::{SegmentMetadata, SymbolMetadata, SymbolType},
-    str_decoding,
     symbols::{processed::DataSymProcessed, RomSymbol, RomSymbolProcessed, Symbol},
 };
 
@@ -357,15 +356,13 @@ impl SymDataDisplay<'_, '_, '_> {
             return self.display_as_word(f, i, current_rom, current_vram);
         };
 
-        let decoded = if let Some(decoded) = self.sym.encoding().decode_to_string(&bytes[..str_end])
-        {
-            decoded
-        } else {
-            // write!(f, "/* Invalid string due to decoding error */{}", self.settings.common.line_end())?;
-            return self.display_as_word(f, i, current_rom, current_vram);
-        };
-
-        let escaped = str_decoding::escape_string(&decoded);
+        let decoded =
+            if let Some(decoded) = self.sym.encoding().decode_to_strings_vec(&bytes[..str_end]) {
+                decoded
+            } else {
+                // write!(f, "/* Invalid string due to decoding error */{}", self.settings.common.line_end())?;
+                return self.display_as_word(f, i, current_rom, current_vram);
+            };
 
         self.settings.common.display_asm_comment(
             f,
@@ -373,13 +370,22 @@ impl SymDataDisplay<'_, '_, '_> {
             current_vram,
             WordComment::No,
         )?;
-        // TODO: maybe change to `.string` instead of `.asciz`?
-        write!(
-            f,
-            ".asciz \"{}\"{}",
-            escaped,
-            self.settings.common.line_end()
-        )?;
+        let mut first = true;
+        for (sub_str, finished) in decoded {
+            if !first {
+                self.settings.common.display_asm_indendation(f)?;
+            }
+            // TODO: maybe change to `.string` instead of `.asciz`?
+            let directive = if finished { ".asciz" } else { ".ascii" };
+            write!(
+                f,
+                "{} \"{}\"{}",
+                directive,
+                sub_str,
+                self.settings.common.line_end()
+            )?;
+            first = false;
+        }
 
         let real_end = (str_end + 1).next_multiple_of(4);
 

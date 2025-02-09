@@ -1,9 +1,8 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use core::{error, fmt};
-
 use alloc::{string::String, vec::Vec};
+use core::{error, fmt};
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
@@ -19,7 +18,7 @@ pub enum Encoding {
 }
 
 // Escape characters that are unlikely to be used
-static BANNED_ESCAPE_CHARACTERS: [u8; 27] = [
+static BANNED_ESCAPE_CHARACTERS: [u8; 28] = [
     0x00, // '\0'
     0x01, //
     0x02, //
@@ -52,11 +51,13 @@ static BANNED_ESCAPE_CHARACTERS: [u8; 27] = [
     0x1D, //
     0x1E, //
     0x1F, //
+    0x7F, //
 ];
 
-// TODO
-#[allow(dead_code)]
-static ESCAPE_CHARACTERS_SPECIAL_CASES: [u8; 4] = [0x1A, 0x1B, 0x8C, 0x8D];
+static ESCAPE_CHARACTERS_SPECIAL_CASES: [u8; 2] = [
+    0x1A, // Arbitrary escape character
+    0x1B, // VT escape sequences
+];
 
 impl Encoding {
     pub fn from_name(name: &str) -> Option<Self> {
@@ -116,6 +117,11 @@ impl Encoding {
                         // Invalid first byte according to https://uic.io/en/charset/show/euc-jp/
                         match char {
                             0x8F => 3,
+                            0x8C | 0x8D => {
+                                // Escape character in zelda games
+                                i += 1;
+                                continue;
+                            }
                             0x80..=0x8D | 0x8F..=0xA0 | 0xA9..=0xAF | 0xF5..=0xFF => {
                                 return Err(DecodingError::InvalidFirstByteOfMultibyte);
                             }
@@ -128,7 +134,7 @@ impl Encoding {
                             0x80..=0xA0 | 0xAA..=0xAF | 0xF8..=0xFF => {
                                 return Err(DecodingError::InvalidFirstByteOfMultibyte);
                             }
-                            _ => 0,
+                            _ => 2,
                         }
                     }
                 };
@@ -187,11 +193,139 @@ impl Encoding {
             None
         }
     }
+
+    pub(crate) fn decode_to_strings_vec(self, bytes: &[u8]) -> Option<Vec<(String, bool)>> {
+        let mut ret = Vec::new();
+        for (s, finished) in DecoderIterator::new(self, bytes) {
+            ret.push((s, finished));
+            if finished {
+                return Some(
+                    ret.into_iter()
+                        .map(|(x, finished)| (escape_string(&x), finished))
+                        .collect(),
+                );
+            }
+        }
+        None
+    }
 }
 
 impl Default for Encoding {
     fn default() -> Self {
         Self::default()
+    }
+}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+struct DecoderIterator<'a> {
+    encoding: Encoding,
+    bytes: &'a [u8],
+    index: usize,
+    trailing_backslash: bool,
+}
+
+impl<'a> DecoderIterator<'a> {
+    fn new(encoding: Encoding, bytes: &'a [u8]) -> Self {
+        Self {
+            encoding,
+            bytes,
+            index: 0,
+            trailing_backslash: false,
+        }
+    }
+
+    pub(crate) fn next(&mut self) -> Option<(String, bool)> {
+        let len = self.bytes.len();
+
+        #[cfg(feature = "pyo3")]
+        if len == 0 && self.index == 0 {
+            // handle empty strings
+            self.index = 1;
+            return Some((format!(""), true));
+        }
+
+        if self.index >= len {
+            return None;
+        }
+
+        let c = self.bytes[self.index];
+        if self.trailing_backslash {
+            self.index += 1;
+            self.trailing_backslash = false;
+            return Some((format!("\\x{:02X}", c), self.index >= len));
+        }
+        if c > 0x7F {
+            // Non ASCII
+            if self.index + 1 < len {
+                // If the second byte of a Japanese character is the 0x5C value ('\\') then we need to
+                // handle it specially. Otherwise, when it gets iconv'd, the compiler gets confused
+                // and thinks it should try to escape the next character instead.
+                // So we break down the string here, add these two characters as individual characters and
+                // skip them
+                let next_char = self.bytes[self.index + 1];
+                if next_char == 0x5C {
+                    self.index += 1;
+                    self.trailing_backslash = true;
+                    return Some((format!("\\x{:02X}", c), self.index >= len));
+                }
+            }
+        }
+
+        if ESCAPE_CHARACTERS_SPECIAL_CASES.contains(&c)
+            || (self.encoding == Encoding::EucJp && (c == 0x8C || c == 0x8D))
+        {
+            self.index += 1;
+            return Some((format!("\\x{:02X}", c), self.index >= len));
+        }
+
+        for i in self.index..len {
+            let c = self.bytes[i];
+
+            if c > 0x7F {
+                // Non ASCII
+                if i + 1 < len {
+                    // If the second byte of a Japanese character is the 0x5C value ('\\') then we need to
+                    // handle it specially. Otherwise, when it gets iconv'd, the compiler gets confused
+                    // and thinks it should try to escape the next character instead.
+                    // So we break down the string here, add these two characters as individual characters and
+                    // skip them
+                    let next_char = self.bytes[i + 1];
+                    if next_char == 0x5C {
+                        let start = self.index;
+                        self.index = i;
+                        return self
+                            .encoding
+                            .decode_to_string(&self.bytes[start..i])
+                            .map(|x| (x, self.index >= len));
+                    }
+                }
+            }
+
+            if ESCAPE_CHARACTERS_SPECIAL_CASES.contains(&c)
+                || (self.encoding == Encoding::EucJp && (c == 0x8C || c == 0x8D))
+            {
+                let start = self.index;
+                self.index = i;
+                return self
+                    .encoding
+                    .decode_to_string(&self.bytes[start..i])
+                    .map(|x| (x, self.index >= len));
+            }
+        }
+
+        let start = self.index;
+        self.index = len;
+        self.encoding
+            .decode_to_string(&self.bytes[start..len])
+            .map(|x| (x, true))
+    }
+}
+
+impl Iterator for DecoderIterator<'_> {
+    type Item = (String, bool);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.next()
     }
 }
 
@@ -348,6 +482,45 @@ mod tests {
         println!("{:?}", encoding.decode_to_string(&BYTES));
 
         assert_eq!(maybe_size, Err(DecodingError::InvalidFirstByteOfMultibyte));
+    }
+
+    #[test]
+    fn asdf() {
+        static BYTES: [u8; 276] = [
+            0x82, 0x60, 0x82, 0x61, 0x82, 0x62, 0x82, 0x63, 0x82, 0x64, 0x5F, 0x5F, 0x82, 0x81,
+            0x82, 0x82, 0x82, 0x83, 0x82, 0x84, 0x82, 0x85, 0x5F, 0x5F, 0x81, 0x9B, 0x81, 0x7E,
+            0x81, 0x99, 0x82, 0x65, 0x82, 0x66, 0x82, 0x67, 0x82, 0x68, 0x82, 0x69, 0x5F, 0x5F,
+            0x82, 0x86, 0x82, 0x87, 0x82, 0x88, 0x82, 0x89, 0x82, 0x8A, 0x5F, 0x5F, 0x81, 0x45,
+            0x81, 0x44, 0x81, 0x46, 0x82, 0x6A, 0x82, 0x6B, 0x82, 0x6C, 0x82, 0x6D, 0x82, 0x6E,
+            0x5F, 0x5F, 0x82, 0x8B, 0x82, 0x8C, 0x82, 0x8D, 0x82, 0x8E, 0x82, 0x8F, 0x5F, 0x5F,
+            0x81, 0x49, 0x81, 0x48, 0x81, 0x95, 0x82, 0x6F, 0x82, 0x70, 0x82, 0x71, 0x82, 0x72,
+            0x82, 0x73, 0x5F, 0x5F, 0x82, 0x90, 0x82, 0x91, 0x82, 0x92, 0x82, 0x93, 0x82, 0x94,
+            0x5F, 0x5F, 0x81, 0x96, 0x81, 0x5E, 0x81, 0x93, 0x82, 0x74, 0x82, 0x75, 0x82, 0x76,
+            0x82, 0x77, 0x82, 0x78, 0x5F, 0x5F, 0x82, 0x95, 0x82, 0x96, 0x82, 0x97, 0x82, 0x98,
+            0x82, 0x99, 0x5F, 0x5F, 0x81, 0x43, 0x81, 0x66, 0x81, 0x60, 0x82, 0x79, 0x5F, 0x5F,
+            0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x82, 0x9A, 0x5F, 0x5F, 0x5F, 0x5F,
+            0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x82, 0x4F,
+            0x82, 0x50, 0x82, 0x51, 0x82, 0x52, 0x82, 0x53, 0x5F, 0x5F, 0x82, 0x54, 0x82, 0x55,
+            0x82, 0x56, 0x82, 0x57, 0x82, 0x58, 0x5F, 0x5F, 0x33, 0x30, 0x33, 0x31, 0x33, 0x32,
+            0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F,
+            0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x34, 0x30, 0x34, 0x31,
+            0x34, 0x32, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F,
+            0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x5F, 0x35, 0x30,
+            0x35, 0x31, 0x35, 0x32, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ];
+        let encoding = Encoding::ShiftJis;
+
+        let decoded = encoding.decode_to_strings_vec(&BYTES);
+        assert!(decoded.is_some());
+        let decoded = decoded.unwrap();
+
+        #[cfg(feature = "std")]
+        for (x, f) in &decoded {
+            println!("{} {}", f, x);
+        }
+
+        assert_eq!(decoded.len(), 1);
+        assert_eq!(decoded[0].0, "ＡＢＣＤＥ__ａｂｃｄｅ__○×☆ＦＧＨＩＪ__ｆｇｈｉｊ__・．：ＫＬＭＮＯ__ｋｌｍｎｏ__！？＆ＰＱＲＳＴ__ｐｑｒｓｔ__＊／％ＵＶＷＸＹ__ｕｖｗｘｙ__，’～Ｚ__________ｚ________________０１２３４__５６７８９__303132________________________404142________________________505152\0\0\0\0\0\0");
     }
 }
 
