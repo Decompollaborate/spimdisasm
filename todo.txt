@@ -12,6 +12,7 @@ String stuff:
     Avoid guessing a string if the current word happens to be an existing symbol
     Option to disallow guessing a string if the word happens to be valid as a Vram on the current segment
     Add an option to avoid guessing strings on unreferenced symbols
+    Consider removing the string guesser from the preheater
 
 Does the following pattern make sense with a pointer?
     /* 00C140 0001B940 B800A68F */  lw          $a2, 0xB8($sp)

@@ -141,9 +141,29 @@ impl StringGuesserFlags {
             return contextSym.isMaybeString
         */
 
+        if reached_late_rodata {
+            return Err(StringGuessError::ReachedLateRodata);
+        }
+
+        if self.is_empty() {
+            return Err(StringGuessError::GuesserDisabled);
+        }
+
+        let expected_alignement = {
+            let alignment_shift = compiler
+                .and_then(|x| x.prev_align_for_type(SymbolType::CString))
+                .unwrap_or(2);
+
+            1 << alignment_shift
+        };
+
+        if vram.inner() % expected_alignement != 0 {
+            // A C string must start at a 0x4-aligned region
+            return Err(StringGuessError::NotProperAlignment);
+        }
+
         if let Some(ref_wrapper) = ref_wrapper {
             // Check for user-defined info.
-
             if ref_wrapper.sym_type() == Some(SymbolType::CString) {
                 // User says it is a C string, we gotta believe them.
 
@@ -177,56 +197,22 @@ impl StringGuesserFlags {
                     return Err(StringGuessError::UserSizeMissingTerminator);
                 }
             }
-        }
 
-        if reached_late_rodata {
-            return Err(StringGuessError::ReachedLateRodata);
-        }
+            // Check for flags
 
-        /*
-        if not self.enableStringGuessing:
-            return False
-        */
+            if !self.contains(Self::MultipleReferences) && ref_wrapper.reference_counter() > 1 {
+                return Err(StringGuessError::ReferencedMoreThanOnce);
+            }
 
-        let expected_alignement = {
-            let alignment_shift = compiler
-                .and_then(|x| x.prev_align_for_type(SymbolType::CString))
-                .unwrap_or(2);
-
-            1 << alignment_shift
-        };
-
-        if vram.inner() % expected_alignement != 0 {
-            // A C string must start at a 0x4-aligned region
-            return Err(StringGuessError::NotProperAlignment);
-        }
-
-        if self.is_empty() {
-            return Err(StringGuessError::GuesserDisabled);
-        }
-
-        if !self.contains(Self::MultipleReferences)
-            && ref_wrapper.is_some_and(|x| x.reference_counter() > 1)
-        {
-            return Err(StringGuessError::ReferencedMoreThanOnce);
-        }
-
-        if !self.contains(Self::EmptyStrings) && bytes[0] == b'\0' {
-            // Empty strings are pretty rare and unlikely.
-            return Err(StringGuessError::EmptyString);
-        }
-
-        if !self.contains(Self::IgnoreDetectedType)
-            && ref_wrapper.is_some_and(|x| {
-                x.autodetected_type()
+            if !self.contains(Self::IgnoreDetectedType) {
+                if ref_wrapper
+                    .autodetected_type()
                     .is_some_and(|x| x != SymbolType::CString)
-            })
-        {
-            return Err(StringGuessError::HasAutodetectedType);
-        }
-        if !self.contains(Self::IgnoreDetectedType)
-            && ref_wrapper.is_some_and(|x| {
-                x.all_access_types()
+                {
+                    return Err(StringGuessError::HasAutodetectedType);
+                }
+                if ref_wrapper
+                    .all_access_types()
                     .iter()
                     .filter(|(x, _)| {
                         !matches!(
@@ -239,12 +225,18 @@ impl StringGuesserFlags {
                     })
                     .count()
                     != 0
-            })
-        {
-            // Avoid considering something as a string if it has been dereferenced.
-            // But allow LEFT/RIGHT accesses, since that can be used to declare strings on the stack.
-            // TODO: make this thing its own guessing level instead of hyjacking IgnoreDetectedType.
-            return Err(StringGuessError::HasBeenDereferenced);
+                {
+                    // Avoid considering something as a string if it has been dereferenced.
+                    // But allow LEFT/RIGHT accesses, since that can be used to declare strings on the stack.
+                    // TODO: make this thing its own guessing level instead of hyjacking IgnoreDetectedType.
+                    return Err(StringGuessError::HasBeenDereferenced);
+                }
+            }
+        }
+
+        if !self.contains(Self::EmptyStrings) && bytes[0] == b'\0' {
+            // Empty strings are pretty rare and unlikely.
+            return Err(StringGuessError::EmptyString);
         }
 
         let raw_size = if let Ok(raw_size) = encoding.check_valid(bytes) {
