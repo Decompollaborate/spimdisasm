@@ -363,10 +363,15 @@ impl Preheater {
             let c_vram = current_vram + Size::new(2);
             let d_vram = current_vram + Size::new(3);
 
-            if prev_sym_info.is_some_and(|(v, _, s)| s.is_some_and(|s| current_vram >= v + s)) {
+            let prev_sym_ended_here = if prev_sym_info
+                .is_some_and(|(v, _, s)| s.is_some_and(|s| current_vram >= v + s))
+            {
                 // If symbol has a given size then get rid of the info as soon as we pass the end of it.
                 prev_sym_info = None;
-            }
+                true
+            } else {
+                false
+            };
 
             if remaining_string_size <= 0 {
                 let mut table_label = None;
@@ -588,6 +593,7 @@ impl Preheater {
                                 settings.encoding(),
                                 settings.compiler(),
                                 maybe_reached_late_rodata || reached_late_rodata,
+                                prev_sym_ended_here,
                             );
 
                             match guessed_size {

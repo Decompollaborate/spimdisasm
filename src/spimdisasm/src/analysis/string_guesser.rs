@@ -30,11 +30,14 @@ bitflags! {
     ///     - A string symbol must be referenced only once.
     ///     - Strings must not be empty.
     /// - [`MultipleReferences`]: A string no longer needs to be referenced only once to be
-    ///   considered a string candidate. This may happen because of a deduplication optimization or by
-    ///   plain `data` strings.
+    ///   considered a string candidate. This may happen because of a deduplication optimization or
+    ///   by plain `data` strings.
     /// - [`EmptyStrings`]: Allow empty strings. Likely to yield false positives.
     /// - [`IgnoreDetectedType`]: Symbols with autodetected type information but no user type
     ///   information can still be guessed as strings.
+    /// - [`UnreferencedStrings`]: Allow completely unreferenced data to be guessed as a string.
+    /// - [`UnreferencedButSymbolized`]: Allow unreferenced data that is after a sized-symbol to be
+    ///   guessed as a string.
     ///
     /// Additionally it is possible to completely disable guessing for strings with the [`no`]
     /// function. On the hand it is possible to enable all settings and almost always try to guess
@@ -46,6 +49,8 @@ bitflags! {
     /// [`MultipleReferences`]: StringGuesserFlags::MultipleReferences
     /// [`EmptyStrings`]: StringGuesserFlags::EmptyStrings
     /// [`IgnoreDetectedType`]: StringGuesserFlags::IgnoreDetectedType
+    /// [`UnreferencedStrings`]: StringGuesserFlags::UnreferencedStrings
+    /// [`UnreferencedButSymbolized`]: StringGuesserFlags::UnreferencedButSymbolized
     /// [`full`]: StringGuesserFlags::full
     #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
     #[non_exhaustive]
@@ -67,8 +72,15 @@ bitflags! {
         /// Allow empty strings. Likely to yield false positives.
         const EmptyStrings = 1 << 2;
 
-        /// Symbols with autodetected type information but no user type information can still be guessed as strings.
+        /// Symbols with autodetected type information but no user type information can still be
+        /// guessed as strings.
         const IgnoreDetectedType = 1 << 3;
+
+        /// Allow completely unreferenced data to be guessed as a string.
+        const UnreferencedStrings = 1 << 4;
+
+        /// Allow unreferenced data that is after a sized-symbol to be guessed as a string.
+        const UnreferencedButSymbolized = 1 << 5;
     }
 }
 
@@ -87,6 +99,7 @@ pub(crate) enum StringGuessError {
     HasAutodetectedType,
     HasBeenDereferenced,
     InvalidString,
+    UnreferencedString,
 }
 
 impl fmt::Display for StringGuessError {
@@ -109,6 +122,7 @@ impl fmt::Display for StringGuessError {
             StringGuessError::HasAutodetectedType => write!(f, "HasAutodetectedType"),
             StringGuessError::HasBeenDereferenced => write!(f, "HasBeenDereferenced"),
             StringGuessError::InvalidString => write!(f, "InvalidString"),
+            StringGuessError::UnreferencedString => write!(f, "UnreferencedString"),
         }
     }
 }
@@ -116,7 +130,9 @@ impl error::Error for StringGuessError {}
 
 impl StringGuesserFlags {
     pub const fn default() -> Self {
-        Self::Basic.union(Self::MultipleReferences)
+        Self::Basic
+            .union(Self::MultipleReferences)
+            .union(Self::UnreferencedButSymbolized)
     }
 
     pub const fn full() -> Self {
@@ -127,6 +143,7 @@ impl StringGuesserFlags {
         Self::empty()
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn guess(
         &self,
         ref_wrapper: Option<ReferenceWrapper>,
@@ -135,6 +152,7 @@ impl StringGuesserFlags {
         encoding: Encoding,
         compiler: Option<Compiler>,
         reached_late_rodata: bool,
+        prev_sym_ended_here: bool,
     ) -> Result<usize, StringGuessError> {
         /*
         if contextSym._ranStringCheck:
@@ -232,6 +250,16 @@ impl StringGuesserFlags {
                     return Err(StringGuessError::HasBeenDereferenced);
                 }
             }
+        } else if !self.contains(Self::UnreferencedStrings) {
+            if self.contains(StringGuesserFlags::UnreferencedButSymbolized)
+            && prev_sym_ended_here {
+                // Previous symbol was sized and it ended here, so it should be fine to guess this new
+                // symbol as a string, even if nobody references it.
+            } else {
+                // Completely unreferenced strings can lead to many hallucinated symbols in the middle
+                // of other symbols.
+                return Err(StringGuessError::UnreferencedString);
+            }
         }
 
         if !self.contains(Self::EmptyStrings) && bytes[0] == b'\0' {
@@ -271,7 +299,7 @@ mod tests {
         let vram = Vram::new(0x80000000);
         let guesser = StringGuesserFlags::default();
 
-        let maybe_size = guesser.guess(None, vram, &BYTES, encoding, None, false);
+        let maybe_size = guesser.guess(None, vram, &BYTES, encoding, None, false, true);
 
         #[cfg(feature = "std")]
         println!("{:?}", maybe_size);
@@ -287,7 +315,7 @@ mod tests {
         let vram = Vram::new(0x80000000);
         let guesser = StringGuesserFlags::default();
 
-        let maybe_size = guesser.guess(None, vram, &BYTES, encoding, None, false);
+        let maybe_size = guesser.guess(None, vram, &BYTES, encoding, None, false, true);
 
         #[cfg(feature = "std")]
         println!("{:?}", maybe_size);
@@ -334,6 +362,16 @@ pub(crate) mod python_bindings {
         #[pyo3(name = "IgnoreDetectedType")]
         pub const fn py_ignore_detected_type() -> Self {
             Self::IgnoreDetectedType
+        }
+        #[staticmethod]
+        #[pyo3(name = "UnreferencedStrings")]
+        pub const fn py_unreferenced_strings() -> Self {
+            Self::UnreferencedStrings
+        }
+        #[staticmethod]
+        #[pyo3(name = "UnreferencedButSymbolized")]
+        pub const fn py_unreferenced_but_symbolized() -> Self {
+            Self::UnreferencedButSymbolized
         }
 
         pub fn __or__(&self, other: Self) -> Self {

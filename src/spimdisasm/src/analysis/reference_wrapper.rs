@@ -11,7 +11,7 @@ use crate::{
         addended_ordered_map::{self, AddendedOrderedMap, FindSettings},
         unordered_map::UnorderedMap,
     },
-    metadata::{SymbolMetadata, SymbolType},
+    metadata::{GeneratedBy, SymbolMetadata, SymbolType},
 };
 
 use super::{Preheater, ReferencedAddress};
@@ -84,6 +84,18 @@ impl ReferenceWrapper<'_, '_> {
             ReferenceWrapper::Metadata(metadata) => metadata.vram(),
             ReferenceWrapper::Address(address) => address.vram(),
             ReferenceWrapper::Both(metadata, _address) => metadata.vram(),
+        }
+    }
+
+    pub(crate) fn is_user_declared(&self) -> bool {
+        match self {
+            ReferenceWrapper::Metadata(metadata) => {
+                metadata.generated_by() == GeneratedBy::UserDeclared
+            }
+            ReferenceWrapper::Address(address) => address.user_declared(),
+            ReferenceWrapper::Both(metadata, _address) => {
+                metadata.generated_by() == GeneratedBy::UserDeclared
+            }
         }
     }
 

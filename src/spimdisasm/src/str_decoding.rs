@@ -473,7 +473,7 @@ mod tests {
 
     #[test]
     fn check_valid_string_invalid_3() {
-        static BYTES: [u8; 4] = [0x80, 0x2C, 0x5E, 0x68];
+        static BYTES: [u8; 5] = [0x80, 0x2C, 0x5E, 0x68, 0x00];
         let encoding = Encoding::ShiftJis;
 
         let maybe_size = encoding.check_valid(&BYTES);
