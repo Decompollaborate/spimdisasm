@@ -16,7 +16,7 @@ use super::{InstructionAnalysisResult, RegisterTracker};
 pub struct InstructionAnalyzer {
     ranges: RomVramRange,
 
-    branches_taken: UnorderedSet<Vram>,
+    branches_taken: UnorderedSet<(Vram, bool)>,
 }
 
 impl InstructionAnalyzer {
@@ -72,6 +72,7 @@ impl InstructionAnalyzer {
                 &instr,
                 &prev_instr,
                 local_offset,
+                prev_instr.opcode().is_branch_likely(),
             )?;
 
             analyzer.follow_jumptable(
@@ -81,6 +82,7 @@ impl InstructionAnalyzer {
                 &regs_tracker,
                 instrs,
                 &prev_instr,
+                false,
             )?;
 
             if (prev_instr_opcode.is_jump() && !prev_instr_opcode.does_link())
@@ -107,6 +109,7 @@ impl InstructionAnalyzer {
         instr: &Instruction,
         prev_instr: &Instruction,
         local_offset: usize,
+        prev_is_likely: bool,
     ) -> Result<(), OwnedSegmentNotFoundError> {
         let branch_offset = if let Some(offset) = prev_instr.get_branch_offset_generic() {
             offset
@@ -114,7 +117,10 @@ impl InstructionAnalyzer {
             return Ok(());
         };
 
-        if !self.branches_taken.insert(prev_instr.vram()) {
+        if !self
+            .branches_taken
+            .insert((prev_instr.vram(), prev_is_likely))
+        {
             // If we already processed this branch then don't do it again.
             return Ok(());
         }
@@ -132,7 +138,7 @@ impl InstructionAnalyzer {
         // Make a copy
         let mut regs_tracker = *original_regs_tracker;
 
-        if prev_instr.opcode().is_branch_likely()
+        if prev_is_likely
         /*|| prev_instr.is_unconditional_branch()*/
         {
             result.process_instr(context, &mut regs_tracker, instr, Some(prev_instr));
@@ -145,9 +151,11 @@ impl InstructionAnalyzer {
             regs_tracker,
             instrs,
             target_local_offset,
+            prev_is_likely,
         )
     }
 
+    #[expect(clippy::too_many_arguments)]
     fn follow_jumptable(
         &mut self,
         context: &Context,
@@ -156,6 +164,7 @@ impl InstructionAnalyzer {
         original_regs_tracker: &RegisterTracker,
         instrs: &[Instruction],
         prev_instr: &Instruction,
+        prev_is_likely: bool,
     ) -> Result<(), OwnedSegmentNotFoundError> {
         let jumptable_address =
             if let Some(jr_reg_data) = original_regs_tracker.get_jr_reg_data(prev_instr) {
@@ -168,7 +177,10 @@ impl InstructionAnalyzer {
                 return Ok(());
             };
 
-        if !self.branches_taken.insert(prev_instr.vram()) {
+        if !self
+            .branches_taken
+            .insert((prev_instr.vram(), prev_is_likely))
+        {
             // If we already processed this branch then don't do it again.
             return Ok(());
         }
@@ -194,6 +206,7 @@ impl InstructionAnalyzer {
                     *original_regs_tracker,
                     instrs,
                     target_local_offset,
+                    prev_is_likely,
                 )?;
             }
         }
@@ -201,6 +214,7 @@ impl InstructionAnalyzer {
         Ok(())
     }
 
+    #[expect(clippy::too_many_arguments)]
     fn look_ahead_impl(
         &mut self,
         context: &Context,
@@ -209,10 +223,11 @@ impl InstructionAnalyzer {
         mut regs_tracker: RegisterTracker,
         instrs: &[Instruction],
         mut target_local_offset: usize,
+        prev_is_likely: bool,
     ) -> Result<(), OwnedSegmentNotFoundError> {
         while target_local_offset / 4 < instrs.len() {
-            let prev_target_instr = instrs[target_local_offset / 4 - 1];
-            let target_instr = instrs[target_local_offset / 4];
+            let prev_target_instr = &instrs[target_local_offset / 4 - 1];
+            let target_instr = &instrs[target_local_offset / 4];
 
             if !prev_target_instr.opcode().is_branch_likely()
             /*&& !prev_target_instr.is_unconditional_branch()*/
@@ -220,8 +235,8 @@ impl InstructionAnalyzer {
                 result.process_instr(
                     context,
                     &mut regs_tracker,
-                    &target_instr,
-                    Some(&prev_target_instr),
+                    target_instr,
+                    Some(prev_target_instr),
                 );
             }
             self.look_ahead(
@@ -230,9 +245,10 @@ impl InstructionAnalyzer {
                 result,
                 &regs_tracker,
                 instrs,
-                &target_instr,
-                &prev_target_instr,
+                target_instr,
+                prev_target_instr,
                 target_local_offset,
+                prev_is_likely || prev_target_instr.opcode().is_branch_likely(),
             )?;
 
             self.follow_jumptable(
@@ -241,7 +257,8 @@ impl InstructionAnalyzer {
                 result,
                 &regs_tracker,
                 instrs,
-                &prev_target_instr,
+                prev_target_instr,
+                prev_is_likely,
             )?;
 
             if prev_target_instr.is_unconditional_branch()
@@ -252,7 +269,7 @@ impl InstructionAnalyzer {
                 return Ok(());
             }
 
-            result.process_prev_func_call(&mut regs_tracker, &prev_target_instr);
+            result.process_prev_func_call(&mut regs_tracker, prev_target_instr);
 
             target_local_offset += 4;
         }

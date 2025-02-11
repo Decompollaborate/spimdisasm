@@ -6,6 +6,7 @@ use std::collections::BTreeMap;
 use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaExtension, IsaVersion};
 use spimdisasm::{
     addresses::{AddressRange, GpValue, Rom, RomVramRange, Size, Vram},
+    collections::addended_ordered_map::FindSettings,
     config::{Compiler, Endian, GlobalConfig, GpConfig},
     context::{
         builder::UserSegmentBuilder, ContextBuilder, GlobalSegmentBuilder, OverlaySegmentBuilder,
@@ -709,4 +710,240 @@ glabel func_80000018
 ";
 
     assert_eq!(disassembly, expected_disassembly,);
+}
+
+#[test]
+fn test_section_text_type_inference_on_complex_control_flow() {
+    static BYTES: [u8; 292] = [
+        // func_8080010C
+        0x27, 0xBD, 0xFF, 0xC8, // addiu
+        0xAF, 0xB7, 0x00, 0x30, // sw
+        0xAF, 0xB0, 0x00, 0x14, // sw
+        0xAF, 0xB6, 0x00, 0x2C, // sw
+        0xAF, 0xB5, 0x00, 0x28, // sw
+        0xAF, 0xB4, 0x00, 0x24, // sw
+        0xAF, 0xB3, 0x00, 0x20, // sw
+        0xAF, 0xB2, 0x00, 0x1C, // sw
+        0xAF, 0xB1, 0x00, 0x18, // sw
+        0x3C, 0x10, 0x80, 0x80, // lui
+        0x3C, 0x17, 0x80, 0x80, // lui
+        0x00, 0x80, 0x88, 0x25, // or
+        0x00, 0xC0, 0x90, 0x25, // or
+        0x00, 0xA0, 0x98, 0x25, // or
+        0xAF, 0xBF, 0x00, 0x34, // sw
+        0x26, 0xF7, 0x1A, 0x4C, // addiu
+        0x26, 0x10, 0x14, 0xA4, // addiu
+        0x24, 0x14, 0xFF, 0xFC, // addiu
+        0x24, 0x15, 0xFF, 0xFD, // addiu
+        0x24, 0x16, 0xFF, 0xFE, // addiu
+        0x96, 0x0E, 0x00, 0x00, // lhu
+        0x56, 0x6E, 0x00, 0x26, // bnel
+        0x26, 0x10, 0x00, 0x08, //  addiu
+        0x12, 0x54, 0x00, 0x17, // beq
+        0x00, 0x00, 0x00, 0x00, //  nop
+        0x12, 0x55, 0x00, 0x05, // beq
+        0x00, 0x00, 0x00, 0x00, //  nop
+        0x12, 0x56, 0x00, 0x0F, // beq
+        0x02, 0x20, 0x20, 0x25, //  or
+        0x10, 0x00, 0x00, 0x1A, // b
+        0x02, 0x20, 0x20, 0x25, //  or
+        0x0C, 0x04, 0x19, 0xE4, // jal
+        0x02, 0x20, 0x20, 0x25, //  or
+        0x8C, 0x4F, 0x00, 0x7C, // lw
+        0x02, 0x20, 0x20, 0x25, // or
+        0x02, 0xC0, 0x28, 0x25, // or
+        0x00, 0x0F, 0xCC, 0xC0, // sll
+        0x07, 0x23, 0x00, 0x16, // bgezl
+        0x26, 0x10, 0x00, 0x08, //  addiu
+        0x0C, 0x20, 0x00, 0x00, // jal
+        0x8E, 0x06, 0x00, 0x04, //  lw
+        0x10, 0x00, 0x00, 0x12, // b
+        0x26, 0x10, 0x00, 0x08, //  addiu
+        0x0C, 0x20, 0x00, 0x2F, // jal
+        0x8E, 0x05, 0x00, 0x04, //  lw
+        0x10, 0x00, 0x00, 0x0E, // b
+        0x26, 0x10, 0x00, 0x08, //  addiu
+        0x0C, 0x03, 0x68, 0xA6, // jal
+        0x24, 0x04, 0x00, 0x0E, //  addiu
+        0x10, 0x40, 0x00, 0x09, // beqz
+        0x02, 0x20, 0x20, 0x25, //  or
+        0x24, 0x05, 0xFF, 0xFF, // addiu
+        0x0C, 0x20, 0x00, 0x00, // jal
+        0x8E, 0x06, 0x00, 0x04, //  lw
+        0x10, 0x00, 0x00, 0x05, // b
+        0x26, 0x10, 0x00, 0x08, //  addiu
+        0x02, 0x40, 0x28, 0x25, // or
+        0x0C, 0x20, 0x00, 0x00, // jal
+        0x8E, 0x06, 0x00, 0x04, //  lw
+        0x26, 0x10, 0x00, 0x08, // addiu
+        0x56, 0x17, 0xFF, 0xD8, // bnel
+        0x96, 0x0E, 0x00, 0x00, //  lhu
+        0x8F, 0xBF, 0x00, 0x34, // lw
+        0x8F, 0xB0, 0x00, 0x14, // lw
+        0x8F, 0xB1, 0x00, 0x18, // lw
+        0x8F, 0xB2, 0x00, 0x1C, // lw
+        0x8F, 0xB3, 0x00, 0x20, // lw
+        0x8F, 0xB4, 0x00, 0x24, // lw
+        0x8F, 0xB5, 0x00, 0x28, // lw
+        0x8F, 0xB6, 0x00, 0x2C, // lw
+        0x8F, 0xB7, 0x00, 0x30, // lw
+        0x03, 0xE0, 0x00, 0x08, // jr
+        0x27, 0xBD, 0x00, 0x38, //  addiu
+    ];
+
+    let rom = Rom::new(0x02139F0C);
+    let vram = Vram::new(0x8080010C);
+
+    let segment_rom = Rom::new(0x00000000);
+    let segment_vram = Vram::new(0x80000000);
+
+    let text_settings = ExecutableSectionSettings::new(
+        Some(Compiler::IDO),
+        InstructionFlags::new_isa(IsaVersion::MIPS_III, None),
+    );
+
+    let mut context = {
+        let global_config = GlobalConfig::new(Endian::Big);
+
+        let global_ranges = RomVramRange::new(
+            AddressRange::new(segment_rom, Rom::new(0x00802000)),
+            AddressRange::new(segment_vram, Vram::new(0x80802000)),
+        );
+        let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
+
+        global_segment.preanalyze_text(&global_config, &text_settings, &BYTES, rom, vram);
+
+        let platform_segment = UserSegmentBuilder::new();
+
+        let builder = ContextBuilder::new(global_segment, platform_segment);
+
+        builder.build(global_config)
+    };
+
+    let parent_segment_info = ParentSegmentInfo::new(segment_rom, segment_vram, None);
+    let section_text = context
+        .create_section_text(
+            &text_settings,
+            "text".to_string(),
+            &BYTES,
+            rom,
+            vram,
+            parent_segment_info,
+        )
+        .unwrap();
+
+    let user_relocs = BTreeMap::new();
+    let section_text = section_text
+        .post_process(&mut context, &user_relocs)
+        .unwrap();
+
+    let mut disassembly = ".section .text\n".to_string();
+    let display_settings = FunctionDisplaySettings::new(InstructionDisplayFlags::new());
+    for sym in section_text.functions() {
+        disassembly.push('\n');
+        disassembly.push_str(
+            &sym.display(&context, &display_settings)
+                .unwrap()
+                .to_string(),
+        );
+    }
+
+    println!("{}", disassembly);
+
+    let expected_disassembly = "\
+.section .text
+
+glabel func_8080010C
+    /* 2139F0C 8080010C 27BDFFC8 */  addiu       $sp, $sp, -0x38
+    /* 2139F10 80800110 AFB70030 */  sw          $s7, 0x30($sp)
+    /* 2139F14 80800114 AFB00014 */  sw          $s0, 0x14($sp)
+    /* 2139F18 80800118 AFB6002C */  sw          $s6, 0x2C($sp)
+    /* 2139F1C 8080011C AFB50028 */  sw          $s5, 0x28($sp)
+    /* 2139F20 80800120 AFB40024 */  sw          $s4, 0x24($sp)
+    /* 2139F24 80800124 AFB30020 */  sw          $s3, 0x20($sp)
+    /* 2139F28 80800128 AFB2001C */  sw          $s2, 0x1C($sp)
+    /* 2139F2C 8080012C AFB10018 */  sw          $s1, 0x18($sp)
+    /* 2139F30 80800130 3C108080 */  lui         $s0, %hi(UNK_808014A4)
+    /* 2139F34 80800134 3C178080 */  lui         $s7, %hi(UNK_80801A4C)
+    /* 2139F38 80800138 00808825 */  or          $s1, $a0, $zero
+    /* 2139F3C 8080013C 00C09025 */  or          $s2, $a2, $zero
+    /* 2139F40 80800140 00A09825 */  or          $s3, $a1, $zero
+    /* 2139F44 80800144 AFBF0034 */  sw          $ra, 0x34($sp)
+    /* 2139F48 80800148 26F71A4C */  addiu       $s7, $s7, %lo(UNK_80801A4C)
+    /* 2139F4C 8080014C 261014A4 */  addiu       $s0, $s0, %lo(UNK_808014A4)
+    /* 2139F50 80800150 2414FFFC */  addiu       $s4, $zero, -0x4
+    /* 2139F54 80800154 2415FFFD */  addiu       $s5, $zero, -0x3
+    /* 2139F58 80800158 2416FFFE */  addiu       $s6, $zero, -0x2
+    /* 2139F5C 8080015C 960E0000 */  lhu         $t6, 0x0($s0)
+  .L80800160:
+    /* 2139F60 80800160 566E0026 */  bnel        $s3, $t6, .L808001FC
+    /* 2139F64 80800164 26100008 */   addiu      $s0, $s0, 0x8
+    /* 2139F68 80800168 12540017 */  beq         $s2, $s4, .L808001C8
+    /* 2139F6C 8080016C 00000000 */   nop
+    /* 2139F70 80800170 12550005 */  beq         $s2, $s5, .L80800188
+    /* 2139F74 80800174 00000000 */   nop
+    /* 2139F78 80800178 1256000F */  beq         $s2, $s6, .L808001B8
+    /* 2139F7C 8080017C 02202025 */   or         $a0, $s1, $zero
+    /* 2139F80 80800180 1000001A */  b           .L808001EC
+    /* 2139F84 80800184 02202025 */   or         $a0, $s1, $zero
+  .L80800188:
+    /* 2139F88 80800188 0C0419E4 */  jal         UNK_func_80106790
+    /* 2139F8C 8080018C 02202025 */   or         $a0, $s1, $zero
+    /* 2139F90 80800190 8C4F007C */  lw          $t7, 0x7C($v0)
+    /* 2139F94 80800194 02202025 */  or          $a0, $s1, $zero
+    /* 2139F98 80800198 02C02825 */  or          $a1, $s6, $zero
+    /* 2139F9C 8080019C 000FCCC0 */  sll         $t9, $t7, 19
+    /* 2139FA0 808001A0 07230016 */  bgezl       $t9, .L808001FC
+    /* 2139FA4 808001A4 26100008 */   addiu      $s0, $s0, 0x8
+    /* 2139FA8 808001A8 0C200000 */  jal         UNK_func_80800000
+    /* 2139FAC 808001AC 8E060004 */   lw         $a2, 0x4($s0)
+    /* 2139FB0 808001B0 10000012 */  b           .L808001FC
+    /* 2139FB4 808001B4 26100008 */   addiu      $s0, $s0, 0x8
+  .L808001B8:
+    /* 2139FB8 808001B8 0C20002F */  jal         UNK_func_808000BC
+    /* 2139FBC 808001BC 8E050004 */   lw         $a1, 0x4($s0)
+    /* 2139FC0 808001C0 1000000E */  b           .L808001FC
+    /* 2139FC4 808001C4 26100008 */   addiu      $s0, $s0, 0x8
+  .L808001C8:
+    /* 2139FC8 808001C8 0C0368A6 */  jal         UNK_func_800DA298
+    /* 2139FCC 808001CC 2404000E */   addiu      $a0, $zero, 0xE
+    /* 2139FD0 808001D0 10400009 */  beqz        $v0, .L808001F8
+    /* 2139FD4 808001D4 02202025 */   or         $a0, $s1, $zero
+    /* 2139FD8 808001D8 2405FFFF */  addiu       $a1, $zero, -0x1
+    /* 2139FDC 808001DC 0C200000 */  jal         UNK_func_80800000
+    /* 2139FE0 808001E0 8E060004 */   lw         $a2, 0x4($s0)
+    /* 2139FE4 808001E4 10000005 */  b           .L808001FC
+    /* 2139FE8 808001E8 26100008 */   addiu      $s0, $s0, 0x8
+  .L808001EC:
+    /* 2139FEC 808001EC 02402825 */  or          $a1, $s2, $zero
+    /* 2139FF0 808001F0 0C200000 */  jal         UNK_func_80800000
+    /* 2139FF4 808001F4 8E060004 */   lw         $a2, 0x4($s0)
+  .L808001F8:
+    /* 2139FF8 808001F8 26100008 */  addiu       $s0, $s0, 0x8
+  .L808001FC:
+    /* 2139FFC 808001FC 5617FFD8 */  bnel        $s0, $s7, .L80800160
+    /* 213A000 80800200 960E0000 */   lhu        $t6, 0x0($s0)
+    /* 213A004 80800204 8FBF0034 */  lw          $ra, 0x34($sp)
+    /* 213A008 80800208 8FB00014 */  lw          $s0, 0x14($sp)
+    /* 213A00C 8080020C 8FB10018 */  lw          $s1, 0x18($sp)
+    /* 213A010 80800210 8FB2001C */  lw          $s2, 0x1C($sp)
+    /* 213A014 80800214 8FB30020 */  lw          $s3, 0x20($sp)
+    /* 213A018 80800218 8FB40024 */  lw          $s4, 0x24($sp)
+    /* 213A01C 8080021C 8FB50028 */  lw          $s5, 0x28($sp)
+    /* 213A020 80800220 8FB6002C */  lw          $s6, 0x2C($sp)
+    /* 213A024 80800224 8FB70030 */  lw          $s7, 0x30($sp)
+    /* 213A028 80800228 03E00008 */  jr          $ra
+    /* 213A02C 8080022C 27BD0038 */   addiu      $sp, $sp, 0x38
+.size func_8080010C, . - func_8080010C
+";
+
+    assert_eq!(disassembly, expected_disassembly);
+
+    let silly_symbol = context
+        .global_segment()
+        .symbols()
+        .find(&Vram::new(0x808014A4), FindSettings::new(false))
+        .unwrap();
+
+    assert_eq!(silly_symbol.access_type(), None);
 }

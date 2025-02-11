@@ -34,5 +34,3 @@ Does the following pattern make sense with a pointer?
 
 Consider allowing user-defined data layouts using the same syntax as python's struct package
     https://docs.python.org/3/library/struct.html
-
-See why the banjo-tooie's symbol D_808014A4_indrv_audio is being disassembled as shorts instead of words
