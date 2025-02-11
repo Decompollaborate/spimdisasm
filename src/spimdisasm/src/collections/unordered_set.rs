@@ -3,6 +3,7 @@
 
 use core::{
     borrow::Borrow,
+    fmt,
     hash::Hash,
     ops::{BitAnd, BitOr, BitXor, Sub},
 };
@@ -13,7 +14,7 @@ use alloc::collections::btree_set::{self, BTreeSet};
 #[cfg(feature = "hash_tables")]
 use std::collections::hash_set::{self, HashSet};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct UnorderedSet<T>
 where
     T: Ord + Hash + Eq,
@@ -202,6 +203,16 @@ where
         other: &'a Self,
     ) -> hash_set::SymmetricDifference<'a, T, std::hash::RandomState> {
         self.inner.symmetric_difference(&other.inner)
+    }
+}
+
+impl<T> fmt::Debug for UnorderedSet<T>
+where
+    T: Ord + Hash + Eq + fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Manually implement Debug to hide the `inner` indirection
+        write!(f, "UnorderedSet {:?}", self.inner)
     }
 }
 

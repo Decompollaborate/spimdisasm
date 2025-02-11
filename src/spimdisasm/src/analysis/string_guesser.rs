@@ -251,8 +251,7 @@ impl StringGuesserFlags {
                 }
             }
         } else if !self.contains(Self::UnreferencedStrings) {
-            if self.contains(StringGuesserFlags::UnreferencedButSymbolized)
-            && prev_sym_ended_here {
+            if self.contains(StringGuesserFlags::UnreferencedButSymbolized) && prev_sym_ended_here {
                 // Previous symbol was sized and it ended here, so it should be fine to guess this new
                 // symbol as a string, even if nobody references it.
             } else {

@@ -2,7 +2,10 @@
 /* SPDX-License-Identifier: MIT */
 
 use alloc::collections::btree_map::{self, BTreeMap};
-use core::ops::{Add, RangeBounds};
+use core::{
+    fmt,
+    ops::{Add, RangeBounds},
+};
 
 #[cfg(not(feature = "nightly"))]
 use ::polonius_the_crab::prelude::*;
@@ -15,8 +18,7 @@ use crate::addresses::{Size, SizedAddress};
 pub type Range<'a, K, V> = btree_map::Range<'a, K, V>;
 pub type RangeMut<'a, K, V> = btree_map::RangeMut<'a, K, V>;
 
-// TODO: default
-#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct AddendedOrderedMap<K, V>
 where
     K: Ord,
@@ -301,6 +303,17 @@ where
 
     pub fn into_values(self) -> btree_map::IntoValues<K, V> {
         self.inner.into_values()
+    }
+}
+
+impl<K, V> fmt::Debug for AddendedOrderedMap<K, V>
+where
+    K: Ord + fmt::Debug,
+    V: SizedAddress + fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Manually implement Debug to hide the `inner` indirection
+        write!(f, "AddendedOrderedMap {:?}", self.inner)
     }
 }
 

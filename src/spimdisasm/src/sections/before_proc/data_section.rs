@@ -395,6 +395,53 @@ impl DataSection {
             remaining_string_size -= 4;
         }
 
+        if let Some(compiler) = settings.compiler {
+            if compiler.prev_align_for_type(SymbolType::CString) > Some(2) {
+                for (v, padded_by) in &auto_pads {
+                    if owned_segment
+                        .find_reference(*v, FindSettings::new(false))
+                        .is_some()
+                    {
+                        continue;
+                    }
+
+                    let mut range = symbols_info.range(padded_by..);
+
+                    // Make sure this is the symbol that created this pad, and make sure it is a string
+                    if range.next().is_none_or(|(padder_vram, padder_type)| {
+                        padder_vram != padded_by || padder_type != &Some(SymbolType::CString)
+                    }) {
+                        continue;
+                    }
+
+                    if range.next().is_none_or(|x| x.0 != v) {
+                        // Somehow the symbol after wasn't the pad?
+                        continue;
+                    }
+
+                    let after_pad = range.next();
+
+                    if let Some((after_pad_vram, after_pad_type)) = after_pad {
+                        if after_pad_type.is_some_and(|sym_type| {
+                            compiler.prev_align_for_type(sym_type).is_some_and(|x| {
+                                v.inner().next_multiple_of(1 << x) == after_pad_vram.inner()
+                                    && after_pad_vram.inner() % (1 << x) == 0
+                            })
+                        }) {
+                            // check every padding byte is zero
+                            let start = (*v - vram_range.start()).inner() as usize;
+                            let end = (*after_pad_vram - vram_range.start()).inner() as usize;
+                            if raw_bytes[start..end].iter().all(|x| *x == 0) {
+                                symbols_info.remove(v);
+                            }
+                        }
+                    } else {
+                        // There are no symbols left?
+                    }
+                }
+            }
+        }
+
         (symbols_info.into_iter().collect(), auto_pads)
     }
 
@@ -472,8 +519,6 @@ impl DataSection {
         // Next word is zero, which means it could be padding bytes, so we have to check
         // if it may be an actual symbol by checking if anything references it
 
-        // owned_segment.find_references_range(vram_range)
-
         let compiler = if let Some(compiler) = settings.compiler {
             compiler
         } else {
@@ -512,6 +557,7 @@ impl DataSection {
                         }
                     } else if vram_range.end() == next_next_vram {
                         // trailing padding, lets just add it to this string
+                        // TODO: change to next_next_vram
                         return next_vram + Size::new(4);
                     }
                 }

@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use core::{borrow::Borrow, hash::Hash, ops::Index};
+use core::{borrow::Borrow, fmt, hash::Hash, ops::Index};
 
 #[cfg(not(feature = "hash_tables"))]
 use alloc::collections::btree_map::{self, BTreeMap};
@@ -9,7 +9,7 @@ use alloc::collections::btree_map::{self, BTreeMap};
 #[cfg(feature = "hash_tables")]
 use std::collections::hash_map::{self, HashMap};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct UnorderedMap<K, V>
 where
     K: Ord + Hash + Eq,
@@ -199,6 +199,17 @@ where
     #[cfg(feature = "hash_tables")]
     pub fn into_values(self) -> hash_map::IntoValues<K, V> {
         self.inner.into_values()
+    }
+}
+
+impl<K, V> fmt::Debug for UnorderedMap<K, V>
+where
+    K: Ord + Hash + Eq + fmt::Debug,
+    V: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Manually implement Debug to hide the `inner` indirection
+        write!(f, "UnorderedMap {:?}", self.inner)
     }
 }
 
