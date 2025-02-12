@@ -8,7 +8,6 @@ Move labels out of symbols
 Avoid disassembling as bytes/shorts if there are user relocs for a given symbol
 Ensure ReferenceWrapper's Range respect symbol sizes
 Ask PSP people about compilers
-Re-enable data syms referencing addends by default
 
 String stuff:
     Make the string guesser less agressive
