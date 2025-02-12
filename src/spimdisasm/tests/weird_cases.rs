@@ -3,10 +3,10 @@
 
 use std::collections::BTreeMap;
 
-use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
+use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaExtension, IsaVersion};
 use spimdisasm::{
-    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
-    config::{Endian, GlobalConfig},
+    addresses::{AddressRange, GpValue, Rom, RomVramRange, Size, Vram},
+    config::{Compiler, Endian, GlobalConfig, GpConfig},
     context::{builder::UserSegmentBuilder, ContextBuilder, GlobalSegmentBuilder},
     parent_segment_info::ParentSegmentInfo,
     sections::before_proc::ExecutableSectionSettings,
@@ -560,4 +560,111 @@ glabel func_8081CE54
 
     assert_eq!(disassembled, expected_str);
     // None::<u32>.unwrap();
+}
+
+#[test]
+fn weird_case_use_gp_as_temp() {
+    static BYTES: [u8; 60] = [
+        // func_80000000
+        0x07, 0x80, 0x01, 0x3C, // lui     at,0x0
+        0xD8, 0x7D, 0x21, 0x24, // addiu   at,at,0
+        0x20, 0x00, 0x3C, 0xAC, // sw      gp,32(at)
+        0x2C, 0x00, 0x3F, 0xAC, // sw      ra,44(at)
+        0x00, 0x00, 0x9C, 0x20, // addi    gp,a0,0
+        0x40, 0x00, 0x84, 0x20, // addi    a0,a0,64
+        0x00, 0x00, 0x84, 0xAF, // sw      a0,0(gp)
+        0x04, 0x00, 0x84, 0xAF, // sw      a0,4(gp)
+        0x08, 0x00, 0x84, 0xAF, // sw      a0,8(gp)
+        0x07, 0x80, 0x01, 0x3C, // lui     at,0x0
+        0xD8, 0x7D, 0x21, 0x24, // addiu   at,at,0
+        0x2C, 0x00, 0x3F, 0x8C, // lw      ra,44(at)
+        0x20, 0x00, 0x3C, 0x8C, // lw      gp,32(at)
+        0x08, 0x00, 0xE0, 0x03, // jr      ra
+        0x00, 0x00, 0x00, 0x00, // nop
+    ];
+
+    let rom = Rom::new(0x0003EBC8);
+    let vram = Vram::new(0x8004E3C8);
+
+    let segment_rom = Rom::new(0x00000000);
+    let segment_vram = Vram::new(0x80000000);
+
+    let text_settings = ExecutableSectionSettings::new(
+        Some(Compiler::PSYQ),
+        InstructionFlags::new_extension(IsaExtension::R3000GTE),
+    );
+
+    let mut context = {
+        let global_config = GlobalConfig::new(Endian::Little)
+            .with_gp_config(Some(GpConfig::new_sdata(GpValue::new(0x80075264))));
+
+        let global_ranges = RomVramRange::new(
+            AddressRange::new(segment_rom, Rom::new(0x0003F3A4)),
+            AddressRange::new(segment_vram, Vram::new(0x8004EBA4)),
+        );
+        let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
+
+        global_segment.preanalyze_text(&global_config, &text_settings, &BYTES, rom, vram);
+
+        let platform_segment = UserSegmentBuilder::new();
+
+        let builder = ContextBuilder::new(global_segment, platform_segment);
+
+        builder.build(global_config)
+    };
+
+    let parent_segment_info = ParentSegmentInfo::new(segment_rom, segment_vram, None);
+    let section_text = context
+        .create_section_text(
+            &text_settings,
+            "text".to_string(),
+            &BYTES,
+            rom,
+            vram,
+            parent_segment_info,
+        )
+        .unwrap();
+
+    let user_relocs = BTreeMap::new();
+    let section_text = section_text
+        .post_process(&mut context, &user_relocs)
+        .unwrap();
+
+    let mut disassembly = ".section .text\n".to_string();
+    let display_settings = FunctionDisplaySettings::new(InstructionDisplayFlags::new());
+    for sym in section_text.functions() {
+        disassembly.push('\n');
+        disassembly.push_str(
+            &sym.display(&context, &display_settings)
+                .unwrap()
+                .to_string(),
+        );
+    }
+
+    println!("{}", disassembly);
+
+    let expected_disassembly = "\
+.section .text
+
+/* Handwritten function */
+glabel func_8004E3C8
+    /* 03EBC8 8004E3C8 0780013C */  lui         $at, %hi(UNK_80077DD8)
+    /* 03EBCC 8004E3CC D87D2124 */  addiu       $at, $at, %lo(UNK_80077DD8)
+    /* 03EBD0 8004E3D0 20003CAC */  sw          $gp, 0x20($at)
+    /* 03EBD4 8004E3D4 2C003FAC */  sw          $ra, 0x2C($at)
+    /* 03EBD8 8004E3D8 00009C20 */  addi        $gp, $a0, 0x0 /* handwritten instruction */
+    /* 03EBDC 8004E3DC 40008420 */  addi        $a0, $a0, 0x40 /* handwritten instruction */
+    /* 03EBE0 8004E3E0 000084AF */  sw          $a0, 0x0($gp)
+    /* 03EBE4 8004E3E4 040084AF */  sw          $a0, 0x4($gp)
+    /* 03EBE8 8004E3E8 080084AF */  sw          $a0, 0x8($gp)
+    /* 03EBEC 8004E3EC 0780013C */  lui         $at, %hi(UNK_80077DD8)
+    /* 03EBF0 8004E3F0 D87D2124 */  addiu       $at, $at, %lo(UNK_80077DD8)
+    /* 03EBF4 8004E3F4 2C003F8C */  lw          $ra, 0x2C($at)
+    /* 03EBF8 8004E3F8 20003C8C */  lw          $gp, 0x20($at)
+    /* 03EBFC 8004E3FC 0800E003 */  jr          $ra
+    /* 03EC00 8004E400 00000000 */   nop
+.size func_8004E3C8, . - func_8004E3C8
+";
+
+    assert_eq!(disassembly, expected_disassembly,);
 }

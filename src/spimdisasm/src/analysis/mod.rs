@@ -12,6 +12,7 @@ mod register_tracker;
 mod string_guesser;
 mod tracked_register_state;
 
+pub(crate) use instruction_analysis_result::GpSetInfo;
 pub use instruction_analysis_result::InstructionAnalysisResult;
 pub(crate) use instruction_analyzer::InstructionAnalyzer;
 pub(crate) use jr_reg_data::JrRegData;

@@ -7,7 +7,7 @@ use rabbitizer::{registers_meta::Register, Instruction};
 
 use crate::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
-    analysis::InstructionAnalysisResult,
+    analysis::{GpSetInfo, InstructionAnalysisResult},
     collections::{addended_ordered_map::FindSettings, unordered_set::UnorderedSet},
     config::GlobalConfig,
     context::Context,
@@ -278,35 +278,39 @@ impl FunctionSymProcessed {
         */
 
         for gp_set_info in instr_analysis.gp_sets().values() {
-            let hi_index = (gp_set_info.hi_rom() - ranges.rom().start()).inner() as usize / 4;
-            let lo_index = (gp_set_info.lo_rom() - ranges.rom().start()).inner() as usize / 4;
-            let hi_instr = &instructions[hi_index];
-            let lo_instr = &instructions[lo_index];
+            if let GpSetInfo::Address(info) = gp_set_info {
+                let hi_index = (info.hi_rom() - ranges.rom().start()).inner() as usize / 4;
+                let lo_index = (info.lo_rom() - ranges.rom().start()).inner() as usize / 4;
+                let hi_instr = &instructions[hi_index];
+                let lo_instr = &instructions[lo_index];
 
-            let hi_reloc_type = Self::reloc_for_instruction(context.global_config(), hi_instr);
-            let lo_reloc_type = Self::reloc_for_instruction(context.global_config(), lo_instr);
-            if context
-                .global_config()
-                .gp_config()
-                .is_some_and(|x| !x.pic() && x.gp_value() == gp_set_info.value())
-            {
-                relocs[hi_index] = Some(
-                    hi_reloc_type.new_reloc_info(RelocReferencedSym::SymName("_gp".to_string(), 0)),
-                );
-                relocs[lo_index] = Some(
-                    lo_reloc_type.new_reloc_info(RelocReferencedSym::SymName("_gp".to_string(), 0)),
-                );
-            } else {
-                // TODO: some kind of conversion method for GpValue -> Vram?
-                let address = Vram::new(gp_set_info.value().inner());
-                if owned_segment.is_vram_ignored(address) {
-                    continue;
+                let hi_reloc_type = Self::reloc_for_instruction(context.global_config(), hi_instr);
+                let lo_reloc_type = Self::reloc_for_instruction(context.global_config(), lo_instr);
+                if context
+                    .global_config()
+                    .gp_config()
+                    .is_some_and(|x| !x.pic() && x.gp_value() == info.value())
+                {
+                    relocs[hi_index] = Some(
+                        hi_reloc_type
+                            .new_reloc_info(RelocReferencedSym::SymName("_gp".to_string(), 0)),
+                    );
+                    relocs[lo_index] = Some(
+                        lo_reloc_type
+                            .new_reloc_info(RelocReferencedSym::SymName("_gp".to_string(), 0)),
+                    );
+                } else {
+                    // TODO: some kind of conversion method for GpValue -> Vram?
+                    let address = Vram::new(info.value().inner());
+                    if owned_segment.is_vram_ignored(address) {
+                        continue;
+                    }
+
+                    relocs[hi_index] =
+                        Some(hi_reloc_type.new_reloc_info(RelocReferencedSym::Address(address)));
+                    relocs[lo_index] =
+                        Some(lo_reloc_type.new_reloc_info(RelocReferencedSym::Address(address)));
                 }
-
-                relocs[hi_index] =
-                    Some(hi_reloc_type.new_reloc_info(RelocReferencedSym::Address(address)));
-                relocs[lo_index] =
-                    Some(lo_reloc_type.new_reloc_info(RelocReferencedSym::Address(address)));
             }
         }
 

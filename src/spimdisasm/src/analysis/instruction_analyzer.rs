@@ -33,10 +33,10 @@ impl InstructionAnalyzer {
             branches_taken: UnorderedSet::new(),
         };
         let mut regs_tracker = RegisterTracker::new();
-        let mut result = InstructionAnalysisResult::new(ranges);
+        let mut result = InstructionAnalysisResult::new(ranges, context.global_config());
 
         // The below iteration skips the first instruction so we have to process it explicitly here.
-        result.process_instr(context, &mut regs_tracker, &instrs[0], None);
+        result.process_instr(&mut regs_tracker, &instrs[0], None);
 
         // TODO: maybe implement a way to know which instructions have been processed?
 
@@ -60,7 +60,7 @@ impl InstructionAnalyzer {
             if !prev_instr.opcode().is_branch_likely()
             /*&& !prev_instr.is_unconditional_branch()*/
             {
-                result.process_instr(context, &mut regs_tracker, &instr, Some(&prev_instr));
+                result.process_instr(&mut regs_tracker, &instr, Some(&prev_instr));
             }
 
             analyzer.look_ahead(
@@ -141,7 +141,7 @@ impl InstructionAnalyzer {
         if prev_is_likely
         /*|| prev_instr.is_unconditional_branch()*/
         {
-            result.process_instr(context, &mut regs_tracker, instr, Some(prev_instr));
+            result.process_instr(&mut regs_tracker, instr, Some(prev_instr));
         }
 
         self.look_ahead_impl(
@@ -232,12 +232,7 @@ impl InstructionAnalyzer {
             if !prev_target_instr.opcode().is_branch_likely()
             /*&& !prev_target_instr.is_unconditional_branch()*/
             {
-                result.process_instr(
-                    context,
-                    &mut regs_tracker,
-                    target_instr,
-                    Some(prev_target_instr),
-                );
+                result.process_instr(&mut regs_tracker, target_instr, Some(prev_target_instr));
             }
             self.look_ahead(
                 context,

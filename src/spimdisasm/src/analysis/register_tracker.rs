@@ -231,6 +231,10 @@ impl RegisterTracker {
             state.lo_info().is_some() && state.hi_info().is_none()
         })
     }
+
+    pub(crate) fn get_gp_state(&self) -> &TrackedRegisterState {
+        &self.registers[Gpr::gp.as_index()]
+    }
 }
 
 impl RegisterTracker {
