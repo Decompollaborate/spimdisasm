@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix to avoid incorrectly inferring the symbol's type if the given symbol is
   referenced on complex control flows.
+- Avoid symbolizing $gp accesses if the current function set that register to a
+  different value.
 
 ## [1.32.1] - 2025-02-02
 

@@ -380,6 +380,8 @@ class SymbolFunction(SymbolText):
             self.relocs[instrOffset] = common.RelocationInfo(relocType, "_gp_disp")
 
         for instrOffset, gpInfo in self.instrAnalyzer.gpSets.items():
+            if gpInfo is None:
+                continue
             hiInstrOffset = gpInfo.hiOffset
             hiInstr = self.instructions[hiInstrOffset//4]
             instr = self.instructions[instrOffset//4]
