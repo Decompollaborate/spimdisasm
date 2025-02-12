@@ -19,7 +19,7 @@ class SymbolFunction(SymbolText):
 
         self.instrAnalyzer = analysis.InstrAnalyzer(self.vram, context)
 
-        self.branchesTaken: set[int] = set()
+        self.branchesTaken: set[tuple[int, bool]] = set()
 
         self.pointersOffsets: set[int] = set()
         self.pointersRemoved: bool = False
@@ -40,7 +40,7 @@ class SymbolFunction(SymbolText):
     def isFunction(self) -> bool:
         return True
 
-    def _lookAheadSymbolFinder(self, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction, instructionOffset: int, trackedRegistersOriginal: rabbitizer.RegistersTracker) -> None:
+    def _lookAheadSymbolFinder(self, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction, instructionOffset: int, trackedRegistersOriginal: rabbitizer.RegistersTracker, prev_is_likely: bool) -> None:
         if not prevInstr.isBranch() and not prevInstr.isUnconditionalBranch():
             return
 
@@ -58,9 +58,9 @@ class SymbolFunction(SymbolText):
 
         self.instrAnalyzer.processInstr(regsTracker, instr, instructionOffset, currentVram, None)
 
-        if instructionOffset in self.branchesTaken:
+        if (instructionOffset, prev_is_likely) in self.branchesTaken:
             return
-        self.branchesTaken.add(instructionOffset)
+        self.branchesTaken.add((instructionOffset, prev_is_likely))
 
         sizew = len(self.instructions)*4
         while branch < sizew:
@@ -69,7 +69,7 @@ class SymbolFunction(SymbolText):
 
             self.instrAnalyzer.processInstr(regsTracker, targetInstr, branch, self.getVramOffset(branch), prevTargetInstr)
 
-            self._lookAheadSymbolFinder(targetInstr, prevTargetInstr, branch, regsTracker)
+            self._lookAheadSymbolFinder(targetInstr, prevTargetInstr, branch, regsTracker, prev_is_likely or prevTargetInstr.isBranchLikely())
 
             if prevTargetInstr.isUnconditionalBranch():
                 # Since we took the branch on the previous _lookAheadSymbolFinder
@@ -129,7 +129,7 @@ class SymbolFunction(SymbolText):
                 self.instrAnalyzer.processInstr(regsTracker, instr, instructionOffset, currentVram, prevInstr)
 
             # look-ahead symbol finder
-            self._lookAheadSymbolFinder(instr, prevInstr, instructionOffset, regsTracker)
+            self._lookAheadSymbolFinder(instr, prevInstr, instructionOffset, regsTracker, prevInstr.isBranchLikely())
 
             if prevInstr.isJumpWithAddress() and not prevInstr.doesLink():
                 targetVram = prevInstr.getBranchVramGeneric()
@@ -380,6 +380,8 @@ class SymbolFunction(SymbolText):
             self.relocs[instrOffset] = common.RelocationInfo(relocType, "_gp_disp")
 
         for instrOffset, gpInfo in self.instrAnalyzer.gpSets.items():
+            if gpInfo is None:
+                continue
             hiInstrOffset = gpInfo.hiOffset
             hiInstr = self.instructions[hiInstrOffset//4]
             instr = self.instructions[instrOffset//4]

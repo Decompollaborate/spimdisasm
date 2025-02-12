@@ -48,6 +48,8 @@ class InstrAnalyzer:
         self.context = context
         "read-only"
 
+        self.currentGpValue: int|None = common.GlobalConfig.GP_VALUE
+
         self.referencedVrams: set[int] = set()
         "Every referenced vram found"
         self.referencedConstants: set[int] = set()
@@ -124,7 +126,7 @@ class InstrAnalyzer:
 
         self.gpSetsOffsets: set[int] = set()
         "Offsets of every instruction that set the $gp register"
-        self.gpSets: dict[int, GpSetInfo] = dict()
+        self.gpSets: dict[int, GpSetInfo|None] = dict()
         "Instructions setting the $gp register, key: offset of the low instruction"
 
 
@@ -233,15 +235,15 @@ class InstrAnalyzer:
                     else:
                         return self.symbolLoInstrOffset[lowerOffset]
 
-        if hiValue is None and common.GlobalConfig.GP_VALUE is None:
+        if hiValue is None and self.currentGpValue is None:
             # Trying to pair a gp relative offset, but we don't know the gp address
             return None
 
         if hiValue is not None:
             upperHalf = hiValue
         else:
-            assert common.GlobalConfig.GP_VALUE is not None
-            upperHalf = common.GlobalConfig.GP_VALUE
+            assert self.currentGpValue is not None
+            upperHalf = self.currentGpValue
 
         return upperHalf + lowerHalf
 
@@ -393,9 +395,12 @@ class InstrAnalyzer:
                     else:
                         hiGpValue = luiInstr.getProcessedImmediate() << 16
                         loGpValue = instr.getProcessedImmediate()
-                        self.gpSets[instrOffset] = GpSetInfo(luiOffset, instrOffset, hiGpValue+loGpValue)
+                        gpValue = hiGpValue+loGpValue
+                        self.gpSets[instrOffset] = GpSetInfo(luiOffset, instrOffset, gpValue)
                         self.gpSetsOffsets.add(luiOffset)
                         self.gpSetsOffsets.add(instrOffset)
+                        if not common.GlobalConfig.PIC:
+                            self.currentGpValue = gpValue
                     # early return to avoid counting this pairing as a normal symbol
                     return
 
@@ -484,6 +489,13 @@ class InstrAnalyzer:
                     self.cploads[instrOffset] = cpload
 
         regsTracker.overwriteRegisters(instr, instrOffset)
+        if not common.GlobalConfig.PIC:
+            dstReg = instr.getDestinationGpr()
+            if dstReg is not None and (dstReg == rabbitizer.RegGprO32.gp or dstReg == rabbitizer.RegGprN32.gp):
+                if instrOffset not in self.gpSets:
+                    self.gpSets[instrOffset] = None
+                    self.gpSetsOffsets.add(instrOffset)
+                    self.currentGpValue = None
 
 
     def processPrevFuncCall(self, regsTracker: rabbitizer.RegistersTracker, instr: rabbitizer.Instruction, prevInstr: rabbitizer.Instruction, currentVram: int | None = None) -> None:
