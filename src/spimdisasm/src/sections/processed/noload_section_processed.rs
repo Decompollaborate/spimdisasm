@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{string::String, vec::Vec};
+use alloc::{sync::Arc, vec::Vec};
 use core::hash;
 
 use crate::{
@@ -22,7 +22,7 @@ const SECTION_TYPE: SectionType = SectionType::Bss;
 #[derive(Debug, Clone)]
 #[must_use]
 pub struct NoloadSectionProcessed {
-    name: String,
+    name: Arc<str>,
     vram_range: AddressRange<Vram>,
     parent_segment_info: ParentSegmentInfo,
     noload_symbols: Vec<NoloadSymProcessed>,
@@ -32,7 +32,7 @@ pub struct NoloadSectionProcessed {
 impl NoloadSectionProcessed {
     pub(crate) fn new(
         context: &mut Context,
-        name: String,
+        name: Arc<str>,
         vram_range: AddressRange<Vram>,
         parent_segment_info: ParentSegmentInfo,
         noload_symbols: Vec<NoloadSym>,
@@ -60,8 +60,8 @@ impl NoloadSectionProcessed {
 }
 
 impl Section for NoloadSectionProcessed {
-    fn name(&self) -> &str {
-        &self.name
+    fn name(&self) -> Arc<str> {
+        self.name.clone()
     }
 
     fn vram_range(&self) -> &AddressRange<Vram> {

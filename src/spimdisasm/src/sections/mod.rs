@@ -10,7 +10,10 @@ mod trait_section;
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings;
 
-pub use section_creation_error::SectionCreationError;
+pub use section_creation_error::{
+    BadBytesSizeError, EmptySectionError, RomVramAlignmentMismatchError, SectionCreationError,
+    UnalignedRomError, UnalignedVramError,
+};
 pub use section_post_process_error::SectionPostProcessError;
 pub use trait_section::{
     RomSection, RomSectionPreprocessed, RomSectionProcessed, Section, SectionPreprocessed,

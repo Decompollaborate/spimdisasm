@@ -2,7 +2,7 @@
 /* SPDX-License-Identifier: MIT */
 
 use core::{error, fmt};
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, sync::Arc};
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
@@ -40,7 +40,8 @@ impl PyUserRelocs {
         sym_name: String,
         addend: i32,
     ) -> Result<(), UserRelocAddError> {
-        let reloc = reloc_type.new_reloc_info(RelocReferencedSym::SymName(sym_name, addend));
+        let reloc =
+            reloc_type.new_reloc_info(RelocReferencedSym::SymName(Arc::from(sym_name), addend));
 
         if self.inner.insert(rom, reloc).is_some() {
             // err

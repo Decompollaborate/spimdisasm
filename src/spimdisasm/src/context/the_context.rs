@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::string::String;
+use alloc::sync::Arc;
 use core::{error, fmt};
 
 use ::polonius_the_crab::prelude::*;
@@ -86,19 +86,22 @@ impl Context {
 }
 
 impl Context {
-    pub fn create_section_text(
+    pub fn create_section_text<T>(
         &mut self,
         settings: &ExecutableSectionSettings,
-        name: String,
+        name: T,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
-    ) -> Result<ExecutableSection, SectionCreationError> {
+    ) -> Result<ExecutableSection, SectionCreationError>
+    where
+        T: Into<Arc<str>>,
+    {
         ExecutableSection::new(
             self,
             settings,
-            name,
+            name.into(),
             raw_bytes,
             rom,
             vram,
@@ -106,19 +109,22 @@ impl Context {
         )
     }
 
-    pub fn create_section_data(
+    pub fn create_section_data<T>(
         &mut self,
         settings: &DataSectionSettings,
-        name: String,
+        name: T,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
-    ) -> Result<DataSection, SectionCreationError> {
+    ) -> Result<DataSection, SectionCreationError>
+    where
+        T: Into<Arc<str>>,
+    {
         DataSection::new(
             self,
             settings,
-            name,
+            name.into(),
             raw_bytes,
             rom,
             vram,
@@ -127,19 +133,22 @@ impl Context {
         )
     }
 
-    pub fn create_section_rodata(
+    pub fn create_section_rodata<T>(
         &mut self,
         settings: &DataSectionSettings,
-        name: String,
+        name: T,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
-    ) -> Result<DataSection, SectionCreationError> {
+    ) -> Result<DataSection, SectionCreationError>
+    where
+        T: Into<Arc<str>>,
+    {
         DataSection::new(
             self,
             settings,
-            name,
+            name.into(),
             raw_bytes,
             rom,
             vram,
@@ -148,29 +157,35 @@ impl Context {
         )
     }
 
-    pub fn create_section_bss(
+    pub fn create_section_bss<T>(
         &mut self,
         settings: &NoloadSectionSettings,
-        name: String,
+        name: T,
         vram_range: AddressRange<Vram>,
         parent_segment_info: ParentSegmentInfo,
-    ) -> Result<NoloadSection, SectionCreationError> {
-        NoloadSection::new(self, settings, name, vram_range, parent_segment_info)
+    ) -> Result<NoloadSection, SectionCreationError>
+    where
+        T: Into<Arc<str>>,
+    {
+        NoloadSection::new(self, settings, name.into(), vram_range, parent_segment_info)
     }
 
-    pub fn create_section_gcc_except_table(
+    pub fn create_section_gcc_except_table<T>(
         &mut self,
         settings: &DataSectionSettings,
-        name: String,
+        name: T,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
-    ) -> Result<DataSection, SectionCreationError> {
+    ) -> Result<DataSection, SectionCreationError>
+    where
+        T: Into<Arc<str>>,
+    {
         DataSection::new(
             self,
             settings,
-            name,
+            name.into(),
             raw_bytes,
             rom,
             vram,
@@ -291,7 +306,7 @@ impl Context {
                                 continue;
                             }
                             for (_segment_rom, segment) in segments_per_rom.segments() {
-                                if segment.name() == Some(prioritised_overlay)
+                                if segment.name().as_ref() == Some(prioritised_overlay)
                                     && segment.in_vram_range(vram)
                                 {
                                     if let Some(sym) = segment.find_symbol(vram, settings) {
@@ -406,7 +421,7 @@ fn find_referenced_segment_mut_impl<'ctx>(
                                 continue;
                             }
                             for (segment_rom, segment) in segments_per_rom.segments() {
-                                if segment.name() == Some(prioritised_overlay)
+                                if segment.name().as_ref() == Some(prioritised_overlay)
                                     && segment.in_vram_range(vram)
                                 {
                                     // We need to clone here to avoid lifetime issues

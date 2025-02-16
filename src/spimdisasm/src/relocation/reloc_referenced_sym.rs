@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::string::String;
+use alloc::sync::Arc;
 
 use crate::addresses::Vram;
 
@@ -9,5 +9,5 @@ use crate::addresses::Vram;
 #[non_exhaustive]
 pub enum RelocReferencedSym {
     Address(Vram),
-    SymName(String, i32),
+    SymName(Arc<str>, i32),
 }

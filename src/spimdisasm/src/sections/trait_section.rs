@@ -1,14 +1,17 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use alloc::sync::Arc;
+
 use crate::addresses::{AddressRange, Rom, RomVramRange, Size, Vram};
 use crate::collections::unordered_set::UnorderedSet;
 use crate::parent_segment_info::ParentSegmentInfo;
 use crate::section_type::SectionType;
 use crate::symbols::{Symbol, SymbolPreprocessed, SymbolProcessed};
+
 pub trait Section {
     #[must_use]
-    fn name(&self) -> &str;
+    fn name(&self) -> Arc<str>;
     #[must_use]
     fn vram_range(&self) -> &AddressRange<Vram>;
 

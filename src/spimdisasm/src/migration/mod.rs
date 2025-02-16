@@ -8,5 +8,8 @@ mod rodata_iterator;
 
 pub use func_rodata_migration::FuncRodataPairing;
 pub use pairing_display::{FuncRodataPairingDisplay, FuncRodataPairingDisplaySettings};
-pub use pairing_error::PairingError;
+pub use pairing_error::{
+    FunctionOutOfBoundsError, MissingRodataSectionError, MissingTextSectionError, PairingError,
+    RodataOutOfBoundsError,
+};
 pub use rodata_iterator::RodataIterator;

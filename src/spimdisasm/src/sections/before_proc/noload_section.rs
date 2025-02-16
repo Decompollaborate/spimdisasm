@@ -1,9 +1,8 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use alloc::{collections::btree_set::BTreeSet, sync::Arc, vec::Vec};
 use core::hash;
-
-use alloc::{collections::btree_set::BTreeSet, string::String, vec::Vec};
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
@@ -16,7 +15,7 @@ use crate::{
     metadata::ParentSectionMetadata,
     parent_segment_info::ParentSegmentInfo,
     section_type::SectionType,
-    sections::{processed::NoloadSectionProcessed, SectionPreprocessed},
+    sections::{processed::NoloadSectionProcessed, EmptySectionError, SectionPreprocessed},
     symbols::{
         before_proc::{noload_sym::NoloadSymProperties, NoloadSym},
         Symbol, SymbolPreprocessed,
@@ -28,7 +27,7 @@ use crate::sections::{Section, SectionCreationError, SectionPostProcessError};
 #[derive(Debug, Clone)]
 #[must_use]
 pub struct NoloadSection {
-    name: String,
+    name: Arc<str>,
 
     vram_range: AddressRange<Vram>,
 
@@ -46,15 +45,12 @@ impl NoloadSection {
     pub(crate) fn new(
         context: &mut Context,
         settings: &NoloadSectionSettings,
-        name: String,
+        name: Arc<str>,
         vram_range: AddressRange<Vram>,
         parent_segment_info: ParentSegmentInfo,
     ) -> Result<Self, SectionCreationError> {
         if vram_range.size().inner() == 0 {
-            return Err(SectionCreationError::EmptySection {
-                name,
-                vram: vram_range.start(),
-            });
+            return Err(EmptySectionError::new(name, vram_range.start()).into());
         }
 
         let mut noload_symbols = Vec::new();
@@ -160,8 +156,8 @@ impl NoloadSection {
 }
 
 impl Section for NoloadSection {
-    fn name(&self) -> &str {
-        &self.name
+    fn name(&self) -> Arc<str> {
+        self.name.clone()
     }
 
     fn vram_range(&self) -> &AddressRange<Vram> {

@@ -21,7 +21,10 @@ use crate::{
     },
 };
 
-use super::{FuncRodataPairing, PairingError};
+use super::{
+    FuncRodataPairing, FunctionOutOfBoundsError, MissingRodataSectionError,
+    MissingTextSectionError, PairingError, RodataOutOfBoundsError,
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct FuncRodataPairingDisplay<
@@ -93,17 +96,18 @@ impl<
                 let text_section = if let Some(text_section) = text_section {
                     text_section
                 } else {
-                    return Err(PairingError::MissingTextSection {});
+                    return Err(MissingTextSectionError::new().into());
                 };
                 let functions = text_section.functions();
                 let func = if let Some(func) = functions.get(*function_index) {
                     func
                 } else {
-                    return Err(PairingError::FunctionOutOfBounds {
-                        index: *function_index,
-                        len: functions.len(),
-                        section_name: text_section.name().into(),
-                    });
+                    return Err(FunctionOutOfBoundsError::new(
+                        *function_index,
+                        functions.len(),
+                        text_section.name(),
+                    )
+                    .into());
                 };
 
                 let (ro_syms_display, late_ro_syms_display) = Self::do_rodata_section(
@@ -154,7 +158,7 @@ impl<
         let rodata_section = if let Some(rodata_section) = rodata_section {
             rodata_section
         } else {
-            return Err(PairingError::MissingRodataSection {});
+            return Err(MissingRodataSectionError::new().into());
         };
 
         let ro_syms_display = Self::do_rodata_displays(
@@ -187,11 +191,12 @@ impl<
                 let rodata = if let Some(rodata) = rodata_syms.get(*x) {
                     rodata
                 } else {
-                    return Err(PairingError::RodataOutOfBounds {
-                        index: *x,
-                        len: rodata_syms.len(),
-                        section_name: rodata_section.name().into(),
-                    });
+                    return Err(RodataOutOfBoundsError::new(
+                        *x,
+                        rodata_syms.len(),
+                        rodata_section.name(),
+                    )
+                    .into());
                 };
                 Ok(rodata.display_internal(
                     context,

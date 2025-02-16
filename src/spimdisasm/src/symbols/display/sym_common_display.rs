@@ -3,7 +3,7 @@
 
 use core::fmt;
 
-use alloc::string::String;
+use alloc::sync::Arc;
 
 use crate::{
     addresses::{Rom, Vram},
@@ -20,7 +20,7 @@ pub(crate) enum WordComment {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SymCommonDisplaySettings {
-    line_end: Option<String>,
+    line_end: Option<Arc<str>>,
 
     emit_asm_comment: bool,
 
@@ -153,7 +153,7 @@ impl SymCommonDisplaySettings {
 
             write!(f, " {}", sym_name)?;
 
-            match metadata.visibility() {
+            match metadata.visibility().as_deref() {
                 None | Some("global") | Some("globl") => {}
                 Some(vis) => write!(f, ", {}", vis)?,
             }
@@ -164,7 +164,8 @@ impl SymCommonDisplaySettings {
             .ent func_80045DD0
             func_80045DD0:
             */
-            let vis = match metadata.visibility() {
+            let visibility = metadata.visibility();
+            let vis = match visibility.as_deref() {
                 None | Some("globl") => "globl",
                 Some(vis) => vis,
             };

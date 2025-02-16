@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{collections::btree_map::BTreeMap, string::String, vec::Vec};
+use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
 use core::hash;
 
 use crate::{
@@ -23,7 +23,7 @@ use crate::{
 #[derive(Debug, Clone)]
 #[must_use]
 pub struct DataSectionProcessed {
-    name: String,
+    name: Arc<str>,
     ranges: RomVramRange,
     parent_segment_info: ParentSegmentInfo,
     section_type: SectionType,
@@ -33,9 +33,9 @@ pub struct DataSectionProcessed {
 
 impl DataSectionProcessed {
     #[allow(clippy::too_many_arguments)]
-    pub fn new(
+    pub(crate) fn new(
         context: &mut Context,
-        name: String,
+        name: Arc<str>,
         ranges: RomVramRange,
         parent_segment_info: ParentSegmentInfo,
         section_type: SectionType,
@@ -66,8 +66,8 @@ impl DataSectionProcessed {
 }
 
 impl Section for DataSectionProcessed {
-    fn name(&self) -> &str {
-        &self.name
+    fn name(&self) -> Arc<str> {
+        self.name.clone()
     }
 
     fn vram_range(&self) -> &AddressRange<Vram> {

@@ -23,7 +23,9 @@ use crate::{
 };
 
 use super::{
-    FuncRodataPairingDisplay, FuncRodataPairingDisplaySettings, PairingError, RodataIterator,
+    FuncRodataPairingDisplay, FuncRodataPairingDisplaySettings, FunctionOutOfBoundsError,
+    MissingRodataSectionError, MissingTextSectionError, PairingError, RodataIterator,
+    RodataOutOfBoundsError,
 };
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -277,7 +279,7 @@ impl FuncRodataPairing {
         {
             // If a function owner was specified for this symbol then it is only
             // allowed to be migrated to that function and none other
-            *owner_name == func_name.to_string()
+            owner_name.as_ref() == func_name.to_string()
         } else if !intersection.contains(&rodata_metadata.vram()) {
             false
         } else {
@@ -301,14 +303,15 @@ impl<'ctx> FuncRodataPairing {
                     if let Some(func) = functions.get(*function_index) {
                         func.find_own_metadata(context)
                     } else {
-                        return Err(PairingError::FunctionOutOfBounds {
-                            index: *function_index,
-                            len: functions.len(),
-                            section_name: text_section.name().into(),
-                        });
+                        return Err(FunctionOutOfBoundsError::new(
+                            *function_index,
+                            functions.len(),
+                            text_section.name(),
+                        )
+                        .into());
                     }
                 } else {
-                    return Err(PairingError::MissingTextSection {});
+                    return Err(MissingTextSectionError::new().into());
                 }
             }
             FuncRodataPairing::SingleRodata { rodata_index } => {
@@ -318,14 +321,15 @@ impl<'ctx> FuncRodataPairing {
                     if let Some(rodata) = data_symbols.get(*rodata_index) {
                         rodata.find_own_metadata(context)
                     } else {
-                        return Err(PairingError::RodataOutOfBounds {
-                            index: *rodata_index,
-                            len: data_symbols.len(),
-                            section_name: rodata_section.name().into(),
-                        });
+                        return Err(RodataOutOfBoundsError::new(
+                            *rodata_index,
+                            data_symbols.len(),
+                            rodata_section.name(),
+                        )
+                        .into());
                     }
                 } else {
-                    return Err(PairingError::MissingRodataSection {});
+                    return Err(MissingRodataSectionError::new().into());
                 }
             }
         };

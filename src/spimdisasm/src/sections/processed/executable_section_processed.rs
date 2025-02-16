@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{collections::btree_map::BTreeMap, string::String, vec::Vec};
+use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
 use core::hash;
 
 use crate::{
@@ -25,7 +25,7 @@ const SECTION_TYPE: SectionType = SectionType::Text;
 #[derive(Debug, Clone)]
 #[must_use]
 pub struct ExecutableSectionProcessed {
-    name: String,
+    name: Arc<str>,
     ranges: RomVramRange,
     parent_segment_info: ParentSegmentInfo,
     functions: Vec<FunctionSymProcessed>,
@@ -35,7 +35,7 @@ pub struct ExecutableSectionProcessed {
 impl ExecutableSectionProcessed {
     pub(crate) fn new(
         context: &mut Context,
-        name: String,
+        name: Arc<str>,
         ranges: RomVramRange,
         parent_segment_info: ParentSegmentInfo,
         functions: Vec<FunctionSym>,
@@ -64,8 +64,8 @@ impl ExecutableSectionProcessed {
 }
 
 impl Section for ExecutableSectionProcessed {
-    fn name(&self) -> &str {
-        &self.name
+    fn name(&self) -> Arc<str> {
+        self.name.clone()
     }
 
     fn vram_range(&self) -> &AddressRange<Vram> {

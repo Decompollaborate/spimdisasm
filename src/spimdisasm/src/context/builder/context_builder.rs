@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{borrow::ToOwned, string::String, vec::Vec};
+use alloc::{sync::Arc, vec::Vec};
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
@@ -52,7 +52,7 @@ impl ContextBuilder {
 
         for other_name in segment.prioritised_overlays() {
             for other_overlay in overlays {
-                if other_overlay.name() == other_name {
+                if other_overlay.name() == *other_name {
                     all_ranges.push(*other_overlay.ranges().vram());
                     break;
                 }
@@ -102,7 +102,8 @@ impl ContextBuilder {
             .zip(visible_ranges_for_overlays)
             .collect();
 
-        let mut new_references: UnorderedMap<String, Vec<ReferencedAddress>> = UnorderedMap::new();
+        let mut new_references: UnorderedMap<Arc<str>, Vec<ReferencedAddress>> =
+            UnorderedMap::new();
         for (overlay, visible_ranges) in &overlays {
             for (vram, reference) in overlay.preheater().references() {
                 if visible_ranges.iter().any(|x| x.in_range(*vram)) {
@@ -110,10 +111,11 @@ impl ContextBuilder {
                     for other_name in overlay.prioritised_overlays() {
                         for (other_overlay, _) in &overlays {
                             let ovl_name = other_overlay.name();
-                            if ovl_name == other_name && other_overlay.ranges().in_vram_range(*vram)
+                            if ovl_name == *other_name
+                                && other_overlay.ranges().in_vram_range(*vram)
                             {
                                 new_references
-                                    .entry(ovl_name.to_owned())
+                                    .entry(ovl_name)
                                     .or_default()
                                     .push(reference.clone());
                                 found = true;
@@ -128,7 +130,7 @@ impl ContextBuilder {
             }
         }
         for (overlay, _) in &mut overlays {
-            if let Some(references_for_this_overlay) = new_references.remove(overlay.name()) {
+            if let Some(references_for_this_overlay) = new_references.remove(&overlay.name()) {
                 let references = overlay.preheater_mut().references_mut();
                 for reference in references_for_this_overlay {
                     let reference_vram = reference.vram();

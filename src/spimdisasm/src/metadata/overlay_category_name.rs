@@ -1,9 +1,8 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use alloc::sync::Arc;
 use core::fmt;
-
-use alloc::string::String;
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
@@ -11,16 +10,19 @@ use pyo3::prelude::*;
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct OverlayCategoryName {
-    inner: String,
+    inner: Arc<str>,
 }
 
 impl OverlayCategoryName {
-    pub const fn new(name: String) -> Self {
-        Self { inner: name }
+    pub fn new<T>(name: T) -> Self
+    where
+        T: Into<Arc<str>>,
+    {
+        Self { inner: name.into() }
     }
 
-    pub fn inner(&self) -> &str {
-        &self.inner
+    pub fn inner(&self) -> Arc<str> {
+        self.inner.clone()
     }
 }
 

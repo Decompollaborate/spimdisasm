@@ -3,7 +3,7 @@
 
 use core::{error, fmt};
 
-use alloc::string::String;
+use alloc::sync::Arc;
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
@@ -14,12 +14,12 @@ use crate::addresses::{AddressRange, Rom, Size, Vram};
 #[non_exhaustive]
 enum AddUserSymbolErrorVariant {
     Overlap {
-        other_name: String,
+        other_name: Arc<str>,
         other_vram: Vram,
         other_size: Size,
     },
     Duplicated {
-        other_name: String,
+        other_name: Arc<str>,
         other_vram: Vram,
     },
     VramOutOfRnage {
@@ -35,18 +35,18 @@ enum AddUserSymbolErrorVariant {
 #[non_exhaustive]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct AddUserSymbolError {
-    sym_name: String,
+    sym_name: Arc<str>,
     sym_vram: Vram,
-    segment_name: Option<String>,
+    segment_name: Option<Arc<str>>,
     variant: AddUserSymbolErrorVariant,
 }
 
 impl AddUserSymbolError {
     pub(crate) fn new_overlap(
-        sym_name: String,
+        sym_name: Arc<str>,
         sym_vram: Vram,
-        segment_name: Option<String>,
-        other_name: String,
+        segment_name: Option<Arc<str>>,
+        other_name: Arc<str>,
         other_vram: Vram,
         other_size: Size,
     ) -> Self {
@@ -63,10 +63,10 @@ impl AddUserSymbolError {
     }
 
     pub(crate) fn new_duplicated(
-        sym_name: String,
+        sym_name: Arc<str>,
         sym_vram: Vram,
-        segment_name: Option<String>,
-        other_name: String,
+        segment_name: Option<Arc<str>>,
+        other_name: Arc<str>,
         other_vram: Vram,
     ) -> Self {
         Self {
@@ -81,9 +81,9 @@ impl AddUserSymbolError {
     }
 
     pub(crate) fn new_vram_out_of_range(
-        sym_name: String,
+        sym_name: Arc<str>,
         sym_vram: Vram,
-        segment_name: Option<String>,
+        segment_name: Option<Arc<str>>,
         segment_ranges: AddressRange<Vram>,
     ) -> Self {
         Self {
@@ -95,9 +95,9 @@ impl AddUserSymbolError {
     }
 
     pub(crate) fn new_rom_out_of_range(
-        sym_name: String,
+        sym_name: Arc<str>,
         sym_vram: Vram,
-        segment_name: Option<String>,
+        segment_name: Option<Arc<str>>,
         rom: Rom,
         segment_ranges: AddressRange<Rom>,
     ) -> Self {

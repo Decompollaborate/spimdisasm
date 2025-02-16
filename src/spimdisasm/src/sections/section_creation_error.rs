@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::string::String;
+use alloc::sync::Arc;
 use core::{error, fmt};
 
 #[cfg(feature = "pyo3")]
@@ -20,31 +20,11 @@ use crate::{
 pub enum SectionCreationError {
     OwnedSegmentNotFound(OwnedSegmentNotFoundError),
     AddSymbol(AddSymbolError),
-    EmptySection {
-        name: String,
-        vram: Vram,
-    },
-    BadBytesSize {
-        name: String,
-        size: usize,
-        multiple_of: usize,
-    },
-    UnalignedVram {
-        name: String,
-        vram: Vram,
-        multiple_of: usize,
-    },
-    UnalignedRom {
-        name: String,
-        rom: Rom,
-        multiple_of: usize,
-    },
-    RomVramAlignmentMismatch {
-        name: String,
-        rom: Rom,
-        vram: Vram,
-        multiple_of: usize,
-    },
+    EmptySection(EmptySectionError),
+    BadBytesSize(BadBytesSizeError),
+    UnalignedVram(UnalignedVramError),
+    UnalignedRom(UnalignedRomError),
+    RomVramAlignmentMismatch(RomVramAlignmentMismatchError),
 }
 
 impl fmt::Display for SectionCreationError {
@@ -54,15 +34,14 @@ impl fmt::Display for SectionCreationError {
                 write!(f, "{}", owned_segment_not_found_error)
             }
             SectionCreationError::AddSymbol(add_symbol_error) => write!(f, "{}", add_symbol_error),
-            SectionCreationError::EmptySection { name, vram } => write!(f, "Can't initialize section '{}' ({:?}) with empty bytes.", name, vram),
-            SectionCreationError::BadBytesSize { name, size, multiple_of} => write!(f, "Can't create section {} because the bytes length (0x{:X}) is not a multiple of 0x{:X}.", name, size, multiple_of),
-            SectionCreationError::UnalignedVram { name, vram, multiple_of} => write!(f, "Can't create section {} because the vram ({:?}) is not aligned to 0x{:X}.", name, vram, multiple_of),
-            SectionCreationError::UnalignedRom { name, rom, multiple_of} => write!(f, "Can't create section {} because the rom (0x{:X}) is not aligned to 0x{:X}.", name, rom.inner(), multiple_of),
-            SectionCreationError::RomVramAlignmentMismatch {name, rom, vram, multiple_of} => write!(f, "Can't create section {} because the alignment of its rom ({:?}) and vram ({:?}) mod {} does not match.", name, rom, vram, multiple_of),
+            SectionCreationError::EmptySection(x) => write!(f, "{}", x),
+            SectionCreationError::BadBytesSize(x) => write!(f, "{}", x),
+            SectionCreationError::UnalignedVram(x) => write!(f, "{}", x),
+            SectionCreationError::UnalignedRom(x) => write!(f, "{}", x),
+            SectionCreationError::RomVramAlignmentMismatch(x) => write!(f, "{}", x),
         }
     }
 }
-
 impl error::Error for SectionCreationError {}
 
 impl From<SymbolCreationError> for SectionCreationError {
@@ -77,18 +56,172 @@ impl From<SymbolCreationError> for SectionCreationError {
         }
     }
 }
-
 impl From<OwnedSegmentNotFoundError> for SectionCreationError {
     fn from(value: OwnedSegmentNotFoundError) -> Self {
         SectionCreationError::OwnedSegmentNotFound(value)
     }
 }
-
 impl From<AddSymbolError> for SectionCreationError {
     fn from(value: AddSymbolError) -> Self {
         SectionCreationError::AddSymbol(value)
     }
 }
+impl From<EmptySectionError> for SectionCreationError {
+    fn from(value: EmptySectionError) -> Self {
+        SectionCreationError::EmptySection(value)
+    }
+}
+impl From<BadBytesSizeError> for SectionCreationError {
+    fn from(value: BadBytesSizeError) -> Self {
+        SectionCreationError::BadBytesSize(value)
+    }
+}
+impl From<UnalignedVramError> for SectionCreationError {
+    fn from(value: UnalignedVramError) -> Self {
+        SectionCreationError::UnalignedVram(value)
+    }
+}
+impl From<UnalignedRomError> for SectionCreationError {
+    fn from(value: UnalignedRomError) -> Self {
+        SectionCreationError::UnalignedRom(value)
+    }
+}
+impl From<RomVramAlignmentMismatchError> for SectionCreationError {
+    fn from(value: RomVramAlignmentMismatchError) -> Self {
+        SectionCreationError::RomVramAlignmentMismatch(value)
+    }
+}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+pub struct EmptySectionError {
+    name: Arc<str>,
+    vram: Vram,
+}
+impl EmptySectionError {
+    pub(crate) fn new(name: Arc<str>, vram: Vram) -> Self {
+        Self { name, vram }
+    }
+}
+impl fmt::Display for EmptySectionError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Can't initialize section '{}' ({:?}) with empty bytes.",
+            self.name, self.vram
+        )
+    }
+}
+impl error::Error for EmptySectionError {}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+pub struct BadBytesSizeError {
+    name: Arc<str>,
+    size: usize,
+    multiple_of: usize,
+}
+impl BadBytesSizeError {
+    pub(crate) fn new(name: Arc<str>, size: usize, multiple_of: usize) -> Self {
+        Self {
+            name,
+            size,
+            multiple_of,
+        }
+    }
+}
+impl fmt::Display for BadBytesSizeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Can't create section {} because the bytes length (0x{:X}) is not a multiple of 0x{:X}.", self.name, self.size, self.multiple_of)
+    }
+}
+impl error::Error for BadBytesSizeError {}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+pub struct UnalignedVramError {
+    name: Arc<str>,
+    vram: Vram,
+    multiple_of: usize,
+}
+impl UnalignedVramError {
+    pub(crate) fn new(name: Arc<str>, vram: Vram, multiple_of: usize) -> Self {
+        Self {
+            name,
+            vram,
+            multiple_of,
+        }
+    }
+}
+impl fmt::Display for UnalignedVramError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Can't create section {} because the vram ({:?}) is not aligned to 0x{:X}.",
+            self.name, self.vram, self.multiple_of
+        )
+    }
+}
+impl error::Error for UnalignedVramError {}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+pub struct UnalignedRomError {
+    name: Arc<str>,
+    rom: Rom,
+    multiple_of: usize,
+}
+impl UnalignedRomError {
+    pub(crate) fn new(name: Arc<str>, rom: Rom, multiple_of: usize) -> Self {
+        Self {
+            name,
+            rom,
+            multiple_of,
+        }
+    }
+}
+impl fmt::Display for UnalignedRomError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Can't create section {} because the rom (0x{:X}) is not aligned to 0x{:X}.",
+            self.name,
+            self.rom.inner(),
+            self.multiple_of
+        )
+    }
+}
+impl error::Error for UnalignedRomError {}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+pub struct RomVramAlignmentMismatchError {
+    name: Arc<str>,
+    rom: Rom,
+    vram: Vram,
+    multiple_of: usize,
+}
+impl RomVramAlignmentMismatchError {
+    pub(crate) fn new(name: Arc<str>, rom: Rom, vram: Vram, multiple_of: usize) -> Self {
+        Self {
+            name,
+            rom,
+            vram,
+            multiple_of,
+        }
+    }
+}
+impl fmt::Display for RomVramAlignmentMismatchError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Can't create section {} because the alignment of its rom ({:?}) and vram ({:?}) mod {} does not match.", self.name, self.rom, self.vram, self.multiple_of)
+    }
+}
+impl error::Error for RomVramAlignmentMismatchError {}
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {

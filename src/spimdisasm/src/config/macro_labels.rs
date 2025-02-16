@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::string::String;
+use alloc::sync::Arc;
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
@@ -9,15 +9,15 @@ use pyo3::prelude::*;
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct MacroLabels {
-    func: String,
-    alt_func: String,
-    func_end: Option<String>,
+    func: Arc<str>,
+    alt_func: Arc<str>,
+    func_end: Option<Arc<str>>,
 
-    jtbl_label: String,
-    ehtbl_label: String,
+    jtbl_label: Arc<str>,
+    ehtbl_label: Arc<str>,
 
-    data: String,
-    data_end: Option<String>,
+    data: Arc<str>,
+    data_end: Option<Arc<str>>,
 }
 
 impl MacroLabels {
@@ -79,31 +79,31 @@ pub(crate) mod python_bindings {
 
         #[pyo3(name="set_func", signature=(func))]
         pub fn py_set_func(&mut self, func: String) {
-            self.func = func;
+            self.func = Arc::from(func);
         }
         #[pyo3(name="set_alt_func", signature=(alt_func))]
         pub fn py_set_alt_func(&mut self, alt_func: String) {
-            self.alt_func = alt_func;
+            self.alt_func = Arc::from(alt_func);
         }
         #[pyo3(name="set_func_end", signature=(func_end))]
         pub fn py_set_func_end(&mut self, func_end: Option<String>) {
-            self.func_end = func_end;
+            self.func_end = func_end.map(Arc::from);
         }
         #[pyo3(name="set_jtbl_label", signature=(jtbl_label))]
         pub fn py_set_jtbl_label(&mut self, jtbl_label: String) {
-            self.jtbl_label = jtbl_label;
+            self.jtbl_label = Arc::from(jtbl_label);
         }
         #[pyo3(name="set_ehtbl_label", signature=(ehtbl_label))]
         pub fn py_set_ehtbl_label(&mut self, ehtbl_label: String) {
-            self.ehtbl_label = ehtbl_label;
+            self.ehtbl_label = Arc::from(ehtbl_label);
         }
         #[pyo3(name="set_data", signature=(data))]
         pub fn py_set_data(&mut self, data: String) {
-            self.data = data;
+            self.data = Arc::from(data);
         }
         #[pyo3(name="set_data_end", signature=(data_end))]
         pub fn py_set_data_end(&mut self, data_end: Option<String>) {
-            self.data_end = data_end;
+            self.data_end = data_end.map(Arc::from);
         }
     }
 }

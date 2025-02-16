@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{collections::btree_map::BTreeMap, string::ToString, vec::Vec};
+use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
 use core::hash;
 use rabbitizer::{registers_meta::Register, Instruction};
 
@@ -219,7 +219,10 @@ impl FunctionSymProcessed {
                 if let Some(imm) = instructions[instr_index].get_processed_immediate() {
                     relocs[instr_index] =
                         Some(RelocationType::R_CUSTOM_CONSTANT_HI.new_reloc_info(
-                            RelocReferencedSym::SymName(format!("0x{:08X}", imm << 16), 0),
+                            RelocReferencedSym::SymName(
+                                Arc::from(format!("0x{:08X}", imm << 16)),
+                                0,
+                            ),
                         ));
                 }
                 continue;
@@ -293,11 +296,11 @@ impl FunctionSymProcessed {
                 {
                     relocs[hi_index] = Some(
                         hi_reloc_type
-                            .new_reloc_info(RelocReferencedSym::SymName("_gp".to_string(), 0)),
+                            .new_reloc_info(RelocReferencedSym::SymName(Arc::from("_gp"), 0)),
                     );
                     relocs[lo_index] = Some(
                         lo_reloc_type
-                            .new_reloc_info(RelocReferencedSym::SymName("_gp".to_string(), 0)),
+                            .new_reloc_info(RelocReferencedSym::SymName(Arc::from("_gp"), 0)),
                     );
                 } else {
                     // TODO: some kind of conversion method for GpValue -> Vram?
@@ -325,10 +328,9 @@ impl FunctionSymProcessed {
             };
 
             // TODO: use `:08X`.
-            relocs[instr_index as usize] = Some(
-                reloc_type
-                    .new_reloc_info(RelocReferencedSym::SymName(format!("0x{:X}", constant), 0)),
-            );
+            relocs[instr_index as usize] = Some(reloc_type.new_reloc_info(
+                RelocReferencedSym::SymName(Arc::from(format!("0x{:X}", constant)), 0),
+            ));
         }
         /*
         for instrOffset, constant in instrAnalyzer.constantInstrOffset.items():
@@ -386,7 +388,7 @@ impl FunctionSymProcessed {
                     // TODO: use `:08X`.
                     relocs[instr_index] =
                         Some(RelocationType::R_CUSTOM_CONSTANT_HI.new_reloc_info(
-                            RelocReferencedSym::SymName(format!("0x{:X}", constant), 0),
+                            RelocReferencedSym::SymName(Arc::from(format!("0x{:X}", constant)), 0),
                         ));
                 }
             }

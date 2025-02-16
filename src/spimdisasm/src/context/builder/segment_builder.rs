@@ -1,10 +1,7 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{
-    string::{String, ToString},
-    vec::Vec,
-};
+use alloc::{string::ToString, sync::Arc, vec::Vec};
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
@@ -25,14 +22,14 @@ use super::{
 #[derive(Debug, Clone, PartialEq)]
 struct SegmentBuilder {
     ranges: RomVramRange,
-    name: Option<String>,
-    prioritised_overlays: Vec<String>,
+    name: Option<Arc<str>>,
+    prioritised_overlays: Vec<Arc<str>>,
     user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
     ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
 }
 
 impl SegmentBuilder {
-    fn new(ranges: RomVramRange, name: Option<String>) -> Self {
+    fn new(ranges: RomVramRange, name: Option<Arc<str>>) -> Self {
         let mut ignored_addresses = AddendedOrderedMap::new();
 
         // Hardcode the address 0 to always be ignored.
@@ -52,13 +49,13 @@ impl SegmentBuilder {
         }
     }
 
-    fn add_prioritised_overlay(&mut self, segment_name: String) {
+    fn add_prioritised_overlay(&mut self, segment_name: Arc<str>) {
         self.prioritised_overlays.push(segment_name);
     }
 
     fn add_user_symbol(
         &mut self,
-        name: String,
+        name: Arc<str>,
         vram: Vram,
         rom: Option<Rom>,
         sym_type: Option<SymbolType>,
@@ -90,8 +87,8 @@ impl SegmentBuilder {
             vram,
             FindSettings::new(check_addend),
             || {
-                let owner_segment_kind = if let Some(name) = &self.name {
-                    OwnerSegmentKind::Overlay(name.clone())
+                let owner_segment_kind = if let Some(name) = self.name.clone() {
+                    OwnerSegmentKind::Overlay(name)
                 } else {
                     OwnerSegmentKind::Global
                 };
@@ -109,7 +106,7 @@ impl SegmentBuilder {
                 name,
                 vram,
                 self.name.clone(),
-                sym.display_name().to_string(),
+                Arc::from(sym.display_name().to_string()),
                 sym.vram(),
                 sym.size().unwrap(),
             ))
@@ -118,11 +115,11 @@ impl SegmentBuilder {
                 name,
                 vram,
                 self.name.clone(),
-                sym.display_name().to_string(),
+                Arc::from(sym.display_name().to_string()),
                 sym.vram(),
             ))
         } else {
-            *sym.user_declared_name_mut() = Some(name);
+            sym.set_user_declared_name(name);
             *sym.rom_mut() = rom;
             if let Some(sym_type) = sym_type {
                 sym.set_type_with_priorities(sym_type, GeneratedBy::UserDeclared);
@@ -193,18 +190,24 @@ impl GlobalSegmentBuilder {
         }
     }
 
-    pub fn add_prioritised_overlay(&mut self, segment_name: String) {
-        self.inner.add_prioritised_overlay(segment_name);
+    pub fn add_prioritised_overlay<T>(&mut self, segment_name: T)
+    where
+        T: Into<Arc<str>>,
+    {
+        self.inner.add_prioritised_overlay(segment_name.into());
     }
 
-    pub fn add_user_symbol(
+    pub fn add_user_symbol<T>(
         &mut self,
-        name: String,
+        name: T,
         vram: Vram,
         rom: Option<Rom>,
         sym_type: Option<SymbolType>,
-    ) -> Result<&mut SymbolMetadata, AddUserSymbolError> {
-        self.inner.add_user_symbol(name, vram, rom, sym_type)
+    ) -> Result<&mut SymbolMetadata, AddUserSymbolError>
+    where
+        T: Into<Arc<str>>,
+    {
+        self.inner.add_user_symbol(name.into(), vram, rom, sym_type)
     }
 
     pub fn add_ignored_address_range(
@@ -237,29 +240,34 @@ pub struct OverlaySegmentBuilder {
 }
 
 impl OverlaySegmentBuilder {
-    pub fn new(
-        ranges: RomVramRange,
-        category_name: OverlayCategoryName,
-        segment_name: String,
-    ) -> Self {
+    pub fn new<T>(ranges: RomVramRange, category_name: OverlayCategoryName, segment_name: T) -> Self
+    where
+        T: Into<Arc<str>>,
+    {
         Self {
-            inner: SegmentBuilder::new(ranges, Some(segment_name)),
+            inner: SegmentBuilder::new(ranges, Some(segment_name.into())),
             category_name,
         }
     }
 
-    pub fn add_prioritised_overlay(&mut self, segment_name: String) {
-        self.inner.add_prioritised_overlay(segment_name);
+    pub fn add_prioritised_overlay<T>(&mut self, segment_name: T)
+    where
+        T: Into<Arc<str>>,
+    {
+        self.inner.add_prioritised_overlay(segment_name.into());
     }
 
-    pub fn add_user_symbol(
+    pub fn add_user_symbol<T>(
         &mut self,
-        name: String,
+        name: T,
         vram: Vram,
         rom: Option<Rom>,
         sym_type: Option<SymbolType>,
-    ) -> Result<&mut SymbolMetadata, AddUserSymbolError> {
-        self.inner.add_user_symbol(name, vram, rom, sym_type)
+    ) -> Result<&mut SymbolMetadata, AddUserSymbolError>
+    where
+        T: Into<Arc<str>>,
+    {
+        self.inner.add_user_symbol(name.into(), vram, rom, sym_type)
     }
 
     pub fn add_ignored_address_range(
@@ -314,7 +322,7 @@ pub(crate) mod python_bindings {
             rom: Option<Rom>,
             attributes: &SymAttributes,
         ) -> Result<(), AddUserSymbolError> {
-            let sym = self.inner.add_user_symbol(name, vram, rom, None)?;
+            let sym = self.add_user_symbol(name, vram, rom, None)?;
             attributes.apply_to_sym(sym);
             Ok(())
         }
@@ -365,9 +373,7 @@ pub(crate) mod python_bindings {
             rom: Option<Rom>,
             attributes: &SymAttributes,
         ) -> Result<(), AddUserSymbolError> {
-            let sym = self
-                .inner
-                .add_user_symbol(name, vram, rom, attributes.typ)?;
+            let sym = self.add_user_symbol(name, vram, rom, attributes.typ)?;
             attributes.apply_to_sym(sym);
             Ok(())
         }
@@ -394,12 +400,40 @@ pub(crate) mod python_bindings {
         }
     }
 
+    #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+    #[non_exhaustive]
+    #[cfg_attr(
+        feature = "pyo3",
+        pyclass(module = "spimdisasm", eq, name = "RodataMigrationBehavior")
+    )]
+    pub enum PyRodataMigrationBehavior {
+        Default(),
+        ForceMigrate(),
+        ForceNotMigrate(),
+        MigrateToSpecificFunction(String),
+    }
+
+    impl From<PyRodataMigrationBehavior> for RodataMigrationBehavior {
+        fn from(value: PyRodataMigrationBehavior) -> Self {
+            match value {
+                PyRodataMigrationBehavior::Default() => RodataMigrationBehavior::Default,
+                PyRodataMigrationBehavior::ForceMigrate() => RodataMigrationBehavior::ForceMigrate,
+                PyRodataMigrationBehavior::ForceNotMigrate() => {
+                    RodataMigrationBehavior::ForceNotMigrate
+                }
+                PyRodataMigrationBehavior::MigrateToSpecificFunction(x) => {
+                    RodataMigrationBehavior::MigrateToSpecificFunction(x.into())
+                }
+            }
+        }
+    }
+
     #[pyclass(module = "spimdisasm")]
     pub struct SymAttributes {
         typ: Option<SymbolType>,
         defined: bool,
         size: Option<Size>,
-        migration_behavior: RodataMigrationBehavior,
+        migration_behavior: PyRodataMigrationBehavior,
         allow_ref_with_addend: Option<bool>,
         can_reference: bool,
         can_be_referenced: bool,
@@ -415,7 +449,7 @@ pub(crate) mod python_bindings {
                 typ: None,
                 defined: false,
                 size: None,
-                migration_behavior: RodataMigrationBehavior::Default(),
+                migration_behavior: PyRodataMigrationBehavior::Default(),
                 allow_ref_with_addend: None,
                 can_reference: false,
                 can_be_referenced: false,
@@ -433,7 +467,7 @@ pub(crate) mod python_bindings {
         pub fn set_size(&mut self, val: &Size) {
             self.size = Some(*val);
         }
-        pub fn set_migration_behavior(&mut self, val: &RodataMigrationBehavior) {
+        pub fn set_migration_behavior(&mut self, val: &PyRodataMigrationBehavior) {
             self.migration_behavior = val.clone();
         }
         pub fn set_allow_ref_with_addend(&mut self, val: bool) {
@@ -464,7 +498,7 @@ pub(crate) mod python_bindings {
             if let Some(size) = self.size {
                 *sym.user_declared_size_mut() = Some(size);
             }
-            *sym.rodata_migration_behavior_mut() = self.migration_behavior.clone();
+            *sym.rodata_migration_behavior_mut() = self.migration_behavior.clone().into();
             if let Some(allow_ref_with_addend) = self.allow_ref_with_addend {
                 sym.set_allow_ref_with_addend(allow_ref_with_addend);
             }
@@ -472,8 +506,12 @@ pub(crate) mod python_bindings {
             sym.can_reference = self.can_reference;
             sym.can_be_referenced = self.can_be_referenced;
             */
-            *sym.user_declared_name_end_mut() = self.name_end.clone();
-            *sym.visibility_mut() = self.visibility.clone();
+            if let Some(name_end) = &self.name_end {
+                sym.set_user_declared_name_end(Arc::from(name_end.clone()));
+            }
+            if let Some(visibility) = &self.visibility {
+                sym.set_visibility(Arc::from(visibility.clone()));
+            }
         }
     }
 }

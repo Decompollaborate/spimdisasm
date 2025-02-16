@@ -152,7 +152,7 @@ fn test_section_text_1() {
     let section_text = context
         .create_section_text(
             &text_settings,
-            "test".into(),
+            "test",
             &bytes,
             rom,
             vram,
@@ -258,7 +258,7 @@ fn test_section_text_lui_delay_slot() {
     let section_text = context
         .create_section_text(
             &text_settings,
-            "test".into(),
+            "test",
             &bytes,
             rom,
             vram,

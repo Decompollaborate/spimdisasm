@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::string::{String, ToString};
+use alloc::sync::Arc;
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
@@ -33,7 +33,7 @@ impl UserSegmentBuilder {
         &mut self,
         vram: Vram,
         size: Size,
-        name: Option<String>,
+        name: Option<Arc<str>>,
         typ: Option<SymbolType>,
     ) -> Result<&mut SymbolMetadata, AddUserSegmentSymbolError> {
         let generated_by = GeneratedBy::UserDeclared;
@@ -52,7 +52,7 @@ impl UserSegmentBuilder {
                 name,
                 size,
                 metadata.vram(),
-                metadata.user_declared_name().map(|x| x.to_string()),
+                metadata.user_declared_name(),
                 metadata
                     .user_declared_size()
                     .expect("Should have size since it is required for this kind of segment."),
@@ -65,7 +65,7 @@ impl UserSegmentBuilder {
                 name,
                 size,
                 metadata.vram(),
-                metadata.user_declared_name().map(|x| x.to_string()),
+                metadata.user_declared_name(),
                 metadata
                     .user_declared_size()
                     .expect("Should have size since it is required for this kind of segment."),
@@ -76,7 +76,7 @@ impl UserSegmentBuilder {
         *metadata.user_declared_size_mut() = Some(size);
 
         if let Some(name) = name {
-            *metadata.user_declared_name_mut() = Some(name);
+            metadata.set_user_declared_name(name);
         }
         if let Some(typ) = typ {
             metadata.set_type(typ, generated_by);
@@ -85,14 +85,17 @@ impl UserSegmentBuilder {
         Ok(metadata)
     }
 
-    pub fn add_user_symbol(
+    pub fn add_user_symbol<T>(
         &mut self,
         vram: Vram,
-        name: String,
+        name: T,
         size: Size,
         typ: Option<SymbolType>,
-    ) -> Result<&mut SymbolMetadata, AddUserSegmentSymbolError> {
-        self.add_symbol_impl(vram, size, Some(name), typ)
+    ) -> Result<&mut SymbolMetadata, AddUserSegmentSymbolError>
+    where
+        T: Into<Arc<str>>,
+    {
+        self.add_symbol_impl(vram, size, Some(name.into()), typ)
     }
 
     fn add_symbols(
@@ -101,12 +104,7 @@ impl UserSegmentBuilder {
         set_names: bool,
     ) -> Result<(), AddUserSegmentSymbolError> {
         for (vram, typ, size, name) in syms {
-            self.add_symbol_impl(
-                *vram,
-                *size,
-                set_names.then(|| name.to_string()),
-                Some(*typ),
-            )?;
+            self.add_symbol_impl(*vram, *size, set_names.then(|| (*name).into()), Some(*typ))?;
         }
 
         Ok(())

@@ -1,7 +1,8 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{string::String, vec::Vec};
+use alloc::{sync::Arc, vec::Vec};
+
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
@@ -17,7 +18,7 @@ use crate::{
 #[derive(Debug, Clone, Hash, PartialEq)]
 pub(crate) struct SegmentHeater {
     ranges: RomVramRange,
-    prioritised_overlays: Vec<String>,
+    prioritised_overlays: Vec<Arc<str>>,
     user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
     ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
 
@@ -27,7 +28,7 @@ pub(crate) struct SegmentHeater {
 impl SegmentHeater {
     const fn new(
         ranges: RomVramRange,
-        prioritised_overlays: Vec<String>,
+        prioritised_overlays: Vec<Arc<str>>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
         ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
     ) -> Self {
@@ -44,7 +45,7 @@ impl SegmentHeater {
     pub(crate) const fn ranges(&self) -> &RomVramRange {
         &self.ranges
     }
-    pub(crate) fn prioritised_overlays(&self) -> &[String] {
+    pub(crate) fn prioritised_overlays(&self) -> &[Arc<str>] {
         &self.prioritised_overlays
     }
 }
@@ -210,7 +211,7 @@ pub struct GlobalSegmentHeater {
 impl GlobalSegmentHeater {
     pub(crate) const fn new(
         ranges: RomVramRange,
-        prioritised_overlays: Vec<String>,
+        prioritised_overlays: Vec<Arc<str>>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
         ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
     ) -> Self {
@@ -295,15 +296,15 @@ impl GlobalSegmentHeater {
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct OverlaySegmentHeater {
     inner: SegmentHeater,
-    name: String,
+    name: Arc<str>,
     category_name: OverlayCategoryName,
 }
 
 impl OverlaySegmentHeater {
     pub(crate) const fn new(
         ranges: RomVramRange,
-        name: String,
-        prioritised_overlays: Vec<String>,
+        name: Arc<str>,
+        prioritised_overlays: Vec<Arc<str>>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
         ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
         category_name: OverlayCategoryName,
@@ -324,8 +325,8 @@ impl OverlaySegmentHeater {
         &self.inner
     }
 
-    pub(crate) fn name(&self) -> &str {
-        &self.name
+    pub(crate) fn name(&self) -> Arc<str> {
+        self.name.clone()
     }
     pub(crate) fn category_name(&self) -> &OverlayCategoryName {
         &self.category_name
@@ -333,7 +334,7 @@ impl OverlaySegmentHeater {
     pub(crate) const fn ranges(&self) -> &RomVramRange {
         self.inner.ranges()
     }
-    pub(crate) fn prioritised_overlays(&self) -> &[String] {
+    pub(crate) fn prioritised_overlays(&self) -> &[Arc<str>] {
         self.inner.prioritised_overlays()
     }
     pub(crate) const fn preheater(&self) -> &Preheater {

@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{collections::btree_map::BTreeMap, string::String, vec::Vec};
+use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
 use core::hash;
 
 #[cfg(feature = "pyo3")]
@@ -21,8 +21,9 @@ use crate::{
     relocation::RelocationInfo,
     section_type::SectionType,
     sections::{
-        processed::DataSectionProcessed, RomSection, RomSectionPreprocessed, Section,
-        SectionCreationError, SectionPostProcessError, SectionPreprocessed,
+        processed::DataSectionProcessed, EmptySectionError, RomSection, RomSectionPreprocessed,
+        RomVramAlignmentMismatchError, Section, SectionCreationError, SectionPostProcessError,
+        SectionPreprocessed,
     },
     str_decoding::Encoding,
     symbols::{
@@ -34,7 +35,7 @@ use crate::{
 #[derive(Debug, Clone)]
 #[must_use]
 pub struct DataSection {
-    name: String,
+    name: Arc<str>,
 
     ranges: RomVramRange,
 
@@ -55,7 +56,7 @@ impl DataSection {
     pub(crate) fn new(
         context: &mut Context,
         settings: &DataSectionSettings,
-        name: String,
+        name: Arc<str>,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
@@ -63,16 +64,11 @@ impl DataSection {
         section_type: SectionType,
     ) -> Result<Self, SectionCreationError> {
         if raw_bytes.is_empty() {
-            return Err(SectionCreationError::EmptySection { name, vram });
+            return Err(EmptySectionError::new(name, vram).into());
         }
         if (rom.inner() % 4) != (vram.inner() % 4) {
             // TODO: Does this check make sense? It would be weird if this kind of section existed, wouldn't it?
-            return Err(SectionCreationError::RomVramAlignmentMismatch {
-                name,
-                rom,
-                vram,
-                multiple_of: 4,
-            });
+            return Err(RomVramAlignmentMismatchError::new(name, rom, vram, 4).into());
         }
 
         let size = Size::new(raw_bytes.len() as u32);
@@ -628,8 +624,8 @@ impl DataSection {
 }
 
 impl Section for DataSection {
-    fn name(&self) -> &str {
-        &self.name
+    fn name(&self) -> Arc<str> {
+        self.name.clone()
     }
 
     fn vram_range(&self) -> &AddressRange<Vram> {

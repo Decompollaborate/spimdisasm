@@ -120,7 +120,7 @@ impl PyDataSection {
                 x.parent_metadata().and_then(|x| {
                     x.parent_segment_info()
                         .overlay_category_name()
-                        .map(|x| x.inner().to_owned())
+                        .map(|x| x.inner().to_string())
                 }),
             )
         })
@@ -141,7 +141,7 @@ impl PyDataSection {
         };
 
         if let Some(metadata) = metadata {
-            *metadata.user_declared_name_mut() = Some(new_name);
+            metadata.set_user_declared_name(new_name.into());
         }
     }
 

@@ -127,7 +127,7 @@ impl PyExecutableSection {
                 x.parent_metadata().and_then(|x| {
                     x.parent_segment_info()
                         .overlay_category_name()
-                        .map(|x| x.inner().to_owned())
+                        .map(|x| x.inner().to_string())
                 }),
             )
         })
@@ -148,7 +148,7 @@ impl PyExecutableSection {
         };
 
         if let Some(metadata) = metadata {
-            *metadata.user_declared_name_mut() = Some(new_name);
+            metadata.set_user_declared_name(new_name.into());
         }
     }
 
@@ -230,7 +230,7 @@ impl PyExecutableSection {
                     metadata.parent_metadata().and_then(|x| {
                         x.parent_segment_info()
                             .overlay_category_name()
-                            .map(|x| x.inner().to_owned())
+                            .map(|x| x.inner().to_string())
                     }),
                 ))
             } else {
@@ -266,7 +266,7 @@ impl PyExecutableSection {
                     .find_symbol_mut(*label_vram, FindSettings::new(false))
                     .unwrap();
 
-                *metadata.user_declared_name_mut() = Some(new_name);
+                metadata.set_user_declared_name(new_name.into());
             }
         }
     }

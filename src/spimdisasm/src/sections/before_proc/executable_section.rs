@@ -1,8 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::collections::btree_map::BTreeMap;
-use alloc::{string::String, vec::Vec};
+use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
 use core::hash;
 
 use rabbitizer::{Instruction, InstructionFlags, IsaExtension};
@@ -20,7 +19,10 @@ use crate::parent_segment_info::ParentSegmentInfo;
 use crate::relocation::RelocationInfo;
 use crate::section_type::SectionType;
 use crate::sections::processed::ExecutableSectionProcessed;
-use crate::sections::{RomSectionPreprocessed, SectionPreprocessed};
+use crate::sections::{
+    BadBytesSizeError, EmptySectionError, RomSectionPreprocessed, SectionPreprocessed,
+    UnalignedRomError, UnalignedVramError,
+};
 use crate::symbols::SymbolPreprocessed;
 use crate::symbols::{
     before_proc::{function_sym::FunctionSymProperties, FunctionSym},
@@ -36,7 +38,7 @@ use crate::sections::{
 #[derive(Debug, Clone)]
 #[must_use]
 pub struct ExecutableSection {
-    name: String,
+    name: Arc<str>,
 
     ranges: RomVramRange,
 
@@ -55,35 +57,23 @@ impl ExecutableSection {
     pub(crate) fn new(
         context: &mut Context,
         settings: &ExecutableSectionSettings,
-        name: String,
+        name: Arc<str>,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
     ) -> Result<Self, SectionCreationError> {
         if raw_bytes.is_empty() {
-            return Err(SectionCreationError::EmptySection { name, vram });
+            return Err(EmptySectionError::new(name, vram).into());
         }
         if raw_bytes.len() % 4 != 0 {
-            return Err(SectionCreationError::BadBytesSize {
-                name,
-                size: raw_bytes.len(),
-                multiple_of: 4,
-            });
+            return Err(BadBytesSizeError::new(name, raw_bytes.len(), 4).into());
         }
         if vram.inner() % 4 != 0 {
-            return Err(SectionCreationError::UnalignedVram {
-                name,
-                vram,
-                multiple_of: 4,
-            });
+            return Err(UnalignedVramError::new(name, vram, 4).into());
         }
         if rom.inner() % 4 != 0 {
-            return Err(SectionCreationError::UnalignedRom {
-                name,
-                rom,
-                multiple_of: 4,
-            });
+            return Err(UnalignedRomError::new(name, rom, 4).into());
         }
 
         let size = Size::new(raw_bytes.len() as u32);
@@ -168,8 +158,8 @@ impl ExecutableSection {
 }
 
 impl Section for ExecutableSection {
-    fn name(&self) -> &str {
-        &self.name
+    fn name(&self) -> Arc<str> {
+        self.name.clone()
     }
 
     fn vram_range(&self) -> &AddressRange<Vram> {

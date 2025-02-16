@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{string::String, vec::Vec};
+use alloc::{sync::Arc, vec::Vec};
 use core::{error, fmt};
 
 #[cfg(feature = "pyo3")]
@@ -20,9 +20,9 @@ pub struct SegmentMetadata {
     ranges: RomVramRange,
 
     category_name: Option<OverlayCategoryName>,
-    name: Option<String>,
+    name: Option<Arc<str>>,
 
-    prioritised_overlays: Vec<String>,
+    prioritised_overlays: Vec<Arc<str>>,
     visible_overlay_ranges: Vec<AddressRange<Vram>>,
 
     symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
@@ -38,13 +38,13 @@ impl SegmentMetadata {
     #[allow(clippy::too_many_arguments)]
     fn new(
         ranges: RomVramRange,
-        prioritised_overlays: Vec<String>,
+        prioritised_overlays: Vec<Arc<str>>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
         ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
         preheater: Preheater,
         visible_overlay_ranges: Vec<AddressRange<Vram>>,
         category_name: Option<OverlayCategoryName>,
-        name: Option<String>,
+        name: Option<Arc<str>>,
     ) -> Self {
         Self {
             ranges,
@@ -65,7 +65,7 @@ impl SegmentMetadata {
 
     pub(crate) fn new_global(
         ranges: RomVramRange,
-        prioritised_overlays: Vec<String>,
+        prioritised_overlays: Vec<Arc<str>>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
         ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
         preheater: Preheater,
@@ -86,13 +86,13 @@ impl SegmentMetadata {
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn new_overlay(
         ranges: RomVramRange,
-        prioritised_overlays: Vec<String>,
+        prioritised_overlays: Vec<Arc<str>>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
         ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
         preheater: Preheater,
         visible_overlay_ranges: Vec<AddressRange<Vram>>,
         category_name: OverlayCategoryName,
-        name: String,
+        name: Arc<str>,
     ) -> Self {
         Self::new(
             ranges,
@@ -125,8 +125,8 @@ impl SegmentMetadata {
         }
     }
 
-    pub fn name(&self) -> Option<&str> {
-        self.name.as_deref()
+    pub fn name(&self) -> Option<Arc<str>> {
+        self.name.clone()
     }
 
     pub const fn rom_vram_range(&self) -> &RomVramRange {
@@ -181,7 +181,7 @@ impl SegmentMetadata {
         self.category_name.as_ref()
     }
 
-    pub(crate) fn prioritised_overlays(&self) -> &[String] {
+    pub(crate) fn prioritised_overlays(&self) -> &[Arc<str>] {
         &self.prioritised_overlays
     }
 
@@ -274,7 +274,7 @@ impl SegmentMetadata {
 pub struct AddSymbolError {
     vram: Vram,
     segment_ranges: AddressRange<Vram>,
-    name: Option<String>,
+    name: Option<Arc<str>>,
 }
 impl fmt::Display for AddSymbolError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

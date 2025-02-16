@@ -85,9 +85,10 @@ fn init_context(
                     )
                     .unwrap();
 
-                if let Some(name_end) = user_symbol_info.name_end {
-                    *sym.user_declared_name_end_mut() = Some(name_end);
-                }
+                // TODO:
+                // if let Some(name_end) = user_symbol_info.name_end {
+                //     sym.set_user_declared_name_end(name_end);
+                // }
                 if let Some(size) = user_symbol_info.size {
                     *sym.user_declared_size_mut() = Some(size);
                 }
@@ -220,7 +221,7 @@ fn init_segments(
                                 context
                                     .create_section_text(
                                         &text_settings,
-                                        (*name).into(),
+                                        *name,
                                         &rom_bytes[AddressRange::new(*rom, rom_end)],
                                         *rom,
                                         info.vram_from_rom(*rom),
@@ -235,7 +236,7 @@ fn init_segments(
                                 context
                                     .create_section_data(
                                         &data_settings,
-                                        (*name).into(),
+                                        *name,
                                         &rom_bytes[AddressRange::new(*rom, rom_end)],
                                         *rom,
                                         info.vram_from_rom(*rom),
@@ -250,7 +251,7 @@ fn init_segments(
                                 context
                                     .create_section_rodata(
                                         &rodata_settings,
-                                        (*name).into(),
+                                        *name,
                                         &rom_bytes[AddressRange::new(*rom, rom_end)],
                                         *rom,
                                         info.vram_from_rom(*rom),
@@ -280,7 +281,7 @@ fn init_segments(
                                 context
                                     .create_section_bss(
                                         &bss_settings,
-                                        (*name).into(),
+                                        *name,
                                         vram_range,
                                         parent_segment_info.clone(),
                                     )

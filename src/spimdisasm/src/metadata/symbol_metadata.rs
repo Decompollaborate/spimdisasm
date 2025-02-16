@@ -1,13 +1,12 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use alloc::sync::Arc;
 use core::{fmt, hash::Hash};
-
-use alloc::string::String;
 use rabbitizer::access_type::AccessType;
 
-#[cfg(feature = "pyo3")]
-use pyo3::prelude::*;
+//#[cfg(feature = "pyo3")]
+//use pyo3::prelude::*;
 
 use crate::{
     addresses::{Rom, Size, SizedAddress, Vram},
@@ -43,17 +42,16 @@ pub(crate) struct GotInfo {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", eq))]
 pub enum RodataMigrationBehavior {
     /// Let spimdisasm handle if it should migrate this rodata symbol.
-    Default(),
+    Default,
 
     /// Ignore rules for migrating rodata and force migration of this symbol to any
     /// function which references it.
-    ForceMigrate(),
+    ForceMigrate,
     /// Ignore rules for migrating rodata and prevent migration of this symbol to
     /// any function which references it.
-    ForceNotMigrate(),
+    ForceNotMigrate,
 
     /// Force migrating to the function that matches the specified name.
     ///
@@ -68,12 +66,12 @@ pub enum RodataMigrationBehavior {
     /// WARNING: It is undefined behavior if during rodata migration the listed
     /// function does not exists on the given text section. For example this symbol
     /// may get lost in limbo.
-    MigrateToSpecificFunction(String),
+    MigrateToSpecificFunction(Arc<str>),
 }
 
 impl Default for RodataMigrationBehavior {
     fn default() -> Self {
-        Self::Default()
+        Self::Default
     }
 }
 
@@ -81,7 +79,7 @@ impl Default for RodataMigrationBehavior {
 pub(crate) enum OwnerSegmentKind {
     Global,
     // The string corresponds to the name of the segment.
-    Overlay(String),
+    Overlay(Arc<str>),
     Unknown,
     User,
 }
@@ -99,8 +97,8 @@ pub struct SymbolMetadata {
     vram: Vram,
     rom: Option<Rom>,
 
-    user_declared_name: Option<String>,
-    user_declared_name_end: Option<String>,
+    user_declared_name: Option<Arc<str>>,
+    user_declared_name_end: Option<Arc<str>>,
 
     // TODO: Is this still necessary?
     /// Used to register a name of a symbol which may change in the future.
@@ -190,7 +188,7 @@ pub struct SymbolMetadata {
     */
     is_mips1_double: bool,
 
-    visibility: Option<String>,
+    visibility: Option<Arc<str>>,
 
     compiler: Option<Compiler>,
     parent_metadata: Option<ParentSectionMetadata>,
@@ -232,7 +230,7 @@ impl SymbolMetadata {
             got_info: None,
             accessed_as_gp_rel: false,
             auto_created_pad_by: None,
-            rodata_migration_behavior: RodataMigrationBehavior::Default(),
+            rodata_migration_behavior: RodataMigrationBehavior::Default,
             allow_ref_with_addend: true,
             is_mips1_double: false,
             visibility: None,
@@ -263,15 +261,16 @@ impl SymbolMetadata {
         SymbolMetadataNameDisplay::new(self)
     }
 
-    pub(crate) fn user_declared_name(&self) -> Option<&str> {
-        self.user_declared_name.as_deref()
+    pub(crate) fn user_declared_name(&self) -> Option<Arc<str>> {
+        self.user_declared_name.clone()
     }
-    pub fn user_declared_name_mut(&mut self) -> &mut Option<String> {
-        &mut self.user_declared_name
+    pub(crate) fn set_user_declared_name(&mut self, name: Arc<str>) {
+        self.user_declared_name = Some(name);
     }
 
-    pub fn user_declared_name_end_mut(&mut self) -> &mut Option<String> {
-        &mut self.user_declared_name_end
+    #[allow(dead_code)]
+    pub(crate) fn set_user_declared_name_end(&mut self, name: Arc<str>) {
+        self.user_declared_name_end = Some(name);
     }
 
     pub fn user_declared_size(&self) -> Option<Size> {
@@ -461,6 +460,7 @@ impl SymbolMetadata {
         &self.rodata_migration_behavior
     }
     #[must_use]
+    // TODO: change to `pub(crate)`
     pub fn rodata_migration_behavior_mut(&mut self) -> &mut RodataMigrationBehavior {
         &mut self.rodata_migration_behavior
     }
@@ -472,11 +472,12 @@ impl SymbolMetadata {
         self.allow_ref_with_addend = val;
     }
 
-    pub fn visibility(&self) -> Option<&str> {
-        self.visibility.as_deref()
+    pub fn visibility(&self) -> Option<Arc<str>> {
+        self.visibility.clone()
     }
-    pub fn visibility_mut(&mut self) -> &mut Option<String> {
-        &mut self.visibility
+    #[allow(dead_code)]
+    pub(crate) fn set_visibility(&mut self, visibility: Arc<str>) {
+        self.visibility = Some(visibility)
     }
 
     pub(crate) fn compiler(&self) -> Option<Compiler> {
@@ -596,9 +597,9 @@ impl SymbolMetadata {
     pub(crate) fn is_migrable(&self) -> bool {
         match self.rodata_migration_behavior {
             RodataMigrationBehavior::MigrateToSpecificFunction(_) => true,
-            RodataMigrationBehavior::ForceMigrate() => true,
-            RodataMigrationBehavior::ForceNotMigrate() => false,
-            RodataMigrationBehavior::Default() => {
+            RodataMigrationBehavior::ForceMigrate => true,
+            RodataMigrationBehavior::ForceNotMigrate => false,
+            RodataMigrationBehavior::Default => {
                 if self.is_mips1_double {
                     true
                 } else if !self.reference_symbols.is_empty() || self.reference_functions.len() > 1 {

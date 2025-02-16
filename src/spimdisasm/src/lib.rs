@@ -38,7 +38,7 @@ fn spimdisasm(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<addresses::Vram>()?;
 
     m.add_class::<metadata::SymbolType>()?;
-    m.add_class::<metadata::RodataMigrationBehavior>()?;
+    m.add_class::<context::builder::segment_builder::python_bindings::PyRodataMigrationBehavior>()?;
 
     m.add_class::<config::Compiler>()?;
     m.add_class::<config::Endian>()?;

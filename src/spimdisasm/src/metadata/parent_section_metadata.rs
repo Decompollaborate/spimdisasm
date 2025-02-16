@@ -1,19 +1,19 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::string::String;
+use alloc::sync::Arc;
 
 use crate::{addresses::Vram, parent_segment_info::ParentSegmentInfo};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct ParentSectionMetadata {
-    name: String,
+    name: Arc<str>,
     vram: Vram,
     parent_segment_info: ParentSegmentInfo,
 }
 
 impl ParentSectionMetadata {
-    pub fn new(name: String, vram: Vram, parent_segment_info: ParentSegmentInfo) -> Self {
+    pub(crate) fn new(name: Arc<str>, vram: Vram, parent_segment_info: ParentSegmentInfo) -> Self {
         Self {
             name,
             vram,
@@ -23,8 +23,8 @@ impl ParentSectionMetadata {
 
     // TODO:
     #[allow(dead_code)]
-    pub fn name(&self) -> &str {
-        &self.name
+    pub fn name(&self) -> Arc<str> {
+        self.name.clone()
     }
     pub fn vram(&self) -> Vram {
         self.vram

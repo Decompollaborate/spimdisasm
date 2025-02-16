@@ -269,7 +269,7 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
     let section_text = context
         .create_section_text(
             &text_settings,
-            "test".into(),
+            "test",
             &bytes,
             rom,
             vram,

@@ -33,3 +33,11 @@ Does the following pattern make sense with a pointer?
 
 Consider allowing user-defined data layouts using the same syntax as python's struct package
     https://docs.python.org/3/library/struct.html
+
+Missing validations:
+    Duplicated names on overlay segments
+    Section was preheated
+    Section is not prehated twice
+    Section is not created twice
+
+Look up for ` -> &str` uses and consider changing them for `Arc<str>`

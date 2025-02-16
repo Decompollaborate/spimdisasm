@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::string::String;
+use alloc::sync::Arc;
 use core::{error, fmt};
 
 use crate::addresses::{Size, Vram};
@@ -16,11 +16,11 @@ enum AddUserSegmentSymbolErrorVariant {
 #[non_exhaustive]
 pub struct AddUserSegmentSymbolError {
     vram: Vram,
-    name: Option<String>,
+    name: Option<Arc<str>>,
     size: Size,
 
     other_sym_vram: Vram,
-    other_sym_name: Option<String>,
+    other_sym_name: Option<Arc<str>>,
     other_sym_size: Size,
 
     variant: AddUserSegmentSymbolErrorVariant,
@@ -28,10 +28,10 @@ pub struct AddUserSegmentSymbolError {
 impl AddUserSegmentSymbolError {
     fn new(
         vram: Vram,
-        name: Option<String>,
+        name: Option<Arc<str>>,
         size: Size,
         other_sym_vram: Vram,
-        other_sym_name: Option<String>,
+        other_sym_name: Option<Arc<str>>,
         other_sym_size: Size,
         variant: AddUserSegmentSymbolErrorVariant,
     ) -> Self {
@@ -48,10 +48,10 @@ impl AddUserSegmentSymbolError {
 
     pub(crate) fn new_overlap(
         vram: Vram,
-        name: Option<String>,
+        name: Option<Arc<str>>,
         size: Size,
         other_sym_vram: Vram,
-        other_sym_name: Option<String>,
+        other_sym_name: Option<Arc<str>>,
         other_sym_size: Size,
     ) -> Self {
         Self::new(
@@ -67,10 +67,10 @@ impl AddUserSegmentSymbolError {
 
     pub(crate) fn new_duplicated(
         vram: Vram,
-        name: Option<String>,
+        name: Option<Arc<str>>,
         size: Size,
         other_sym_vram: Vram,
-        other_sym_name: Option<String>,
+        other_sym_name: Option<Arc<str>>,
         other_sym_size: Size,
     ) -> Self {
         Self::new(
