@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{sync::Arc, vec::Vec};
+use alloc::sync::Arc;
 use core::{error, fmt};
 
 #[cfg(feature = "pyo3")]
@@ -22,8 +22,8 @@ pub struct SegmentMetadata {
     category_name: Option<OverlayCategoryName>,
     name: Option<Arc<str>>,
 
-    prioritised_overlays: Vec<Arc<str>>,
-    visible_overlay_ranges: Vec<AddressRange<Vram>>,
+    prioritised_overlays: Arc<[Arc<str>]>,
+    visible_overlay_ranges: Arc<[AddressRange<Vram>]>,
 
     symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
     // constants: BTreeMap<Vram, SymbolMetadata>,
@@ -38,11 +38,11 @@ impl SegmentMetadata {
     #[allow(clippy::too_many_arguments)]
     fn new(
         ranges: RomVramRange,
-        prioritised_overlays: Vec<Arc<str>>,
+        prioritised_overlays: Arc<[Arc<str>]>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
         ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
         preheater: Preheater,
-        visible_overlay_ranges: Vec<AddressRange<Vram>>,
+        visible_overlay_ranges: Arc<[AddressRange<Vram>]>,
         category_name: Option<OverlayCategoryName>,
         name: Option<Arc<str>>,
     ) -> Self {
@@ -65,11 +65,11 @@ impl SegmentMetadata {
 
     pub(crate) fn new_global(
         ranges: RomVramRange,
-        prioritised_overlays: Vec<Arc<str>>,
+        prioritised_overlays: Arc<[Arc<str>]>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
         ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
         preheater: Preheater,
-        visible_overlay_ranges: Vec<AddressRange<Vram>>,
+        visible_overlay_ranges: Arc<[AddressRange<Vram>]>,
     ) -> Self {
         Self::new(
             ranges,
@@ -86,11 +86,11 @@ impl SegmentMetadata {
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn new_overlay(
         ranges: RomVramRange,
-        prioritised_overlays: Vec<Arc<str>>,
+        prioritised_overlays: Arc<[Arc<str>]>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
         ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
         preheater: Preheater,
-        visible_overlay_ranges: Vec<AddressRange<Vram>>,
+        visible_overlay_ranges: Arc<[AddressRange<Vram>]>,
         category_name: OverlayCategoryName,
         name: Arc<str>,
     ) -> Self {
@@ -114,11 +114,11 @@ impl SegmentMetadata {
             is_the_unknown_segment: true,
             ..Self::new(
                 ranges,
-                Vec::new(),
+                Arc::new([]),
                 AddendedOrderedMap::new(),
                 AddendedOrderedMap::new(),
                 Preheater::new(ranges),
-                Vec::new(),
+                Arc::new([]),
                 None,
                 None,
             )
@@ -350,11 +350,11 @@ mod tests {
         let ranges = RomVramRange::new(rom_range, vram_range);
         let mut segment = SegmentMetadata::new_global(
             ranges,
-            Vec::new(),
+            Arc::new([]),
             AddendedOrderedMap::new(),
             AddendedOrderedMap::new(),
             Preheater::new(ranges),
-            Vec::new(),
+            Arc::new([]),
         );
 
         segment.add_symbol(Vram::new(0x100C), true).unwrap();

@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{collections::btree_map::BTreeMap, vec::Vec};
+use alloc::{collections::btree_map::BTreeMap, sync::Arc};
 use core::hash;
 use rabbitizer::{access_type::AccessType, Instruction};
 
@@ -27,7 +27,7 @@ const SECTION_TYPE: SectionType = SectionType::Text;
 #[derive(Debug, Clone)]
 pub struct FunctionSym {
     ranges: RomVramRange,
-    instructions: Vec<Instruction>,
+    instructions: Arc<[Instruction]>,
     parent_segment_info: ParentSegmentInfo,
     instr_analysis: InstructionAnalysisResult,
 }
@@ -35,7 +35,7 @@ pub struct FunctionSym {
 impl FunctionSym {
     pub(crate) fn new(
         context: &mut Context,
-        instructions: Vec<Instruction>,
+        instructions: Arc<[Instruction]>,
         rom: Rom,
         vram: Vram,
         _in_section_offset: usize,

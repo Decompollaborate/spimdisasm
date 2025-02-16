@@ -27,7 +27,7 @@ pub struct DataSectionProcessed {
     ranges: RomVramRange,
     parent_segment_info: ParentSegmentInfo,
     section_type: SectionType,
-    data_symbols: Vec<DataSymProcessed>,
+    data_symbols: Arc<[DataSymProcessed]>,
     symbol_vrams: UnorderedSet<Vram>,
 }
 
@@ -46,7 +46,7 @@ impl DataSectionProcessed {
         let data_symbols = data_symbols
             .into_iter()
             .map(|x| x.post_process(context, user_relocs))
-            .collect::<Result<Vec<DataSymProcessed>, SymbolPostProcessError>>()?;
+            .collect::<Result<Arc<[DataSymProcessed]>, SymbolPostProcessError>>()?;
 
         Ok(Self {
             name,

@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-mod func_rodata_migration;
+pub(crate) mod func_rodata_migration;
 mod pairing_display;
 mod pairing_error;
 mod rodata_iterator;

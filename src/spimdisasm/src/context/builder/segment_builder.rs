@@ -225,7 +225,7 @@ impl GlobalSegmentBuilder {
     pub fn finish_symbols(self) -> GlobalSegmentHeater {
         GlobalSegmentHeater::new(
             self.inner.ranges,
-            self.inner.prioritised_overlays,
+            self.inner.prioritised_overlays.into(),
             self.inner.user_symbols,
             self.inner.ignored_addresses,
         )
@@ -288,7 +288,7 @@ impl OverlaySegmentBuilder {
             self.inner.name.expect(
                 "Should not be None since that's the only way to create an object of this struct",
             ),
-            self.inner.prioritised_overlays,
+            self.inner.prioritised_overlays.into(),
             self.inner.user_symbols,
             self.inner.ignored_addresses,
             self.category_name,

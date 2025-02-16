@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{collections::vec_deque::VecDeque, string::ToString, vec::Vec};
+use alloc::{collections::vec_deque::VecDeque, string::ToString, sync::Arc, vec::Vec};
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
@@ -29,15 +29,14 @@ use super::{
 };
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub enum FuncRodataPairing {
     SingleRodata {
         rodata_index: usize,
     },
     Pairing {
         function_index: usize,
-        rodata_indices: Vec<usize>,
-        late_rodata_indices: Vec<usize>,
+        rodata_indices: Arc<[usize]>,
+        late_rodata_indices: Arc<[usize]>,
     },
 }
 
@@ -222,8 +221,8 @@ impl FuncRodataPairing {
 
         FuncRodataPairing::Pairing {
             function_index,
-            rodata_indices,
-            late_rodata_indices,
+            rodata_indices: rodata_indices.into(),
+            late_rodata_indices: late_rodata_indices.into(),
         }
     }
 
@@ -399,8 +398,17 @@ pub(crate) mod python_bindings {
 
     use super::*;
 
+    #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+    #[cfg_attr(
+        feature = "pyo3",
+        pyclass(module = "spimdisasm", name = "FuncRodataPairing")
+    )]
+    pub struct PyFuncRodataPairing {
+        inner: FuncRodataPairing,
+    }
+
     #[pymethods]
-    impl FuncRodataPairing {
+    impl PyFuncRodataPairing {
         #[pyo3(name = "pair_sections", signature = (context, text_section=None, rodata_section=None))]
         #[staticmethod]
         pub fn py_pair_sections(
@@ -408,11 +416,14 @@ pub(crate) mod python_bindings {
             text_section: Option<&PyExecutableSection>,
             rodata_section: Option<&PyDataSection>,
         ) -> Vec<Self> {
-            Self::pair_sections(
+            FuncRodataPairing::pair_sections(
                 context,
                 text_section.map(|x| x.unwrap_processed()),
                 rodata_section.map(|x| x.unwrap_processed()),
             )
+            .into_iter()
+            .map(|x| x.into())
+            .collect()
         }
 
         #[pyo3(name = "get_function_name_and_vram", signature = (context, text_section=None))]
@@ -421,7 +432,7 @@ pub(crate) mod python_bindings {
             context: &Context,
             text_section: Option<&PyExecutableSection>,
         ) -> Option<(String, u32)> {
-            match self {
+            match &self.inner {
                 FuncRodataPairing::Pairing { function_index, .. } => {
                     if let Some(text_section) = text_section {
                         text_section
@@ -451,7 +462,7 @@ pub(crate) mod python_bindings {
             context: &Context,
             rodata_section: Option<&PyDataSection>,
         ) -> Option<(String, u32)> {
-            match self {
+            match &self.inner {
                 FuncRodataPairing::Pairing { .. } => None,
                 FuncRodataPairing::SingleRodata { rodata_index } => {
                     if let Some(rodata_section) = rodata_section {
@@ -487,7 +498,7 @@ pub(crate) mod python_bindings {
             section_label_rodata: Option<&str>,
             section_label_late_rodata: Option<&str>,
         ) -> Result<String, PairingError> {
-            let disp = self.display(
+            let disp = self.inner.display(
                 context,
                 text_section.map(|x| x.unwrap_processed()),
                 function_display_settings,
@@ -501,6 +512,12 @@ pub(crate) mod python_bindings {
             )?;
 
             Ok(disp.to_string())
+        }
+    }
+
+    impl From<FuncRodataPairing> for PyFuncRodataPairing {
+        fn from(value: FuncRodataPairing) -> Self {
+            Self { inner: value }
         }
     }
 }

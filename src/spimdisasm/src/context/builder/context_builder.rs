@@ -161,7 +161,7 @@ impl ContextBuilder {
             grouped_segments
                 .entry(overlay.category_name().clone())
                 .or_default()
-                .push(overlay.finish(visible_ranges));
+                .push(overlay.finish(visible_ranges.into()));
         }
 
         let mut overlay_segments = UnorderedMap::new();
@@ -187,7 +187,7 @@ impl ContextBuilder {
 
         let visible_ranges_for_global =
             Self::get_visible_vram_ranges_for_segment(self.global_segment.inner(), &self.overlays);
-        let global_segment = self.global_segment.finish(visible_ranges_for_global);
+        let global_segment = self.global_segment.finish(visible_ranges_for_global.into());
 
         let overlay_segments = Self::build_overlays(self.overlays);
 

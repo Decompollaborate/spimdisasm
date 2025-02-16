@@ -25,7 +25,7 @@ pub struct NoloadSectionProcessed {
     name: Arc<str>,
     vram_range: AddressRange<Vram>,
     parent_segment_info: ParentSegmentInfo,
-    noload_symbols: Vec<NoloadSymProcessed>,
+    noload_symbols: Arc<[NoloadSymProcessed]>,
     symbol_vrams: UnorderedSet<Vram>,
 }
 
@@ -41,7 +41,7 @@ impl NoloadSectionProcessed {
         let noload_symbols = noload_symbols
             .into_iter()
             .map(|x| x.post_process(context))
-            .collect::<Result<Vec<NoloadSymProcessed>, SymbolPostProcessError>>()?;
+            .collect::<Result<Arc<[NoloadSymProcessed]>, SymbolPostProcessError>>()?;
 
         Ok(Self {
             name,

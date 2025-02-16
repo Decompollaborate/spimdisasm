@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{collections::btree_map::BTreeMap, vec::Vec};
+use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
 use core::hash;
 
 use crate::{
@@ -25,19 +25,19 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct DataSymProcessed {
     ranges: RomVramRange,
-    raw_bytes: Vec<u8>,
+    raw_bytes: Arc<[u8]>,
     parent_segment_info: ParentSegmentInfo,
     section_type: SectionType,
     encoding: Encoding,
 
-    relocs: Vec<Option<RelocationInfo>>,
+    relocs: Arc<[Option<RelocationInfo>]>,
 }
 
 impl DataSymProcessed {
     pub(crate) fn new(
         context: &mut Context,
         ranges: RomVramRange,
-        raw_bytes: Vec<u8>,
+        raw_bytes: Arc<[u8]>,
         parent_segment_info: ParentSegmentInfo,
         section_type: SectionType,
         encoding: Encoding,
@@ -82,7 +82,7 @@ impl DataSymProcessed {
                 parent_segment_info,
                 section_type,
                 encoding,
-                relocs,
+                relocs: relocs.into(),
             }
         })
     }

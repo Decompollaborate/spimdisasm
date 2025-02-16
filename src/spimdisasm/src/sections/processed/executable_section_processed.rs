@@ -28,7 +28,7 @@ pub struct ExecutableSectionProcessed {
     name: Arc<str>,
     ranges: RomVramRange,
     parent_segment_info: ParentSegmentInfo,
-    functions: Vec<FunctionSymProcessed>,
+    functions: Arc<[FunctionSymProcessed]>,
     symbol_vrams: UnorderedSet<Vram>,
 }
 
@@ -45,7 +45,7 @@ impl ExecutableSectionProcessed {
         let functions = functions
             .into_iter()
             .map(|x| x.post_process(context, user_relocs))
-            .collect::<Result<Vec<FunctionSymProcessed>, SymbolPostProcessError>>()?;
+            .collect::<Result<Arc<[FunctionSymProcessed]>, SymbolPostProcessError>>()?;
 
         Ok(Self {
             name,

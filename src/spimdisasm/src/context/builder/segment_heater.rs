@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{sync::Arc, vec::Vec};
+use alloc::sync::Arc;
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
@@ -18,7 +18,7 @@ use crate::{
 #[derive(Debug, Clone, Hash, PartialEq)]
 pub(crate) struct SegmentHeater {
     ranges: RomVramRange,
-    prioritised_overlays: Vec<Arc<str>>,
+    prioritised_overlays: Arc<[Arc<str>]>,
     user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
     ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
 
@@ -28,7 +28,7 @@ pub(crate) struct SegmentHeater {
 impl SegmentHeater {
     const fn new(
         ranges: RomVramRange,
-        prioritised_overlays: Vec<Arc<str>>,
+        prioritised_overlays: Arc<[Arc<str>]>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
         ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
     ) -> Self {
@@ -211,7 +211,7 @@ pub struct GlobalSegmentHeater {
 impl GlobalSegmentHeater {
     pub(crate) const fn new(
         ranges: RomVramRange,
-        prioritised_overlays: Vec<Arc<str>>,
+        prioritised_overlays: Arc<[Arc<str>]>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
         ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
     ) -> Self {
@@ -278,7 +278,10 @@ impl GlobalSegmentHeater {
     }
 
     #[must_use]
-    pub(crate) fn finish(self, visible_overlay_ranges: Vec<AddressRange<Vram>>) -> SegmentMetadata {
+    pub(crate) fn finish(
+        self,
+        visible_overlay_ranges: Arc<[AddressRange<Vram>]>,
+    ) -> SegmentMetadata {
         self.inner.dump_info(None);
 
         SegmentMetadata::new_global(
@@ -304,7 +307,7 @@ impl OverlaySegmentHeater {
     pub(crate) const fn new(
         ranges: RomVramRange,
         name: Arc<str>,
-        prioritised_overlays: Vec<Arc<str>>,
+        prioritised_overlays: Arc<[Arc<str>]>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
         ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
         category_name: OverlayCategoryName,
@@ -393,7 +396,10 @@ impl OverlaySegmentHeater {
     }
 
     #[must_use]
-    pub(crate) fn finish(self, visible_overlay_ranges: Vec<AddressRange<Vram>>) -> SegmentMetadata {
+    pub(crate) fn finish(
+        self,
+        visible_overlay_ranges: Arc<[AddressRange<Vram>]>,
+    ) -> SegmentMetadata {
         self.inner.dump_info(Some(&self.name));
 
         SegmentMetadata::new_overlay(

@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{collections::btree_map::BTreeMap, vec::Vec};
+use alloc::{collections::btree_map::BTreeMap, sync::Arc};
 use core::hash;
 
 use crate::{
@@ -23,7 +23,7 @@ use crate::symbols::{
 #[derive(Debug, Clone)]
 pub struct DataSym {
     ranges: RomVramRange,
-    raw_bytes: Vec<u8>,
+    raw_bytes: Arc<[u8]>,
     parent_segment_info: ParentSegmentInfo,
     section_type: SectionType,
     encoding: Encoding,
@@ -34,7 +34,7 @@ impl DataSym {
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn new(
         context: &mut Context,
-        raw_bytes: Vec<u8>,
+        raw_bytes: Arc<[u8]>,
         rom: Rom,
         vram: Vram,
         _in_section_offset: usize,

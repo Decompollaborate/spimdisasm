@@ -28,19 +28,19 @@ const SECTION_TYPE: SectionType = SectionType::Text;
 #[derive(Debug, Clone)]
 pub struct FunctionSymProcessed {
     ranges: RomVramRange,
-    instructions: Vec<Instruction>,
+    instructions: Arc<[Instruction]>,
     parent_segment_info: ParentSegmentInfo,
     instr_analysis: InstructionAnalysisResult,
 
-    relocs: Vec<Option<RelocationInfo>>,
-    labels: Vec<Vram>,
+    relocs: Arc<[Option<RelocationInfo>]>,
+    labels: Arc<[Vram]>,
 }
 
 impl FunctionSymProcessed {
     pub(crate) fn new(
         context: &mut Context,
         ranges: RomVramRange,
-        instructions: Vec<Instruction>,
+        instructions: Arc<[Instruction]>,
         parent_segment_info: ParentSegmentInfo,
         instr_analysis: InstructionAnalysisResult,
         user_relocs: &BTreeMap<Rom, RelocationInfo>,
@@ -87,8 +87,8 @@ impl FunctionSymProcessed {
             instructions,
             parent_segment_info,
             instr_analysis,
-            relocs,
-            labels,
+            relocs: relocs.into(),
+            labels: labels.into(),
         })
     }
 

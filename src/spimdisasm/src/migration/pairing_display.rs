@@ -1,9 +1,8 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use alloc::sync::Arc;
 use core::fmt;
-
-use alloc::vec::Vec;
 
 use crate::{
     addresses::Size,
@@ -38,8 +37,8 @@ pub struct FuncRodataPairingDisplay<
     'late_ro_label,
 > {
     func_display: Option<FunctionDisplay<'ctx, 'text, 'text_settings>>,
-    ro_syms_display: Vec<SymDataDisplay<'ctx, 'rodata, 'rodata_settings>>,
-    late_ro_syms_display: Vec<SymDataDisplay<'ctx, 'rodata, 'rodata_settings>>,
+    ro_syms_display: Arc<[SymDataDisplay<'ctx, 'rodata, 'rodata_settings>]>,
+    late_ro_syms_display: Arc<[SymDataDisplay<'ctx, 'rodata, 'rodata_settings>]>,
 
     settings: FuncRodataPairingDisplaySettings<'text_label, 'ro_label, 'late_ro_label>,
 }
@@ -137,6 +136,7 @@ impl<
         })
     }
 
+    #[allow(clippy::type_complexity)]
     fn do_rodata_section(
         context: &'ctx Context,
         rodata_section: Option<&'rodata DataSectionProcessed>,
@@ -145,14 +145,14 @@ impl<
         late_rodata_indices: &[usize],
     ) -> Result<
         (
-            Vec<SymDataDisplay<'ctx, 'rodata, 'rodata_settings>>,
-            Vec<SymDataDisplay<'ctx, 'rodata, 'rodata_settings>>,
+            Arc<[SymDataDisplay<'ctx, 'rodata, 'rodata_settings>]>,
+            Arc<[SymDataDisplay<'ctx, 'rodata, 'rodata_settings>]>,
         ),
         PairingError,
     > {
         if rodata_indices.is_empty() && late_rodata_indices.is_empty() {
             // We only care if the rodata section exists if we do actually reference rodata symbols.
-            return Ok((Vec::new(), Vec::new()));
+            return Ok((Arc::new([]), Arc::new([])));
         }
 
         let rodata_section = if let Some(rodata_section) = rodata_section {
@@ -182,7 +182,7 @@ impl<
         rodata_section: &'rodata DataSectionProcessed,
         rodata_display_settings: &'rodata_settings SymDataDisplaySettings,
         indices: &[usize],
-    ) -> Result<Vec<SymDataDisplay<'ctx, 'rodata, 'rodata_settings>>, PairingError> {
+    ) -> Result<Arc<[SymDataDisplay<'ctx, 'rodata, 'rodata_settings>]>, PairingError> {
         let rodata_syms = rodata_section.data_symbols();
 
         indices
@@ -223,7 +223,7 @@ impl fmt::Display for FuncRodataPairingDisplay<'_, '_, '_, '_, '_, '_, '_, '_> {
                 }
             }
 
-            for sym_display in &self.ro_syms_display {
+            for sym_display in self.ro_syms_display.iter() {
                 write!(f, "{}", line_end)?;
                 // TODO:
                 // f.write(sym.disassemble(migrate=True, useGlobalLabel=True, isSplittedSymbol=True))
@@ -271,7 +271,7 @@ impl fmt::Display for FuncRodataPairingDisplay<'_, '_, '_, '_, '_, '_, '_, '_> {
                     write!(f, ".late_rodata_alignment {}{}", align, line_end)?;
                 }
 
-                for sym_display in &self.late_ro_syms_display {
+                for sym_display in self.late_ro_syms_display.iter() {
                     // TODO:
                     // f.write(sym.disassemble(migrate=True, useGlobalLabel=True, isSplittedSymbol=True))
                     write!(f, "{}{}", sym_display, line_end)?;

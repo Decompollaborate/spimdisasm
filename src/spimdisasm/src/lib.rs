@@ -71,7 +71,7 @@ fn spimdisasm(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<symbols::display::SymDataDisplaySettings>()?;
     m.add_class::<symbols::display::SymNoloadDisplaySettings>()?;
 
-    m.add_class::<migration::FuncRodataPairing>()?;
+    m.add_class::<migration::func_rodata_migration::python_bindings::PyFuncRodataPairing>()?;
     m.add_class::<migration::PairingError>()?;
 
     // rabbitizer types
