@@ -70,7 +70,7 @@ impl SymCommonDisplaySettings {
             write!(
                 f,
                 "/* access type: {:?} */{}",
-                metadata.access_type(),
+                metadata.all_access_types(),
                 self.line_end()
             )?;
             write!(

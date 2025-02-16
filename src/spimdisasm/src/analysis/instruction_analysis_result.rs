@@ -177,6 +177,10 @@ impl InstructionAnalysisResult {
     ) -> &UnorderedMap<Vram, UnorderedMap<(AccessType, bool), u32>> {
         &self.type_info_per_address
     }
+    #[must_use]
+    pub fn type_info_per_instr(&self) -> &UnorderedMap<Rom, (AccessType, bool)> {
+        &self.type_info_per_instr
+    }
 
     #[must_use]
     pub fn handwritten_instrs(&self) -> &UnorderedSet<Rom> {

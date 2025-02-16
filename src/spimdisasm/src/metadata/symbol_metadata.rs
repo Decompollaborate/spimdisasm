@@ -76,7 +76,7 @@ impl Default for RodataMigrationBehavior {
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) enum OwnerSegmentKind {
+pub enum OwnerSegmentKind {
     Global,
     // The string corresponds to the name of the segment.
     Overlay(Arc<str>),
@@ -119,7 +119,6 @@ pub struct SymbolMetadata {
     is_defined: bool,
 
     // TODO: merge these two
-    access_type: Option<(AccessType, bool)>,
     access_types: UnorderedMap<AccessType, u32>,
 
     c_string_info: Option<StringInfo>,
@@ -219,7 +218,6 @@ impl SymbolMetadata {
 
             is_defined: false,
 
-            access_type: None,
             access_types: UnorderedMap::new(),
             c_string_info: None,
             // pascal_string_info: None,
@@ -303,10 +301,10 @@ impl SymbolMetadata {
     }
 
     pub fn sym_type(&self) -> Option<SymbolType> {
-        if let Some(t) = &self.user_declared_type {
-            Some(*t)
+        if let Some(t) = self.user_declared_type {
+            Some(t)
         } else {
-            self.autodetected_type
+            self.autodetected_type()
         }
     }
     pub fn user_declared_type(&self) -> Option<SymbolType> {
@@ -316,7 +314,20 @@ impl SymbolMetadata {
         &mut self.user_declared_type
     }
     pub fn autodetected_type(&self) -> Option<SymbolType> {
-        self.autodetected_type
+        if let Some(t) = self.autodetected_type {
+            Some(t)
+        } else if self.access_types.len() == 1 {
+            SymbolType::from_access_type(
+                *self
+                    .access_types
+                    .iter()
+                    .next()
+                    .expect("Should not panic since we already checked its length")
+                    .0,
+            )
+        } else {
+            None
+        }
     }
     pub(crate) fn set_type(&mut self, new_type: SymbolType, generated_by: GeneratedBy) {
         match generated_by {
@@ -397,20 +408,11 @@ impl SymbolMetadata {
         self.is_defined = true;
     }
 
-    pub fn access_type(&self) -> Option<(AccessType, bool)> {
-        self.access_type
-    }
-    pub(crate) fn all_access_types(&self) -> &UnorderedMap<AccessType, u32> {
+    pub fn all_access_types(&self) -> &UnorderedMap<AccessType, u32> {
         &self.access_types
     }
-    pub(crate) fn set_access_type_if_unset(&mut self, access_type: (AccessType, bool)) {
+    pub(crate) fn set_access_type(&mut self, access_type: (AccessType, bool)) {
         *self.access_types.entry(access_type.0).or_default() += 1;
-        if self.access_type.is_none() {
-            self.access_type = Some(access_type);
-            if self.autodetected_type.is_none() {
-                self.autodetected_type = SymbolType::from_access_type(access_type.0);
-            }
-        }
     }
 
     /// How much this symbol is referenced by something else
@@ -440,7 +442,7 @@ impl SymbolMetadata {
             .insert(rom);
     }
 
-    pub(crate) fn owner_segment_kind(&self) -> &OwnerSegmentKind {
+    pub fn owner_segment_kind(&self) -> &OwnerSegmentKind {
         &self.owner_segment_kind
     }
 

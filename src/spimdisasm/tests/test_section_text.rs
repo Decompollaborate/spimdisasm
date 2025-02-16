@@ -945,5 +945,6 @@ glabel func_8080010C
         .find(&Vram::new(0x808014A4), FindSettings::new(false))
         .unwrap();
 
-    assert_eq!(silly_symbol.access_type(), None);
+    println!("{:?} {:?}", silly_symbol, silly_symbol.owner_segment_kind());
+    assert_eq!(silly_symbol.all_access_types().len(), 2);
 }

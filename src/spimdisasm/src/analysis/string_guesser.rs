@@ -96,7 +96,6 @@ pub(crate) enum StringGuessError {
     GuesserDisabled,
     ReferencedMoreThanOnce,
     EmptyString,
-    HasAutodetectedType,
     HasBeenDereferenced,
     InvalidString,
     UnreferencedString,
@@ -119,7 +118,6 @@ impl fmt::Display for StringGuessError {
             StringGuessError::GuesserDisabled => write!(f, "GuesserDisabled"),
             StringGuessError::ReferencedMoreThanOnce => write!(f, "ReferencedMoreThanOnce"),
             StringGuessError::EmptyString => write!(f, "EmptyString"),
-            StringGuessError::HasAutodetectedType => write!(f, "HasAutodetectedType"),
             StringGuessError::HasBeenDereferenced => write!(f, "HasBeenDereferenced"),
             StringGuessError::InvalidString => write!(f, "InvalidString"),
             StringGuessError::UnreferencedString => write!(f, "UnreferencedString"),
@@ -223,30 +221,20 @@ impl StringGuesserFlags {
             }
 
             if !self.contains(Self::IgnoreDetectedType) {
-                if ref_wrapper
-                    .autodetected_type()
-                    .is_some_and(|x| x != SymbolType::CString)
-                {
-                    return Err(StringGuessError::HasAutodetectedType);
-                }
-                if ref_wrapper
-                    .all_access_types()
-                    .iter()
-                    .filter(|(x, _)| {
+                let all_access_types = ref_wrapper.all_access_types();
+                if !all_access_types.is_empty()
+                    && all_access_types.iter().all(|x| {
                         !matches!(
-                            x,
+                            x.0,
                             AccessType::WORD_LEFT
                                 | AccessType::WORD_RIGHT
                                 | AccessType::DOUBLEWORD_LEFT
                                 | AccessType::DOUBLEWORD_RIGHT
                         )
                     })
-                    .count()
-                    != 0
                 {
                     // Avoid considering something as a string if it has been dereferenced.
                     // But allow LEFT/RIGHT accesses, since that can be used to declare strings on the stack.
-                    // TODO: make this thing its own guessing level instead of hyjacking IgnoreDetectedType.
                     return Err(StringGuessError::HasBeenDereferenced);
                 }
             }
