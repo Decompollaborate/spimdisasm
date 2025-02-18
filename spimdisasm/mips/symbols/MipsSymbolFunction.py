@@ -859,7 +859,7 @@ class SymbolFunction(SymbolText):
         output += self.contextSym.getReferenceeSymbols()
         output += self.getPrevAlignDirective(0)
 
-        if self.isLikelyHandwritten:
+        if self.isLikelyHandwritten and common.GlobalConfig.ASM_COMMENT:
             if not self.isRsp:
                 # RSP functions are always handwritten, so this is redundant
                 output += "/* Handwritten function */" + common.GlobalConfig.LINE_ENDS

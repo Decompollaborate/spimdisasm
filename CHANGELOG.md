@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.32.3] - 2025-02-18
+
+### Fixed
+
+- Avoid emitting `Handwritten function` comment when comments are disabled.
+
 ## [1.32.2] - 2025-02-12
 
 ### Fixed
@@ -1751,6 +1757,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.32.3]: https://github.com/Decompollaborate/spimdisasm/compare/1.32.2...1.32.3
 [1.32.2]: https://github.com/Decompollaborate/spimdisasm/compare/1.32.1...1.32.2
 [1.32.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.32.0...1.32.1
 [1.32.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.31.3...1.32.0
