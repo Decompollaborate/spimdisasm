@@ -82,41 +82,49 @@ impl Sections {
         let mut context = {
             let mut global_heater = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
 
-            global_heater.preanalyze_text(
-                &global_config,
-                &text_info.1,
-                text_info.0.bytes,
-                text_info.0.rom,
-                text_info.0.vram,
-            );
-            global_heater.preanalyze_data(
-                &global_config,
-                &data_info.1,
-                data_info.0.bytes,
-                data_info.0.rom,
-                data_info.0.vram,
-            );
-            global_heater.preanalyze_rodata(
-                &global_config,
-                &rodata_info.1,
-                rodata_info.0.bytes,
-                rodata_info.0.rom,
-                rodata_info.0.vram,
-            );
-            global_heater.preanalyze_gcc_except_table(
-                &global_config,
-                &gcc_except_table_info.1,
-                gcc_except_table_info.0.bytes,
-                gcc_except_table_info.0.rom,
-                gcc_except_table_info.0.vram,
-            );
+            global_heater
+                .preheat_text(
+                    &global_config,
+                    &text_info.1,
+                    text_info.0.bytes,
+                    text_info.0.rom,
+                    text_info.0.vram,
+                )
+                .unwrap();
+            global_heater
+                .preheat_data(
+                    &global_config,
+                    &data_info.1,
+                    data_info.0.bytes,
+                    data_info.0.rom,
+                    data_info.0.vram,
+                )
+                .unwrap();
+            global_heater
+                .preheat_rodata(
+                    &global_config,
+                    &rodata_info.1,
+                    rodata_info.0.bytes,
+                    rodata_info.0.rom,
+                    rodata_info.0.vram,
+                )
+                .unwrap();
+            global_heater
+                .preheat_gcc_except_table(
+                    &global_config,
+                    &gcc_except_table_info.1,
+                    gcc_except_table_info.0.bytes,
+                    gcc_except_table_info.0.rom,
+                    gcc_except_table_info.0.vram,
+                )
+                .unwrap();
 
             let mut platform_segment = UserSegmentBuilder::new();
             platform_segment.n64_libultra_symbols().unwrap();
             platform_segment.n64_hardware_registers(true, true).unwrap();
 
             let builder = ContextBuilder::new(global_heater, platform_segment);
-            builder.build(global_config)
+            builder.build(global_config).unwrap()
         };
 
         let parent_info = ParentSegmentInfo::new(

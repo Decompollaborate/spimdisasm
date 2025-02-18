@@ -35,7 +35,8 @@ Consider allowing user-defined data layouts using the same syntax as python's st
     https://docs.python.org/3/library/struct.html
 
 Missing validations:
-    Duplicated names on overlay segments
-    Section was preheated
-    Section is not prehated twice
-    Section is not created twice
+    Check section was preheated
+    Ensure section is not prehated twice
+    Ensure section is not created twice
+
+Rename preanalyze to preheat

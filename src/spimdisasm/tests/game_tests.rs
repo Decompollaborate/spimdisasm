@@ -130,30 +130,36 @@ fn init_context(
                     };
 
                     match sect {
-                        TestSection::Text(rom, _) => global_segment_heater.preanalyze_text(
-                            &global_config,
-                            &ExecutableSectionSettings::new(
-                                COMPILER,
-                                InstructionFlags::new(IsaVersion::MIPS_III),
-                            ),
-                            &rom_bytes[AddressRange::new(*rom, rom_end)],
-                            *rom,
-                            info.vram_from_rom(*rom),
-                        ),
-                        TestSection::Data(rom, _) => global_segment_heater.preanalyze_data(
-                            &global_config,
-                            &DataSectionSettings::new(COMPILER),
-                            &rom_bytes[AddressRange::new(*rom, rom_end)],
-                            *rom,
-                            info.vram_from_rom(*rom),
-                        ),
-                        TestSection::Rodata(rom, _) => global_segment_heater.preanalyze_rodata(
-                            &global_config,
-                            &DataSectionSettings::new(COMPILER),
-                            &rom_bytes[AddressRange::new(*rom, rom_end)],
-                            *rom,
-                            info.vram_from_rom(*rom),
-                        ),
+                        TestSection::Text(rom, _) => global_segment_heater
+                            .preheat_text(
+                                &global_config,
+                                &ExecutableSectionSettings::new(
+                                    COMPILER,
+                                    InstructionFlags::new(IsaVersion::MIPS_III),
+                                ),
+                                &rom_bytes[AddressRange::new(*rom, rom_end)],
+                                *rom,
+                                info.vram_from_rom(*rom),
+                            )
+                            .unwrap(),
+                        TestSection::Data(rom, _) => global_segment_heater
+                            .preheat_data(
+                                &global_config,
+                                &DataSectionSettings::new(COMPILER),
+                                &rom_bytes[AddressRange::new(*rom, rom_end)],
+                                *rom,
+                                info.vram_from_rom(*rom),
+                            )
+                            .unwrap(),
+                        TestSection::Rodata(rom, _) => global_segment_heater
+                            .preheat_rodata(
+                                &global_config,
+                                &DataSectionSettings::new(COMPILER),
+                                &rom_bytes[AddressRange::new(*rom, rom_end)],
+                                *rom,
+                                info.vram_from_rom(*rom),
+                            )
+                            .unwrap(),
                         TestSection::Bss(..) | TestSection::Bin(..) => {}
                     }
                 }
@@ -166,7 +172,7 @@ fn init_context(
     platform_segment.n64_hardware_registers(true, true).unwrap();
 
     let builder = ContextBuilder::new(global_segment_heater, platform_segment);
-    builder.build(global_config)
+    builder.build(global_config).unwrap()
 }
 
 fn init_segments(

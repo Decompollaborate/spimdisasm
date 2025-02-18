@@ -16,7 +16,8 @@ use crate::{
 };
 
 use super::{
-    AddIgnoredAddressRangeError, AddUserSymbolError, GlobalSegmentHeater, OverlaySegmentHeater,
+    segment_builder_error::AddPrioritisedOverlayError, AddIgnoredAddressRangeError,
+    AddUserSymbolError, GlobalSegmentHeater, OverlaySegmentHeater,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -49,8 +50,24 @@ impl SegmentBuilder {
         }
     }
 
-    fn add_prioritised_overlay(&mut self, segment_name: Arc<str>) {
-        self.prioritised_overlays.push(segment_name);
+    fn add_prioritised_overlay(
+        &mut self,
+        segment_name: Arc<str>,
+    ) -> Result<(), AddPrioritisedOverlayError> {
+        if self.name.as_ref() == Some(&segment_name) {
+            Err(AddPrioritisedOverlayError::new_self_name(
+                self.name.clone(),
+                segment_name,
+            ))
+        } else if self.prioritised_overlays.contains(&segment_name) {
+            Err(AddPrioritisedOverlayError::new_duplicated(
+                self.name.clone(),
+                segment_name,
+            ))
+        } else {
+            self.prioritised_overlays.push(segment_name);
+            Ok(())
+        }
     }
 
     fn add_user_symbol(
@@ -190,11 +207,14 @@ impl GlobalSegmentBuilder {
         }
     }
 
-    pub fn add_prioritised_overlay<T>(&mut self, segment_name: T)
+    pub fn add_prioritised_overlay<T>(
+        &mut self,
+        segment_name: T,
+    ) -> Result<(), AddPrioritisedOverlayError>
     where
         T: Into<Arc<str>>,
     {
-        self.inner.add_prioritised_overlay(segment_name.into());
+        self.inner.add_prioritised_overlay(segment_name.into())
     }
 
     pub fn add_user_symbol<T>(
@@ -250,11 +270,14 @@ impl OverlaySegmentBuilder {
         }
     }
 
-    pub fn add_prioritised_overlay<T>(&mut self, segment_name: T)
+    pub fn add_prioritised_overlay<T>(
+        &mut self,
+        segment_name: T,
+    ) -> Result<(), AddPrioritisedOverlayError>
     where
         T: Into<Arc<str>>,
     {
-        self.inner.add_prioritised_overlay(segment_name.into());
+        self.inner.add_prioritised_overlay(segment_name.into())
     }
 
     pub fn add_user_symbol<T>(
@@ -310,8 +333,11 @@ pub(crate) mod python_bindings {
         }
 
         #[pyo3(name = "add_prioritised_overlay")]
-        pub fn py_add_prioritised_overlay(&mut self, segment_name: String) {
-            self.add_prioritised_overlay(segment_name);
+        pub fn py_add_prioritised_overlay(
+            &mut self,
+            segment_name: String,
+        ) -> Result<(), AddPrioritisedOverlayError> {
+            self.add_prioritised_overlay(segment_name)
         }
 
         #[pyo3(name = "add_user_symbol", signature = (name, vram, rom, attributes))]
@@ -361,8 +387,11 @@ pub(crate) mod python_bindings {
         }
 
         #[pyo3(name = "add_prioritised_overlay")]
-        pub fn py_add_prioritised_overlay(&mut self, segment_name: String) {
-            self.add_prioritised_overlay(segment_name);
+        pub fn py_add_prioritised_overlay(
+            &mut self,
+            segment_name: String,
+        ) -> Result<(), AddPrioritisedOverlayError> {
+            self.add_prioritised_overlay(segment_name)
         }
 
         #[pyo3(name = "add_user_symbol", signature = (name, vram, rom, attributes))]

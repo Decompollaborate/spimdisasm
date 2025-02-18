@@ -12,7 +12,7 @@ use crate::{
     sections::before_proc::{DataSectionSettings, ExecutableSectionSettings},
 };
 
-use super::{ReferenceWrapper, ReferencedAddress, RegisterTracker};
+use super::{PreheatError, ReferenceWrapper, ReferencedAddress, RegisterTracker};
 
 #[derive(Debug, Clone, Hash, PartialEq, PartialOrd)]
 pub(crate) struct Preheater {
@@ -45,7 +45,7 @@ impl Preheater {
         vram: Vram,
         user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
         ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
-    ) {
+    ) -> Result<(), PreheatError> {
         let mut current_rom = rom;
         let mut current_vram = vram;
         let mut prev_instr: Option<Instruction> = None;
@@ -214,6 +214,8 @@ impl Preheater {
             current_rom += Size::new(4);
             current_vram += Size::new(4);
         }
+
+        Ok(())
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -226,10 +228,10 @@ impl Preheater {
         vram: Vram,
         user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
         ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
-    ) {
+    ) -> Result<(), PreheatError> {
         if rom.inner() % 4 != 0 || vram.inner() % 4 != 0 {
             // not word-aligned, give up.
-            return;
+            return Ok(());
         }
 
         self.common_data_preheat(
@@ -241,7 +243,7 @@ impl Preheater {
             user_symbols,
             SectionType::Data,
             ignored_addresses,
-        );
+        )
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -254,10 +256,10 @@ impl Preheater {
         vram: Vram,
         user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
         ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
-    ) {
+    ) -> Result<(), PreheatError> {
         if rom.inner() % 4 != 0 || vram.inner() % 4 != 0 {
             // not word-aligned, give up.
-            return;
+            return Ok(());
         }
 
         self.common_data_preheat(
@@ -269,7 +271,7 @@ impl Preheater {
             user_symbols,
             SectionType::Rodata,
             ignored_addresses,
-        );
+        )
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -282,10 +284,10 @@ impl Preheater {
         vram: Vram,
         user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
         ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
-    ) {
+    ) -> Result<(), PreheatError> {
         if rom.inner() % 4 != 0 || vram.inner() % 4 != 0 {
             // not word-aligned, give up.
-            return;
+            return Ok(());
         }
 
         // Make sure there's a table at the start of the section
@@ -316,6 +318,8 @@ impl Preheater {
 
             current_vram += Size::new(4);
         }
+
+        Ok(())
     }
 
     // TODO
@@ -330,10 +334,10 @@ impl Preheater {
         user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
         section_type: SectionType,
         ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
-    ) {
+    ) -> Result<(), PreheatError> {
         if rom.inner() % 4 != 0 || vram.inner() % 4 != 0 {
             // not word-aligned, give up.
-            return;
+            return Ok(());
         }
 
         // Ensure there's a symbol at the start of the segment
@@ -681,6 +685,8 @@ impl Preheater {
             }
             remaining_string_size -= 4;
         }
+
+        Ok(())
     }
 
     fn new_ref(

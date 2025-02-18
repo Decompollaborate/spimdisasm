@@ -112,7 +112,9 @@ fn test_section_text_1() {
         );
         let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
 
-        global_segment.preanalyze_text(&global_config, &text_settings, &bytes, rom, vram);
+        global_segment
+            .preheat_text(&global_config, &text_settings, &bytes, rom, vram)
+            .unwrap();
 
         let mut platform_segment = UserSegmentBuilder::new();
         platform_segment.n64_libultra_symbols().unwrap();
@@ -141,10 +143,12 @@ fn test_section_text_1() {
 
             let overlay_builder = OverlaySegmentBuilder::new(ranges, category_name, segment_name);
 
-            builder.add_overlay(overlay_builder.finish_symbols());
+            builder
+                .add_overlay(overlay_builder.finish_symbols())
+                .unwrap();
         }
 
-        builder.build(global_config)
+        builder.build(global_config).unwrap()
     };
 
     let instr_display_flags = InstructionDisplayFlags::default();
@@ -242,7 +246,9 @@ fn test_section_text_lui_delay_slot() {
         );
         let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
 
-        global_segment.preanalyze_text(&global_config, &text_settings, &bytes, rom, vram);
+        global_segment
+            .preheat_text(&global_config, &text_settings, &bytes, rom, vram)
+            .unwrap();
 
         let mut platform_segment = UserSegmentBuilder::new();
         platform_segment.n64_libultra_symbols().unwrap();
@@ -250,7 +256,7 @@ fn test_section_text_lui_delay_slot() {
 
         let builder = ContextBuilder::new(global_segment, platform_segment);
 
-        builder.build(global_config)
+        builder.build(global_config).unwrap()
     };
 
     let instr_display_flags = InstructionDisplayFlags::default();
@@ -393,7 +399,9 @@ fn test_section_text_pairing_on_delay_slot() {
         );
         let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
 
-        global_segment.preanalyze_text(&global_config, &text_settings, &BYTES, rom, vram);
+        global_segment
+            .preheat_text(&global_config, &text_settings, &BYTES, rom, vram)
+            .unwrap();
 
         let mut platform_segment = UserSegmentBuilder::new();
         platform_segment.n64_libultra_symbols().unwrap();
@@ -401,7 +409,7 @@ fn test_section_text_pairing_on_delay_slot() {
 
         let builder = ContextBuilder::new(global_segment, platform_segment);
 
-        builder.build(global_config)
+        builder.build(global_config).unwrap()
     };
 
     let parent_segment_info = ParentSegmentInfo::new(segment_rom, segment_vram, None);
@@ -544,7 +552,9 @@ fn test_section_text_lui_paired_with_lw_and_ori() {
         );
         let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
 
-        global_segment.preanalyze_text(&global_config, &text_settings, &BYTES, rom, vram);
+        global_segment
+            .preheat_text(&global_config, &text_settings, &BYTES, rom, vram)
+            .unwrap();
 
         let mut platform_segment = UserSegmentBuilder::new();
         platform_segment.n64_libultra_symbols().unwrap();
@@ -552,7 +562,7 @@ fn test_section_text_lui_paired_with_lw_and_ori() {
 
         let builder = ContextBuilder::new(global_segment, platform_segment);
 
-        builder.build(global_config)
+        builder.build(global_config).unwrap()
     };
 
     let parent_segment_info = ParentSegmentInfo::new(segment_rom, segment_vram, None);
@@ -651,13 +661,15 @@ fn test_section_text_gp_rels() {
         );
         let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
 
-        global_segment.preanalyze_text(&global_config, &text_settings, &BYTES, rom, vram);
+        global_segment
+            .preheat_text(&global_config, &text_settings, &BYTES, rom, vram)
+            .unwrap();
 
         let platform_segment = UserSegmentBuilder::new();
 
         let builder = ContextBuilder::new(global_segment, platform_segment);
 
-        builder.build(global_config)
+        builder.build(global_config).unwrap()
     };
 
     let parent_segment_info = ParentSegmentInfo::new(segment_rom, segment_vram, None);
@@ -811,13 +823,15 @@ fn test_section_text_type_inference_on_complex_control_flow() {
         );
         let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
 
-        global_segment.preanalyze_text(&global_config, &text_settings, &BYTES, rom, vram);
+        global_segment
+            .preheat_text(&global_config, &text_settings, &BYTES, rom, vram)
+            .unwrap();
 
         let platform_segment = UserSegmentBuilder::new();
 
         let builder = ContextBuilder::new(global_segment, platform_segment);
 
-        builder.build(global_config)
+        builder.build(global_config).unwrap()
     };
 
     let parent_segment_info = ParentSegmentInfo::new(segment_rom, segment_vram, None);

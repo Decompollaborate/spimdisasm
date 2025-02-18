@@ -1,9 +1,8 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use core::{error, fmt};
-
 use alloc::sync::Arc;
+use core::{error, fmt};
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;

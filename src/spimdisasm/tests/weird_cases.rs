@@ -260,7 +260,9 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
     platform_segment.n64_libultra_symbols().unwrap();
     platform_segment.n64_hardware_registers(true, true).unwrap();
 
-    let mut context = ContextBuilder::new(global_segment, platform_segment).build(global_config);
+    let mut context = ContextBuilder::new(global_segment, platform_segment)
+        .build(global_config)
+        .unwrap();
 
     let text_settings =
         ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
@@ -604,13 +606,15 @@ fn weird_case_use_gp_as_temp() {
         );
         let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
 
-        global_segment.preanalyze_text(&global_config, &text_settings, &BYTES, rom, vram);
+        global_segment
+            .preheat_text(&global_config, &text_settings, &BYTES, rom, vram)
+            .unwrap();
 
         let platform_segment = UserSegmentBuilder::new();
 
         let builder = ContextBuilder::new(global_segment, platform_segment);
 
-        builder.build(global_config)
+        builder.build(global_config).unwrap()
     };
 
     let parent_segment_info = ParentSegmentInfo::new(segment_rom, segment_vram, None);

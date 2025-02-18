@@ -8,7 +8,7 @@ use pyo3::prelude::*;
 
 use crate::{
     addresses::{AddressRange, Rom, RomVramRange, Vram},
-    analysis::Preheater,
+    analysis::{PreheatError, Preheater},
     collections::addended_ordered_map::AddendedOrderedMap,
     config::GlobalConfig,
     metadata::{IgnoredAddressRange, OverlayCategoryName, SegmentMetadata, SymbolMetadata},
@@ -51,14 +51,14 @@ impl SegmentHeater {
 }
 
 impl SegmentHeater {
-    fn preanalyze_text(
+    fn preheat_text(
         &mut self,
         global_config: &GlobalConfig,
         settings: &ExecutableSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
-    ) {
+    ) -> Result<(), PreheatError> {
         self.preheater.preheat_text(
             global_config,
             settings,
@@ -67,17 +67,17 @@ impl SegmentHeater {
             vram,
             &self.user_symbols,
             &self.ignored_addresses,
-        );
+        )
     }
 
-    fn preanalyze_data(
+    fn preheat_data(
         &mut self,
         global_config: &GlobalConfig,
         settings: &DataSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
-    ) {
+    ) -> Result<(), PreheatError> {
         self.preheater.preheat_data(
             global_config,
             settings,
@@ -86,17 +86,17 @@ impl SegmentHeater {
             vram,
             &self.user_symbols,
             &self.ignored_addresses,
-        );
+        )
     }
 
-    fn preanalyze_rodata(
+    fn preheat_rodata(
         &mut self,
         global_config: &GlobalConfig,
         settings: &DataSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
-    ) {
+    ) -> Result<(), PreheatError> {
         self.preheater.preheat_rodata(
             global_config,
             settings,
@@ -105,17 +105,17 @@ impl SegmentHeater {
             vram,
             &self.user_symbols,
             &self.ignored_addresses,
-        );
+        )
     }
 
-    fn preanalyze_gcc_except_table(
+    fn preheat_gcc_except_table(
         &mut self,
         global_config: &GlobalConfig,
         settings: &DataSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
-    ) {
+    ) -> Result<(), PreheatError> {
         self.preheater.preheat_gcc_except_table(
             global_config,
             settings,
@@ -124,7 +124,7 @@ impl SegmentHeater {
             vram,
             &self.user_symbols,
             &self.ignored_addresses,
-        );
+        )
     }
 
     fn dump_info(&self, segment_name: Option<&str>) {
@@ -229,52 +229,56 @@ impl GlobalSegmentHeater {
         &self.inner
     }
 
-    pub fn preanalyze_text(
+    pub(crate) const fn ranges(&self) -> &RomVramRange {
+        self.inner.ranges()
+    }
+
+    pub fn preheat_text(
         &mut self,
         global_config: &GlobalConfig,
         settings: &ExecutableSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
-    ) {
+    ) -> Result<(), PreheatError> {
         self.inner
-            .preanalyze_text(global_config, settings, raw_bytes, rom, vram);
+            .preheat_text(global_config, settings, raw_bytes, rom, vram)
     }
 
-    pub fn preanalyze_data(
+    pub fn preheat_data(
         &mut self,
         global_config: &GlobalConfig,
         settings: &DataSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
-    ) {
+    ) -> Result<(), PreheatError> {
         self.inner
-            .preanalyze_data(global_config, settings, raw_bytes, rom, vram);
+            .preheat_data(global_config, settings, raw_bytes, rom, vram)
     }
 
-    pub fn preanalyze_rodata(
+    pub fn preheat_rodata(
         &mut self,
         global_config: &GlobalConfig,
         settings: &DataSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
-    ) {
+    ) -> Result<(), PreheatError> {
         self.inner
-            .preanalyze_rodata(global_config, settings, raw_bytes, rom, vram);
+            .preheat_rodata(global_config, settings, raw_bytes, rom, vram)
     }
 
-    pub fn preanalyze_gcc_except_table(
+    pub fn preheat_gcc_except_table(
         &mut self,
         global_config: &GlobalConfig,
         settings: &DataSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
-    ) {
+    ) -> Result<(), PreheatError> {
         self.inner
-            .preanalyze_gcc_except_table(global_config, settings, raw_bytes, rom, vram);
+            .preheat_gcc_except_table(global_config, settings, raw_bytes, rom, vram)
     }
 
     #[must_use]
@@ -347,52 +351,52 @@ impl OverlaySegmentHeater {
         &mut self.inner.preheater
     }
 
-    pub fn preanalyze_text(
+    pub fn preheat_text(
         &mut self,
         global_config: &GlobalConfig,
         settings: &ExecutableSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
-    ) {
+    ) -> Result<(), PreheatError> {
         self.inner
-            .preanalyze_text(global_config, settings, raw_bytes, rom, vram);
+            .preheat_text(global_config, settings, raw_bytes, rom, vram)
     }
 
-    pub fn preanalyze_data(
+    pub fn preheat_data(
         &mut self,
         global_config: &GlobalConfig,
         settings: &DataSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
-    ) {
+    ) -> Result<(), PreheatError> {
         self.inner
-            .preanalyze_data(global_config, settings, raw_bytes, rom, vram);
+            .preheat_data(global_config, settings, raw_bytes, rom, vram)
     }
 
-    pub fn preanalyze_rodata(
+    pub fn preheat_rodata(
         &mut self,
         global_config: &GlobalConfig,
         settings: &DataSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
-    ) {
+    ) -> Result<(), PreheatError> {
         self.inner
-            .preanalyze_rodata(global_config, settings, raw_bytes, rom, vram);
+            .preheat_rodata(global_config, settings, raw_bytes, rom, vram)
     }
 
-    pub fn preanalyze_gcc_except_table(
+    pub fn preheat_gcc_except_table(
         &mut self,
         global_config: &GlobalConfig,
         settings: &DataSectionSettings,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
-    ) {
+    ) -> Result<(), PreheatError> {
         self.inner
-            .preanalyze_gcc_except_table(global_config, settings, raw_bytes, rom, vram);
+            .preheat_gcc_except_table(global_config, settings, raw_bytes, rom, vram)
     }
 
     #[must_use]
@@ -421,103 +425,103 @@ pub(crate) mod python_bindings {
 
     #[pymethods]
     impl GlobalSegmentHeater {
-        #[pyo3(name = "preanalyze_text")]
-        pub fn py_preanalyze_text(
+        #[pyo3(name = "preheat_text")]
+        pub fn py_preheat_text(
             &mut self,
             global_config: &GlobalConfig,
             settings: &ExecutableSectionSettings,
             raw_bytes: &[u8],
             rom: Rom,
             vram: Vram,
-        ) {
-            self.preanalyze_text(global_config, settings, raw_bytes, rom, vram);
+        ) -> Result<(), PreheatError> {
+            self.preheat_text(global_config, settings, raw_bytes, rom, vram)
         }
 
-        #[pyo3(name = "preanalyze_data")]
-        pub fn py_preanalyze_data(
+        #[pyo3(name = "preheat_data")]
+        pub fn py_preheat_data(
             &mut self,
             global_config: &GlobalConfig,
             settings: &DataSectionSettings,
             raw_bytes: &[u8],
             rom: Rom,
             vram: Vram,
-        ) {
-            self.preanalyze_data(global_config, settings, raw_bytes, rom, vram);
+        ) -> Result<(), PreheatError> {
+            self.preheat_data(global_config, settings, raw_bytes, rom, vram)
         }
 
-        #[pyo3(name = "preanalyze_rodata")]
-        pub fn py_preanalyze_rodata(
+        #[pyo3(name = "preheat_rodata")]
+        pub fn py_preheat_rodata(
             &mut self,
             global_config: &GlobalConfig,
             settings: &DataSectionSettings,
             raw_bytes: &[u8],
             rom: Rom,
             vram: Vram,
-        ) {
-            self.preanalyze_rodata(global_config, settings, raw_bytes, rom, vram);
+        ) -> Result<(), PreheatError> {
+            self.preheat_rodata(global_config, settings, raw_bytes, rom, vram)
         }
 
-        #[pyo3(name = "preanalyze_gcc_except_table")]
-        pub fn py_preanalyze_gcc_except_table(
+        #[pyo3(name = "preheat_gcc_except_table")]
+        pub fn py_preheat_gcc_except_table(
             &mut self,
             global_config: &GlobalConfig,
             settings: &DataSectionSettings,
             raw_bytes: &[u8],
             rom: Rom,
             vram: Vram,
-        ) {
-            self.preanalyze_gcc_except_table(global_config, settings, raw_bytes, rom, vram);
+        ) -> Result<(), PreheatError> {
+            self.preheat_gcc_except_table(global_config, settings, raw_bytes, rom, vram)
         }
     }
 
     #[pymethods]
     impl OverlaySegmentHeater {
-        #[pyo3(name = "preanalyze_text")]
-        pub fn py_preanalyze_text(
+        #[pyo3(name = "preheat_text")]
+        pub fn py_preheat_text(
             &mut self,
             global_config: &GlobalConfig,
             settings: &ExecutableSectionSettings,
             raw_bytes: &[u8],
             rom: Rom,
             vram: Vram,
-        ) {
-            self.preanalyze_text(global_config, settings, raw_bytes, rom, vram);
+        ) -> Result<(), PreheatError> {
+            self.preheat_text(global_config, settings, raw_bytes, rom, vram)
         }
 
-        #[pyo3(name = "preanalyze_data")]
-        pub fn py_preanalyze_data(
+        #[pyo3(name = "preheat_data")]
+        pub fn py_preheat_data(
             &mut self,
             global_config: &GlobalConfig,
             settings: &DataSectionSettings,
             raw_bytes: &[u8],
             rom: Rom,
             vram: Vram,
-        ) {
-            self.preanalyze_data(global_config, settings, raw_bytes, rom, vram);
+        ) -> Result<(), PreheatError> {
+            self.preheat_data(global_config, settings, raw_bytes, rom, vram)
         }
 
-        #[pyo3(name = "preanalyze_rodata")]
-        pub fn py_preanalyze_rodata(
+        #[pyo3(name = "preheat_rodata")]
+        pub fn py_preheat_rodata(
             &mut self,
             global_config: &GlobalConfig,
             settings: &DataSectionSettings,
             raw_bytes: &[u8],
             rom: Rom,
             vram: Vram,
-        ) {
-            self.preanalyze_rodata(global_config, settings, raw_bytes, rom, vram);
+        ) -> Result<(), PreheatError> {
+            self.preheat_rodata(global_config, settings, raw_bytes, rom, vram)
         }
 
-        #[pyo3(name = "preanalyze_gcc_except_table")]
-        pub fn py_preanalyze_gcc_except_table(
+        #[pyo3(name = "preheat_gcc_except_table")]
+        pub fn py_preheat_gcc_except_table(
             &mut self,
             global_config: &GlobalConfig,
             settings: &DataSectionSettings,
             raw_bytes: &[u8],
             rom: Rom,
             vram: Vram,
-        ) {
-            self.preanalyze_gcc_except_table(global_config, settings, raw_bytes, rom, vram);
+        ) -> Result<(), PreheatError> {
+            self.preheat_gcc_except_table(global_config, settings, raw_bytes, rom, vram)
         }
     }
 }
