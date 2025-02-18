@@ -117,7 +117,7 @@ impl SegmentMetadata {
                 Arc::new([]),
                 AddendedOrderedMap::new(),
                 AddendedOrderedMap::new(),
-                Preheater::new(ranges),
+                Preheater::new(None, ranges),
                 Arc::new([]),
                 None,
                 None,
@@ -353,7 +353,7 @@ mod tests {
             Arc::new([]),
             AddendedOrderedMap::new(),
             AddendedOrderedMap::new(),
-            Preheater::new(ranges),
+            Preheater::new(None, ranges),
             Arc::new([]),
         );
 

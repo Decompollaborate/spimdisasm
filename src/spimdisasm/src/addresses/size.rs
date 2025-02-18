@@ -143,7 +143,13 @@ impl TryFrom<VramOffset> for Size {
 }
 
 pub trait SizedAddress {
-    fn size(&self) -> Option<Size>;
+    fn size(&self) -> Size;
+}
+
+impl SizedAddress for Size {
+    fn size(&self) -> Size {
+        *self
+    }
 }
 
 #[cfg(test)]

@@ -23,7 +23,7 @@ impl IgnoredAddressRange {
 }
 
 impl SizedAddress for IgnoredAddressRange {
-    fn size(&self) -> Option<Size> {
-        Some(self.size)
+    fn size(&self) -> Size {
+        self.size
     }
 }

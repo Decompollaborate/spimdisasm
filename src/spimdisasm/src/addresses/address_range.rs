@@ -57,6 +57,10 @@ where
     pub fn in_range(&self, value: T) -> bool {
         self.start <= value && value < self.end
     }
+    #[must_use]
+    pub(crate) fn in_range_inclusive_end(&self, value: T) -> bool {
+        self.start <= value && value <= self.end
+    }
 
     fn decrease_start(&mut self, value: T) {
         if value < self.start {

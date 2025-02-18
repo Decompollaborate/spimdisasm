@@ -52,14 +52,8 @@ where
             let mut range = self.inner.range(..=key);
 
             if let Some((other_key, v)) = range.next_back() {
-                if other_key == key {
+                if other_key == key || *key < *other_key + v.size() {
                     Some(v)
-                } else if let Some(siz) = v.size() {
-                    if *key < *other_key + siz {
-                        Some(v)
-                    } else {
-                        None
-                    }
                 } else {
                     None
                 }
@@ -101,14 +95,8 @@ where
             let mut range = self.inner.range_mut(..=key);
 
             if let Some((other_key, v)) = range.next_back() {
-                if other_key == key {
+                if other_key == key || *key < *other_key + v.size() {
                     Some(v)
-                } else if let Some(siz) = v.size() {
-                    if *key < *other_key + siz {
-                        Some(v)
-                    } else {
-                        None
-                    }
                 } else {
                     None
                 }
@@ -165,10 +153,8 @@ where
             false
         } else if !settings.allow_addend {
             true
-        } else if let Some(siz) = v.size() {
-            key >= *other_key + siz
         } else {
-            true
+            key >= *other_key + v.size()
         }
     } else {
         true

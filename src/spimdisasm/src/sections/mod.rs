@@ -11,8 +11,9 @@ mod trait_section;
 pub(crate) mod python_bindings;
 
 pub use section_creation_error::{
-    BadBytesSizeError, EmptySectionError, RomVramAlignmentMismatchError, SectionCreationError,
-    UnalignedRomError, UnalignedVramError,
+    BadBytesSizeError, EmptySectionError, RomVramAlignmentMismatchError,
+    SectionAlreadyCreatedError, SectionCreationError, SectionNotPreheatedError, UnalignedRomError,
+    UnalignedVramError,
 };
 pub use section_post_process_error::SectionPostProcessError;
 pub use trait_section::{

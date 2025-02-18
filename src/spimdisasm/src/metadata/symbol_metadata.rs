@@ -649,7 +649,7 @@ impl fmt::Debug for SymbolMetadata {
 }
 
 impl SizedAddress for SymbolMetadata {
-    fn size(&self) -> Option<Size> {
-        self.size()
+    fn size(&self) -> Size {
+        self.size().unwrap_or(Size::new(1))
     }
 }

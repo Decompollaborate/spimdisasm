@@ -217,6 +217,16 @@ impl ContextBuilder {
     }
 
     pub fn build(self, global_config: GlobalConfig) -> Result<Context, BuildContextError> {
+        let mut preheated_sections = UnorderedMap::new();
+        for (rom, _) in self.global_segment.preheated_sections() {
+            preheated_sections.insert(*rom, false);
+        }
+        for overlay in &self.overlays {
+            for (rom, _) in overlay.preheated_sections() {
+                preheated_sections.insert(*rom, false);
+            }
+        }
+
         let visible_ranges_for_global = Self::get_visible_vram_ranges_for_segment(
             None,
             self.global_segment.inner(),
@@ -231,6 +241,7 @@ impl ContextBuilder {
             global_segment,
             self.user_segment.build(),
             overlay_segments,
+            preheated_sections,
         ))
     }
 }

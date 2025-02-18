@@ -25,6 +25,8 @@ pub enum SectionCreationError {
     UnalignedVram(UnalignedVramError),
     UnalignedRom(UnalignedRomError),
     RomVramAlignmentMismatch(RomVramAlignmentMismatchError),
+    AlreadyCreated(SectionAlreadyCreatedError),
+    NotPrehated(SectionNotPreheatedError),
 }
 
 impl fmt::Display for SectionCreationError {
@@ -39,6 +41,8 @@ impl fmt::Display for SectionCreationError {
             SectionCreationError::UnalignedVram(x) => write!(f, "{}", x),
             SectionCreationError::UnalignedRom(x) => write!(f, "{}", x),
             SectionCreationError::RomVramAlignmentMismatch(x) => write!(f, "{}", x),
+            SectionCreationError::AlreadyCreated(x) => write!(f, "{}", x),
+            SectionCreationError::NotPrehated(x) => write!(f, "{}", x),
         }
     }
 }
@@ -89,6 +93,16 @@ impl From<UnalignedRomError> for SectionCreationError {
 impl From<RomVramAlignmentMismatchError> for SectionCreationError {
     fn from(value: RomVramAlignmentMismatchError) -> Self {
         SectionCreationError::RomVramAlignmentMismatch(value)
+    }
+}
+impl From<SectionAlreadyCreatedError> for SectionCreationError {
+    fn from(value: SectionAlreadyCreatedError) -> Self {
+        SectionCreationError::AlreadyCreated(value)
+    }
+}
+impl From<SectionNotPreheatedError> for SectionCreationError {
+    fn from(value: SectionNotPreheatedError) -> Self {
+        SectionCreationError::NotPrehated(value)
     }
 }
 
@@ -222,6 +236,54 @@ impl fmt::Display for RomVramAlignmentMismatchError {
     }
 }
 impl error::Error for RomVramAlignmentMismatchError {}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+pub struct SectionAlreadyCreatedError {
+    name: Arc<str>,
+    rom: Option<Rom>,
+    vram: Vram,
+}
+impl SectionAlreadyCreatedError {
+    pub(crate) fn new(name: Arc<str>, rom: Option<Rom>, vram: Vram) -> Self {
+        Self { name, rom, vram }
+    }
+}
+impl fmt::Display for SectionAlreadyCreatedError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Can't create section {} ({:?} / {:?}) because it has been created already.",
+            self.name, self.rom, self.vram
+        )
+    }
+}
+impl error::Error for SectionAlreadyCreatedError {}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+pub struct SectionNotPreheatedError {
+    name: Arc<str>,
+    rom: Rom,
+    vram: Vram,
+}
+impl SectionNotPreheatedError {
+    pub(crate) fn new(name: Arc<str>, rom: Rom, vram: Vram) -> Self {
+        Self { name, rom, vram }
+    }
+}
+impl fmt::Display for SectionNotPreheatedError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Can't create section {} ({:?} / {:?}) because it wasn't preheated.",
+            self.name, self.rom, self.vram
+        )
+    }
+}
+impl error::Error for SectionNotPreheatedError {}
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {

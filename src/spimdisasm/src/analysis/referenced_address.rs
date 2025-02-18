@@ -240,7 +240,7 @@ impl Hash for ReferencedAddress {
 }
 
 impl SizedAddress for ReferencedAddress {
-    fn size(&self) -> Option<Size> {
-        self.size()
+    fn size(&self) -> Size {
+        self.size().unwrap_or(Size::new(1))
     }
 }

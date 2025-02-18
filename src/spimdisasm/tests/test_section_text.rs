@@ -818,8 +818,8 @@ fn test_section_text_type_inference_on_complex_control_flow() {
         let global_config = GlobalConfig::new(Endian::Big);
 
         let global_ranges = RomVramRange::new(
-            AddressRange::new(segment_rom, Rom::new(0x00802000)),
-            AddressRange::new(segment_vram, Vram::new(0x80802000)),
+            AddressRange::new(segment_rom, Rom::new(0x04000000)),
+            AddressRange::new(segment_vram, Vram::new(0x84000000)),
         );
         let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
 

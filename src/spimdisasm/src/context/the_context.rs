@@ -11,7 +11,10 @@ use pyo3::prelude::*;
 
 use crate::{
     addresses::{AddressRange, Rom, Vram},
-    collections::{addended_ordered_map::FindSettings, unordered_map::UnorderedMap},
+    collections::{
+        addended_ordered_map::FindSettings, unordered_map::UnorderedMap,
+        unordered_set::UnorderedSet,
+    },
     config::GlobalConfig,
     metadata::{
         OverlayCategory, OverlayCategoryName, SegmentMetadata, SymbolMetadata, UserSegmentMetadata,
@@ -23,7 +26,7 @@ use crate::{
             DataSection, DataSectionSettings, ExecutableSection, ExecutableSectionSettings,
             NoloadSection, NoloadSectionSettings,
         },
-        SectionCreationError,
+        SectionAlreadyCreatedError, SectionCreationError, SectionNotPreheatedError,
     },
 };
 
@@ -42,15 +45,11 @@ pub struct Context {
     //
     // totalVramRange: SymbolsRanges
 
-    // Maybe move to SegmentMetadata?
-    // # Stuff that looks like pointers, but the disassembler shouldn't count it as a pointer
-    // self.bannedSymbols: set[int] = set()
-    // self.bannedRangedSymbols: list[AddressRange] = list()
-
-    // self.globalRelocationOverrides: dict[int, RelocationInfo] = dict()
-    // "key: vrom address"
-
     // self.gpAccesses = GpAccessContainer()
+
+    //
+    preheated_sections: UnorderedMap<Rom, bool>,
+    created_noload_sections: UnorderedSet<(ParentSegmentInfo, Vram)>,
 }
 
 impl Context {
@@ -59,6 +58,7 @@ impl Context {
         global_segment: SegmentMetadata,
         user_segment: UserSegmentMetadata,
         overlay_segments: UnorderedMap<OverlayCategoryName, OverlayCategory>,
+        preheated_sections: UnorderedMap<Rom, bool>,
     ) -> Self {
         Self {
             global_config,
@@ -66,6 +66,8 @@ impl Context {
             user_segment,
             overlay_segments,
             unknown_segment: SegmentMetadata::new_unknown_segment(),
+            preheated_sections,
+            created_noload_sections: UnorderedSet::new(),
         }
     }
 }
@@ -98,10 +100,22 @@ impl Context {
     where
         T: Into<Arc<str>>,
     {
+        let name = name.into();
+
+        if let Some(was_created) = self.preheated_sections.get_mut(&rom) {
+            if *was_created {
+                return Err(SectionAlreadyCreatedError::new(name, Some(rom), vram).into());
+            } else {
+                *was_created = true;
+            }
+        } else {
+            return Err(SectionNotPreheatedError::new(name, rom, vram).into());
+        }
+
         ExecutableSection::new(
             self,
             settings,
-            name.into(),
+            name,
             raw_bytes,
             rom,
             vram,
@@ -121,10 +135,22 @@ impl Context {
     where
         T: Into<Arc<str>>,
     {
+        let name = name.into();
+
+        if let Some(was_created) = self.preheated_sections.get_mut(&rom) {
+            if *was_created {
+                return Err(SectionAlreadyCreatedError::new(name, Some(rom), vram).into());
+            } else {
+                *was_created = true;
+            }
+        } else {
+            return Err(SectionNotPreheatedError::new(name, rom, vram).into());
+        }
+
         DataSection::new(
             self,
             settings,
-            name.into(),
+            name,
             raw_bytes,
             rom,
             vram,
@@ -145,29 +171,28 @@ impl Context {
     where
         T: Into<Arc<str>>,
     {
+        let name = name.into();
+
+        if let Some(was_created) = self.preheated_sections.get_mut(&rom) {
+            if *was_created {
+                return Err(SectionAlreadyCreatedError::new(name, Some(rom), vram).into());
+            } else {
+                *was_created = true;
+            }
+        } else {
+            return Err(SectionNotPreheatedError::new(name, rom, vram).into());
+        }
+
         DataSection::new(
             self,
             settings,
-            name.into(),
+            name,
             raw_bytes,
             rom,
             vram,
             parent_segment_info,
             SectionType::Rodata,
         )
-    }
-
-    pub fn create_section_bss<T>(
-        &mut self,
-        settings: &NoloadSectionSettings,
-        name: T,
-        vram_range: AddressRange<Vram>,
-        parent_segment_info: ParentSegmentInfo,
-    ) -> Result<NoloadSection, SectionCreationError>
-    where
-        T: Into<Arc<str>>,
-    {
-        NoloadSection::new(self, settings, name.into(), vram_range, parent_segment_info)
     }
 
     pub fn create_section_gcc_except_table<T>(
@@ -182,16 +207,50 @@ impl Context {
     where
         T: Into<Arc<str>>,
     {
+        let name = name.into();
+
+        if let Some(was_created) = self.preheated_sections.get_mut(&rom) {
+            if *was_created {
+                return Err(SectionAlreadyCreatedError::new(name, Some(rom), vram).into());
+            } else {
+                *was_created = true;
+            }
+        } else {
+            return Err(SectionNotPreheatedError::new(name, rom, vram).into());
+        }
+
         DataSection::new(
             self,
             settings,
-            name.into(),
+            name,
             raw_bytes,
             rom,
             vram,
             parent_segment_info,
             SectionType::GccExceptTable,
         )
+    }
+
+    pub fn create_section_bss<T>(
+        &mut self,
+        settings: &NoloadSectionSettings,
+        name: T,
+        vram_range: AddressRange<Vram>,
+        parent_segment_info: ParentSegmentInfo,
+    ) -> Result<NoloadSection, SectionCreationError>
+    where
+        T: Into<Arc<str>>,
+    {
+        let name = name.into();
+
+        if !self
+            .created_noload_sections
+            .insert((parent_segment_info.clone(), vram_range.start()))
+        {
+            return Err(SectionAlreadyCreatedError::new(name, None, vram_range.start()).into());
+        }
+
+        NoloadSection::new(self, settings, name, vram_range, parent_segment_info)
     }
 }
 

@@ -33,10 +33,3 @@ Does the following pattern make sense with a pointer?
 
 Consider allowing user-defined data layouts using the same syntax as python's struct package
     https://docs.python.org/3/library/struct.html
-
-Missing validations:
-    Check section was preheated
-    Ensure section is not prehated twice
-    Ensure section is not created twice
-
-Rename preanalyze to preheat

@@ -82,42 +82,50 @@ impl Sections {
         let mut context = {
             let mut global_heater = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
 
-            global_heater
-                .preheat_text(
-                    &global_config,
-                    &text_info.1,
-                    text_info.0.bytes,
-                    text_info.0.rom,
-                    text_info.0.vram,
-                )
-                .unwrap();
-            global_heater
-                .preheat_data(
-                    &global_config,
-                    &data_info.1,
-                    data_info.0.bytes,
-                    data_info.0.rom,
-                    data_info.0.vram,
-                )
-                .unwrap();
-            global_heater
-                .preheat_rodata(
-                    &global_config,
-                    &rodata_info.1,
-                    rodata_info.0.bytes,
-                    rodata_info.0.rom,
-                    rodata_info.0.vram,
-                )
-                .unwrap();
-            global_heater
-                .preheat_gcc_except_table(
-                    &global_config,
-                    &gcc_except_table_info.1,
-                    gcc_except_table_info.0.bytes,
-                    gcc_except_table_info.0.rom,
-                    gcc_except_table_info.0.vram,
-                )
-                .unwrap();
+            if !text_info.0.bytes.is_empty() {
+                global_heater
+                    .preheat_text(
+                        &global_config,
+                        &text_info.1,
+                        text_info.0.bytes,
+                        text_info.0.rom,
+                        text_info.0.vram,
+                    )
+                    .unwrap();
+            }
+            if !data_info.0.bytes.is_empty() {
+                global_heater
+                    .preheat_data(
+                        &global_config,
+                        &data_info.1,
+                        data_info.0.bytes,
+                        data_info.0.rom,
+                        data_info.0.vram,
+                    )
+                    .unwrap();
+            }
+            if !rodata_info.0.bytes.is_empty() {
+                global_heater
+                    .preheat_rodata(
+                        &global_config,
+                        &rodata_info.1,
+                        rodata_info.0.bytes,
+                        rodata_info.0.rom,
+                        rodata_info.0.vram,
+                    )
+                    .unwrap();
+            }
+            if !gcc_except_table_info.0.bytes.is_empty() {
+                global_heater
+                    .preheat_gcc_except_table(
+                        &global_config,
+                        &gcc_except_table_info.1,
+                        gcc_except_table_info.0.bytes,
+                        gcc_except_table_info.0.rom,
+                        gcc_except_table_info.0.vram,
+                    )
+                    .unwrap();
+            }
 
             let mut platform_segment = UserSegmentBuilder::new();
             platform_segment.n64_libultra_symbols().unwrap();

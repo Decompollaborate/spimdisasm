@@ -254,7 +254,14 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
         AddressRange::new(rom, rom + size),
         AddressRange::new(vram, vram + size),
     );
-    let global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
+    let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
+
+    let text_settings =
+        ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
+
+    global_segment
+        .preheat_text(&global_config, &text_settings, &bytes, rom, vram)
+        .unwrap();
 
     let mut platform_segment = UserSegmentBuilder::new();
     platform_segment.n64_libultra_symbols().unwrap();
@@ -264,8 +271,6 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
         .build(global_config)
         .unwrap();
 
-    let text_settings =
-        ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
     let instr_display_flags = InstructionDisplayFlags::default();
 
     let section_text = context

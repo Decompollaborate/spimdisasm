@@ -1,6 +1,8 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use alloc::sync::Arc;
+
 use rabbitizer::{access_type::AccessType, Instruction};
 
 use crate::{
@@ -16,15 +18,19 @@ use super::{PreheatError, ReferenceWrapper, ReferencedAddress, RegisterTracker};
 
 #[derive(Debug, Clone, Hash, PartialEq, PartialOrd)]
 pub(crate) struct Preheater {
+    segment_name: Option<Arc<str>>,
     ranges: RomVramRange,
     references: AddendedOrderedMap<Vram, ReferencedAddress>,
+    preheated_sections: AddendedOrderedMap<Rom, Size>,
 }
 
 impl Preheater {
-    pub(crate) const fn new(ranges: RomVramRange) -> Self {
+    pub(crate) const fn new(segment_name: Option<Arc<str>>, ranges: RomVramRange) -> Self {
         Self {
+            segment_name,
             ranges,
             references: AddendedOrderedMap::new(),
+            preheated_sections: AddendedOrderedMap::new(),
         }
     }
 
@@ -33,6 +39,9 @@ impl Preheater {
     }
     pub(crate) fn references_mut(&mut self) -> &mut AddendedOrderedMap<Vram, ReferencedAddress> {
         &mut self.references
+    }
+    pub(crate) fn preheated_sections(&self) -> &AddendedOrderedMap<Rom, Size> {
+        &self.preheated_sections
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -46,6 +55,8 @@ impl Preheater {
         user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
         ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
     ) -> Result<(), PreheatError> {
+        self.check_failable_preconditions(raw_bytes, rom, vram)?;
+
         let mut current_rom = rom;
         let mut current_vram = vram;
         let mut prev_instr: Option<Instruction> = None;
@@ -229,11 +240,6 @@ impl Preheater {
         user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
         ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
     ) -> Result<(), PreheatError> {
-        if rom.inner() % 4 != 0 || vram.inner() % 4 != 0 {
-            // not word-aligned, give up.
-            return Ok(());
-        }
-
         self.common_data_preheat(
             global_config,
             settings,
@@ -257,11 +263,6 @@ impl Preheater {
         user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
         ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
     ) -> Result<(), PreheatError> {
-        if rom.inner() % 4 != 0 || vram.inner() % 4 != 0 {
-            // not word-aligned, give up.
-            return Ok(());
-        }
-
         self.common_data_preheat(
             global_config,
             settings,
@@ -285,6 +286,8 @@ impl Preheater {
         user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
         ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
     ) -> Result<(), PreheatError> {
+        self.check_failable_preconditions(raw_bytes, rom, vram)?;
+
         if rom.inner() % 4 != 0 || vram.inner() % 4 != 0 {
             // not word-aligned, give up.
             return Ok(());
@@ -335,6 +338,8 @@ impl Preheater {
         section_type: SectionType,
         ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
     ) -> Result<(), PreheatError> {
+        self.check_failable_preconditions(raw_bytes, rom, vram)?;
+
         if rom.inner() % 4 != 0 || vram.inner() % 4 != 0 {
             // not word-aligned, give up.
             return Ok(());
@@ -758,5 +763,52 @@ impl Preheater {
         }
 
         refer
+    }
+
+    fn check_failable_preconditions(
+        &mut self,
+        raw_bytes: &[u8],
+        rom: Rom,
+        vram: Vram,
+    ) -> Result<(), PreheatError> {
+        let size = Size::new(raw_bytes.len() as u32);
+        let rom_end = rom + size;
+        let vram_end = vram + size;
+        let segment_rom_range = self.ranges.rom();
+        let segment_vram_range = self.ranges.vram();
+
+        if !segment_rom_range.in_range(rom) || !segment_rom_range.in_range_inclusive_end(rom_end) {
+            Err(PreheatError::new_wrong_rom(
+                self.segment_name.clone(),
+                rom,
+                vram,
+                *segment_rom_range,
+                rom_end,
+            ))
+        } else if !segment_vram_range.in_range(vram)
+            || !segment_vram_range.in_range_inclusive_end(vram_end)
+        {
+            Err(PreheatError::new_wrong_vram(
+                self.segment_name.clone(),
+                rom,
+                vram,
+                *segment_vram_range,
+                vram_end,
+            ))
+        } else if self
+            .preheated_sections
+            .find(&rom, FindSettings::new(true))
+            .is_some()
+        {
+            Err(PreheatError::new_already_preheated(
+                self.segment_name.clone(),
+                rom,
+                vram,
+            ))
+        } else {
+            self.preheated_sections
+                .find_mut_or_insert_with(rom, FindSettings::new(false), || (rom, size));
+            Ok(())
+        }
     }
 }

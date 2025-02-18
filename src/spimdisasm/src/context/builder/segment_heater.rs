@@ -7,7 +7,7 @@ use alloc::sync::Arc;
 use pyo3::prelude::*;
 
 use crate::{
-    addresses::{AddressRange, Rom, RomVramRange, Vram},
+    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     analysis::{PreheatError, Preheater},
     collections::addended_ordered_map::AddendedOrderedMap,
     config::GlobalConfig,
@@ -27,6 +27,7 @@ pub(crate) struct SegmentHeater {
 
 impl SegmentHeater {
     const fn new(
+        segment_name: Option<Arc<str>>,
         ranges: RomVramRange,
         prioritised_overlays: Arc<[Arc<str>]>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
@@ -38,7 +39,7 @@ impl SegmentHeater {
             user_symbols,
             ignored_addresses,
 
-            preheater: Preheater::new(ranges),
+            preheater: Preheater::new(segment_name, ranges),
         }
     }
 
@@ -47,6 +48,10 @@ impl SegmentHeater {
     }
     pub(crate) fn prioritised_overlays(&self) -> &[Arc<str>] {
         &self.prioritised_overlays
+    }
+
+    fn preheated_sections(&self) -> &AddendedOrderedMap<Rom, Size> {
+        self.preheater.preheated_sections()
     }
 }
 
@@ -217,6 +222,7 @@ impl GlobalSegmentHeater {
     ) -> Self {
         Self {
             inner: SegmentHeater::new(
+                None,
                 ranges,
                 prioritised_overlays,
                 user_symbols,
@@ -231,6 +237,10 @@ impl GlobalSegmentHeater {
 
     pub(crate) const fn ranges(&self) -> &RomVramRange {
         self.inner.ranges()
+    }
+
+    pub(crate) fn preheated_sections(&self) -> &AddendedOrderedMap<Rom, Size> {
+        self.inner.preheated_sections()
     }
 
     pub fn preheat_text(
@@ -308,7 +318,7 @@ pub struct OverlaySegmentHeater {
 }
 
 impl OverlaySegmentHeater {
-    pub(crate) const fn new(
+    pub(crate) fn new(
         ranges: RomVramRange,
         name: Arc<str>,
         prioritised_overlays: Arc<[Arc<str>]>,
@@ -318,6 +328,7 @@ impl OverlaySegmentHeater {
     ) -> Self {
         Self {
             inner: SegmentHeater::new(
+                Some(name.clone()),
                 ranges,
                 prioritised_overlays,
                 user_symbols,
@@ -349,6 +360,10 @@ impl OverlaySegmentHeater {
     }
     pub(crate) const fn preheater_mut(&mut self) -> &mut Preheater {
         &mut self.inner.preheater
+    }
+
+    pub(crate) fn preheated_sections(&self) -> &AddendedOrderedMap<Rom, Size> {
+        self.inner.preheated_sections()
     }
 
     pub fn preheat_text(
