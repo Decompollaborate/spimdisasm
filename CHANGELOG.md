@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `gpRelHack` fix:
+  - Fix not emitting `.extern` directives for `$gp` accesses with addends.
+
 ## [1.32.3] - 2025-02-18
 
 ### Fixed
