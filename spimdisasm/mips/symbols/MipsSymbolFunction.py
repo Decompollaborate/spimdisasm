@@ -851,7 +851,7 @@ class SymbolFunction(SymbolText):
         if not common.GlobalConfig.PIC and self.gpRelHack and len(self.instrAnalyzer.gpReferencedSymbols) > 0:
             output += f"/* Symbols accessed via $gp register */{common.GlobalConfig.LINE_ENDS}"
             for gpAddress in self.instrAnalyzer.gpReferencedSymbols:
-                gpSym = self.getSymbol(gpAddress, tryPlusOffset=False)
+                gpSym = self.getSymbol(gpAddress, tryPlusOffset=True)
                 if gpSym is not None:
                     output += f".extern {gpSym.getName()}, 1{common.GlobalConfig.LINE_ENDS}"
             output += common.GlobalConfig.LINE_ENDS

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.32.4] - 2025-03-03
+
+### Fixed
+
+- `gpRelHack` fix:
+  - Fix not emitting `.extern` directives for `$gp` accesses with addends.
+
 ## [1.32.3] - 2025-02-18
 
 ### Fixed
@@ -1757,6 +1764,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.32.4]: https://github.com/Decompollaborate/spimdisasm/compare/1.32.3...1.32.4
 [1.32.3]: https://github.com/Decompollaborate/spimdisasm/compare/1.32.2...1.32.3
 [1.32.2]: https://github.com/Decompollaborate/spimdisasm/compare/1.32.1...1.32.2
 [1.32.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.32.0...1.32.1
