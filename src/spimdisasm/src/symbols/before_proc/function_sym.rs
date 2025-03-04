@@ -253,10 +253,10 @@ impl FunctionSym {
 
             let realigned_symbol_vram = match sym_access {
                 // Align down the Vram
-                Some((AccessType::WORD_LEFT | AccessType::WORD_RIGHT, _)) => {
+                Some((AccessType::UNALIGNED_WORD, _)) => {
                     Vram::new(symbol_vram.inner() - (symbol_vram.inner() % 4))
                 }
-                Some((AccessType::DOUBLEWORD_LEFT | AccessType::DOUBLEWORD_RIGHT, _)) => {
+                Some((AccessType::UNALIGNED_DOUBLEWORD, _)) => {
                     Vram::new(symbol_vram.inner() - (symbol_vram.inner() % 8))
                 }
                 None | Some(_) => *symbol_vram,
@@ -281,14 +281,14 @@ impl FunctionSym {
                 match sym_access {
                     // Set a dummy min size to allow relocs to properly reference this symbol from the unknown segment.
                     // This may not be real tho, I need to properly check.
-                    Some((AccessType::WORD_LEFT | AccessType::WORD_RIGHT, _)) => {
+                    Some((AccessType::UNALIGNED_WORD, _)) => {
                         let siz = sym_metadata
                             .autodetected_size()
                             .unwrap_or(Size::new(4))
                             .max(Size::new(4));
                         *sym_metadata.autodetected_size_mut() = Some(siz);
                     }
-                    Some((AccessType::DOUBLEWORD_LEFT | AccessType::DOUBLEWORD_RIGHT, _)) => {
+                    Some((AccessType::UNALIGNED_DOUBLEWORD, _)) => {
                         let siz = sym_metadata
                             .autodetected_size()
                             .unwrap_or(Size::new(8))

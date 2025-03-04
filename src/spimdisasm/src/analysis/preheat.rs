@@ -158,12 +158,12 @@ impl Preheater {
 
                             let realigned_symbol_vram = match access_type {
                                 // Align down the Vram
-                                Some(AccessType::WORD_LEFT | AccessType::WORD_RIGHT) => {
+                                Some(AccessType::UNALIGNED_WORD) => {
                                     Vram::new(address.inner() - (address.inner() % 4))
                                 }
-                                Some(
-                                    AccessType::DOUBLEWORD_LEFT | AccessType::DOUBLEWORD_RIGHT,
-                                ) => Vram::new(address.inner() - (address.inner() % 8)),
+                                Some(AccessType::UNALIGNED_DOUBLEWORD) => {
+                                    Vram::new(address.inner() - (address.inner() % 8))
+                                }
                                 None | Some(_) => address,
                             };
 
@@ -190,12 +190,8 @@ impl Preheater {
                 if let Some(access_type) = instr.opcode().access_type() {
                     let realigned_symbol_vram = match access_type {
                         // Align down the Vram
-                        AccessType::WORD_LEFT | AccessType::WORD_RIGHT => {
-                            Vram::new(address - (address % 4))
-                        }
-                        AccessType::DOUBLEWORD_LEFT | AccessType::DOUBLEWORD_RIGHT => {
-                            Vram::new(address - (address % 8))
-                        }
+                        AccessType::UNALIGNED_WORD => Vram::new(address - (address % 4)),
+                        AccessType::UNALIGNED_DOUBLEWORD => Vram::new(address - (address % 8)),
                         _ => Vram::new(address),
                     };
 

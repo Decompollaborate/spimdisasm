@@ -226,10 +226,7 @@ impl StringGuesserFlags {
                     && all_access_types.iter().all(|x| {
                         !matches!(
                             x.0,
-                            AccessType::WORD_LEFT
-                                | AccessType::WORD_RIGHT
-                                | AccessType::DOUBLEWORD_LEFT
-                                | AccessType::DOUBLEWORD_RIGHT
+                            AccessType::UNALIGNED_WORD | AccessType::UNALIGNED_DOUBLEWORD
                         )
                     })
                 {

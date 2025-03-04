@@ -87,19 +87,18 @@ impl SymbolType {
         match access_type {
             AccessType::BYTE => Some(SymbolType::Byte),
             AccessType::SHORT => Some(SymbolType::Short),
-            AccessType::WORD => Some(SymbolType::Word),
-            AccessType::DOUBLEWORD => Some(SymbolType::DWord),
+            AccessType::WORD | AccessType::WORD_COP2 | AccessType::LINKED_WORD_WORD => {
+                Some(SymbolType::Word)
+            }
+            AccessType::DOUBLEWORD
+            | AccessType::DOUBLEWORD_COP2
+            | AccessType::LINKED_WORD_DOUBLEWORD => Some(SymbolType::DWord),
             AccessType::QUADWORD => Some(SymbolType::DWord), // ?
             AccessType::FLOAT => Some(SymbolType::Float32),
             AccessType::DOUBLEFLOAT => Some(SymbolType::Float64),
 
             // Struct copies
-            AccessType::WORD_LEFT
-            | AccessType::WORD_RIGHT
-            | AccessType::DOUBLEWORD_LEFT
-            | AccessType::DOUBLEWORD_RIGHT => None,
-
-            _ => unimplemented!("A new AccessType was added to rabbitizer?"),
+            AccessType::UNALIGNED_WORD | AccessType::UNALIGNED_DOUBLEWORD => None,
         }
     }
 
