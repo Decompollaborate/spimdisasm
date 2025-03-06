@@ -181,7 +181,13 @@ fn test_section_text_1() {
     for s in symbols {
         println!("{:?}", s.1);
     }
-    assert_eq!(symbols.len(), 11);
+    assert_eq!(symbols.len(), 10);
+
+    let labels = context.global_segment().labels();
+    for s in labels {
+        println!("{:?}", s.1);
+    }
+    assert_eq!(labels.len(), 1);
 
     /*
     println!();

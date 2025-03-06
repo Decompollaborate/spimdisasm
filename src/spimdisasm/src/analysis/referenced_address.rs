@@ -172,29 +172,29 @@ impl ReferencedAddress {
 }
 
 impl ReferencedAddress {
-    pub fn add_referenced_by(&mut self, specific_address: Vram) {
+    pub(crate) fn add_referenced_by(&mut self, specific_address: Vram) {
         self.referenced_by.push(specific_address);
     }
 
-    pub fn set_access_type(&mut self, access_type: AccessType) {
+    pub(crate) fn set_access_type(&mut self, access_type: AccessType) {
         *self.access_types.entry(access_type).or_default() += 1;
     }
 
-    pub fn set_user_declared_type(&mut self, typ: SymbolType) {
+    pub(crate) fn set_user_declared_type(&mut self, typ: SymbolType) {
         self.user_declared_type = Some(typ);
     }
-    pub fn set_sym_type(&mut self, sym_type: SymbolType) {
+    pub(crate) fn set_sym_type(&mut self, sym_type: SymbolType) {
         *self.autodetected_types.entry(sym_type).or_default() += 1;
     }
 
-    pub fn set_user_declared_size(&mut self, size: Size) {
+    pub(crate) fn set_user_declared_size(&mut self, size: Size) {
         self.user_declared_size = Some(size);
     }
-    pub fn set_autodetected_size(&mut self, size: Size) {
+    pub(crate) fn set_autodetected_size(&mut self, size: Size) {
         self.autodetected_size = Some(size);
     }
 
-    pub fn add_table_label(&mut self, label: Vram) {
+    pub(crate) fn add_table_label(&mut self, label: Vram) {
         self.table_labels.push(label);
     }
 

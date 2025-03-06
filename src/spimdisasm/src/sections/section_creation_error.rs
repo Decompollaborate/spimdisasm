@@ -10,7 +10,7 @@ use pyo3::prelude::*;
 use crate::{
     addresses::{Rom, Vram},
     context::OwnedSegmentNotFoundError,
-    metadata::segment_metadata::AddSymbolError,
+    metadata::{segment_metadata::AddSymbolError, AddLabelError},
     symbols::SymbolCreationError,
 };
 
@@ -20,6 +20,7 @@ use crate::{
 pub enum SectionCreationError {
     OwnedSegmentNotFound(OwnedSegmentNotFoundError),
     AddSymbol(AddSymbolError),
+    AddLabel(AddLabelError),
     EmptySection(EmptySectionError),
     BadBytesSize(BadBytesSizeError),
     UnalignedVram(UnalignedVramError),
@@ -32,10 +33,11 @@ pub enum SectionCreationError {
 impl fmt::Display for SectionCreationError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            SectionCreationError::OwnedSegmentNotFound(owned_segment_not_found_error) => {
-                write!(f, "{}", owned_segment_not_found_error)
+            SectionCreationError::OwnedSegmentNotFound(x) => {
+                write!(f, "{}", x)
             }
-            SectionCreationError::AddSymbol(add_symbol_error) => write!(f, "{}", add_symbol_error),
+            SectionCreationError::AddSymbol(x) => write!(f, "{}", x),
+            SectionCreationError::AddLabel(x) => write!(f, "{}", x),
             SectionCreationError::EmptySection(x) => write!(f, "{}", x),
             SectionCreationError::BadBytesSize(x) => write!(f, "{}", x),
             SectionCreationError::UnalignedVram(x) => write!(f, "{}", x),
@@ -51,12 +53,11 @@ impl error::Error for SectionCreationError {}
 impl From<SymbolCreationError> for SectionCreationError {
     fn from(value: SymbolCreationError) -> Self {
         match value {
-            SymbolCreationError::OwnedSegmentNotFound(owned_segment_not_found_error) => {
-                SectionCreationError::OwnedSegmentNotFound(owned_segment_not_found_error)
+            SymbolCreationError::OwnedSegmentNotFound(x) => {
+                SectionCreationError::OwnedSegmentNotFound(x)
             }
-            SymbolCreationError::AddSymbol(add_symbol_error) => {
-                SectionCreationError::AddSymbol(add_symbol_error)
-            }
+            SymbolCreationError::AddSymbol(x) => SectionCreationError::AddSymbol(x),
+            SymbolCreationError::AddLabel(x) => SectionCreationError::AddLabel(x),
         }
     }
 }

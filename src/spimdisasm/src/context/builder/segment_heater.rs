@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::sync::Arc;
+use alloc::{collections::BTreeMap, sync::Arc};
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
@@ -11,7 +11,9 @@ use crate::{
     analysis::{PreheatError, Preheater},
     collections::addended_ordered_map::AddendedOrderedMap,
     config::GlobalConfig,
-    metadata::{IgnoredAddressRange, OverlayCategoryName, SegmentMetadata, SymbolMetadata},
+    metadata::{
+        IgnoredAddressRange, LabelMetadata, OverlayCategoryName, SegmentMetadata, SymbolMetadata,
+    },
     sections::before_proc::{DataSectionSettings, ExecutableSectionSettings},
 };
 
@@ -20,6 +22,7 @@ pub(crate) struct SegmentHeater {
     ranges: RomVramRange,
     prioritised_overlays: Arc<[Arc<str>]>,
     user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+    user_labels: BTreeMap<Vram, LabelMetadata>,
     ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
 
     preheater: Preheater,
@@ -31,12 +34,14 @@ impl SegmentHeater {
         ranges: RomVramRange,
         prioritised_overlays: Arc<[Arc<str>]>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+        user_labels: BTreeMap<Vram, LabelMetadata>,
         ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
     ) -> Self {
         Self {
             ranges,
             prioritised_overlays,
             user_symbols,
+            user_labels,
             ignored_addresses,
 
             preheater: Preheater::new(segment_name, ranges),
@@ -71,6 +76,7 @@ impl SegmentHeater {
             rom,
             vram,
             &self.user_symbols,
+            &self.user_labels,
             &self.ignored_addresses,
         )
     }
@@ -90,6 +96,7 @@ impl SegmentHeater {
             rom,
             vram,
             &self.user_symbols,
+            &self.user_labels,
             &self.ignored_addresses,
         )
     }
@@ -109,6 +116,7 @@ impl SegmentHeater {
             rom,
             vram,
             &self.user_symbols,
+            &self.user_labels,
             &self.ignored_addresses,
         )
     }
@@ -128,6 +136,7 @@ impl SegmentHeater {
             rom,
             vram,
             &self.user_symbols,
+            &self.user_labels,
             &self.ignored_addresses,
         )
     }
@@ -218,6 +227,7 @@ impl GlobalSegmentHeater {
         ranges: RomVramRange,
         prioritised_overlays: Arc<[Arc<str>]>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+        user_labels: BTreeMap<Vram, LabelMetadata>,
         ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
     ) -> Self {
         Self {
@@ -226,6 +236,7 @@ impl GlobalSegmentHeater {
                 ranges,
                 prioritised_overlays,
                 user_symbols,
+                user_labels,
                 ignored_addresses,
             ),
         }
@@ -302,6 +313,7 @@ impl GlobalSegmentHeater {
             self.inner.ranges,
             self.inner.prioritised_overlays,
             self.inner.user_symbols,
+            self.inner.user_labels,
             self.inner.ignored_addresses,
             self.inner.preheater,
             visible_overlay_ranges,
@@ -323,6 +335,7 @@ impl OverlaySegmentHeater {
         name: Arc<str>,
         prioritised_overlays: Arc<[Arc<str>]>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+        user_labels: BTreeMap<Vram, LabelMetadata>,
         ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
         category_name: OverlayCategoryName,
     ) -> Self {
@@ -332,6 +345,7 @@ impl OverlaySegmentHeater {
                 ranges,
                 prioritised_overlays,
                 user_symbols,
+                user_labels,
                 ignored_addresses,
             ),
             name,
@@ -425,6 +439,7 @@ impl OverlaySegmentHeater {
             self.inner.ranges,
             self.inner.prioritised_overlays,
             self.inner.user_symbols,
+            self.inner.user_labels,
             self.inner.ignored_addresses,
             self.inner.preheater,
             visible_overlay_ranges,

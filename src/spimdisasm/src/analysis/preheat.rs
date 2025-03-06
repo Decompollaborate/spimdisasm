@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::sync::Arc;
+use alloc::{collections::btree_map::BTreeMap, sync::Arc};
 
 use rabbitizer::{access_type::AccessType, Instruction};
 
@@ -9,18 +9,19 @@ use crate::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram, VramOffset},
     collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
     config::GlobalConfig,
-    metadata::{IgnoredAddressRange, SymbolMetadata, SymbolType},
+    metadata::{IgnoredAddressRange, LabelMetadata, LabelType, SymbolMetadata, SymbolType},
     section_type::SectionType,
     sections::before_proc::{DataSectionSettings, ExecutableSectionSettings},
 };
 
-use super::{PreheatError, ReferenceWrapper, ReferencedAddress, RegisterTracker};
+use super::{PreheatError, ReferenceWrapper, ReferencedAddress, ReferencedLabel, RegisterTracker};
 
 #[derive(Debug, Clone, Hash, PartialEq, PartialOrd)]
 pub(crate) struct Preheater {
     segment_name: Option<Arc<str>>,
     ranges: RomVramRange,
     references: AddendedOrderedMap<Vram, ReferencedAddress>,
+    label_references: BTreeMap<Vram, ReferencedLabel>,
     preheated_sections: AddendedOrderedMap<Rom, Size>,
 }
 
@@ -30,6 +31,7 @@ impl Preheater {
             segment_name,
             ranges,
             references: AddendedOrderedMap::new(),
+            label_references: BTreeMap::new(),
             preheated_sections: AddendedOrderedMap::new(),
         }
     }
@@ -53,6 +55,7 @@ impl Preheater {
         rom: Rom,
         vram: Vram,
         user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
+        user_labels: &BTreeMap<Vram, LabelMetadata>,
         ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
     ) -> Result<(), PreheatError> {
         self.check_failable_preconditions(raw_bytes, rom, vram)?;
@@ -86,14 +89,7 @@ impl Preheater {
                 // instr.opcode().is_branch() or instr.is_unconditional_branch()
 
                 regs_tracker.process_branch(&instr, current_rom);
-                if let Some(new_ref) = self.new_ref_no_addend(
-                    target_vram,
-                    Some(current_vram),
-                    user_symbols,
-                    ignored_addresses,
-                ) {
-                    new_ref.set_sym_type(SymbolType::BranchLabel);
-                }
+                self.new_label_ref(target_vram, LabelType::Branch, current_vram, user_labels);
             } else if let Some(target_vram) = instr.get_instr_index_as_vram() {
                 // instr.opcode().is_jump_with_address()
                 if let Some(reference) = self.new_ref(
@@ -234,6 +230,7 @@ impl Preheater {
         rom: Rom,
         vram: Vram,
         user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
+        user_labels: &BTreeMap<Vram, LabelMetadata>,
         ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
     ) -> Result<(), PreheatError> {
         self.common_data_preheat(
@@ -243,6 +240,7 @@ impl Preheater {
             rom,
             vram,
             user_symbols,
+            user_labels,
             SectionType::Data,
             ignored_addresses,
         )
@@ -257,6 +255,7 @@ impl Preheater {
         rom: Rom,
         vram: Vram,
         user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
+        user_labels: &BTreeMap<Vram, LabelMetadata>,
         ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
     ) -> Result<(), PreheatError> {
         self.common_data_preheat(
@@ -266,6 +265,7 @@ impl Preheater {
             rom,
             vram,
             user_symbols,
+            user_labels,
             SectionType::Rodata,
             ignored_addresses,
         )
@@ -280,6 +280,7 @@ impl Preheater {
         rom: Rom,
         vram: Vram,
         user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
+        user_labels: &BTreeMap<Vram, LabelMetadata>,
         ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
     ) -> Result<(), PreheatError> {
         self.check_failable_preconditions(raw_bytes, rom, vram)?;
@@ -305,14 +306,12 @@ impl Preheater {
                 .is_none()
                 && self.ranges.in_vram_range(word_vram)
             {
-                if let Some(label) = self.new_ref_no_addend(
+                self.new_label_ref(
                     word_vram,
-                    Some(current_vram),
-                    user_symbols,
-                    ignored_addresses,
-                ) {
-                    label.set_sym_type(SymbolType::GccExceptTableLabel);
-                }
+                    LabelType::GccExceptTable,
+                    current_vram,
+                    user_labels,
+                );
             }
 
             current_vram += Size::new(4);
@@ -331,6 +330,7 @@ impl Preheater {
         rom: Rom,
         vram: Vram,
         user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
+        user_labels: &BTreeMap<Vram, LabelMetadata>,
         section_type: SectionType,
         ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
     ) -> Result<(), PreheatError> {
@@ -491,38 +491,32 @@ impl Preheater {
 
                         let in_range = self.ranges.in_vram_range(word_vram);
                         if in_range {
-                            let new_ref = if is_table {
-                                if let Some(x) = self.new_ref_no_addend(
+                            let new_ref_info = if is_table {
+                                let new_ref = self.new_label_ref(
                                     word_vram,
-                                    Some(current_vram),
-                                    user_symbols,
-                                    ignored_addresses,
-                                ) {
-                                    x.set_sym_type(
-                                        SymbolType::label_for_table(current_type).unwrap(),
-                                    );
-                                    Some(x)
-                                } else {
-                                    None
-                                }
+                                    SymbolType::label_for_table(current_type)
+                                        .expect("Already checked this is a table type"),
+                                    current_vram,
+                                    user_labels,
+                                );
+                                Some((new_ref.vram(), false))
                             } else {
-                                self.new_ref(
+                                let new_ref = self.new_ref(
                                     word_vram,
                                     Some(current_vram),
                                     user_symbols,
                                     ignored_addresses,
-                                )
+                                );
+
+                                new_ref
+                                    .map(|x| (x.vram(), x.sym_type() == Some(SymbolType::Function)))
                             };
 
-                            if let Some(new_ref) = new_ref {
+                            if let Some((new_ref_vram, is_function)) = new_ref_info {
                                 new_ref_scheduled_due_to_jtbl_ended = false;
                                 reference_found = true;
-                                if new_ref.vram() != word_vram {
-                                    if let Some(ref_type) = new_ref.sym_type() {
-                                        if ref_type == SymbolType::Function {
-                                            reference_is_in_function = !is_table;
-                                        }
-                                    }
+                                if new_ref_vram != word_vram && is_function {
+                                    reference_is_in_function = !is_table;
                                 }
                             }
                         }
@@ -757,6 +751,27 @@ impl Preheater {
         if let Some(referenced_by) = referenced_by {
             refer.add_referenced_by(referenced_by);
         }
+
+        refer
+    }
+
+    fn new_label_ref(
+        &mut self,
+        vram: Vram,
+        label_type: LabelType,
+        referenced_by: Vram,
+        user_labels: &BTreeMap<Vram, LabelMetadata>,
+    ) -> &mut ReferencedLabel {
+        let refer = self.label_references.entry(vram).or_insert_with(|| {
+            if let Some(metadata) = user_labels.get(&vram) {
+                ReferencedLabel::new_user_declared(vram, metadata.label_type())
+            } else {
+                ReferencedLabel::new(vram, label_type)
+            }
+        });
+
+        refer.add_referenced_by(referenced_by);
+        refer.set_autodetected_type(label_type);
 
         refer
     }

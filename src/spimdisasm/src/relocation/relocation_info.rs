@@ -11,7 +11,7 @@ use crate::{
     collections::addended_ordered_map::FindSettings,
     config::Compiler,
     context::Context,
-    metadata::{SymbolMetadata, SymbolType},
+    metadata::{LabelMetadata, LabelType, SymbolMetadata, SymbolType},
     parent_segment_info::ParentSegmentInfo,
     symbols::display::InternalSymDisplSettings,
 };
@@ -67,8 +67,11 @@ impl RelocationInfo {
 enum RelocSymState<'name, 'meta> {
     LiteralSymName(&'name str, i32),
     Sym(Vram, &'meta SymbolMetadata),
+    Label(Vram, &'meta LabelMetadata),
+
     // Kinda useful for debugging
     SegmentNotFound(Vram),
+    LabelNotFound(Vram),
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq)]
@@ -107,7 +110,12 @@ impl<'ctx, 'rel, 'prnt> RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
 
                             RelocationType::R_MIPS_16 => true,
                             RelocationType::R_MIPS_32 => {
-                                metadata.sym_type() != Some(SymbolType::BranchLabel)
+                                if metadata.sym_type() == Some(SymbolType::Function) {
+                                    // Avoid referencing addends of functions
+                                    metadata.vram() == *vram
+                                } else {
+                                    true
+                                }
                             }
 
                             RelocationType::R_MIPS_REL32 => true,
@@ -116,14 +124,20 @@ impl<'ctx, 'rel, 'prnt> RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
                                 metadata.sym_type() == Some(SymbolType::Function)
                             }
 
-                            RelocationType::R_MIPS_HI16 => true,
-                            RelocationType::R_MIPS_LO16 => true,
+                            RelocationType::R_MIPS_HI16 | RelocationType::R_MIPS_LO16 => {
+                                if metadata.sym_type() == Some(SymbolType::Function) {
+                                    // Avoid referencing addends of functions
+                                    metadata.vram() == *vram
+                                } else {
+                                    true
+                                }
+                            }
                             RelocationType::R_MIPS_GPREL16 => true,
 
                             RelocationType::R_MIPS_LITERAL => true,
 
                             RelocationType::R_MIPS_PC16 => {
-                                metadata.sym_type().is_some_and(|x| x.valid_branch_target())
+                                metadata.sym_type() == Some(SymbolType::Function)
                             }
 
                             RelocationType::R_MIPS_CALL16
@@ -152,6 +166,55 @@ impl<'ctx, 'rel, 'prnt> RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
                         return None;
                     }
                     RelocSymState::SegmentNotFound(*vram)
+                }
+            }
+            RelocReferencedSym::Label(vram) => {
+                if let Some(label_metadata) =
+                    context.find_label_from_any_segment(*vram, segment_info, |metadata| {
+                        match rel.reloc_type {
+                            RelocationType::R_MIPS_NONE => true, // Shouldn't be possible, but whatever.
+
+                            RelocationType::R_MIPS_16 => true,
+                            RelocationType::R_MIPS_32 => metadata.label_type() != LabelType::Branch,
+
+                            RelocationType::R_MIPS_REL32 => true,
+
+                            RelocationType::R_MIPS_26 => false,
+
+                            RelocationType::R_MIPS_HI16 => true,
+                            RelocationType::R_MIPS_LO16 => true,
+                            RelocationType::R_MIPS_GPREL16 => true,
+
+                            RelocationType::R_MIPS_LITERAL => true,
+
+                            RelocationType::R_MIPS_PC16 => true,
+
+                            RelocationType::R_MIPS_CALL16
+                            | RelocationType::R_MIPS_CALL_HI16
+                            | RelocationType::R_MIPS_CALL_LO16 => {
+                                // TODO: check symbol is present in the GOT.
+                                false
+                            }
+
+                            RelocationType::R_MIPS_GOT16
+                            | RelocationType::R_MIPS_GPREL32
+                            | RelocationType::R_MIPS_GOT_HI16
+                            | RelocationType::R_MIPS_GOT_LO16 => {
+                                // TODO: check symbol is present in the GOT.
+                                true
+                            }
+
+                            RelocationType::R_CUSTOM_CONSTANT_HI => false,
+                            RelocationType::R_CUSTOM_CONSTANT_LO => false,
+                        }
+                    })
+                {
+                    RelocSymState::Label(*vram, label_metadata)
+                } else {
+                    if false {
+                        return None;
+                    }
+                    RelocSymState::LabelNotFound(*vram)
                 }
             }
         };
@@ -232,8 +295,16 @@ impl fmt::Display for RelocationInfoDisplay<'_, '_, '_> {
                 write!(f, "{}", sym_metadata.display_name())?;
                 (*vram - sym_metadata.vram()).inner()
             }
+            RelocSymState::Label(_vram, label_metadata) => {
+                write!(f, "{}", label_metadata.display_name())?;
+                0
+            }
             RelocSymState::SegmentNotFound(vram) => {
                 write!(f, "/* ERROR: segment for address 0x{} not found */", vram)?;
+                0
+            }
+            RelocSymState::LabelNotFound(vram) => {
+                write!(f, "/* ERROR: label for address 0x{} not found */", vram)?;
                 0
             }
         };

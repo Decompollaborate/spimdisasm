@@ -7,7 +7,7 @@ use crate::{
     addresses::{Rom, Size},
     collections::addended_ordered_map::FindSettings,
     context::Context,
-    metadata::SymbolType,
+    metadata::{LabelType, SymbolType},
     relocation::python_bindings::py_user_relocs::PyUserRelocs,
     sections::{
         before_proc::ExecutableSection, processed::ExecutableSectionProcessed, Section,
@@ -195,15 +195,7 @@ impl PyExecutableSection {
         context: &Context,
         sym_index: usize,
         label_index: usize,
-    ) -> Option<(
-        u32,
-        Option<Rom>,
-        Option<SymbolType>,
-        Option<Size>,
-        bool,
-        usize,
-        Option<String>,
-    )> {
+    ) -> Option<(u32, Option<Rom>, LabelType, bool, usize)> {
         let (sym, parent_segment_info) = {
             let section = self.unwrap_processed();
             (
@@ -217,21 +209,15 @@ impl PyExecutableSection {
                 let metadata = context
                     .find_owned_segment(parent_segment_info)
                     .unwrap()
-                    .find_symbol(*label_vram, FindSettings::new(false))
+                    .find_label(*label_vram)
                     .unwrap();
 
                 Some((
                     metadata.vram().inner(),
                     metadata.rom(),
-                    metadata.sym_type(),
-                    metadata.size(),
+                    metadata.label_type(),
                     metadata.is_defined(),
                     metadata.reference_counter(),
-                    metadata.parent_metadata().and_then(|x| {
-                        x.parent_segment_info()
-                            .overlay_category_name()
-                            .map(|x| x.inner().to_string())
-                    }),
                 ))
             } else {
                 None
@@ -263,7 +249,7 @@ impl PyExecutableSection {
                 let metadata = context
                     .find_owned_segment_mut(parent_segment_info)
                     .unwrap()
-                    .find_symbol_mut(*label_vram, FindSettings::new(false))
+                    .find_label_mut(*label_vram)
                     .unwrap();
 
                 metadata.set_user_declared_name(new_name.into());

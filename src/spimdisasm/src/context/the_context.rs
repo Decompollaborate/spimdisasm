@@ -17,7 +17,8 @@ use crate::{
     },
     config::GlobalConfig,
     metadata::{
-        OverlayCategory, OverlayCategoryName, SegmentMetadata, SymbolMetadata, UserSegmentMetadata,
+        LabelMetadata, OverlayCategory, OverlayCategoryName, SegmentMetadata, SymbolMetadata,
+        UserSegmentMetadata,
     },
     parent_segment_info::ParentSegmentInfo,
     section_type::SectionType,
@@ -329,25 +330,25 @@ impl Context {
     }
 
     #[must_use]
-    pub(crate) fn find_symbol_from_any_segment<F>(
+    fn find_from_any_segment<T, FS, FU, FV>(
         &self,
         vram: Vram,
         info: &ParentSegmentInfo,
-        settings: FindSettings,
-        sym_validation: F,
-    ) -> Option<&SymbolMetadata>
+        find_within_segment: FS,
+        find_within_user_segment: FU,
+        sym_validation: FV,
+    ) -> Option<&T>
     where
-        F: Fn(&SymbolMetadata) -> bool,
+        FS: Fn(&SegmentMetadata) -> Option<&T>,
+        FU: Fn(&UserSegmentMetadata) -> Option<&T>,
+        FV: Fn(&T) -> bool,
     {
-        if let Some(metadata) = self.user_segment.find_symbol(vram, settings) {
-            return Some(metadata);
+        if let Some(t) = find_within_user_segment(&self.user_segment) {
+            return Some(t);
         }
 
         if self.global_segment.in_vram_range(vram) {
-            return self
-                .global_segment
-                .find_symbol(vram, settings)
-                .filter(|&sym| sym_validation(sym));
+            return find_within_segment(&self.global_segment).filter(|&t| sym_validation(t));
         }
 
         if let Some(overlay_category_name) = info.overlay_category_name() {
@@ -355,7 +356,7 @@ impl Context {
             if let Some(segments_per_rom) = self.overlay_segments.get(overlay_category_name) {
                 if let Some(owned_segment) = segments_per_rom.segments().get(&info.segment_rom()) {
                     if owned_segment.in_vram_range(vram) {
-                        return owned_segment.find_symbol(vram, settings);
+                        return find_within_segment(owned_segment);
                     }
 
                     // Check for any prioiritised overlay, if any.
@@ -368,9 +369,9 @@ impl Context {
                                 if segment.name().as_ref() == Some(prioritised_overlay)
                                     && segment.in_vram_range(vram)
                                 {
-                                    if let Some(sym) = segment.find_symbol(vram, settings) {
-                                        if sym_validation(sym) {
-                                            return Some(sym);
+                                    if let Some(t) = find_within_segment(segment) {
+                                        if sym_validation(t) {
+                                            return Some(t);
                                         }
                                     }
                                 }
@@ -399,9 +400,9 @@ impl Context {
                     .next()
                     .expect("Should exist since we already checked the length");
                 if segment.in_vram_range(vram) {
-                    if let Some(sym) = segment.find_symbol(vram, settings) {
-                        if sym_validation(sym) {
-                            return Some(sym);
+                    if let Some(t) = find_within_segment(segment) {
+                        if sym_validation(t) {
+                            return Some(t);
                         }
                     }
                 }
@@ -420,9 +421,9 @@ impl Context {
             if segments.len() != 1 {
                 for (_, segment) in segments {
                     if segment.in_vram_range(vram) {
-                        if let Some(sym) = segment.find_symbol(vram, settings) {
-                            if sym_validation(sym) {
-                                return Some(sym);
+                        if let Some(t) = find_within_segment(segment) {
+                            if sym_validation(t) {
+                                return Some(t);
                             }
                         }
                     }
@@ -431,12 +432,52 @@ impl Context {
         }
 
         // If we still can't find it, fall back to the unknown segment
-        if let Some(sym) = self.unknown_segment.find_symbol(vram, settings) {
-            if sym_validation(sym) {
-                return Some(sym);
+        if let Some(t) = find_within_segment(&self.unknown_segment) {
+            if sym_validation(t) {
+                return Some(t);
             }
         }
+
         None
+    }
+
+    #[must_use]
+    pub(crate) fn find_symbol_from_any_segment<V>(
+        &self,
+        vram: Vram,
+        info: &ParentSegmentInfo,
+        settings: FindSettings,
+        sym_validation: V,
+    ) -> Option<&SymbolMetadata>
+    where
+        V: Fn(&SymbolMetadata) -> bool,
+    {
+        self.find_from_any_segment(
+            vram,
+            info,
+            |segment| segment.find_symbol(vram, settings),
+            |user_segment| user_segment.find_symbol(vram, settings),
+            sym_validation,
+        )
+    }
+
+    #[must_use]
+    pub(crate) fn find_label_from_any_segment<V>(
+        &self,
+        vram: Vram,
+        info: &ParentSegmentInfo,
+        label_validation: V,
+    ) -> Option<&LabelMetadata>
+    where
+        V: Fn(&LabelMetadata) -> bool,
+    {
+        self.find_from_any_segment(
+            vram,
+            info,
+            |segment| segment.find_label(vram),
+            |_| None,
+            label_validation,
+        )
     }
 }
 

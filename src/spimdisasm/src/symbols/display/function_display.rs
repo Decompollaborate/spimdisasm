@@ -12,7 +12,7 @@ use crate::{
     addresses::{Size, Vram},
     collections::addended_ordered_map::FindSettings,
     context::Context,
-    metadata::{SegmentMetadata, SymbolMetadata, SymbolType},
+    metadata::{LabelType, SegmentMetadata, SymbolMetadata},
     relocation::RelocationInfo,
     symbols::{
         display::sym_common_display::WordComment, processed::FunctionSymProcessed,
@@ -99,15 +99,7 @@ impl<'ctx, 'sym, 'flg> FunctionDisplay<'ctx, 'sym, 'flg> {
 
 impl FunctionDisplay<'_, '_, '_> {
     fn display_label(&self, f: &mut fmt::Formatter<'_>, current_vram: Vram) -> fmt::Result {
-        if current_vram == self.sym.vram_range().start() {
-            // Avoid duplicating first symbol
-            return Ok(());
-        }
-
-        if let Some(sym_label) = self
-            .owned_segment
-            .find_symbol(current_vram, FindSettings::new(false))
-        {
+        if let Some(label) = self.owned_segment.find_label(current_vram) {
             if self.settings.asm_label_indentation > 0 {
                 write!(
                     f,
@@ -117,13 +109,12 @@ impl FunctionDisplay<'_, '_, '_> {
                 )?;
             }
 
-            let use_macro = sym_label.sym_type().is_none_or(|x| match x {
-                SymbolType::Function => true,
-                SymbolType::BranchLabel => false,
-                SymbolType::JumptableLabel => !self.internal_settings.migrate(),
-                SymbolType::GccExceptTableLabel => true,
-                _ => true,
-            });
+            let use_macro = match label.label_type() {
+                LabelType::Branch => false,
+                LabelType::Jumptable => !self.internal_settings.migrate(),
+                LabelType::GccExceptTable => true,
+                LabelType::AlternativeEntry => true,
+            };
 
             // TODO:
             /*
@@ -137,20 +128,16 @@ impl FunctionDisplay<'_, '_, '_> {
             */
 
             if use_macro {
-                // label = labelSym.getReferenceeSymbols()
+                // label = labelSym.getreferenceSymbols()
 
-                self.settings.common.display_symbol_name(
-                    f,
-                    self.context.global_config(),
-                    sym_label,
-                    true,
-                    self.metadata.section_type(),
-                )?;
+                self.settings
+                    .common
+                    .display_label(f, self.context.global_config(), label)?;
             } else {
                 write!(
                     f,
                     "{}:{}",
-                    sym_label.display_name(),
+                    label.display_name(),
                     self.settings.common.line_end()
                 )?;
             }

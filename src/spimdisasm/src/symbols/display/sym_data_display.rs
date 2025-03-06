@@ -112,12 +112,7 @@ impl SymDataDisplay<'_, '_, '_> {
                     {
                         write!(f, "/* This symbol has type {:?}, but it is not possible to emit it due to wrong alignment or size */{}", sym_type, self.settings.common.line_end())
                     }
-                    SymbolType::Function
-                    | SymbolType::BranchLabel
-                    | SymbolType::JumptableLabel
-                    | SymbolType::GccExceptTableLabel
-                        if rom.inner() % 4 != 0 || size % 4 != 0 =>
-                    {
+                    SymbolType::Function if rom.inner() % 4 != 0 || size % 4 != 0 => {
                         write!(f, "/* This symbol has type {:?}, but it is not possible to emit it due to wrong alignment or size */{}", sym_type, self.settings.common.line_end())
                     }
                     SymbolType::Jumptable | SymbolType::GccExceptTable
@@ -139,9 +134,6 @@ impl SymDataDisplay<'_, '_, '_> {
                     | SymbolType::CString
                     | SymbolType::VirtualTable
                     | SymbolType::Function
-                    | SymbolType::BranchLabel
-                    | SymbolType::JumptableLabel
-                    | SymbolType::GccExceptTableLabel
                     | SymbolType::Jumptable
                     | SymbolType::GccExceptTable
                     | SymbolType::DWord
@@ -471,14 +463,6 @@ impl fmt::Display for SymDataDisplay<'_, '_, '_> {
                     // Try to display according to the given type.
                     match sym_type {
                         Some(SymbolType::Function) => {
-                            // This should be cod, how did this end up here?
-                            self.display_as_word(f, i, current_rom, current_vram)?
-                        }
-                        Some(
-                            SymbolType::BranchLabel
-                            | SymbolType::JumptableLabel
-                            | SymbolType::GccExceptTableLabel,
-                        ) => {
                             // This should be cod, how did this end up here?
                             self.display_as_word(f, i, current_rom, current_vram)?
                         }

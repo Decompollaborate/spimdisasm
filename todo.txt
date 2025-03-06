@@ -33,3 +33,21 @@ Does the following pattern make sense with a pointer?
 
 Consider allowing user-defined data layouts using the same syntax as python's struct package
     https://docs.python.org/3/library/struct.html
+
+Change addend type to i64.
+
+Add an addresslabel/abslabel/whaterver.
+    Generic way to namify an address.
+    Use it for name_ends and `.NON_MATCHING` symbols
+
+Allow executable sections to have symbols being disassembled as data
+
+Add size parameter to add_user_symbol and make sure there are no overlaps
+
+Change the order of checks in InstructionAnalysisResult::process_instr
+    Check and_link before everything else
+
+aent (alternative function entry) label type
+
+if !j_as_branch, then each j should be considered as a possible function end instead of assuming the referenced address is a function no-doubt
+addresses referenced by link instructions may no longer be considered guaranteed real functions

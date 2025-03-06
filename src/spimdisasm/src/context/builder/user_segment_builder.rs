@@ -72,6 +72,7 @@ impl UserSegmentBuilder {
             ));
         }
 
+        // Symbols from user_segment are always considered as "defined"
         metadata.set_defined();
         *metadata.user_declared_size_mut() = Some(size);
 

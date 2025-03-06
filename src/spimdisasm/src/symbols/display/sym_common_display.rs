@@ -8,7 +8,7 @@ use alloc::sync::Arc;
 use crate::{
     addresses::{Rom, Vram},
     config::{Compiler, GlobalConfig},
-    metadata::{SegmentMetadata, SymbolMetadata, SymbolType},
+    metadata::{LabelMetadata, LabelType, SegmentMetadata, SymbolMetadata, SymbolType},
     section_type::SectionType,
 };
 
@@ -125,13 +125,8 @@ impl SymCommonDisplaySettings {
                         write!(f, "{}", macro_labels.func())?;
                     }
                 }
-                Some(SymbolType::JumptableLabel) => write!(f, "{}", macro_labels.jtbl_label())?,
-                Some(SymbolType::GccExceptTableLabel) => {
-                    write!(f, "{}", macro_labels.ehtbl_label())?
-                }
                 Some(
-                    SymbolType::BranchLabel
-                    | SymbolType::Jumptable
+                    SymbolType::Jumptable
                     | SymbolType::GccExceptTable
                     | SymbolType::Byte
                     | SymbolType::Short
@@ -180,11 +175,6 @@ impl SymCommonDisplaySettings {
                         write!(f, ".ent {}{}", sym_name, self.line_end())?;
                     }
                 }
-                Some(
-                    SymbolType::JumptableLabel
-                    | SymbolType::GccExceptTableLabel
-                    | SymbolType::BranchLabel,
-                ) => {}
 
                 Some(SymbolType::Jumptable | SymbolType::GccExceptTable) => {}
                 Some(
@@ -218,10 +208,65 @@ impl SymCommonDisplaySettings {
         write!(f, "{}", self.line_end())
     }
 
+    pub fn display_label(
+        &self,
+        f: &mut fmt::Formatter<'_>,
+        global_config: &GlobalConfig,
+        metadata: &LabelMetadata,
+    ) -> fmt::Result {
+        let sym_name = metadata.display_name();
+
+        if let Some(macro_labels) = global_config.macro_labels() {
+            // Write the label, ie `jlabel`, `ehlabel`, etc
+            match metadata.label_type() {
+                LabelType::Jumptable => write!(f, "{}", macro_labels.jtbl_label())?,
+                LabelType::GccExceptTable => write!(f, "{}", macro_labels.ehtbl_label())?,
+                LabelType::AlternativeEntry => write!(f, "{}", macro_labels.alt_func())?,
+                // TODO: use an specific macro for branches
+                LabelType::Branch => write!(f, "{}", macro_labels.data())?,
+            }
+
+            write!(f, " {}", sym_name)?;
+
+            match metadata.visibility().as_deref() {
+                None | Some("global") | Some("globl") => {}
+                Some(vis) => write!(f, ", {}", vis)?,
+            }
+        } else {
+            /*
+            .globl func_80045DD0
+            func_80045DD0:
+            */
+            let visibility = metadata.visibility();
+            let vis = match visibility.as_deref() {
+                Some(vis) => Some(vis),
+                None => match metadata.label_type() {
+                    LabelType::Jumptable
+                    | LabelType::GccExceptTable
+                    | LabelType::AlternativeEntry => Some("globl"),
+                    LabelType::Branch => None,
+                },
+            };
+            if let Some(vis) = vis {
+                write!(f, ".{} {}{}", vis, sym_name, self.line_end())?;
+            }
+
+            write!(f, "{}:", sym_name)?;
+        }
+
+        /*
+        if GlobalConfig.GLABEL_ASM_COUNT:
+            if self.index is not None:
+                label += f" # {self.index}"
+        */
+
+        write!(f, "{}", self.line_end())
+    }
+
     /*
     pub fn display_symbol_start(&self, f: &mut fmt::Formatter<'_>, sym_name: &SymbolMetadataNameDisplay) -> fmt::Result {
         /*
-        output = self.contextSym.getReferenceeSymbols()
+        output = self.contextSym.getreferenceSymbols()
         output += self.getPrevAlignDirective(0)
 
         symName = self.getName()
@@ -310,9 +355,6 @@ impl SymCommonDisplaySettings {
                             write!(f, "{} {}{}", func_end, sym_name, self.line_end())?;
                         }
                     }
-                    SymbolType::JumptableLabel
-                    | SymbolType::GccExceptTableLabel
-                    | SymbolType::BranchLabel => {}
 
                     SymbolType::Jumptable
                     | SymbolType::GccExceptTable

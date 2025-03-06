@@ -295,7 +295,13 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
     for s in symbols {
         println!("{:?}", s.1);
     }
-    assert_eq!(symbols.len(), 21);
+    assert_eq!(symbols.len(), 1);
+
+    let labels = context.global_segment().labels();
+    for s in labels {
+        println!("{:?}", s.1);
+    }
+    assert_eq!(labels.len(), 20);
 
     let mut disassembled = ".section .text\n".to_string();
     let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);

@@ -97,6 +97,11 @@ fn init_context(
                     sym.set_allow_ref_with_addend(false);
                 }
             }
+            UserSymbol::Label(name, vram, label_type) => {
+                global_segment
+                    .add_user_label(name, vram, None, label_type)
+                    .unwrap();
+            }
             game_tests_info::UserSymbol::Ignored(_vram, _size) => {}
         }
     }
@@ -376,7 +381,8 @@ fn drmario64_us_without_symbols() {
         }
     }
 
-    assert_eq!(context.global_segment().symbols().len(), 10424);
+    assert_eq!(context.global_segment().symbols().len(), 3401);
+    assert_eq!(context.global_segment().labels().len(), 7027);
 
     /*
     for seg in &segments {
@@ -394,7 +400,7 @@ fn drmario64_us_without_symbols() {
                 .sum::<usize>()
         })
         .sum();
-    assert_eq!(function_count, 1407);
+    assert_eq!(function_count, 1410);
 
     let data_syms_count: usize = segments
         .iter()
@@ -470,7 +476,8 @@ fn drmario64_us_with_symbols() {
         }
     }
 
-    assert_eq!(context.global_segment().symbols().len(), 10134);
+    assert_eq!(context.global_segment().symbols().len(), 3096);
+    assert_eq!(context.global_segment().labels().len(), 7039);
 
     /*
     for seg in &segments {

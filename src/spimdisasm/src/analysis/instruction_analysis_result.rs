@@ -71,6 +71,7 @@ pub struct InstructionAnalysisResult {
 
     /// Key is the rom of the instruction, value is the address of the called function.
     func_calls: UnorderedMap<Rom, Vram>,
+    non_linking_func_calls: UnorderedMap<Rom, Vram>,
 
     referenced_jumptables: UnorderedMap<Rom, Vram>,
 
@@ -109,6 +110,7 @@ impl InstructionAnalysisResult {
             branch_targets: UnorderedMap::new(),
             branch_targets_outside: UnorderedMap::new(),
             func_calls: UnorderedMap::new(),
+            non_linking_func_calls: UnorderedMap::new(),
             referenced_jumptables: UnorderedMap::new(),
             hi_instrs: UnorderedMap::new(),
             non_lo_instrs: UnorderedSet::new(),
@@ -145,6 +147,11 @@ impl InstructionAnalysisResult {
     #[must_use]
     pub fn func_calls(&self) -> &UnorderedMap<Rom, Vram> {
         &self.func_calls
+    }
+
+    #[must_use]
+    pub fn non_linking_func_calls(&self) -> &UnorderedMap<Rom, Vram> {
+        &self.non_linking_func_calls
     }
 
     #[must_use]
@@ -296,7 +303,7 @@ impl InstructionAnalysisResult {
         }
     }
 
-    fn process_func_call(&mut self, _instr: &Instruction, instr_rom: Rom, target_vram: Vram) {
+    fn process_func_call(&mut self, instr: &Instruction, instr_rom: Rom, target_vram: Vram) {
         /*
         if instrOffset in self.funcCallInstrOffsets:
             # Already processed
@@ -310,6 +317,9 @@ impl InstructionAnalysisResult {
 
         self.add_referenced_vram(instr_rom, target_vram);
         self.func_calls.insert(instr_rom, target_vram);
+        if !instr.opcode().does_link() {
+            self.non_linking_func_calls.insert(instr_rom, target_vram);
+        }
     }
 
     fn process_jumptable_jump(

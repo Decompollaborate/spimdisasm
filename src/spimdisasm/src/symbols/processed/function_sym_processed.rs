@@ -11,6 +11,7 @@ use crate::{
     collections::{addended_ordered_map::FindSettings, unordered_set::UnorderedSet},
     config::GlobalConfig,
     context::Context,
+    metadata::SymbolType,
     parent_segment_info::ParentSegmentInfo,
     relocation::{RelocReferencedSym, RelocationInfo, RelocationType},
     section_type::SectionType,
@@ -111,26 +112,16 @@ impl FunctionSymProcessed {
                     continue
             */
 
-            if let Some(branch_sym) =
-                owned_segment.find_symbol(*target_vram, FindSettings::new(false))
-            {
+            if let Some(branch_sym) = owned_segment.find_label(*target_vram) {
                 debug_assert!(branch_sym.vram() == *target_vram);
-                if branch_sym
-                    .sym_type()
-                    .is_some_and(|x| x.valid_branch_target())
-                {
-                    let instr_index = (*instr_rom - ranges.rom().start()).inner() / 4;
-                    relocs[instr_index as usize] = Some(
-                        RelocationType::R_MIPS_PC16
-                            .new_reloc_info(RelocReferencedSym::Address(*target_vram)),
-                    );
+                let instr_index = (*instr_rom - ranges.rom().start()).inner() / 4;
+                relocs[instr_index as usize] = Some(
+                    RelocationType::R_MIPS_PC16
+                        .new_reloc_info(RelocReferencedSym::Label(*target_vram)),
+                );
 
-                    // TODO: keep here?
-                    // contextSym.branchLabels.add(labelSym.vram, labelSym)
-                } else {
-                    // TODO: Warning saying this is not a valid branch target?
-                    // TODO: maybe still emit the relocation?
-                }
+                // TODO: keep here?
+                // contextSym.branchLabels.add(labelSym.vram, labelSym)
             } else {
                 // TODO: Add a comment with a warning saying that the target wasn't found
             }
@@ -143,26 +134,25 @@ impl FunctionSymProcessed {
                     continue
             */
 
-            if let Some(branch_sym) =
-                owned_segment.find_symbol(*target_vram, FindSettings::new(false))
+            if let Some(branch_sym) = owned_segment
+                .find_symbol(*target_vram, FindSettings::new(false))
+                .filter(|x| x.sym_type() == Some(SymbolType::Function))
             {
                 debug_assert!(branch_sym.vram() == *target_vram);
-                if branch_sym
-                    .sym_type()
-                    .is_some_and(|x| x.valid_branch_target())
-                {
-                    let instr_index = (*instr_rom - ranges.rom().start()).inner() / 4;
-                    relocs[instr_index as usize] = Some(
-                        RelocationType::R_MIPS_PC16
-                            .new_reloc_info(RelocReferencedSym::Address(*target_vram)),
-                    );
+                let instr_index = (*instr_rom - ranges.rom().start()).inner() / 4;
+                relocs[instr_index as usize] = Some(
+                    RelocationType::R_MIPS_PC16
+                        .new_reloc_info(RelocReferencedSym::Address(*target_vram)),
+                );
 
-                    // TODO: keep here?
-                    // contextSym.branchLabels.add(labelSym.vram, labelSym)
-                } else {
-                    // TODO: Warning saying this is not a valid branch target?
-                    // TODO: maybe still emit the relocation?
-                }
+                // TODO: keep here?
+                // contextSym.branchLabels.add(labelSym.vram, labelSym)
+            } else if owned_segment.find_label(*target_vram).is_some() {
+                let instr_index = (*instr_rom - ranges.rom().start()).inner() / 4;
+                relocs[instr_index as usize] = Some(
+                    RelocationType::R_MIPS_PC16
+                        .new_reloc_info(RelocReferencedSym::Label(*target_vram)),
+                );
             } else {
                 // TODO: Add a comment with a warning saying that the target wasn't found
             }
@@ -187,9 +177,29 @@ impl FunctionSymProcessed {
             */
 
             let instr_index = (*instr_rom - ranges.rom().start()).inner() / 4;
-            relocs[instr_index as usize] = Some(
-                RelocationType::R_MIPS_26.new_reloc_info(RelocReferencedSym::Address(*target_vram)),
-            );
+
+            let referenced_sym = if context
+                .find_symbol_from_any_segment(
+                    *target_vram,
+                    parent_segment_info,
+                    FindSettings::new(false),
+                    |x| x.sym_type().is_some_and(|y| y.valid_call_target()),
+                )
+                .is_some()
+            {
+                RelocReferencedSym::Address(*target_vram)
+            } else if context
+                .find_label_from_any_segment(*target_vram, parent_segment_info, |_| true)
+                .is_some()
+            {
+                RelocReferencedSym::Label(*target_vram)
+            } else {
+                // whatever
+                RelocReferencedSym::Address(*target_vram)
+            };
+
+            relocs[instr_index as usize] =
+                Some(RelocationType::R_MIPS_26.new_reloc_info(referenced_sym));
         }
 
         for (instr_rom, symbol_vram) in instr_analysis.address_per_lo_instr() {
@@ -208,8 +218,20 @@ impl FunctionSymProcessed {
 
             let reloc_type =
                 Self::reloc_for_instruction(context.global_config(), &instructions[instr_index]);
-            relocs[instr_index] =
-                Some(reloc_type.new_reloc_info(RelocReferencedSym::Address(*symbol_vram)));
+
+            let metadata = context.find_symbol_from_any_segment(
+                *symbol_vram,
+                parent_segment_info,
+                FindSettings::new(true),
+                |x| x.sym_type() != Some(SymbolType::Function) || x.vram() == *symbol_vram,
+            );
+            let referenced_sym = if metadata.is_some() {
+                RelocReferencedSym::Address(*symbol_vram)
+            } else {
+                RelocReferencedSym::Label(*symbol_vram)
+            };
+
+            relocs[instr_index] = Some(reloc_type.new_reloc_info(referenced_sym));
         }
 
         for (instr_rom, symbol_vram) in instr_analysis.address_per_hi_instr() {
@@ -230,8 +252,20 @@ impl FunctionSymProcessed {
 
             let reloc_type =
                 Self::reloc_for_instruction(context.global_config(), &instructions[instr_index]);
-            relocs[instr_index] =
-                Some(reloc_type.new_reloc_info(RelocReferencedSym::Address(*symbol_vram)));
+
+            let metadata = context.find_symbol_from_any_segment(
+                *symbol_vram,
+                parent_segment_info,
+                FindSettings::new(true),
+                |x| x.sym_type() != Some(SymbolType::Function) || x.vram() == *symbol_vram,
+            );
+            let referenced_sym = if metadata.is_some() {
+                RelocReferencedSym::Address(*symbol_vram)
+            } else {
+                RelocReferencedSym::Label(*symbol_vram)
+            };
+
+            relocs[instr_index] = Some(reloc_type.new_reloc_info(referenced_sym));
         }
 
         /*
@@ -463,13 +497,12 @@ impl FunctionSymProcessed {
 
         let owned_segment = context.find_owned_segment_mut(parent_segment_info)?;
 
-        for (vram, sym) in owned_segment.find_symbol_ranges_mut(*ranges.vram()) {
+        for (vram, sym) in owned_segment.find_label_range_mut(*ranges.vram()) {
             sym.set_defined();
-            *sym.section_type_mut() = Some(SECTION_TYPE);
 
             let rom =
                 Size::new((*vram - ranges.vram().start()).inner() as u32) + ranges.rom().start();
-            *sym.rom_mut() = Some(rom);
+            sym.set_rom(rom);
 
             labels.push(*vram);
         }

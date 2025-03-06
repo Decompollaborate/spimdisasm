@@ -7,7 +7,8 @@ use crate::section_type::SectionType;
 
 use super::{OwnerSegmentKind, SymbolMetadata, SymbolType};
 
-fn should_escape_symbol(name: &str) -> bool {
+// Avoid duplicating this function here and in label_metadata_name_display
+fn should_quote_symbol(name: &str) -> bool {
     name.contains('@')
 }
 
@@ -27,12 +28,9 @@ impl SymbolMetadataNameDisplay<'_> {
     fn display_section_prefix(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.sym.sym_type() {
             Some(SymbolType::Function)
-            | Some(SymbolType::BranchLabel)
-            | Some(SymbolType::JumptableLabel)
             | Some(SymbolType::Jumptable)
-            | Some(SymbolType::GccExceptTable)
-            | Some(SymbolType::GccExceptTableLabel) => {
-                // Functions, labels and jumptables don't get a section prefix because most of the time they are in
+            | Some(SymbolType::GccExceptTable) => {
+                // Functions and tables don't get a section prefix because most of the time they are in
                 // their respective sections.
                 // But if the section type is missing, then we haven't seen this symbol actually defined anywhere, so
                 // we tell the user by using this prefix.
@@ -59,10 +57,8 @@ impl SymbolMetadataNameDisplay<'_> {
     fn display_type_prefix(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.sym.sym_type() {
             Some(SymbolType::Function) => write!(f, "func_"),
-            Some(SymbolType::BranchLabel) | Some(SymbolType::JumptableLabel) => write!(f, ".L"),
             Some(SymbolType::Jumptable) => write!(f, "jtbl_"),
             Some(SymbolType::GccExceptTable) => write!(f, "ehtbl_"),
-            Some(SymbolType::GccExceptTableLabel) => write!(f, "$LEH_"),
 
             Some(SymbolType::Byte) => Ok(()),
             Some(SymbolType::Short) => Ok(()),
@@ -152,7 +148,7 @@ impl SymbolMetadataNameDisplay<'_> {
 impl fmt::Display for SymbolMetadataNameDisplay<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(user_declared_name) = &self.sym.user_declared_name() {
-            let should_escape = should_escape_symbol(user_declared_name);
+            let should_escape = should_quote_symbol(user_declared_name);
 
             if should_escape {
                 write!(f, "\"")?;

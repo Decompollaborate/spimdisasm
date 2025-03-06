@@ -1,7 +1,10 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::sync::Arc;
+use alloc::{
+    collections::btree_map::{self, BTreeMap},
+    sync::Arc,
+};
 use core::{error, fmt};
 
 #[cfg(feature = "pyo3")]
@@ -9,11 +12,14 @@ use pyo3::prelude::*;
 
 use crate::addresses::{AddressRange, Rom, RomVramRange, Size, Vram};
 use crate::analysis::{reference_wrapper, Preheater, ReferenceWrapper};
-use crate::collections::addended_ordered_map::{self, AddendedOrderedMap, FindSettings};
+use crate::collections::addended_ordered_map::{AddendedOrderedMap, FindSettings};
 use crate::section_type::SectionType;
 
 use super::{symbol_metadata::GeneratedBy, OverlayCategoryName};
-use super::{IgnoredAddressRange, OwnerSegmentKind, SymbolMetadata, SymbolType};
+use super::{
+    AddLabelError, IgnoredAddressRange, LabelMetadata, LabelType, OwnerSegmentKind, ReferencedInfo,
+    SymbolMetadata, SymbolType,
+};
 
 #[derive(Debug, Clone, Hash, PartialEq, PartialOrd)]
 pub struct SegmentMetadata {
@@ -26,6 +32,7 @@ pub struct SegmentMetadata {
     visible_overlay_ranges: Arc<[AddressRange<Vram>]>,
 
     symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+    labels: BTreeMap<Vram, LabelMetadata>,
     // constants: BTreeMap<Vram, SymbolMetadata>,
     ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
 
@@ -40,6 +47,7 @@ impl SegmentMetadata {
         ranges: RomVramRange,
         prioritised_overlays: Arc<[Arc<str>]>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+        user_labels: BTreeMap<Vram, LabelMetadata>,
         ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
         preheater: Preheater,
         visible_overlay_ranges: Arc<[AddressRange<Vram>]>,
@@ -55,6 +63,7 @@ impl SegmentMetadata {
             visible_overlay_ranges,
 
             symbols: user_symbols,
+            labels: user_labels,
             ignored_addresses,
 
             preheater,
@@ -67,6 +76,7 @@ impl SegmentMetadata {
         ranges: RomVramRange,
         prioritised_overlays: Arc<[Arc<str>]>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+        user_labels: BTreeMap<Vram, LabelMetadata>,
         ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
         preheater: Preheater,
         visible_overlay_ranges: Arc<[AddressRange<Vram>]>,
@@ -75,6 +85,7 @@ impl SegmentMetadata {
             ranges,
             prioritised_overlays,
             user_symbols,
+            user_labels,
             ignored_addresses,
             preheater,
             visible_overlay_ranges,
@@ -88,6 +99,7 @@ impl SegmentMetadata {
         ranges: RomVramRange,
         prioritised_overlays: Arc<[Arc<str>]>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+        user_labels: BTreeMap<Vram, LabelMetadata>,
         ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
         preheater: Preheater,
         visible_overlay_ranges: Arc<[AddressRange<Vram>]>,
@@ -98,6 +110,7 @@ impl SegmentMetadata {
             ranges,
             prioritised_overlays,
             user_symbols,
+            user_labels,
             ignored_addresses,
             preheater,
             visible_overlay_ranges,
@@ -116,6 +129,7 @@ impl SegmentMetadata {
                 ranges,
                 Arc::new([]),
                 AddendedOrderedMap::new(),
+                BTreeMap::new(),
                 AddendedOrderedMap::new(),
                 Preheater::new(None, ranges),
                 Arc::new([]),
@@ -202,6 +216,9 @@ impl SegmentMetadata {
     pub const fn symbols(&self) -> &AddendedOrderedMap<Vram, SymbolMetadata> {
         &self.symbols
     }
+    pub const fn labels(&self) -> &BTreeMap<Vram, LabelMetadata> {
+        &self.labels
+    }
 }
 
 impl SegmentMetadata {
@@ -266,6 +283,38 @@ impl SegmentMetadata {
 
         Ok(metadata)
     }
+
+    pub(crate) fn add_label(
+        &mut self,
+        vram: Vram,
+        label_type: LabelType,
+        referenced_info: ReferencedInfo,
+    ) -> Result<&mut LabelMetadata, AddLabelError> {
+        if self.in_vram_range(vram) {
+            let label = self.labels.entry(vram).or_insert_with(|| {
+                let owner_segment_kind = if self.is_the_unknown_segment {
+                    OwnerSegmentKind::Unknown
+                } else if let Some(name) = &self.name {
+                    OwnerSegmentKind::Overlay(name.clone())
+                } else {
+                    OwnerSegmentKind::Global
+                };
+                LabelMetadata::new(vram, owner_segment_kind, label_type)
+            });
+
+            label.set_autodetected_type(label_type);
+            label.set_referenced_info(referenced_info);
+
+            Ok(label)
+        } else {
+            Err(AddLabelError::new_vram_out_of_range(
+                vram,
+                label_type,
+                self.name.clone(),
+                *self.vram_range(),
+            ))
+        }
+    }
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -313,11 +362,22 @@ impl SegmentMetadata {
         self.symbols.find_mut(&vram, settings)
     }
 
-    pub(crate) fn find_symbol_ranges_mut(
+    #[must_use]
+    pub(crate) fn find_label(&self, vram: Vram) -> Option<&LabelMetadata> {
+        self.labels.get(&vram)
+    }
+
+    #[must_use]
+    #[cfg(feature = "pyo3")]
+    pub(crate) fn find_label_mut(&mut self, vram: Vram) -> Option<&mut LabelMetadata> {
+        self.labels.get_mut(&vram)
+    }
+
+    pub(crate) fn find_label_range_mut(
         &mut self,
         vram_range: AddressRange<Vram>,
-    ) -> addended_ordered_map::RangeMut<Vram, SymbolMetadata> {
-        self.symbols.range_mut(vram_range)
+    ) -> btree_map::RangeMut<Vram, LabelMetadata> {
+        self.labels.range_mut(vram_range)
     }
 }
 
@@ -352,6 +412,7 @@ mod tests {
             ranges,
             Arc::new([]),
             AddendedOrderedMap::new(),
+            BTreeMap::new(),
             AddendedOrderedMap::new(),
             Preheater::new(None, ranges),
             Arc::new([]),

@@ -8,7 +8,7 @@ use std::{collections::BTreeMap, sync::Arc};
 use spimdisasm::{
     addresses::{Rom, Size, Vram},
     context::Context,
-    metadata::{RodataMigrationBehavior, SymbolType},
+    metadata::{LabelType, RodataMigrationBehavior, SymbolType},
     sections::{
         before_proc::{DataSection, ExecutableSection, NoloadSection},
         processed::{DataSectionProcessed, ExecutableSectionProcessed, NoloadSectionProcessed},
@@ -112,6 +112,7 @@ pub struct UserSymbolInfo {
 }
 pub enum UserSymbol {
     Info(UserSymbolInfo),
+    Label(Arc<str>, Vram, LabelType),
     Ignored(Vram, Option<Size>),
 }
 
@@ -128,6 +129,9 @@ impl UserSymbol {
             dont_allow_addend: false,
         })
     }
+    pub fn new_label(name: Arc<str>, vram: Vram, label_type: LabelType) -> Self {
+        UserSymbol::Label(name, vram, label_type)
+    }
     pub fn new_ignored(vram: Vram) -> Self {
         UserSymbol::Ignored(vram, None)
     }
@@ -138,7 +142,7 @@ impl UserSymbol {
                 rom: Some(rom),
                 ..s
             }),
-            UserSymbol::Ignored(_vram, _) => panic!("no"),
+            UserSymbol::Label(..) | UserSymbol::Ignored(..) => panic!("no"),
         }
     }
     pub fn with_name_end(self, name_end: Arc<str>) -> Self {
@@ -147,7 +151,7 @@ impl UserSymbol {
                 name_end: Some(name_end),
                 ..s
             }),
-            UserSymbol::Ignored(..) => panic!("no"),
+            UserSymbol::Label(..) | UserSymbol::Ignored(..) => panic!("no"),
         }
     }
     pub fn with_size(self, size: Size) -> Self {
@@ -157,6 +161,7 @@ impl UserSymbol {
                 ..s
             }),
             UserSymbol::Ignored(vram, _) => UserSymbol::Ignored(vram, Some(size)),
+            UserSymbol::Label(..) => panic!("no"),
         }
     }
     pub fn with_typ(self, typ: SymbolType) -> Self {
@@ -165,7 +170,7 @@ impl UserSymbol {
                 typ: Some(typ),
                 ..s
             }),
-            UserSymbol::Ignored(..) => panic!("no"),
+            UserSymbol::Label(..) | UserSymbol::Ignored(..) => panic!("no"),
         }
     }
     pub fn with_migration_behavior(self, migration_behavior: RodataMigrationBehavior) -> Self {
@@ -174,7 +179,7 @@ impl UserSymbol {
                 migration_behavior,
                 ..s
             }),
-            UserSymbol::Ignored(..) => panic!("no"),
+            UserSymbol::Label(..) | UserSymbol::Ignored(..) => panic!("no"),
         }
     }
     pub fn with_dont_allow_addend(self) -> Self {
@@ -183,7 +188,7 @@ impl UserSymbol {
                 dont_allow_addend: true,
                 ..s
             }),
-            UserSymbol::Ignored(..) => panic!("no"),
+            UserSymbol::Label(..) | UserSymbol::Ignored(..) => panic!("no"),
         }
     }
 }
@@ -850,8 +855,11 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("__osEepStatus".into(), Vram::new(0x80009A90)).with_size(Size::new(0x19C)),
         UserSymbol::new("__osExceptionPreamble".into(), Vram::new(0x80009C30)),
         UserSymbol::new("__osException".into(), Vram::new(0x80009C40)),
-        UserSymbol::new("handle_interrupt".into(), Vram::new(0x80009E48))
-            .with_typ(SymbolType::BranchLabel),
+        UserSymbol::new_label(
+            "handle_interrupt".into(),
+            Vram::new(0x80009E48),
+            LabelType::Branch,
+        ),
         UserSymbol::new("send_mesg".into(), Vram::new(0x8000A1BC)),
         UserSymbol::new("__osEnqueueAndYield".into(), Vram::new(0x8000A2AC)),
         UserSymbol::new("__osEnqueueThread".into(), Vram::new(0x8000A3B4)),

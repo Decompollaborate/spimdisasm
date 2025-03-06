@@ -294,13 +294,6 @@ impl DataSection {
                     if !owned_segment.is_vram_ignored(current_vram)
                         && word_ref.is_none_or(|x| match x.sym_type() {
                             Some(SymbolType::Function) => x.vram() != word_vram,
-                            Some(t) => {
-                                if t.is_label() {
-                                    x.vram() != word_vram
-                                } else {
-                                    false
-                                }
-                            }
                             _ => false,
                         })
                     {

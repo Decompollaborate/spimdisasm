@@ -2,6 +2,7 @@
 /* SPDX-License-Identifier: MIT */
 
 mod add_ignored_address_range_error;
+mod add_user_label_error;
 mod add_user_segment_symbol_error;
 mod add_user_symbol_error;
 mod context_builder;
@@ -12,6 +13,7 @@ mod segment_heater;
 mod user_segment_builder;
 
 pub use add_ignored_address_range_error::AddIgnoredAddressRangeError;
+pub use add_user_label_error::AddUserLabelError;
 pub use add_user_segment_symbol_error::AddUserSegmentSymbolError;
 pub use add_user_symbol_error::AddUserSymbolError;
 pub use context_builder::ContextBuilder;

@@ -1,7 +1,12 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{string::ToString, sync::Arc, vec::Vec};
+use alloc::{
+    collections::btree_map::{self, BTreeMap},
+    string::ToString,
+    sync::Arc,
+    vec::Vec,
+};
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
@@ -10,14 +15,14 @@ use crate::{
     addresses::{Rom, RomVramRange, Size, Vram},
     collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
     metadata::{
-        GeneratedBy, IgnoredAddressRange, OverlayCategoryName, OwnerSegmentKind, SymbolMetadata,
-        SymbolType,
+        GeneratedBy, IgnoredAddressRange, LabelMetadata, LabelType, OverlayCategoryName,
+        OwnerSegmentKind, SymbolMetadata, SymbolType,
     },
 };
 
 use super::{
     segment_builder_error::AddPrioritisedOverlayError, AddIgnoredAddressRangeError,
-    AddUserSymbolError, GlobalSegmentHeater, OverlaySegmentHeater,
+    AddUserLabelError, AddUserSymbolError, GlobalSegmentHeater, OverlaySegmentHeater,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -26,6 +31,7 @@ struct SegmentBuilder {
     name: Option<Arc<str>>,
     prioritised_overlays: Vec<Arc<str>>,
     user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+    user_labels: BTreeMap<Vram, LabelMetadata>,
     ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
 }
 
@@ -46,6 +52,7 @@ impl SegmentBuilder {
             name,
             prioritised_overlays: Vec::new(),
             user_symbols: AddendedOrderedMap::new(),
+            user_labels: BTreeMap::new(),
             ignored_addresses,
         }
     }
@@ -98,7 +105,7 @@ impl SegmentBuilder {
             ));
         }
 
-        let check_addend = !sym_type.is_some_and(|x| x.is_label());
+        let check_addend = sym_type.is_none_or(|x| x.may_have_addend());
 
         let (sym, newly_created) = self.user_symbols.find_mut_or_insert_with(
             vram,
@@ -116,9 +123,7 @@ impl SegmentBuilder {
             },
         );
 
-        if sym.vram() != vram
-            && !(sym.is_trustable_function() && sym_type.is_some_and(|x| x.is_label()))
-        {
+        if sym.vram() != vram {
             Err(AddUserSymbolError::new_overlap(
                 name,
                 vram,
@@ -139,9 +144,72 @@ impl SegmentBuilder {
             sym.set_user_declared_name(name);
             *sym.rom_mut() = rom;
             if let Some(sym_type) = sym_type {
-                sym.set_type_with_priorities(sym_type, GeneratedBy::UserDeclared);
+                sym.set_type(sym_type, GeneratedBy::UserDeclared);
             }
             Ok(sym)
+        }
+    }
+
+    fn add_user_label(
+        &mut self,
+        name: Arc<str>,
+        vram: Vram,
+        rom: Option<Rom>,
+        label_type: LabelType,
+    ) -> Result<&mut LabelMetadata, AddUserLabelError> {
+        if let Some(rom) = rom {
+            if !self.ranges.in_rom_range(rom) {
+                return Err(AddUserLabelError::new_rom_out_of_range(
+                    name,
+                    vram,
+                    label_type,
+                    self.name.clone(),
+                    rom,
+                    *self.ranges.rom(),
+                ));
+            }
+        }
+
+        if !self.ranges.in_vram_range(vram) {
+            return Err(AddUserLabelError::new_vram_out_of_range(
+                name,
+                vram,
+                label_type,
+                self.name.clone(),
+                *self.ranges.vram(),
+            ));
+        }
+
+        let entry = self.user_labels.entry(vram);
+        match entry {
+            btree_map::Entry::Occupied(occupied_entry) => {
+                let label = occupied_entry.get();
+
+                Err(AddUserLabelError::new_duplicated(
+                    name,
+                    vram,
+                    label_type,
+                    self.name.clone(),
+                    Arc::from(label.display_name().to_string()),
+                    label.vram(),
+                    label.label_type(),
+                ))
+            }
+            btree_map::Entry::Vacant(vacant_entry) => {
+                let owner_segment_kind = if let Some(name) = self.name.clone() {
+                    OwnerSegmentKind::Overlay(name)
+                } else {
+                    OwnerSegmentKind::Global
+                };
+
+                Ok(vacant_entry.insert(LabelMetadata::new_user(
+                    vram,
+                    owner_segment_kind,
+                    label_type,
+                    name,
+                    rom,
+                )))
+            }
         }
     }
 
@@ -230,6 +298,20 @@ impl GlobalSegmentBuilder {
         self.inner.add_user_symbol(name.into(), vram, rom, sym_type)
     }
 
+    pub fn add_user_label<T>(
+        &mut self,
+        name: T,
+        vram: Vram,
+        rom: Option<Rom>,
+        label_type: LabelType,
+    ) -> Result<&mut LabelMetadata, AddUserLabelError>
+    where
+        T: Into<Arc<str>>,
+    {
+        self.inner
+            .add_user_label(name.into(), vram, rom, label_type)
+    }
+
     pub fn add_ignored_address_range(
         &mut self,
         vram: Vram,
@@ -247,6 +329,7 @@ impl GlobalSegmentBuilder {
             self.inner.ranges,
             self.inner.prioritised_overlays.into(),
             self.inner.user_symbols,
+            self.inner.user_labels,
             self.inner.ignored_addresses,
         )
     }
@@ -293,6 +376,20 @@ impl OverlaySegmentBuilder {
         self.inner.add_user_symbol(name.into(), vram, rom, sym_type)
     }
 
+    pub fn add_user_label<T>(
+        &mut self,
+        name: T,
+        vram: Vram,
+        rom: Option<Rom>,
+        label_type: LabelType,
+    ) -> Result<&mut LabelMetadata, AddUserLabelError>
+    where
+        T: Into<Arc<str>>,
+    {
+        self.inner
+            .add_user_label(name.into(), vram, rom, label_type)
+    }
+
     pub fn add_ignored_address_range(
         &mut self,
         vram: Vram,
@@ -313,6 +410,7 @@ impl OverlaySegmentBuilder {
             ),
             self.inner.prioritised_overlays.into(),
             self.inner.user_symbols,
+            self.inner.user_labels,
             self.inner.ignored_addresses,
             self.category_name,
         )
@@ -350,6 +448,18 @@ pub(crate) mod python_bindings {
         ) -> Result<(), AddUserSymbolError> {
             let sym = self.add_user_symbol(name, vram, rom, None)?;
             attributes.apply_to_sym(sym);
+            Ok(())
+        }
+
+        #[pyo3(name = "add_user_label", signature = (name, vram, rom, label_type))]
+        pub fn py_add_user_label(
+            &mut self,
+            name: String,
+            vram: Vram,
+            rom: Option<Rom>,
+            label_type: LabelType,
+        ) -> Result<(), AddUserLabelError> {
+            self.add_user_label(name, vram, rom, label_type)?;
             Ok(())
         }
 
@@ -404,6 +514,18 @@ pub(crate) mod python_bindings {
         ) -> Result<(), AddUserSymbolError> {
             let sym = self.add_user_symbol(name, vram, rom, attributes.typ)?;
             attributes.apply_to_sym(sym);
+            Ok(())
+        }
+
+        #[pyo3(name = "add_user_label", signature = (name, vram, rom, label_type))]
+        pub fn py_add_user_label(
+            &mut self,
+            name: String,
+            vram: Vram,
+            rom: Option<Rom>,
+            label_type: LabelType,
+        ) -> Result<(), AddUserLabelError> {
+            self.add_user_label(name, vram, rom, label_type)?;
             Ok(())
         }
 

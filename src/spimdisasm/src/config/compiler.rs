@@ -196,9 +196,6 @@ impl Compiler {
             SymbolType::Function => self.prev_align_function(),
             SymbolType::Jumptable => self.prev_align_jumptable(),
             SymbolType::GccExceptTable => None,
-            SymbolType::BranchLabel
-            | SymbolType::JumptableLabel
-            | SymbolType::GccExceptTableLabel => None,
             SymbolType::Byte | SymbolType::Short | SymbolType::Word => None,
             SymbolType::DWord => None,
             SymbolType::Float32 => None,

@@ -8,7 +8,7 @@ use crate::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     collections::addended_ordered_map::FindSettings,
     context::Context,
-    metadata::SymbolType,
+    metadata::{LabelType, SymbolType},
     parent_segment_info::ParentSegmentInfo,
     relocation::{RelocReferencedSym, RelocationInfo, RelocationType},
     section_type::SectionType,
@@ -117,29 +117,56 @@ impl DataSymProcessed {
                 let word = endian.word_from_bytes(word_bytes);
                 let word_vram = Vram::new(word);
 
-                let valid_reference = if owned_segment.in_vram_range(word_vram) {
-                    owned_segment.find_symbol(word_vram, find_settings)
-                } else {
-                    context.find_symbol_from_any_segment(
-                        word_vram,
-                        parent_segment_info,
-                        find_settings,
-                        |other_metadata| other_metadata.sym_type() != Some(SymbolType::BranchLabel),
-                    )
+                if owned_segment.is_vram_ignored(word_vram) {
+                    continue;
                 }
-                .is_some_and(|other_metadata| {
-                    (other_metadata.vram() == word_vram
-                        || other_metadata
-                            .sym_type()
-                            .is_none_or(|sym_typ| sym_typ.may_have_addend()))
-                        && other_metadata.sym_type() != Some(SymbolType::BranchLabel)
-                });
 
-                if valid_reference && !owned_segment.is_vram_ignored(word_vram) {
-                    relocs[i] = Some(
-                        RelocationType::R_MIPS_32
-                            .new_reloc_info(RelocReferencedSym::Address(word_vram)),
-                    );
+                if is_table {
+                    let valid_reference = if owned_segment.in_vram_range(word_vram) {
+                        owned_segment.find_label(word_vram)
+                    } else {
+                        context
+                            .find_label_from_any_segment(word_vram, parent_segment_info, |_| true)
+                    }
+                    .is_some_and(|other_metadata| other_metadata.label_type() != LabelType::Branch);
+
+                    if valid_reference {
+                        relocs[i] = Some(
+                            RelocationType::R_MIPS_32
+                                .new_reloc_info(RelocReferencedSym::Label(word_vram)),
+                        );
+                    }
+                } else {
+                    let valid_reference = if owned_segment.in_vram_range(word_vram) {
+                        owned_segment.find_symbol(word_vram, find_settings)
+                    } else {
+                        context.find_symbol_from_any_segment(
+                            word_vram,
+                            parent_segment_info,
+                            find_settings,
+                            |other_metadata| {
+                                if other_metadata.sym_type() == Some(SymbolType::Function) {
+                                    // Avoid referencing addends of functions
+                                    other_metadata.vram() == word_vram
+                                } else {
+                                    true
+                                }
+                            },
+                        )
+                    }
+                    .is_some_and(|other_metadata| {
+                        other_metadata.vram() == word_vram
+                            || other_metadata
+                                .sym_type()
+                                .is_none_or(|sym_typ| sym_typ.may_have_addend())
+                    });
+
+                    if valid_reference {
+                        relocs[i] = Some(
+                            RelocationType::R_MIPS_32
+                                .new_reloc_info(RelocReferencedSym::Address(word_vram)),
+                        );
+                    }
                 }
             }
         }
