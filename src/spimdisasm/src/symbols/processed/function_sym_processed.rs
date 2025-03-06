@@ -46,6 +46,7 @@ impl FunctionSymProcessed {
         instr_analysis: InstructionAnalysisResult,
         user_relocs: &BTreeMap<Rom, RelocationInfo>,
     ) -> Result<Self, SymbolPostProcessError> {
+        let labels = Self::find_and_update_labels(context, &ranges, &parent_segment_info)?;
         let mut relocs = Self::generate_relocs(
             context,
             &ranges,
@@ -53,7 +54,6 @@ impl FunctionSymProcessed {
             &parent_segment_info,
             &instr_analysis,
         )?;
-        let labels = Self::find_and_update_labels(context, &ranges, &parent_segment_info)?;
 
         if !relocs.is_empty() {
             for (reloc_rom, reloc_info) in user_relocs.range(*ranges.rom()) {
@@ -183,7 +183,7 @@ impl FunctionSymProcessed {
                     *target_vram,
                     parent_segment_info,
                     FindSettings::new(false),
-                    |x| x.sym_type().is_some_and(|y| y.valid_call_target()),
+                    |x| x.is_defined() && x.sym_type().is_some_and(|y| y.valid_call_target()),
                 )
                 .is_some()
             {

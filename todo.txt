@@ -42,7 +42,4 @@ Allow executable sections to have symbols being disassembled as data
 Change the order of checks in InstructionAnalysisResult::process_instr
     Check and_link before everything else
 
-aent (alternative function entry) label type
-
-if !j_as_branch, then each j should be considered as a possible function end instead of assuming the referenced address is a function no-doubt
-addresses referenced by link instructions may no longer be considered guaranteed real functions
+Some functions may end with `jr` with a non-$ra register that hasn't loaded a jumptable either.

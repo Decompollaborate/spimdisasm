@@ -447,7 +447,7 @@ impl SymbolMetadata {
 }
 
 impl SymbolMetadata {
-    pub fn is_trustable_function(&self) -> bool {
+    pub(crate) fn is_trustable_function(&self) -> bool {
         // """Checks if the function symbol should be trusted based on the current disassembler settings"""
 
         /*

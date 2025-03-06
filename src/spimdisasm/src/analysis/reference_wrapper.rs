@@ -179,7 +179,7 @@ impl ReferenceWrapper<'_, '_> {
         }
     }
 
-    pub fn is_trustable_function(&self) -> bool {
+    pub(crate) fn is_trustable_function(&self) -> bool {
         match self {
             ReferenceWrapper::Metadata(metadata) => metadata.is_trustable_function(),
             ReferenceWrapper::Address(address) => address.is_trustable_function(),

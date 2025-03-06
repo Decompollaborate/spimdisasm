@@ -496,6 +496,7 @@ fn find_functions_branch_checker(
             }
         }
     } else if let Some(jr_reg_data) = regs_tracker.get_jr_reg_data(instr) {
+        // Check jumptables
         if jr_reg_data.branch_info().is_none() {
             let jumptable_address = Vram::new(jr_reg_data.address());
             if let Some(jumptable_ref) =
@@ -545,7 +546,7 @@ fn find_functions_check_function_ended(
     if let Some(reference) =
         owned_segment.find_reference(current_vram + VramOffset::new(8), FindSettings::new(false))
     {
-        // # If there's another function after this then the current function has ended
+        // If there's another function after this then the current function has ended
         if reference.is_trustable_function() {
             if let Some(sym_rom) = reference.rom() {
                 if current_rom + Size::new(8) == sym_rom {
@@ -604,8 +605,8 @@ fn find_functions_check_function_ended(
         // If this instruction is a jump and it is jumping to a function then
         // we can consider this as a function end. This can happen as a
         // tail-optimization in "modern" compilers
-        if !settings.instruction_flags.j_as_branch() {
-            return (true, false);
+        if settings.instruction_flags.j_as_branch() {
+            return (false, false);
         } else if let Some(target_vram) = instr.get_instr_index_as_vram() {
             if let Some(aux_ref) =
                 owned_segment.find_reference(target_vram, FindSettings::new(false))
