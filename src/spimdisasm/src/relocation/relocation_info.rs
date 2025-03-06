@@ -65,7 +65,7 @@ impl RelocationInfo {
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, PartialOrd)]
 enum RelocSymState<'name, 'meta> {
-    LiteralSymName(&'name str, i32),
+    LiteralSymName(&'name str, i64),
     Sym(Vram, &'meta SymbolMetadata),
     Label(Vram, &'meta LabelMetadata),
 
@@ -230,7 +230,7 @@ impl<'ctx, 'rel, 'prnt> RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
 }
 
 impl RelocationInfoDisplay<'_, '_, '_> {
-    fn display_addend(&self, f: &mut fmt::Formatter<'_>, addend: i32) -> fmt::Result {
+    fn display_addend(&self, f: &mut fmt::Formatter<'_>, addend: i64) -> fmt::Result {
         if addend == 0 {
             Ok(())
         } else {
@@ -293,7 +293,7 @@ impl fmt::Display for RelocationInfoDisplay<'_, '_, '_> {
             }
             RelocSymState::Sym(vram, sym_metadata) => {
                 write!(f, "{}", sym_metadata.display_name())?;
-                (*vram - sym_metadata.vram()).inner()
+                (*vram - sym_metadata.vram()).inner().into()
             }
             RelocSymState::Label(_vram, label_metadata) => {
                 write!(f, "{}", label_metadata.display_name())?;

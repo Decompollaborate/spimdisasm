@@ -38,7 +38,7 @@ impl PyUserRelocs {
         rom: Rom,
         reloc_type: RelocationType,
         sym_name: String,
-        addend: i32,
+        addend: i64,
     ) -> Result<(), UserRelocAddError> {
         let reloc =
             reloc_type.new_reloc_info(RelocReferencedSym::SymName(Arc::from(sym_name), addend));

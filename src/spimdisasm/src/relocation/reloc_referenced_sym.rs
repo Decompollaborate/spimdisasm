@@ -10,5 +10,5 @@ use crate::addresses::Vram;
 pub enum RelocReferencedSym {
     Address(Vram),
     Label(Vram),
-    SymName(Arc<str>, i32),
+    SymName(Arc<str>, i64),
 }

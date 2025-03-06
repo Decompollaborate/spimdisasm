@@ -4,7 +4,6 @@ Test pic code
 Test `j func` code
 Try to break out from non word-aligned symbols
 Sealed functions for traits / seal traits
-Move labels out of symbols
 Avoid disassembling as bytes/shorts if there are user relocs for a given symbol
 Ensure ReferenceWrapper's Range respect symbol sizes
 Ask PSP people about compilers
@@ -33,8 +32,6 @@ Does the following pattern make sense with a pointer?
 
 Consider allowing user-defined data layouts using the same syntax as python's struct package
     https://docs.python.org/3/library/struct.html
-
-Change addend type to i64.
 
 Add an addresslabel/abslabel/whaterver.
     Generic way to namify an address.
