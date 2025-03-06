@@ -40,10 +40,7 @@ impl UserSegmentBuilder {
         let (metadata, newly_created) =
             self.symbols
                 .find_mut_or_insert_with(vram, FindSettings::new(true), || {
-                    (
-                        vram,
-                        SymbolMetadata::new(generated_by, vram, OwnerSegmentKind::User),
-                    )
+                    SymbolMetadata::new(generated_by, vram, OwnerSegmentKind::User)
                 });
 
         if metadata.vram() != vram {

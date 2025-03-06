@@ -5,7 +5,6 @@ use pyo3::prelude::*;
 
 use crate::{
     addresses::{Rom, Size},
-    collections::addended_ordered_map::FindSettings,
     context::Context,
     metadata::{LabelType, SymbolType},
     relocation::python_bindings::py_user_relocs::PyUserRelocs,

@@ -174,12 +174,9 @@ impl ContextBuilder {
                         FindSettings::new(true),
                         || {
                             if reference.user_declared() {
-                                (
-                                    reference_vram,
-                                    ReferencedAddress::new_user_declared(reference_vram),
-                                )
+                                ReferencedAddress::new_user_declared(reference_vram)
                             } else {
-                                (reference_vram, ReferencedAddress::new(reference_vram))
+                                ReferencedAddress::new(reference_vram)
                             }
                         },
                     );

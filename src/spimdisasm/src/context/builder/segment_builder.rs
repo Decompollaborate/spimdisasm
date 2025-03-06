@@ -41,10 +41,7 @@ impl SegmentBuilder {
 
         // Hardcode the address 0 to always be ignored.
         ignored_addresses.find_mut_or_insert_with(Vram::new(0), FindSettings::new(false), || {
-            (
-                Vram::new(0),
-                IgnoredAddressRange::new(Vram::new(0), Size::new(1)),
-            )
+            IgnoredAddressRange::new(Vram::new(0), Size::new(1))
         });
 
         Self {
@@ -133,10 +130,7 @@ impl SegmentBuilder {
                 } else {
                     OwnerSegmentKind::Global
                 };
-                (
-                    vram,
-                    SymbolMetadata::new(GeneratedBy::UserDeclared, vram, owner_segment_kind),
-                )
+                SymbolMetadata::new(GeneratedBy::UserDeclared, vram, owner_segment_kind)
             },
         );
 
@@ -239,7 +233,7 @@ impl SegmentBuilder {
         let (ignored_address, newly_created) =
             self.ignored_addresses
                 .find_mut_or_insert_with(vram, FindSettings::new(true), || {
-                    (vram, IgnoredAddressRange::new(vram, size))
+                    IgnoredAddressRange::new(vram, size)
                 });
 
         if ignored_address.vram() != vram {

@@ -201,6 +201,18 @@ where
         default: F,
     ) -> (&mut V, bool)
     where
+        F: FnOnce() -> V,
+    {
+        add_impl(self, key, settings, || (key, default()))
+    }
+
+    pub fn find_mut_or_insert_with_key_value<F>(
+        &mut self,
+        key: K,
+        settings: FindSettings,
+        default: F,
+    ) -> (&mut V, bool)
+    where
         F: FnOnce() -> (K, V),
     {
         add_impl(self, key, settings, default)

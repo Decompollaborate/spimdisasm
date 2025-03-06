@@ -729,24 +729,25 @@ impl Preheater {
         user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
         settings: FindSettings,
     ) -> &mut ReferencedAddress {
-        // TODO: write an find_mut_or_insert_another that allows inserting a different key than the original
-        let (refer, _) = self.references.find_mut_or_insert_with(vram, settings, || {
-            if let Some(metadata) = user_symbols.find(&vram, settings) {
-                let vram = metadata.vram();
-                let mut refer = ReferencedAddress::new_user_declared(vram);
+        let (refer, _) = self
+            .references
+            .find_mut_or_insert_with_key_value(vram, settings, || {
+                if let Some(metadata) = user_symbols.find(&vram, settings) {
+                    let vram = metadata.vram();
+                    let mut refer = ReferencedAddress::new_user_declared(vram);
 
-                if let Some(typ) = metadata.user_declared_type() {
-                    refer.set_user_declared_type(typ);
-                }
-                if let Some(size) = metadata.user_declared_size() {
-                    refer.set_user_declared_size(size);
-                }
+                    if let Some(typ) = metadata.user_declared_type() {
+                        refer.set_user_declared_type(typ);
+                    }
+                    if let Some(size) = metadata.user_declared_size() {
+                        refer.set_user_declared_size(size);
+                    }
 
-                (vram, refer)
-            } else {
-                (vram, ReferencedAddress::new(vram))
-            }
-        });
+                    (vram, refer)
+                } else {
+                    (vram, ReferencedAddress::new(vram))
+                }
+            });
 
         if let Some(referenced_by) = referenced_by {
             refer.add_referenced_by(referenced_by);
@@ -818,7 +819,7 @@ impl Preheater {
             ))
         } else {
             self.preheated_sections
-                .find_mut_or_insert_with(rom, FindSettings::new(false), || (rom, size));
+                .find_mut_or_insert_with(rom, FindSettings::new(false), || size);
             Ok(())
         }
     }
