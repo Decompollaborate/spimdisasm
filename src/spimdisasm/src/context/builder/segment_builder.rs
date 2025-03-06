@@ -82,6 +82,7 @@ impl SegmentBuilder {
         name: Arc<str>,
         vram: Vram,
         rom: Option<Rom>,
+        size: Option<Size>,
         sym_type: Option<SymbolType>,
     ) -> Result<&mut SymbolMetadata, AddUserSymbolError> {
         if let Some(rom) = rom {
@@ -103,6 +104,22 @@ impl SegmentBuilder {
                 self.name.clone(),
                 *self.ranges.vram(),
             ));
+        }
+
+        if let Some(size) = size {
+            if let Some(other) = self.user_symbols.find(
+                &(vram + Size::new(size.inner() - 1)),
+                FindSettings::new(true),
+            ) {
+                return Err(AddUserSymbolError::new_overlap(
+                    name,
+                    vram,
+                    self.name.clone(),
+                    Arc::from(other.display_name().to_string()),
+                    other.vram(),
+                    other.size().unwrap(),
+                ));
+            }
         }
 
         let check_addend = sym_type.is_none_or(|x| x.may_have_addend());
@@ -143,6 +160,7 @@ impl SegmentBuilder {
         } else {
             sym.set_user_declared_name(name);
             *sym.rom_mut() = rom;
+            *sym.user_declared_size_mut() = size;
             if let Some(sym_type) = sym_type {
                 sym.set_type(sym_type, GeneratedBy::UserDeclared);
             }
@@ -290,12 +308,14 @@ impl GlobalSegmentBuilder {
         name: T,
         vram: Vram,
         rom: Option<Rom>,
+        size: Option<Size>,
         sym_type: Option<SymbolType>,
     ) -> Result<&mut SymbolMetadata, AddUserSymbolError>
     where
         T: Into<Arc<str>>,
     {
-        self.inner.add_user_symbol(name.into(), vram, rom, sym_type)
+        self.inner
+            .add_user_symbol(name.into(), vram, rom, size, sym_type)
     }
 
     pub fn add_user_label<T>(
@@ -368,12 +388,14 @@ impl OverlaySegmentBuilder {
         name: T,
         vram: Vram,
         rom: Option<Rom>,
+        size: Option<Size>,
         sym_type: Option<SymbolType>,
     ) -> Result<&mut SymbolMetadata, AddUserSymbolError>
     where
         T: Into<Arc<str>>,
     {
-        self.inner.add_user_symbol(name.into(), vram, rom, sym_type)
+        self.inner
+            .add_user_symbol(name.into(), vram, rom, size, sym_type)
     }
 
     pub fn add_user_label<T>(
@@ -446,7 +468,7 @@ pub(crate) mod python_bindings {
             rom: Option<Rom>,
             attributes: &SymAttributes,
         ) -> Result<(), AddUserSymbolError> {
-            let sym = self.add_user_symbol(name, vram, rom, None)?;
+            let sym = self.add_user_symbol(name, vram, rom, attributes.size, None)?;
             attributes.apply_to_sym(sym);
             Ok(())
         }
@@ -512,7 +534,7 @@ pub(crate) mod python_bindings {
             rom: Option<Rom>,
             attributes: &SymAttributes,
         ) -> Result<(), AddUserSymbolError> {
-            let sym = self.add_user_symbol(name, vram, rom, attributes.typ)?;
+            let sym = self.add_user_symbol(name, vram, rom, attributes.size, attributes.typ)?;
             attributes.apply_to_sym(sym);
             Ok(())
         }

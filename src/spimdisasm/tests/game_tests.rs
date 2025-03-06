@@ -81,6 +81,7 @@ fn init_context(
                         user_symbol_info.name,
                         user_symbol_info.vram,
                         user_symbol_info.rom,
+                        user_symbol_info.size,
                         user_symbol_info.typ,
                     )
                     .unwrap();
@@ -89,9 +90,6 @@ fn init_context(
                 // if let Some(name_end) = user_symbol_info.name_end {
                 //     sym.set_user_declared_name_end(name_end);
                 // }
-                if let Some(size) = user_symbol_info.size {
-                    *sym.user_declared_size_mut() = Some(size);
-                }
                 *sym.rodata_migration_behavior_mut() = user_symbol_info.migration_behavior;
                 if user_symbol_info.dont_allow_addend {
                     sym.set_allow_ref_with_addend(false);
