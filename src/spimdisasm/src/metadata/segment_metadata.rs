@@ -17,7 +17,7 @@ use crate::section_type::SectionType;
 
 use super::{symbol_metadata::GeneratedBy, OverlayCategoryName};
 use super::{
-    AddLabelError, IgnoredAddressRange, LabelMetadata, LabelType, OwnerSegmentKind, ReferencedInfo,
+    AddLabelError, IgnoredAddressRange, LabelMetadata, LabelType, OwnerSegmentKind, ReferrerInfo,
     SymbolMetadata, SymbolType,
 };
 
@@ -254,7 +254,6 @@ impl SegmentMetadata {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
     pub(crate) fn add_self_symbol<F>(
         &mut self,
         vram: Vram,
@@ -267,6 +266,10 @@ impl SegmentMetadata {
     where
         F: Fn(&SymbolMetadata) -> Size,
     {
+        // Remove every other symbols that may overlap this one
+        let overlapping_range = vram + Size::new(1)..vram + size;
+        self.symbols.retain(|k, _| !overlapping_range.contains(k));
+
         let metadata = self.add_symbol(vram, false)?;
         metadata.set_defined();
         *metadata.rom_mut() = rom;
@@ -286,7 +289,7 @@ impl SegmentMetadata {
         &mut self,
         vram: Vram,
         label_type: LabelType,
-        referenced_info: ReferencedInfo,
+        creator: ReferrerInfo,
     ) -> Result<&mut LabelMetadata, AddLabelError> {
         if self.in_vram_range(vram) {
             let label = self.labels.entry(vram).or_insert_with(|| {
@@ -301,7 +304,7 @@ impl SegmentMetadata {
             });
 
             label.set_autodetected_type(label_type);
-            label.set_referenced_info(referenced_info);
+            label.add_creator(creator);
 
             Ok(label)
         } else {
@@ -366,7 +369,6 @@ impl SegmentMetadata {
     }
 
     #[must_use]
-    #[cfg(feature = "pyo3")]
     pub(crate) fn find_label_mut(&mut self, vram: Vram) -> Option<&mut LabelMetadata> {
         self.labels.get_mut(&vram)
     }

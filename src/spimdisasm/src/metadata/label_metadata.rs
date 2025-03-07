@@ -4,13 +4,11 @@
 use alloc::sync::Arc;
 use core::{fmt, hash::Hash};
 
-use crate::{
-    addresses::{Rom, Vram},
-    collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
-    parent_segment_info::ParentSegmentInfo,
-};
+use crate::addresses::{Rom, Vram};
 
-use super::{GeneratedBy, LabelMetadataNameDisplay, LabelType, OwnerSegmentKind, ReferencedInfo};
+use super::{
+    GeneratedBy, LabelMetadataNameDisplay, LabelType, OwnerSegmentKind, ReferrerInfo, Referrers,
+};
 
 #[derive(Clone)]
 #[allow(dead_code)]
@@ -27,18 +25,8 @@ pub struct LabelMetadata {
 
     is_defined: bool,
 
-    /// Which functions reference this label.
-    /// Key is the vram of the function and the segment it is contained on (since vrams can overlap
-    /// on different segments).
-    /// Value is the rom of the instruction that references this symbol, so we can know how many
-    /// times a function references the same label.
-    reference_functions: UnorderedMap<(Vram, ParentSegmentInfo), UnorderedSet<Rom>>,
-    /// Which symbols reference this label.
-    /// Key is the vram of the non-function symbol and the segment it is contained on (since vrams
-    /// can overlap on different segments).
-    /// Value is the rom of the word that references this symbol, so we can know how many
-    /// times a symbol references the same label.
-    reference_symbols: UnorderedMap<(Vram, ParentSegmentInfo), UnorderedSet<Rom>>,
+    sym_creators: Referrers,
+    sym_referrers: Referrers,
 
     visibility: Option<Arc<str>>,
 }
@@ -62,8 +50,8 @@ impl LabelMetadata {
 
             is_defined: false,
 
-            reference_functions: UnorderedMap::new(),
-            reference_symbols: UnorderedMap::new(),
+            sym_creators: Referrers::new(),
+            sym_referrers: Referrers::new(),
 
             visibility: None,
         }
@@ -134,33 +122,16 @@ impl LabelMetadata {
         self.is_defined = true;
     }
 
+    pub(crate) fn add_creator(&mut self, creator: ReferrerInfo) {
+        self.sym_creators.add(creator);
+    }
+
     /// How much this label is referenced by something else
     pub fn reference_counter(&self) -> usize {
-        self.reference_functions.values().count() + self.reference_symbols.values().count()
+        self.sym_referrers.reference_counter()
     }
-    pub(crate) fn set_referenced_info(&mut self, info: ReferencedInfo) {
-        match info {
-            ReferencedInfo::Function {
-                sym_vram,
-                parent,
-                specific_rom,
-            } => {
-                self.reference_functions
-                    .entry((sym_vram, parent))
-                    .or_default()
-                    .insert(specific_rom);
-            }
-            ReferencedInfo::Data {
-                sym_vram,
-                parent,
-                specific_rom,
-            } => {
-                self.reference_symbols
-                    .entry((sym_vram, parent))
-                    .or_default()
-                    .insert(specific_rom);
-            }
-        }
+    pub(crate) fn add_referenced_info(&mut self, referrer: ReferrerInfo) {
+        self.sym_referrers.add(referrer);
     }
 
     pub fn visibility(&self) -> Option<Arc<str>> {

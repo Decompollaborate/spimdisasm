@@ -8,7 +8,7 @@ use crate::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     config::{Compiler, Endian},
     context::Context,
-    metadata::{GeneratedBy, ParentSectionMetadata, ReferencedInfo, SymbolMetadata, SymbolType},
+    metadata::{GeneratedBy, ParentSectionMetadata, ReferrerInfo, SymbolMetadata, SymbolType},
     parent_segment_info::ParentSegmentInfo,
     relocation::RelocationInfo,
     section_type::SectionType,
@@ -94,11 +94,11 @@ impl DataSym {
                     && owned_segment.in_vram_range(word_vram)
                 {
                     if let Some(label) = table_label {
-                        let referenced_info = ReferencedInfo::Data {
-                            sym_vram: ranges.vram().start(),
-                            parent: parent_segment_info.clone(),
-                            specific_rom: ranges.rom().start() + offset,
-                        };
+                        let referenced_info = ReferrerInfo::new_data(
+                            ranges.vram().start(),
+                            parent_segment_info.clone(),
+                            ranges.rom().start() + offset,
+                        );
                         owned_segment.add_label(word_vram, label, referenced_info)?;
                     }
                 } else {

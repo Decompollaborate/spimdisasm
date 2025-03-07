@@ -12,7 +12,7 @@ use crate::{
     config::Compiler,
     context::Context,
     metadata::{
-        GeneratedBy, LabelType, ParentSectionMetadata, ReferencedInfo, SegmentMetadata,
+        GeneratedBy, LabelType, ParentSectionMetadata, ReferrerInfo, SegmentMetadata,
         SymbolMetadata, SymbolType,
     },
     parent_segment_info::ParentSegmentInfo,
@@ -100,11 +100,11 @@ impl FunctionSym {
                     continue
             */
 
-            let referenced_info = ReferencedInfo::Function {
-                sym_vram: ranges.vram().start(),
-                parent: parent_segment_info.clone(),
-                specific_rom: *instr_rom,
-            };
+            let referenced_info = ReferrerInfo::new_function(
+                ranges.vram().start(),
+                parent_segment_info.clone(),
+                *instr_rom,
+            );
             let branch_label =
                 owned_segment.add_label(*target_vram, LabelType::Branch, referenced_info)?;
             branch_label.set_rom(ranges.rom_from_vram(*target_vram).unwrap());
@@ -132,11 +132,11 @@ impl FunctionSym {
             {
                 // Only generate a label if this outside-branch is not branching to the start of a function
 
-                let referenced_info = ReferencedInfo::Function {
-                    sym_vram: ranges.vram().start(),
-                    parent: parent_segment_info.clone(),
-                    specific_rom: *instr_rom,
-                };
+                let referenced_info = ReferrerInfo::new_function(
+                    ranges.vram().start(),
+                    parent_segment_info.clone(),
+                    *instr_rom,
+                );
                 let branch_label = owned_segment.add_label(
                     *target_vram,
                     LabelType::AlternativeEntry,
@@ -225,11 +225,11 @@ impl FunctionSym {
                     *instr_rom,
                 );
             } else {
-                let referenced_info = ReferencedInfo::Function {
-                    sym_vram: ranges.vram().start(),
-                    parent: parent_segment_info.clone(),
-                    specific_rom: *instr_rom,
-                };
+                let referenced_info = ReferrerInfo::new_function(
+                    ranges.vram().start(),
+                    parent_segment_info.clone(),
+                    *instr_rom,
+                );
 
                 referenced_segment.add_label(
                     *target_vram,
@@ -369,14 +369,15 @@ impl FunctionSym {
                                     contextSym.isMips1Double = True
                     */
                 }
-            } else {
-                let referenced_info = ReferencedInfo::Function {
-                    sym_vram: ranges.vram().start(),
-                    parent: parent_segment_info.clone(),
-                    specific_rom: *instr_rom,
-                };
+            }
 
-                // TODO: add a proper label type for this
+            if !sym_metadata.is_defined() || sym_metadata.vram() != realigned_symbol_vram {
+                let referenced_info = ReferrerInfo::new_function(
+                    ranges.vram().start(),
+                    parent_segment_info.clone(),
+                    *instr_rom,
+                );
+
                 referenced_segment.add_label(
                     realigned_symbol_vram,
                     LabelType::AlternativeEntry,

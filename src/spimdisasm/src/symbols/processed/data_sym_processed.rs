@@ -8,7 +8,7 @@ use crate::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     collections::addended_ordered_map::FindSettings,
     context::Context,
-    metadata::{LabelType, SymbolType},
+    metadata::{LabelType, ReferrerInfo, SymbolType},
     parent_segment_info::ParentSegmentInfo,
     relocation::{RelocReferencedSym, RelocationInfo, RelocationType},
     section_type::SectionType,
@@ -88,7 +88,7 @@ impl DataSymProcessed {
     }
 
     fn generate_relocs(
-        context: &Context,
+        context: &mut Context,
         ranges: &RomVramRange,
         raw_bytes: &[u8],
         parent_segment_info: &ParentSegmentInfo,
@@ -98,6 +98,11 @@ impl DataSymProcessed {
         }
 
         let mut relocs = vec![None; raw_bytes.len() / 4];
+
+        let self_vram = ranges.vram().start();
+
+        let mut referenced_labels_owned_segment = Vec::new();
+        let mut referenced_labels_refer_segment = Vec::new();
 
         let owned_segment = context.find_owned_segment(parent_segment_info)?;
         let metadata = owned_segment
@@ -111,9 +116,9 @@ impl DataSymProcessed {
         let is_table = sym_type.is_some_and(|x| x.is_table());
         let find_settings = FindSettings::new(!is_table && metadata.allow_ref_with_addend());
 
-        // TODO: improve heuristic to determine if should search for symbols
         if should_search_for_address {
             for (i, word_bytes) in raw_bytes.chunks_exact(4).enumerate() {
+                let current_rom = ranges.rom().start() + Size::new(i as u32 * 4);
                 let word = endian.word_from_bytes(word_bytes);
                 let word_vram = Vram::new(word);
 
@@ -122,19 +127,41 @@ impl DataSymProcessed {
                 }
 
                 if is_table {
-                    let valid_reference = if owned_segment.in_vram_range(word_vram) {
-                        owned_segment.find_label(word_vram)
+                    let (label, is_owned_segment) = if owned_segment.in_vram_range(word_vram) {
+                        (owned_segment.find_label(word_vram), true)
                     } else {
-                        context
-                            .find_label_from_any_segment(word_vram, parent_segment_info, |_| true)
-                    }
-                    .is_some_and(|other_metadata| other_metadata.label_type() != LabelType::Branch);
+                        (
+                            context.find_label_from_any_segment(
+                                word_vram,
+                                parent_segment_info,
+                                |_| true,
+                            ),
+                            false,
+                        )
+                    };
+                    let valid_reference = label.is_some_and(|other_metadata| {
+                        other_metadata.label_type() != LabelType::Branch
+                    });
 
                     if valid_reference {
                         relocs[i] = Some(
                             RelocationType::R_MIPS_32
                                 .new_reloc_info(RelocReferencedSym::Label(word_vram)),
                         );
+
+                        if is_owned_segment {
+                            &mut referenced_labels_owned_segment
+                        } else {
+                            &mut referenced_labels_refer_segment
+                        }
+                        .push((
+                            word_vram,
+                            ReferrerInfo::new_data(
+                                self_vram,
+                                parent_segment_info.clone(),
+                                current_rom,
+                            ),
+                        ));
                     }
                 } else {
                     let valid_reference = if owned_segment.in_vram_range(word_vram) {
@@ -168,6 +195,22 @@ impl DataSymProcessed {
                         );
                     }
                 }
+            }
+        }
+
+        // Tell labels they have been referenced
+        let owned_segment_mut = context.find_owned_segment_mut(parent_segment_info)?;
+        for (label_vram, referrer) in referenced_labels_owned_segment {
+            if let Some(label) = owned_segment_mut.find_label_mut(label_vram) {
+                label.add_referenced_info(referrer);
+            }
+        }
+
+        for (label_vram, referrer) in referenced_labels_refer_segment {
+            let referenced_segment_mut =
+                context.find_referenced_segment_mut(label_vram, parent_segment_info);
+            if let Some(label) = referenced_segment_mut.find_label_mut(label_vram) {
+                label.add_referenced_info(referrer);
             }
         }
 

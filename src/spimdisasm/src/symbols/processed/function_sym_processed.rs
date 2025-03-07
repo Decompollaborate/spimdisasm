@@ -11,7 +11,7 @@ use crate::{
     collections::{addended_ordered_map::FindSettings, unordered_set::UnorderedSet},
     config::GlobalConfig,
     context::Context,
-    metadata::SymbolType,
+    metadata::{ReferrerInfo, SymbolType},
     parent_segment_info::ParentSegmentInfo,
     relocation::{RelocReferencedSym, RelocationInfo, RelocationType},
     section_type::SectionType,
@@ -94,13 +94,18 @@ impl FunctionSymProcessed {
     }
 
     fn generate_relocs(
-        context: &Context,
+        context: &mut Context,
         ranges: &RomVramRange,
         instructions: &[Instruction],
         parent_segment_info: &ParentSegmentInfo,
         instr_analysis: &InstructionAnalysisResult,
     ) -> Result<Vec<Option<RelocationInfo>>, SymbolPostProcessError> {
         let mut relocs = vec![None; instructions.len()];
+
+        let self_vram = ranges.vram().start();
+
+        let mut referenced_labels_owned_segment = Vec::new();
+        let mut referenced_labels_refer_segment = Vec::new();
 
         let owned_segment = context.find_owned_segment(parent_segment_info)?;
 
@@ -119,6 +124,11 @@ impl FunctionSymProcessed {
                     RelocationType::R_MIPS_PC16
                         .new_reloc_info(RelocReferencedSym::Label(*target_vram)),
                 );
+
+                referenced_labels_owned_segment.push((
+                    *target_vram,
+                    ReferrerInfo::new_function(self_vram, parent_segment_info.clone(), *instr_rom),
+                ));
 
                 // TODO: keep here?
                 // contextSym.branchLabels.add(labelSym.vram, labelSym)
@@ -153,6 +163,11 @@ impl FunctionSymProcessed {
                     RelocationType::R_MIPS_PC16
                         .new_reloc_info(RelocReferencedSym::Label(*target_vram)),
                 );
+
+                referenced_labels_owned_segment.push((
+                    *target_vram,
+                    ReferrerInfo::new_function(self_vram, parent_segment_info.clone(), *instr_rom),
+                ));
             } else {
                 // TODO: Add a comment with a warning saying that the target wasn't found
             }
@@ -192,6 +207,11 @@ impl FunctionSymProcessed {
                 .find_label_from_any_segment(*target_vram, parent_segment_info, |_| true)
                 .is_some()
             {
+                referenced_labels_refer_segment.push((
+                    *target_vram,
+                    ReferrerInfo::new_function(self_vram, parent_segment_info.clone(), *instr_rom),
+                ));
+
                 RelocReferencedSym::Label(*target_vram)
             } else {
                 // whatever
@@ -228,6 +248,11 @@ impl FunctionSymProcessed {
             let referenced_sym = if metadata.is_some() {
                 RelocReferencedSym::Address(*symbol_vram)
             } else {
+                referenced_labels_refer_segment.push((
+                    *symbol_vram,
+                    ReferrerInfo::new_function(self_vram, parent_segment_info.clone(), *instr_rom),
+                ));
+
                 RelocReferencedSym::Label(*symbol_vram)
             };
 
@@ -262,6 +287,11 @@ impl FunctionSymProcessed {
             let referenced_sym = if metadata.is_some() {
                 RelocReferencedSym::Address(*symbol_vram)
             } else {
+                referenced_labels_refer_segment.push((
+                    *symbol_vram,
+                    ReferrerInfo::new_function(self_vram, parent_segment_info.clone(), *instr_rom),
+                ));
+
                 RelocReferencedSym::Label(*symbol_vram)
             };
 
@@ -425,6 +455,22 @@ impl FunctionSymProcessed {
                             RelocReferencedSym::SymName(Arc::from(format!("0x{:X}", constant)), 0),
                         ));
                 }
+            }
+        }
+
+        // Tell labels they have been referenced
+        let owned_segment_mut = context.find_owned_segment_mut(parent_segment_info)?;
+        for (label_vram, referrer) in referenced_labels_owned_segment {
+            if let Some(label) = owned_segment_mut.find_label_mut(label_vram) {
+                label.add_referenced_info(referrer);
+            }
+        }
+
+        for (label_vram, referrer) in referenced_labels_refer_segment {
+            let referenced_segment_mut =
+                context.find_referenced_segment_mut(label_vram, parent_segment_info);
+            if let Some(label) = referenced_segment_mut.find_label_mut(label_vram) {
+                label.add_referenced_info(referrer);
             }
         }
 

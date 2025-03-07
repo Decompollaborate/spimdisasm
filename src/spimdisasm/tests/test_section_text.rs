@@ -187,7 +187,7 @@ fn test_section_text_1() {
     for s in labels {
         println!("{:?}", s.1);
     }
-    assert_eq!(labels.len(), 1);
+    assert_eq!(labels.len(), 4);
 
     /*
     println!();

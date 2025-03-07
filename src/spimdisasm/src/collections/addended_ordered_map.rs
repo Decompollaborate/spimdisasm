@@ -219,12 +219,12 @@ where
     }
 }
 
-/*
 impl<K, V> AddendedOrderedMap<K, V>
 where
     K: Ord,
     V: SizedAddress,
 {
+    /*
     pub fn clear(&mut self) {
         self.inner.clear();
     }
@@ -244,6 +244,7 @@ where
     {
         self.inner.remove_entry(value)
     }
+    */
 
     pub fn retain<F>(&mut self, f: F)
     where
@@ -252,7 +253,6 @@ where
         self.inner.retain(f);
     }
 }
-*/
 
 impl<K, V> AddendedOrderedMap<K, V>
 where
