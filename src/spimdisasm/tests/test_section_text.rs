@@ -968,3 +968,134 @@ glabel func_8080010C
     println!("{:?} {:?}", silly_symbol, silly_symbol.owner_segment_kind());
     assert_eq!(silly_symbol.all_access_types().len(), 2);
 }
+
+#[test]
+fn test_section_text_exception_control_flow() {
+    static BYTES: [u8; 17 * 4] = [
+        // function
+        0x00, 0x80, 0x1D, 0x3C, // lui
+        0x6C, 0x1E, 0x00, 0x0C, // jal
+        0xE0, 0x64, 0xBD, 0x27, // addiu
+        0x0D, 0x00, 0x00, 0x00, // break
+        // function
+        0x80, 0x1F, 0x00, 0x0C, // jal
+        0x00, 0x00, 0x00, 0x00, // nop
+        0x0D, 0x00, 0x00, 0x00, // break
+        // function
+        0x10, 0x1F, 0x00, 0x0C, // jal
+        0x00, 0x00, 0x00, 0x00, // nop
+        0x10, 0x00, 0x00, 0x42, // rfe
+        // function
+        0xC0, 0x1F, 0x00, 0x0C, // jal
+        0x00, 0x00, 0x00, 0x00, // nop
+        0x18, 0x00, 0x00, 0x42, // eret
+        // function
+        0x00, 0x00, 0x03, 0x24, // addiu
+        0x0C, 0x00, 0x00, 0x00, // syscall
+        0x08, 0x00, 0xE0, 0x03, // jr
+        0x00, 0x00, 0x00, 0x00, // nop
+    ];
+
+    let rom = Rom::new(0x00000000);
+    let vram = Vram::new(0x80000000);
+
+    let segment_rom = Rom::new(0x00000000);
+    let segment_vram = Vram::new(0x80000000);
+
+    let text_settings = ExecutableSectionSettings::new(
+        Some(Compiler::PSYQ),
+        InstructionFlags::new_extension(IsaExtension::R5900EE),
+    );
+
+    let mut context = {
+        let global_config = GlobalConfig::new(Endian::Little)
+            .with_gp_config(Some(GpConfig::new_sdata(GpValue::new(0x80008014))));
+
+        let global_ranges = RomVramRange::new(
+            AddressRange::new(segment_rom, Rom::new(0x00008000)),
+            AddressRange::new(segment_vram, Vram::new(0x80008000)),
+        );
+        let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
+
+        global_segment
+            .preheat_text(&global_config, &text_settings, &BYTES, rom, vram)
+            .unwrap();
+
+        let platform_segment = UserSegmentBuilder::new();
+
+        let builder = ContextBuilder::new(global_segment, platform_segment);
+
+        builder.build(global_config).unwrap()
+    };
+
+    let parent_segment_info = ParentSegmentInfo::new(segment_rom, segment_vram, None);
+    let section_text = context
+        .create_section_text(
+            &text_settings,
+            "text".to_string(),
+            &BYTES,
+            rom,
+            vram,
+            parent_segment_info,
+        )
+        .unwrap();
+
+    let user_relocs = BTreeMap::new();
+    let section_text = section_text
+        .post_process(&mut context, &user_relocs)
+        .unwrap();
+
+    let mut disassembly = ".section .text\n".to_string();
+    let display_settings = FunctionDisplaySettings::new(InstructionDisplayFlags::new());
+    for sym in section_text.functions() {
+        disassembly.push('\n');
+        disassembly.push_str(
+            &sym.display(&context, &display_settings)
+                .unwrap()
+                .to_string(),
+        );
+    }
+
+    println!("{}", disassembly);
+
+    let expected_disassembly = "\
+.section .text
+
+glabel func_80000000
+    /* 000000 80000000 00801D3C */  lui         $sp, %hi(UNK_800064E0)
+    /* 000004 80000004 6C1E000C */  jal         UNK_func_800079B0
+    /* 000008 80000008 E064BD27 */   addiu      $sp, $sp, %lo(UNK_800064E0)
+    /* 00000C 8000000C 0D000000 */  break       0
+.size func_80000000, . - func_80000000
+
+glabel func_80000010
+    /* 000010 80000010 801F000C */  jal         UNK_func_80007E00
+    /* 000014 80000014 00000000 */   nop
+    /* 000018 80000018 0D000000 */  break       0
+.size func_80000010, . - func_80000010
+
+/* Handwritten function */
+glabel func_8000001C
+    /* 00001C 8000001C 101F000C */  jal         UNK_func_80007C40
+    /* 000020 80000020 00000000 */   nop
+    /* 000024 80000024 10000042 */  rfe /* handwritten instruction */
+.size func_8000001C, . - func_8000001C
+
+/* Handwritten function */
+glabel func_80000028
+    /* 000028 80000028 C01F000C */  jal         UNK_func_80007F00
+    /* 00002C 8000002C 00000000 */   nop
+    /* 000030 80000030 18000042 */  eret /* handwritten instruction */
+.size func_80000028, . - func_80000028
+
+/* Handwritten function */
+glabel func_80000034
+    /* 000034 80000034 00000324 */  addiu       $v1, $zero, 0x0
+    /* 000038 80000038 0C000000 */  syscall     0 /* handwritten instruction */
+    /* 00003C 8000003C 0800E003 */  jr          $ra
+    /* 000040 80000040 00000000 */   nop
+.size func_80000034, . - func_80000034
+";
+
+    assert_eq!(disassembly, expected_disassembly,);
+}

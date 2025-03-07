@@ -251,7 +251,7 @@ fn find_functions(
 
     let mut starts_data = Vec::new();
 
-    let mut function_ended = false;
+    let mut function_ended = FunctionEndedState::No;
     let mut farthest_branch = VramOffset::new(0);
     let mut halt_function_searching;
 
@@ -302,11 +302,12 @@ fn find_functions(
             contains_invalid = true;
         }
 
-        if function_ended {
-            //function_ended = false;
-
+        if function_ended != FunctionEndedState::No {
             is_likely_handwritten = settings.is_handwritten;
-            index += 1;
+
+            if function_ended == FunctionEndedState::WithDelaySlot {
+                index += 1;
+            }
 
             let mut aux_ref = owned_segment.find_reference(
                 section_ranges.vram().start() + Size::new(index as u32 * 4),
@@ -387,7 +388,6 @@ fn find_functions(
         (function_ended, prev_func_had_user_declared_size) = find_functions_check_function_ended(
             owned_segment,
             settings,
-            instr,
             index,
             instrs,
             section_ranges.rom().start() + Size::new(index as u32 * 4),
@@ -516,12 +516,18 @@ fn find_functions_branch_checker(
     (farthest_branch, halt_function_searching)
 }
 
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+enum FunctionEndedState {
+    No,
+    WithDelaySlot,
+    ByException,
+}
+
 // returns `(function_ended, prev_func_had_user_declared_size)`
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 fn find_functions_check_function_ended(
     owned_segment: &SegmentMetadata,
     settings: &ExecutableSectionSettings,
-    instr: &Instruction,
     index: usize,
     instrs: &[Instruction],
     current_rom: Rom,
@@ -529,16 +535,18 @@ fn find_functions_check_function_ended(
     current_function_ref: Option<ReferenceWrapper>,
     farthest_branch: VramOffset,
     current_function_start: usize,
-) -> (bool, bool) {
+) -> (FunctionEndedState, bool) {
+    let instr = &instrs[index];
+
     if let Some(reference) = current_function_ref {
         if let Some(user_declared_size) = reference.user_declared_size() {
             // If the function has a size set by the user then only use that and ignore the other ways of determining function-ends
             return if (index + 2) * 4
                 == current_function_start + user_declared_size.inner() as usize
             {
-                (true, true)
+                (FunctionEndedState::WithDelaySlot, true)
             } else {
-                (false, false)
+                (FunctionEndedState::No, false)
             };
         }
     }
@@ -550,19 +558,26 @@ fn find_functions_check_function_ended(
         if reference.is_trustable_function() {
             if let Some(sym_rom) = reference.rom() {
                 if current_rom + Size::new(8) == sym_rom {
-                    return (true, false);
+                    return (FunctionEndedState::WithDelaySlot, false);
                 }
             } else {
-                return (true, false);
+                return (FunctionEndedState::WithDelaySlot, false);
             }
         }
     }
 
     if farthest_branch.is_positive() {
-        return (false, false);
+        return (FunctionEndedState::No, false);
     }
+
+    if instr.opcode().causes_unconditional_exception()
+        && !instr.opcode().causes_returnable_exception()
+    {
+        return (FunctionEndedState::ByException, false);
+    }
+
     if !instr.opcode().is_jump() {
-        return (false, false);
+        return (FunctionEndedState::No, false);
     }
 
     if instr.is_return() {
@@ -592,10 +607,10 @@ fn find_functions_check_function_ended(
                 }
             }
             if !redundant_pattern_detected {
-                return (true, false);
+                return (FunctionEndedState::WithDelaySlot, false);
             }
         } else {
-            return (true, false);
+            return (FunctionEndedState::WithDelaySlot, false);
         }
     } else if instr.is_jumptable_jump() {
         // Usually jumptables, ignore
@@ -606,19 +621,19 @@ fn find_functions_check_function_ended(
         // we can consider this as a function end. This can happen as a
         // tail-optimization in "modern" compilers
         if settings.instruction_flags.j_as_branch() {
-            return (false, false);
+            return (FunctionEndedState::No, false);
         } else if let Some(target_vram) = instr.get_instr_index_as_vram() {
             if let Some(aux_ref) =
                 owned_segment.find_reference(target_vram, FindSettings::new(false))
             {
                 if aux_ref.is_trustable_function() && Some(aux_ref) != current_function_ref {
-                    return (true, false);
+                    return (FunctionEndedState::WithDelaySlot, false);
                 }
             }
         }
     }
 
-    (false, false)
+    (FunctionEndedState::No, false)
 }
 
 fn run_register_tracker_start(
