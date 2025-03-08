@@ -27,6 +27,7 @@ bitflags! {
     ///     - Do not try to guess if the user provided just a size for the symbol, but that size
     ///       doesn't match the one of a correct string (i.e. missing terminator).
     ///     - Do not try to guess if type information for the symbol can be inferred by other means.
+    ///     - Do not try to guess if the symbol has been dereferenced.
     ///     - A string symbol must be referenced only once.
     ///     - Strings must not be empty.
     /// - [`MultipleReferences`]: A string no longer needs to be referenced only once to be
@@ -38,6 +39,10 @@ bitflags! {
     /// - [`UnreferencedStrings`]: Allow completely unreferenced data to be guessed as a string.
     /// - [`UnreferencedButSymbolized`]: Allow unreferenced data that is after a sized-symbol to be
     ///   guessed as a string.
+    /// - [`AllowMixedAlignedDereferences`]: Allow guessing if the symbol has been aligned
+    ///   dereferenced by different access types
+    /// - [`AllowUnalignedDereferences`]: Allow guessing if the symbol has been unaligned
+    ///   dereferenced.
     ///
     /// Additionally it is possible to completely disable guessing for strings with the [`no`]
     /// function. On the hand it is possible to enable all settings and almost always try to guess
@@ -51,6 +56,8 @@ bitflags! {
     /// [`IgnoreDetectedType`]: StringGuesserFlags::IgnoreDetectedType
     /// [`UnreferencedStrings`]: StringGuesserFlags::UnreferencedStrings
     /// [`UnreferencedButSymbolized`]: StringGuesserFlags::UnreferencedButSymbolized
+    /// [`AllowMixedAlignedDereferences`]: StringGuesserFlags::AllowMixedAlignedDereferences
+    /// [`AllowUnalignedDereferences`]: StringGuesserFlags::AllowUnalignedDereferences
     /// [`full`]: StringGuesserFlags::full
     #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
     #[non_exhaustive]
@@ -81,6 +88,12 @@ bitflags! {
 
         /// Allow unreferenced data that is after a sized-symbol to be guessed as a string.
         const UnreferencedButSymbolized = 1 << 5;
+
+        /// Allow guessing when a symbol has been dereferenced by different aligned access types.
+        const AllowMixedAlignedDereferences = 1 << 6;
+
+        /// Allow guessing when a symbol has been unaligned dereferenced.
+        const AllowUnalignedDereferences = 1 << 7;
     }
 }
 
@@ -96,7 +109,9 @@ pub(crate) enum StringGuessError {
     GuesserDisabled,
     ReferencedMoreThanOnce,
     EmptyString,
-    HasBeenDereferenced,
+    HasDetectedType,
+    HasBeenDereferencedMixedAligned,
+    HasBeenDereferencedUnaligned,
     InvalidString,
     UnreferencedString,
 }
@@ -118,7 +133,13 @@ impl fmt::Display for StringGuessError {
             StringGuessError::GuesserDisabled => write!(f, "GuesserDisabled"),
             StringGuessError::ReferencedMoreThanOnce => write!(f, "ReferencedMoreThanOnce"),
             StringGuessError::EmptyString => write!(f, "EmptyString"),
-            StringGuessError::HasBeenDereferenced => write!(f, "HasBeenDereferenced"),
+            StringGuessError::HasDetectedType => write!(f, "HasDetectedType"),
+            StringGuessError::HasBeenDereferencedMixedAligned => {
+                write!(f, "HasBeenDereferencedMixedAligned")
+            }
+            StringGuessError::HasBeenDereferencedUnaligned => {
+                write!(f, "HasBeenDereferencedUnaligned")
+            }
             StringGuessError::InvalidString => write!(f, "InvalidString"),
             StringGuessError::UnreferencedString => write!(f, "UnreferencedString"),
         }
@@ -131,6 +152,7 @@ impl StringGuesserFlags {
         Self::Basic
             .union(Self::MultipleReferences)
             .union(Self::UnreferencedButSymbolized)
+            .union(Self::AllowUnalignedDereferences)
     }
 
     pub const fn full() -> Self {
@@ -220,21 +242,7 @@ impl StringGuesserFlags {
                 return Err(StringGuessError::ReferencedMoreThanOnce);
             }
 
-            if !self.contains(Self::IgnoreDetectedType) {
-                let all_access_types = ref_wrapper.all_access_types();
-                if !all_access_types.is_empty()
-                    && all_access_types.iter().all(|x| {
-                        !matches!(
-                            x.0,
-                            AccessType::UNALIGNED_WORD | AccessType::UNALIGNED_DOUBLEWORD
-                        )
-                    })
-                {
-                    // Avoid considering something as a string if it has been dereferenced.
-                    // But allow LEFT/RIGHT accesses, since that can be used to declare strings on the stack.
-                    return Err(StringGuessError::HasBeenDereferenced);
-                }
-            }
+            self.handle_access_types(ref_wrapper)?;
         } else if !self.contains(Self::UnreferencedStrings) {
             if self.contains(StringGuesserFlags::UnreferencedButSymbolized) && prev_sym_ended_here {
                 // Previous symbol was sized and it ended here, so it should be fine to guess this new
@@ -258,6 +266,42 @@ impl StringGuesserFlags {
         };
 
         Ok(raw_size)
+    }
+
+    fn handle_access_types(&self, ref_wrapper: ReferenceWrapper) -> Result<(), StringGuessError> {
+        if self.contains(Self::IgnoreDetectedType) {
+            return Ok(());
+        }
+
+        let all_access_types = ref_wrapper.all_access_types();
+        let contains_unaligned = all_access_types.iter().any(|x| {
+            matches!(
+                x.0,
+                AccessType::UNALIGNED_WORD | AccessType::UNALIGNED_DOUBLEWORD
+            )
+        });
+
+        if contains_unaligned {
+            return if self.contains(Self::AllowUnalignedDereferences) {
+                Ok(())
+            } else {
+                Err(StringGuessError::HasBeenDereferencedUnaligned)
+            };
+        }
+
+        // At this point we know this symbol haven't been unaligned dereferenced.
+
+        match all_access_types.len() {
+            0 => Ok(()),
+            1 => Err(StringGuessError::HasDetectedType),
+            _ => {
+                if self.contains(Self::AllowMixedAlignedDereferences) {
+                    Ok(())
+                } else {
+                    Err(StringGuessError::HasBeenDereferencedMixedAligned)
+                }
+            }
+        }
     }
 }
 
@@ -356,6 +400,16 @@ pub(crate) mod python_bindings {
         #[pyo3(name = "UnreferencedButSymbolized")]
         pub const fn py_unreferenced_but_symbolized() -> Self {
             Self::UnreferencedButSymbolized
+        }
+        #[staticmethod]
+        #[pyo3(name = "AllowMixedAlignedDereferences")]
+        pub const fn py_allow_mixed_aligned_dereferences() -> Self {
+            Self::AllowMixedAlignedDereferences
+        }
+        #[staticmethod]
+        #[pyo3(name = "AllowUnalignedDereferences")]
+        pub const fn py_allow_unaligned_dereferences() -> Self {
+            Self::AllowUnalignedDereferences
         }
 
         pub fn __or__(&self, other: Self) -> Self {
