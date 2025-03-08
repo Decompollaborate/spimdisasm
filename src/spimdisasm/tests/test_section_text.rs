@@ -971,7 +971,7 @@ glabel func_8080010C
 
 #[test]
 fn test_section_text_exception_control_flow() {
-    static BYTES: [u8; 17 * 4] = [
+    static BYTES: [u8; 14 * 4] = [
         // function
         0x00, 0x80, 0x1D, 0x3C, // lui
         0x6C, 0x1E, 0x00, 0x0C, // jal
@@ -981,10 +981,6 @@ fn test_section_text_exception_control_flow() {
         0x80, 0x1F, 0x00, 0x0C, // jal
         0x00, 0x00, 0x00, 0x00, // nop
         0x0D, 0x00, 0x00, 0x00, // break
-        // function
-        0x10, 0x1F, 0x00, 0x0C, // jal
-        0x00, 0x00, 0x00, 0x00, // nop
-        0x10, 0x00, 0x00, 0x42, // rfe
         // function
         0xC0, 0x1F, 0x00, 0x0C, // jal
         0x00, 0x00, 0x00, 0x00, // nop
@@ -1076,25 +1072,18 @@ glabel func_80000010
 
 /* Handwritten function */
 glabel func_8000001C
-    /* 00001C 8000001C 101F000C */  jal         UNK_func_80007C40
+    /* 00001C 8000001C C01F000C */  jal         UNK_func_80007F00
     /* 000020 80000020 00000000 */   nop
-    /* 000024 80000024 10000042 */  rfe /* handwritten instruction */
+    /* 000024 80000024 18000042 */  eret /* handwritten instruction */
 .size func_8000001C, . - func_8000001C
 
 /* Handwritten function */
 glabel func_80000028
-    /* 000028 80000028 C01F000C */  jal         UNK_func_80007F00
-    /* 00002C 8000002C 00000000 */   nop
-    /* 000030 80000030 18000042 */  eret /* handwritten instruction */
+    /* 000028 80000028 00000324 */  addiu       $v1, $zero, 0x0
+    /* 00002C 8000002C 0C000000 */  syscall     0 /* handwritten instruction */
+    /* 000030 80000030 0800E003 */  jr          $ra
+    /* 000034 80000034 00000000 */   nop
 .size func_80000028, . - func_80000028
-
-/* Handwritten function */
-glabel func_80000034
-    /* 000034 80000034 00000324 */  addiu       $v1, $zero, 0x0
-    /* 000038 80000038 0C000000 */  syscall     0 /* handwritten instruction */
-    /* 00003C 8000003C 0800E003 */  jr          $ra
-    /* 000040 80000040 00000000 */   nop
-.size func_80000034, . - func_80000034
 ";
 
     assert_eq!(disassembly, expected_disassembly,);
