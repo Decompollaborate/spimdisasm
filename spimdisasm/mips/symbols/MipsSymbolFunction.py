@@ -867,7 +867,13 @@ class SymbolFunction(SymbolText):
         self._generateRelocsFromInstructionAnalyzer()
 
         symName = self.getName()
+
         symSize = self.contextSym.getSize()
+        if self.contextSym.userDeclaredSize is None:
+            # Fixup symbol size to avoid counting padding as part of the symbol
+            # on the emitted size and end directives.
+            symSize -= 4 * self.countExtraPadding()
+
         output += self.getSymbolAsmDeclaration(symName, useGlobalLabel)
 
         wasLastInstABranch = False

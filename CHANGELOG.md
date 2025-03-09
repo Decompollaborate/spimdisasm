@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Change where `.size` directive and end label is emitted on functions with no
+  user-declared size.
+  - The directives are now emitted before the function's trailing padding.
+
 ## [1.32.4] - 2025-03-03
 
 ### Fixed
