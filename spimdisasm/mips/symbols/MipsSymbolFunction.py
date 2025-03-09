@@ -811,8 +811,9 @@ class SymbolFunction(SymbolText):
                     line = line.replace("addiu ", "la    ").replace(", $gp, ", ", ").replace(", $28, ", ", ")
 
                 endComment = self.endOfLineComment.get(instructionOffset//4, "")
-                endComment += f" /* gp_rel: {immOverride} */"
-                self.endOfLineComment[instructionOffset//4] = endComment
+                if " /* gp_rel: " not in endComment:
+                    endComment += f" /* gp_rel: {immOverride} */"
+                    self.endOfLineComment[instructionOffset//4] = endComment
 
         return f"{comment}  {line}"
 
