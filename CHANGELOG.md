@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.33.0] - 2025-03-10
+
+### Added
+
+- `SectionText.setGpRelHack`: Allows updating the gpRelHack value after anlyzing
+  the section.
+
+### Changed
+
+- Change where `.size` directive and end label is emitted on functions with no
+  user-declared size.
+  - The directives are now emitted before the function's trailing padding.
+- Allow using reloc `MIPS_NONE` on `jal` and `j` instructions.
+
+### Fixed
+
+- `gpRelHack` fix:
+  - Avoid emitting multiple `gp_rel:` comments.
+
 ## [1.32.4] - 2025-03-03
 
 ### Fixed
@@ -1764,6 +1783,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.33.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.32.4...1.33.0
 [1.32.4]: https://github.com/Decompollaborate/spimdisasm/compare/1.32.3...1.32.4
 [1.32.3]: https://github.com/Decompollaborate/spimdisasm/compare/1.32.2...1.32.3
 [1.32.2]: https://github.com/Decompollaborate/spimdisasm/compare/1.32.1...1.32.2

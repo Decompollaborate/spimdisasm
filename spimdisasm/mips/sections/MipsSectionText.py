@@ -419,3 +419,12 @@ class SectionText(SectionBase):
             was_updated = True
 
         return was_updated
+
+    def getGpRelHack(self) -> bool:
+        return self.gpRelHack
+
+    def setGpRelHack(self, value: bool) -> None:
+        self.gpRelHack = value
+        for func in self.symbolList:
+            assert isinstance(func, symbols.SymbolFunction)
+            func.gpRelHack = value

@@ -709,11 +709,15 @@ class SymbolFunction(SymbolText):
             return None, None
 
         relocInfo = self.getReloc(instrOffset, instr)
-        if relocInfo is not None and not relocInfo.isRelocNone():
-            ignoredRelocs = set()
-            if self.gpRelHack:
-                ignoredRelocs.add(common.RelocType.MIPS_GPREL16)
-            return relocInfo.getNameWithReloc(isSplittedSymbol=isSplittedSymbol, ignoredRelocs=ignoredRelocs), relocInfo
+        if relocInfo is not None:
+            if relocInfo.isRelocNone():
+                if instr.isJumpWithAddress():
+                    return f"0x{instr.getInstrIndexAsVram():08X}", relocInfo
+            else:
+                ignoredRelocs = set()
+                if self.gpRelHack:
+                    ignoredRelocs.add(common.RelocType.MIPS_GPREL16)
+                return relocInfo.getNameWithReloc(isSplittedSymbol=isSplittedSymbol, ignoredRelocs=ignoredRelocs), relocInfo
 
         if instr.isBranch() or instr.isUnconditionalBranch():
             if common.GlobalConfig.IGNORE_BRANCHES:
@@ -811,8 +815,9 @@ class SymbolFunction(SymbolText):
                     line = line.replace("addiu ", "la    ").replace(", $gp, ", ", ").replace(", $28, ", ", ")
 
                 endComment = self.endOfLineComment.get(instructionOffset//4, "")
-                endComment += f" /* gp_rel: {immOverride} */"
-                self.endOfLineComment[instructionOffset//4] = endComment
+                if " /* gp_rel: " not in endComment:
+                    endComment += f" /* gp_rel: {immOverride} */"
+                    self.endOfLineComment[instructionOffset//4] = endComment
 
         return f"{comment}  {line}"
 
@@ -867,7 +872,13 @@ class SymbolFunction(SymbolText):
         self._generateRelocsFromInstructionAnalyzer()
 
         symName = self.getName()
+
         symSize = self.contextSym.getSize()
+        if self.contextSym.userDeclaredSize is None:
+            # Fixup symbol size to avoid counting padding as part of the symbol
+            # on the emitted size and end directives.
+            symSize -= 4 * self.countExtraPadding()
+
         output += self.getSymbolAsmDeclaration(symName, useGlobalLabel)
 
         wasLastInstABranch = False
