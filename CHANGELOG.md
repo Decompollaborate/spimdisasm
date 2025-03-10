@@ -7,11 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `SectionText.setGpRelHack`: Allows updating the gpRelHack value after anlyzing
+  the section.
+
 ### Changed
 
 - Change where `.size` directive and end label is emitted on functions with no
   user-declared size.
   - The directives are now emitted before the function's trailing padding.
+
+### Fixed
+
+- `gpRelHack` fix:
+  - Avoid emitting multiple `gp_rel:` comments.
 
 ## [1.32.4] - 2025-03-03
 
