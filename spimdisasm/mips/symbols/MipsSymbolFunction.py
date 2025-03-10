@@ -709,11 +709,15 @@ class SymbolFunction(SymbolText):
             return None, None
 
         relocInfo = self.getReloc(instrOffset, instr)
-        if relocInfo is not None and not relocInfo.isRelocNone():
-            ignoredRelocs = set()
-            if self.gpRelHack:
-                ignoredRelocs.add(common.RelocType.MIPS_GPREL16)
-            return relocInfo.getNameWithReloc(isSplittedSymbol=isSplittedSymbol, ignoredRelocs=ignoredRelocs), relocInfo
+        if relocInfo is not None:
+            if relocInfo.isRelocNone():
+                if instr.isJumpWithAddress():
+                    return f"0x{instr.getInstrIndexAsVram():08X}", relocInfo
+            else:
+                ignoredRelocs = set()
+                if self.gpRelHack:
+                    ignoredRelocs.add(common.RelocType.MIPS_GPREL16)
+                return relocInfo.getNameWithReloc(isSplittedSymbol=isSplittedSymbol, ignoredRelocs=ignoredRelocs), relocInfo
 
         if instr.isBranch() or instr.isUnconditionalBranch():
             if common.GlobalConfig.IGNORE_BRANCHES:

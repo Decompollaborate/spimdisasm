@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change where `.size` directive and end label is emitted on functions with no
   user-declared size.
   - The directives are now emitted before the function's trailing padding.
+- Allow using reloc `MIPS_NONE` on `jal` and `j` instructions.
 
 ### Fixed
 
