@@ -9,7 +9,10 @@ use pyo3::prelude::*;
 use crate::{
     addresses::{Size, Vram},
     collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
-    metadata::{GeneratedBy, OwnerSegmentKind, SymbolMetadata, SymbolType, UserSegmentMetadata},
+    metadata::{
+        GeneratedBy, OwnerSegmentKind, SymbolMetadata, SymbolNameGenerationSettings, SymbolType,
+        UserSegmentMetadata,
+    },
 };
 
 use super::AddUserSegmentSymbolError;
@@ -40,7 +43,12 @@ impl UserSegmentBuilder {
         let (metadata, newly_created) =
             self.symbols
                 .find_mut_or_insert_with(vram, FindSettings::new(true), || {
-                    SymbolMetadata::new(generated_by, vram, OwnerSegmentKind::User)
+                    SymbolMetadata::new(
+                        generated_by,
+                        vram,
+                        OwnerSegmentKind::User,
+                        SymbolNameGenerationSettings::new(),
+                    )
                 });
 
         if metadata.vram() != vram {

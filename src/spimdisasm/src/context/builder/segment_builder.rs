@@ -16,7 +16,7 @@ use crate::{
     collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
     metadata::{
         GeneratedBy, IgnoredAddressRange, LabelMetadata, LabelType, OverlayCategoryName,
-        OwnerSegmentKind, SymbolMetadata, SymbolType,
+        OwnerSegmentKind, SymbolMetadata, SymbolNameGenerationSettings, SymbolType,
     },
 };
 
@@ -130,7 +130,12 @@ impl SegmentBuilder {
                 } else {
                     OwnerSegmentKind::Global
                 };
-                SymbolMetadata::new(GeneratedBy::UserDeclared, vram, owner_segment_kind)
+                SymbolMetadata::new(
+                    GeneratedBy::UserDeclared,
+                    vram,
+                    owner_segment_kind,
+                    SymbolNameGenerationSettings::new(),
+                )
             },
         );
 

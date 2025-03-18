@@ -16,7 +16,9 @@ use crate::{
     section_type::SectionType,
 };
 
-use super::{ParentSectionMetadata, SymbolMetadataNameDisplay, SymbolType};
+use super::{
+    ParentSectionMetadata, SymbolMetadataNameDisplay, SymbolNameGenerationSettings, SymbolType,
+};
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub /*(crate)*/ enum GeneratedBy {
@@ -95,6 +97,8 @@ impl OwnerSegmentKind {
 pub struct SymbolMetadata {
     generated_by: GeneratedBy,
     vram: Vram,
+    owner_segment_kind: OwnerSegmentKind,
+    symbol_name_generation_settings: SymbolNameGenerationSettings,
     rom: Option<Rom>,
 
     user_declared_name: Option<Arc<str>>,
@@ -148,7 +152,6 @@ pub struct SymbolMetadata {
     // "Name of the file containing this symbol"
     // inFileOffset: int|None = None
     // "Offset relative to the start of the file"
-    owner_segment_kind: OwnerSegmentKind,
 
     //
     got_info: Option<GotInfo>,
@@ -200,10 +203,14 @@ impl SymbolMetadata {
         generated_by: GeneratedBy,
         vram: Vram,
         owner_segment_kind: OwnerSegmentKind,
+        symbol_name_generation_settings: SymbolNameGenerationSettings,
     ) -> Self {
         Self {
             generated_by,
             vram,
+            owner_segment_kind,
+            symbol_name_generation_settings,
+
             rom: None,
 
             user_declared_name: None,
@@ -224,7 +231,6 @@ impl SymbolMetadata {
             reference_functions: UnorderedMap::new(),
             reference_symbols: UnorderedMap::new(),
             // name_get_callback: None,
-            owner_segment_kind,
             got_info: None,
             accessed_as_gp_rel: false,
             auto_created_pad_by: None,
@@ -246,6 +252,13 @@ impl SymbolMetadata {
 
     pub const fn vram(&self) -> Vram {
         self.vram
+    }
+
+    pub fn symbol_name_generation_settings(&self) -> &SymbolNameGenerationSettings {
+        &self.symbol_name_generation_settings
+    }
+    pub fn symbol_name_generation_settings_mut(&mut self) -> &mut SymbolNameGenerationSettings {
+        &mut self.symbol_name_generation_settings
     }
 
     pub fn rom(&self) -> Option<Rom> {

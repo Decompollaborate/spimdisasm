@@ -31,6 +31,10 @@ impl NoloadSym {
         parent_segment_info: ParentSegmentInfo,
         properties: NoloadSymProperties,
     ) -> Result<Self, SymbolCreationError> {
+        let symbol_name_generation_settings = context
+            .global_config()
+            .symbol_name_generation_settings()
+            .clone();
         let owned_segment = context.find_owned_segment_mut(&parent_segment_info)?;
         let metadata = owned_segment.add_self_symbol(
             vram_range.start(),
@@ -39,6 +43,7 @@ impl NoloadSym {
             SECTION_TYPE,
             None,
             |_| Size::new(0),
+            symbol_name_generation_settings,
         )?;
 
         properties.apply_to_metadata(metadata);

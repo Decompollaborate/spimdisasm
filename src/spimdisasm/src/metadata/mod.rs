@@ -13,6 +13,7 @@ mod referenced_info;
 pub(crate) mod segment_metadata;
 mod symbol_metadata;
 mod symbol_metadata_name_display;
+mod symbol_name_generation_settings;
 mod symbol_type;
 mod user_segment_metadata;
 
@@ -29,5 +30,6 @@ pub use segment_metadata::SegmentMetadata;
 pub(crate) use symbol_metadata::OwnerSegmentKind;
 pub use symbol_metadata::{GeneratedBy, RodataMigrationBehavior, SymbolMetadata};
 pub use symbol_metadata_name_display::SymbolMetadataNameDisplay;
+pub use symbol_name_generation_settings::SymbolNameGenerationSettings;
 pub use symbol_type::SymbolType;
 pub(crate) use user_segment_metadata::UserSegmentMetadata;

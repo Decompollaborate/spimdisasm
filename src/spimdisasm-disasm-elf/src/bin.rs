@@ -1,0 +1,873 @@
+/* SPDX-FileCopyrightText: © 2025 Decompollaborate */
+/* SPDX-License-Identifier: MIT */
+
+use clap::{error::Result, Parser};
+use object::{
+    self, elf,
+    read::elf::{ElfFile32, FileHeader, Sym},
+    Object, ObjectSection, ObjectSymbol,
+};
+use spimdisasm::{
+    self,
+    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
+    config::{Endian, GlobalConfig},
+    context::{
+        builder::{GlobalSegmentHeater, UserSegmentBuilder},
+        Context, ContextBuilder, GlobalSegmentBuilder,
+    },
+    metadata::SymbolType,
+    parent_segment_info::ParentSegmentInfo,
+    rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion},
+    relocation::RelocationInfo,
+    sections::{
+        before_proc::{
+            DataSection, DataSectionSettings, ExecutableSection, ExecutableSectionSettings,
+            NoloadSection, NoloadSectionSettings,
+        },
+        processed::{DataSectionProcessed, ExecutableSectionProcessed, NoloadSectionProcessed},
+        Section, SectionPostProcessError,
+    },
+    symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings, SymNoloadDisplaySettings},
+};
+use std::{
+    collections::{BTreeMap, HashSet},
+    fmt::Display,
+    fs::{self, File},
+    io::{BufReader, BufWriter, Read, Write},
+    path::PathBuf,
+    time,
+};
+
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, clap::ValueEnum)]
+#[allow(non_camel_case_types)]
+pub enum ArgCompiler {
+    #[clap(aliases=&["ido"])]
+    IDO,
+}
+
+impl From<ArgCompiler> for spimdisasm::config::Compiler {
+    fn from(value: ArgCompiler) -> Self {
+        match value {
+            ArgCompiler::IDO => Self::IDO,
+        }
+    }
+}
+
+/// disasm-elf: CLI tool to disassemble an elf file using spimdisasm
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    input_path: PathBuf,
+    output_dir: PathBuf,
+
+    #[clap(long)]
+    compiler: Option<ArgCompiler>,
+}
+
+#[track_caller]
+#[inline]
+fn pretty_unwrap<T, E>(value: Result<T, E>) -> T
+where
+    E: Display,
+{
+    match value {
+        Ok(v) => v,
+        Err(e) => panic!("{}", e),
+    }
+}
+
+fn get_time_now() -> time::Duration {
+    pretty_unwrap(time::SystemTime::now().duration_since(time::UNIX_EPOCH))
+}
+
+fn read_elf(binary_data: &[u8]) -> ElfFile32 {
+    if let object::File::Elf32(elf_file) = pretty_unwrap(object::File::parse(binary_data)) {
+        elf_file
+    } else {
+        panic!("Not an elf32 file")
+    }
+}
+
+fn endian_to_endian(endian: object::Endianness) -> Endian {
+    match endian {
+        object::Endianness::Big => Endian::Big,
+        object::Endianness::Little => Endian::Little,
+    }
+}
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+enum ProgbitsType {
+    Text,
+    Data,
+    Rodata,
+    Got,
+    Unknown,
+}
+
+impl ProgbitsType {
+    fn new(sh_flags: u32, name: &str) -> Self {
+        if name == ".got" {
+            ProgbitsType::Got
+        } else if matches!(name, ".rodata" | ".rdata") {
+            // Some compilers set the Write flag on .rodata sections, so we need to hardcode
+            // a special check to distinguish it properly
+            ProgbitsType::Rodata
+        } else if sh_flags & elf::SHF_ALLOC == 0 {
+            ProgbitsType::Unknown
+        } else if sh_flags & elf::SHF_EXECINSTR != 0 {
+            ProgbitsType::Text
+        } else if sh_flags & elf::SHF_WRITE != 0 {
+            ProgbitsType::Data
+        } else {
+            ProgbitsType::Rodata
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+enum SectionType {
+    Progbits(ProgbitsType),
+    Nobits,
+    Reloc,
+    DynSym,
+}
+
+impl SectionType {
+    fn new(sh_type: u32, sh_flags: u32, name: &str) -> Option<Self> {
+        match sh_type {
+            elf::SHT_PROGBITS => Some(SectionType::Progbits(ProgbitsType::new(sh_flags, name))),
+            elf::SHT_NOBITS => Some(SectionType::Nobits),
+            elf::SHT_REL => Some(SectionType::Reloc),
+            elf::SHT_DYNSYM => Some(SectionType::DynSym),
+            _ => None,
+        }
+    }
+}
+
+#[allow(dead_code)]
+fn print_elf_stuff(elf_file: &ElfFile32) {
+    let elf_header = elf_file.elf_header();
+
+    match elf_header.e_type(elf_file.endian()) {
+        elf::ET_REL => println!("Relocatable file"),
+        elf::ET_EXEC => println!("Executable file"),
+        elf::ET_DYN => println!("Shared object file"),
+        _ => panic!("Unsupported e_type"),
+    }
+
+    match elf_header.e_machine(elf_file.endian()) {
+        elf::EM_MIPS => println!("MIPS R3000 big-endian"),
+        elf::EM_MIPS_RS3_LE => println!("MIPS R3000 little-endian"),
+        _ => panic!("Unsupported e_machine"),
+    }
+
+    println!(
+        "Entrypoint: 0x{:08X}",
+        elf_header.e_entry(elf_file.endian())
+    );
+
+    {
+        let mut e_flags = elf_header.e_flags(elf_file.endian());
+        println!("Flags: 0x{:08X}", e_flags);
+
+        print!("    ");
+
+        let arch = e_flags & elf::EF_MIPS_ARCH;
+        e_flags &= !elf::EF_MIPS_ARCH;
+
+        print!(
+            "{}",
+            match arch {
+                elf::EF_MIPS_ARCH_1 => "mips1",
+                elf::EF_MIPS_ARCH_2 => "mips2",
+                elf::EF_MIPS_ARCH_3 => "mips3",
+                elf::EF_MIPS_ARCH_4 => "mips4",
+                elf::EF_MIPS_ARCH_5 => "mips5",
+                elf::EF_MIPS_ARCH_32 => "mips32",
+                elf::EF_MIPS_ARCH_64 => "mips64",
+                elf::EF_MIPS_ARCH_32R2 => "mips32R2",
+                elf::EF_MIPS_ARCH_64R2 => "mips64R2",
+                elf::EF_MIPS_ARCH_32R6 => "mips32R6",
+                elf::EF_MIPS_ARCH_64R6 => "mips64R6",
+                _ => "UNKNOWN ARCH",
+            }
+        );
+
+        if e_flags & elf::EF_MIPS_NOREORDER != 0 {
+            print!(", noreorder");
+            e_flags &= !elf::EF_MIPS_NOREORDER;
+        }
+
+        if e_flags & elf::EF_MIPS_PIC != 0 {
+            print!(", pic");
+            e_flags &= !elf::EF_MIPS_PIC;
+        }
+        if e_flags & elf::EF_MIPS_CPIC != 0 {
+            print!(", cpic");
+            e_flags &= !elf::EF_MIPS_CPIC;
+        }
+
+        if e_flags != 0 {
+            print!(", ");
+            print!("Unknown flags: 0x{:08X}", e_flags);
+        }
+
+        println!();
+    }
+
+    println!();
+
+    println!("dynamic_symbols:");
+    for sym in elf_file.dynamic_symbols() {
+        println!("  {}", pretty_unwrap(sym.name()));
+    }
+    println!();
+
+    for section in elf_file.sections() {
+        println!("{}", pretty_unwrap(section.name()));
+        println!(
+            "    address: 0x{:08X}, size: 0x{:08X}, align: 0x{:02X}",
+            section.address(),
+            section.size(),
+            section.align()
+        );
+        println!(
+            "    kind: {:?}, flags: {:?}",
+            section.kind(),
+            section.flags()
+        );
+
+        let sh_flags = section.elf_section_header().sh_flags.get(elf_file.endian());
+        let sh_type = section.elf_section_header().sh_type.get(elf_file.endian());
+        println!("    sh_flags: {}", sh_flags);
+        println!("    sh_type: {}", sh_type);
+    }
+}
+
+fn create_global_ranges(elf_file: &ElfFile32) -> RomVramRange {
+    let mut rom_start = None;
+    let mut rom_end = None;
+    let mut vram_start = None;
+    let mut vram_end = None;
+
+    for section in elf_file.sections() {
+        let sh_flags = section.elf_section_header().sh_flags.get(elf_file.endian());
+        let sh_type = section.elf_section_header().sh_type.get(elf_file.endian());
+
+        let section_type = SectionType::new(sh_type, sh_flags, pretty_unwrap(section.name()));
+        if let Some(SectionType::Progbits(_) | SectionType::Nobits) = section_type {
+            let mut vram = section.address() as u32;
+            if vram == 0 {
+                // hack to avoid having issues with relocatable files
+                vram = section
+                    .elf_section_header()
+                    .sh_offset
+                    .get(elf_file.endian());
+            }
+            let end = vram + section.size() as u32;
+
+            if let Some(x) = vram_start {
+                vram_start = Some(vram.min(x));
+            } else {
+                vram_start = Some(vram);
+            }
+            if let Some(x) = vram_end {
+                vram_end = Some(end.max(x));
+            } else {
+                vram_end = Some(end);
+            }
+
+            if matches!(section_type, Some(SectionType::Progbits(_))) {
+                let rom = section
+                    .elf_section_header()
+                    .sh_offset
+                    .get(elf_file.endian());
+                let end = rom + section.size() as u32;
+
+                if let Some(x) = rom_start {
+                    rom_start = Some(rom.min(x));
+                } else {
+                    rom_start = Some(rom);
+                }
+                if let Some(x) = rom_end {
+                    rom_end = Some(end.max(x));
+                } else {
+                    rom_end = Some(end);
+                }
+            }
+        }
+    }
+
+    let rom = AddressRange::new(Rom::new(rom_start.unwrap()), Rom::new(rom_end.unwrap()));
+    let vram = AddressRange::new(Vram::new(vram_start.unwrap()), Vram::new(vram_end.unwrap()));
+
+    RomVramRange::new(rom, vram)
+}
+
+fn fill_symbols(elf_file: &ElfFile32, global_ranges: RomVramRange) -> GlobalSegmentHeater {
+    let mut global_segment = GlobalSegmentBuilder::new(global_ranges);
+
+    let mut addresses = HashSet::new();
+    let mut local_syms = Vec::new();
+    let mut weak_syms = Vec::new();
+
+    // TODO: handle relocatable elfs
+
+    for sym in elf_file.dynamic_symbols() {
+        let st_type = sym.elf_symbol().st_type();
+        let st_shndx = sym.elf_symbol().st_shndx(elf_file.endian());
+
+        let sym_type = match st_type {
+            elf::STT_FUNC => Some(SymbolType::Function),
+            elf::STT_OBJECT => None,
+            _ => continue,
+        };
+
+        let name = pretty_unwrap(sym.name());
+        let vram = Vram::new(sym.address() as u32);
+        let rom = None;
+        let size = {
+            let s = sym.size() as u32;
+            if s == 0 || st_shndx == elf::SHN_UNDEF {
+                None
+            } else {
+                Some(Size::new(s))
+            }
+        };
+
+        match sym.elf_symbol().st_visibility() {
+            elf::STB_LOCAL => {
+                local_syms.push((name, vram, rom, size, sym_type));
+                continue;
+            }
+            elf::STB_GLOBAL => {}
+            elf::STB_WEAK => {
+                weak_syms.push((name, vram, rom, size, sym_type));
+                continue;
+            }
+            x => panic!("Unhandled st_visibility: {}", x),
+        }
+
+        if global_ranges.in_vram_range(vram) {
+            pretty_unwrap(global_segment.add_user_symbol(name, vram, rom, size, sym_type));
+            addresses.insert(vram);
+        } else {
+            // TODO: store this somewhere
+        }
+    }
+
+    for (name, vram, rom, size, sym_type) in local_syms {
+        if addresses.contains(&vram) {
+            continue;
+        }
+
+        if global_ranges.in_vram_range(vram) {
+            pretty_unwrap(global_segment.add_user_symbol(name, vram, rom, size, sym_type));
+            // TODO: set local visibiility
+            addresses.insert(vram);
+        } else {
+            // TODO: store this somewhere
+        }
+    }
+
+    for (name, vram, rom, size, sym_type) in weak_syms {
+        if addresses.contains(&vram) {
+            continue;
+        }
+
+        if global_ranges.in_vram_range(vram) {
+            pretty_unwrap(global_segment.add_user_symbol(name, vram, rom, size, sym_type));
+            // TODO: set weak visibiility
+            addresses.insert(vram);
+        } else {
+            // TODO: store this somewhere
+        }
+    }
+
+    global_segment.finish_symbols()
+}
+
+fn preheat_sections(
+    elf_file: &ElfFile32,
+    global_segment: &mut GlobalSegmentHeater,
+    global_config: &GlobalConfig,
+    executable_settings: &ExecutableSectionSettings,
+    data_settings: &DataSectionSettings,
+) {
+    // Executable sections first
+    for section in elf_file.sections() {
+        let sh_flags = section.elf_section_header().sh_flags.get(elf_file.endian());
+        let sh_type = section.elf_section_header().sh_type.get(elf_file.endian());
+
+        let section_type = SectionType::new(sh_type, sh_flags, pretty_unwrap(section.name()));
+        if let Some(SectionType::Progbits(ProgbitsType::Text)) = section_type {
+            let raw_bytes = pretty_unwrap(section.data());
+            let rom = Rom::new(
+                section
+                    .elf_section_header()
+                    .sh_offset
+                    .get(elf_file.endian()),
+            );
+            let section_address = section.address();
+            let vram = if section_address != 0 {
+                Vram::new(section.address() as u32)
+            } else {
+                Vram::new(rom.inner())
+            };
+
+            pretty_unwrap(global_segment.preheat_text(
+                global_config,
+                executable_settings,
+                raw_bytes,
+                rom,
+                vram,
+            ));
+        }
+    }
+
+    // Data sections later
+    for section in elf_file.sections() {
+        let sh_flags = section.elf_section_header().sh_flags.get(elf_file.endian());
+        let sh_type = section.elf_section_header().sh_type.get(elf_file.endian());
+
+        let section_type = SectionType::new(sh_type, sh_flags, pretty_unwrap(section.name()));
+        if let Some(SectionType::Progbits(progbits)) = section_type {
+            let raw_bytes = pretty_unwrap(section.data());
+            let rom = Rom::new(
+                section
+                    .elf_section_header()
+                    .sh_offset
+                    .get(elf_file.endian()),
+            );
+            let section_address = section.address();
+            let vram = if section_address != 0 {
+                Vram::new(section.address() as u32)
+            } else {
+                Vram::new(rom.inner())
+            };
+
+            match progbits {
+                ProgbitsType::Text => continue,
+                ProgbitsType::Data => pretty_unwrap(global_segment.preheat_data(
+                    global_config,
+                    data_settings,
+                    raw_bytes,
+                    rom,
+                    vram,
+                )),
+                ProgbitsType::Rodata => pretty_unwrap(global_segment.preheat_data(
+                    global_config,
+                    data_settings,
+                    raw_bytes,
+                    rom,
+                    vram,
+                )),
+                ProgbitsType::Got => continue,
+                ProgbitsType::Unknown => {
+                    eprintln!("Unknown progbits: {}", pretty_unwrap(section.name()))
+                }
+            }
+        }
+    }
+}
+
+fn create_context(
+    elf_file: &ElfFile32,
+    global_ranges: RomVramRange,
+    executable_settings: &ExecutableSectionSettings,
+    data_settings: &DataSectionSettings,
+) -> Context {
+    let global_config = GlobalConfig::new(endian_to_endian(elf_file.endian()));
+    // TODO: gp value
+
+    print!("    symbols");
+    let start = get_time_now();
+    let mut global_segment = fill_symbols(elf_file, global_ranges);
+    let user_segment = UserSegmentBuilder::new();
+    let end = get_time_now();
+    println!(": {:?}", end - start);
+
+    print!("    got table");
+    let start = get_time_now();
+    // Handle got table first
+    for section in elf_file.sections() {
+        let sh_flags = section.elf_section_header().sh_flags.get(elf_file.endian());
+        let sh_type = section.elf_section_header().sh_type.get(elf_file.endian());
+
+        let section_type = SectionType::new(sh_type, sh_flags, pretty_unwrap(section.name()));
+        if let Some(SectionType::Progbits(ProgbitsType::Got)) = section_type {
+            // TODO
+        }
+    }
+    let end = get_time_now();
+    println!(": {:?}", end - start);
+
+    print!("    preheat sections");
+    let start = get_time_now();
+    preheat_sections(
+        elf_file,
+        &mut global_segment,
+        &global_config,
+        executable_settings,
+        data_settings,
+    );
+    let end = get_time_now();
+    println!(": {:?}", end - start);
+
+    pretty_unwrap(ContextBuilder::new(global_segment, user_segment).build(global_config))
+}
+
+fn create_sections(
+    elf_file: &ElfFile32,
+    context: &mut Context,
+    executable_settings: ExecutableSectionSettings,
+    data_settings: DataSectionSettings,
+    noload_settings: NoloadSectionSettings,
+) -> (Vec<ExecutableSection>, Vec<DataSection>, Vec<NoloadSection>) {
+    let mut executable_sections = Vec::new();
+    let mut data_sections = Vec::new();
+    let mut noload_sections = Vec::new();
+
+    let global_ranges = context.global_segment().rom_vram_range();
+    let parent_segment_info = ParentSegmentInfo::new(
+        global_ranges.rom().start(),
+        global_ranges.vram().start(),
+        None,
+    );
+
+    for section in elf_file.sections() {
+        let sh_flags = section.elf_section_header().sh_flags.get(elf_file.endian());
+        let sh_type = section.elf_section_header().sh_type.get(elf_file.endian());
+
+        let section_type = SectionType::new(sh_type, sh_flags, pretty_unwrap(section.name()));
+        if let Some(SectionType::Progbits(ProgbitsType::Text)) = section_type {
+            let name = pretty_unwrap(section.name());
+            let raw_bytes = pretty_unwrap(section.data());
+            let rom = Rom::new(
+                section
+                    .elf_section_header()
+                    .sh_offset
+                    .get(elf_file.endian()),
+            );
+            let section_address = section.address();
+            let vram = if section_address != 0 {
+                Vram::new(section.address() as u32)
+            } else {
+                Vram::new(rom.inner())
+            };
+
+            executable_sections.push(pretty_unwrap(context.create_section_text(
+                &executable_settings,
+                name,
+                raw_bytes,
+                rom,
+                vram,
+                parent_segment_info.clone(),
+            )));
+        }
+    }
+
+    for section in elf_file.sections() {
+        let sh_flags = section.elf_section_header().sh_flags.get(elf_file.endian());
+        let sh_type = section.elf_section_header().sh_type.get(elf_file.endian());
+
+        let section_type = SectionType::new(sh_type, sh_flags, pretty_unwrap(section.name()));
+        match section_type {
+            Some(SectionType::Progbits(progbits)) => {
+                let name = pretty_unwrap(section.name());
+                let raw_bytes = pretty_unwrap(section.data());
+                let rom = Rom::new(
+                    section
+                        .elf_section_header()
+                        .sh_offset
+                        .get(elf_file.endian()),
+                );
+                let section_address = section.address();
+                let vram = if section_address != 0 {
+                    Vram::new(section.address() as u32)
+                } else {
+                    Vram::new(rom.inner())
+                };
+
+                match progbits {
+                    ProgbitsType::Text => continue,
+                    ProgbitsType::Data => {
+                        data_sections.push(pretty_unwrap(context.create_section_data(
+                            &data_settings,
+                            name,
+                            raw_bytes,
+                            rom,
+                            vram,
+                            parent_segment_info.clone(),
+                        )))
+                    }
+                    ProgbitsType::Rodata => {
+                        data_sections.push(pretty_unwrap(context.create_section_rodata(
+                            &data_settings,
+                            name,
+                            raw_bytes,
+                            rom,
+                            vram,
+                            parent_segment_info.clone(),
+                        )))
+                    }
+                    ProgbitsType::Got => continue,
+                    ProgbitsType::Unknown => {
+                        eprintln!("Unknown progbits: {}", pretty_unwrap(section.name()))
+                    }
+                }
+            }
+            Some(SectionType::Nobits) => {
+                let name = pretty_unwrap(section.name());
+                let section_address = section.address();
+                let vram = if section_address != 0 {
+                    Vram::new(section.address() as u32)
+                } else {
+                    Vram::new(
+                        section
+                            .elf_section_header()
+                            .sh_offset
+                            .get(elf_file.endian()),
+                    )
+                };
+                let vram_end = vram + Size::new(section.size() as u32);
+
+                noload_sections.push(pretty_unwrap(context.create_section_bss(
+                    &noload_settings,
+                    name,
+                    AddressRange::new(vram, vram_end),
+                    parent_segment_info.clone(),
+                )))
+            }
+            _ => {}
+        }
+    }
+
+    (executable_sections, data_sections, noload_sections)
+}
+
+fn gather_relocs(elf_file: &ElfFile32) -> BTreeMap<Rom, RelocationInfo> {
+    let _avoid_warning = elf_file;
+    let user_relocs = BTreeMap::new();
+
+    // TODO
+
+    #[expect(clippy::let_and_return)]
+    user_relocs
+}
+
+fn post_process_sections(
+    context: &mut Context,
+    user_relocs: BTreeMap<Rom, RelocationInfo>,
+    executable_sections: Vec<ExecutableSection>,
+    data_sections: Vec<DataSection>,
+    noload_sections: Vec<NoloadSection>,
+) -> (
+    Vec<ExecutableSectionProcessed>,
+    Vec<DataSectionProcessed>,
+    Vec<NoloadSectionProcessed>,
+) {
+    let executable_sections = pretty_unwrap(
+        executable_sections
+            .into_iter()
+            .map(|x| x.post_process(context, &user_relocs))
+            .collect::<Result<Vec<ExecutableSectionProcessed>, SectionPostProcessError>>(),
+    );
+    let data_sections = pretty_unwrap(
+        data_sections
+            .into_iter()
+            .map(|x| x.post_process(context, &user_relocs))
+            .collect::<Result<Vec<DataSectionProcessed>, SectionPostProcessError>>(),
+    );
+    let noload_sections = pretty_unwrap(
+        noload_sections
+            .into_iter()
+            .map(|x| x.post_process(context))
+            .collect::<Result<Vec<NoloadSectionProcessed>, SectionPostProcessError>>(),
+    );
+
+    (executable_sections, data_sections, noload_sections)
+}
+
+fn write_sections_to_files(
+    output_dir: PathBuf,
+    context: Context,
+    executable_sections: Vec<ExecutableSectionProcessed>,
+    data_sections: Vec<DataSectionProcessed>,
+    noload_sections: Vec<NoloadSectionProcessed>,
+) {
+    pretty_unwrap(fs::create_dir_all(&output_dir));
+
+    let func_display_settings = FunctionDisplaySettings::new(InstructionDisplayFlags::new());
+    for section in executable_sections {
+        let name = section.name();
+        let sep = if name.starts_with(".") { "" } else { "." };
+        let filename = format!("{}{}{}.s", section.vram_range().start(), sep, name);
+        let outpath = output_dir.join(filename);
+
+        let mut asm_file = BufWriter::new(pretty_unwrap(fs::File::create(outpath)));
+        pretty_unwrap(write!(
+            asm_file,
+            ".include \"macro.inc\"
+
+/* assembler directives */
+.set noat      /* allow manual use of $at */
+.set noreorder /* do not insert nops after branches */
+
+.section {}
+
+.align 4
+",
+            name
+        ));
+        for symbol in section.functions() {
+            pretty_unwrap(write!(
+                asm_file,
+                "\n{}",
+                pretty_unwrap(symbol.display(&context, &func_display_settings))
+            ));
+        }
+    }
+
+    let data_display_settings = SymDataDisplaySettings::new();
+    for section in data_sections {
+        let name = section.name();
+        let sep = if name.starts_with(".") { "" } else { "." };
+        let filename = format!("{}{}{}.s", section.vram_range().start(), sep, name);
+        let outpath = output_dir.join(filename);
+
+        let mut asm_file = BufWriter::new(pretty_unwrap(fs::File::create(outpath)));
+        pretty_unwrap(write!(
+            asm_file,
+            ".include \"macro.inc\"
+
+.section {}
+
+.align 4
+",
+            name
+        ));
+        for symbol in section.data_symbols() {
+            pretty_unwrap(write!(
+                asm_file,
+                "\n{}",
+                pretty_unwrap(symbol.display(&context, &data_display_settings))
+            ));
+        }
+    }
+
+    let noload_display_settings = SymNoloadDisplaySettings::new();
+    for section in noload_sections {
+        let name = section.name();
+        let sep = if name.starts_with(".") { "" } else { "." };
+        let filename = format!("{}{}{}.s", section.vram_range().start(), sep, name);
+        let outpath = output_dir.join(filename);
+
+        let mut asm_file = BufWriter::new(pretty_unwrap(fs::File::create(outpath)));
+        pretty_unwrap(write!(
+            asm_file,
+            ".include \"macro.inc\"
+
+.section {}
+
+.align 4
+",
+            name
+        ));
+        for symbol in section.noload_symbols() {
+            pretty_unwrap(write!(
+                asm_file,
+                "\n{}",
+                pretty_unwrap(symbol.display(&context, &noload_display_settings))
+            ));
+        }
+    }
+}
+
+fn main() {
+    let args = Args::parse();
+
+    println!("input path: {:?}", args.input_path);
+
+    print!("Reading elf");
+    let start = get_time_now();
+    let binary_data = {
+        let mut buf = Vec::new();
+        let f = File::open(args.input_path).expect("Input file not found");
+        BufReader::new(f)
+            .read_to_end(&mut buf)
+            .expect("Error reading the file");
+        buf
+    };
+    let elf_file = read_elf(&binary_data);
+    let end = get_time_now();
+    println!(": {:?}", end - start);
+
+    // print_elf_stuff(&elf_file);
+
+    print!("global ranges");
+    let start = get_time_now();
+    let global_ranges = create_global_ranges(&elf_file);
+    let end = get_time_now();
+    println!(": {:?}", end - start);
+
+    let compiler = args.compiler.map(|x| x.into());
+    // TODO: proper InstructionFlags
+    let executable_settings =
+        ExecutableSectionSettings::new(compiler, InstructionFlags::new(IsaVersion::MIPS_III));
+    let data_settings = DataSectionSettings::new(compiler);
+    let noload_settings = NoloadSectionSettings::new(compiler);
+
+    println!("context:");
+    let start = get_time_now();
+    let mut context = create_context(
+        &elf_file,
+        global_ranges,
+        &executable_settings,
+        &data_settings,
+    );
+    let end = get_time_now();
+    println!("  {:?}", end - start);
+
+    print!("create_sections");
+    let start = get_time_now();
+    let (executable_sections, data_sections, noload_sections) = create_sections(
+        &elf_file,
+        &mut context,
+        executable_settings,
+        data_settings,
+        noload_settings,
+    );
+    let end = get_time_now();
+    println!(": {:?}", end - start);
+
+    print!("user_relocs");
+    let start = get_time_now();
+    let user_relocs = gather_relocs(&elf_file);
+    let end = get_time_now();
+    println!(": {:?}", end - start);
+
+    print!("post_process_sections");
+    let start = get_time_now();
+    let (executable_sections, data_sections, noload_sections) = post_process_sections(
+        &mut context,
+        user_relocs,
+        executable_sections,
+        data_sections,
+        noload_sections,
+    );
+    let end = get_time_now();
+    println!(": {:?}", end - start);
+
+    print!("write_sections_to_files");
+    let start = get_time_now();
+    write_sections_to_files(
+        args.output_dir,
+        context,
+        executable_sections,
+        data_sections,
+        noload_sections,
+    );
+    let end = get_time_now();
+    println!(": {:?}", end - start);
+}

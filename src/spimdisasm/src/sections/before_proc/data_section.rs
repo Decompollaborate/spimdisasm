@@ -76,10 +76,14 @@ impl DataSection {
         let vram_range = AddressRange::new(vram, vram + size);
         let ranges = RomVramRange::new(rom_range, vram_range);
 
+        let symbol_name_generation_settings = context
+            .global_config()
+            .symbol_name_generation_settings()
+            .clone();
         // Ensure there's a symbol at the beginning of the section.
         context
             .find_owned_segment_mut(&parent_segment_info)?
-            .add_symbol(vram, false)?;
+            .add_symbol(vram, false, symbol_name_generation_settings)?;
 
         let owned_segment = context.find_owned_segment(&parent_segment_info)?;
 
@@ -127,7 +131,16 @@ impl DataSection {
                 detected_type: *sym_type,
                 encoding: settings.encoding,
             };
-            let /*mut*/ sym = DataSym::new(context, raw_bytes[start..end].into(), sym_rom, *new_sym_vram, start, parent_segment_info.clone(), section_type, properties)?;
+            let sym = DataSym::new(
+                context,
+                raw_bytes[start..end].into(),
+                sym_rom,
+                *new_sym_vram,
+                start,
+                parent_segment_info.clone(),
+                section_type,
+                properties,
+            )?;
 
             data_symbols.push(sym);
         }
@@ -468,10 +481,12 @@ impl DataSection {
                     current_vram + Size::new(str_sym_size as u32),
                 ));
 
-                if in_between_range.next().is_none() {
+                if in_between_range.next().is_some() || str_sym_size > sub_raw_bytes.len() {
                     // Check if there is already another symbol after the current one and before the end of the string,
                     // in which case we say this symbol should not be a string
 
+                    None
+                } else {
                     let next_vram = Self::next_vram_for_c_string(
                         current_vram + Size::new(str_sym_size as u32),
                         owned_segment,
@@ -481,8 +496,6 @@ impl DataSection {
                     );
 
                     Some((str_size as i32, next_vram))
-                } else {
-                    None
                 }
             }
 

@@ -52,6 +52,7 @@ impl FunctionDisplaySettings {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[must_use]
 pub struct FunctionDisplay<'ctx, 'sym, 'flg> {
     context: &'ctx Context,
     sym: &'sym FunctionSymProcessed,
@@ -254,6 +255,17 @@ impl fmt::Display for FunctionDisplay<'_, '_, '_> {
         )?;
 
         let mut size = Size::new(0);
+        let symbol_size = if let Some(s) = self.metadata.size() {
+            let new_size = if let Some(padding) = self.metadata.trailing_padding_size() {
+                Size::new(s.inner().saturating_sub(padding.inner()))
+            } else {
+                s
+            };
+
+            Some(new_size)
+        } else {
+            None
+        };
 
         let mut prev_instr_had_delay_slot = false;
         for instr in self.sym.instructions() {
@@ -267,7 +279,7 @@ impl fmt::Display for FunctionDisplay<'_, '_, '_> {
             prev_instr_had_delay_slot = instr.opcode().has_delay_slot();
 
             size += Size::new(4);
-            if Some(size) == self.metadata.size() {
+            if Some(size) == symbol_size {
                 self.settings.common.display_sym_end(
                     f,
                     self.context.global_config(),

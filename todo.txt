@@ -43,3 +43,5 @@ Change the order of checks in InstructionAnalysisResult::process_instr
     Check and_link before everything else
 
 Some functions may end with `jr` with a non-$ra register that hasn't loaded a jumptable either.
+
+Rename noload to nobits

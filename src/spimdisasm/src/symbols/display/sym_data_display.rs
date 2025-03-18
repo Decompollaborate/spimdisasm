@@ -45,6 +45,7 @@ impl SymDataDisplaySettings {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[must_use]
 pub struct SymDataDisplay<'ctx, 'sym, 'flg> {
     context: &'ctx Context,
     sym: &'sym DataSymProcessed,

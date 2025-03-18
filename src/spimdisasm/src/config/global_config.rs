@@ -1,6 +1,8 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use crate::metadata::SymbolNameGenerationSettings;
+
 use super::{Endian, GpConfig, MacroLabels};
 
 #[cfg(feature = "pyo3")]
@@ -22,6 +24,7 @@ pub struct GlobalConfig {
     // ASM_GENERATED_BY: bool = True
 
     // TODO: ABI
+    symbol_name_generation_settings: SymbolNameGenerationSettings,
 }
 
 impl GlobalConfig {
@@ -32,6 +35,8 @@ impl GlobalConfig {
 
             macro_labels: Some(MacroLabels::new()),
             emit_size_directive: true,
+
+            symbol_name_generation_settings: SymbolNameGenerationSettings::new(),
         }
     }
 }
@@ -82,6 +87,22 @@ impl GlobalConfig {
             ..self
         }
     }
+
+    pub const fn symbol_name_generation_settings(&self) -> &SymbolNameGenerationSettings {
+        &self.symbol_name_generation_settings
+    }
+    pub fn symbol_name_generation_settings_mut(&mut self) -> &mut SymbolNameGenerationSettings {
+        &mut self.symbol_name_generation_settings
+    }
+    pub fn with_symbol_name_generation_settings(
+        self,
+        symbol_name_generation_settings: SymbolNameGenerationSettings,
+    ) -> Self {
+        Self {
+            symbol_name_generation_settings,
+            ..self
+        }
+    }
 }
 
 #[cfg(feature = "pyo3")]
@@ -92,7 +113,13 @@ pub(crate) mod python_bindings {
     impl GlobalConfig {
         #[new]
         pub fn py_new(endian: Endian) -> Self {
-            Self::new(endian)
+            let mut myself = Self::new(endian);
+
+            myself
+                .symbol_name_generation_settings_mut()
+                .set_use_type_prefix(false);
+
+            myself
         }
 
         pub fn set_gp_config(&mut self, gp_config: GpConfig) {

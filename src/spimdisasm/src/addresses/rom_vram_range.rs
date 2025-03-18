@@ -18,9 +18,11 @@ impl RomVramRange {
     pub fn new(rom: AddressRange<Rom>, vram: AddressRange<Vram>) -> Self {
         assert!(
             vram.size() >= rom.size(),
-            "vram ({:?}) can't be smaller than rom ({:?})",
+            "Vram range ({:?}, {:?}) can't be smaller than Rom range ({:?}, {:?})",
             vram,
-            rom
+            vram.size(),
+            rom,
+            rom.size(),
         );
         assert!(
             vram.start().inner() % 4 == rom.start().inner() % 4,

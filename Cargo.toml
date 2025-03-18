@@ -4,6 +4,7 @@
 [workspace]
 members = [
     "src/spimdisasm",
+    "src/spimdisasm-disasm-elf",
 ]
 resolver = "2"
 

@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: © 2025 Decompollaborate
+# SPDX-License-Identifier: MIT
+
+[package]
+name = "spimdisasm-disasm-elf"
+version.workspace = true
+edition.workspace = true
+# rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+# description = ""
+# readme = "README.md"
+# keywords = ["MIPS"]
+
+[[bin]]
+name = "spimdisasm-disasm-elf"
+path = "src/bin.rs"
+
+[dependencies]
+clap = { version = "4.5.20", features = ["derive"] }
+object = { version = "0.36.7", default-features = false, features = ["std", "elf", "read_core"] }
+spimdisasm = { path = "../spimdisasm" }

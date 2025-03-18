@@ -50,6 +50,10 @@ impl DataSym {
         let endian = context.global_config().endian();
         let encoding = properties.encoding;
 
+        let symbol_name_generation_settings = context
+            .global_config()
+            .symbol_name_generation_settings()
+            .clone();
         let owned_segment = context.find_owned_segment_mut(&parent_segment_info)?;
 
         let sym_type = if section_type == SectionType::GccExceptTable {
@@ -74,6 +78,7 @@ impl DataSym {
                     rom,
                 )
             },
+            symbol_name_generation_settings,
         )?;
 
         properties.apply_to_metadata(metadata);
