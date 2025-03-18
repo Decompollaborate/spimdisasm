@@ -79,6 +79,10 @@ class SectionText(SectionBase):
             if auxSym is not None and auxSym.isTrustableFunction(self.instrCat == rabbitizer.InstrCategory.RSP):
                 return farthestBranch, haltFunctionSearching
 
+        if instr.doesLink():
+            # This is used more as a function call than as an actual branch
+            return farthestBranch, haltFunctionSearching
+
         branchOffset = instr.getBranchOffsetGeneric()
         if branchOffset > farthestBranch:
             # keep track of the farthest branch target
@@ -109,8 +113,8 @@ class SectionText(SectionBase):
                     j -= 1
         return farthestBranch, haltFunctionSearching
 
-    def _findFunctions_checkFunctionHalted(self, index: int, currentVrom: int, currentVram: int, currentInstructionStart: int) -> bool:
-        if index == currentInstructionStart:
+    def _findFunctions_checkFunctionHalted(self, instructionOffset: int, currentVrom: int, currentVram: int, currentInstructionStart: int) -> bool:
+        if instructionOffset == currentInstructionStart:
             # Check if we have a function after the first instruction of the current function.
             # This can happen when a garbage instruction was emitted and it was misinterpreted as
             # the beginning of a function. This seems to be a common situation section padding on SN64.
@@ -132,7 +136,7 @@ class SectionText(SectionBase):
             if instructionOffset + 8 == currentInstructionStart + currentFunctionSym.getSize():
                 functionEnded = True
                 prevFuncHadUserDeclaredSize = True
-        elif self._findFunctions_checkFunctionHalted(index, currentVrom, currentVram, currentInstructionStart):
+        elif self._findFunctions_checkFunctionHalted(instructionOffset, currentVrom, currentVram, currentInstructionStart):
             functionEnded = True
             functionHalted = True
         else:
