@@ -462,3 +462,33 @@ class SectionText(SectionBase):
         for func in self.symbolList:
             assert isinstance(func, symbols.SymbolFunction)
             func.gpRelHack = value
+
+    def suspectedPaddingGarbage(self) -> list[int]:
+        garbage: list[int] = []
+
+        sectionAlign_text = common.GlobalConfig.COMPILER.value.sectionAlign_text
+        textAlignment = 1 << sectionAlign_text if sectionAlign_text is not None else None
+        if textAlignment is None:
+            return garbage
+
+        for func in self.symbolList:
+            assert isinstance(func, symbols.SymbolFunction)
+            if func.sizew * 4 >= textAlignment:
+                # i.e. if textAlignment is 0x10, then reject functions with more than 3 instructions
+                continue
+            if (func.vram + func.sizew * 4) % textAlignment != 0:
+                # Only functions that may be at the end of a section
+                continue
+            if func.contextSym.referenceCounter != 0:
+                # Only unused functions
+                continue
+
+            if func.sizew >= 2:
+                instr = func.instructions[-2]
+                if instr.isJump() or instr.isBranch():
+                    # Only count as garbage functions that do not have a proper jump at its end
+                    continue
+
+            garbage.append(func.inFileOffset + func.sizew * 4)
+
+        return garbage

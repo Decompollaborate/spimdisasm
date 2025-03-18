@@ -274,3 +274,6 @@ class SectionBase(FileBase):
                         was_updated = True
 
         return was_updated
+
+    def suspectedPaddingGarbage(self) -> list[int]:
+        return []
