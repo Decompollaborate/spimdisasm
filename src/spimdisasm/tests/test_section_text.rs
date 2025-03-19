@@ -9,17 +9,127 @@ use spimdisasm::{
     collections::addended_ordered_map::FindSettings,
     config::{Compiler, Endian, GlobalConfig, GpConfig},
     context::{
-        builder::UserSegmentBuilder, ContextBuilder, GlobalSegmentBuilder, OverlaySegmentBuilder,
+        builder::UserSegmentBuilder, Context, ContextBuilder, GlobalSegmentBuilder,
+        OverlaySegmentBuilder,
     },
     metadata::OverlayCategoryName,
     parent_segment_info::ParentSegmentInfo,
-    sections::before_proc::ExecutableSectionSettings,
+    sections::{before_proc::ExecutableSectionSettings, processed::ExecutableSectionProcessed},
     symbols::display::FunctionDisplaySettings,
 };
 
+fn disassemble_text(
+    raw_bytes: &[u8],
+    rom: Rom,
+    vram: Vram,
+    endian: Endian,
+    gp_config: Option<GpConfig>,
+    text_settings: ExecutableSectionSettings,
+    fill_n64_symbols: bool,
+    add_segmented_assets: bool,
+) -> (String, Context, ExecutableSectionProcessed) {
+    let segment_rom = Rom::new(0x00000000);
+    let segment_vram = Vram::new(0x80000000);
+
+    let mut context = {
+        let global_config = GlobalConfig::new(endian).with_gp_config(gp_config);
+
+        let global_ranges = RomVramRange::new(
+            AddressRange::new(segment_rom, Rom::new(0x04000000)),
+            AddressRange::new(segment_vram, Vram::new(0x84000000)),
+        );
+        let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
+
+        global_segment
+            .preheat_text(&global_config, &text_settings, raw_bytes, rom, vram)
+            .unwrap();
+
+        let mut user_segment = UserSegmentBuilder::new();
+
+        if fill_n64_symbols {
+            matches!(
+                text_settings.compiler(),
+                Some(Compiler::IDO | Compiler::KMC | Compiler::SN64 | Compiler::EGCS)
+            );
+            user_segment.n64_libultra_symbols().unwrap();
+            user_segment.n64_hardware_registers(true, true).unwrap();
+        }
+
+        let mut builder = ContextBuilder::new(global_segment, user_segment);
+
+        if add_segmented_assets {
+            matches!(
+                text_settings.compiler(),
+                Some(Compiler::IDO | Compiler::KMC | Compiler::SN64 | Compiler::EGCS)
+            );
+
+            for i in 0x0..=0xF {
+                let segment_name = format!("segment_0{:X}", i);
+                let category_name = OverlayCategoryName::new(segment_name.clone());
+
+                let magic_number = 0x01000000;
+                let segment_size = Size::new(magic_number);
+                let segment_vram = Vram::new(i * magic_number);
+                let vram_range = AddressRange::new(segment_vram, segment_vram + segment_size);
+                let arbitrary_number = 128 * 1024 * 1024; // 128MiB, no rom should be that big, right?
+                let segment_rom = Rom::new(arbitrary_number + i * magic_number);
+                let rom_range = AddressRange::new(segment_rom, segment_rom + segment_size);
+
+                println!(
+                    "Adding overlay '{:?}': {:?} {:?}",
+                    category_name, rom_range, vram_range
+                );
+
+                let ranges = RomVramRange::new(rom_range, vram_range);
+
+                let overlay_builder =
+                    OverlaySegmentBuilder::new(ranges, category_name, segment_name);
+
+                builder
+                    .add_overlay(overlay_builder.finish_symbols())
+                    .unwrap();
+            }
+        }
+
+        builder.build(global_config).unwrap()
+    };
+
+    let parent_segment_info = ParentSegmentInfo::new(segment_rom, segment_vram, None);
+    let section_text = context
+        .create_section_text(
+            &text_settings,
+            "text".to_string(),
+            raw_bytes,
+            rom,
+            vram,
+            parent_segment_info,
+        )
+        .unwrap();
+
+    let user_relocs = BTreeMap::new();
+    let section_text = section_text
+        .post_process(&mut context, &user_relocs)
+        .unwrap();
+
+    let mut disassembly = ".section .text\n".to_string();
+    let display_settings = FunctionDisplaySettings::new(InstructionDisplayFlags::new());
+    for sym in section_text.functions() {
+        disassembly.push('\n');
+        disassembly.push_str(
+            &sym.display(&context, &display_settings)
+                .unwrap()
+                .to_string(),
+        );
+    }
+
+    println!("{}", disassembly);
+
+    (disassembly, context, section_text)
+}
+
 #[test]
 fn test_section_text_1() {
-    let bytes = [
+    static BYTES: [u8; 73 * 4] = [
         // 0x80000400
         0x27, 0xBD, 0xFF, 0xE8, // addiu
         0xAF, 0xB0, 0x00, 0x10, // sw
@@ -99,81 +209,114 @@ fn test_section_text_1() {
     ];
     let rom = Rom::new(0x001050);
     let vram = Vram::new(0x80000400);
-    let size = Size::new(0x21FC00);
 
-    let text_settings =
-        ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
+    let endian = Endian::Big;
+    let gp_config = None;
 
-    let global_config = GlobalConfig::new(Endian::Big);
-    let mut context = {
-        let global_ranges = RomVramRange::new(
-            AddressRange::new(rom, rom + size),
-            AddressRange::new(vram, vram + size),
-        );
-        let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
+    let text_settings = ExecutableSectionSettings::new(
+        Some(Compiler::KMC),
+        InstructionFlags::new(IsaVersion::MIPS_III),
+    );
 
-        global_segment
-            .preheat_text(&global_config, &text_settings, &bytes, rom, vram)
-            .unwrap();
+    let (disassembly, context, section_text) = disassemble_text(
+        &BYTES,
+        rom,
+        vram,
+        endian,
+        gp_config,
+        text_settings,
+        false,
+        true,
+    );
 
-        let mut platform_segment = UserSegmentBuilder::new();
-        platform_segment.n64_libultra_symbols().unwrap();
-        platform_segment.n64_hardware_registers(true, true).unwrap();
+    let expected_disassembly = "\
+.section .text
 
-        let mut builder = ContextBuilder::new(global_segment, platform_segment);
+glabel func_80000400
+    /* 001050 80000400 27BDFFE8 */  addiu       $sp, $sp, -0x18
+    /* 001054 80000404 AFB00010 */  sw          $s0, 0x10($sp)
+    /* 001058 80000408 AFBF0014 */  sw          $ra, 0x14($sp)
+    /* 00105C 8000040C 0C00013F */  jal         func_800004FC
+    /* 001060 80000410 00808021 */   addu       $s0, $a0, $zero
+    /* 001064 80000414 0C00013F */  jal         func_800004FC
+    /* 001068 80000418 02002021 */   addu       $a0, $s0, $zero
+    /* 00106C 8000041C 3C03801A */  lui         $v1, %hi(UNK_801A6D7C)
+    /* 001070 80000420 8C636D7C */  lw          $v1, %lo(UNK_801A6D7C)($v1)
+    /* 001074 80000424 24020002 */  addiu       $v0, $zero, 0x2
+    /* 001078 80000428 14620008 */  bne         $v1, $v0, .L8000044C
+    /* 00107C 8000042C 00000000 */   nop
+    /* 001080 80000430 0C00013F */  jal         func_800004FC
+    /* 001084 80000434 02002021 */   addu       $a0, $s0, $zero
+    /* 001088 80000438 8FBF0014 */  lw          $ra, 0x14($sp)
+    /* 00108C 8000043C 8FB00010 */  lw          $s0, 0x10($sp)
+    /* 001090 80000440 27BD0018 */  addiu       $sp, $sp, 0x18
+    /* 001094 80000444 03E00008 */  jr          $ra
+    /* 001098 80000448 00000000 */   nop
+  .L8000044C:
+    /* 00109C 8000044C 8FBF0014 */  lw          $ra, 0x14($sp)
+    /* 0010A0 80000450 8FB00010 */  lw          $s0, 0x10($sp)
+    /* 0010A4 80000454 27BD0018 */  addiu       $sp, $sp, 0x18
+    /* 0010A8 80000458 03E00008 */  jr          $ra
+    /* 0010AC 8000045C 00000000 */   nop
+.size func_80000400, . - func_80000400
 
-        for i in 0x0..=0xF {
-            let segment_name = format!("segment_0{:X}", i);
-            let category_name = OverlayCategoryName::new(segment_name.clone());
+glabel func_80000460
+    /* 0010B0 80000460 27BDFFD0 */  addiu       $sp, $sp, -0x30
+    /* 0010B4 80000464 3C040107 */  lui         $a0, %hi(UNK_01077C60)
+    /* 0010B8 80000468 24847C60 */  addiu       $a0, $a0, %lo(UNK_01077C60)
+    /* 0010BC 8000046C AFB10024 */  sw          $s1, 0x24($sp)
+    /* 0010C0 80000470 3C11801C */  lui         $s1, %hi(UNK_801C70B0)
+    /* 0010C4 80000474 8E3170B0 */  lw          $s1, %lo(UNK_801C70B0)($s1)
+    /* 0010C8 80000478 3C050108 */  lui         $a1, %hi(UNK_010835A0)
+    /* 0010CC 8000047C 24A535A0 */  addiu       $a1, $a1, %lo(UNK_010835A0)
+    /* 0010D0 80000480 00A42823 */  subu        $a1, $a1, $a0
+    /* 0010D4 80000484 AFBF0028 */  sw          $ra, 0x28($sp)
+    /* 0010D8 80000488 0C026600 */  jal         UNK_func_80099800
+    /* 0010DC 8000048C AFB00020 */   sw         $s0, 0x20($sp)
+    /* 0010E0 80000490 3C040058 */  lui         $a0, %hi(UNK_00581DF0)
+    /* 0010E4 80000494 24841DF0 */  addiu       $a0, $a0, %lo(UNK_00581DF0)
+    /* 0010E8 80000498 3C100059 */  lui         $s0, %hi(UNK_0058D730)
+    /* 0010EC 8000049C 2610D730 */  addiu       $s0, $s0, %lo(UNK_0058D730)
+    /* 0010F0 800004A0 02048023 */  subu        $s0, $s0, $a0
+    /* 0010F4 800004A4 02003021 */  addu        $a2, $s0, $zero
+    /* 0010F8 800004A8 0C0004C4 */  jal         UNK_func_80001310
+    /* 0010FC 800004AC 02202821 */   addu       $a1, $s1, $zero
+    /* 001100 800004B0 02202021 */  addu        $a0, $s1, $zero
+    /* 001104 800004B4 3C02801C */  lui         $v0, %hi(UNK_801C70B0)
+    /* 001108 800004B8 8C4270B0 */  lw          $v0, %lo(UNK_801C70B0)($v0)
+    /* 00110C 800004BC 2405FFFF */  addiu       $a1, $zero, -0x1
+    /* 001110 800004C0 00003021 */  addu        $a2, $zero, $zero
+    /* 001114 800004C4 AFA00010 */  sw          $zero, 0x10($sp)
+    /* 001118 800004C8 AFA00014 */  sw          $zero, 0x14($sp)
+    /* 00111C 800004CC AFA00018 */  sw          $zero, 0x18($sp)
+    /* 001120 800004D0 00501021 */  addu        $v0, $v0, $s0
+    /* 001124 800004D4 3C01801C */  lui         $at, %hi(UNK_801C70B0)
+    /* 001128 800004D8 AC2270B0 */  sw          $v0, %lo(UNK_801C70B0)($at)
+    /* 00112C 800004DC 0C013939 */  jal         UNK_func_8004E4E4
+    /* 001130 800004E0 24070002 */   addiu      $a3, $zero, 0x2
+    /* 001134 800004E4 8FBF0028 */  lw          $ra, 0x28($sp)
+    /* 001138 800004E8 8FB10024 */  lw          $s1, 0x24($sp)
+    /* 00113C 800004EC 8FB00020 */  lw          $s0, 0x20($sp)
+    /* 001140 800004F0 27BD0030 */  addiu       $sp, $sp, 0x30
+    /* 001144 800004F4 03E00008 */  jr          $ra
+    /* 001148 800004F8 00000000 */   nop
+.size func_80000460, . - func_80000460
 
-            let magic_number = 0x01000000;
-            let segment_size = Size::new(magic_number);
-            let segment_vram = Vram::new(i * magic_number);
-            let vram_range = AddressRange::new(segment_vram, segment_vram + segment_size);
-            let arbitrary_number = 128 * 1024 * 1024; // 128MiB, no rom should be that big, right?
-            let segment_rom = Rom::new(arbitrary_number + i * magic_number);
-            let rom_range = AddressRange::new(segment_rom, segment_rom + segment_size);
+glabel func_800004FC
+    /* 00114C 800004FC 27BDFFE8 */  addiu       $sp, $sp, -0x18
+    /* 001150 80000500 AFBF0010 */  sw          $ra, 0x10($sp)
+    /* 001154 80000504 3C018022 */  lui         $at, %hi(UNK_8021AD28)
+    /* 001158 80000508 AC20AD28 */  sw          $zero, %lo(UNK_8021AD28)($at)
+    /* 00115C 8000050C 0C01D2BB */  jal         UNK_func_80074AEC
+    /* 001160 80000510 00000000 */   nop
+    /* 001164 80000514 8FBF0010 */  lw          $ra, 0x10($sp)
+    /* 001168 80000518 27BD0018 */  addiu       $sp, $sp, 0x18
+    /* 00116C 8000051C 03E00008 */  jr          $ra
+    /* 001170 80000520 00000000 */   nop
+.size func_800004FC, . - func_800004FC
+";
 
-            println!(
-                "Adding overlay '{:?}': {:?} {:?}",
-                category_name, rom_range, vram_range
-            );
-
-            let ranges = RomVramRange::new(rom_range, vram_range);
-
-            let overlay_builder = OverlaySegmentBuilder::new(ranges, category_name, segment_name);
-
-            builder
-                .add_overlay(overlay_builder.finish_symbols())
-                .unwrap();
-        }
-
-        builder.build(global_config).unwrap()
-    };
-
-    let instr_display_flags = InstructionDisplayFlags::default();
-
-    let section_text = context
-        .create_section_text(
-            &text_settings,
-            "test",
-            &bytes,
-            rom,
-            vram,
-            ParentSegmentInfo::new(rom, vram, None),
-        )
-        .unwrap();
-
-    let user_relocs = BTreeMap::new();
-    let section_text = section_text
-        .post_process(&mut context, &user_relocs)
-        .unwrap();
-
-    let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
-    for func in section_text.functions() {
-        let func_display = func.display(&context, &function_display_settings).unwrap();
-        println!("{}", func_display);
-    }
+    assert_eq!(disassembly, expected_disassembly,);
 
     assert_eq!(section_text.functions().len(), 3);
 
@@ -188,33 +331,11 @@ fn test_section_text_1() {
         println!("{:?}", s.1);
     }
     assert_eq!(labels.len(), 4);
-
-    /*
-    println!();
-    let overlays_data = context
-        .overlay_segments()
-        .get(&OverlayCategoryName::new("segment_01".into()))
-        .unwrap();
-    println!("placeholder:");
-    for sym in overlays_data.placeholder_segment().symbols() {
-        println!("{:?}", sym);
-    }
-    println!();
-    println!("other:");
-    for (segment_rom, segment_metadata) in &overlays_data.segments() {
-        println!("  {:?}", segment_rom,);
-        for sym in segment_metadata.symbols() {
-            println!("    {:?}", sym);
-        }
-    }
-    */
-
-    // None::<u32>.unwrap();
 }
 
 #[test]
 fn test_section_text_lui_delay_slot() {
-    let bytes = [
+    static BYTES: [u8; 21 * 4] = [
         0x94, 0xA3, 0x00, 0x9A, // lhu
         0x24, 0x02, 0x7F, 0xFF, // addiu
         0x10, 0x62, 0x00, 0x0D, // beq
@@ -239,57 +360,27 @@ fn test_section_text_lui_delay_slot() {
     ];
     let rom = Rom::new(0x069558);
     let vram = Vram::new(0x80081738);
-    let size = Size::new(0x1000);
+
+    let endian = Endian::Big;
+    let gp_config = None;
 
     let text_settings =
         ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
 
-    let global_config = GlobalConfig::new(Endian::Big);
-    let mut context = {
-        let global_ranges = RomVramRange::new(
-            AddressRange::new(rom, rom + size),
-            AddressRange::new(vram, vram + size),
-        );
-        let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
+    let (disassembly, _context, _section_text) = disassemble_text(
+        &BYTES,
+        rom,
+        vram,
+        endian,
+        gp_config,
+        text_settings,
+        false,
+        false,
+    );
 
-        global_segment
-            .preheat_text(&global_config, &text_settings, &bytes, rom, vram)
-            .unwrap();
+    let expected_disassembly = "\
+.section .text
 
-        let mut platform_segment = UserSegmentBuilder::new();
-        platform_segment.n64_libultra_symbols().unwrap();
-        platform_segment.n64_hardware_registers(true, true).unwrap();
-
-        let builder = ContextBuilder::new(global_segment, platform_segment);
-
-        builder.build(global_config).unwrap()
-    };
-
-    let instr_display_flags = InstructionDisplayFlags::default();
-
-    let section_text = context
-        .create_section_text(
-            &text_settings,
-            "test",
-            &bytes,
-            rom,
-            vram,
-            ParentSegmentInfo::new(rom, vram, None),
-        )
-        .unwrap();
-
-    let user_relocs = BTreeMap::new();
-    let section_text = section_text
-        .post_process(&mut context, &user_relocs)
-        .unwrap();
-
-    let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
-    for func in section_text.functions() {
-        let func_display = func.display(&context, &function_display_settings);
-        println!("{}", func_display.unwrap());
-    }
-
-    let expected_str = "\
 glabel func_80081738
     /* 069558 80081738 94A3009A */  lhu         $v1, 0x9A($a1)
     /* 06955C 8008173C 24027FFF */  addiu       $v0, $zero, 0x7FFF
@@ -318,13 +409,7 @@ glabel func_80081738
 .size func_80081738, . - func_80081738
 ";
 
-    assert_eq!(
-        section_text.functions()[0]
-            .display(&context, &function_display_settings)
-            .unwrap()
-            .to_string(),
-        expected_str
-    );
+    assert_eq!(disassembly, expected_disassembly);
 }
 
 #[test]
@@ -388,65 +473,24 @@ fn test_section_text_pairing_on_delay_slot() {
     let rom = Rom::new(0x3118);
     let vram = Vram::new(0x80002518);
 
-    let segment_rom = Rom::new(0x1000);
-    let segment_vram = Vram::new(0x80000400);
+    let endian = Endian::Big;
+    let gp_config = None;
 
     let text_settings = ExecutableSectionSettings::new(
         Some(Compiler::IDO),
         InstructionFlags::new(IsaVersion::MIPS_III),
     );
 
-    let mut context = {
-        let global_config = GlobalConfig::new(Endian::Big);
-
-        let global_ranges = RomVramRange::new(
-            AddressRange::new(segment_rom, Rom::new(0x46270)),
-            AddressRange::new(segment_vram, Vram::new(0x8009A8C0)),
-        );
-        let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
-
-        global_segment
-            .preheat_text(&global_config, &text_settings, &BYTES, rom, vram)
-            .unwrap();
-
-        let mut platform_segment = UserSegmentBuilder::new();
-        platform_segment.n64_libultra_symbols().unwrap();
-        platform_segment.n64_hardware_registers(true, true).unwrap();
-
-        let builder = ContextBuilder::new(global_segment, platform_segment);
-
-        builder.build(global_config).unwrap()
-    };
-
-    let parent_segment_info = ParentSegmentInfo::new(segment_rom, segment_vram, None);
-    let section_text = context
-        .create_section_text(
-            &text_settings,
-            "text".to_string(),
-            &BYTES,
-            rom,
-            vram,
-            parent_segment_info,
-        )
-        .unwrap();
-
-    let user_relocs = BTreeMap::new();
-    let section_text = section_text
-        .post_process(&mut context, &user_relocs)
-        .unwrap();
-
-    let mut disassembly = ".section .text\n".to_string();
-    let display_settings = FunctionDisplaySettings::new(InstructionDisplayFlags::new());
-    for sym in section_text.functions() {
-        disassembly.push('\n');
-        disassembly.push_str(
-            &sym.display(&context, &display_settings)
-                .unwrap()
-                .to_string(),
-        );
-    }
-
-    println!("{}", disassembly);
+    let (disassembly, _context, _section_text) = disassemble_text(
+        &BYTES,
+        rom,
+        vram,
+        endian,
+        gp_config,
+        text_settings,
+        false,
+        false,
+    );
 
     let expected_disassembly = "\
 .section .text
@@ -541,65 +585,24 @@ fn test_section_text_lui_paired_with_lw_and_ori() {
     let rom = Rom::new(0x008460);
     let vram = Vram::new(0x80007860);
 
-    let segment_rom = Rom::new(0x1000);
-    let segment_vram = Vram::new(0x80000400);
+    let endian = Endian::Big;
+    let gp_config = None;
 
     let text_settings = ExecutableSectionSettings::new(
         Some(Compiler::KMC),
         InstructionFlags::new(IsaVersion::MIPS_III),
     );
 
-    let mut context = {
-        let global_config = GlobalConfig::new(Endian::Big);
-
-        let global_ranges = RomVramRange::new(
-            AddressRange::new(segment_rom, Rom::new(0x46270)),
-            AddressRange::new(segment_vram, Vram::new(0x8009A8C0)),
-        );
-        let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
-
-        global_segment
-            .preheat_text(&global_config, &text_settings, &BYTES, rom, vram)
-            .unwrap();
-
-        let mut platform_segment = UserSegmentBuilder::new();
-        platform_segment.n64_libultra_symbols().unwrap();
-        platform_segment.n64_hardware_registers(true, true).unwrap();
-
-        let builder = ContextBuilder::new(global_segment, platform_segment);
-
-        builder.build(global_config).unwrap()
-    };
-
-    let parent_segment_info = ParentSegmentInfo::new(segment_rom, segment_vram, None);
-    let section_text = context
-        .create_section_text(
-            &text_settings,
-            "text".to_string(),
-            &BYTES,
-            rom,
-            vram,
-            parent_segment_info,
-        )
-        .unwrap();
-
-    let user_relocs = BTreeMap::new();
-    let section_text = section_text
-        .post_process(&mut context, &user_relocs)
-        .unwrap();
-
-    let mut disassembly = ".section .text\n".to_string();
-    let display_settings = FunctionDisplaySettings::new(InstructionDisplayFlags::new());
-    for sym in section_text.functions() {
-        disassembly.push('\n');
-        disassembly.push_str(
-            &sym.display(&context, &display_settings)
-                .unwrap()
-                .to_string(),
-        );
-    }
-
-    println!("{}", disassembly);
+    let (disassembly, _context, _section_text) = disassemble_text(
+        &BYTES,
+        rom,
+        vram,
+        endian,
+        gp_config,
+        text_settings,
+        true,
+        false,
+    );
 
     let expected_disassembly = "\
 .section .text
@@ -649,64 +652,24 @@ fn test_section_text_gp_rels() {
     let rom = Rom::new(0x00000000);
     let vram = Vram::new(0x80000000);
 
-    let segment_rom = Rom::new(0x00000000);
-    let segment_vram = Vram::new(0x80000000);
+    let endian = Endian::Little;
+    let gp_config = Some(GpConfig::new_sdata(GpValue::new(0x80008014)));
 
     let text_settings = ExecutableSectionSettings::new(
         Some(Compiler::PSYQ),
         InstructionFlags::new_extension(IsaExtension::R3000GTE),
     );
 
-    let mut context = {
-        let global_config = GlobalConfig::new(Endian::Little)
-            .with_gp_config(Some(GpConfig::new_sdata(GpValue::new(0x80008014))));
-
-        let global_ranges = RomVramRange::new(
-            AddressRange::new(segment_rom, Rom::new(0x00008000)),
-            AddressRange::new(segment_vram, Vram::new(0x80008000)),
-        );
-        let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
-
-        global_segment
-            .preheat_text(&global_config, &text_settings, &BYTES, rom, vram)
-            .unwrap();
-
-        let platform_segment = UserSegmentBuilder::new();
-
-        let builder = ContextBuilder::new(global_segment, platform_segment);
-
-        builder.build(global_config).unwrap()
-    };
-
-    let parent_segment_info = ParentSegmentInfo::new(segment_rom, segment_vram, None);
-    let section_text = context
-        .create_section_text(
-            &text_settings,
-            "text".to_string(),
-            &BYTES,
-            rom,
-            vram,
-            parent_segment_info,
-        )
-        .unwrap();
-
-    let user_relocs = BTreeMap::new();
-    let section_text = section_text
-        .post_process(&mut context, &user_relocs)
-        .unwrap();
-
-    let mut disassembly = ".section .text\n".to_string();
-    let display_settings = FunctionDisplaySettings::new(InstructionDisplayFlags::new());
-    for sym in section_text.functions() {
-        disassembly.push('\n');
-        disassembly.push_str(
-            &sym.display(&context, &display_settings)
-                .unwrap()
-                .to_string(),
-        );
-    }
-
-    println!("{}", disassembly);
+    let (disassembly, _context, _section_text) = disassemble_text(
+        &BYTES,
+        rom,
+        vram,
+        endian,
+        gp_config,
+        text_settings,
+        false,
+        false,
+    );
 
     let expected_disassembly = "\
 .section .text
@@ -812,63 +775,24 @@ fn test_section_text_type_inference_on_complex_control_flow() {
     let rom = Rom::new(0x02139F0C);
     let vram = Vram::new(0x8080010C);
 
-    let segment_rom = Rom::new(0x00000000);
-    let segment_vram = Vram::new(0x80000000);
+    let endian = Endian::Big;
+    let gp_config = None;
 
     let text_settings = ExecutableSectionSettings::new(
         Some(Compiler::IDO),
         InstructionFlags::new_isa(IsaVersion::MIPS_III, None),
     );
 
-    let mut context = {
-        let global_config = GlobalConfig::new(Endian::Big);
-
-        let global_ranges = RomVramRange::new(
-            AddressRange::new(segment_rom, Rom::new(0x04000000)),
-            AddressRange::new(segment_vram, Vram::new(0x84000000)),
-        );
-        let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
-
-        global_segment
-            .preheat_text(&global_config, &text_settings, &BYTES, rom, vram)
-            .unwrap();
-
-        let platform_segment = UserSegmentBuilder::new();
-
-        let builder = ContextBuilder::new(global_segment, platform_segment);
-
-        builder.build(global_config).unwrap()
-    };
-
-    let parent_segment_info = ParentSegmentInfo::new(segment_rom, segment_vram, None);
-    let section_text = context
-        .create_section_text(
-            &text_settings,
-            "text".to_string(),
-            &BYTES,
-            rom,
-            vram,
-            parent_segment_info,
-        )
-        .unwrap();
-
-    let user_relocs = BTreeMap::new();
-    let section_text = section_text
-        .post_process(&mut context, &user_relocs)
-        .unwrap();
-
-    let mut disassembly = ".section .text\n".to_string();
-    let display_settings = FunctionDisplaySettings::new(InstructionDisplayFlags::new());
-    for sym in section_text.functions() {
-        disassembly.push('\n');
-        disassembly.push_str(
-            &sym.display(&context, &display_settings)
-                .unwrap()
-                .to_string(),
-        );
-    }
-
-    println!("{}", disassembly);
+    let (disassembly, context, _section_text) = disassemble_text(
+        &BYTES,
+        rom,
+        vram,
+        endian,
+        gp_config,
+        text_settings,
+        false,
+        false,
+    );
 
     let expected_disassembly = "\
 .section .text
@@ -995,68 +919,29 @@ fn test_section_text_exception_control_flow() {
     let rom = Rom::new(0x00000000);
     let vram = Vram::new(0x80000000);
 
-    let segment_rom = Rom::new(0x00000000);
-    let segment_vram = Vram::new(0x80000000);
+    let endian = Endian::Little;
+    let gp_config = Some(GpConfig::new_sdata(GpValue::new(0x80008014)));
 
     let text_settings = ExecutableSectionSettings::new(
-        Some(Compiler::PSYQ),
+        Some(Compiler::EEGCC),
         InstructionFlags::new_extension(IsaExtension::R5900EE),
     );
 
-    let mut context = {
-        let global_config = GlobalConfig::new(Endian::Little)
-            .with_gp_config(Some(GpConfig::new_sdata(GpValue::new(0x80008014))));
-
-        let global_ranges = RomVramRange::new(
-            AddressRange::new(segment_rom, Rom::new(0x00008000)),
-            AddressRange::new(segment_vram, Vram::new(0x80008000)),
-        );
-        let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
-
-        global_segment
-            .preheat_text(&global_config, &text_settings, &BYTES, rom, vram)
-            .unwrap();
-
-        let platform_segment = UserSegmentBuilder::new();
-
-        let builder = ContextBuilder::new(global_segment, platform_segment);
-
-        builder.build(global_config).unwrap()
-    };
-
-    let parent_segment_info = ParentSegmentInfo::new(segment_rom, segment_vram, None);
-    let section_text = context
-        .create_section_text(
-            &text_settings,
-            "text".to_string(),
-            &BYTES,
-            rom,
-            vram,
-            parent_segment_info,
-        )
-        .unwrap();
-
-    let user_relocs = BTreeMap::new();
-    let section_text = section_text
-        .post_process(&mut context, &user_relocs)
-        .unwrap();
-
-    let mut disassembly = ".section .text\n".to_string();
-    let display_settings = FunctionDisplaySettings::new(InstructionDisplayFlags::new());
-    for sym in section_text.functions() {
-        disassembly.push('\n');
-        disassembly.push_str(
-            &sym.display(&context, &display_settings)
-                .unwrap()
-                .to_string(),
-        );
-    }
-
-    println!("{}", disassembly);
+    let (disassembly, _context, _section_text) = disassemble_text(
+        &BYTES,
+        rom,
+        vram,
+        endian,
+        gp_config,
+        text_settings,
+        false,
+        false,
+    );
 
     let expected_disassembly = "\
 .section .text
 
+.align 3
 glabel func_80000000
     /* 000000 80000000 00801D3C */  lui         $sp, %hi(UNK_800064E0)
     /* 000004 80000004 6C1E000C */  jal         UNK_func_800079B0
@@ -1064,6 +949,7 @@ glabel func_80000000
     /* 00000C 8000000C 0D000000 */  break       0
 .size func_80000000, . - func_80000000
 
+.align 3
 glabel func_80000010
     /* 000010 80000010 801F000C */  jal         UNK_func_80007E00
     /* 000014 80000014 00000000 */   nop
@@ -1078,6 +964,7 @@ glabel func_8000001C
 .size func_8000001C, . - func_8000001C
 
 /* Handwritten function */
+.align 3
 glabel func_80000028
     /* 000028 80000028 00000324 */  addiu       $v1, $zero, 0x0
     /* 00002C 8000002C 0C000000 */  syscall     0 /* handwritten instruction */
@@ -1086,5 +973,5 @@ glabel func_80000028
 .size func_80000028, . - func_80000028
 ";
 
-    assert_eq!(disassembly, expected_disassembly,);
+    assert_eq!(disassembly, expected_disassembly);
 }
