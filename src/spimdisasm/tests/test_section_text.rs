@@ -975,3 +975,64 @@ glabel func_80000028
 
     assert_eq!(disassembly, expected_disassembly);
 }
+
+#[test]
+fn test_section_text_forward_bal() {
+    static BYTES: [u8; 10 * 4] = [
+        // function
+        0x27, 0xBD, 0xFF, 0xE0, // addiu
+        0xAF, 0xBF, 0x00, 0x10, // sw
+        0x04, 0x11, 0x00, 0x05, // bal
+        0x24, 0x05, 0x00, 0x10, // addiu
+        0x24, 0x42, 0x00, 0x10, // addiu
+        0x8F, 0xBF, 0x00, 0x10, // lw
+        0x03, 0xE0, 0x00, 0x08, // jr
+        0x27, 0xBD, 0x00, 0x20, // addiu
+        // function
+        0x03, 0xE0, 0x00, 0x08, // jr
+        0x00, 0x85, 0x10, 0x21, // addu
+    ];
+
+    let rom = Rom::new(0x00000000);
+    let vram = Vram::new(0x80000000);
+
+    let endian = Endian::Big;
+    let gp_config = None;
+
+    let text_settings =
+        ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
+
+    let (disassembly, _context, _section_text) = disassemble_text(
+        &BYTES,
+        rom,
+        vram,
+        endian,
+        gp_config,
+        text_settings,
+        false,
+        false,
+    );
+
+    let expected_disassembly = "\
+.section .text
+
+/* Handwritten function */
+glabel func_80000000
+    /* 000000 80000000 27BDFFE0 */  addiu       $sp, $sp, -0x20
+    /* 000004 80000004 AFBF0010 */  sw          $ra, 0x10($sp)
+    /* 000008 80000008 04110005 */  bal         func_80000020 /* handwritten instruction */
+    /* 00000C 8000000C 24050010 */   addiu      $a1, $zero, 0x10
+    /* 000010 80000010 24420010 */  addiu       $v0, $v0, 0x10
+    /* 000014 80000014 8FBF0010 */  lw          $ra, 0x10($sp)
+    /* 000018 80000018 03E00008 */  jr          $ra
+    /* 00001C 8000001C 27BD0020 */   addiu      $sp, $sp, 0x20
+.size func_80000000, . - func_80000000
+
+glabel func_80000020
+    /* 000020 80000020 03E00008 */  jr          $ra
+    /* 000024 80000024 00851021 */   addu       $v0, $a0, $a1
+.size func_80000020, . - func_80000020
+";
+
+    assert_eq!(disassembly, expected_disassembly);
+}

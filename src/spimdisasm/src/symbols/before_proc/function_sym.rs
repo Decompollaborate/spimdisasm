@@ -131,9 +131,10 @@ impl FunctionSym {
                     continue
             */
 
-            if owned_segment
-                .find_symbol(*target_vram, FindSettings::new(false))
-                .is_none()
+            if owned_segment.in_vram_range(*target_vram)
+                && owned_segment
+                    .find_symbol(*target_vram, FindSettings::new(false))
+                    .is_none()
             {
                 // Only generate a label if this outside-branch is not branching to the start of a function
 

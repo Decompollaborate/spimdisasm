@@ -451,6 +451,11 @@ fn find_functions_branch_checker(
         }
     }
 
+    if instr.opcode().does_link() {
+        // This is more likely to be a function call than as an actual branch
+        return (farthest_branch, halt_function_searching);
+    }
+
     if let Some(branch_offset) = instr.get_branch_offset_generic() {
         if branch_offset > farthest_branch {
             // Keep track of the farthest branch target
