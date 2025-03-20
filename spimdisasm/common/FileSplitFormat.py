@@ -61,7 +61,7 @@ class FileSplitFormat:
             offset = int(offsetStr, 16)
             nextOffset = 0xFFFFFF
             if i + 1 < len(self.splits):
-                if self.splits[i+1][2] == ".end":
+                if self.splits[i+1][2] in (".end", ".dummy"):
                     nextOffsetStr = self.splits[i+1][0]
                 elif self.splits[i+1][2].startswith("."):
                     nextOffsetStr = self.splits[i+2][0]
