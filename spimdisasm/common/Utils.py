@@ -165,7 +165,7 @@ def readCsv(filepath: Path) -> list[list[str]]:
 
     with filepath.open() as f:
         lines = f.readlines()
-        processedLines = [x.strip().split("#")[0] for x in lines]
+        processedLines = [x.split("#")[0].strip() for x in lines]
         csvReader = csv.reader(processedLines)
         for row in csvReader:
             data.append(list(row))
