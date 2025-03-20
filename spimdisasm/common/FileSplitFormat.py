@@ -53,6 +53,9 @@ class FileSplitFormat:
             if possibleSection != FileSectionType.Invalid:
                 if possibleSection == FileSectionType.End:
                     break
+                elif possibleSection == FileSectionType.Dummy:
+                    # ignore dummy sections
+                    continue
                 else:
                     section = possibleSection
                     continue
