@@ -6,7 +6,7 @@ use alloc::{collections::btree_map::BTreeMap, sync::Arc};
 use rabbitizer::{access_type::AccessType, Instruction};
 
 use crate::{
-    addresses::{AddressRange, Rom, RomVramRange, Size, Vram, VramOffset},
+    addresses::{AddressRange, Rom, RomVramRange, Size, SizedAddress, Vram, VramOffset},
     collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
     config::GlobalConfig,
     metadata::{IgnoredAddressRange, LabelMetadata, LabelType, SymbolMetadata, SymbolType},
@@ -22,7 +22,8 @@ pub(crate) struct Preheater {
     ranges: RomVramRange,
     references: AddendedOrderedMap<Vram, ReferencedAddress>,
     label_references: BTreeMap<Vram, ReferencedLabel>,
-    preheated_sections: AddendedOrderedMap<Rom, Size>,
+    preheated_sections_rom: AddendedOrderedMap<Rom, Size>,
+    preheated_sections_vram: AddendedOrderedMap<Vram, (Arc<str>, Vram, Size)>,
 }
 
 impl Preheater {
@@ -32,7 +33,8 @@ impl Preheater {
             ranges,
             references: AddendedOrderedMap::new(),
             label_references: BTreeMap::new(),
-            preheated_sections: AddendedOrderedMap::new(),
+            preheated_sections_rom: AddendedOrderedMap::new(),
+            preheated_sections_vram: AddendedOrderedMap::new(),
         }
     }
 
@@ -42,8 +44,8 @@ impl Preheater {
     pub(crate) fn references_mut(&mut self) -> &mut AddendedOrderedMap<Vram, ReferencedAddress> {
         &mut self.references
     }
-    pub(crate) fn preheated_sections(&self) -> &AddendedOrderedMap<Rom, Size> {
-        &self.preheated_sections
+    pub(crate) fn preheated_sections_rom(&self) -> &AddendedOrderedMap<Rom, Size> {
+        &self.preheated_sections_rom
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -51,6 +53,7 @@ impl Preheater {
         &mut self,
         global_config: &GlobalConfig,
         settings: &ExecutableSectionSettings,
+        name: Arc<str>,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
@@ -58,7 +61,7 @@ impl Preheater {
         user_labels: &BTreeMap<Vram, LabelMetadata>,
         ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
     ) -> Result<(), PreheatError> {
-        self.check_failable_preconditions(raw_bytes, rom, vram)?;
+        self.check_failable_preconditions(name, raw_bytes, rom, vram)?;
 
         let mut current_rom = rom;
         let mut current_vram = vram;
@@ -226,6 +229,7 @@ impl Preheater {
         &mut self,
         global_config: &GlobalConfig,
         settings: &DataSectionSettings,
+        name: Arc<str>,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
@@ -236,6 +240,7 @@ impl Preheater {
         self.common_data_preheat(
             global_config,
             settings,
+            name,
             raw_bytes,
             rom,
             vram,
@@ -251,6 +256,7 @@ impl Preheater {
         &mut self,
         global_config: &GlobalConfig,
         settings: &DataSectionSettings,
+        name: Arc<str>,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
@@ -261,6 +267,7 @@ impl Preheater {
         self.common_data_preheat(
             global_config,
             settings,
+            name,
             raw_bytes,
             rom,
             vram,
@@ -276,6 +283,7 @@ impl Preheater {
         &mut self,
         global_config: &GlobalConfig,
         _settings: &DataSectionSettings,
+        name: Arc<str>,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
@@ -283,7 +291,7 @@ impl Preheater {
         user_labels: &BTreeMap<Vram, LabelMetadata>,
         ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
     ) -> Result<(), PreheatError> {
-        self.check_failable_preconditions(raw_bytes, rom, vram)?;
+        self.check_failable_preconditions(name, raw_bytes, rom, vram)?;
 
         if rom.inner() % 4 != 0 || vram.inner() % 4 != 0 {
             // not word-aligned, give up.
@@ -326,6 +334,7 @@ impl Preheater {
         &mut self,
         global_config: &GlobalConfig,
         settings: &DataSectionSettings,
+        name: Arc<str>,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
@@ -334,7 +343,7 @@ impl Preheater {
         section_type: SectionType,
         ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
     ) -> Result<(), PreheatError> {
-        self.check_failable_preconditions(raw_bytes, rom, vram)?;
+        self.check_failable_preconditions(name, raw_bytes, rom, vram)?;
 
         if rom.inner() % 4 != 0 || vram.inner() % 4 != 0 {
             // not word-aligned, give up.
@@ -779,6 +788,7 @@ impl Preheater {
 
     fn check_failable_preconditions(
         &mut self,
+        name: Arc<str>,
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
@@ -792,6 +802,7 @@ impl Preheater {
         if !segment_rom_range.in_range(rom) || !segment_rom_range.in_range_inclusive_end(rom_end) {
             Err(PreheatError::new_wrong_rom(
                 self.segment_name.clone(),
+                name,
                 rom,
                 vram,
                 *segment_rom_range,
@@ -802,25 +813,54 @@ impl Preheater {
         {
             Err(PreheatError::new_wrong_vram(
                 self.segment_name.clone(),
+                name,
                 rom,
                 vram,
                 *segment_vram_range,
                 vram_end,
             ))
         } else if self
-            .preheated_sections
+            .preheated_sections_rom
             .find(&rom, FindSettings::new(true))
             .is_some()
         {
             Err(PreheatError::new_already_preheated(
                 self.segment_name.clone(),
+                name,
                 rom,
                 vram,
             ))
+        } else if let Some((other_name, other_vram, other_size)) = self
+            .preheated_sections_vram
+            .find(&vram, FindSettings::new(true))
+        {
+            Err(PreheatError::new_overlaps_with_already_preheated(
+                self.segment_name.clone(),
+                name,
+                rom,
+                vram,
+                other_name.clone(),
+                *other_vram,
+                *other_size,
+            ))
         } else {
-            self.preheated_sections
-                .find_mut_or_insert_with(rom, FindSettings::new(false), || size);
+            self.preheated_sections_rom.find_mut_or_insert_with(
+                rom,
+                FindSettings::new(false),
+                || size,
+            );
+            self.preheated_sections_vram.find_mut_or_insert_with(
+                vram,
+                FindSettings::new(false),
+                || (name, vram, size),
+            );
             Ok(())
         }
+    }
+}
+
+impl SizedAddress for (Arc<str>, Vram, Size) {
+    fn size(&self) -> Size {
+        self.2
     }
 }

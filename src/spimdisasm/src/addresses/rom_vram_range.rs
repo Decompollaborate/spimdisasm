@@ -18,10 +18,12 @@ impl RomVramRange {
     pub fn new(rom: AddressRange<Rom>, vram: AddressRange<Vram>) -> Self {
         assert!(
             vram.size() >= rom.size(),
-            "Vram range ({:?}, {:?}) can't be smaller than Rom range ({:?}, {:?})",
-            vram,
+            "Can't create RomVramRange: The range of the Vram must be equal or greater than the Rom range.\nVram range is 0x{} ~ 0x{} (Size {}).\n Rom range is 0x{:08X} ~ 0x{:08X} (Size {}).",
+            vram.start(),
+            vram.end(),
             vram.size(),
-            rom,
+            rom.start().inner(),
+            rom.end().inner(),
             rom.size(),
         );
         assert!(

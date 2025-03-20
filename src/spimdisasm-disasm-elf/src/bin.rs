@@ -401,6 +401,7 @@ fn preheat_sections(
 
         let section_type = SectionType::new(sh_type, sh_flags, pretty_unwrap(section.name()));
         if let Some(SectionType::Progbits(ProgbitsType::Text)) = section_type {
+            let name = pretty_unwrap(section.name());
             let raw_bytes = pretty_unwrap(section.data());
             let rom = Rom::new(
                 section
@@ -418,6 +419,7 @@ fn preheat_sections(
             pretty_unwrap(global_segment.preheat_text(
                 global_config,
                 executable_settings,
+                name,
                 raw_bytes,
                 rom,
                 vram,
@@ -432,6 +434,7 @@ fn preheat_sections(
 
         let section_type = SectionType::new(sh_type, sh_flags, pretty_unwrap(section.name()));
         if let Some(SectionType::Progbits(progbits)) = section_type {
+            let name = pretty_unwrap(section.name());
             let raw_bytes = pretty_unwrap(section.data());
             let rom = Rom::new(
                 section
@@ -451,6 +454,7 @@ fn preheat_sections(
                 ProgbitsType::Data => pretty_unwrap(global_segment.preheat_data(
                     global_config,
                     data_settings,
+                    name,
                     raw_bytes,
                     rom,
                     vram,
@@ -458,6 +462,7 @@ fn preheat_sections(
                 ProgbitsType::Rodata => pretty_unwrap(global_segment.preheat_data(
                     global_config,
                     data_settings,
+                    name,
                     raw_bytes,
                     rom,
                     vram,

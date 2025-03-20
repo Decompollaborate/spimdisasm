@@ -133,31 +133,34 @@ fn init_context(
                     };
 
                     match sect {
-                        TestSection::Text(rom, _) => global_segment_heater
+                        TestSection::Text(rom, name) => global_segment_heater
                             .preheat_text(
                                 &global_config,
                                 &ExecutableSectionSettings::new(
                                     COMPILER,
                                     InstructionFlags::new(IsaVersion::MIPS_III),
                                 ),
+                                *name,
                                 &rom_bytes[AddressRange::new(*rom, rom_end)],
                                 *rom,
                                 info.vram_from_rom(*rom),
                             )
                             .unwrap(),
-                        TestSection::Data(rom, _) => global_segment_heater
+                        TestSection::Data(rom, name) => global_segment_heater
                             .preheat_data(
                                 &global_config,
                                 &DataSectionSettings::new(COMPILER),
+                                *name,
                                 &rom_bytes[AddressRange::new(*rom, rom_end)],
                                 *rom,
                                 info.vram_from_rom(*rom),
                             )
                             .unwrap(),
-                        TestSection::Rodata(rom, _) => global_segment_heater
+                        TestSection::Rodata(rom, name) => global_segment_heater
                             .preheat_rodata(
                                 &global_config,
                                 &DataSectionSettings::new(COMPILER),
+                                *name,
                                 &rom_bytes[AddressRange::new(*rom, rom_end)],
                                 *rom,
                                 info.vram_from_rom(*rom),

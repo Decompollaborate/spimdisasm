@@ -215,11 +215,11 @@ impl ContextBuilder {
 
     pub fn build(self, global_config: GlobalConfig) -> Result<Context, BuildContextError> {
         let mut preheated_sections = UnorderedMap::new();
-        for (rom, _) in self.global_segment.preheated_sections() {
+        for (rom, _) in self.global_segment.preheated_sections_rom() {
             preheated_sections.insert(*rom, false);
         }
         for overlay in &self.overlays {
-            for (rom, _) in overlay.preheated_sections() {
+            for (rom, _) in overlay.preheated_sections_rom() {
                 preheated_sections.insert(*rom, false);
             }
         }

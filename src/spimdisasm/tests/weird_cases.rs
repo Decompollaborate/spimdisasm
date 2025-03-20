@@ -260,7 +260,7 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
         ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
 
     global_segment
-        .preheat_text(&global_config, &text_settings, &bytes, rom, vram)
+        .preheat_text(&global_config, &text_settings, "test", &bytes, rom, vram)
         .unwrap();
 
     let mut platform_segment = UserSegmentBuilder::new();
@@ -618,7 +618,7 @@ fn weird_case_use_gp_as_temp() {
         let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
 
         global_segment
-            .preheat_text(&global_config, &text_settings, &BYTES, rom, vram)
+            .preheat_text(&global_config, &text_settings, "text", &BYTES, rom, vram)
             .unwrap();
 
         let platform_segment = UserSegmentBuilder::new();
@@ -632,7 +632,7 @@ fn weird_case_use_gp_as_temp() {
     let section_text = context
         .create_section_text(
             &text_settings,
-            "text".to_string(),
+            "text",
             &BYTES,
             rom,
             vram,

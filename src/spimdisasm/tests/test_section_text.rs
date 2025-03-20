@@ -31,6 +31,8 @@ fn disassemble_text(
     let segment_rom = Rom::new(0x00000000);
     let segment_vram = Vram::new(0x80000000);
 
+    let section_name = "text";
+
     let mut context = {
         let global_config = GlobalConfig::new(endian).with_gp_config(gp_config);
 
@@ -41,7 +43,14 @@ fn disassemble_text(
         let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
 
         global_segment
-            .preheat_text(&global_config, &text_settings, raw_bytes, rom, vram)
+            .preheat_text(
+                &global_config,
+                &text_settings,
+                section_name,
+                raw_bytes,
+                rom,
+                vram,
+            )
             .unwrap();
 
         let mut user_segment = UserSegmentBuilder::new();
@@ -98,7 +107,7 @@ fn disassemble_text(
     let section_text = context
         .create_section_text(
             &text_settings,
-            "text".to_string(),
+            section_name,
             raw_bytes,
             rom,
             vram,
