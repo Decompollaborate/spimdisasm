@@ -581,6 +581,14 @@ fn find_functions_check_function_ended(
         return (FunctionEndedState::ByException, false);
     }
 
+    if settings.negative_branch_as_end() && instr.is_unconditional_branch() {
+        if let Some(target_vram) = instr.get_branch_vram_generic() {
+            if target_vram < current_vram {
+                return (FunctionEndedState::WithDelaySlot, false);
+            }
+        }
+    }
+
     if !instr.opcode().is_jump() {
         return (FunctionEndedState::No, false);
     }
@@ -732,6 +740,11 @@ pub struct ExecutableSectionSettings {
     /// Tries to detect one or more redundants and unreferenced function ends and merge them to the previous function.
     /// This option is ignored if the compiler is not set to IDO.
     detect_redundant_end: bool,
+
+    /// Allow considering a negative unconditional branch as a possible function end.
+    /// It is disabled by default since many compilers may emit the function's epilogue even if it
+    /// is unreachable.
+    negative_branch_as_end: bool,
 }
 
 impl ExecutableSectionSettings {
@@ -741,6 +754,7 @@ impl ExecutableSectionSettings {
             instruction_flags,
             is_handwritten: false,
             detect_redundant_end: false,
+            negative_branch_as_end: false,
         }
     }
 
@@ -750,23 +764,49 @@ impl ExecutableSectionSettings {
     pub fn instruction_flags(&self) -> InstructionFlags {
         self.instruction_flags
     }
+
     pub fn is_handwritten(&self) -> bool {
         self.is_handwritten
     }
+    pub fn set_is_handwritten(&mut self, is_handwritten: bool) {
+        self.is_handwritten = is_handwritten;
+    }
+    pub fn with_is_handwritten(self, is_handwritten: bool) -> Self {
+        Self {
+            is_handwritten,
+            ..self
+        }
+    }
+
     pub fn detect_redundant_end(&self) -> bool {
         // TODO: move hardcoded IDO check to a Compiler function.
         self.compiler
             .is_some_and(|x| x == Compiler::IDO && self.detect_redundant_end)
     }
-
-    pub fn set_is_handwritten(&mut self, is_handwritten: bool) {
-        self.is_handwritten = is_handwritten;
-    }
-
     /// Tries to detect one or more redundants and unreferenced function ends and merge them to the previous function.
     /// This option is ignored if the compiler is not set to IDO.
     pub fn set_detect_redundant_end(&mut self, detect_redundant_end: bool) {
         self.detect_redundant_end = detect_redundant_end;
+    }
+    pub fn with_detect_redundant_end(self, detect_redundant_end: bool) -> Self {
+        Self {
+            detect_redundant_end,
+            ..self
+        }
+    }
+
+    pub fn negative_branch_as_end(&self) -> bool {
+        self.negative_branch_as_end
+    }
+    pub fn set_negative_branch_as_end(&mut self, negative_branch_as_end: bool) {
+        self.negative_branch_as_end = negative_branch_as_end;
+    }
+    /// Allow considering a negative unconditional branch as a possible function end.
+    pub fn with_negative_branch_as_end(self, negative_branch_as_end: bool) -> Self {
+        Self {
+            negative_branch_as_end,
+            ..self
+        }
     }
 }
 

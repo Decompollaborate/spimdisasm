@@ -1036,3 +1036,92 @@ glabel func_80000020
 
     assert_eq!(disassembly, expected_disassembly);
 }
+
+#[test]
+fn test_section_text_negative_branch_end() {
+    static BYTES: [u8; 20 * 4] = [
+        // function
+        0x00, 0x00, 0x10, 0x25, // or
+        0x3c, 0x03, 0x80, 0x00, // lui
+        0x8c, 0x64, 0x01, 0x00, // lw
+        0x14, 0x80, 0x00, 0x03, // bnez
+        0x00, 0x00, 0x00, 0x00, // nop
+        0x03, 0xe0, 0x00, 0x08, // jr
+        0x00, 0x00, 0x00, 0x00, // nop
+        0x10, 0x00, 0xff, 0xfa, // b
+        0x24, 0x42, 0x00, 0x01, // addiu
+        // function
+        0x00, 0x00, 0x10, 0x25, // or
+        0x3c, 0x03, 0x80, 0x00, // lui
+        0x8c, 0x64, 0x01, 0x04, // lw
+        0x14, 0x80, 0x00, 0x03, // bnez
+        0x00, 0x00, 0x00, 0x00, // nop
+        0x03, 0xe0, 0x00, 0x08, // jr
+        0x00, 0x00, 0x00, 0x00, // nop
+        0x08, 0x00, 0x00, 0x0B, // j // TODO
+        0x24, 0x42, 0x00, 0x01, // addiu
+        // function
+        0x03, 0xE0, 0x00, 0x08, //jr
+        0x00, 0x00, 0x00, 0x00, //nop
+    ];
+
+    let rom = Rom::new(0x00000000);
+    let vram = Vram::new(0x80000000);
+
+    let endian = Endian::Big;
+    let gp_config = None;
+
+    let text_settings =
+        ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III))
+            .with_negative_branch_as_end(true);
+
+    let (disassembly, _context, _section_text) = disassemble_text(
+        &BYTES,
+        rom,
+        vram,
+        endian,
+        gp_config,
+        text_settings,
+        false,
+        false,
+    );
+
+    let expected_disassembly = "\
+.section .text
+
+glabel func_80000000
+    /* 000000 80000000 00001025 */  or          $v0, $zero, $zero
+    /* 000004 80000004 3C038000 */  lui         $v1, %hi(UNK_80000100)
+  .L80000008:
+    /* 000008 80000008 8C640100 */  lw          $a0, %lo(UNK_80000100)($v1)
+    /* 00000C 8000000C 14800003 */  bnez        $a0, .L8000001C
+    /* 000010 80000010 00000000 */   nop
+    /* 000014 80000014 03E00008 */  jr          $ra
+    /* 000018 80000018 00000000 */   nop
+  .L8000001C:
+    /* 00001C 8000001C 1000FFFA */  b           .L80000008
+    /* 000020 80000020 24420001 */   addiu      $v0, $v0, 0x1
+.size func_80000000, . - func_80000000
+
+glabel func_80000024
+    /* 000024 80000024 00001025 */  or          $v0, $zero, $zero
+    /* 000028 80000028 3C038000 */  lui         $v1, %hi(UNK_80000104)
+  .L8000002C:
+    /* 00002C 8000002C 8C640104 */  lw          $a0, %lo(UNK_80000104)($v1)
+    /* 000030 80000030 14800003 */  bnez        $a0, .L80000040
+    /* 000034 80000034 00000000 */   nop
+    /* 000038 80000038 03E00008 */  jr          $ra
+    /* 00003C 8000003C 00000000 */   nop
+  .L80000040:
+    /* 000040 80000040 0800000B */  j           .L8000002C
+    /* 000044 80000044 24420001 */   addiu      $v0, $v0, 0x1
+.size func_80000024, . - func_80000024
+
+glabel func_80000048
+    /* 000048 80000048 03E00008 */  jr          $ra
+    /* 00004C 8000004C 00000000 */   nop
+.size func_80000048, . - func_80000048
+";
+
+    assert_eq!(disassembly, expected_disassembly);
+}
