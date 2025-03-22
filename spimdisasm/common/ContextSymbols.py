@@ -693,6 +693,8 @@ class ContextSymbol:
             label += GlobalConfig.ASM_JTBL_LABEL
         elif currentType == SymbolSpecialType.gccexcepttablelabel:
             label += GlobalConfig.ASM_EHTBL_LABEL
+        elif currentType in gKnownTypes:
+            label += GlobalConfig.ASM_DATA_LABEL
         elif self.sectionType == FileSectionType.Text:
             if isInMiddleLabel:
                 label += GlobalConfig.ASM_TEXT_ALT_LABEL
