@@ -9,7 +9,7 @@ use object::{
 };
 use spimdisasm::{
     self,
-    addresses::{AddressRange, GpValue, Rom, RomVramRange, Size, Vram},
+    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     config::{GlobalConfig, GpConfig},
     context::{
         builder::{GlobalSegmentHeater, UserSegmentBuilder},
@@ -255,19 +255,35 @@ fn create_global_ranges(elf_file: &ElfFile32) -> RomVramRange {
     RomVramRange::new(rom, vram)
 }
 
-fn fill_symbols(elf_file: &ElfFile32, global_ranges: RomVramRange) -> GlobalSegmentHeater {
+fn fill_dyn_symbols(
+    elf_file: &ElfFile32,
+    global_ranges: RomVramRange,
+    dynamic: &DynamicSection,
+    raw_got: &[u32],
+) -> (GlobalSegmentHeater, UserSegmentBuilder) {
     let mut global_segment = GlobalSegmentBuilder::new(global_ranges);
+    let mut user_segment = UserSegmentBuilder::new();
+
+    let gotsym = dynamic.gotsym() as usize;
+
+    let global_offset_table = GlobalOffsetTable::parse(elf_file, dynamic, raw_got);
+    let mut global_got = global_offset_table.globals().iter();
 
     let mut addresses = HashSet::new();
     let mut local_syms = Vec::new();
     let mut weak_syms = Vec::new();
     let mut remaining_symbols = Vec::new();
 
-    // TODO: handle relocatable elfs
-
-    for sym in elf_file.dynamic_symbols() {
+    for (i, sym) in elf_file.dynamic_symbols().enumerate() {
         let st_type = sym.elf_symbol().st_type();
         let st_shndx = sym.elf_symbol().st_shndx(elf_file.endian());
+
+        // We have to do `i+1` because the `object` crate skips the first null entry
+        let got_entry = if i + 1 >= gotsym {
+            global_got.next()
+        } else {
+            None
+        };
 
         let sym_type = match st_type {
             elf::STT_FUNC => Some(SymbolType::Function),
@@ -289,12 +305,12 @@ fn fill_symbols(elf_file: &ElfFile32, global_ranges: RomVramRange) -> GlobalSegm
 
         match sym.elf_symbol().st_visibility() {
             elf::STB_LOCAL => {
-                local_syms.push((name, vram, rom, size, sym_type));
+                local_syms.push((name, vram, rom, size, sym_type, got_entry));
                 continue;
             }
             elf::STB_GLOBAL => {}
             elf::STB_WEAK => {
-                weak_syms.push((name, vram, rom, size, sym_type));
+                weak_syms.push((name, vram, rom, size, sym_type, got_entry));
                 continue;
             }
             x => panic!("Unhandled st_visibility: {}", x),
@@ -304,11 +320,11 @@ fn fill_symbols(elf_file: &ElfFile32, global_ranges: RomVramRange) -> GlobalSegm
             utils::pretty_unwrap(global_segment.add_user_symbol(name, vram, rom, size, sym_type));
             addresses.insert(vram);
         } else {
-            remaining_symbols.push((name, vram, rom, size, sym_type, elf::STB_GLOBAL));
+            remaining_symbols.push((name, vram, rom, size, sym_type, elf::STB_GLOBAL, got_entry));
         }
     }
 
-    for (name, vram, rom, size, sym_type) in local_syms {
+    for (name, vram, rom, size, sym_type, got_entry) in local_syms {
         if addresses.contains(&vram) {
             continue;
         }
@@ -318,11 +334,11 @@ fn fill_symbols(elf_file: &ElfFile32, global_ranges: RomVramRange) -> GlobalSegm
             // TODO: set local visibiility
             addresses.insert(vram);
         } else {
-            remaining_symbols.push((name, vram, rom, size, sym_type, elf::STB_LOCAL));
+            remaining_symbols.push((name, vram, rom, size, sym_type, elf::STB_LOCAL, got_entry));
         }
     }
 
-    for (name, vram, rom, size, sym_type) in weak_syms {
+    for (name, vram, rom, size, sym_type, got_entry) in weak_syms {
         if addresses.contains(&vram) {
             continue;
         }
@@ -332,17 +348,58 @@ fn fill_symbols(elf_file: &ElfFile32, global_ranges: RomVramRange) -> GlobalSegm
             // TODO: set weak visibiility
             addresses.insert(vram);
         } else {
-            remaining_symbols.push((name, vram, rom, size, sym_type, elf::STB_WEAK));
+            remaining_symbols.push((name, vram, rom, size, sym_type, elf::STB_WEAK, got_entry));
         }
     }
 
-    /*
-    for (name, vram, rom, size, sym_type, st_visibility) in remaining_symbols {
-        println!("{:?}, {:?}, {:?}, {:?}, {:?}, {:?}", name, vram, rom, size, sym_type, st_visibility);
+    for (name, vram, rom, size, sym_type, st_visibility, got_entry) in remaining_symbols {
+        if let Some(got_entry) = got_entry {
+            // Check for `COMMON` those symbols do not contain an address on their value, they contain an alignment instead.
+            if vram == Vram::new(0) || got_entry.undef_or_com() {
+                let initial = got_entry.initial();
+                if initial != 0 {
+                    let got_entry = Vram::new(initial);
+                    if addresses.contains(&got_entry) {
+                        continue;
+                    }
+                    utils::pretty_unwrap(user_segment.add_user_symbol(
+                        got_entry,
+                        name,
+                        size.unwrap_or(Size::new(1)),
+                        sym_type,
+                    ));
+                    // TODO: set visibiility?
+                    addresses.insert(got_entry);
+                }
+            } else {
+                eprintln!(
+                    "Unhandled dynamic symbol: {:?}, {:?}, {:?}, {:?}, {:?}, {:?}, {:?}",
+                    name, vram, rom, size, sym_type, st_visibility, got_entry
+                );
+            }
+        } else {
+            eprintln!(
+                "Unhandled dynamic symbol: {:?}, {:?}, {:?}, {:?}, {:?}, {:?}, {:?}",
+                name, vram, rom, size, sym_type, st_visibility, got_entry
+            );
+        }
     }
-    */
 
-    global_segment.finish_symbols()
+    // TODO: pass global_offset_table to spimdisasm
+
+    (global_segment.finish_symbols(), user_segment)
+}
+
+fn fill_symtab(
+    _elf_file: &ElfFile32,
+    global_ranges: RomVramRange,
+) -> (GlobalSegmentHeater, UserSegmentBuilder) {
+    let global_segment = GlobalSegmentBuilder::new(global_ranges);
+    let user_segment = UserSegmentBuilder::new();
+
+    // TODO: handle relocatable elfs
+
+    (global_segment.finish_symbols(), user_segment)
 }
 
 fn preheat_sections(
@@ -443,9 +500,9 @@ fn create_context(
     data_settings: &DataSectionSettings,
 ) -> Context {
     let dynamic_section = DynamicSection::parse(elf_file);
-    let gp_config = if let Some(gp) = dynamic_section.and_then(|x| x.gp()) {
-        println!("gp: 0x{:08X}", gp);
-        Some(GpConfig::new_pic(GpValue::new(gp)))
+    let gp_config = if let Some(gp) = dynamic_section.map(|x| x.gp()) {
+        println!("{:?}", gp);
+        Some(GpConfig::new_pic(gp))
     } else {
         println!("No gp value found.");
         None
@@ -457,29 +514,14 @@ fn create_context(
 
     print!("    symbols");
     let start = utils::get_time_now();
-    let mut global_segment = fill_symbols(elf_file, global_ranges);
-    let user_segment = UserSegmentBuilder::new();
+    let (mut global_segment, user_segment) =
+        if let (Some(dynamic), Some(raw_got)) = (&dynamic_section, &raw_got) {
+            fill_dyn_symbols(elf_file, global_ranges, dynamic, raw_got)
+        } else {
+            fill_symtab(elf_file, global_ranges)
+        };
     let end = utils::get_time_now();
     println!(": {:?}", end - start);
-
-    println!("    got table");
-    let start = utils::get_time_now();
-    // Handle got table first
-    let _global_offset_table = if let (Some(dynamic), Some(raw_got)) = (&dynamic_section, &raw_got)
-    {
-        let global_offset_table = GlobalOffsetTable::parse(elf_file, dynamic, raw_got);
-        if let Some(got) = &global_offset_table {
-            println!("        locals:  {}", got.locals().len());
-            println!("        globals: {}", got.globals().len());
-        } else {
-            println!("        No got table");
-        }
-        global_offset_table
-    } else {
-        None
-    };
-    let end = utils::get_time_now();
-    println!("      : {:?}", end - start);
 
     print!("    preheat sections");
     let start = utils::get_time_now();

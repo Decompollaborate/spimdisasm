@@ -18,27 +18,26 @@ pub struct GlobalOffsetTable {
 }
 
 impl GlobalOffsetTable {
+    #[must_use]
     pub fn new(locals: Vec<GotLocalEntry>, globals: Vec<GotGlobalEntry>) -> Self {
         Self { locals, globals }
     }
 
+    #[must_use]
+    #[expect(dead_code)]
     pub fn locals(&self) -> &Vec<GotLocalEntry> {
         &self.locals
     }
+    #[must_use]
     pub fn globals(&self) -> &Vec<GotGlobalEntry> {
         &self.globals
     }
 }
 
 impl GlobalOffsetTable {
-    pub fn parse(elf_file: &ElfFile32, dynamic: &DynamicSection, raw_got: &[u32]) -> Option<Self> {
-        let (local_gotno, gotsym) =
-            if let (Some(local_gotno), Some(gotsym)) = (dynamic.local_gotno(), dynamic.gotsym()) {
-                (local_gotno as usize, gotsym as usize)
-            } else {
-                return None;
-            };
-
+    pub fn parse(elf_file: &ElfFile32, dynamic: &DynamicSection, raw_got: &[u32]) -> Self {
+        let local_gotno = dynamic.local_gotno() as usize;
+        let gotsym = dynamic.gotsym() as usize;
         let mut raw_got = raw_got.iter();
 
         // Consume the first `local_gotno` elements of `raw_got`
@@ -53,7 +52,7 @@ impl GlobalOffsetTable {
         // `zip` the dynamic symtab starting at gotsym with the remaining `raw_got`
         let globals = dynsym
             .iter()
-            .skip(gotsym)
+            .skip(gotsym - 1)
             .zip(raw_got)
             .map(|(entry, initial)| {
                 let sym_val = Vram::new(entry.st_value(elf_endian));
@@ -64,7 +63,7 @@ impl GlobalOffsetTable {
             })
             .collect();
 
-        Some(Self::new(locals, globals))
+        Self::new(locals, globals)
     }
 }
 
@@ -109,10 +108,13 @@ impl GotGlobalEntry {
         }
     }
 
-    /*
     #[must_use]
-    pub const fn inner(&self) -> u32 {
-        self.inner
+    pub const fn initial(&self) -> u32 {
+        self.initial
     }
-    */
+
+    #[must_use]
+    pub const fn undef_or_com(&self) -> bool {
+        self.undef_or_com
+    }
 }
