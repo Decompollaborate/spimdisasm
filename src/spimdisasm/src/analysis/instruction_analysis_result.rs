@@ -92,6 +92,8 @@ pub struct InstructionAnalysisResult {
 
     /// Instructions setting the $gp register, key: offset of the low instruction
     gp_sets: UnorderedMap<Rom, GpSetInfo>,
+
+    got_access_addresses: UnorderedMap<Rom, Vram>,
 }
 
 impl InstructionAnalysisResult {
@@ -122,6 +124,7 @@ impl InstructionAnalysisResult {
             type_info_per_instr: UnorderedMap::new(),
             handwritten_instrs: UnorderedSet::new(),
             gp_sets: UnorderedMap::new(),
+            got_access_addresses: UnorderedMap::new(),
         }
     }
 
@@ -197,6 +200,12 @@ impl InstructionAnalysisResult {
     #[must_use]
     pub(crate) fn gp_sets(&self) -> &UnorderedMap<Rom, GpSetInfo> {
         &self.gp_sets
+    }
+
+    #[must_use]
+    #[expect(dead_code)]
+    pub(crate) fn got_access_addresses(&self) -> &UnorderedMap<Rom, Vram> {
+        &self.got_access_addresses
     }
 }
 
@@ -626,8 +635,8 @@ impl InstructionAnalysisResult {
         }
     }
 
-    fn process_got_symbol(&mut self, _address: Vram, _instr_rom: Rom) {
-        // TODO
+    fn process_got_symbol(&mut self, address: Vram, instr_rom: Rom) {
+        self.got_access_addresses.insert(instr_rom, address);
     }
 
     fn process_address(

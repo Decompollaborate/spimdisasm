@@ -22,9 +22,11 @@ impl GpConfig {
         }
     }
     #[must_use]
-    pub fn new_pic(_gp_value: GpValue) -> Self {
-        unimplemented!("PIC support is not implemented yet");
-        // Self { gp_value, pic: true }
+    pub fn new_pic(gp_value: GpValue) -> Self {
+        Self {
+            gp_value,
+            pic: true,
+        }
     }
 
     #[must_use]

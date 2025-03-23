@@ -9,8 +9,8 @@ use object::{
 };
 use spimdisasm::{
     self,
-    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
-    config::{Endian, GlobalConfig},
+    addresses::{AddressRange, GpValue, Rom, RomVramRange, Size, Vram},
+    config::{GlobalConfig, GpConfig},
     context::{
         builder::{GlobalSegmentHeater, UserSegmentBuilder},
         Context, ContextBuilder, GlobalSegmentBuilder,
@@ -31,12 +31,19 @@ use spimdisasm::{
 };
 use std::{
     collections::{BTreeMap, HashSet},
-    fmt::Display,
     fs::{self, File},
     io::{BufReader, BufWriter, Read, Write},
     path::PathBuf,
-    time,
 };
+
+mod dynamic_section;
+mod elf_section_type;
+mod global_offset_table;
+mod utils;
+
+use dynamic_section::DynamicSection;
+use elf_section_type::{ElfSectionType, ProgbitsType};
+use global_offset_table::GlobalOffsetTable;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, clap::ValueEnum)]
 #[allow(non_camel_case_types)]
@@ -62,86 +69,6 @@ struct Args {
 
     #[clap(long)]
     compiler: Option<ArgCompiler>,
-}
-
-#[track_caller]
-#[inline]
-fn pretty_unwrap<T, E>(value: Result<T, E>) -> T
-where
-    E: Display,
-{
-    match value {
-        Ok(v) => v,
-        Err(e) => panic!("{}", e),
-    }
-}
-
-fn get_time_now() -> time::Duration {
-    pretty_unwrap(time::SystemTime::now().duration_since(time::UNIX_EPOCH))
-}
-
-fn read_elf(binary_data: &[u8]) -> ElfFile32 {
-    if let object::File::Elf32(elf_file) = pretty_unwrap(object::File::parse(binary_data)) {
-        elf_file
-    } else {
-        panic!("Not an elf32 file")
-    }
-}
-
-fn endian_to_endian(endian: object::Endianness) -> Endian {
-    match endian {
-        object::Endianness::Big => Endian::Big,
-        object::Endianness::Little => Endian::Little,
-    }
-}
-
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
-enum ProgbitsType {
-    Text,
-    Data,
-    Rodata,
-    Got,
-    Unknown,
-}
-
-impl ProgbitsType {
-    fn new(sh_flags: u32, name: &str) -> Self {
-        if name == ".got" {
-            ProgbitsType::Got
-        } else if matches!(name, ".rodata" | ".rdata") {
-            // Some compilers set the Write flag on .rodata sections, so we need to hardcode
-            // a special check to distinguish it properly
-            ProgbitsType::Rodata
-        } else if sh_flags & elf::SHF_ALLOC == 0 {
-            ProgbitsType::Unknown
-        } else if sh_flags & elf::SHF_EXECINSTR != 0 {
-            ProgbitsType::Text
-        } else if sh_flags & elf::SHF_WRITE != 0 {
-            ProgbitsType::Data
-        } else {
-            ProgbitsType::Rodata
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
-enum SectionType {
-    Progbits(ProgbitsType),
-    Nobits,
-    Reloc,
-    DynSym,
-}
-
-impl SectionType {
-    fn new(sh_type: u32, sh_flags: u32, name: &str) -> Option<Self> {
-        match sh_type {
-            elf::SHT_PROGBITS => Some(SectionType::Progbits(ProgbitsType::new(sh_flags, name))),
-            elf::SHT_NOBITS => Some(SectionType::Nobits),
-            elf::SHT_REL => Some(SectionType::Reloc),
-            elf::SHT_DYNSYM => Some(SectionType::DynSym),
-            _ => None,
-        }
-    }
 }
 
 #[allow(dead_code)]
@@ -219,12 +146,12 @@ fn print_elf_stuff(elf_file: &ElfFile32) {
 
     println!("dynamic_symbols:");
     for sym in elf_file.dynamic_symbols() {
-        println!("  {}", pretty_unwrap(sym.name()));
+        println!("  {}", utils::pretty_unwrap(sym.name()));
     }
     println!();
 
     for section in elf_file.sections() {
-        println!("{}", pretty_unwrap(section.name()));
+        println!("{}", utils::pretty_unwrap(section.name()));
         println!(
             "    address: 0x{:08X}, size: 0x{:08X}, align: 0x{:02X}",
             section.address(),
@@ -244,6 +171,29 @@ fn print_elf_stuff(elf_file: &ElfFile32) {
     }
 }
 
+fn gather_raw_got(elf_file: &ElfFile32) -> Option<Vec<u32>> {
+    let endian = utils::endian_to_endian(elf_file.endian());
+
+    for section in elf_file.sections() {
+        let sh_flags = section.elf_section_header().sh_flags.get(elf_file.endian());
+        let sh_type = section.elf_section_header().sh_type.get(elf_file.endian());
+
+        let section_type =
+            ElfSectionType::new(sh_type, sh_flags, utils::pretty_unwrap(section.name()));
+        if let Some(ElfSectionType::Progbits(ProgbitsType::Got)) = section_type {
+            let data = utils::pretty_unwrap(section.data());
+            let raw = data
+                .chunks_exact(4)
+                .map(|w| endian.word_from_bytes(w))
+                .collect();
+
+            return Some(raw);
+        }
+    }
+
+    None
+}
+
 fn create_global_ranges(elf_file: &ElfFile32) -> RomVramRange {
     let mut rom_start = None;
     let mut rom_end = None;
@@ -254,8 +204,9 @@ fn create_global_ranges(elf_file: &ElfFile32) -> RomVramRange {
         let sh_flags = section.elf_section_header().sh_flags.get(elf_file.endian());
         let sh_type = section.elf_section_header().sh_type.get(elf_file.endian());
 
-        let section_type = SectionType::new(sh_type, sh_flags, pretty_unwrap(section.name()));
-        if let Some(SectionType::Progbits(_) | SectionType::Nobits) = section_type {
+        let section_type =
+            ElfSectionType::new(sh_type, sh_flags, utils::pretty_unwrap(section.name()));
+        if let Some(ElfSectionType::Progbits(_) | ElfSectionType::Nobits) = section_type {
             let mut vram = section.address() as u32;
             if vram == 0 {
                 // hack to avoid having issues with relocatable files
@@ -277,7 +228,7 @@ fn create_global_ranges(elf_file: &ElfFile32) -> RomVramRange {
                 vram_end = Some(end);
             }
 
-            if matches!(section_type, Some(SectionType::Progbits(_))) {
+            if matches!(section_type, Some(ElfSectionType::Progbits(_))) {
                 let rom = section
                     .elf_section_header()
                     .sh_offset
@@ -310,6 +261,7 @@ fn fill_symbols(elf_file: &ElfFile32, global_ranges: RomVramRange) -> GlobalSegm
     let mut addresses = HashSet::new();
     let mut local_syms = Vec::new();
     let mut weak_syms = Vec::new();
+    let mut remaining_symbols = Vec::new();
 
     // TODO: handle relocatable elfs
 
@@ -323,7 +275,7 @@ fn fill_symbols(elf_file: &ElfFile32, global_ranges: RomVramRange) -> GlobalSegm
             _ => continue,
         };
 
-        let name = pretty_unwrap(sym.name());
+        let name = utils::pretty_unwrap(sym.name());
         let vram = Vram::new(sym.address() as u32);
         let rom = None;
         let size = {
@@ -349,10 +301,10 @@ fn fill_symbols(elf_file: &ElfFile32, global_ranges: RomVramRange) -> GlobalSegm
         }
 
         if global_ranges.in_vram_range(vram) {
-            pretty_unwrap(global_segment.add_user_symbol(name, vram, rom, size, sym_type));
+            utils::pretty_unwrap(global_segment.add_user_symbol(name, vram, rom, size, sym_type));
             addresses.insert(vram);
         } else {
-            // TODO: store this somewhere
+            remaining_symbols.push((name, vram, rom, size, sym_type, elf::STB_GLOBAL));
         }
     }
 
@@ -362,11 +314,11 @@ fn fill_symbols(elf_file: &ElfFile32, global_ranges: RomVramRange) -> GlobalSegm
         }
 
         if global_ranges.in_vram_range(vram) {
-            pretty_unwrap(global_segment.add_user_symbol(name, vram, rom, size, sym_type));
+            utils::pretty_unwrap(global_segment.add_user_symbol(name, vram, rom, size, sym_type));
             // TODO: set local visibiility
             addresses.insert(vram);
         } else {
-            // TODO: store this somewhere
+            remaining_symbols.push((name, vram, rom, size, sym_type, elf::STB_LOCAL));
         }
     }
 
@@ -376,13 +328,19 @@ fn fill_symbols(elf_file: &ElfFile32, global_ranges: RomVramRange) -> GlobalSegm
         }
 
         if global_ranges.in_vram_range(vram) {
-            pretty_unwrap(global_segment.add_user_symbol(name, vram, rom, size, sym_type));
+            utils::pretty_unwrap(global_segment.add_user_symbol(name, vram, rom, size, sym_type));
             // TODO: set weak visibiility
             addresses.insert(vram);
         } else {
-            // TODO: store this somewhere
+            remaining_symbols.push((name, vram, rom, size, sym_type, elf::STB_WEAK));
         }
     }
+
+    /*
+    for (name, vram, rom, size, sym_type, st_visibility) in remaining_symbols {
+        println!("{:?}, {:?}, {:?}, {:?}, {:?}, {:?}", name, vram, rom, size, sym_type, st_visibility);
+    }
+    */
 
     global_segment.finish_symbols()
 }
@@ -399,10 +357,11 @@ fn preheat_sections(
         let sh_flags = section.elf_section_header().sh_flags.get(elf_file.endian());
         let sh_type = section.elf_section_header().sh_type.get(elf_file.endian());
 
-        let section_type = SectionType::new(sh_type, sh_flags, pretty_unwrap(section.name()));
-        if let Some(SectionType::Progbits(ProgbitsType::Text)) = section_type {
-            let name = pretty_unwrap(section.name());
-            let raw_bytes = pretty_unwrap(section.data());
+        let section_type =
+            ElfSectionType::new(sh_type, sh_flags, utils::pretty_unwrap(section.name()));
+        if let Some(ElfSectionType::Progbits(ProgbitsType::Text)) = section_type {
+            let name = utils::pretty_unwrap(section.name());
+            let raw_bytes = utils::pretty_unwrap(section.data());
             let rom = Rom::new(
                 section
                     .elf_section_header()
@@ -416,7 +375,7 @@ fn preheat_sections(
                 Vram::new(rom.inner())
             };
 
-            pretty_unwrap(global_segment.preheat_text(
+            utils::pretty_unwrap(global_segment.preheat_text(
                 global_config,
                 executable_settings,
                 name,
@@ -432,10 +391,11 @@ fn preheat_sections(
         let sh_flags = section.elf_section_header().sh_flags.get(elf_file.endian());
         let sh_type = section.elf_section_header().sh_type.get(elf_file.endian());
 
-        let section_type = SectionType::new(sh_type, sh_flags, pretty_unwrap(section.name()));
-        if let Some(SectionType::Progbits(progbits)) = section_type {
-            let name = pretty_unwrap(section.name());
-            let raw_bytes = pretty_unwrap(section.data());
+        let section_type =
+            ElfSectionType::new(sh_type, sh_flags, utils::pretty_unwrap(section.name()));
+        if let Some(ElfSectionType::Progbits(progbits)) = section_type {
+            let name = utils::pretty_unwrap(section.name());
+            let raw_bytes = utils::pretty_unwrap(section.data());
             let rom = Rom::new(
                 section
                     .elf_section_header()
@@ -451,7 +411,7 @@ fn preheat_sections(
 
             match progbits {
                 ProgbitsType::Text => continue,
-                ProgbitsType::Data => pretty_unwrap(global_segment.preheat_data(
+                ProgbitsType::Data => utils::pretty_unwrap(global_segment.preheat_data(
                     global_config,
                     data_settings,
                     name,
@@ -459,7 +419,7 @@ fn preheat_sections(
                     rom,
                     vram,
                 )),
-                ProgbitsType::Rodata => pretty_unwrap(global_segment.preheat_data(
+                ProgbitsType::Rodata => utils::pretty_unwrap(global_segment.preheat_data(
                     global_config,
                     data_settings,
                     name,
@@ -469,7 +429,7 @@ fn preheat_sections(
                 )),
                 ProgbitsType::Got => continue,
                 ProgbitsType::Unknown => {
-                    eprintln!("Unknown progbits: {}", pretty_unwrap(section.name()))
+                    eprintln!("Unknown progbits: {}", utils::pretty_unwrap(section.name()))
                 }
             }
         }
@@ -482,33 +442,47 @@ fn create_context(
     executable_settings: &ExecutableSectionSettings,
     data_settings: &DataSectionSettings,
 ) -> Context {
-    let global_config = GlobalConfig::new(endian_to_endian(elf_file.endian()));
-    // TODO: gp value
+    let dynamic_section = DynamicSection::parse(elf_file);
+    let gp_config = if let Some(gp) = dynamic_section.and_then(|x| x.gp()) {
+        println!("gp: 0x{:08X}", gp);
+        Some(GpConfig::new_pic(GpValue::new(gp)))
+    } else {
+        println!("No gp value found.");
+        None
+    };
+    let raw_got = gather_raw_got(elf_file);
+
+    let global_config =
+        GlobalConfig::new(utils::endian_to_endian(elf_file.endian())).with_gp_config(gp_config);
 
     print!("    symbols");
-    let start = get_time_now();
+    let start = utils::get_time_now();
     let mut global_segment = fill_symbols(elf_file, global_ranges);
     let user_segment = UserSegmentBuilder::new();
-    let end = get_time_now();
+    let end = utils::get_time_now();
     println!(": {:?}", end - start);
 
-    print!("    got table");
-    let start = get_time_now();
+    println!("    got table");
+    let start = utils::get_time_now();
     // Handle got table first
-    for section in elf_file.sections() {
-        let sh_flags = section.elf_section_header().sh_flags.get(elf_file.endian());
-        let sh_type = section.elf_section_header().sh_type.get(elf_file.endian());
-
-        let section_type = SectionType::new(sh_type, sh_flags, pretty_unwrap(section.name()));
-        if let Some(SectionType::Progbits(ProgbitsType::Got)) = section_type {
-            // TODO
+    let _global_offset_table = if let (Some(dynamic), Some(raw_got)) = (&dynamic_section, &raw_got)
+    {
+        let global_offset_table = GlobalOffsetTable::parse(elf_file, dynamic, raw_got);
+        if let Some(got) = &global_offset_table {
+            println!("        locals:  {}", got.locals().len());
+            println!("        globals: {}", got.globals().len());
+        } else {
+            println!("        No got table");
         }
-    }
-    let end = get_time_now();
-    println!(": {:?}", end - start);
+        global_offset_table
+    } else {
+        None
+    };
+    let end = utils::get_time_now();
+    println!("      : {:?}", end - start);
 
     print!("    preheat sections");
-    let start = get_time_now();
+    let start = utils::get_time_now();
     preheat_sections(
         elf_file,
         &mut global_segment,
@@ -516,10 +490,10 @@ fn create_context(
         executable_settings,
         data_settings,
     );
-    let end = get_time_now();
+    let end = utils::get_time_now();
     println!(": {:?}", end - start);
 
-    pretty_unwrap(ContextBuilder::new(global_segment, user_segment).build(global_config))
+    utils::pretty_unwrap(ContextBuilder::new(global_segment, user_segment).build(global_config))
 }
 
 fn create_sections(
@@ -544,10 +518,11 @@ fn create_sections(
         let sh_flags = section.elf_section_header().sh_flags.get(elf_file.endian());
         let sh_type = section.elf_section_header().sh_type.get(elf_file.endian());
 
-        let section_type = SectionType::new(sh_type, sh_flags, pretty_unwrap(section.name()));
-        if let Some(SectionType::Progbits(ProgbitsType::Text)) = section_type {
-            let name = pretty_unwrap(section.name());
-            let raw_bytes = pretty_unwrap(section.data());
+        let section_type =
+            ElfSectionType::new(sh_type, sh_flags, utils::pretty_unwrap(section.name()));
+        if let Some(ElfSectionType::Progbits(ProgbitsType::Text)) = section_type {
+            let name = utils::pretty_unwrap(section.name());
+            let raw_bytes = utils::pretty_unwrap(section.data());
             let rom = Rom::new(
                 section
                     .elf_section_header()
@@ -561,7 +536,7 @@ fn create_sections(
                 Vram::new(rom.inner())
             };
 
-            executable_sections.push(pretty_unwrap(context.create_section_text(
+            executable_sections.push(utils::pretty_unwrap(context.create_section_text(
                 &executable_settings,
                 name,
                 raw_bytes,
@@ -576,11 +551,12 @@ fn create_sections(
         let sh_flags = section.elf_section_header().sh_flags.get(elf_file.endian());
         let sh_type = section.elf_section_header().sh_type.get(elf_file.endian());
 
-        let section_type = SectionType::new(sh_type, sh_flags, pretty_unwrap(section.name()));
+        let section_type =
+            ElfSectionType::new(sh_type, sh_flags, utils::pretty_unwrap(section.name()));
         match section_type {
-            Some(SectionType::Progbits(progbits)) => {
-                let name = pretty_unwrap(section.name());
-                let raw_bytes = pretty_unwrap(section.data());
+            Some(ElfSectionType::Progbits(progbits)) => {
+                let name = utils::pretty_unwrap(section.name());
+                let raw_bytes = utils::pretty_unwrap(section.data());
                 let rom = Rom::new(
                     section
                         .elf_section_header()
@@ -597,7 +573,7 @@ fn create_sections(
                 match progbits {
                     ProgbitsType::Text => continue,
                     ProgbitsType::Data => {
-                        data_sections.push(pretty_unwrap(context.create_section_data(
+                        data_sections.push(utils::pretty_unwrap(context.create_section_data(
                             &data_settings,
                             name,
                             raw_bytes,
@@ -607,7 +583,7 @@ fn create_sections(
                         )))
                     }
                     ProgbitsType::Rodata => {
-                        data_sections.push(pretty_unwrap(context.create_section_rodata(
+                        data_sections.push(utils::pretty_unwrap(context.create_section_rodata(
                             &data_settings,
                             name,
                             raw_bytes,
@@ -618,12 +594,12 @@ fn create_sections(
                     }
                     ProgbitsType::Got => continue,
                     ProgbitsType::Unknown => {
-                        eprintln!("Unknown progbits: {}", pretty_unwrap(section.name()))
+                        eprintln!("Unknown progbits: {}", utils::pretty_unwrap(section.name()))
                     }
                 }
             }
-            Some(SectionType::Nobits) => {
-                let name = pretty_unwrap(section.name());
+            Some(ElfSectionType::Nobits) => {
+                let name = utils::pretty_unwrap(section.name());
                 let section_address = section.address();
                 let vram = if section_address != 0 {
                     Vram::new(section.address() as u32)
@@ -637,7 +613,7 @@ fn create_sections(
                 };
                 let vram_end = vram + Size::new(section.size() as u32);
 
-                noload_sections.push(pretty_unwrap(context.create_section_bss(
+                noload_sections.push(utils::pretty_unwrap(context.create_section_bss(
                     &noload_settings,
                     name,
                     AddressRange::new(vram, vram_end),
@@ -672,19 +648,19 @@ fn post_process_sections(
     Vec<DataSectionProcessed>,
     Vec<NoloadSectionProcessed>,
 ) {
-    let executable_sections = pretty_unwrap(
+    let executable_sections = utils::pretty_unwrap(
         executable_sections
             .into_iter()
             .map(|x| x.post_process(context, &user_relocs))
             .collect::<Result<Vec<ExecutableSectionProcessed>, SectionPostProcessError>>(),
     );
-    let data_sections = pretty_unwrap(
+    let data_sections = utils::pretty_unwrap(
         data_sections
             .into_iter()
             .map(|x| x.post_process(context, &user_relocs))
             .collect::<Result<Vec<DataSectionProcessed>, SectionPostProcessError>>(),
     );
-    let noload_sections = pretty_unwrap(
+    let noload_sections = utils::pretty_unwrap(
         noload_sections
             .into_iter()
             .map(|x| x.post_process(context))
@@ -701,7 +677,7 @@ fn write_sections_to_files(
     data_sections: Vec<DataSectionProcessed>,
     noload_sections: Vec<NoloadSectionProcessed>,
 ) {
-    pretty_unwrap(fs::create_dir_all(&output_dir));
+    utils::pretty_unwrap(fs::create_dir_all(&output_dir));
 
     let func_display_settings = FunctionDisplaySettings::new(InstructionDisplayFlags::new());
     for section in executable_sections {
@@ -710,8 +686,8 @@ fn write_sections_to_files(
         let filename = format!("{}{}{}.s", section.vram_range().start(), sep, name);
         let outpath = output_dir.join(filename);
 
-        let mut asm_file = BufWriter::new(pretty_unwrap(fs::File::create(outpath)));
-        pretty_unwrap(write!(
+        let mut asm_file = BufWriter::new(utils::pretty_unwrap(fs::File::create(outpath)));
+        utils::pretty_unwrap(write!(
             asm_file,
             ".include \"macro.inc\"
 
@@ -726,10 +702,10 @@ fn write_sections_to_files(
             name
         ));
         for symbol in section.functions() {
-            pretty_unwrap(write!(
+            utils::pretty_unwrap(write!(
                 asm_file,
                 "\n{}",
-                pretty_unwrap(symbol.display(&context, &func_display_settings))
+                utils::pretty_unwrap(symbol.display(&context, &func_display_settings))
             ));
         }
     }
@@ -741,8 +717,8 @@ fn write_sections_to_files(
         let filename = format!("{}{}{}.s", section.vram_range().start(), sep, name);
         let outpath = output_dir.join(filename);
 
-        let mut asm_file = BufWriter::new(pretty_unwrap(fs::File::create(outpath)));
-        pretty_unwrap(write!(
+        let mut asm_file = BufWriter::new(utils::pretty_unwrap(fs::File::create(outpath)));
+        utils::pretty_unwrap(write!(
             asm_file,
             ".include \"macro.inc\"
 
@@ -753,10 +729,10 @@ fn write_sections_to_files(
             name
         ));
         for symbol in section.data_symbols() {
-            pretty_unwrap(write!(
+            utils::pretty_unwrap(write!(
                 asm_file,
                 "\n{}",
-                pretty_unwrap(symbol.display(&context, &data_display_settings))
+                utils::pretty_unwrap(symbol.display(&context, &data_display_settings))
             ));
         }
     }
@@ -768,8 +744,8 @@ fn write_sections_to_files(
         let filename = format!("{}{}{}.s", section.vram_range().start(), sep, name);
         let outpath = output_dir.join(filename);
 
-        let mut asm_file = BufWriter::new(pretty_unwrap(fs::File::create(outpath)));
-        pretty_unwrap(write!(
+        let mut asm_file = BufWriter::new(utils::pretty_unwrap(fs::File::create(outpath)));
+        utils::pretty_unwrap(write!(
             asm_file,
             ".include \"macro.inc\"
 
@@ -780,10 +756,10 @@ fn write_sections_to_files(
             name
         ));
         for symbol in section.noload_symbols() {
-            pretty_unwrap(write!(
+            utils::pretty_unwrap(write!(
                 asm_file,
                 "\n{}",
-                pretty_unwrap(symbol.display(&context, &noload_display_settings))
+                utils::pretty_unwrap(symbol.display(&context, &noload_display_settings))
             ));
         }
     }
@@ -795,7 +771,7 @@ fn main() {
     println!("input path: {:?}", args.input_path);
 
     print!("Reading elf");
-    let start = get_time_now();
+    let start = utils::get_time_now();
     let binary_data = {
         let mut buf = Vec::new();
         let f = File::open(args.input_path).expect("Input file not found");
@@ -804,16 +780,16 @@ fn main() {
             .expect("Error reading the file");
         buf
     };
-    let elf_file = read_elf(&binary_data);
-    let end = get_time_now();
+    let elf_file = utils::read_elf(&binary_data);
+    let end = utils::get_time_now();
     println!(": {:?}", end - start);
 
     // print_elf_stuff(&elf_file);
 
     print!("global ranges");
-    let start = get_time_now();
+    let start = utils::get_time_now();
     let global_ranges = create_global_ranges(&elf_file);
-    let end = get_time_now();
+    let end = utils::get_time_now();
     println!(": {:?}", end - start);
 
     let compiler = args.compiler.map(|x| x.into());
@@ -824,18 +800,18 @@ fn main() {
     let noload_settings = NoloadSectionSettings::new(compiler);
 
     println!("context:");
-    let start = get_time_now();
+    let start = utils::get_time_now();
     let mut context = create_context(
         &elf_file,
         global_ranges,
         &executable_settings,
         &data_settings,
     );
-    let end = get_time_now();
+    let end = utils::get_time_now();
     println!("  {:?}", end - start);
 
     print!("create_sections");
-    let start = get_time_now();
+    let start = utils::get_time_now();
     let (executable_sections, data_sections, noload_sections) = create_sections(
         &elf_file,
         &mut context,
@@ -843,17 +819,17 @@ fn main() {
         data_settings,
         noload_settings,
     );
-    let end = get_time_now();
+    let end = utils::get_time_now();
     println!(": {:?}", end - start);
 
     print!("user_relocs");
-    let start = get_time_now();
+    let start = utils::get_time_now();
     let user_relocs = gather_relocs(&elf_file);
-    let end = get_time_now();
+    let end = utils::get_time_now();
     println!(": {:?}", end - start);
 
     print!("post_process_sections");
-    let start = get_time_now();
+    let start = utils::get_time_now();
     let (executable_sections, data_sections, noload_sections) = post_process_sections(
         &mut context,
         user_relocs,
@@ -861,11 +837,11 @@ fn main() {
         data_sections,
         noload_sections,
     );
-    let end = get_time_now();
+    let end = utils::get_time_now();
     println!(": {:?}", end - start);
 
     print!("write_sections_to_files");
-    let start = get_time_now();
+    let start = utils::get_time_now();
     write_sections_to_files(
         args.output_dir,
         context,
@@ -873,6 +849,6 @@ fn main() {
         data_sections,
         noload_sections,
     );
-    let end = get_time_now();
+    let end = utils::get_time_now();
     println!(": {:?}", end - start);
 }
