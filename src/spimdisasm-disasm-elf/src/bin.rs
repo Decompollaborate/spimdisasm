@@ -15,7 +15,7 @@ use spimdisasm::{
         builder::{GlobalSegmentHeater, UserSegmentBuilder},
         Context, ContextBuilder, GlobalSegmentBuilder,
     },
-    metadata::SymbolType,
+    metadata::{GotAccessKind, SymbolType},
     parent_segment_info::ParentSegmentInfo,
     rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion},
     relocation::RelocationInfo,
@@ -43,7 +43,7 @@ mod utils;
 
 use dynamic_section::DynamicSection;
 use elf_section_type::{ElfSectionType, ProgbitsType};
-use global_offset_table::GlobalOffsetTable;
+use global_offset_table::parse_got;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, clap::ValueEnum)]
 #[allow(non_camel_case_types)]
@@ -171,7 +171,7 @@ fn print_elf_stuff(elf_file: &ElfFile32) {
     }
 }
 
-fn gather_raw_got(elf_file: &ElfFile32) -> Option<Vec<u32>> {
+fn gather_raw_got(elf_file: &ElfFile32) -> Option<(Vram, Vec<u32>)> {
     let endian = utils::endian_to_endian(elf_file.endian());
 
     for section in elf_file.sections() {
@@ -181,13 +181,14 @@ fn gather_raw_got(elf_file: &ElfFile32) -> Option<Vec<u32>> {
         let section_type =
             ElfSectionType::new(sh_type, sh_flags, utils::pretty_unwrap(section.name()));
         if let Some(ElfSectionType::Progbits(ProgbitsType::Got)) = section_type {
+            let vram = Vram::new(section.address() as u32);
             let data = utils::pretty_unwrap(section.data());
             let raw = data
                 .chunks_exact(4)
                 .map(|w| endian.word_from_bytes(w))
                 .collect();
 
-            return Some(raw);
+            return Some((vram, raw));
         }
     }
 
@@ -258,32 +259,76 @@ fn create_global_ranges(elf_file: &ElfFile32) -> RomVramRange {
 fn fill_dyn_symbols(
     elf_file: &ElfFile32,
     global_ranges: RomVramRange,
+    global_config: &GlobalConfig,
     dynamic: &DynamicSection,
+    got_vram: Vram,
     raw_got: &[u32],
 ) -> (GlobalSegmentHeater, UserSegmentBuilder) {
     let mut global_segment = GlobalSegmentBuilder::new(global_ranges);
     let mut user_segment = UserSegmentBuilder::new();
 
     let gotsym = dynamic.gotsym() as usize;
+    let elf_endian = elf_file.endian();
 
-    let global_offset_table = GlobalOffsetTable::parse(elf_file, dynamic, raw_got);
+    let global_offset_table = parse_got(elf_file, dynamic, got_vram, raw_got);
     let mut global_got = global_offset_table.globals().iter();
 
     let mut addresses = HashSet::new();
+    let mut initials = HashSet::new();
     let mut local_syms = Vec::new();
     let mut weak_syms = Vec::new();
     let mut remaining_symbols = Vec::new();
 
-    for (i, sym) in elf_file.dynamic_symbols().enumerate() {
-        let st_type = sym.elf_symbol().st_type();
-        let st_shndx = sym.elf_symbol().st_shndx(elf_file.endian());
+    let dynsym = elf_file.elf_dynamic_symbol_table();
+    let dynstr = dynsym.strings();
 
-        // We have to do `i+1` because the `object` crate skips the first null entry
-        let got_entry = if i + 1 >= gotsym {
+    for (i, sym) in dynsym.enumerate() {
+        let st_type = sym.st_type();
+        let st_shndx = sym.st_shndx(elf_endian);
+
+        let got_entry = if i.0 >= gotsym {
             global_got.next()
         } else {
             None
         };
+
+        let raw_name = utils::pretty_unwrap(sym.name(elf_endian, dynstr));
+        let name = utils::pretty_unwrap(String::from_utf8(raw_name.into()));
+
+        if let Some(got_entry) = got_entry {
+            let initial = got_entry.initial();
+            if initial != 0 {
+                let got_entry = Vram::new(initial);
+                if !initials.contains(&got_entry) {
+                    let sym_type = match st_type {
+                        elf::STT_FUNC => Some(SymbolType::Function),
+                        _ => None,
+                    };
+
+                    let size = {
+                        let s = sym.st_size(elf_endian);
+                        // This size seems to only be valid for `initial` for `UNDEF` symbols.
+                        // TODO: investigate COM symbols
+                        if s != 0 && st_shndx == elf::SHN_UNDEF {
+                            Size::new(s)
+                        } else {
+                            Size::new(1)
+                        }
+                    };
+
+                    let sym_metadata = utils::pretty_unwrap(user_segment.add_user_symbol(
+                        got_entry,
+                        name.clone(),
+                        size,
+                        sym_type,
+                    ));
+                    sym_metadata.set_got_access_kind(GotAccessKind::Global);
+
+                    // TODO: set visibiility?
+                    initials.insert(got_entry);
+                }
+            }
+        }
 
         let sym_type = match st_type {
             elf::STT_FUNC => Some(SymbolType::Function),
@@ -291,11 +336,10 @@ fn fill_dyn_symbols(
             _ => continue,
         };
 
-        let name = utils::pretty_unwrap(sym.name());
-        let vram = Vram::new(sym.address() as u32);
+        let vram = Vram::new(sym.st_value(elf_endian));
         let rom = None;
         let size = {
-            let s = sym.size() as u32;
+            let s = sym.st_size(elf_endian);
             if s == 0 || st_shndx == elf::SHN_UNDEF {
                 None
             } else {
@@ -303,7 +347,7 @@ fn fill_dyn_symbols(
             }
         };
 
-        match sym.elf_symbol().st_visibility() {
+        match sym.st_visibility() {
             elf::STB_LOCAL => {
                 local_syms.push((name, vram, rom, size, sym_type, got_entry));
                 continue;
@@ -317,7 +361,12 @@ fn fill_dyn_symbols(
         }
 
         if global_ranges.in_vram_range(vram) {
-            utils::pretty_unwrap(global_segment.add_user_symbol(name, vram, rom, size, sym_type));
+            let sym_metadata = utils::pretty_unwrap(
+                global_segment.add_user_symbol(name, vram, rom, size, sym_type),
+            );
+            if got_entry.is_some() {
+                sym_metadata.set_got_access_kind(GotAccessKind::Global);
+            }
             addresses.insert(vram);
         } else {
             remaining_symbols.push((name, vram, rom, size, sym_type, elf::STB_GLOBAL, got_entry));
@@ -330,7 +379,12 @@ fn fill_dyn_symbols(
         }
 
         if global_ranges.in_vram_range(vram) {
-            utils::pretty_unwrap(global_segment.add_user_symbol(name, vram, rom, size, sym_type));
+            let sym_metadata = utils::pretty_unwrap(
+                global_segment.add_user_symbol(name, vram, rom, size, sym_type),
+            );
+            if got_entry.is_some() {
+                sym_metadata.set_got_access_kind(GotAccessKind::Global);
+            }
             // TODO: set local visibiility
             addresses.insert(vram);
         } else {
@@ -344,7 +398,12 @@ fn fill_dyn_symbols(
         }
 
         if global_ranges.in_vram_range(vram) {
-            utils::pretty_unwrap(global_segment.add_user_symbol(name, vram, rom, size, sym_type));
+            let sym_metadata = utils::pretty_unwrap(
+                global_segment.add_user_symbol(name, vram, rom, size, sym_type),
+            );
+            if got_entry.is_some() {
+                sym_metadata.set_got_access_kind(GotAccessKind::Global);
+            }
             // TODO: set weak visibiility
             addresses.insert(vram);
         } else {
@@ -359,17 +418,19 @@ fn fill_dyn_symbols(
                 let initial = got_entry.initial();
                 if initial != 0 {
                     let got_entry = Vram::new(initial);
-                    if addresses.contains(&got_entry) {
+                    if initials.contains(&got_entry) {
                         continue;
                     }
-                    utils::pretty_unwrap(user_segment.add_user_symbol(
+                    let sym_metadata = utils::pretty_unwrap(user_segment.add_user_symbol(
                         got_entry,
                         name,
                         size.unwrap_or(Size::new(1)),
                         sym_type,
                     ));
+                    sym_metadata.set_got_access_kind(GotAccessKind::Global);
+
                     // TODO: set visibiility?
-                    addresses.insert(got_entry);
+                    initials.insert(got_entry);
                 }
             } else {
                 eprintln!(
@@ -385,7 +446,27 @@ fn fill_dyn_symbols(
         }
     }
 
-    // TODO: pass global_offset_table to spimdisasm
+    // First entry of the GOT is reserved for the lazy resolver
+    if let Some(lazy_resolver) = global_offset_table.locals().first() {
+        // ido 7.1 ld has its lazy resolver set to 0?
+        let vram = Vram::new(lazy_resolver.inner());
+        if vram != Vram::new(0) {
+            // Something silly, so the user doesn't confuse this as a real symbol
+            let name = "$$.LazyResolver";
+            let size = Size::new(4);
+            let typ = None;
+
+            let sym_metadata =
+                utils::pretty_unwrap(user_segment.add_user_symbol(vram, name, size, typ));
+            // I'm not sure if this should be considered Local or Global.
+            // Maybe make a new kind for this?
+            sym_metadata.set_got_access_kind(GotAccessKind::Local);
+        }
+    }
+
+    utils::pretty_unwrap(
+        global_segment.add_global_offset_table(global_config, global_offset_table),
+    );
 
     (global_segment.finish_symbols(), user_segment)
 }
@@ -507,16 +588,24 @@ fn create_context(
         println!("No gp value found.");
         None
     };
-    let raw_got = gather_raw_got(elf_file);
+    let raw_got_info = gather_raw_got(elf_file);
 
     let global_config =
         GlobalConfig::new(utils::endian_to_endian(elf_file.endian())).with_gp_config(gp_config);
 
     print!("    symbols");
     let start = utils::get_time_now();
+    // TODO: an object can have both a dynsym and a symtab
     let (mut global_segment, user_segment) =
-        if let (Some(dynamic), Some(raw_got)) = (&dynamic_section, &raw_got) {
-            fill_dyn_symbols(elf_file, global_ranges, dynamic, raw_got)
+        if let (Some(dynamic), Some((got_vram, raw_got))) = (dynamic_section, raw_got_info) {
+            fill_dyn_symbols(
+                elf_file,
+                global_ranges,
+                &global_config,
+                &dynamic,
+                got_vram,
+                &raw_got,
+            )
         } else {
             fill_symtab(elf_file, global_ranges)
         };

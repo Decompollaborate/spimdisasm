@@ -7,7 +7,7 @@ use alloc::{collections::BTreeMap, sync::Arc};
 use pyo3::prelude::*;
 
 use crate::{
-    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
+    addresses::{AddressRange, GlobalOffsetTable, Rom, RomVramRange, Size, Vram},
     analysis::{PreheatError, Preheater},
     collections::addended_ordered_map::AddendedOrderedMap,
     config::GlobalConfig,
@@ -24,6 +24,7 @@ pub(crate) struct SegmentHeater {
     user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
     user_labels: BTreeMap<Vram, LabelMetadata>,
     ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
+    global_offset_table: Option<GlobalOffsetTable>,
 
     preheater: Preheater,
 }
@@ -36,6 +37,7 @@ impl SegmentHeater {
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
         user_labels: BTreeMap<Vram, LabelMetadata>,
         ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
+        global_offset_table: Option<GlobalOffsetTable>,
     ) -> Self {
         Self {
             ranges,
@@ -43,6 +45,7 @@ impl SegmentHeater {
             user_symbols,
             user_labels,
             ignored_addresses,
+            global_offset_table,
 
             preheater: Preheater::new(segment_name, ranges),
         }
@@ -237,6 +240,7 @@ impl GlobalSegmentHeater {
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
         user_labels: BTreeMap<Vram, LabelMetadata>,
         ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
+        global_offset_table: Option<GlobalOffsetTable>,
     ) -> Self {
         Self {
             inner: SegmentHeater::new(
@@ -246,6 +250,7 @@ impl GlobalSegmentHeater {
                 user_symbols,
                 user_labels,
                 ignored_addresses,
+                global_offset_table,
             ),
         }
     }
@@ -347,6 +352,7 @@ impl GlobalSegmentHeater {
             self.inner.ignored_addresses,
             self.inner.preheater,
             visible_overlay_ranges,
+            self.inner.global_offset_table,
         )
     }
 }
@@ -360,6 +366,7 @@ pub struct OverlaySegmentHeater {
 }
 
 impl OverlaySegmentHeater {
+    #[expect(clippy::too_many_arguments)]
     pub(crate) fn new(
         ranges: RomVramRange,
         name: Arc<str>,
@@ -367,6 +374,7 @@ impl OverlaySegmentHeater {
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
         user_labels: BTreeMap<Vram, LabelMetadata>,
         ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
+        global_offset_table: Option<GlobalOffsetTable>,
         category_name: OverlayCategoryName,
     ) -> Self {
         Self {
@@ -377,6 +385,7 @@ impl OverlaySegmentHeater {
                 user_symbols,
                 user_labels,
                 ignored_addresses,
+                global_offset_table,
             ),
             name,
             category_name,
@@ -495,6 +504,7 @@ impl OverlaySegmentHeater {
             self.inner.ignored_addresses,
             self.inner.preheater,
             visible_overlay_ranges,
+            self.inner.global_offset_table,
             self.category_name,
             self.name,
         )

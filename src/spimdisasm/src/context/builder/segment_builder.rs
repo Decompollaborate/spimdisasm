@@ -12,8 +12,9 @@ use alloc::{
 use pyo3::prelude::*;
 
 use crate::{
-    addresses::{Rom, RomVramRange, Size, Vram},
+    addresses::{GlobalOffsetTable, Rom, RomVramRange, Size, Vram},
     collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
+    config::GlobalConfig,
     metadata::{
         GeneratedBy, IgnoredAddressRange, LabelMetadata, LabelType, OverlayCategoryName,
         OwnerSegmentKind, SymbolMetadata, SymbolNameGenerationSettings, SymbolType,
@@ -21,8 +22,9 @@ use crate::{
 };
 
 use super::{
-    segment_builder_error::AddPrioritisedOverlayError, AddIgnoredAddressRangeError,
-    AddUserLabelError, AddUserSymbolError, GlobalSegmentHeater, OverlaySegmentHeater,
+    segment_builder_error::AddPrioritisedOverlayError, AddGlobalOffsetTableError,
+    AddIgnoredAddressRangeError, AddUserLabelError, AddUserSymbolError, GlobalSegmentHeater,
+    OverlaySegmentHeater,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -33,6 +35,7 @@ struct SegmentBuilder {
     user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
     user_labels: BTreeMap<Vram, LabelMetadata>,
     ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
+    global_offset_table: Option<GlobalOffsetTable>,
 }
 
 impl SegmentBuilder {
@@ -51,6 +54,7 @@ impl SegmentBuilder {
             user_symbols: AddendedOrderedMap::new(),
             user_labels: BTreeMap::new(),
             ignored_addresses,
+            global_offset_table: None,
         }
     }
 
@@ -277,6 +281,22 @@ impl SegmentBuilder {
 
         Ok(())
     }
+
+    // TODO: Document adding symbols outside of the program should be added to the UserSegment instead of here
+    fn add_global_offset_table(
+        &mut self,
+        global_config: &GlobalConfig,
+        global_offset_table: GlobalOffsetTable,
+    ) -> Result<(), AddGlobalOffsetTableError> {
+        if self.global_offset_table.is_some() {
+            Err(AddGlobalOffsetTableError::new_already_added())
+        } else if global_config.gp_config().is_none_or(|x| !x.pic()) {
+            Err(AddGlobalOffsetTableError::new_not_pic())
+        } else {
+            self.global_offset_table = Some(global_offset_table);
+            Ok(())
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -343,6 +363,16 @@ impl GlobalSegmentBuilder {
         self.inner.n64_default_banned_addresses()
     }
 
+    // TODO: Document adding symbols outside of the program should be added to the UserSegment instead of here
+    pub fn add_global_offset_table(
+        &mut self,
+        global_config: &GlobalConfig,
+        global_offset_table: GlobalOffsetTable,
+    ) -> Result<(), AddGlobalOffsetTableError> {
+        self.inner
+            .add_global_offset_table(global_config, global_offset_table)
+    }
+
     pub fn finish_symbols(self) -> GlobalSegmentHeater {
         GlobalSegmentHeater::new(
             self.inner.ranges,
@@ -350,6 +380,7 @@ impl GlobalSegmentBuilder {
             self.inner.user_symbols,
             self.inner.user_labels,
             self.inner.ignored_addresses,
+            self.inner.global_offset_table,
         )
     }
 }
@@ -433,6 +464,7 @@ impl OverlaySegmentBuilder {
             self.inner.user_symbols,
             self.inner.user_labels,
             self.inner.ignored_addresses,
+            self.inner.global_offset_table,
             self.category_name,
         )
     }

@@ -10,7 +10,9 @@ use core::{error, fmt};
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::addresses::{AddressRange, Rom, RomVramRange, Size, Vram};
+use crate::addresses::{
+    AddressRange, GlobalOffsetTable, GotRequestedAddress, Rom, RomVramRange, Size, Vram,
+};
 use crate::analysis::{reference_wrapper, Preheater, ReferenceWrapper};
 use crate::collections::addended_ordered_map::{AddendedOrderedMap, FindSettings};
 use crate::section_type::SectionType;
@@ -35,6 +37,7 @@ pub struct SegmentMetadata {
     labels: BTreeMap<Vram, LabelMetadata>,
     // constants: BTreeMap<Vram, SymbolMetadata>,
     ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
+    global_offset_table: Option<GlobalOffsetTable>,
 
     preheater: Preheater,
 
@@ -51,6 +54,7 @@ impl SegmentMetadata {
         ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
         preheater: Preheater,
         visible_overlay_ranges: Arc<[AddressRange<Vram>]>,
+        global_offset_table: Option<GlobalOffsetTable>,
         category_name: Option<OverlayCategoryName>,
         name: Option<Arc<str>>,
     ) -> Self {
@@ -65,6 +69,7 @@ impl SegmentMetadata {
             symbols: user_symbols,
             labels: user_labels,
             ignored_addresses,
+            global_offset_table,
 
             preheater,
 
@@ -72,6 +77,7 @@ impl SegmentMetadata {
         }
     }
 
+    #[expect(clippy::too_many_arguments)]
     pub(crate) fn new_global(
         ranges: RomVramRange,
         prioritised_overlays: Arc<[Arc<str>]>,
@@ -80,6 +86,7 @@ impl SegmentMetadata {
         ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
         preheater: Preheater,
         visible_overlay_ranges: Arc<[AddressRange<Vram>]>,
+        global_offset_table: Option<GlobalOffsetTable>,
     ) -> Self {
         Self::new(
             ranges,
@@ -89,6 +96,7 @@ impl SegmentMetadata {
             ignored_addresses,
             preheater,
             visible_overlay_ranges,
+            global_offset_table,
             None,
             None,
         )
@@ -103,6 +111,7 @@ impl SegmentMetadata {
         ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
         preheater: Preheater,
         visible_overlay_ranges: Arc<[AddressRange<Vram>]>,
+        global_offset_table: Option<GlobalOffsetTable>,
         category_name: OverlayCategoryName,
         name: Arc<str>,
     ) -> Self {
@@ -114,6 +123,7 @@ impl SegmentMetadata {
             ignored_addresses,
             preheater,
             visible_overlay_ranges,
+            global_offset_table,
             Some(category_name),
             Some(name),
         )
@@ -133,6 +143,7 @@ impl SegmentMetadata {
                 AddendedOrderedMap::new(),
                 Preheater::new(None, ranges),
                 Arc::new([]),
+                None,
                 None,
                 None,
             )
@@ -387,6 +398,12 @@ impl SegmentMetadata {
     ) -> btree_map::RangeMut<Vram, LabelMetadata> {
         self.labels.range_mut(vram_range)
     }
+
+    pub(crate) fn request_got_address(&self, vram: Vram) -> Option<GotRequestedAddress> {
+        self.global_offset_table
+            .as_ref()
+            .and_then(|x| x.request_address(vram))
+    }
 }
 
 impl SegmentMetadata {
@@ -425,6 +442,7 @@ mod tests {
             AddendedOrderedMap::new(),
             Preheater::new(None, ranges),
             Arc::new([]),
+            None,
         );
 
         segment

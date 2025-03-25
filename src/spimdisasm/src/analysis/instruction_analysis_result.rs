@@ -94,6 +94,14 @@ pub struct InstructionAnalysisResult {
     gp_sets: UnorderedMap<Rom, GpSetInfo>,
 
     got_access_addresses: UnorderedMap<Rom, Vram>,
+    calculated_got_addresses: UnorderedMap<Rom, Vram>,
+
+    hi_to_lo: UnorderedMap<Rom, Rom>,
+    lo_to_hi: UnorderedMap<Rom, Rom>,
+
+    // Jump and link (functions)
+    indirect_function_call_instr: UnorderedMap<Rom, Vram>,
+    indirect_function_call: UnorderedMap<Rom, Vram>,
 }
 
 impl InstructionAnalysisResult {
@@ -125,6 +133,11 @@ impl InstructionAnalysisResult {
             handwritten_instrs: UnorderedSet::new(),
             gp_sets: UnorderedMap::new(),
             got_access_addresses: UnorderedMap::new(),
+            calculated_got_addresses: UnorderedMap::new(),
+            hi_to_lo: UnorderedMap::new(),
+            lo_to_hi: UnorderedMap::new(),
+            indirect_function_call_instr: UnorderedMap::new(),
+            indirect_function_call: UnorderedMap::new(),
         }
     }
 
@@ -203,9 +216,31 @@ impl InstructionAnalysisResult {
     }
 
     #[must_use]
-    #[expect(dead_code)]
     pub(crate) fn got_access_addresses(&self) -> &UnorderedMap<Rom, Vram> {
         &self.got_access_addresses
+    }
+
+    #[must_use]
+    pub(crate) fn calculated_got_addresses(&self) -> &UnorderedMap<Rom, Vram> {
+        &self.calculated_got_addresses
+    }
+    #[must_use]
+    pub(crate) fn calculated_got_addresses_mut(&mut self) -> &mut UnorderedMap<Rom, Vram> {
+        &mut self.calculated_got_addresses
+    }
+
+    #[must_use]
+    pub(crate) fn hi_to_lo(&self) -> &UnorderedMap<Rom, Rom> {
+        &self.hi_to_lo
+    }
+    #[must_use]
+    pub(crate) fn lo_to_hi(&self) -> &UnorderedMap<Rom, Rom> {
+        &self.lo_to_hi
+    }
+
+    #[must_use]
+    pub(crate) fn indirect_function_call(&self) -> &UnorderedMap<Rom, Vram> {
+        &self.indirect_function_call
     }
 }
 
@@ -367,22 +402,20 @@ impl InstructionAnalysisResult {
 
     fn process_jump_and_link_register(
         &mut self,
-        _regs_tracker: &mut RegisterTracker,
-        _instr: &Instruction,
-        _instr_rom: Rom,
+        regs_tracker: &mut RegisterTracker,
+        instr: &Instruction,
+        instr_rom: Rom,
     ) {
-        // TODO
-        /*
-        jrRegData = regsTracker.getJrRegData(instr)
-        if jrRegData.hasInfo():
-            offset = jrRegData.offset()
-            address = jrRegData.address()
+        if let Some(jr_reg_data) = regs_tracker.get_jr_reg_data(instr) {
+            let lo_rom = jr_reg_data.lo_rom();
+            let vram = Vram::new(jr_reg_data.address());
 
-            self.indirectFunctionCallOffsets[offset] = address
-            self.indirectFunctionCallIntrOffset[instrOffset] = address
-            if not common.GlobalConfig.PIC:
-                self.referencedVrams.add(address)
-        */
+            self.indirect_function_call_instr.insert(instr_rom, vram);
+            self.indirect_function_call.insert(lo_rom, vram);
+
+            self.add_referenced_vram(instr_rom, vram);
+            self.add_referenced_vram(lo_rom, vram);
+        }
     }
 
     fn process_hi(
@@ -436,8 +469,8 @@ impl InstructionAnalysisResult {
         }
         self.constant_per_instr.insert(instr_rom, constant);
 
-        // self.hiToLowDict[luiOffset] = lowerOffset
-        // self.lowToHiDict[lowerOffset] = luiOffset
+        self.hi_to_lo.insert(hi_rom, instr_rom);
+        self.lo_to_hi.insert(instr_rom, hi_rom);
 
         regs_tracker.process_constant(instr, constant, instr_rom);
     }
@@ -696,10 +729,8 @@ impl InstructionAnalysisResult {
                 self.address_per_instr.insert(*hi_rom, address);
                 self.add_referenced_vram(*hi_rom, address);
             }
-            /*
-            self.hiToLowDict[luiOffset] = lowerOffset
-            self.lowToHiDict[lowerOffset] = luiOffset
-            */
+            self.hi_to_lo.insert(*hi_rom, instr_rom);
+            self.lo_to_hi.insert(instr_rom, *hi_rom);
         } else {
             /*
             self.symbolGpInstrOffset[lowerOffset] = address

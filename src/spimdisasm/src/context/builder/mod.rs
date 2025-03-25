@@ -1,6 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+mod add_global_offset_table_error;
 mod add_ignored_address_range_error;
 mod add_user_label_error;
 mod add_user_segment_symbol_error;
@@ -12,6 +13,7 @@ mod segment_builder_error;
 mod segment_heater;
 mod user_segment_builder;
 
+pub use add_global_offset_table_error::AddGlobalOffsetTableError;
 pub use add_ignored_address_range_error::AddIgnoredAddressRangeError;
 pub use add_user_label_error::AddUserLabelError;
 pub use add_user_segment_symbol_error::AddUserSegmentSymbolError;

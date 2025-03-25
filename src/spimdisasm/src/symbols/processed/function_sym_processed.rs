@@ -11,7 +11,7 @@ use crate::{
     collections::{addended_ordered_map::FindSettings, unordered_set::UnorderedSet},
     config::GlobalConfig,
     context::Context,
-    metadata::{ReferrerInfo, SymbolType},
+    metadata::{GotAccessKind, ReferrerInfo, SymbolMetadata, SymbolType},
     parent_segment_info::ParentSegmentInfo,
     relocation::{RelocReferencedSym, RelocationInfo, RelocationType},
     section_type::SectionType,
@@ -236,15 +236,21 @@ impl FunctionSymProcessed {
                 continue;
             }
 
-            let reloc_type =
-                Self::reloc_for_instruction(context.global_config(), &instructions[instr_index]);
-
             let metadata = context.find_symbol_from_any_segment(
                 *symbol_vram,
                 parent_segment_info,
                 FindSettings::new(true),
                 |x| x.sym_type() != Some(SymbolType::Function) || x.vram() == *symbol_vram,
             );
+
+            let reloc_type = Self::reloc_for_instruction(
+                context.global_config(),
+                &instructions[instr_index],
+                metadata,
+                instr_analysis,
+                *instr_rom,
+            );
+
             let referenced_sym = if metadata.is_some() {
                 RelocReferencedSym::Address(*symbol_vram)
             } else {
@@ -275,15 +281,21 @@ impl FunctionSymProcessed {
                 continue;
             }
 
-            let reloc_type =
-                Self::reloc_for_instruction(context.global_config(), &instructions[instr_index]);
-
             let metadata = context.find_symbol_from_any_segment(
                 *symbol_vram,
                 parent_segment_info,
                 FindSettings::new(true),
                 |x| x.sym_type() != Some(SymbolType::Function) || x.vram() == *symbol_vram,
             );
+
+            let reloc_type = Self::reloc_for_instruction(
+                context.global_config(),
+                &instructions[instr_index],
+                metadata,
+                instr_analysis,
+                *instr_rom,
+            );
+
             let referenced_sym = if metadata.is_some() {
                 RelocReferencedSym::Address(*symbol_vram)
             } else {
@@ -294,6 +306,53 @@ impl FunctionSymProcessed {
 
                 RelocReferencedSym::Label(*symbol_vram)
             };
+
+            relocs[instr_index] = Some(reloc_type.new_reloc_info(referenced_sym));
+        }
+
+        for (instr_rom, symbol_got_vram) in instr_analysis.calculated_got_addresses() {
+            let instr_index = (*instr_rom - ranges.rom().start()).inner() as usize / 4;
+
+            /*
+            if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
+                if getVromOffset(loOffset) in context.globalRelocationOverrides:
+                    # Avoid creating wrong symbols on elf files
+                    continue
+            */
+
+            if owned_segment.is_vram_ignored(*symbol_got_vram) {
+                continue;
+            }
+
+            let metadata = context.find_symbol_from_any_segment(
+                *symbol_got_vram,
+                parent_segment_info,
+                FindSettings::new(true),
+                |x| x.sym_type() != Some(SymbolType::Function) || x.vram() == *symbol_got_vram,
+            );
+
+            let reloc_type = Self::reloc_for_instruction(
+                context.global_config(),
+                &instructions[instr_index],
+                metadata,
+                instr_analysis,
+                *instr_rom,
+            );
+
+            // TODO: is this necessary??
+            /*
+            let referenced_sym = if metadata.is_some() {
+                RelocReferencedSym::Address(*symbol_got_vram)
+            } else {
+                referenced_labels_refer_segment.push((
+                    *symbol_got_vram,
+                    ReferrerInfo::new_function(self_vram, parent_segment_info.clone(), *instr_rom),
+                ));
+
+                RelocReferencedSym::Label(*symbol_got_vram)
+            };
+            */
+            let referenced_sym = RelocReferencedSym::Address(*symbol_got_vram);
 
             relocs[instr_index] = Some(reloc_type.new_reloc_info(referenced_sym));
         }
@@ -351,8 +410,20 @@ impl FunctionSymProcessed {
                 let hi_instr = &instructions[hi_index];
                 let lo_instr = &instructions[lo_index];
 
-                let hi_reloc_type = Self::reloc_for_instruction(context.global_config(), hi_instr);
-                let lo_reloc_type = Self::reloc_for_instruction(context.global_config(), lo_instr);
+                let hi_reloc_type = Self::reloc_for_instruction(
+                    context.global_config(),
+                    hi_instr,
+                    None,
+                    instr_analysis,
+                    info.hi_rom(),
+                );
+                let lo_reloc_type = Self::reloc_for_instruction(
+                    context.global_config(),
+                    lo_instr,
+                    None,
+                    instr_analysis,
+                    info.lo_rom(),
+                );
                 if context
                     .global_config()
                     .gp_config()
@@ -478,7 +549,13 @@ impl FunctionSymProcessed {
     }
 
     // Maybe split this function into two, one for hi and another for lo?
-    fn reloc_for_instruction(global_config: &GlobalConfig, instr: &Instruction) -> RelocationType {
+    fn reloc_for_instruction(
+        global_config: &GlobalConfig,
+        instr: &Instruction,
+        sym_metadata: Option<&SymbolMetadata>,
+        instr_analysis: &InstructionAnalysisResult,
+        instr_rom: Rom,
+    ) -> RelocationType {
         let opcode = instr.opcode();
         let is_pic = global_config.gp_config().is_some_and(|x| x.pic());
 
@@ -510,15 +587,22 @@ impl FunctionSymProcessed {
                         RelocationType::R_MIPS_GPREL16
                     };
                 }
-                /*
-                if contextSym is not None:
-                    if contextSym.isGotGlobal and contextSym.getTypeSpecial() == common.SymbolSpecialType.function and instrOffset in self.instrAnalyzer.indirectFunctionCallOffsets:
-                        return common.RelocType.MIPS_CALL16
-                    elif contextSym.isGot:
-                        return common.RelocType.MIPS_GOT16
-                    else:
-                        return common.RelocType.MIPS_GPREL16
-                */
+                if let Some(sym_metadata) = sym_metadata {
+                    return if let Some(got_info) = sym_metadata.got_info() {
+                        if got_info.access_kind() == GotAccessKind::Global
+                            && sym_metadata.sym_type() == Some(SymbolType::Function)
+                            && instr_analysis
+                                .indirect_function_call()
+                                .contains_key(&instr_rom)
+                        {
+                            RelocationType::R_MIPS_CALL16
+                        } else {
+                            RelocationType::R_MIPS_GOT16
+                        }
+                    } else {
+                        RelocationType::R_MIPS_GPREL16
+                    };
+                }
             } else if is_pic {
                 /*
                 if contextSym is not None and gotHiLo:

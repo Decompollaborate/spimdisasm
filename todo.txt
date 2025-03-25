@@ -47,3 +47,7 @@ Some functions may end with `jr` with a non-$ra register that hasn't loaded a ju
 Rename noload to nobits
 
 negative unconditional branch may end the current function
+
+Make a builder for GlobalConfig
+
+Parse `.rel.dyn` when it is available

@@ -8,12 +8,15 @@ use rabbitizer::{access_type::AccessType, Instruction};
 use crate::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     analysis::{InstructionAnalysisResult, InstructionAnalyzer},
-    collections::{addended_ordered_map::FindSettings, unordered_set::UnorderedSet},
+    collections::{
+        addended_ordered_map::FindSettings, unordered_map::UnorderedMap,
+        unordered_set::UnorderedSet,
+    },
     config::Compiler,
     context::Context,
     metadata::{
-        GeneratedBy, LabelType, ParentSectionMetadata, ReferrerInfo, SegmentMetadata,
-        SymbolMetadata, SymbolType,
+        GeneratedBy, GotAccessKind, LabelType, ParentSectionMetadata, ReferrerInfo,
+        SegmentMetadata, SymbolMetadata, SymbolType,
     },
     parent_segment_info::ParentSegmentInfo,
     relocation::RelocationInfo,
@@ -50,7 +53,7 @@ impl FunctionSym {
         let vram_range = AddressRange::new(vram, vram + size);
         let ranges = RomVramRange::new(rom_range, vram_range);
 
-        let instr_analysis =
+        let mut instr_analysis =
             InstructionAnalyzer::analyze(context, &parent_segment_info, ranges, &instructions)?;
 
         let symbol_name_generation_settings = context
@@ -77,10 +80,11 @@ impl FunctionSym {
             owned_segment,
         )?;
         Self::process_instr_analysis_result_referenced(
-            &instr_analysis,
+            &mut instr_analysis,
             &ranges,
             context,
             &parent_segment_info,
+            &instructions,
         )?;
 
         Ok(Self {
@@ -171,10 +175,11 @@ impl FunctionSym {
     }
 
     fn process_instr_analysis_result_referenced(
-        instr_analysis: &InstructionAnalysisResult,
+        instr_analysis: &mut InstructionAnalysisResult,
         ranges: &RomVramRange,
         context: &mut Context,
         parent_segment_info: &ParentSegmentInfo,
+        instructions: &[Instruction],
     ) -> Result<(), SymbolCreationError> {
         let symbol_name_generation_settings = context
             .global_config()
@@ -424,89 +429,137 @@ impl FunctionSym {
         */
 
         // let mut global_got_offsets = UnorderedSet::new();
+        let mut calculated_got_addresses = UnorderedMap::new();
 
-        /*
         for (got_access_rom, got_access) in instr_analysis.got_access_addresses() {
+            if let Some(got_request) =
+                context.find_got_access_from_any_segment(*got_access, parent_segment_info)
+            {
+                let (got_address, kind) = if got_request.is_local() {
+                    let got_address = Vram::new(got_request.address());
 
+                    // GOT-locals need to be paired
+                    let got_address = if let Some(lo_rom) =
+                        instr_analysis.hi_to_lo().get(got_access_rom)
+                    {
+                        let lo_instr = instructions
+                            [(lo_rom.inner() - ranges.rom().start().inner()) as usize / 4];
+                        let got_address = if let Some(imm) = lo_instr.get_processed_immediate() {
+                            Vram::new(got_address.inner().wrapping_add_signed(imm))
+                        } else {
+                            got_address
+                        };
+
+                        calculated_got_addresses.insert(*lo_rom, got_address);
+
+                        /*
+                        self.instrAnalyzer.symbolInstrOffset[loOffset] = got_address
+
+                        symAccess = self.instrAnalyzer.symbolTypesOffsets.get(loOffset)
+                        if symAccess is not None:
+                            if got_address not in self.instrAnalyzer.possibleSymbolTypes:
+                                self.instrAnalyzer.possibleSymbolTypes[got_address] = dict()
+                            if symAccess not in self.instrAnalyzer.possibleSymbolTypes[got_address]:
+                                self.instrAnalyzer.possibleSymbolTypes[got_address][symAccess] = 0
+                            self.instrAnalyzer.possibleSymbolTypes[got_address][symAccess] += 1
+                        */
+
+                        got_address
+                    } else {
+                        got_address
+                    };
+
+                    (got_address, GotAccessKind::Local)
+                } else {
+                    let got_address = Vram::new(got_request.address());
+
+                    // global_got_offsets.insert(got_access_rom);
+
+                    /*
+                    loOffset = self.instrAnalyzer.hiToLowDict.get(got_access_rom)
+                    if loOffset is not None:
+                        if loOffset in self.instrAnalyzer.symbolLoInstrOffset:
+                            del self.instrAnalyzer.symbolLoInstrOffset[loOffset]
+                        if loOffset in self.instrAnalyzer.symbolInstrOffset:
+                            del self.instrAnalyzer.symbolInstrOffset[loOffset]
+                    */
+
+                    (got_address, GotAccessKind::Global)
+                };
+
+                let referenced_segment =
+                    context.find_referenced_segment_mut(got_address, parent_segment_info);
+                let sym_metadata = referenced_segment.add_symbol(
+                    got_address,
+                    true,
+                    symbol_name_generation_settings.clone(),
+                )?;
+
+                sym_metadata.set_got_access_kind(kind);
+
+                calculated_got_addresses.insert(*got_access_rom, got_address);
+
+                /*
+                self.instrAnalyzer.symbolInstrOffset[got_access_rom] = got_address
+                self.instrAnalyzer.referencedVrams.add(got_address)
+                */
+            }
         }
-        */
+
+        // Aditional lookup for unpaired GOT-locals
+        if !instr_analysis.got_access_addresses().is_empty() {
+            for (lo_rom, got_access_rom) in instr_analysis.lo_to_hi() {
+                if let Some(got_request) = instr_analysis
+                    .got_access_addresses()
+                    .get(got_access_rom)
+                    .and_then(|got_access| {
+                        context.find_got_access_from_any_segment(*got_access, parent_segment_info)
+                    })
+                {
+                    if !got_request.is_local() {
+                        continue;
+                    }
+
+                    let lo_instr =
+                        instructions[(lo_rom.inner() - ranges.rom().start().inner()) as usize / 4];
+                    if let Some(imm) = lo_instr.get_processed_immediate() {
+                        let got_address = Vram::new(got_request.address().wrapping_add_signed(imm));
+
+                        /*
+                        self.instrAnalyzer.symbolInstrOffset[lo_rom] = got_address
+
+                        symAccess = self.instrAnalyzer.symbolTypesOffsets.get(lo_rom)
+                        if symAccess is not None:
+                            if got_address not in self.instrAnalyzer.possibleSymbolTypes:
+                                self.instrAnalyzer.possibleSymbolTypes[got_address] = dict()
+                            if symAccess not in self.instrAnalyzer.possibleSymbolTypes[got_address]:
+                                self.instrAnalyzer.possibleSymbolTypes[got_address][symAccess] = 0
+                            self.instrAnalyzer.possibleSymbolTypes[got_address][symAccess] += 1
+
+                        self.instrAnalyzer.symbolInstrOffset[got_access_rom] = got_address
+                        self.instrAnalyzer.referencedVrams.add(got_address)
+                        */
+
+                        let referenced_segment =
+                            context.find_referenced_segment_mut(got_address, parent_segment_info);
+                        let sym_metadata = referenced_segment.add_symbol(
+                            got_address,
+                            true,
+                            symbol_name_generation_settings.clone(),
+                        )?;
+
+                        sym_metadata.set_got_access_kind(GotAccessKind::Local);
+
+                        calculated_got_addresses.insert(*got_access_rom, got_address);
+                        calculated_got_addresses.insert(*lo_rom, got_address);
+                    }
+                }
+            }
+        }
+
+        *instr_analysis.calculated_got_addresses_mut() = calculated_got_addresses;
+
         /*
-        for gotAccessOffset, gotAccess in self.instrAnalyzer.gotAccessAddresses.items():
-            gpAccess = self.context.gpAccesses.requestAddress(gotAccess)
-            if gpAccess is None:
-        common.Utils.eprint(1, f"0x{self.instructions[gotAccessOffset //4].vram:08X}", f"0x{gotAccess:08X}", self.instructions[gotAccessOffset//4].disassemble())
-                continue
-
-            gotAddress = gpAccess.address
-            if not gpAccess.isGotLocal:
-                global_got_offsets.add(gotAccessOffset)
-                contextSym = self.addSymbol(gotAddress, isAutogenerated=True)
-                contextSym.isGot = gpAccess.isGot
-                contextSym.isGotGlobal = gpAccess.isGotGlobal
-                loOffset = self.instrAnalyzer.hiToLowDict.get(gotAccessOffset)
-                if loOffset is not None:
-                    if loOffset in self.instrAnalyzer.symbolLoInstrOffset:
-                        del self.instrAnalyzer.symbolLoInstrOffset[loOffset]
-                    if loOffset in self.instrAnalyzer.symbolInstrOffset:
-                        del self.instrAnalyzer.symbolInstrOffset[loOffset]
-            else:
-                # GOT-locals need to be paired
-                loOffset = self.instrAnalyzer.hiToLowDict.get(gotAccessOffset)
-                if loOffset is not None:
-        loInstr = self.instructions[loOffset //4]
-                    gotAddress += loInstr.getProcessedImmediate()
-                    self.instrAnalyzer.symbolInstrOffset[loOffset] = gotAddress
-
-                    symAccess = self.instrAnalyzer.symbolTypesOffsets.get(loOffset)
-                    if symAccess is not None:
-                        if gotAddress not in self.instrAnalyzer.possibleSymbolTypes:
-                            self.instrAnalyzer.possibleSymbolTypes[gotAddress] = dict()
-                        if symAccess not in self.instrAnalyzer.possibleSymbolTypes[gotAddress]:
-                            self.instrAnalyzer.possibleSymbolTypes[gotAddress][symAccess] = 0
-                        self.instrAnalyzer.possibleSymbolTypes[gotAddress][symAccess] += 1
-
-                contextSym = self.addSymbol(gotAddress, isAutogenerated=True)
-                contextSym.isGot = True
-                contextSym.isGotLocal = True
-            self.instrAnalyzer.symbolInstrOffset[gotAccessOffset] = gotAddress
-            self.instrAnalyzer.referencedVrams.add(gotAddress)
-
-        # Aditional lookup for unpaired GOT-locals
-        if len(self.instrAnalyzer.gotAccessAddresses) > 0:
-            for loOffset, gotAccessOffset in self.instrAnalyzer.lowToHiDict.items():
-                gotAccess_ = self.instrAnalyzer.gotAccessAddresses.get(gotAccessOffset)
-                if gotAccess_ is None:
-                    continue
-
-                gpAccess = self.context.gpAccesses.requestAddress(gotAccess_)
-                if gpAccess is None:
-        common.Utils.eprint(2, f"0x{self.instructions[gotAccessOffset//4].vram:08X}", f"0x{gotAccess_:08X}", self.instructions[gotAccessOffset //4].disassemble())
-                    continue
-
-                if not gpAccess.isGotLocal:
-                    continue
-
-                gotAddress = gpAccess.address
-
-        loInstr = self.instructions[loOffset //4]
-                gotAddress += loInstr.getProcessedImmediate()
-                self.instrAnalyzer.symbolInstrOffset[loOffset] = gotAddress
-
-                symAccess = self.instrAnalyzer.symbolTypesOffsets.get(loOffset)
-                if symAccess is not None:
-                    if gotAddress not in self.instrAnalyzer.possibleSymbolTypes:
-                        self.instrAnalyzer.possibleSymbolTypes[gotAddress] = dict()
-                    if symAccess not in self.instrAnalyzer.possibleSymbolTypes[gotAddress]:
-                        self.instrAnalyzer.possibleSymbolTypes[gotAddress][symAccess] = 0
-                    self.instrAnalyzer.possibleSymbolTypes[gotAddress][symAccess] += 1
-
-                contextSym = self.addSymbol(gotAddress, isAutogenerated=True)
-                contextSym.isGot = True
-                contextSym.isGotLocal = True
-                self.instrAnalyzer.symbolInstrOffset[gotAccessOffset] = gotAddress
-                self.instrAnalyzer.referencedVrams.add(gotAddress)
-
-
         for loOffset, symVram in self.instrAnalyzer.symbolLoInstrOffset.items():
             hiOffset = self.instrAnalyzer.lowToHiDict.get(loOffset)
             if hiOffset is not None and hiOffset in self.instrAnalyzer.gotAccessAddresses:

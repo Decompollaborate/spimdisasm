@@ -28,7 +28,9 @@ pub(crate) use parent_section_metadata::ParentSectionMetadata;
 pub(crate) use referenced_info::{ReferrerInfo, Referrers};
 pub use segment_metadata::SegmentMetadata;
 pub(crate) use symbol_metadata::OwnerSegmentKind;
-pub use symbol_metadata::{GeneratedBy, RodataMigrationBehavior, SymbolMetadata};
+pub use symbol_metadata::{
+    GeneratedBy, GotAccessKind, GotInfo, RodataMigrationBehavior, SymbolMetadata,
+};
 pub use symbol_metadata_name_display::SymbolMetadataNameDisplay;
 pub use symbol_name_generation_settings::SymbolNameGenerationSettings;
 pub use symbol_type::SymbolType;
