@@ -194,6 +194,15 @@ impl ReferenceWrapper<'_, '_> {
             ReferenceWrapper::Both(_metadata, address) => address.table_labels(),
         }
     }
+
+    #[must_use]
+    pub(crate) fn add_gp_to_pointed_data(&self) -> bool {
+        match self {
+            ReferenceWrapper::Metadata(metadata) => metadata.add_gp_to_pointed_data(),
+            ReferenceWrapper::Address(_address) => false, // TODO
+            ReferenceWrapper::Both(metadata, _address) => metadata.add_gp_to_pointed_data(),
+        }
+    }
 }
 
 impl<'seg> From<&'seg SymbolMetadata> for ReferenceWrapper<'seg, '_> {

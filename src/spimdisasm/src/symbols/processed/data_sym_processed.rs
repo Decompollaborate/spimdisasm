@@ -108,19 +108,33 @@ impl DataSymProcessed {
         let metadata = owned_segment
             .find_symbol(ranges.vram().start(), FindSettings::new(false))
             .map_or_else(|| Err(OwnedSymbolNotFoundError::new()), Ok)?;
-        let endian = context.global_config().endian();
+        let global_config = context.global_config();
+        let endian = global_config.endian();
+        let gp_value = global_config.gp_config().map(|x| x.gp_value());
 
         let sym_type = metadata.sym_type();
+        let add_gp_to_pointed_data = metadata.add_gp_to_pointed_data();
 
         let should_search_for_address = sym_type.is_none_or(|x| x.can_reference_symbols());
         let is_table = sym_type.is_some_and(|x| x.is_table());
         let find_settings = FindSettings::new(!is_table && metadata.allow_ref_with_addend());
 
         if should_search_for_address {
+            let reloc_type = if add_gp_to_pointed_data {
+                RelocationType::R_MIPS_GPREL32
+            } else {
+                RelocationType::R_MIPS_32
+            };
+
             for (i, word_bytes) in raw_bytes.chunks_exact(4).enumerate() {
                 let current_rom = ranges.rom().start() + Size::new(i as u32 * 4);
                 let word = endian.word_from_bytes(word_bytes);
-                let word_vram = Vram::new(word);
+                let word_vram = if let (true, Some(gp_value)) = (add_gp_to_pointed_data, gp_value) {
+                    // `as i32` should be doing a two complement conversion.
+                    Vram::new(gp_value.inner().wrapping_add_signed(word as i32))
+                } else {
+                    Vram::new(word)
+                };
 
                 if owned_segment.is_vram_ignored(word_vram) {
                     continue;
@@ -144,10 +158,8 @@ impl DataSymProcessed {
                     });
 
                     if valid_reference {
-                        relocs[i] = Some(
-                            RelocationType::R_MIPS_32
-                                .new_reloc_info(RelocReferencedSym::Label(word_vram)),
-                        );
+                        relocs[i] =
+                            Some(reloc_type.new_reloc_info(RelocReferencedSym::Label(word_vram)));
 
                         if is_owned_segment {
                             &mut referenced_labels_owned_segment
@@ -189,10 +201,8 @@ impl DataSymProcessed {
                     });
 
                     if valid_reference {
-                        relocs[i] = Some(
-                            RelocationType::R_MIPS_32
-                                .new_reloc_info(RelocReferencedSym::Address(word_vram)),
-                        );
+                        relocs[i] =
+                            Some(reloc_type.new_reloc_info(RelocReferencedSym::Address(word_vram)));
                     }
                 }
             }

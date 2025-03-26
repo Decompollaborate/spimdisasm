@@ -23,6 +23,7 @@ pub struct TrackedRegisterState {
     branch_info: Option<Rom>,
 
     contains_float: bool,
+    added_with_gp: Option<Rom>,
 }
 
 impl TrackedRegisterState {
@@ -35,6 +36,7 @@ impl TrackedRegisterState {
             dereferenced: None,
             branch_info: None,
             contains_float: false,
+            added_with_gp: None,
         }
     }
 
@@ -58,8 +60,9 @@ impl TrackedRegisterState {
         if self.dereferenced.is_none() {
             None
         } else {
-            self.lo_info
-                .map(|lo_rom| JrRegData::new(lo_rom, self.value, self.branch_info))
+            self.lo_info.map(|lo_rom| {
+                JrRegData::new(lo_rom, self.value, self.branch_info, self.added_with_gp)
+            })
         }
     }
 
@@ -76,6 +79,7 @@ impl TrackedRegisterState {
         self.clear_gp();
         self.clear_lo();
         self.clear_branch();
+        self.clear_added_with_gp();
     }
 
     pub fn clear_hi(&mut self) {
@@ -94,6 +98,10 @@ impl TrackedRegisterState {
 
     pub fn clear_contains_float(&mut self) {
         self.contains_float = false;
+    }
+
+    pub fn clear_added_with_gp(&mut self) {
+        self.added_with_gp = None;
     }
 }
 
@@ -139,6 +147,10 @@ impl TrackedRegisterState {
 
     pub fn set_contains_float(&mut self) {
         self.contains_float = true;
+    }
+
+    pub fn set_added_with_gp(&mut self, instr_rom: Rom) {
+        self.added_with_gp = Some(instr_rom);
     }
 }
 

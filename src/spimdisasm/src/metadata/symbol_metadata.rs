@@ -206,6 +206,8 @@ pub struct SymbolMetadata {
     parent_metadata: Option<ParentSectionMetadata>,
 
     trailing_padding_size: Option<Size>,
+
+    add_gp_to_pointed_data: bool,
 }
 
 impl SymbolMetadata {
@@ -253,6 +255,8 @@ impl SymbolMetadata {
             parent_metadata: None,
 
             trailing_padding_size: None,
+
+            add_gp_to_pointed_data: false,
         }
     }
 
@@ -480,6 +484,14 @@ impl SymbolMetadata {
     }
     pub(crate) fn set_trailing_padding_size(&mut self, size: Size) {
         self.trailing_padding_size = Some(size);
+    }
+
+    #[must_use]
+    pub(crate) fn add_gp_to_pointed_data(&self) -> bool {
+        self.add_gp_to_pointed_data
+    }
+    pub(crate) fn set_add_gp_to_pointed_data(&mut self) {
+        self.add_gp_to_pointed_data = true;
     }
 }
 

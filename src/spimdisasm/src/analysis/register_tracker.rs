@@ -234,6 +234,10 @@ impl RegisterTracker {
     pub(crate) fn get_gp_state(&self) -> &TrackedRegisterState {
         &self.registers[Gpr::gp.as_index()]
     }
+
+    pub(crate) fn set_added_with_gp(&mut self, reg: Gpr, instr_rom: Rom) {
+        self.registers[reg.as_index()].set_added_with_gp(instr_rom);
+    }
 }
 
 impl RegisterTracker {

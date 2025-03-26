@@ -576,6 +576,10 @@ impl FunctionSym {
                         );
                         sym_metadata.set_got_access_kind(GotAccessKind::Local);
 
+                        if instr_analysis.lo_rom_added_with_gp().contains(lo_rom) {
+                            sym_metadata.set_add_gp_to_pointed_data();
+                        }
+
                         calculated_got_addresses.insert(*got_access_rom, got_address);
                         calculated_got_addresses.insert(*lo_rom, got_address);
                     }

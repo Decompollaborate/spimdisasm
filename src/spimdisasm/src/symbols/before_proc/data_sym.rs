@@ -47,13 +47,13 @@ impl DataSym {
         let vram_range = AddressRange::new(vram, vram + size);
         let ranges = RomVramRange::new(rom_range, vram_range);
 
-        let endian = context.global_config().endian();
+        let global_config = context.global_config();
+        let endian = global_config.endian();
+        let gp_value = global_config.gp_config().map(|x| x.gp_value());
         let encoding = properties.encoding;
 
-        let symbol_name_generation_settings = context
-            .global_config()
-            .symbol_name_generation_settings()
-            .clone();
+        let symbol_name_generation_settings =
+            global_config.symbol_name_generation_settings().clone();
         let owned_segment = context.find_owned_segment_mut(&parent_segment_info)?;
 
         let sym_type = if section_type == SectionType::GccExceptTable {
@@ -82,6 +82,7 @@ impl DataSym {
         )?;
 
         properties.apply_to_metadata(metadata);
+        let add_gp_to_pointed_data = metadata.add_gp_to_pointed_data();
 
         let sym_type = metadata.sym_type();
 
@@ -92,7 +93,15 @@ impl DataSym {
         if rom.inner() % 4 == 0 && should_search_for_address {
             for (i, word_bytes) in raw_bytes.chunks_exact(4).enumerate() {
                 let word = endian.word_from_bytes(word_bytes);
-                let word_vram = Vram::new(word);
+                if word == 0 {
+                    continue;
+                }
+                let word_vram = if let (true, Some(gp_value)) = (add_gp_to_pointed_data, gp_value) {
+                    // `as i32` should be doing a two complement conversion.
+                    Vram::new(gp_value.inner().wrapping_add_signed(word as i32))
+                } else {
+                    Vram::new(word)
+                };
                 let offset = Size::new(i as u32);
 
                 if !owned_segment.is_vram_ignored(word_vram)

@@ -102,6 +102,8 @@ pub struct InstructionAnalysisResult {
     // Jump and link (functions)
     indirect_function_call_instr: UnorderedMap<Rom, Vram>,
     indirect_function_call: UnorderedMap<Rom, Vram>,
+
+    lo_rom_added_with_gp: UnorderedSet<Rom>,
 }
 
 impl InstructionAnalysisResult {
@@ -138,6 +140,7 @@ impl InstructionAnalysisResult {
             lo_to_hi: UnorderedMap::new(),
             indirect_function_call_instr: UnorderedMap::new(),
             indirect_function_call: UnorderedMap::new(),
+            lo_rom_added_with_gp: UnorderedSet::new(),
         }
     }
 
@@ -262,6 +265,11 @@ impl InstructionAnalysisResult {
     pub(crate) fn indirect_function_call_mut(&mut self) -> &mut UnorderedMap<Rom, Vram> {
         &mut self.indirect_function_call
     }
+
+    #[must_use]
+    pub(crate) fn lo_rom_added_with_gp(&self) -> &UnorderedSet<Rom> {
+        &self.lo_rom_added_with_gp
+    }
 }
 
 impl InstructionAnalysisResult {
@@ -304,18 +312,38 @@ impl InstructionAnalysisResult {
         } else if instr.opcode().can_be_unsigned_lo() {
             self.process_unsigned_lo(regs_tracker, instr, instr_rom);
         } else if instr.opcode() == Opcode::core_addu {
-            /*
-            # special check for .cpload
-            if len(self.unpairedCploads) > 0:
-                if instr.rd in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp} and instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
-                    cpload = self.unpairedCploads.pop()
-                    cpload.adduOffset = instrOffset
-                    cpload.reg = instr.rt
-                    self.cploadOffsets.add(cpload.hiOffset)
-                    self.cploadOffsets.add(cpload.loOffset)
-                    self.cploadOffsets.add(instrOffset)
-                    self.cploads[instrOffset] = cpload
-            */
+            let rd = instr.field_rd();
+            let rs = instr.field_rs();
+            let rt = instr.field_rt();
+
+            if let (Some(rd), Some(rs), Some(rt)) = (rd, rs, rt) {
+                let rs_is_gp = rs.is_global_pointer(instr.abi());
+                let rt_is_gp = rt.is_global_pointer(instr.abi());
+
+                if rd.is_global_pointer(instr.abi()) {
+                    // special check for .cpload
+                    /*
+                    if len(self.unpairedCploads) > 0:
+                        if instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
+                            cpload = self.unpairedCploads.pop()
+                            cpload.adduOffset = instrOffset
+                            cpload.reg = instr.rt
+                            self.cploadOffsets.add(cpload.hiOffset)
+                            self.cploadOffsets.add(cpload.loOffset)
+                            self.cploadOffsets.add(instrOffset)
+                            self.cploads[instrOffset] = cpload
+                    */
+                } else if rs_is_gp ^ rt_is_gp {
+                    let reg = if !rs_is_gp { rs } else { rt };
+
+                    if reg == rd {
+                        // We have something like
+                        // addu        $t7, $t7, $gp
+
+                        regs_tracker.set_added_with_gp(reg, instr_rom);
+                    }
+                }
+            }
         }
 
         regs_tracker.overwrite_registers(instr, instr_rom);
@@ -417,6 +445,10 @@ impl InstructionAnalysisResult {
 
             // self.jumpRegisterIntrOffset[instrOffset] = address
             self.add_referenced_vram(instr_rom, address);
+
+            if jr_reg_data.added_with_gp().is_some() {
+                self.lo_rom_added_with_gp.insert(lo_rom);
+            }
         }
     }
 

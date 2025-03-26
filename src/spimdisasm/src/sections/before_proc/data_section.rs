@@ -14,7 +14,7 @@ use crate::{
         addended_ordered_map::FindSettings, unordered_map::UnorderedMap,
         unordered_set::UnorderedSet,
     },
-    config::{Compiler, Endian},
+    config::{Compiler, Endian, GlobalConfig},
     context::Context,
     metadata::{ParentSectionMetadata, SegmentMetadata, SymbolType},
     parent_segment_info::ParentSegmentInfo,
@@ -93,7 +93,7 @@ impl DataSection {
             raw_bytes,
             vram_range,
             section_type,
-            context.global_config().endian(),
+            context.global_config(),
         );
 
         let mut data_symbols = Vec::new();
@@ -162,8 +162,11 @@ impl DataSection {
         raw_bytes: &[u8],
         vram_range: AddressRange<Vram>,
         section_type: SectionType,
-        endian: Endian,
+        global_config: &GlobalConfig,
     ) -> (Vec<(Vram, Option<SymbolType>)>, UnorderedMap<Vram, Vram>) {
+        let endian = global_config.endian();
+        let gp_value = global_config.gp_config().map(|x| x.gp_value());
+
         let mut symbols_info = BTreeMap::new();
         // Ensure there's a symbol at the beginning of the section.
         symbols_info.insert(vram_range.start(), None);
@@ -285,7 +288,16 @@ impl DataSection {
                     let should_search_for_address =
                         current_type.is_none_or(|x| x.can_reference_symbols());
 
-                    let word_vram = Vram::new(word);
+                    let word_vram = if let (Some(a), Some(gp_value)) = (a, gp_value) {
+                        if a.add_gp_to_pointed_data() {
+                            // `as i32` should be doing a two complement conversion.
+                            Vram::new(gp_value.inner().wrapping_add_signed(word as i32))
+                        } else {
+                            Vram::new(word)
+                        }
+                    } else {
+                        Vram::new(word)
+                    };
                     let word_ref = owned_segment.find_reference(word_vram, FindSettings::new(true));
 
                     if should_search_for_address {
