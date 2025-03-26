@@ -29,8 +29,8 @@ game_tests = [] # Tests that require game roms to run
 pyo3 = ["std", "dep:pyo3", "rabbitizer/pyo3"]
 
 [dependencies]
-rabbitizer = { git = "https://github.com/Decompollaborate/rabbitizer.git", branch = "🦀" }
-# rabbitizer = { path = "../../../rabbitizer/src/rabbitizer" }
+rabbitizer = { git = "https://github.com/Decompollaborate/rabbitizer.git", branch = "🦀", features = ["MIPS_IV", "all_extensions"] }
+# rabbitizer = { path = "../../../rabbitizer/src/rabbitizer", features = ["MIPS_IV", "all_extensions"] }
 polonius-the-crab = "0.4.2" # TODO: get rid of the polonius stuff when the new borrow checker has been released.
 pyo3 = { version = "0.23.2", optional = true }
 encoding_rs = "0.8.35"

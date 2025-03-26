@@ -181,6 +181,10 @@ impl InstructionAnalysisResult {
     }
 
     #[must_use]
+    pub fn address_per_instr(&self) -> &UnorderedMap<Rom, Vram> {
+        &self.address_per_instr
+    }
+    #[must_use]
     pub fn address_per_instr_mut(&mut self) -> &mut UnorderedMap<Rom, Vram> {
         &mut self.address_per_instr
     }
@@ -200,6 +204,10 @@ impl InstructionAnalysisResult {
     #[must_use]
     pub fn referenced_jumptables(&self) -> &UnorderedMap<Rom, Vram> {
         &self.referenced_jumptables
+    }
+    #[must_use]
+    pub fn referenced_jumptables_mut(&mut self) -> &mut UnorderedMap<Rom, Vram> {
+        &mut self.referenced_jumptables
     }
 
     #[must_use]
@@ -249,6 +257,10 @@ impl InstructionAnalysisResult {
     #[must_use]
     pub(crate) fn indirect_function_call(&self) -> &UnorderedMap<Rom, Vram> {
         &self.indirect_function_call
+    }
+    #[must_use]
+    pub(crate) fn indirect_function_call_mut(&mut self) -> &mut UnorderedMap<Rom, Vram> {
+        &mut self.indirect_function_call
     }
 }
 
@@ -569,6 +581,7 @@ impl InstructionAnalysisResult {
         let address = address.unwrap();
         if upper_info.is_none() && self.original_gp_config.is_some_and(|x| x.pic()) {
             self.process_got_symbol(address, instr_rom);
+            regs_tracker.process_lo(instr, address.inner(), instr_rom);
             return;
         }
 

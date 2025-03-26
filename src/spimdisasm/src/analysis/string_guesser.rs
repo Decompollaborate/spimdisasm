@@ -94,6 +94,13 @@ bitflags! {
 
         /// Allow guessing when a symbol has been unaligned dereferenced.
         const AllowUnalignedDereferences = 1 << 7;
+
+        /// Allow guessing strings even after we have reached the "late rodata".
+        ///
+        /// This only applies to compilers that have a concept of "late rodata" (i.e. [`IDO`]).
+        ///
+        /// [`IDO`]: crate::config::compiler::IDO
+        const AllowLateRodata = 1 << 8;
     }
 }
 
@@ -179,7 +186,7 @@ impl StringGuesserFlags {
             return contextSym.isMaybeString
         */
 
-        if reached_late_rodata {
+        if !self.contains(Self::AllowLateRodata) && reached_late_rodata {
             return Err(StringGuessError::ReachedLateRodata);
         }
 

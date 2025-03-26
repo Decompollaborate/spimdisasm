@@ -499,7 +499,13 @@ impl DataSection {
                 }
             }
 
-            Err(_e) => None,
+            Err(_e) => {
+                // To debug why a symbol wasn't guessed as a string
+                // if current_vram == Vram::new(/**/) {
+                //     panic!("{:?}", _e);
+                // };
+                None
+            }
         }
     }
 

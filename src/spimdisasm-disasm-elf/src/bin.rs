@@ -10,6 +10,7 @@ use object::{
 use spimdisasm::{
     self,
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
+    analysis::StringGuesserFlags,
     config::{GlobalConfig, GpConfig},
     context::{
         builder::{GlobalSegmentHeater, UserSegmentBuilder},
@@ -927,7 +928,12 @@ fn main() {
     // TODO: proper InstructionFlags
     let executable_settings =
         ExecutableSectionSettings::new(compiler, InstructionFlags::new(IsaVersion::MIPS_III));
-    let data_settings = DataSectionSettings::new(compiler);
+    // Since we don't have file splits information we allow late rodata strings because late rodata
+    // start detection will be borked either way.
+    let string_guesser_flags =
+        StringGuesserFlags::default().union(StringGuesserFlags::AllowLateRodata);
+    let data_settings =
+        DataSectionSettings::new(compiler).with_string_guesser_flags(string_guesser_flags);
     let noload_settings = NoloadSectionSettings::new(compiler);
 
     println!("context:");

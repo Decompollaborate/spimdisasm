@@ -58,10 +58,9 @@ impl RegisterTracker {
     }
 
     pub(crate) fn get_jr_reg_data(&self, instr: &Instruction) -> Option<JrRegData> {
-        if instr.is_jumptable_jump() || instr.is_return() {
-            instr
-                .field_rs()
-                .and_then(|reg| self.registers[reg.as_index()].get_jr_reg_data())
+        if instr.opcode().jumps_to_register() {
+            let rs = instr.field_rs();
+            rs.and_then(|reg| self.registers[reg.as_index()].get_jr_reg_data())
         } else {
             None
         }

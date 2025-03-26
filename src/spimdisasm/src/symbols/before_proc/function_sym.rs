@@ -16,7 +16,7 @@ use crate::{
     context::Context,
     metadata::{
         GeneratedBy, GotAccessKind, LabelType, ParentSectionMetadata, ReferrerInfo,
-        SegmentMetadata, SymbolMetadata, SymbolType,
+        SegmentMetadata, SymbolMetadata, SymbolNameGenerationSettings, SymbolType,
     },
     parent_segment_info::ParentSegmentInfo,
     relocation::RelocationInfo,
@@ -185,6 +185,15 @@ impl FunctionSym {
             .global_config()
             .symbol_name_generation_settings()
             .clone();
+
+        Self::process_got_syms(
+            instr_analysis,
+            ranges,
+            context,
+            parent_segment_info,
+            instructions,
+            &symbol_name_generation_settings,
+        )?;
 
         // Jumptables
         for (instr_rom, target_vram) in instr_analysis.referenced_jumptables() {
@@ -428,8 +437,20 @@ impl FunctionSym {
                 instr.inHandwrittenFunction = self.isLikelyHandwritten
         */
 
+        Ok(())
+    }
+
+    fn process_got_syms(
+        instr_analysis: &mut InstructionAnalysisResult,
+        ranges: &RomVramRange,
+        context: &mut Context,
+        parent_segment_info: &ParentSegmentInfo,
+        instructions: &[Instruction],
+        symbol_name_generation_settings: &SymbolNameGenerationSettings,
+    ) -> Result<(), SymbolCreationError> {
         let mut global_got_offsets = UnorderedSet::new();
         let mut calculated_got_addresses = UnorderedMap::new();
+        let mut addrs_per_instr_to_update = UnorderedMap::new();
         let mut lo_to_remove = UnorderedSet::new();
 
         for (got_access_rom, got_access) in instr_analysis.got_access_addresses() {
@@ -452,10 +473,9 @@ impl FunctionSym {
                         };
 
                         calculated_got_addresses.insert(*lo_rom, got_address);
+                        addrs_per_instr_to_update.insert(*lo_rom, got_address);
 
                         /*
-                        self.instrAnalyzer.address_per_instr[loOffset] = got_address
-
                         symAccess = self.instrAnalyzer.symbolTypesOffsets.get(loOffset)
                         if symAccess is not None:
                             if got_address not in self.instrAnalyzer.possibleSymbolTypes:
@@ -499,9 +519,9 @@ impl FunctionSym {
                 );
 
                 calculated_got_addresses.insert(*got_access_rom, got_address);
+                addrs_per_instr_to_update.insert(*got_access_rom, got_address);
 
                 /*
-                self.instrAnalyzer.address_per_instr[got_access_rom] = got_address
                 self.instrAnalyzer.referencedVrams.add(got_address)
                 */
             }
@@ -526,9 +546,10 @@ impl FunctionSym {
                     if let Some(imm) = lo_instr.get_processed_immediate() {
                         let got_address = Vram::new(got_request.address().wrapping_add_signed(imm));
 
-                        /*
-                        self.instrAnalyzer.address_per_instr[lo_rom] = got_address
+                        addrs_per_instr_to_update.insert(*lo_rom, got_address);
+                        addrs_per_instr_to_update.insert(*got_access_rom, got_address);
 
+                        /*
                         symAccess = self.instrAnalyzer.symbolTypesOffsets.get(lo_rom)
                         if symAccess is not None:
                             if got_address not in self.instrAnalyzer.possibleSymbolTypes:
@@ -537,7 +558,6 @@ impl FunctionSym {
                                 self.instrAnalyzer.possibleSymbolTypes[got_address][symAccess] = 0
                             self.instrAnalyzer.possibleSymbolTypes[got_address][symAccess] += 1
 
-                        self.instrAnalyzer.address_per_instr[got_access_rom] = got_address
                         self.instrAnalyzer.referencedVrams.add(got_address)
                         */
 
@@ -565,7 +585,15 @@ impl FunctionSym {
 
         *instr_analysis.calculated_got_addresses_mut() = calculated_got_addresses;
 
-        for (lo_rom, _sym_vram) in instr_analysis.address_per_lo_instr() {
+        for (instr_rom, sym_vram) in addrs_per_instr_to_update {
+            instr_analysis
+                .address_per_instr_mut()
+                .insert(instr_rom, sym_vram);
+        }
+
+        let mut more_lo_to_update = UnorderedMap::new();
+
+        for (lo_rom, sym_vram) in instr_analysis.address_per_lo_instr() {
             if let Some(hi_rom) = instr_analysis.lo_to_hi().get(lo_rom) {
                 if !instr_analysis.got_access_addresses().contains_key(hi_rom) {
                     continue;
@@ -576,17 +604,25 @@ impl FunctionSym {
                     continue;
                 }
 
-                /*
-                if hiOffset in self.instrAnalyzer.address_per_instr:
-                    sym_vram = self.instrAnalyzer.address_per_instr[hiOffset]
-                    self.instrAnalyzer.address_per_lo_instr[loOffset] = sym_vram
+                let vram = if let Some(other_vram) = instr_analysis.address_per_instr().get(hi_rom)
+                {
+                    *other_vram
+                } else {
+                    *sym_vram
+                };
+                more_lo_to_update.insert(*lo_rom, vram);
+            }
+        }
 
-                if loOffset in self.instrAnalyzer.referencedJumpTableOffsets:
-                    self.instrAnalyzer.referencedJumpTableOffsets[loOffset] = sym_vram
-
-                if loOffset in self.instrAnalyzer.indirectFunctionCallOffsets:
-                    self.instrAnalyzer.indirectFunctionCallOffsets[loOffset] = sym_vram
-                */
+        for (lo_rom, sym_vram) in more_lo_to_update {
+            if let Some(a) = instr_analysis.address_per_lo_instr_mut().get_mut(&lo_rom) {
+                *a = sym_vram;
+            }
+            if let Some(a) = instr_analysis.referenced_jumptables_mut().get_mut(&lo_rom) {
+                *a = sym_vram;
+            }
+            if let Some(a) = instr_analysis.indirect_function_call_mut().get_mut(&lo_rom) {
+                *a = sym_vram;
             }
         }
 
