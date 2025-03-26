@@ -181,12 +181,20 @@ impl InstructionAnalysisResult {
     }
 
     #[must_use]
+    pub fn address_per_instr_mut(&mut self) -> &mut UnorderedMap<Rom, Vram> {
+        &mut self.address_per_instr
+    }
+    #[must_use]
     pub fn address_per_hi_instr(&self) -> &UnorderedMap<Rom, Vram> {
         &self.address_per_hi_instr
     }
     #[must_use]
     pub fn address_per_lo_instr(&self) -> &UnorderedMap<Rom, Vram> {
         &self.address_per_lo_instr
+    }
+    #[must_use]
+    pub fn address_per_lo_instr_mut(&mut self) -> &mut UnorderedMap<Rom, Vram> {
+        &mut self.address_per_lo_instr
     }
 
     #[must_use]
@@ -485,7 +493,7 @@ impl InstructionAnalysisResult {
         // TODO
         if instr.opcode().does_load()
             && instr
-                .get_destination_gpr()
+                .field_rs()
                 .is_some_and(|reg| reg.is_global_pointer(instr.abi()))
         {
             regs_tracker.process_gp_load(instr, instr_rom);

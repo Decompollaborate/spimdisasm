@@ -428,8 +428,9 @@ impl FunctionSym {
                 instr.inHandwrittenFunction = self.isLikelyHandwritten
         */
 
-        // let mut global_got_offsets = UnorderedSet::new();
+        let mut global_got_offsets = UnorderedSet::new();
         let mut calculated_got_addresses = UnorderedMap::new();
+        let mut lo_to_remove = UnorderedSet::new();
 
         for (got_access_rom, got_access) in instr_analysis.got_access_addresses() {
             if let Some(got_request) =
@@ -453,7 +454,7 @@ impl FunctionSym {
                         calculated_got_addresses.insert(*lo_rom, got_address);
 
                         /*
-                        self.instrAnalyzer.symbolInstrOffset[loOffset] = got_address
+                        self.instrAnalyzer.address_per_instr[loOffset] = got_address
 
                         symAccess = self.instrAnalyzer.symbolTypesOffsets.get(loOffset)
                         if symAccess is not None:
@@ -473,16 +474,11 @@ impl FunctionSym {
                 } else {
                     let got_address = Vram::new(got_request.address());
 
-                    // global_got_offsets.insert(got_access_rom);
+                    global_got_offsets.insert(*got_access_rom);
 
-                    /*
-                    loOffset = self.instrAnalyzer.hiToLowDict.get(got_access_rom)
-                    if loOffset is not None:
-                        if loOffset in self.instrAnalyzer.symbolLoInstrOffset:
-                            del self.instrAnalyzer.symbolLoInstrOffset[loOffset]
-                        if loOffset in self.instrAnalyzer.symbolInstrOffset:
-                            del self.instrAnalyzer.symbolInstrOffset[loOffset]
-                    */
+                    if let Some(lo_rom) = instr_analysis.hi_to_lo().get(got_access_rom) {
+                        lo_to_remove.insert(*lo_rom);
+                    }
 
                     (got_address, GotAccessKind::Global)
                 };
@@ -500,7 +496,7 @@ impl FunctionSym {
                 calculated_got_addresses.insert(*got_access_rom, got_address);
 
                 /*
-                self.instrAnalyzer.symbolInstrOffset[got_access_rom] = got_address
+                self.instrAnalyzer.address_per_instr[got_access_rom] = got_address
                 self.instrAnalyzer.referencedVrams.add(got_address)
                 */
             }
@@ -526,7 +522,7 @@ impl FunctionSym {
                         let got_address = Vram::new(got_request.address().wrapping_add_signed(imm));
 
                         /*
-                        self.instrAnalyzer.symbolInstrOffset[lo_rom] = got_address
+                        self.instrAnalyzer.address_per_instr[lo_rom] = got_address
 
                         symAccess = self.instrAnalyzer.symbolTypesOffsets.get(lo_rom)
                         if symAccess is not None:
@@ -536,7 +532,7 @@ impl FunctionSym {
                                 self.instrAnalyzer.possibleSymbolTypes[got_address][symAccess] = 0
                             self.instrAnalyzer.possibleSymbolTypes[got_address][symAccess] += 1
 
-                        self.instrAnalyzer.symbolInstrOffset[got_access_rom] = got_address
+                        self.instrAnalyzer.address_per_instr[got_access_rom] = got_address
                         self.instrAnalyzer.referencedVrams.add(got_address)
                         */
 
@@ -559,25 +555,35 @@ impl FunctionSym {
 
         *instr_analysis.calculated_got_addresses_mut() = calculated_got_addresses;
 
-        /*
-        for loOffset, symVram in self.instrAnalyzer.symbolLoInstrOffset.items():
-            hiOffset = self.instrAnalyzer.lowToHiDict.get(loOffset)
-            if hiOffset is not None and hiOffset in self.instrAnalyzer.gotAccessAddresses:
-                if hiOffset in global_got_offsets:
-                    if loOffset in self.instrAnalyzer.symbolInstrOffset:
-                        del self.instrAnalyzer.symbolInstrOffset[loOffset]
-                    continue
+        for (lo_rom, _sym_vram) in instr_analysis.address_per_lo_instr() {
+            if let Some(hi_rom) = instr_analysis.lo_to_hi().get(lo_rom) {
+                if !instr_analysis.got_access_addresses().contains_key(hi_rom) {
+                    continue;
+                }
 
-                if hiOffset in self.instrAnalyzer.symbolInstrOffset:
-                    symVram = self.instrAnalyzer.symbolInstrOffset[hiOffset]
-                    self.instrAnalyzer.symbolLoInstrOffset[loOffset] = symVram
+                if global_got_offsets.contains(hi_rom) {
+                    lo_to_remove.insert(*lo_rom);
+                    continue;
+                }
+
+                /*
+                if hiOffset in self.instrAnalyzer.address_per_instr:
+                    sym_vram = self.instrAnalyzer.address_per_instr[hiOffset]
+                    self.instrAnalyzer.address_per_lo_instr[loOffset] = sym_vram
 
                 if loOffset in self.instrAnalyzer.referencedJumpTableOffsets:
-                    self.instrAnalyzer.referencedJumpTableOffsets[loOffset] = symVram
+                    self.instrAnalyzer.referencedJumpTableOffsets[loOffset] = sym_vram
 
                 if loOffset in self.instrAnalyzer.indirectFunctionCallOffsets:
-                    self.instrAnalyzer.indirectFunctionCallOffsets[loOffset] = symVram
-        */
+                    self.instrAnalyzer.indirectFunctionCallOffsets[loOffset] = sym_vram
+                */
+            }
+        }
+
+        for lo_rom in lo_to_remove {
+            instr_analysis.address_per_lo_instr_mut().remove(&lo_rom);
+            instr_analysis.address_per_instr_mut().remove(&lo_rom);
+        }
 
         Ok(())
     }

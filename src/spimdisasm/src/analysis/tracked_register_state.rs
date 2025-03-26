@@ -149,6 +149,8 @@ impl TrackedRegisterState {
 
     // TODO: rename to was_set_by_current_instr
     pub fn was_set_in_current_instr(&self, instr_rom: Rom) -> bool {
-        self.lo_info == Some(instr_rom) || self.dereferenced == Some(instr_rom)
+        self.lo_info == Some(instr_rom)
+            || self.dereferenced == Some(instr_rom)
+            || self.gp_info == Some(instr_rom)
     }
 }
