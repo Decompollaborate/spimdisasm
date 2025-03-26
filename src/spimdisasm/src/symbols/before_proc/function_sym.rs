@@ -492,6 +492,11 @@ impl FunctionSym {
                 )?;
 
                 sym_metadata.set_got_access_kind(kind);
+                sym_metadata.add_reference_function(
+                    ranges.vram().start(),
+                    parent_segment_info.clone(),
+                    *got_access_rom,
+                );
 
                 calculated_got_addresses.insert(*got_access_rom, got_address);
 
@@ -544,6 +549,11 @@ impl FunctionSym {
                             symbol_name_generation_settings.clone(),
                         )?;
 
+                        sym_metadata.add_reference_function(
+                            ranges.vram().start(),
+                            parent_segment_info.clone(),
+                            *lo_rom,
+                        );
                         sym_metadata.set_got_access_kind(GotAccessKind::Local);
 
                         calculated_got_addresses.insert(*got_access_rom, got_address);
