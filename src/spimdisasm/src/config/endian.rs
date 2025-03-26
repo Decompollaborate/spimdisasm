@@ -13,6 +13,7 @@ pub enum Endian {
 
 impl Endian {
     #[must_use]
+    #[inline]
     pub const fn word_from_bytes(self, bytes: &[u8]) -> u32 {
         assert!(bytes.len() >= 4, "Not big enough");
         let arr = [bytes[0], bytes[1], bytes[2], bytes[3]];
@@ -23,6 +24,7 @@ impl Endian {
         }
     }
     #[must_use]
+    #[inline]
     pub const fn short_from_bytes(self, bytes: &[u8]) -> u16 {
         assert!(bytes.len() >= 2, "Not big enough");
         let arr = [bytes[0], bytes[1]];
@@ -33,6 +35,7 @@ impl Endian {
         }
     }
     #[must_use]
+    #[inline]
     pub const fn dword_from_bytes(self, bytes: &[u8]) -> u64 {
         assert!(bytes.len() >= 8, "Not big enough");
         let arr = [
@@ -46,6 +49,7 @@ impl Endian {
     }
 
     #[must_use]
+    #[inline]
     pub const fn bytes_from_word(self, word: u32) -> [u8; 4] {
         match self {
             Endian::Big => word.to_be_bytes(),

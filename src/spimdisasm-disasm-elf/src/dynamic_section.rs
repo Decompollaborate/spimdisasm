@@ -15,7 +15,7 @@ pub struct DynamicSection {
 }
 
 impl DynamicSection {
-    pub fn parse(elf_file: &ElfFile32) -> Option<Self> {
+    pub fn parse_from_elf(elf_file: &ElfFile32) -> Option<Self> {
         for section in elf_file.sections() {
             let sh_flags = section.elf_section_header().sh_flags.get(elf_file.endian());
             let sh_type = section.elf_section_header().sh_type.get(elf_file.endian());
@@ -61,7 +61,7 @@ impl DynamicSection {
         }
     }
 
-    pub fn gp(&self) -> GpValue {
+    pub fn canonical_gp(&self) -> GpValue {
         GpValue::new(self.pltgot + 0x7FF0)
     }
     pub fn local_gotno(&self) -> u32 {

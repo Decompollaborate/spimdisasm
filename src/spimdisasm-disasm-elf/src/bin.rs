@@ -40,11 +40,13 @@ use std::{
 mod dynamic_section;
 mod elf_section_type;
 mod global_offset_table;
+mod mips_reginfo;
 mod utils;
 
 use dynamic_section::DynamicSection;
 use elf_section_type::{ElfSectionType, ProgbitsType};
 use global_offset_table::parse_got;
+use mips_reginfo::MipsReginfo;
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, clap::ValueEnum)]
 #[allow(non_camel_case_types)]
@@ -581,8 +583,14 @@ fn create_context(
     executable_settings: &ExecutableSectionSettings,
     data_settings: &DataSectionSettings,
 ) -> Context {
-    let dynamic_section = DynamicSection::parse(elf_file);
-    let gp_config = if let Some(gp) = dynamic_section.map(|x| x.gp()) {
+    let mips_reginfo = MipsReginfo::parse_from_elf(elf_file);
+    let dynamic_section = DynamicSection::parse_from_elf(elf_file);
+    let gp_value = if let Some(mips_reginfo) = mips_reginfo {
+        Some(mips_reginfo.ri_gp_value())
+    } else {
+        dynamic_section.map(|x| x.canonical_gp())
+    };
+    let gp_config = if let Some(gp) = gp_value {
         println!("{:?}", gp);
         Some(GpConfig::new_pic(gp))
     } else {

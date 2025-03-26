@@ -10,6 +10,7 @@ pub enum ElfSectionType {
     Reloc,
     DynSym,
     Dynamic,
+    MipsReginfo,
 }
 
 impl ElfSectionType {
@@ -19,13 +20,8 @@ impl ElfSectionType {
             elf::SHT_NOBITS => Some(ElfSectionType::Nobits),
             elf::SHT_REL => Some(ElfSectionType::Reloc),
             elf::SHT_DYNSYM => Some(ElfSectionType::DynSym),
-            elf::SHT_DYNAMIC => {
-                if name == ".dynamic" {
-                    Some(ElfSectionType::Dynamic)
-                } else {
-                    None
-                }
-            }
+            elf::SHT_DYNAMIC if name == ".dynamic" => Some(ElfSectionType::Dynamic),
+            elf::SHT_MIPS_REGINFO if name == ".reginfo" => Some(ElfSectionType::MipsReginfo),
             _ => None,
         }
     }
