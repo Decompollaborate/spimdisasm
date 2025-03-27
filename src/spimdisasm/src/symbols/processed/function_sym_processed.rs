@@ -236,6 +236,11 @@ impl FunctionSymProcessed {
                 continue;
             }
 
+            // `_gp_disp`
+            if instr_analysis.cpload_roms().contains(instr_rom) {
+                continue;
+            }
+
             let metadata = context.find_symbol_from_any_segment(
                 *symbol_vram,
                 parent_segment_info,
@@ -267,6 +272,11 @@ impl FunctionSymProcessed {
 
         for (instr_rom, symbol_vram) in instr_analysis.address_per_hi_instr() {
             let instr_index = (*instr_rom - ranges.rom().start()).inner() as usize / 4;
+
+            // `_gp_disp`
+            if instr_analysis.cpload_roms().contains(instr_rom) {
+                continue;
+            }
 
             if owned_segment.is_vram_ignored(*symbol_vram) {
                 if let Some(imm) = instructions[instr_index].get_processed_immediate() {
@@ -394,14 +404,26 @@ impl FunctionSymProcessed {
             relocs[instrOffset] = common.RelocationInfo(relocType, contextSym, address - contextSym.vram)
         */
 
-        /*
-        for instrOffset in instrAnalyzer.cploadOffsets:
-            # .cpload directive is meant to use the `_gp_disp` pseudo-symbol
-            instr = instructions[instrOffset//4]
+        // `.cpload`` directive uses the `_gp_disp` pseudo-symbol
+        for instr_rom in instr_analysis.cpload_roms() {
+            let index = (*instr_rom - ranges.rom().start()).inner() as usize / 4;
+            let instr = &instructions[index];
+            let opcode = instr.opcode();
 
-            relocType = _getRelocTypeForInstruction(instr, instrOffset)
-            relocs[instrOffset] = common.RelocationInfo(relocType, "_gp_disp")
-        */
+            if opcode.can_be_hi() || opcode.can_be_lo() {
+                let reloc_type = Self::reloc_for_instruction(
+                    context.global_config(),
+                    instr,
+                    None,
+                    instr_analysis,
+                    *instr_rom,
+                );
+
+                relocs[index] = Some(
+                    reloc_type.new_reloc_info(RelocReferencedSym::SymName("_gp_disp".into(), 0)),
+                );
+            }
+        }
 
         for gp_set_info in instr_analysis.gp_sets().values() {
             if let GpSetInfo::Address(info) = gp_set_info {

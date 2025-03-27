@@ -1,6 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use alloc::vec::Vec;
 use rabbitizer::{
     access_type::AccessType, opcodes::Opcode, registers::Gpr, registers_meta::Register,
     vram::VramOffset, Instruction, Vram,
@@ -38,6 +39,41 @@ impl GpAddressSet {
     }
     pub(crate) fn value(&self) -> GpValue {
         self.value
+    }
+}
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct UnfinishedCpload {
+    hi_rom: Rom,
+    lo_rom: Rom,
+}
+
+impl UnfinishedCpload {
+    fn new(hi_rom: Rom, lo_rom: Rom) -> Self {
+        Self { hi_rom, lo_rom }
+    }
+
+    fn finish(self, addu_rom: Rom, reg: Gpr) -> CploadInfo {
+        CploadInfo::new(self.hi_rom, self.lo_rom, addu_rom, reg)
+    }
+}
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct CploadInfo {
+    hi_rom: Rom,
+    lo_rom: Rom,
+    addu_rom: Rom,
+    reg: Gpr,
+}
+
+impl CploadInfo {
+    fn new(hi_rom: Rom, lo_rom: Rom, addu_rom: Rom, reg: Gpr) -> Self {
+        Self {
+            hi_rom,
+            lo_rom,
+            addu_rom,
+            reg,
+        }
     }
 }
 
@@ -104,6 +140,13 @@ pub struct InstructionAnalysisResult {
     indirect_function_call: UnorderedMap<Rom, Vram>,
 
     lo_rom_added_with_gp: UnorderedSet<Rom>,
+
+    /// `.cploads` which are not yet fully paired.
+    unfinished_cploads: Vec<UnfinishedCpload>,
+    /// Rom address for every instruction that is part of a `.cpload`.
+    cpload_roms: UnorderedSet<Rom>,
+    /// Completed cpload, key: rom of last instruction of the `.cpload`.
+    cploads: UnorderedMap<Rom, CploadInfo>,
 }
 
 impl InstructionAnalysisResult {
@@ -141,6 +184,9 @@ impl InstructionAnalysisResult {
             indirect_function_call_instr: UnorderedMap::new(),
             indirect_function_call: UnorderedMap::new(),
             lo_rom_added_with_gp: UnorderedSet::new(),
+            unfinished_cploads: Vec::new(),
+            cpload_roms: UnorderedSet::new(),
+            cploads: UnorderedMap::new(),
         }
     }
 
@@ -270,6 +316,11 @@ impl InstructionAnalysisResult {
     pub(crate) fn lo_rom_added_with_gp(&self) -> &UnorderedSet<Rom> {
         &self.lo_rom_added_with_gp
     }
+
+    #[must_use]
+    pub(crate) fn cpload_roms(&self) -> &UnorderedSet<Rom> {
+        &self.cpload_roms
+    }
 }
 
 impl InstructionAnalysisResult {
@@ -322,17 +373,16 @@ impl InstructionAnalysisResult {
 
                 if rd.is_global_pointer(instr.abi()) {
                     // special check for .cpload
-                    /*
-                    if len(self.unpairedCploads) > 0:
-                        if instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
-                            cpload = self.unpairedCploads.pop()
-                            cpload.adduOffset = instrOffset
-                            cpload.reg = instr.rt
-                            self.cploadOffsets.add(cpload.hiOffset)
-                            self.cploadOffsets.add(cpload.loOffset)
-                            self.cploadOffsets.add(instrOffset)
-                            self.cploads[instrOffset] = cpload
-                    */
+                    if rs.is_global_pointer(instr.abi()) {
+                        if let Some(unfinished_cpload) = self.unfinished_cploads.pop() {
+                            let cpload = unfinished_cpload.finish(instr_rom, rt);
+
+                            self.cpload_roms.insert(cpload.hi_rom);
+                            self.cpload_roms.insert(cpload.lo_rom);
+                            self.cpload_roms.insert(cpload.addu_rom);
+                            self.cploads.insert(instr_rom, cpload);
+                        }
+                    }
                 } else if rs_is_gp ^ rt_is_gp {
                     let reg = if !rs_is_gp { rs } else { rt };
 
@@ -576,10 +626,8 @@ impl InstructionAnalysisResult {
                                     && lo_rt.is_global_pointer(instr.abi())
                                 {
                                     if self.original_gp_config.is_some_and(|x| x.pic()) {
-                                        /*
-                                        # cpload
-                                        self.unpairedCploads.append(CploadInfo(luiOffset, instrOffset))
-                                        */
+                                        self.unfinished_cploads
+                                            .push(UnfinishedCpload::new(hi_rom, instr_rom));
                                     } else if let Some(lo_gp_value) =
                                         instr.get_processed_immediate()
                                     {

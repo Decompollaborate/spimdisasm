@@ -284,6 +284,11 @@ impl FunctionSym {
                     continue
             */
 
+            // Avoid symbolizing `_gp_disp`
+            if instr_analysis.cpload_roms().contains(instr_rom) {
+                continue;
+            }
+
             let sym_access = if let Some(sym_access_info) =
                 instr_analysis.type_info_per_address().get(symbol_vram)
             {
