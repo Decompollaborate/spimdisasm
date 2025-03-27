@@ -27,6 +27,8 @@ pub struct ReferencedAddress {
     autodetected_size: Option<Size>,
 
     table_labels: Vec<Vram>,
+
+    add_gp_to_pointed_data: bool,
 }
 
 impl ReferencedAddress {
@@ -46,6 +48,8 @@ impl ReferencedAddress {
             autodetected_size: None,
 
             table_labels: Vec::new(),
+
+            add_gp_to_pointed_data: false,
         }
     }
 
@@ -169,6 +173,11 @@ impl ReferencedAddress {
     pub fn table_labels(&self) -> &[Vram] {
         &self.table_labels
     }
+
+    #[must_use]
+    pub(crate) fn add_gp_to_pointed_data(&self) -> bool {
+        self.add_gp_to_pointed_data
+    }
 }
 
 impl ReferencedAddress {
@@ -220,6 +229,10 @@ impl ReferencedAddress {
         for label in other.table_labels {
             self.add_table_label(label);
         }
+    }
+
+    pub(crate) fn set_add_gp_to_pointed_data(&mut self) {
+        self.add_gp_to_pointed_data = true;
     }
 }
 

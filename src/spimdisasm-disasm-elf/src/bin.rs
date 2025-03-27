@@ -938,8 +938,9 @@ fn main() {
         ExecutableSectionSettings::new(compiler, InstructionFlags::new(IsaVersion::MIPS_III));
     // Since we don't have file splits information we allow late rodata strings because late rodata
     // start detection will be borked either way.
-    let string_guesser_flags =
-        StringGuesserFlags::default().union(StringGuesserFlags::AllowLateRodata);
+    let string_guesser_flags = StringGuesserFlags::default()
+        .union(StringGuesserFlags::AllowLateRodata)
+        .union(StringGuesserFlags::IgnoreDetectedType);
     let data_settings =
         DataSectionSettings::new(compiler).with_string_guesser_flags(string_guesser_flags);
     let noload_settings = NoloadSectionSettings::new(compiler);

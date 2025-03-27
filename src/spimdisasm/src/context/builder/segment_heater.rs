@@ -83,6 +83,7 @@ impl SegmentHeater {
             &self.user_symbols,
             &self.user_labels,
             &self.ignored_addresses,
+            self.global_offset_table.as_ref(),
         )
     }
 
@@ -105,6 +106,7 @@ impl SegmentHeater {
             &self.user_symbols,
             &self.user_labels,
             &self.ignored_addresses,
+            self.global_offset_table.as_ref(),
         )
     }
 
@@ -127,6 +129,7 @@ impl SegmentHeater {
             &self.user_symbols,
             &self.user_labels,
             &self.ignored_addresses,
+            self.global_offset_table.as_ref(),
         )
     }
 
@@ -149,6 +152,7 @@ impl SegmentHeater {
             &self.user_symbols,
             &self.user_labels,
             &self.ignored_addresses,
+            self.global_offset_table.as_ref(),
         )
     }
 

@@ -21,6 +21,12 @@ impl RegisterTracker {
 }
 
 impl RegisterTracker {
+    // For debugging
+    #[allow(dead_code)]
+    pub(crate) fn get(&self, reg: Gpr) -> &TrackedRegisterState {
+        &self.registers[reg.as_index()]
+    }
+
     pub(crate) fn clear(&mut self) {
         self.registers.iter_mut().for_each(|state| state.clear());
     }
@@ -95,7 +101,7 @@ impl RegisterTracker {
         state.set_gp_load(
             instr
                 .get_processed_immediate()
-                .expect("should have immediate field") as u32,
+                .expect("should have immediate field") as i16,
             instr_rom,
         );
     }
@@ -192,6 +198,7 @@ impl RegisterTracker {
                     value: state.value() as i64,
                     is_gp_rel: false,
                     is_gp_got: false,
+                    upper_imm: Some(hi_info.upper_imm.into()),
                 });
             } else if reg.is_global_pointer(instr.abi()) {
                 return Some(LoPairingInfo {
@@ -199,13 +206,15 @@ impl RegisterTracker {
                     value: state.value() as i64,
                     is_gp_rel: true,
                     is_gp_got: false,
+                    upper_imm: None,
                 });
             } else if let Some(gp_info) = state.gp_info() {
                 return Some(LoPairingInfo {
-                    instr_rom: gp_info,
+                    instr_rom: gp_info.instr_rom,
                     value: state.value() as i64,
                     is_gp_rel: false,
                     is_gp_got: true,
+                    upper_imm: Some(gp_info.upper_imm.into()),
                 });
             }
 

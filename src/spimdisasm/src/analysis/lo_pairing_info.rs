@@ -9,4 +9,5 @@ pub struct LoPairingInfo {
     pub(crate) value: i64, // TODO: This is fishy
     pub(crate) is_gp_rel: bool,
     pub(crate) is_gp_got: bool,
+    pub(crate) upper_imm: Option<i64>,
 }

@@ -8,6 +8,13 @@ use super::JrRegData;
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct HiInfo {
     pub(crate) instr_rom: Rom,
+    pub(crate) upper_imm: u32,
+}
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct GpInfo {
+    pub(crate) instr_rom: Rom,
+    pub(crate) upper_imm: i32,
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -17,7 +24,7 @@ pub struct TrackedRegisterState {
 
     // TODO: maybe wrap in an enum?
     hi_info: Option<HiInfo>,
-    gp_info: Option<Rom>,
+    gp_info: Option<GpInfo>,
     lo_info: Option<Rom>,
     dereferenced: Option<Rom>,
     branch_info: Option<Rom>,
@@ -46,7 +53,7 @@ impl TrackedRegisterState {
     pub(crate) fn hi_info(&self) -> Option<HiInfo> {
         self.hi_info
     }
-    pub(crate) fn gp_info(&self) -> Option<Rom> {
+    pub(crate) fn gp_info(&self) -> Option<GpInfo> {
         self.gp_info
     }
     pub(crate) fn lo_info(&self) -> Option<Rom> {
@@ -110,16 +117,22 @@ impl TrackedRegisterState {
         assert!(self.gp_info.is_none());
         self.value = value << 16;
 
-        self.hi_info = Some(HiInfo { instr_rom });
+        self.hi_info = Some(HiInfo {
+            instr_rom,
+            upper_imm: self.value,
+        });
         self.dereferenced = None;
         self.clear_contains_float();
     }
 
-    pub fn set_gp_load(&mut self, value: u32, instr_rom: Rom) {
+    pub fn set_gp_load(&mut self, value: i16, instr_rom: Rom) {
         assert!(self.hi_info.is_none());
-        self.value = value;
+        self.value = value as u32;
 
-        self.gp_info = Some(instr_rom);
+        self.gp_info = Some(GpInfo {
+            instr_rom,
+            upper_imm: value.into(),
+        });
         self.clear_contains_float();
     }
 
@@ -163,6 +176,6 @@ impl TrackedRegisterState {
     pub fn was_set_in_current_instr(&self, instr_rom: Rom) -> bool {
         self.lo_info == Some(instr_rom)
             || self.dereferenced == Some(instr_rom)
-            || self.gp_info == Some(instr_rom)
+            || self.gp_info.map(|x| x.instr_rom) == Some(instr_rom)
     }
 }

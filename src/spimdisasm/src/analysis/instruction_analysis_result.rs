@@ -534,7 +534,6 @@ impl InstructionAnalysisResult {
         instr_rom: Rom,
         _prev_instr: Option<&Instruction>,
     ) {
-        // TODO
         if instr.opcode().does_load()
             && instr
                 .field_rs()

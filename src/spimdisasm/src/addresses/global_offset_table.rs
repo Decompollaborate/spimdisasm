@@ -150,7 +150,6 @@ impl GotRequestedAddress {
         matches!(self, GotRequestedAddress::Local(_))
     }
     #[must_use]
-    #[expect(dead_code)] // TODO
     pub(crate) const fn is_global(&self) -> bool {
         matches!(self, GotRequestedAddress::Global(_))
     }

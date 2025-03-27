@@ -3,11 +3,16 @@
 
 use alloc::{collections::btree_map::BTreeMap, sync::Arc};
 
-use rabbitizer::{access_type::AccessType, Instruction};
+use rabbitizer::{access_type::AccessType, opcodes::Opcode, registers_meta::Register, Instruction};
 
 use crate::{
-    addresses::{AddressRange, Rom, RomVramRange, Size, SizedAddress, Vram, VramOffset},
-    collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
+    addresses::{
+        AddressRange, GlobalOffsetTable, Rom, RomVramRange, Size, SizedAddress, Vram, VramOffset,
+    },
+    collections::{
+        addended_ordered_map::{AddendedOrderedMap, FindSettings},
+        unordered_map::UnorderedMap,
+    },
     config::GlobalConfig,
     metadata::{IgnoredAddressRange, LabelMetadata, LabelType, SymbolMetadata, SymbolType},
     section_type::SectionType,
@@ -60,6 +65,7 @@ impl Preheater {
         user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
         user_labels: &BTreeMap<Vram, LabelMetadata>,
         ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
+        global_offset_table: Option<&GlobalOffsetTable>,
     ) -> Result<(), PreheatError> {
         self.check_failable_preconditions(name, raw_bytes, rom, vram)?;
 
@@ -67,6 +73,7 @@ impl Preheater {
         let mut current_vram = vram;
         let mut prev_instr: Option<Instruction> = None;
         let mut regs_tracker = RegisterTracker::new();
+        let mut pic_locals = UnorderedMap::new();
 
         for b in raw_bytes.chunks_exact(4) {
             let word = global_config.endian().word_from_bytes(b);
@@ -87,6 +94,8 @@ impl Preheater {
                 current_vram += Size::new(4);
                 continue;
             }
+
+            let mut special_case = false;
 
             if let Some(target_vram) = instr.get_branch_vram_generic() {
                 // instr.opcode().is_branch() or instr.is_unconditional_branch()
@@ -115,6 +124,16 @@ impl Preheater {
                             reference.set_sym_type(SymbolType::Jumptable);
                         }
                     }
+
+                    if jr_reg_data.added_with_gp().is_some() {
+                        if let Some(got_address) = pic_locals.get(&jr_reg_data.lo_rom()) {
+                            if let Some(reference) =
+                                self.new_ref(*got_address, None, user_symbols, ignored_addresses)
+                            {
+                                reference.set_add_gp_to_pointed_data();
+                            }
+                        }
+                    }
                 }
             } else if instr.opcode().is_jump() && instr.opcode().does_link() {
                 // `jalr`. Implicit `!is_jump_with_address`
@@ -136,17 +155,72 @@ impl Preheater {
                 if let Some(pairing_info) =
                     regs_tracker.preprocess_lo_and_get_info(&instr, current_rom)
                 {
+                    if instr.opcode().does_load()
+                        && instr
+                            .field_rs()
+                            .is_some_and(|reg| reg.is_global_pointer(instr.abi()))
+                    {
+                        regs_tracker.process_gp_load(&instr, current_rom);
+                    }
+
                     if let Some(lower_half) = instr.get_processed_immediate() {
                         let address = if pairing_info.is_gp_got {
-                            // TODO
-                            // global_config.gp_config().is_some_and(|x| x.pic())
-                            None
+                            if let (Some(gp_config), Some(upper_imm), Some(global_offset_table)) = (
+                                global_config.gp_config(),
+                                pairing_info.upper_imm,
+                                global_offset_table,
+                            ) {
+                                if gp_config.pic() {
+                                    let got_accesss = gp_config
+                                        .gp_value()
+                                        .inner()
+                                        .wrapping_add_signed(upper_imm as i32);
+                                    if let Some(got_requested_address) =
+                                        global_offset_table.request_address(Vram::new(got_accesss))
+                                    {
+                                        if got_requested_address.is_local() {
+                                            let got_address = Vram::new(
+                                                got_requested_address
+                                                    .address()
+                                                    .wrapping_add_signed(lower_half),
+                                            );
+
+                                            pic_locals.insert(current_rom, got_address);
+
+                                            Some(got_address)
+                                        } else {
+                                            None
+                                        }
+                                    } else {
+                                        None
+                                    }
+                                } else {
+                                    None
+                                }
+                            } else {
+                                None
+                            }
                         } else if pairing_info.is_gp_rel {
-                            // TODO: should check for global_config.gp_config().is_some_and(|x| !x.pic())?
-                            global_config.gp_config().map(|gp_config| {
-                                Vram::new(
-                                    gp_config.gp_value().inner().wrapping_add_signed(lower_half),
-                                )
+                            global_config.gp_config().and_then(|gp_config| {
+                                let gp_value = gp_config.gp_value();
+                                let address =
+                                    Vram::new(gp_value.inner().wrapping_add_signed(lower_half));
+
+                                if gp_config.pic() {
+                                    global_offset_table.and_then(|global_offset_table| {
+                                        global_offset_table.request_address(address).and_then(
+                                            |got_requested_address| {
+                                                if got_requested_address.is_global() {
+                                                    Some(Vram::new(got_requested_address.address()))
+                                                } else {
+                                                    None
+                                                }
+                                            },
+                                        )
+                                    })
+                                } else {
+                                    Some(address)
+                                }
                             })
                         } else {
                             Some(Vram::new(pairing_info.value as u32) + VramOffset::new(lower_half))
@@ -182,6 +256,42 @@ impl Preheater {
                         }
                     }
                 }
+            } else if instr.opcode().can_be_unsigned_lo() {
+                // TODO
+            } else if instr.opcode() == Opcode::core_addu {
+                let rd = instr.field_rd();
+                let rs = instr.field_rs();
+                let rt = instr.field_rt();
+
+                if let (Some(rd), Some(rs), Some(rt)) = (rd, rs, rt) {
+                    let rs_is_gp = rs.is_global_pointer(instr.abi());
+                    let rt_is_gp = rt.is_global_pointer(instr.abi());
+
+                    if rd.is_global_pointer(instr.abi()) {
+                        // special check for .cpload
+                        /*
+                        if len(self.unpairedCploads) > 0:
+                            if instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
+                                cpload = self.unpairedCploads.pop()
+                                cpload.adduOffset = instrOffset
+                                cpload.reg = instr.rt
+                                self.cploadOffsets.add(cpload.hiOffset)
+                                self.cploadOffsets.add(cpload.loOffset)
+                                self.cploadOffsets.add(instrOffset)
+                                self.cploads[instrOffset] = cpload
+                        */
+                    } else if rs_is_gp ^ rt_is_gp {
+                        let reg = if !rs_is_gp { rs } else { rt };
+
+                        if reg == rd {
+                            // We have something like
+                            // addu        $t7, $t7, $gp
+
+                            regs_tracker.set_added_with_gp(reg, current_rom);
+                            special_case = true;
+                        }
+                    }
+                }
             }
             if let Some(address) =
                 regs_tracker.get_address_if_instr_can_set_type(&instr, current_rom)
@@ -194,17 +304,22 @@ impl Preheater {
                         _ => Vram::new(address),
                     };
 
-                    if let Some(reference) =
-                        self.new_ref(realigned_symbol_vram, None, user_symbols, ignored_addresses)
-                    {
-                        reference.set_access_type(access_type);
+                    if realigned_symbol_vram.inner() >= address {
+                        if let Some(reference) = self.new_ref(
+                            realigned_symbol_vram,
+                            None,
+                            user_symbols,
+                            ignored_addresses,
+                        ) {
+                            reference.set_access_type(access_type);
+                        }
                     }
                 }
-            } else if instr.opcode().can_be_unsigned_lo() {
-                // TODO
             }
 
-            regs_tracker.overwrite_registers(&instr, current_rom);
+            if !special_case {
+                regs_tracker.overwrite_registers(&instr, current_rom);
+            }
 
             if let Some(prev) = &prev_instr {
                 if prev.is_function_call() {
@@ -236,6 +351,7 @@ impl Preheater {
         user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
         user_labels: &BTreeMap<Vram, LabelMetadata>,
         ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
+        _global_offset_table: Option<&GlobalOffsetTable>,
     ) -> Result<(), PreheatError> {
         self.common_data_preheat(
             global_config,
@@ -263,6 +379,7 @@ impl Preheater {
         user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
         user_labels: &BTreeMap<Vram, LabelMetadata>,
         ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
+        _global_offset_table: Option<&GlobalOffsetTable>,
     ) -> Result<(), PreheatError> {
         self.common_data_preheat(
             global_config,
@@ -290,6 +407,7 @@ impl Preheater {
         user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
         user_labels: &BTreeMap<Vram, LabelMetadata>,
         ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
+        _global_offset_table: Option<&GlobalOffsetTable>,
     ) -> Result<(), PreheatError> {
         self.check_failable_preconditions(name, raw_bytes, rom, vram)?;
 
@@ -355,7 +473,7 @@ impl Preheater {
 
         let mut remaining_string_size = 0;
 
-        let mut prev_sym_info: Option<(Vram, Option<SymbolType>, Option<Size>)> = None;
+        let mut prev_sym_info: Option<(Vram, Option<SymbolType>, Option<Size>, bool)> = None;
         // If true: the previous symbol made us thought we may be in late_rodata
         let mut maybe_reached_late_rodata = false;
         // If true, we are sure we are in late_rodata
@@ -364,10 +482,11 @@ impl Preheater {
         let mut float_counter = 0;
         let mut float_padding_counter = 0;
 
-        let mut first_table_label: Option<u32> = None;
+        let mut first_table_label: Option<Vram> = None;
         let mut new_ref_scheduled_due_to_jtbl_ended = false;
 
         let endian = global_config.endian();
+        let gp_value = global_config.gp_config().map(|x| x.gp_value());
 
         for (i, word_bytes) in raw_bytes.chunks_exact(4).enumerate() {
             let local_offset = i * 4;
@@ -378,7 +497,7 @@ impl Preheater {
             let d_vram = current_vram + Size::new(3);
 
             let prev_sym_ended_here = if prev_sym_info
-                .is_some_and(|(v, _, s)| s.is_some_and(|s| current_vram >= v + s))
+                .is_some_and(|(v, _, s, _)| s.is_some_and(|s| current_vram >= v + s))
             {
                 // If symbol has a given size then get rid of the info as soon as we pass the end of it.
                 prev_sym_info = None;
@@ -415,24 +534,28 @@ impl Preheater {
                     current_vram,
                     a.and_then(|x| x.sym_type()),
                     a.and_then(|x| x.user_declared_size()),
+                    a.is_some_and(|x| x.add_gp_to_pointed_data()),
                 );
                 let b_type = (
                     b.is_some(),
                     b_vram,
                     b.and_then(|x| x.sym_type()),
                     b.and_then(|x| x.user_declared_size()),
+                    b.is_some_and(|x| x.add_gp_to_pointed_data()),
                 );
                 let c_type = (
                     c.is_some(),
                     c_vram,
                     c.and_then(|x| x.sym_type()),
                     c.and_then(|x| x.user_declared_size()),
+                    c.is_some_and(|x| x.add_gp_to_pointed_data()),
                 );
                 let d_type = (
                     d.is_some(),
                     d_vram,
                     d.and_then(|x| x.sym_type()),
                     d.and_then(|x| x.user_declared_size()),
+                    d.is_some_and(|x| x.add_gp_to_pointed_data()),
                 );
 
                 if b.is_none() && c.is_none() && d.is_none() {
@@ -495,7 +618,21 @@ impl Preheater {
                     let mut reference_found = false;
                     let mut reference_is_in_function = false;
                     if should_search_for_address {
-                        let word_vram = Vram::new(word);
+                        let add_gp_to_pointed_data = if let Some(a) = a {
+                            a.add_gp_to_pointed_data()
+                        } else {
+                            prev_sym_info.is_some_and(|(_, _, _, add_gp_to_pointed_data)| {
+                                add_gp_to_pointed_data
+                            })
+                        };
+
+                        let word_vram =
+                            if let (true, Some(gp_value)) = (add_gp_to_pointed_data, gp_value) {
+                                // `as i32` should be doing a two complement conversion.
+                                Vram::new(gp_value.inner().wrapping_add_signed(word as i32))
+                            } else {
+                                Vram::new(word)
+                            };
                         let is_table = current_type.is_some_and(|x| x.is_table());
 
                         let in_range = self.ranges.in_vram_range(word_vram);
@@ -533,7 +670,11 @@ impl Preheater {
                         if is_table {
                             let still_valid_table = if let Some(first) = first_table_label {
                                 let mask = 0xFF800000;
-                                if word == 0 || ((first & mask) != (word & mask)) || !in_range {
+
+                                if word == 0
+                                    || ((first.inner() & mask) != (word_vram.inner() & mask))
+                                    || !in_range
+                                {
                                     // We are past the end of the jumptable, so we trash `prev_sym_info` to avoid
                                     // seeing the rest of the symbol as a jumptable
 
@@ -541,7 +682,7 @@ impl Preheater {
                                     // so we can keep this as trailing padding into this symbol
                                     new_ref_scheduled_due_to_jtbl_ended = word == 0;
 
-                                    if word != 0 {
+                                    if !new_ref_scheduled_due_to_jtbl_ended {
                                         self.new_ref(
                                             current_vram,
                                             prev_sym_info.map(|x| x.0),
@@ -550,7 +691,7 @@ impl Preheater {
                                         );
                                     }
 
-                                    if let Some((jtbl_vram, _, _)) = prev_sym_info {
+                                    if let Some((jtbl_vram, _, _, _)) = prev_sym_info {
                                         if let Some(jtbl_ref) = self.new_ref(
                                             jtbl_vram,
                                             None,
@@ -571,7 +712,7 @@ impl Preheater {
                                     true
                                 }
                             } else {
-                                first_table_label = Some(word);
+                                first_table_label = Some(word_vram);
                                 true
                             };
 
@@ -651,15 +792,18 @@ impl Preheater {
                     }
                 }
 
-                for (exists, sym_vram, sym_type, sym_size) in
+                for (exists, sym_vram, sym_type, sym_size, add_gp_to_pointed_data) in
                     [a_type, b_type, c_type, d_type].into_iter()
                 {
                     if exists {
-                        prev_sym_info = Some((sym_vram, sym_type, sym_size));
+                        prev_sym_info =
+                            Some((sym_vram, sym_type, sym_size, add_gp_to_pointed_data));
+                        new_ref_scheduled_due_to_jtbl_ended = false;
                     }
                 }
 
-                if let (Some((table_vram, _, _)), Some(table_label)) = (prev_sym_info, table_label)
+                if let (Some((table_vram, _, _, _)), Some(table_label)) =
+                    (prev_sym_info, table_label)
                 {
                     if let Some(current_reference_mut) = self
                         .references
