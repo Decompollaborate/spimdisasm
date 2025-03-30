@@ -388,28 +388,68 @@ impl RegisterTracker {
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[must_use]
 pub(crate) enum InstrProcessedResult {
-    // TODO: Currently handles non linking calls too. Divide them to DirectLinkingCall and NonLinkingCall or something
-    FunctionCall {
+    /// "Branch and link" kind of instructions.
+    ///
+    /// These kind is usually used in handwritten assembly, so we can't expect ABI conventions to
+    /// hold true, so this can branch into either a "real" function or into the middle of a
+    /// function, even branching into the somewhere inside the current function!
+    LinkingBranch {
         target_vram: Vram,
     },
-    Branch {
+    /// A "normal" function call to a hardcoded address. A `jal`.
+    ///
+    /// This is the "normal" way to call functions on statically linked code, position independent
+    /// code (PIC) won't be seeing much of this.
+    DirectLinkingCall {
         target_vram: Vram,
     },
-    JumptableJump {
+    /// A suspected tail call to a hardcoded address. A `j`.
+    ///
+    /// This being an actual tail call is not certain since some compilers (or handwritten
+    /// assembly) may use this instruction as an unconditional branch, a tail call or even both.
+    MaybeDirectTailCall {
+        target_vram: Vram,
+    },
+    /// A "Jump and link register" to a register that has been dereferenced. A `jalr`.
+    ///
+    /// This usually happens on arrays of function pointers, meaning we only know the address of
+    /// the array but not the address of the actual function that is being called.
+    DereferencedRegisterLink {
         jr_reg_data: JrRegData,
     },
-    UnknownRegInfoJump {
-        reg: Gpr,
-    },
-    JumpAndLinkDereferencedRegister {
+    /// A "Jump and link register" to a register that contains a raw address. A `jalr`.
+    ///
+    /// Here we know the actual address of the function that is being called.
+    RawRegisterLink {
         jr_reg_data: JrRegData,
     },
-    JumpAndLinkRawRegister {
-        jr_reg_data: JrRegData,
-    },
+    /// A "Jump and link register", but we don't have info about what is being called. A `jalr`.
     UnknownJumpAndLinkRegister {
         reg: Gpr,
     },
+
+    /// Jump into a `case` of a jumptable. A `jr`.
+    JumptableJump {
+        jr_reg_data: JrRegData,
+    },
+    // DereferencedRegisterTailCall {
+    // },
+    // RawRegisterTailCall {
+    // },
+    /// Jump to a register, but we don't have info about what it is pointing to. A `jr`.
+    UnknownRegInfoJump {
+        reg: Gpr,
+    },
+
+    /// An usual non-linking branch.
+    ///
+    /// This may include the `j` instruction depending on the rabbitizer `Instruction`'s flags,
+    /// specifically `j_as_branch` being `true`.
+    Branch {
+        target_vram: Vram,
+    },
+
+    /// This instruction can set the `%hi` part of the reloc to a symbol. A `lui`.
     Hi {
         dst_reg: Gpr,
         value: u32,
@@ -447,17 +487,25 @@ pub(crate) enum InstrProcessedResult {
         imm: i16,
     },
 
+    /// A constant value paired to a `Hi`. An `ori`.
+    ///
+    /// This is not covered by `PairedLo` because it can't be disassembled using a `%lo`.
     Constant {
         constant: u32,
         hi_rom: Rom,
     },
+    /// An `ori` that couldn't be paired to a corresponding `Hi`.
     UnpairedConstant {
         imm: u16,
     },
 
+    /// This instruction did not fall into any of the previous categories.
     UnhandledOpcode {
         opcode: Opcode,
     },
+    /// The instruction wasn't a valid one.
+    ///
+    /// This was not applied into the tracker at all.
     InvalidInstr {},
 }
 
@@ -477,13 +525,28 @@ impl RegisterTracker {
 
         let opcode = instr.opcode();
 
-        let out = if let Some(target_vram) = instr.get_branch_vram_generic() {
+        let out = if opcode.does_link() {
+            if let Some(target_vram) = instr.get_instr_index_as_vram() {
+                // InstrProcessedResult::FunctionCall { target_vram }
+                InstrProcessedResult::DirectLinkingCall { target_vram }
+            } else if let Some(target_vram) = instr.get_branch_vram_generic() {
+                InstrProcessedResult::LinkingBranch { target_vram }
+            } else {
+                debug_assert!(opcode == Opcode::core_jalr);
+
+                if let Some(jr_reg_data) = self.get_jr_reg_data(instr) {
+                    InstrProcessedResult::DereferencedRegisterLink { jr_reg_data }
+                } else if let Some(jr_reg_data) = self.get_jr_raw_reg_data(instr) {
+                    InstrProcessedResult::RawRegisterLink { jr_reg_data }
+                } else {
+                    let rs = instr.field_rs().expect("");
+                    InstrProcessedResult::UnknownJumpAndLinkRegister { reg: rs }
+                }
+            }
+        } else if let Some(target_vram) = instr.get_branch_vram_generic() {
             // opcode.is_branch() or instr.is_unconditional_branch()
             self.process_branch(instr, instr_rom);
             InstrProcessedResult::Branch { target_vram }
-        } else if let Some(target_vram) = instr.get_instr_index_as_vram() {
-            // opcode.is_jump_with_address()
-            InstrProcessedResult::FunctionCall { target_vram }
         } else if instr.is_jumptable_jump() {
             if let Some(jr_reg_data) = self.get_jr_reg_data(instr) {
                 InstrProcessedResult::JumptableJump { jr_reg_data }
@@ -491,18 +554,15 @@ impl RegisterTracker {
                 let rs = instr.field_rs().expect("jr should have an rs field");
                 InstrProcessedResult::UnknownRegInfoJump { reg: rs }
             }
-        } else if opcode.is_jump() && opcode.does_link() {
-            // `jalr`. Implicit `!is_jump_with_address`
+        } else if let Some(target_vram) = instr.get_instr_index_as_vram() {
+            // At this point only `j` should have an instr_index field.
+            debug_assert!(opcode == Opcode::core_j);
 
-            // TODO: This doesn't cover not dereferenced pointers.
-            if let Some(jr_reg_data) = self.get_jr_reg_data(instr) {
-                InstrProcessedResult::JumpAndLinkDereferencedRegister { jr_reg_data }
-            } else if let Some(jr_reg_data) = self.get_jr_raw_reg_data(instr) {
-                InstrProcessedResult::JumpAndLinkRawRegister { jr_reg_data }
-            } else {
-                let rs = instr.field_rs().expect("");
-                InstrProcessedResult::UnknownJumpAndLinkRegister { reg: rs }
-            }
+            self.process_branch(instr, instr_rom);
+
+            // Some compilers use `j` as an unconditional branch, as a tail call or even as both.
+            // So it is hard to say if this a tail call or not, thus `Maybe`.
+            InstrProcessedResult::MaybeDirectTailCall { target_vram }
         } else if opcode.can_be_hi() {
             let (dst_reg, value) = self.process_hi(instr, instr_rom);
 
@@ -895,7 +955,7 @@ mod tests {
                 imm: -0x7FE0,
                 vram: Vram::new(0x80000094),
             },
-            InstrProcessedResult::JumpAndLinkRawRegister {
+            InstrProcessedResult::RawRegisterLink {
                 jr_reg_data: JrRegData::new(Rom::new(0x0001003C), 0x80000094, None, None),
             },
             InstrProcessedResult::UnhandledOpcode {
@@ -906,7 +966,7 @@ mod tests {
                 imm: -0x7FE0,
                 vram: Vram::new(0x80000094),
             },
-            InstrProcessedResult::JumpAndLinkRawRegister {
+            InstrProcessedResult::RawRegisterLink {
                 jr_reg_data: JrRegData::new(Rom::new(0x0001004C), 0x80000094, None, None),
             },
             InstrProcessedResult::UnhandledOpcode {
@@ -923,7 +983,7 @@ mod tests {
                 imm: 0x88,
                 vram: Vram::new(0x80000088),
             },
-            InstrProcessedResult::JumpAndLinkRawRegister {
+            InstrProcessedResult::RawRegisterLink {
                 jr_reg_data: JrRegData::new(Rom::new(0x00010060), 0x80000088, None, None),
             },
             InstrProcessedResult::UnhandledOpcode {
@@ -935,7 +995,7 @@ mod tests {
                 vram: Vram::new(0x8000011C),
             },
             InstrProcessedResult::DanglingLo { imm: 0x4 },
-            InstrProcessedResult::JumpAndLinkDereferencedRegister {
+            InstrProcessedResult::DereferencedRegisterLink {
                 jr_reg_data: JrRegData::new(Rom::new(0x00010070), 0x8000011C, None, None),
             },
             InstrProcessedResult::UnhandledOpcode {

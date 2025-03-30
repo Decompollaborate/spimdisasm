@@ -173,8 +173,43 @@ impl FunctionSymProcessed {
             }
             // TODO: add some kind of comment mentioning this instr is branching outside the current function.
         }
+        for (instr_rom, target_vram) in instr_analysis.branch_calls() {
+            /*
+            if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
+                if getVromOffset(instrOffset) in context.globalRelocationOverrides:
+                    # Avoid creating wrong symbols on elf files
+                    continue
+            */
 
-        for (instr_rom, target_vram) in instr_analysis.func_calls() {
+            if let Some(branch_sym) = owned_segment
+                .find_symbol(*target_vram, FindSettings::new(false))
+                .filter(|x| x.sym_type() == Some(SymbolType::Function))
+            {
+                debug_assert!(branch_sym.vram() == *target_vram);
+                let instr_index = (*instr_rom - ranges.rom().start()).inner() / 4;
+                relocs[instr_index as usize] = Some(
+                    RelocationType::R_MIPS_PC16
+                        .new_reloc_info(RelocReferencedSym::Address(*target_vram)),
+                );
+            } else if owned_segment.find_label(*target_vram).is_some() {
+                let instr_index = (*instr_rom - ranges.rom().start()).inner() / 4;
+                relocs[instr_index as usize] = Some(
+                    RelocationType::R_MIPS_PC16
+                        .new_reloc_info(RelocReferencedSym::Label(*target_vram)),
+                );
+
+                referenced_labels_owned_segment.push((
+                    *target_vram,
+                    ReferrerInfo::new_function(self_vram, parent_segment_info.clone(), *instr_rom),
+                ));
+            }
+        }
+
+        for (instr_rom, target_vram) in instr_analysis
+            .func_calls()
+            .iter()
+            .chain(instr_analysis.maybe_tail_calls())
+        {
             if owned_segment.is_vram_ignored(*target_vram) {
                 continue;
             }

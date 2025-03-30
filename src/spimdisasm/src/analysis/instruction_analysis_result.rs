@@ -90,7 +90,7 @@ impl GpSetInfo {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct InstructionAnalysisResult {
+pub(crate) struct InstructionAnalysisResult {
     ranges: RomVramRange,
     original_gp_config: Option<GpConfig>,
     current_gp_value: Option<GpValue>,
@@ -107,7 +107,8 @@ pub struct InstructionAnalysisResult {
 
     /// Key is the rom of the instruction, value is the address of the called function.
     func_calls: UnorderedMap<Rom, Vram>,
-    non_linking_func_calls: UnorderedMap<Rom, Vram>,
+    branch_calls: UnorderedMap<Rom, Vram>,
+    maybe_tail_calls: UnorderedMap<Rom, Vram>,
 
     referenced_jumptables: UnorderedMap<Rom, Vram>,
 
@@ -167,7 +168,8 @@ impl InstructionAnalysisResult {
             branch_targets: UnorderedMap::new(),
             branch_targets_outside: UnorderedMap::new(),
             func_calls: UnorderedMap::new(),
-            non_linking_func_calls: UnorderedMap::new(),
+            branch_calls: UnorderedMap::new(),
+            maybe_tail_calls: UnorderedMap::new(),
             referenced_jumptables: UnorderedMap::new(),
             hi_instrs: UnorderedMap::new(),
             non_lo_instrs: UnorderedSet::new(),
@@ -195,87 +197,70 @@ impl InstructionAnalysisResult {
     }
 
     #[must_use]
-    pub fn ranges(&self) -> &RomVramRange {
+    pub(crate) fn ranges(&self) -> &RomVramRange {
         &self.ranges
     }
 
     #[must_use]
-    pub fn referenced_vrams(&self) -> &UnorderedSet<Vram> {
+    pub(crate) fn referenced_vrams(&self) -> &UnorderedSet<Vram> {
         &self.referenced_vrams
     }
 
     #[must_use]
-    pub fn branch_targets(&self) -> &UnorderedMap<Rom, Vram> {
+    pub(crate) fn branch_targets(&self) -> &UnorderedMap<Rom, Vram> {
         &self.branch_targets
     }
     #[must_use]
-    pub fn branch_targets_outside(&self) -> &UnorderedMap<Rom, Vram> {
+    pub(crate) fn branch_targets_outside(&self) -> &UnorderedMap<Rom, Vram> {
         &self.branch_targets_outside
     }
 
     #[must_use]
-    pub fn func_calls(&self) -> &UnorderedMap<Rom, Vram> {
+    pub(crate) fn func_calls(&self) -> &UnorderedMap<Rom, Vram> {
         &self.func_calls
     }
-
     #[must_use]
-    pub fn non_linking_func_calls(&self) -> &UnorderedMap<Rom, Vram> {
-        &self.non_linking_func_calls
+    pub(crate) fn branch_calls(&self) -> &UnorderedMap<Rom, Vram> {
+        &self.branch_calls
+    }
+    #[must_use]
+    pub(crate) fn maybe_tail_calls(&self) -> &UnorderedMap<Rom, Vram> {
+        &self.maybe_tail_calls
     }
 
     #[must_use]
-    pub fn hi_instrs(&self) -> &UnorderedMap<Rom, (Gpr, u16)> {
+    pub(crate) fn hi_instrs(&self) -> &UnorderedMap<Rom, (Gpr, u16)> {
         &self.hi_instrs
     }
 
     #[must_use]
-    pub fn constant_per_instr(&self) -> &UnorderedMap<Rom, u32> {
+    pub(crate) fn constant_per_instr(&self) -> &UnorderedMap<Rom, u32> {
         &self.constant_per_instr
     }
 
     #[must_use]
-    pub fn address_per_instr(&self) -> &UnorderedMap<Rom, Vram> {
-        &self.address_per_instr
-    }
-    #[must_use]
-    pub fn address_per_instr_mut(&mut self) -> &mut UnorderedMap<Rom, Vram> {
-        &mut self.address_per_instr
-    }
-    #[must_use]
-    pub fn address_per_hi_instr(&self) -> &UnorderedMap<Rom, Vram> {
+    pub(crate) fn address_per_hi_instr(&self) -> &UnorderedMap<Rom, Vram> {
         &self.address_per_hi_instr
     }
     #[must_use]
-    pub fn address_per_lo_instr(&self) -> &UnorderedMap<Rom, Vram> {
+    pub(crate) fn address_per_lo_instr(&self) -> &UnorderedMap<Rom, Vram> {
         &self.address_per_lo_instr
     }
-    #[must_use]
-    pub fn address_per_lo_instr_mut(&mut self) -> &mut UnorderedMap<Rom, Vram> {
-        &mut self.address_per_lo_instr
-    }
 
     #[must_use]
-    pub fn referenced_jumptables(&self) -> &UnorderedMap<Rom, Vram> {
+    pub(crate) fn referenced_jumptables(&self) -> &UnorderedMap<Rom, Vram> {
         &self.referenced_jumptables
     }
-    #[must_use]
-    pub fn referenced_jumptables_mut(&mut self) -> &mut UnorderedMap<Rom, Vram> {
-        &mut self.referenced_jumptables
-    }
 
     #[must_use]
-    pub fn type_info_per_address(
+    pub(crate) fn type_info_per_address(
         &self,
     ) -> &UnorderedMap<Vram, UnorderedMap<(AccessType, bool), u32>> {
         &self.type_info_per_address
     }
-    #[must_use]
-    pub fn type_info_per_instr(&self) -> &UnorderedMap<Rom, (AccessType, bool)> {
-        &self.type_info_per_instr
-    }
 
     #[must_use]
-    pub fn handwritten_instrs(&self) -> &UnorderedSet<Rom> {
+    pub(crate) fn handwritten_instrs(&self) -> &UnorderedSet<Rom> {
         &self.handwritten_instrs
     }
 
@@ -337,8 +322,14 @@ impl InstructionAnalysisResult {
         let mut special_case = false;
 
         match instr_processed_result {
-            InstrProcessedResult::FunctionCall { target_vram } => {
-                self.process_func_call(instr, instr_rom, target_vram);
+            InstrProcessedResult::DirectLinkingCall { target_vram } => {
+                self.process_func_call(instr_rom, target_vram);
+            }
+            InstrProcessedResult::LinkingBranch { target_vram } => {
+                self.process_branch_call(instr_rom, target_vram);
+            }
+            InstrProcessedResult::MaybeDirectTailCall { target_vram } => {
+                self.process_maybe_tail_call(instr_rom, target_vram);
             }
             InstrProcessedResult::Branch { target_vram } => {
                 self.process_branch(instr_rom, target_vram);
@@ -347,10 +338,10 @@ impl InstructionAnalysisResult {
                 self.process_jumptable_jump(jr_reg_data, instr_rom);
             }
             InstrProcessedResult::UnknownRegInfoJump { .. } => {}
-            InstrProcessedResult::JumpAndLinkDereferencedRegister { jr_reg_data } => {
+            InstrProcessedResult::DereferencedRegisterLink { jr_reg_data } => {
                 self.process_jump_and_link_register(jr_reg_data, instr_rom, true)
             }
-            InstrProcessedResult::JumpAndLinkRawRegister { jr_reg_data } => {
+            InstrProcessedResult::RawRegisterLink { jr_reg_data } => {
                 self.process_jump_and_link_register(jr_reg_data, instr_rom, false)
             }
             InstrProcessedResult::UnknownJumpAndLinkRegister { .. } => {}
@@ -510,23 +501,19 @@ impl InstructionAnalysisResult {
         }
     }
 
-    fn process_func_call(&mut self, instr: &Instruction, instr_rom: Rom, target_vram: Vram) {
-        /*
-        if instrOffset in self.funcCallInstrOffsets:
-            # Already processed
-            return
-        */
-
-        /*
-        if not self.context.isAddressInGlobalRange(target):
-            self.funcCallOutsideRangesOffsets[instrOffset] = target
-        */
-
+    fn process_func_call(&mut self, instr_rom: Rom, target_vram: Vram) {
         self.add_referenced_vram(instr_rom, target_vram);
         self.func_calls.insert(instr_rom, target_vram);
-        if !instr.opcode().does_link() {
-            self.non_linking_func_calls.insert(instr_rom, target_vram);
-        }
+    }
+
+    fn process_branch_call(&mut self, instr_rom: Rom, target_vram: Vram) {
+        self.add_referenced_vram(instr_rom, target_vram);
+        self.branch_calls.insert(instr_rom, target_vram);
+    }
+
+    fn process_maybe_tail_call(&mut self, instr_rom: Rom, target_vram: Vram) {
+        self.add_referenced_vram(instr_rom, target_vram);
+        self.maybe_tail_calls.insert(instr_rom, target_vram);
     }
 
     fn process_jumptable_jump(&mut self, jr_reg_data: JrRegData, instr_rom: Rom) {

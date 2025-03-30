@@ -470,7 +470,9 @@ fn find_functions_branch_checker(
 
     match instr_processed_result {
         // This is more likely to be a function call than as an actual branch
-        InstrProcessedResult::FunctionCall { target_vram: _ } => {}
+        InstrProcessedResult::LinkingBranch { .. } => {}
+        InstrProcessedResult::DirectLinkingCall { .. } => {}
+        InstrProcessedResult::MaybeDirectTailCall { .. } => {}
         InstrProcessedResult::Branch { target_vram } => {
             let branch_offset = target_vram - instr.vram();
             if branch_offset > farthest_branch {
@@ -536,8 +538,8 @@ fn find_functions_branch_checker(
             }
         }
         InstrProcessedResult::UnknownRegInfoJump { .. } => {}
-        InstrProcessedResult::JumpAndLinkDereferencedRegister { .. } => {}
-        InstrProcessedResult::JumpAndLinkRawRegister { .. } => {}
+        InstrProcessedResult::DereferencedRegisterLink { .. } => {}
+        InstrProcessedResult::RawRegisterLink { .. } => {}
         InstrProcessedResult::UnknownJumpAndLinkRegister { .. } => {}
         InstrProcessedResult::Hi { .. } => {}
         InstrProcessedResult::PairedLo { .. } => {}

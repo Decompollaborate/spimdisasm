@@ -110,7 +110,7 @@ impl Preheater {
                 current_gp_value.as_ref(),
             );
             let paired_address = match instr_processed_result {
-                InstrProcessedResult::FunctionCall { target_vram } => {
+                InstrProcessedResult::DirectLinkingCall { target_vram } => {
                     if let Some(reference) = self.new_ref(
                         target_vram,
                         Some(current_vram),
@@ -119,9 +119,11 @@ impl Preheater {
                     ) {
                         reference.set_sym_type(SymbolType::Function);
                     }
-                    None::<Vram>
+                    None
                 }
-                InstrProcessedResult::Branch { target_vram } => {
+                InstrProcessedResult::Branch { target_vram }
+                | InstrProcessedResult::LinkingBranch { target_vram }
+                | InstrProcessedResult::MaybeDirectTailCall { target_vram } => {
                     self.new_label_ref(target_vram, LabelType::Branch, current_vram, user_labels);
                     None
                 }
@@ -148,8 +150,8 @@ impl Preheater {
                     None
                 }
                 InstrProcessedResult::UnknownRegInfoJump { reg: _ } => None,
-                InstrProcessedResult::JumpAndLinkDereferencedRegister { jr_reg_data: _ } => None,
-                InstrProcessedResult::JumpAndLinkRawRegister { jr_reg_data } => {
+                InstrProcessedResult::DereferencedRegisterLink { jr_reg_data: _ } => None,
+                InstrProcessedResult::RawRegisterLink { jr_reg_data } => {
                     let address = Vram::new(jr_reg_data.address());
 
                     if let Some(reference) =
