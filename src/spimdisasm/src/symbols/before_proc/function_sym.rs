@@ -8,10 +8,7 @@ use rabbitizer::{access_type::AccessType, Instruction};
 use crate::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     analysis::{InstructionAnalysisResult, InstructionAnalyzer},
-    collections::{
-        addended_ordered_map::FindSettings, unordered_map::UnorderedMap,
-        unordered_set::UnorderedSet,
-    },
+    collections::{addended_ordered_map::FindSettings, unordered_set::UnorderedSet},
     config::Compiler,
     context::Context,
     metadata::{
@@ -84,7 +81,6 @@ impl FunctionSym {
             &ranges,
             context,
             &parent_segment_info,
-            &instructions,
         )?;
 
         Ok(Self {
@@ -179,7 +175,6 @@ impl FunctionSym {
         ranges: &RomVramRange,
         context: &mut Context,
         parent_segment_info: &ParentSegmentInfo,
-        instructions: &[Instruction],
     ) -> Result<(), SymbolCreationError> {
         let symbol_name_generation_settings = context
             .global_config()
@@ -191,7 +186,6 @@ impl FunctionSym {
             ranges,
             context,
             parent_segment_info,
-            instructions,
             &symbol_name_generation_settings,
         )?;
 
@@ -450,194 +444,53 @@ impl FunctionSym {
         ranges: &RomVramRange,
         context: &mut Context,
         parent_segment_info: &ParentSegmentInfo,
-        instructions: &[Instruction],
         symbol_name_generation_settings: &SymbolNameGenerationSettings,
     ) -> Result<(), SymbolCreationError> {
-        let mut global_got_offsets = UnorderedSet::new();
-        let mut calculated_got_addresses = UnorderedMap::new();
-        let mut addrs_per_instr_to_update = UnorderedMap::new();
-        let mut lo_to_remove = UnorderedSet::new();
+        for (instr_rom, symbol_vram) in instr_analysis
+            .global_got_addresses()
+            .iter()
+            .chain(instr_analysis.unpaired_local_got_addresses())
+        {
+            let referenced_segment =
+                context.find_referenced_segment_mut(*symbol_vram, parent_segment_info);
+            let sym_metadata = referenced_segment.add_symbol(
+                *symbol_vram,
+                true,
+                symbol_name_generation_settings.clone(),
+            )?;
 
-        for (got_access_rom, got_access) in instr_analysis.got_access_addresses() {
-            if let Some(got_request) =
-                context.find_got_access_from_any_segment(*got_access, parent_segment_info)
-            {
-                let (got_address, kind) = if got_request.is_local() {
-                    let got_address = Vram::new(got_request.address());
-
-                    // GOT-locals need to be paired
-                    let got_address = if let Some(lo_rom) =
-                        instr_analysis.hi_to_lo().get(got_access_rom)
-                    {
-                        let lo_instr = instructions
-                            [(lo_rom.inner() - ranges.rom().start().inner()) as usize / 4];
-                        let got_address = if let Some(imm) = lo_instr.get_processed_immediate() {
-                            Vram::new(got_address.inner().wrapping_add_signed(imm))
-                        } else {
-                            got_address
-                        };
-
-                        calculated_got_addresses.insert(*lo_rom, got_address);
-                        addrs_per_instr_to_update.insert(*lo_rom, got_address);
-
-                        /*
-                        symAccess = self.instrAnalyzer.symbolTypesOffsets.get(loOffset)
-                        if symAccess is not None:
-                            if got_address not in self.instrAnalyzer.possibleSymbolTypes:
-                                self.instrAnalyzer.possibleSymbolTypes[got_address] = dict()
-                            if symAccess not in self.instrAnalyzer.possibleSymbolTypes[got_address]:
-                                self.instrAnalyzer.possibleSymbolTypes[got_address][symAccess] = 0
-                            self.instrAnalyzer.possibleSymbolTypes[got_address][symAccess] += 1
-                        */
-
-                        got_address
-                    } else {
-                        got_address
-                    };
-
-                    (got_address, GotAccessKind::Local)
-                } else {
-                    let got_address = Vram::new(got_request.address());
-
-                    global_got_offsets.insert(*got_access_rom);
-
-                    if let Some(lo_rom) = instr_analysis.hi_to_lo().get(got_access_rom) {
-                        lo_to_remove.insert(*lo_rom);
-                    }
-
-                    (got_address, GotAccessKind::Global)
-                };
-
-                let referenced_segment =
-                    context.find_referenced_segment_mut(got_address, parent_segment_info);
-                let sym_metadata = referenced_segment.add_symbol(
-                    got_address,
-                    true,
-                    symbol_name_generation_settings.clone(),
-                )?;
-
-                sym_metadata.set_got_access_kind(kind);
-                sym_metadata.add_reference_function(
-                    ranges.vram().start(),
-                    parent_segment_info.clone(),
-                    *got_access_rom,
-                );
-
-                calculated_got_addresses.insert(*got_access_rom, got_address);
-                addrs_per_instr_to_update.insert(*got_access_rom, got_address);
-
-                /*
-                self.instrAnalyzer.referencedVrams.add(got_address)
-                */
-            }
+            sym_metadata.set_got_access_kind(GotAccessKind::Global);
+            sym_metadata.add_reference_function(
+                ranges.vram().start(),
+                parent_segment_info.clone(),
+                *instr_rom,
+            );
         }
 
-        // Aditional lookup for unpaired GOT-locals
-        if !instr_analysis.got_access_addresses().is_empty() {
-            for (lo_rom, got_access_rom) in instr_analysis.lo_to_hi() {
-                if let Some(got_request) = instr_analysis
-                    .got_access_addresses()
-                    .get(got_access_rom)
-                    .and_then(|got_access| {
-                        context.find_got_access_from_any_segment(*got_access, parent_segment_info)
-                    })
-                {
-                    if !got_request.is_local() {
-                        continue;
-                    }
+        // TODO
+        // for (instr_rom, symbol_vram) in instr_analysis.unpaired_local_got_addresses() {
+        //     panic!("\n\n\n{:?} {:?}\n", instr_rom, symbol_vram);
+        // }
 
-                    let lo_instr =
-                        instructions[(lo_rom.inner() - ranges.rom().start().inner()) as usize / 4];
-                    if let Some(imm) = lo_instr.get_processed_immediate() {
-                        let got_address = Vram::new(got_request.address().wrapping_add_signed(imm));
+        for (instr_rom, symbol_vram) in instr_analysis.paired_local_got_addresses() {
+            let referenced_segment =
+                context.find_referenced_segment_mut(*symbol_vram, parent_segment_info);
+            let sym_metadata = referenced_segment.add_symbol(
+                *symbol_vram,
+                true,
+                symbol_name_generation_settings.clone(),
+            )?;
 
-                        addrs_per_instr_to_update.insert(*lo_rom, got_address);
-                        addrs_per_instr_to_update.insert(*got_access_rom, got_address);
+            sym_metadata.set_got_access_kind(GotAccessKind::Local);
+            sym_metadata.add_reference_function(
+                ranges.vram().start(),
+                parent_segment_info.clone(),
+                *instr_rom,
+            );
 
-                        /*
-                        symAccess = self.instrAnalyzer.symbolTypesOffsets.get(lo_rom)
-                        if symAccess is not None:
-                            if got_address not in self.instrAnalyzer.possibleSymbolTypes:
-                                self.instrAnalyzer.possibleSymbolTypes[got_address] = dict()
-                            if symAccess not in self.instrAnalyzer.possibleSymbolTypes[got_address]:
-                                self.instrAnalyzer.possibleSymbolTypes[got_address][symAccess] = 0
-                            self.instrAnalyzer.possibleSymbolTypes[got_address][symAccess] += 1
-
-                        self.instrAnalyzer.referencedVrams.add(got_address)
-                        */
-
-                        let referenced_segment =
-                            context.find_referenced_segment_mut(got_address, parent_segment_info);
-                        let sym_metadata = referenced_segment.add_symbol(
-                            got_address,
-                            true,
-                            symbol_name_generation_settings.clone(),
-                        )?;
-
-                        sym_metadata.add_reference_function(
-                            ranges.vram().start(),
-                            parent_segment_info.clone(),
-                            *lo_rom,
-                        );
-                        sym_metadata.set_got_access_kind(GotAccessKind::Local);
-
-                        if instr_analysis.lo_rom_added_with_gp().contains(lo_rom) {
-                            sym_metadata.set_add_gp_to_pointed_data();
-                        }
-
-                        calculated_got_addresses.insert(*got_access_rom, got_address);
-                        calculated_got_addresses.insert(*lo_rom, got_address);
-                    }
-                }
+            if instr_analysis.lo_rom_added_with_gp().contains(instr_rom) {
+                sym_metadata.set_add_gp_to_pointed_data();
             }
-        }
-
-        *instr_analysis.calculated_got_addresses_mut() = calculated_got_addresses;
-
-        for (instr_rom, sym_vram) in addrs_per_instr_to_update {
-            instr_analysis
-                .address_per_instr_mut()
-                .insert(instr_rom, sym_vram);
-        }
-
-        let mut more_lo_to_update = UnorderedMap::new();
-
-        for (lo_rom, sym_vram) in instr_analysis.address_per_lo_instr() {
-            if let Some(hi_rom) = instr_analysis.lo_to_hi().get(lo_rom) {
-                if !instr_analysis.got_access_addresses().contains_key(hi_rom) {
-                    continue;
-                }
-
-                if global_got_offsets.contains(hi_rom) {
-                    lo_to_remove.insert(*lo_rom);
-                    continue;
-                }
-
-                let vram = if let Some(other_vram) = instr_analysis.address_per_instr().get(hi_rom)
-                {
-                    *other_vram
-                } else {
-                    *sym_vram
-                };
-                more_lo_to_update.insert(*lo_rom, vram);
-            }
-        }
-
-        for (lo_rom, sym_vram) in more_lo_to_update {
-            if let Some(a) = instr_analysis.address_per_lo_instr_mut().get_mut(&lo_rom) {
-                *a = sym_vram;
-            }
-            if let Some(a) = instr_analysis.referenced_jumptables_mut().get_mut(&lo_rom) {
-                *a = sym_vram;
-            }
-            if let Some(a) = instr_analysis.indirect_function_call_mut().get_mut(&lo_rom) {
-                *a = sym_vram;
-            }
-        }
-
-        for lo_rom in lo_to_remove {
-            instr_analysis.address_per_lo_instr_mut().remove(&lo_rom);
-            instr_analysis.address_per_instr_mut().remove(&lo_rom);
         }
 
         Ok(())

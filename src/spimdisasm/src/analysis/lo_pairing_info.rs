@@ -10,4 +10,5 @@ pub struct LoPairingInfo {
     pub(crate) is_gp_rel: bool,
     pub(crate) is_gp_got: bool,
     pub(crate) upper_imm: Option<i64>,
+    pub(crate) upper_is_got_global: bool,
 }

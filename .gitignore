@@ -208,3 +208,6 @@ asm/
 *.s
 splits/
 data/
+*.o
+*.elf
+*.ld

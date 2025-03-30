@@ -10,9 +10,7 @@ use core::{error, fmt};
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::addresses::{
-    AddressRange, GlobalOffsetTable, GotRequestedAddress, Rom, RomVramRange, Size, Vram,
-};
+use crate::addresses::{AddressRange, GlobalOffsetTable, Rom, RomVramRange, Size, Vram};
 use crate::analysis::{reference_wrapper, Preheater, ReferenceWrapper};
 use crate::collections::addended_ordered_map::{AddendedOrderedMap, FindSettings};
 use crate::section_type::SectionType;
@@ -230,6 +228,10 @@ impl SegmentMetadata {
     pub const fn labels(&self) -> &BTreeMap<Vram, LabelMetadata> {
         &self.labels
     }
+
+    pub const fn global_offset_table(&self) -> Option<&GlobalOffsetTable> {
+        self.global_offset_table.as_ref()
+    }
 }
 
 impl SegmentMetadata {
@@ -397,12 +399,6 @@ impl SegmentMetadata {
         vram_range: AddressRange<Vram>,
     ) -> btree_map::RangeMut<Vram, LabelMetadata> {
         self.labels.range_mut(vram_range)
-    }
-
-    pub(crate) fn request_got_address(&self, vram: Vram) -> Option<GotRequestedAddress> {
-        self.global_offset_table
-            .as_ref()
-            .and_then(|x| x.request_address(vram))
     }
 }
 

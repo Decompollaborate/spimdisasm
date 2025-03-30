@@ -6,9 +6,7 @@ use alloc::{collections::btree_map::BTreeMap, sync::Arc};
 use rabbitizer::{access_type::AccessType, opcodes::Opcode, registers_meta::Register, Instruction};
 
 use crate::{
-    addresses::{
-        AddressRange, GlobalOffsetTable, Rom, RomVramRange, Size, SizedAddress, Vram, VramOffset,
-    },
+    addresses::{AddressRange, GlobalOffsetTable, Rom, RomVramRange, Size, SizedAddress, Vram},
     collections::{
         addended_ordered_map::{AddendedOrderedMap, FindSettings},
         unordered_map::UnorderedMap,
@@ -19,7 +17,10 @@ use crate::{
     sections::before_proc::{DataSectionSettings, ExecutableSectionSettings},
 };
 
-use super::{PreheatError, ReferenceWrapper, ReferencedAddress, ReferencedLabel, RegisterTracker};
+use super::{
+    InstrProcessedResult, PreheatError, ReferenceWrapper, ReferencedAddress, ReferencedLabel,
+    RegisterTracker,
+};
 
 #[derive(Debug, Clone, Hash, PartialEq, PartialOrd)]
 pub(crate) struct Preheater {
@@ -73,7 +74,11 @@ impl Preheater {
         let mut current_vram = vram;
         let mut prev_instr: Option<Instruction> = None;
         let mut regs_tracker = RegisterTracker::new();
+        // TODO: A bit of a hack, consider removing
         let mut pic_locals = UnorderedMap::new();
+
+        let original_gp_config = global_config.gp_config();
+        let current_gp_value = original_gp_config.map(|x| x.gp_value());
 
         for b in raw_bytes.chunks_exact(4) {
             let word = global_config.endian().word_from_bytes(b);
@@ -97,24 +102,30 @@ impl Preheater {
 
             let mut special_case = false;
 
-            if let Some(target_vram) = instr.get_branch_vram_generic() {
-                // instr.opcode().is_branch() or instr.is_unconditional_branch()
-
-                regs_tracker.process_branch(&instr, current_rom);
-                self.new_label_ref(target_vram, LabelType::Branch, current_vram, user_labels);
-            } else if let Some(target_vram) = instr.get_instr_index_as_vram() {
-                // instr.opcode().is_jump_with_address()
-                if let Some(reference) = self.new_ref(
-                    target_vram,
-                    Some(current_vram),
-                    user_symbols,
-                    ignored_addresses,
-                ) {
-                    reference.set_sym_type(SymbolType::Function);
+            let instr_processed_result = regs_tracker.process_instruction(
+                &instr,
+                current_rom,
+                global_offset_table,
+                original_gp_config,
+                current_gp_value.as_ref(),
+            );
+            let paired_address = match instr_processed_result {
+                InstrProcessedResult::FunctionCall { target_vram } => {
+                    if let Some(reference) = self.new_ref(
+                        target_vram,
+                        Some(current_vram),
+                        user_symbols,
+                        ignored_addresses,
+                    ) {
+                        reference.set_sym_type(SymbolType::Function);
+                    }
+                    None::<Vram>
                 }
-            } else if instr.is_jumptable_jump() {
-                //self.process_jumptable_jump(context, regs_tracker, instr, instr_rom);
-                if let Some(jr_reg_data) = regs_tracker.get_jr_reg_data(&instr) {
+                InstrProcessedResult::Branch { target_vram } => {
+                    self.new_label_ref(target_vram, LabelType::Branch, current_vram, user_labels);
+                    None
+                }
+                InstrProcessedResult::JumptableJump { jr_reg_data } => {
                     let address = Vram::new(jr_reg_data.address());
 
                     if jr_reg_data.branch_info().is_none() {
@@ -134,165 +145,121 @@ impl Preheater {
                             }
                         }
                     }
+                    None
                 }
-            } else if instr.opcode().is_jump() && instr.opcode().does_link() {
-                // `jalr`. Implicit `!is_jump_with_address`
-                // We can only mark the referenced address as a function if that address was not dereferenced.
-                // i.e. `la $t9, some_func; jalr $t9`.
-                // Dereferenced symbols are usually some kind of callback, like an array of functions.
-                // Currently `get_jr_reg_data` only returns `Some` if the register was dereferenced, so we can't really use it here.
-                /*
-                if let Some(jr_reg_data) = regs_tracker.get_jr_reg_data(&instr) {
+                InstrProcessedResult::UnknownRegInfoJump { reg: _ } => None,
+                InstrProcessedResult::JumpAndLinkDereferencedRegister { jr_reg_data: _ } => None,
+                InstrProcessedResult::JumpAndLinkRawRegister { jr_reg_data } => {
                     let address = Vram::new(jr_reg_data.address());
 
-                    let reference = self.new_ref(address, None, user_symbols);
-                    reference.set_sym_type(SymbolType::Function);
-                }
-                */
-            } else if instr.opcode().can_be_hi() {
-                regs_tracker.process_hi(&instr, current_rom);
-            } else if instr.opcode().can_be_lo() {
-                if let Some(pairing_info) =
-                    regs_tracker.preprocess_lo_and_get_info(&instr, current_rom)
-                {
-                    if instr.opcode().does_load()
-                        && instr
-                            .field_rs()
-                            .is_some_and(|reg| reg.is_global_pointer(instr.abi()))
+                    if let Some(reference) =
+                        self.new_ref(address, None, user_symbols, ignored_addresses)
                     {
-                        regs_tracker.process_gp_load(&instr, current_rom);
+                        reference.set_sym_type(SymbolType::Function);
+                    }
+                    None
+                }
+                InstrProcessedResult::UnknownJumpAndLinkRegister { reg: _ } => None,
+                InstrProcessedResult::Hi { .. } => None,
+                InstrProcessedResult::PairedLo { vram, .. } => {
+                    if let Some(lo_rs) = instr.field_rs() {
+                        if instr.opcode().reads_rs() && lo_rs.is_global_pointer(instr.abi()) {
+                            if let Some(lo_rt) = instr.field_rt() {
+                                if instr.opcode().modifies_rt()
+                                    && lo_rt.is_global_pointer(instr.abi())
+                                {
+                                    special_case = true;
+                                }
+                            }
+                        }
                     }
 
-                    if let Some(lower_half) = instr.get_processed_immediate() {
-                        let address = if pairing_info.is_gp_got {
-                            if let (Some(gp_config), Some(upper_imm), Some(global_offset_table)) = (
-                                global_config.gp_config(),
-                                pairing_info.upper_imm,
-                                global_offset_table,
-                            ) {
-                                if gp_config.pic() {
-                                    let got_accesss = gp_config
-                                        .gp_value()
-                                        .inner()
-                                        .wrapping_add_signed(upper_imm as i32);
-                                    if let Some(got_requested_address) =
-                                        global_offset_table.request_address(Vram::new(got_accesss))
-                                    {
-                                        if got_requested_address.is_local() {
-                                            let got_address = Vram::new(
-                                                got_requested_address
-                                                    .address()
-                                                    .wrapping_add_signed(lower_half),
-                                            );
-
-                                            pic_locals.insert(current_rom, got_address);
-
-                                            Some(got_address)
-                                        } else {
-                                            None
-                                        }
-                                    } else {
-                                        None
-                                    }
-                                } else {
-                                    None
-                                }
-                            } else {
-                                None
-                            }
-                        } else if pairing_info.is_gp_rel {
-                            global_config.gp_config().and_then(|gp_config| {
-                                let gp_value = gp_config.gp_value();
-                                let address =
-                                    Vram::new(gp_value.inner().wrapping_add_signed(lower_half));
-
-                                if gp_config.pic() {
-                                    global_offset_table.and_then(|global_offset_table| {
-                                        global_offset_table.request_address(address).and_then(
-                                            |got_requested_address| {
-                                                if got_requested_address.is_global() {
-                                                    Some(Vram::new(got_requested_address.address()))
-                                                } else {
-                                                    None
-                                                }
-                                            },
-                                        )
-                                    })
-                                } else {
-                                    Some(address)
-                                }
-                            })
-                        } else {
-                            Some(Vram::new(pairing_info.value as u32) + VramOffset::new(lower_half))
-                        };
-
-                        if let Some(address) = address {
-                            let access_type = instr.opcode().access_type();
-
-                            let realigned_symbol_vram = match access_type {
-                                // Align down the Vram
-                                Some(AccessType::UNALIGNED_WORD) => {
-                                    Vram::new(address.inner() - (address.inner() % 4))
-                                }
-                                Some(AccessType::UNALIGNED_DOUBLEWORD) => {
-                                    Vram::new(address.inner() - (address.inner() % 8))
-                                }
-                                None | Some(_) => address,
-                            };
-
-                            if let (Some(reference), Some(access_type)) = (
-                                self.new_ref(
-                                    realigned_symbol_vram,
-                                    Some(current_vram),
-                                    user_symbols,
-                                    ignored_addresses,
-                                ),
-                                instr.opcode().access_type(),
-                            ) {
-                                reference.set_access_type(access_type);
-                            }
-
-                            regs_tracker.process_lo(&instr, address.inner(), current_rom);
-                        }
+                    if special_case {
+                        None
+                    } else {
+                        Some(vram)
                     }
                 }
-            } else if instr.opcode().can_be_unsigned_lo() {
-                // TODO
-            } else if instr.opcode() == Opcode::core_addu {
-                let rd = instr.field_rd();
-                let rs = instr.field_rs();
-                let rt = instr.field_rt();
+                InstrProcessedResult::GpRel { vram, .. } => Some(vram),
+                InstrProcessedResult::GpGotGlobal { vram, .. }
+                | InstrProcessedResult::GpGotLazyResolver { vram, .. } => Some(vram),
+                InstrProcessedResult::GpGotLocal { .. } => None,
+                InstrProcessedResult::PairedGpGotLo { vram, .. } => {
+                    pic_locals.insert(current_rom, vram);
 
-                if let (Some(rd), Some(rs), Some(rt)) = (rd, rs, rt) {
-                    let rs_is_gp = rs.is_global_pointer(instr.abi());
-                    let rt_is_gp = rt.is_global_pointer(instr.abi());
+                    Some(vram)
+                }
+                InstrProcessedResult::DanglingLo { .. } => None,
+                InstrProcessedResult::Constant { .. } => None,
+                InstrProcessedResult::UnpairedConstant { .. } => None,
+                InstrProcessedResult::UnhandledOpcode { opcode } => {
+                    if opcode == Opcode::core_addu {
+                        let rd = instr.field_rd();
+                        let rs = instr.field_rs();
+                        let rt = instr.field_rt();
 
-                    if rd.is_global_pointer(instr.abi()) {
-                        // special check for .cpload
-                        /*
-                        if len(self.unpairedCploads) > 0:
-                            if instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
-                                cpload = self.unpairedCploads.pop()
-                                cpload.adduOffset = instrOffset
-                                cpload.reg = instr.rt
-                                self.cploadOffsets.add(cpload.hiOffset)
-                                self.cploadOffsets.add(cpload.loOffset)
-                                self.cploadOffsets.add(instrOffset)
-                                self.cploads[instrOffset] = cpload
-                        */
-                    } else if rs_is_gp ^ rt_is_gp {
-                        let reg = if !rs_is_gp { rs } else { rt };
+                        if let (Some(rd), Some(rs), Some(rt)) = (rd, rs, rt) {
+                            let rs_is_gp = rs.is_global_pointer(instr.abi());
+                            let rt_is_gp = rt.is_global_pointer(instr.abi());
 
-                        if reg == rd {
-                            // We have something like
-                            // addu        $t7, $t7, $gp
+                            if rd.is_global_pointer(instr.abi()) {
+                                // special check for .cpload
+                                /*
+                                if len(self.unpairedCploads) > 0:
+                                    if instr.rs in {rabbitizer.RegGprO32.gp, rabbitizer.RegGprN32.gp}:
+                                        cpload = self.unpairedCploads.pop()
+                                        cpload.adduOffset = instrOffset
+                                        cpload.reg = instr.rt
+                                        self.cploadOffsets.add(cpload.hiOffset)
+                                        self.cploadOffsets.add(cpload.loOffset)
+                                        self.cploadOffsets.add(instrOffset)
+                                        self.cploads[instrOffset] = cpload
+                                */
+                            } else if rs_is_gp ^ rt_is_gp {
+                                let reg = if !rs_is_gp { rs } else { rt };
 
-                            regs_tracker.set_added_with_gp(reg, current_rom);
-                            special_case = true;
+                                if reg == rd {
+                                    // We have something like
+                                    // addu        $t7, $t7, $gp
+
+                                    regs_tracker.set_added_with_gp(reg, current_rom);
+                                    special_case = true;
+                                }
+                            }
                         }
                     }
+                    None
+                }
+                InstrProcessedResult::InvalidInstr {} => None,
+            };
+
+            if let Some(paired_address) = paired_address {
+                let access_type = instr.opcode().access_type();
+
+                let realigned_symbol_vram = match access_type {
+                    // Align down the Vram
+                    Some(AccessType::UNALIGNED_WORD) => {
+                        Vram::new(paired_address.inner() - (paired_address.inner() % 4))
+                    }
+                    Some(AccessType::UNALIGNED_DOUBLEWORD) => {
+                        Vram::new(paired_address.inner() - (paired_address.inner() % 8))
+                    }
+                    None | Some(_) => paired_address,
+                };
+
+                if let (Some(reference), Some(access_type)) = (
+                    self.new_ref(
+                        realigned_symbol_vram,
+                        Some(current_vram),
+                        user_symbols,
+                        ignored_addresses,
+                    ),
+                    instr.opcode().access_type(),
+                ) {
+                    reference.set_access_type(access_type);
                 }
             }
+
             if let Some(address) =
                 regs_tracker.get_address_if_instr_can_set_type(&instr, current_rom)
             {
@@ -321,15 +288,7 @@ impl Preheater {
                 regs_tracker.overwrite_registers(&instr, current_rom);
             }
 
-            if let Some(prev) = &prev_instr {
-                if prev.is_function_call() {
-                    regs_tracker.unset_registers_after_func_call(prev);
-                } else if (prev.opcode().is_jump() && !prev.opcode().does_link())
-                    || prev.is_unconditional_branch()
-                {
-                    regs_tracker.clear();
-                }
-            }
+            regs_tracker.clear_afterwards(prev_instr.as_ref());
 
             prev_instr = Some(instr);
             current_rom += Size::new(4);

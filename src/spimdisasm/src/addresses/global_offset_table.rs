@@ -54,7 +54,11 @@ impl GlobalOffsetTable {
 
         let index = (diff / 4) as usize;
         if let Some(x) = self.locals.get(index) {
-            Some(GotRequestedAddress::Local(*x))
+            if index == 0 {
+                Some(GotRequestedAddress::LazyResolver(*x))
+            } else {
+                Some(GotRequestedAddress::Local(*x))
+            }
         } else {
             let global_index = index - self.locals.len();
             self.globals
@@ -132,6 +136,7 @@ impl GotGlobalEntry {
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum GotRequestedAddress {
     // TODO: consider using references here instead of copying the data
+    LazyResolver(GotLocalEntry),
     Local(GotLocalEntry),
     Global(GotGlobalEntry),
 }
@@ -140,17 +145,9 @@ impl GotRequestedAddress {
     #[must_use]
     pub(crate) const fn address(&self) -> u32 {
         match self {
+            GotRequestedAddress::LazyResolver(x) => x.address(),
             GotRequestedAddress::Local(x) => x.address(),
             GotRequestedAddress::Global(x) => x.address(),
         }
-    }
-
-    #[must_use]
-    pub(crate) const fn is_local(&self) -> bool {
-        matches!(self, GotRequestedAddress::Local(_))
-    }
-    #[must_use]
-    pub(crate) const fn is_global(&self) -> bool {
-        matches!(self, GotRequestedAddress::Global(_))
     }
 }

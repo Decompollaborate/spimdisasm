@@ -24,6 +24,6 @@ pub use preheat_error::PreheatError;
 pub use reference_wrapper::ReferenceWrapper;
 pub use referenced_address::ReferencedAddress;
 pub use referenced_label::ReferencedLabel;
-pub(crate) use register_tracker::RegisterTracker;
+pub(crate) use register_tracker::{InstrProcessedResult, RegisterTracker};
 pub use string_guesser::StringGuesserFlags;
 pub(crate) use tracked_register_state::TrackedRegisterState;

@@ -320,7 +320,12 @@ impl FunctionSymProcessed {
             relocs[instr_index] = Some(reloc_type.new_reloc_info(referenced_sym));
         }
 
-        for (instr_rom, symbol_got_vram) in instr_analysis.calculated_got_addresses() {
+        for (instr_rom, symbol_got_vram) in instr_analysis
+            .global_got_addresses()
+            .iter()
+            .chain(instr_analysis.unpaired_local_got_addresses())
+            .chain(instr_analysis.paired_local_got_addresses())
+        {
             let instr_index = (*instr_rom - ranges.rom().start()).inner() as usize / 4;
 
             /*
@@ -614,7 +619,7 @@ impl FunctionSymProcessed {
                         if got_info.access_kind() == GotAccessKind::Global
                             && sym_metadata.sym_type() == Some(SymbolType::Function)
                             && instr_analysis
-                                .indirect_function_call()
+                                .raw_indirect_function_call()
                                 .contains_key(&instr_rom)
                         {
                             RelocationType::R_MIPS_CALL16

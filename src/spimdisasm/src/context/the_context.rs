@@ -10,7 +10,7 @@ use ::polonius_the_crab::prelude::*;
 use pyo3::prelude::*;
 
 use crate::{
-    addresses::{AddressRange, GotRequestedAddress, Rom, Vram},
+    addresses::{AddressRange, Rom, Vram},
     collections::{
         addended_ordered_map::FindSettings, unordered_map::UnorderedMap,
         unordered_set::UnorderedSet,
@@ -478,19 +478,6 @@ impl Context {
             |_| None,
             label_validation,
         )
-    }
-
-    #[must_use]
-    pub(crate) fn find_got_access_from_any_segment(
-        &self,
-        vram: Vram,
-        _info: &ParentSegmentInfo,
-    ) -> Option<GotRequestedAddress> {
-        if self.global_segment.in_vram_range(vram) {
-            self.global_segment.request_got_address(vram)
-        } else {
-            None
-        }
     }
 }
 

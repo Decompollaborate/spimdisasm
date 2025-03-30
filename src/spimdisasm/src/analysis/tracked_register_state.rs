@@ -31,6 +31,7 @@ pub struct TrackedRegisterState {
 
     contains_float: bool,
     added_with_gp: Option<Rom>,
+    got_global: Option<Rom>,
 }
 
 impl TrackedRegisterState {
@@ -44,6 +45,7 @@ impl TrackedRegisterState {
             branch_info: None,
             contains_float: false,
             added_with_gp: None,
+            got_global: None,
         }
     }
 
@@ -72,9 +74,17 @@ impl TrackedRegisterState {
             })
         }
     }
+    pub(crate) fn get_jr_raw_reg_data(&self) -> Option<JrRegData> {
+        self.lo_info
+            .map(|lo_rom| JrRegData::new(lo_rom, self.value, self.branch_info, self.added_with_gp))
+    }
 
     pub(crate) fn contains_float(&self) -> bool {
         self.contains_float
+    }
+
+    pub(crate) fn got_global(&self) -> Option<Rom> {
+        self.got_global
     }
 }
 
@@ -87,6 +97,7 @@ impl TrackedRegisterState {
         self.clear_lo();
         self.clear_branch();
         self.clear_added_with_gp();
+        self.clear_got_global();
     }
 
     pub fn clear_hi(&mut self) {
@@ -109,6 +120,9 @@ impl TrackedRegisterState {
 
     pub fn clear_added_with_gp(&mut self) {
         self.added_with_gp = None;
+    }
+    pub fn clear_got_global(&mut self) {
+        self.got_global = None;
     }
 }
 
@@ -164,6 +178,10 @@ impl TrackedRegisterState {
 
     pub fn set_added_with_gp(&mut self, instr_rom: Rom) {
         self.added_with_gp = Some(instr_rom);
+    }
+
+    pub fn set_got_global(&mut self, instr_rom: Rom) {
+        self.got_global = Some(instr_rom);
     }
 }
 
