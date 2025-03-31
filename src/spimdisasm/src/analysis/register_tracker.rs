@@ -820,6 +820,20 @@ mod tests {
         nop
         lw      $gp, 0x18($sp)
 
+        lui     $a0, %got_hi(some_var)
+        addu    $a0, $a0, $gp
+        lw      $a0, %got_lo(some_var)($a0)
+        lw      $a0, 0x4($a0)
+        lw      $a1, 0x8($a0)
+        lw      $a2, 0xC($a0)
+
+        lui     $t9, %call_hi(global_function)
+        addu    $t9, $t9, $gp
+        lw      $t9, %call_lo(global_function)($t9)
+        jalr    $t9
+        nop
+        lw      $gp, 0x18($sp)
+
         lw      $ra, 0x10($sp)
         addiu   $sp, $sp, 0x20
 
@@ -882,20 +896,74 @@ mod tests {
         .size func_arr, .-func_arr
 
         */
-        static BYTES: [u8; 37 * 4] = [
-            0x3C, 0x1C, 0x00, 0x01, 0x27, 0x9C, 0x80, 0xB0, 0x03, 0x99, 0xE0, 0x21, 0x27, 0xBD,
-            0xFF, 0xE0, 0xAF, 0xBF, 0x00, 0x10, 0xAF, 0xBC, 0x00, 0x18, 0x3C, 0x04, 0x80, 0x00,
-            0x24, 0x85, 0x00, 0xFC, 0x8C, 0xA4, 0x00, 0x08, 0x3C, 0x02, 0x80, 0x00, 0x8C, 0x43,
-            0x01, 0x00, 0x8F, 0x86, 0x80, 0x30, 0x8F, 0x87, 0x80, 0x1C, 0x8F, 0x88, 0x80, 0x18,
-            0x8D, 0x09, 0x00, 0xE8, 0x8F, 0x99, 0x80, 0x20, 0x03, 0x20, 0xF8, 0x09, 0x00, 0x00,
-            0x00, 0x00, 0x8F, 0xBC, 0x00, 0x18, 0x8F, 0x99, 0x80, 0x20, 0x03, 0x20, 0xF8, 0x09,
-            0x00, 0x00, 0x00, 0x00, 0x8F, 0xBC, 0x00, 0x18, 0x8F, 0x99, 0x80, 0x18, 0x27, 0x39,
-            0x00, 0x88, 0x03, 0x20, 0xF8, 0x09, 0x00, 0x00, 0x00, 0x00, 0x8F, 0xBC, 0x00, 0x18,
-            0x8F, 0x99, 0x80, 0x24, 0x8F, 0x39, 0x00, 0x04, 0x03, 0x20, 0xF8, 0x09, 0x00, 0x00,
-            0x00, 0x00, 0x8F, 0xBC, 0x00, 0x18, 0x8F, 0xBF, 0x00, 0x10, 0x27, 0xBD, 0x00, 0x20,
-            0x03, 0xE0, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00,
+        static BYTES: [u8; 49 * 4] = [
+            // _gp_disp
+            0x3C, 0x1C, 0x00, 0x01, // lui
+            0x27, 0x9C, 0x80, 0xB0, // addiu
+            0x03, 0x99, 0xE0, 0x21, // addu
+            //
+            0x27, 0xBD, 0xFF, 0xE0, // addiu
+            0xAF, 0xBF, 0x00, 0x10, // sw
+            0xAF, 0xBC, 0x00, 0x18, // sw
+            // some_var
+            0x3C, 0x04, 0x80, 0x00, // lui
+            0x24, 0x85, 0x01, 0x2C, // addiu
+            0x8C, 0xA4, 0x00, 0x08, // lw
+            // some_var + 0x4
+            0x3C, 0x02, 0x80, 0x00, // lui
+            0x8C, 0x43, 0x01, 0x30, // lw
+            // some_var + 0x4
+            0x8F, 0x86, 0x80, 0x30, // lw
+            // some_var + 0x8
+            0x8F, 0x87, 0x80, 0x1C, // lw
+            // static_sym
+            0x8F, 0x88, 0x80, 0x18, // lw
+            0x8D, 0x09, 0x01, 0x3C, // lw
+            // global_function
+            0x8F, 0x99, 0x80, 0x20, // lw
+            0x03, 0x20, 0xF8, 0x09, // jalr
+            0x00, 0x00, 0x00, 0x00, // nop
+            0x8F, 0xBC, 0x00, 0x18, // lw
+            // global_function
+            0x8F, 0x99, 0x80, 0x20, // lw
+            0x03, 0x20, 0xF8, 0x09, // jalr
+            0x00, 0x00, 0x00, 0x00, // nop
+            0x8F, 0xBC, 0x00, 0x18, // lw
+            // non_global_function
+            0x8F, 0x99, 0x80, 0x18, // lw
+            0x27, 0x39, 0x00, 0xCC, // addiu
+            0x03, 0x20, 0xF8, 0x09, // jalr
+            0x00, 0x00, 0x00, 0x00, // nop
+            0x8F, 0xBC, 0x00, 0x18, // lw
+            // func_arr
+            0x8F, 0x99, 0x80, 0x24, // lw
+            0x8F, 0x39, 0x00, 0x04, // lw
+            0x03, 0x20, 0xF8, 0x09, // jalr
+            0x00, 0x00, 0x00, 0x00, // nop
+            0x8F, 0xBC, 0x00, 0x18, // lw
+            // some_var
+            0x3C, 0x04, 0x00, 0x00, // lui
+            0x00, 0x9C, 0x20, 0x21, // addu
+            0x8C, 0x84, 0x80, 0x30, // lw
+            0x8C, 0x84, 0x00, 0x04, // lw
+            0x8C, 0x85, 0x00, 0x08, // lw
+            0x8C, 0x86, 0x00, 0x0C, // lw
+            // global_function
+            0x3C, 0x19, 0x00, 0x00, // lui
+            0x03, 0x3C, 0xC8, 0x21, // addu
+            0x8F, 0x39, 0x80, 0x20, // lw
+            0x03, 0x20, 0xF8, 0x09, // jalr
+            0x00, 0x00, 0x00, 0x00, // nop
+            0x8F, 0xBC, 0x00, 0x18, // lw
+            //
+            0x8F, 0xBF, 0x00, 0x10, // lw
+            0x27, 0xBD, 0x00, 0x20, // lw
+            //
+            0x03, 0xE0, 0x00, 0x08, // jr
+            0x00, 0x00, 0x00, 0x00, // nop
         ];
-        static EXPECTED_RESULTS: [InstrProcessedResult; 37] = [
+        static EXPECTED_RESULTS: [InstrProcessedResult; 49] = [
+            // Ideally this block could be somehow identified as `.cpload`
             InstrProcessedResult::Hi {
                 dst_reg: Gpr::gp,
                 value: 0x00010000,
@@ -909,9 +977,11 @@ mod tests {
             InstrProcessedResult::UnhandledOpcode {
                 opcode: Opcode::core_addu,
             },
+            //
             InstrProcessedResult::DanglingLo { imm: -0x20 },
             InstrProcessedResult::DanglingLo { imm: 0x10 },
             InstrProcessedResult::DanglingLo { imm: 0x18 },
+            // some_var
             InstrProcessedResult::Hi {
                 dst_reg: Gpr::a0,
                 value: 0x80000000,
@@ -919,10 +989,11 @@ mod tests {
             InstrProcessedResult::PairedLo {
                 hi_imm: 0x8000,
                 hi_rom: Rom::new(0x00010018),
-                imm: 0xFC,
-                vram: Vram::new(0x800000FC),
+                imm: 0x12C,
+                vram: Vram::new(0x8000012C),
             },
             InstrProcessedResult::DanglingLo { imm: 0x8 },
+            // some_var + 0x4
             InstrProcessedResult::Hi {
                 dst_reg: Gpr::v0,
                 value: 0x80000000,
@@ -930,17 +1001,20 @@ mod tests {
             InstrProcessedResult::PairedLo {
                 hi_imm: 0x8000,
                 hi_rom: Rom::new(0x00010024),
-                imm: 0x100,
-                vram: Vram::new(0x80000100),
+                imm: 0x130,
+                vram: Vram::new(0x80000130),
             },
+            // some_var + 0x4
             InstrProcessedResult::GpRel {
                 imm: -0x7FD0,
-                vram: Vram::new(0x80000100),
+                vram: Vram::new(0x80000130),
             },
+            // some_var + 0x8
             InstrProcessedResult::GpGotGlobal {
                 imm: -0x7FE4,
-                vram: Vram::new(0x80000104),
+                vram: Vram::new(0x80000134),
             },
+            // static_sym
             InstrProcessedResult::GpGotLocal {
                 imm: -0x7FE8,
                 vram: Vram::new(0x80000000),
@@ -948,31 +1022,34 @@ mod tests {
             InstrProcessedResult::PairedGpGotLo {
                 upper_imm: -0x7FE8,
                 upper_rom: Rom::new(0x00010034),
-                imm: 0xE8,
-                vram: Vram::new(0x800000E8),
+                imm: 0x13C,
+                vram: Vram::new(0x8000013C),
             },
+            // global_function
             InstrProcessedResult::GpGotGlobal {
                 imm: -0x7FE0,
-                vram: Vram::new(0x80000094),
+                vram: Vram::new(0x800000C4),
             },
             InstrProcessedResult::RawRegisterLink {
-                jr_reg_data: JrRegData::new(Rom::new(0x0001003C), 0x80000094, None, None),
+                jr_reg_data: JrRegData::new(Rom::new(0x0001003C), 0x800000C4, None, None),
             },
             InstrProcessedResult::UnhandledOpcode {
                 opcode: Opcode::core_nop,
             },
             InstrProcessedResult::DanglingLo { imm: 0x18 },
+            // global_function
             InstrProcessedResult::GpGotGlobal {
                 imm: -0x7FE0,
-                vram: Vram::new(0x80000094),
+                vram: Vram::new(0x800000C4),
             },
             InstrProcessedResult::RawRegisterLink {
-                jr_reg_data: JrRegData::new(Rom::new(0x0001004C), 0x80000094, None, None),
+                jr_reg_data: JrRegData::new(Rom::new(0x0001004C), 0x800000C4, None, None),
             },
             InstrProcessedResult::UnhandledOpcode {
                 opcode: Opcode::core_nop,
             },
             InstrProcessedResult::DanglingLo { imm: 0x18 },
+            // non_global_function
             InstrProcessedResult::GpGotLocal {
                 imm: -0x7FE8,
                 vram: Vram::new(0x80000000),
@@ -980,30 +1057,66 @@ mod tests {
             InstrProcessedResult::PairedGpGotLo {
                 upper_imm: -0x7FE8,
                 upper_rom: Rom::new(0x0001005C),
-                imm: 0x88,
-                vram: Vram::new(0x80000088),
+                imm: 0xCC,
+                vram: Vram::new(0x800000CC),
             },
             InstrProcessedResult::RawRegisterLink {
-                jr_reg_data: JrRegData::new(Rom::new(0x00010060), 0x80000088, None, None),
+                jr_reg_data: JrRegData::new(Rom::new(0x00010060), 0x800000CC, None, None),
             },
             InstrProcessedResult::UnhandledOpcode {
                 opcode: Opcode::core_nop,
             },
             InstrProcessedResult::DanglingLo { imm: 0x18 },
+            // func_arr
             InstrProcessedResult::GpGotGlobal {
                 imm: -0x7FDC,
-                vram: Vram::new(0x8000011C),
+                vram: Vram::new(0x8000014C),
             },
             InstrProcessedResult::DanglingLo { imm: 0x4 },
             InstrProcessedResult::DereferencedRegisterLink {
-                jr_reg_data: JrRegData::new(Rom::new(0x00010070), 0x8000011C, None, None),
+                jr_reg_data: JrRegData::new(Rom::new(0x00010070), 0x8000014C, None, None),
             },
             InstrProcessedResult::UnhandledOpcode {
                 opcode: Opcode::core_nop,
             },
             InstrProcessedResult::DanglingLo { imm: 0x18 },
+            // some_var
+            InstrProcessedResult::Hi {
+                dst_reg: Gpr::a0,
+                value: 0x0,
+            },
+            InstrProcessedResult::UnhandledOpcode {
+                opcode: Opcode::core_addu,
+            },
+            // TODO: Fix `%got_hi` and `%got_lo` pairing
+            // InstrProcessedResult::PairedLo { hi_imm: 0x0, hi_rom: Rom::new(0x00010084), imm: -0x7FD0, vram: Vram::new(0x8000012C) },
+            InstrProcessedResult::DanglingLo { imm: -0x7FD0 },
+            InstrProcessedResult::DanglingLo { imm: 0x4 },
+            InstrProcessedResult::DanglingLo { imm: 0x8 },
+            InstrProcessedResult::DanglingLo { imm: 0xC },
+            // global_function
+            InstrProcessedResult::Hi {
+                dst_reg: Gpr::t9,
+                value: 0x0,
+            },
+            InstrProcessedResult::UnhandledOpcode {
+                opcode: Opcode::core_addu,
+            },
+            // TODO: Fix `%call_hi` and `%call_lo` pairing
+            // InstrProcessedResult::PairedLo { hi_imm: 0x0, hi_rom: Rom::new(0x0001009C), imm: -0x7FE0, vram: Vram::new(0x800000C4) },
+            // InstrProcessedResult::RawRegisterLink {
+            //     jr_reg_data: JrRegData::new(Rom::new(0x000100A4), 0x800000C4, None, Some(Rom::new(0x000100A0))),
+            // },
+            InstrProcessedResult::DanglingLo { imm: -0x7FE0 },
+            InstrProcessedResult::UnknownJumpAndLinkRegister { reg: Gpr::t9 },
+            InstrProcessedResult::UnhandledOpcode {
+                opcode: Opcode::core_nop,
+            },
+            InstrProcessedResult::DanglingLo { imm: 0x18 },
+            //
             InstrProcessedResult::DanglingLo { imm: 0x10 },
             InstrProcessedResult::DanglingLo { imm: 0x20 },
+            //
             InstrProcessedResult::UnhandledOpcode {
                 opcode: Opcode::core_jr,
             },
@@ -1015,21 +1128,26 @@ mod tests {
         let rom = Rom::new(0x00010000);
         let vram = Vram::new(0x80000000);
         let endian = Endian::Big;
-        let original_gp_config = GpConfig::new_pic(GpValue::new(0x800080D0));
+        let original_gp_config = GpConfig::new_pic(GpValue::new(0x80008100));
         let current_gp_value = original_gp_config.gp_value();
 
         let got_locals = vec![
-            /* -0x7FF0($gp) */ GotLocalEntry::new(0x0F000000),
-            /* -0x7FEC($gp) */ GotLocalEntry::new(0x80000000),
-            /* -0x7FE8($gp) */ GotLocalEntry::new(0x80000000),
+            /* -0x7FF0($gp) */ GotLocalEntry::new(0x0F000000), /* Lazy resolver */
+            /* -0x7FEC($gp) */ GotLocalEntry::new(0x80000000), /* GNU extension */
+            /* -0x7FE8($gp) */ GotLocalEntry::new(0x80000000), /* */
         ];
         let got_globals = vec![
-            /* -0x7FE4($gp) */ GotGlobalEntry::new(0x80000104, 0x80000104, false),
-            /* -0x7FE0($gp) */ GotGlobalEntry::new(0x80000094, 0x80000094, false),
-            /* -0x7FDC($gp) */ GotGlobalEntry::new(0x8000011C, 0x8000011C, false),
+            /* -0x7FE4($gp) */
+            GotGlobalEntry::new(0x80000134, 0x80000134, false), /* some_var + 0x8 */
+            /* -0x7FE0($gp) */
+            GotGlobalEntry::new(0x800000C4, 0x800000C4, false), /* global_function */
+            /* -0x7FDC($gp) */
+            GotGlobalEntry::new(0x8000014C, 0x8000014C, false), /* func_arr */
+            /* -0x7FD0($gp) */
+            GotGlobalEntry::new(0x8000012C, 0x8000012C, false), /* some_var */
         ];
         let global_offset_table =
-            GlobalOffsetTable::new(Vram::new(0x800000E0), got_locals, got_globals);
+            GlobalOffsetTable::new(Vram::new(0x80000110), got_locals, got_globals);
 
         let mut expected_results = EXPECTED_RESULTS.iter();
 
