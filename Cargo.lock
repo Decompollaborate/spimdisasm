@@ -293,8 +293,8 @@ dependencies = [
 
 [[package]]
 name = "rabbitizer"
-version = "2.0.0-dev0"
-source = "git+https://github.com/Decompollaborate/rabbitizer.git?branch=%F0%9F%A6%80#149aa16a440629ebb604308eb3dbdcf5475b841c"
+version = "2.0.0-alpha.2"
+source = "git+https://github.com/Decompollaborate/rabbitizer.git?branch=%F0%9F%A6%80#511b61d25f4d5a0bff046c311fd6d2d83a65f3e7"
 dependencies = [
  "bitflags",
  "pyo3",

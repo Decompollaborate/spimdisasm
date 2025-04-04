@@ -49,8 +49,6 @@ impl RegisterTracker {
     }
 
     fn process_branch(&mut self, instr: &Instruction, instr_rom: Rom) {
-        assert!(instr.get_branch_offset_generic().is_some());
-
         if let Some(reg) = instr.field_rs() {
             if instr.opcode().reads_rs() {
                 self.registers[reg.as_index()].set_branching(instr_rom);
