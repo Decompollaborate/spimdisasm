@@ -3,7 +3,7 @@
 
 use alloc::{collections::btree_map::BTreeMap, sync::Arc};
 
-use rabbitizer::{access_type::AccessType, registers_meta::Register, Instruction};
+use rabbitizer::{registers_meta::Register, Instruction};
 
 use crate::{
     addresses::{AddressRange, GlobalOffsetTable, Rom, RomVramRange, Size, SizedAddress, Vram},
@@ -279,27 +279,14 @@ impl Preheater {
             };
 
             if let Some((paired_address, referenced_by, access_info)) = paired_address {
-                let realigned_symbol_vram = match access_info {
-                    // Align down the Vram
-                    Some((AccessType::UNALIGNED_WORD, _)) => {
-                        Vram::new(paired_address.inner() - (paired_address.inner() % 4))
-                    }
-                    Some((AccessType::UNALIGNED_DOUBLEWORD, _)) => {
-                        Vram::new(paired_address.inner() - (paired_address.inner() % 8))
-                    }
-                    None | Some(_) => paired_address,
-                };
-
-                if realigned_symbol_vram >= paired_address {
-                    if let Some(reference) = self.new_ref(
-                        realigned_symbol_vram,
-                        referenced_by,
-                        user_symbols,
-                        ignored_addresses,
-                    ) {
-                        if let Some((access_type, _)) = access_info {
-                            reference.set_access_type(access_type);
-                        }
+                if let Some(reference) = self.new_ref(
+                    paired_address,
+                    referenced_by,
+                    user_symbols,
+                    ignored_addresses,
+                ) {
+                    if let Some((access_type, _)) = access_info {
+                        reference.set_access_type(access_type);
                     }
                 }
             }

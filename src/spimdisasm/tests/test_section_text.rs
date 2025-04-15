@@ -899,7 +899,7 @@ glabel func_8080010C
         .unwrap();
 
     println!("{:?} {:?}", silly_symbol, silly_symbol.owner_segment_kind());
-    // assert_eq!(silly_symbol.all_access_types().len(), 2);
+    assert_eq!(silly_symbol.all_access_types().len(), 2);
 }
 
 #[test]
@@ -1130,6 +1130,188 @@ glabel func_80000048
     /* 000048 80000048 03E00008 */  jr          $ra
     /* 00004C 8000004C 00000000 */   nop
 .size func_80000048, . - func_80000048
+";
+
+    assert_eq!(disassembly, expected_disassembly);
+}
+
+// KMC-generated code (N64)
+#[test]
+fn test_section_text_lwl_lwr_individual() {
+    static BYTES: [u8; 15 * 4] = [
+        0x3C, 0x02, 0x80, 0x00, // lui
+        0x8C, 0x42, 0x00, 0x90, // lw
+        0x27, 0xBD, 0xFF, 0xF8, // addiu
+        0x00, 0x02, 0x10, 0x80, // sll
+        0x3C, 0x01, 0x80, 0x00, // lui
+        0x00, 0x22, 0x08, 0x21, // addu
+        0x88, 0x23, 0x00, 0x60, // lwl
+        0x3C, 0x01, 0x80, 0x00, // lui
+        0x00, 0x22, 0x08, 0x21, // addu
+        0x98, 0x23, 0x00, 0x63, // lwr
+        0xAB, 0xA3, 0x00, 0x00, // swl
+        0xBB, 0xA3, 0x00, 0x03, // swr
+        0x83, 0xA2, 0x00, 0x00, // lb
+        0x03, 0xE0, 0x00, 0x08, // jr
+        0x27, 0xBD, 0x00, 0x08, // addiu
+    ];
+
+    let rom = Rom::new(0x00000000);
+    let vram = Vram::new(0x80000000);
+
+    let endian = Endian::Big;
+    let gp_config = None;
+
+    let text_settings =
+        ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
+
+    let (disassembly, _context, _section_text) = disassemble_text(
+        &BYTES,
+        rom,
+        vram,
+        endian,
+        gp_config,
+        text_settings,
+        false,
+        false,
+    );
+
+    let expected_disassembly = "\
+.section .text
+
+glabel func_80000000
+    /* 000000 80000000 3C028000 */  lui         $v0, %hi(UNK_80000090)
+    /* 000004 80000004 8C420090 */  lw          $v0, %lo(UNK_80000090)($v0)
+    /* 000008 80000008 27BDFFF8 */  addiu       $sp, $sp, -0x8
+    /* 00000C 8000000C 00021080 */  sll         $v0, $v0, 2
+    /* 000010 80000010 3C018000 */  lui         $at, %hi(UNK_80000060)
+    /* 000014 80000014 00220821 */  addu        $at, $at, $v0
+    /* 000018 80000018 88230060 */  lwl         $v1, %lo(UNK_80000060)($at)
+    /* 00001C 8000001C 3C018000 */  lui         $at, %hi(UNK_80000063)
+    /* 000020 80000020 00220821 */  addu        $at, $at, $v0
+    /* 000024 80000024 98230063 */  lwr         $v1, %lo(UNK_80000063)($at)
+    /* 000028 80000028 ABA30000 */  swl         $v1, 0x0($sp)
+    /* 00002C 8000002C BBA30003 */  swr         $v1, 0x3($sp)
+    /* 000030 80000030 83A20000 */  lb          $v0, 0x0($sp)
+    /* 000034 80000034 03E00008 */  jr          $ra
+    /* 000038 80000038 27BD0008 */   addiu      $sp, $sp, 0x8
+.size func_80000000, . - func_80000000
+";
+
+    assert_eq!(disassembly, expected_disassembly);
+}
+
+// GCCEE-SN-generated code (PS2)
+#[test]
+fn test_section_text_ldl_ldr_mixed() {
+    static BYTES: [u8; 14 * 4] = [
+        0xF0, 0xFF, 0xBD, 0x27, // addiu
+        0x2D, 0x10, 0x80, 0x00, // move
+        0x00, 0x00, 0xBF, 0x7F, // sq
+        0x00, 0x80, 0x03, 0x3C, // lui
+        0x2D, 0x20, 0xA0, 0x00, // move
+        0xEC, 0x00, 0x49, 0x24, // addiu
+        0xF0, 0x00, 0x47, 0x8C, // lw
+        0x77, 0x00, 0x65, 0x68, // ldl
+        0x70, 0x00, 0x65, 0x6C, // ldr
+        0x0E, 0x00, 0x00, 0x0C, // jal
+        0xE8, 0x00, 0x48, 0x8C, // lw
+        0x00, 0x00, 0xBF, 0x7B, // lq
+        0x08, 0x00, 0xE0, 0x03, // jr
+        0x10, 0x00, 0xBD, 0x27, // addiu
+    ];
+
+    let rom = Rom::new(0x00000000);
+    let vram = Vram::new(0x80000000);
+
+    let endian = Endian::Little;
+    let gp_config = None;
+
+    let text_settings = ExecutableSectionSettings::new(
+        None,
+        InstructionFlags::new_extension(IsaExtension::R5900EE),
+    );
+
+    let (disassembly, _context, _section_text) = disassemble_text(
+        &BYTES,
+        rom,
+        vram,
+        endian,
+        gp_config,
+        text_settings,
+        false,
+        false,
+    );
+
+    let expected_disassembly = "\
+.section .text
+
+glabel func_80000000
+    /* 000000 80000000 F0FFBD27 */  addiu       $sp, $sp, -0x10
+    /* 000004 80000004 2D108000 */  daddu       $v0, $a0, $zero
+    /* 000008 80000008 0000BF7F */  sq          $ra, 0x0($sp)
+    /* 00000C 8000000C 0080033C */  lui         $v1, %hi(UNK_80000077)
+    /* 000010 80000010 2D20A000 */  daddu       $a0, $a1, $zero
+    /* 000014 80000014 EC004924 */  addiu       $t1, $v0, 0xEC
+    /* 000018 80000018 F000478C */  lw          $a3, 0xF0($v0)
+    /* 00001C 8000001C 77006568 */  ldl         $a1, %lo(UNK_80000077)($v1)
+    /* 000020 80000020 7000656C */  ldr         $a1, %lo(UNK_80000070)($v1)
+    /* 000024 80000024 0E00000C */  jal         UNK_func_80000038
+    /* 000028 80000028 E800488C */   lw         $t0, 0xE8($v0)
+    /* 00002C 8000002C 0000BF7B */  lq          $ra, 0x0($sp)
+    /* 000030 80000030 0800E003 */  jr          $ra
+    /* 000034 80000034 1000BD27 */   addiu      $sp, $sp, 0x10
+.size func_80000000, . - func_80000000
+";
+
+    assert_eq!(disassembly, expected_disassembly);
+}
+
+// Minified code taken from IDO 7.1 ld. Vram: 0x10070018
+#[test]
+fn test_section_text_ldl_ldr_gp_rel() {
+    static BYTES: [u8; 7 * 4] = [
+        0x6B, 0x88, 0xDF, 0x64, // ldl
+        0x6F, 0x88, 0xDF, 0x6B, // ldr
+        0x00, 0x08, 0x44, 0x3E, // dsrl32
+        0x8F, 0x89, 0xDF, 0x74, // lw
+        0x01, 0x28, 0x48, 0x21, // addu
+        0x03, 0xE0, 0x00, 0x08, // jr
+        0xAF, 0x89, 0xDF, 0x74, // sw
+    ];
+
+    let rom = Rom::new(0x00000000);
+    let vram = Vram::new(0x80070018);
+
+    let endian = Endian::Big;
+    let gp_config = Some(GpConfig::new_pic(GpValue::new(0x100A89F8)));
+
+    let text_settings =
+        ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
+
+    let (disassembly, _context, _section_text) = disassemble_text(
+        &BYTES,
+        rom,
+        vram,
+        endian,
+        gp_config,
+        text_settings,
+        false,
+        false,
+    );
+
+    let expected_disassembly = "\
+.section .text
+
+glabel func_80070018
+    /* 000000 80070018 6B88DF64 */  ldl         $t0, %gp_rel(UNK_100A695C)($gp)
+    /* 000004 8007001C 6F88DF6B */  ldr         $t0, %gp_rel(UNK_100A6963)($gp)
+    /* 000008 80070020 0008443E */  dsrl32      $t0, $t0, 16
+    /* 00000C 80070024 8F89DF74 */  lw          $t1, %gp_rel(UNK_100A696C)($gp)
+    /* 000010 80070028 01284821 */  addu        $t1, $t1, $t0
+    /* 000014 8007002C 03E00008 */  jr          $ra
+    /* 000018 80070030 AF89DF74 */   sw         $t1, %gp_rel(UNK_100A696C)($gp)
+.size func_80070018, . - func_80070018
 ";
 
     assert_eq!(disassembly, expected_disassembly);

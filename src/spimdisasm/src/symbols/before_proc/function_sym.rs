@@ -3,7 +3,7 @@
 
 use alloc::{collections::btree_map::BTreeMap, sync::Arc};
 use core::hash;
-use rabbitizer::{access_type::AccessType, Instruction};
+use rabbitizer::Instruction;
 
 use crate::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
@@ -367,60 +367,30 @@ impl FunctionSym {
                 None
             };
 
-            let realigned_symbol_vram = match sym_access {
-                // Align down the Vram
-                Some((AccessType::UNALIGNED_WORD, _)) => {
-                    Vram::new(symbol_vram.inner() - (symbol_vram.inner() % 4))
-                }
-                Some((AccessType::UNALIGNED_DOUBLEWORD, _)) => {
-                    Vram::new(symbol_vram.inner() - (symbol_vram.inner() % 8))
-                }
-                None | Some(_) => *symbol_vram,
-            };
             if context
                 .find_owned_segment(parent_segment_info)?
-                .is_vram_ignored(realigned_symbol_vram)
+                .is_vram_ignored(*symbol_vram)
             {
                 continue;
             }
 
             let referenced_segment =
-                context.find_referenced_segment_mut(realigned_symbol_vram, parent_segment_info);
+                context.find_referenced_segment_mut(*symbol_vram, parent_segment_info);
 
             let sym_metadata = referenced_segment.add_symbol(
-                realigned_symbol_vram,
+                *symbol_vram,
                 true,
                 symbol_name_generation_settings.clone(),
             )?;
             if sym_metadata.sym_type() != Some(SymbolType::Function)
-                || sym_metadata.vram() == realigned_symbol_vram
+                || sym_metadata.vram() == *symbol_vram
             {
                 sym_metadata.add_reference_function(
                     ranges.vram().start(),
                     parent_segment_info.clone(),
                     *instr_rom,
                 );
-                if sym_metadata.owner_segment_kind().is_unknown_segment() {
-                    match sym_access {
-                        // Set a dummy min size to allow relocs to properly reference this symbol from the unknown segment.
-                        // This may not be real tho, I need to properly check.
-                        Some((AccessType::UNALIGNED_WORD, _)) => {
-                            let siz = sym_metadata
-                                .autodetected_size()
-                                .unwrap_or(Size::new(4))
-                                .max(Size::new(4));
-                            *sym_metadata.autodetected_size_mut() = Some(siz);
-                        }
-                        Some((AccessType::UNALIGNED_DOUBLEWORD, _)) => {
-                            let siz = sym_metadata
-                                .autodetected_size()
-                                .unwrap_or(Size::new(8))
-                                .max(Size::new(8));
-                            *sym_metadata.autodetected_size_mut() = Some(siz);
-                        }
-                        None | Some(_) => {}
-                    }
-                }
+
                 /*
                 contextSym = sym_metadata
                 # TODO: do this in a less ugly way
@@ -479,7 +449,7 @@ impl FunctionSym {
                 }
             }
 
-            if !sym_metadata.is_defined() || sym_metadata.vram() != realigned_symbol_vram {
+            if !sym_metadata.is_defined() || sym_metadata.vram() != *symbol_vram {
                 let referenced_info = ReferrerInfo::new_function(
                     ranges.vram().start(),
                     parent_segment_info.clone(),
@@ -487,7 +457,7 @@ impl FunctionSym {
                 );
 
                 referenced_segment.add_label(
-                    realigned_symbol_vram,
+                    *symbol_vram,
                     LabelType::AlternativeEntry,
                     referenced_info,
                 )?;

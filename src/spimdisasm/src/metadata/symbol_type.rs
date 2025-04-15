@@ -81,7 +81,10 @@ impl SymbolType {
             AccessType::DOUBLEFLOAT => Some(SymbolType::Float64),
 
             // Struct copies
-            AccessType::UNALIGNED_WORD | AccessType::UNALIGNED_DOUBLEWORD => None,
+            AccessType::UNALIGNED_WORD_LEFT
+            | AccessType::UNALIGNED_WORD_RIGHT
+            | AccessType::UNALIGNED_DOUBLEWORD_LEFT
+            | AccessType::UNALIGNED_DOUBLEWORD_RIGHT => None,
         }
     }
 

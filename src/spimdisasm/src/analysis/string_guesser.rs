@@ -3,7 +3,6 @@
 
 use bitflags::bitflags;
 use core::{error, fmt};
-use rabbitizer::access_type::AccessType;
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
@@ -281,12 +280,7 @@ impl StringGuesserFlags {
         }
 
         let all_access_types = ref_wrapper.all_access_types();
-        let contains_unaligned = all_access_types.iter().any(|x| {
-            matches!(
-                x.0,
-                AccessType::UNALIGNED_WORD | AccessType::UNALIGNED_DOUBLEWORD
-            )
-        });
+        let contains_unaligned = all_access_types.iter().any(|x| x.0.is_unaligned());
 
         if contains_unaligned {
             return if self.contains(Self::AllowUnalignedDereferences) {

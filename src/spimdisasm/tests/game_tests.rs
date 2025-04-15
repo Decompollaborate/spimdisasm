@@ -382,8 +382,8 @@ fn drmario64_us_without_symbols() {
         }
     }
 
-    assert_eq!(context.global_segment().symbols().len(), 3399);
-    assert_eq!(context.global_segment().labels().len(), 8675);
+    assert_eq!(context.global_segment().symbols().len(), 3400);
+    assert_eq!(context.global_segment().labels().len(), 8676);
 
     /*
     for seg in &segments {
@@ -477,8 +477,8 @@ fn drmario64_us_with_symbols() {
         }
     }
 
-    assert_eq!(context.global_segment().symbols().len(), 3096);
-    assert_eq!(context.global_segment().labels().len(), 8717);
+    assert_eq!(context.global_segment().symbols().len(), 3097);
+    assert_eq!(context.global_segment().labels().len(), 8718);
 
     /*
     for seg in &segments {

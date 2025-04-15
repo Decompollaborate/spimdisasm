@@ -339,57 +339,43 @@ impl RegisterTracker {
             self.set_gpr_value(reg, reg_value);
 
             info
-        } else {
-            // TODO: Implement more properties in rabbitizer's side
-            match opcode {
-                Opcode::core_addu
-                | Opcode::core_add
-                | Opcode::core_dadd
-                | Opcode::core_daddu
-                | Opcode::r5900ee_paddub => {
-                    let (reg, reg_value, info) = self.handle_add_registers(instr, instr_rom);
-                    self.set_gpr_value(reg, reg_value);
+        } else if opcode.adds_registers() {
+            let (reg, reg_value, info) = self.handle_add_registers(instr, instr_rom);
+            self.set_gpr_value(reg, reg_value);
 
-                    info
-                }
-                Opcode::core_subu | Opcode::core_sub | Opcode::core_dsub | Opcode::core_dsubu => {
-                    let (reg, reg_value, info) = self.handle_sub_registers(instr, instr_rom);
-                    self.set_gpr_value(reg, reg_value);
+            info
+        } else if opcode.subs_registers() {
+            let (reg, reg_value, info) = self.handle_sub_registers(instr, instr_rom);
+            self.set_gpr_value(reg, reg_value);
 
-                    info
-                }
-                Opcode::core_or => {
-                    let (reg, reg_value, info) = self.handle_or_registers(instr, instr_rom);
-                    self.set_gpr_value(reg, reg_value);
+            info
+        } else if opcode.ors_registers() {
+            let (reg, reg_value, info) = self.handle_or_registers(instr, instr_rom);
+            self.set_gpr_value(reg, reg_value);
 
-                    info
-                }
-                Opcode::core_and => {
-                    if let (Some(rd), Some(rs), Some(rt)) =
-                        (instr.field_rd(), instr.field_rs(), instr.field_rt())
-                    {
-                        if rd.is_stack_pointer(instr.abi())
-                            && (rs.is_stack_pointer(instr.abi())
-                                || rt.is_stack_pointer(instr.abi()))
-                        {
-                            // Some programs (IDO 7.1 programs to be precise) like to `and` the
-                            // stack pointer as a way to align down the stack.
-                            // I didn't want to actually implement logic for this silliness, so
-                            // here we have a hardcoded check.
-                        } else {
-                            self.set_gpr_value(rd, GprRegisterValue::Garbage);
-                        }
-                    }
-
-                    InstructionOperation::UnhandledOpcode { opcode }
-                }
-                _ => {
-                    if let Some(reg) = instr.get_destination_gpr() {
-                        self.set_gpr_value(reg, GprRegisterValue::Garbage);
-                    }
-                    InstructionOperation::UnhandledOpcode { opcode }
+            info
+        } else if opcode.ands_registers() {
+            if let (Some(rd), Some(rs), Some(rt)) =
+                (instr.field_rd(), instr.field_rs(), instr.field_rt())
+            {
+                if rd.is_stack_pointer(instr.abi())
+                    && (rs.is_stack_pointer(instr.abi()) || rt.is_stack_pointer(instr.abi()))
+                {
+                    // Some programs (IDO 7.1 programs to be precise) like to `and` the
+                    // stack pointer as a way to align down the stack.
+                    // I didn't want to actually implement logic for this silliness, so
+                    // here we have a hardcoded check.
+                } else {
+                    self.set_gpr_value(rd, GprRegisterValue::Garbage);
                 }
             }
+
+            InstructionOperation::UnhandledOpcode { opcode }
+        } else {
+            if let Some(reg) = instr.get_destination_gpr() {
+                self.set_gpr_value(reg, GprRegisterValue::Garbage);
+            }
+            InstructionOperation::UnhandledOpcode { opcode }
         }
     }
 
