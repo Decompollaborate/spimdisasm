@@ -585,8 +585,8 @@ fn create_context(
 ) -> Context {
     let mips_reginfo = MipsReginfo::parse_from_elf(elf_file);
     let dynamic_section = DynamicSection::parse_from_elf(elf_file);
-    let gp_value = if let Some(mips_reginfo) = mips_reginfo {
-        Some(mips_reginfo.ri_gp_value())
+    let gp_value = if let Some(ri_gp_value) = mips_reginfo.and_then(|x| x.ri_gp_value()) {
+        Some(ri_gp_value)
     } else {
         dynamic_section.map(|x| x.canonical_gp())
     };
@@ -934,8 +934,10 @@ fn main() {
 
     let compiler = args.compiler.map(|x| x.into());
     // TODO: proper InstructionFlags
-    let executable_settings =
-        ExecutableSectionSettings::new(compiler, InstructionFlags::new(IsaVersion::MIPS_III));
+    let executable_settings = ExecutableSectionSettings::new(
+        compiler,
+        InstructionFlags::new(IsaVersion::MIPS_III).with_j_as_branch(false),
+    );
     // Since we don't have file splits information we allow late rodata strings because late rodata
     // start detection will be borked either way.
     let string_guesser_flags = StringGuesserFlags::default()

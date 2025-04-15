@@ -17,6 +17,10 @@ repository.workspace = true
 name = "spimdisasm-disasm-elf"
 path = "src/bin.rs"
 
+[features]
+default = []
+std = ["spimdisasm/std"]
+
 [dependencies]
 clap = { version = "4.5.20", features = ["derive"] }
 object = { version = "0.36.7", default-features = false, features = ["std", "elf", "read_core"] }

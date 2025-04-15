@@ -10,7 +10,7 @@ use rabbitizer::{Instruction, InstructionFlags, IsaExtension};
 use pyo3::prelude::*;
 
 use crate::addresses::{AddressRange, Rom, RomVramRange, Size, Vram, VramOffset};
-use crate::analysis::{InstrProcessedResult, ReferenceWrapper, RegisterTracker};
+use crate::analysis::{InstrOpTailCall, InstructionOperation, ReferenceWrapper, RegisterTracker};
 use crate::collections::{addended_ordered_map::FindSettings, unordered_set::UnorderedSet};
 use crate::config::{Compiler, Endian, GlobalConfig};
 use crate::context::Context;
@@ -238,6 +238,37 @@ fn instrs_from_bytes(
     instrs
 }
 
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+struct FarthestBranch {
+    farthest: VramOffset,
+    /// Mainly just for debugging
+    last_setter_rom: Rom,
+}
+
+impl FarthestBranch {
+    fn new(current_rom: Rom) -> Self {
+        Self {
+            farthest: VramOffset::new(0),
+            last_setter_rom: current_rom,
+        }
+    }
+
+    fn farthest(&self) -> VramOffset {
+        self.farthest
+    }
+
+    fn update(&mut self, current_rom: Rom, new_farthest: VramOffset) {
+        if new_farthest > self.farthest {
+            self.farthest = new_farthest;
+            self.last_setter_rom = current_rom;
+        }
+    }
+
+    fn decrease(&mut self) {
+        self.farthest = VramOffset::new(self.farthest.inner() - 4);
+    }
+}
+
 fn find_functions(
     global_config: &GlobalConfig,
     settings: &ExecutableSectionSettings,
@@ -252,8 +283,7 @@ fn find_functions(
     let mut starts_data = Vec::new();
 
     let mut function_ended = FunctionEndedState::No;
-    let mut farthest_branch = VramOffset::new(0);
-    let mut halt_function_searching;
+    let mut farthest_branch = FarthestBranch::new(section_ranges.rom().start());
 
     let mut index: usize = 0;
     let mut current_function_start = index * 4;
@@ -263,7 +293,6 @@ fn find_functions(
     );
 
     let mut prev_start = index;
-    let mut contains_invalid = false;
     let mut is_likely_handwritten = settings.is_handwritten;
 
     let mut prev_func_had_user_declared_size = false;
@@ -294,18 +323,16 @@ fn find_functions(
     }
 
     let mut auto_pad_by = None;
-    let mut regs_tracker = RegisterTracker::new();
+    let mut regs_tracker = RegisterTracker::new(
+        settings.instruction_flags().abi(),
+        Some(section_ranges.vram().start() + Size::new(index as u32 * 4)),
+        global_config.gp_config().copied(),
+    );
     let mut prev_instr = None;
 
-    let original_gp_config = global_config.gp_config();
-    let current_gp_value = original_gp_config.map(|x| x.gp_value());
     let global_offset_table = owned_segment.global_offset_table();
 
     while index < instrs.len() {
-        if !instrs[index].is_valid() {
-            contains_invalid = true;
-        }
-
         if function_ended != FunctionEndedState::No {
             is_likely_handwritten = settings.is_handwritten;
 
@@ -357,7 +384,11 @@ fn find_functions(
                 return starts_data;
             }
 
-            contains_invalid = !instrs[index].is_valid();
+            prev_instr = None;
+            regs_tracker.soft_reset(
+                instrs[index].abi(),
+                Some(section_ranges.vram().start() + Size::new(index as u32 * 4)),
+            );
         }
 
         let instr = &instrs[index];
@@ -367,48 +398,37 @@ fn find_functions(
         }
 
         let current_rom = section_ranges.rom().start() + Size::new(index as u32 * 4);
-        let instr_processed_result = regs_tracker.process_instruction(
-            instr,
-            current_rom,
-            global_offset_table,
-            original_gp_config,
-            current_gp_value.as_ref(),
-        );
-        regs_tracker.overwrite_registers(instr, current_rom);
+        let instr_processed_result =
+            regs_tracker.process_instruction(instr, current_rom, global_offset_table);
 
         if instr.opcode().is_branch()
             || instr.is_unconditional_branch()
             || instr.is_jumptable_jump()
         {
-            (farthest_branch, halt_function_searching) = find_functions_branch_checker(
+            find_functions_branch_checker(
                 owned_segment,
-                instr_processed_result,
+                &instr_processed_result,
                 section_ranges,
                 index * 4,
                 instr,
-                &mut starts_data,
-                farthest_branch,
-                is_likely_handwritten,
-                contains_invalid,
+                &mut farthest_branch,
             );
-            if halt_function_searching {
-                break;
-            }
         }
 
         (function_ended, prev_func_had_user_declared_size) = find_functions_check_function_ended(
             owned_segment,
+            &instr_processed_result,
             settings,
             index,
             instrs,
             section_ranges.rom().start() + Size::new(index as u32 * 4),
             section_ranges.vram().start() + Size::new(index as u32 * 4),
             current_function_ref,
-            farthest_branch,
+            &farthest_branch,
             current_function_start,
         );
 
-        regs_tracker.clear_afterwards(prev_instr);
+        regs_tracker.clear_afterwards(prev_instr, None);
 
         if instr.is_valid() {
             prev_instr = Some(instr);
@@ -417,8 +437,7 @@ fn find_functions(
         }
 
         index += 1;
-        //farthest_branch -= 4;
-        farthest_branch = VramOffset::new(farthest_branch.inner() - 4);
+        farthest_branch.decrease();
     }
 
     if prev_start != index
@@ -431,20 +450,14 @@ fn find_functions(
     starts_data
 }
 
-#[allow(clippy::too_many_arguments)]
 fn find_functions_branch_checker(
     owned_segment: &SegmentMetadata,
-    instr_processed_result: InstrProcessedResult,
+    instr_processed_result: &InstructionOperation,
     section_ranges: RomVramRange,
     local_offset: usize,
     instr: &Instruction,
-    starts_data: &mut Vec<(usize, Option<usize>)>,
-    mut farthest_branch: VramOffset,
-    is_likely_handwritten: bool,
-    contains_invalid: bool,
-) -> (VramOffset, bool) {
-    let mut halt_function_searching = false;
-
+    farthest_branch: &mut FarthestBranch,
+) {
     if instr.opcode().is_jump_with_address() {
         // If this instruction is a jump and it is jumping to a function then
         // don't treat it as a branch, it is probably actually being used as
@@ -456,106 +469,47 @@ fn find_functions_branch_checker(
                 owned_segment.find_reference(target_vram, FindSettings::new(false))
             {
                 if aux_ref.is_trustable_function() {
-                    return (farthest_branch, halt_function_searching);
+                    return;
                 }
             }
         }
-    }
-
-    // TODO: merge within the `instr_processed_result` match
-    if instr.opcode().does_link() {
-        // This is more likely to be a function call than as an actual branch
-        return (farthest_branch, halt_function_searching);
     }
 
     match instr_processed_result {
-        // This is more likely to be a function call than as an actual branch
-        InstrProcessedResult::LinkingBranch { .. } => {}
-        InstrProcessedResult::DirectLinkingCall { .. } => {}
-        InstrProcessedResult::MaybeDirectTailCall { .. } => {}
-        InstrProcessedResult::Branch { target_vram } => {
-            let branch_offset = target_vram - instr.vram();
-            if branch_offset > farthest_branch {
-                // Keep track of the farthest branch target
-                farthest_branch = branch_offset;
-            }
-            if branch_offset.is_negative() {
-                // Check backwards branches
+        InstructionOperation::Branch { target_vram } => {
+            let branch_offset = *target_vram - instr.vram();
+            let current_rom = section_ranges.rom().start() + Size::new(local_offset as u32);
 
-                if (branch_offset.inner() + (local_offset as i32) < 0)
-                    && (!instr.opcode().is_jump() || instr.flags().j_as_branch())
-                {
-                    // Whatever we are reading is not a valid instruction, it doesn't make sense for
-                    // an instruction to backwards-branch outside of the function.
-
-                    // Except for `j`, its behavior depends in if we are treating it as a branch or not.
-                    // Jumping outside of the function is fine, but branching isn't.
-                    halt_function_searching = true;
-                } else if !is_likely_handwritten && !contains_invalid {
-                    let mut j = starts_data.len() as i32 - 1;
-                    while j >= 0 {
-                        let other_func_start_offset = starts_data[j as usize].0 * 4;
-                        if branch_offset.inner() + (local_offset as i32)
-                            < (other_func_start_offset as i32)
-                        {
-                            let vram =
-                                section_ranges.vram().start() + Size::new(local_offset as u32);
-
-                            // TODO: invert check?
-                            if let Some(func_symbol) =
-                                owned_segment.find_reference(vram, FindSettings::new(false))
-                            {
-                                // TODO
-                                if func_symbol.is_trustable_function() {
-                                    j -= 1;
-                                    continue;
-                                }
-                            }
-                            starts_data.remove(j as usize);
-                        } else {
-                            break;
-                        }
-                        j -= 1;
-                    }
-                }
-            }
+            farthest_branch.update(current_rom, branch_offset);
         }
-        InstrProcessedResult::JumptableJump { jr_reg_data } => {
+        InstructionOperation::JumptableJump { jumptable_vram, .. } => {
             // Check jumptables
-            if jr_reg_data.branch_info().is_none() {
-                let jumptable_address = Vram::new(jr_reg_data.address());
-                if let Some(jumptable_ref) =
-                    owned_segment.find_reference(jumptable_address, FindSettings::new(false))
-                {
-                    for jtbl_label_vram in jumptable_ref.table_labels() {
-                        let branch_offset = *jtbl_label_vram - instr.vram();
+            if let Some(jumptable_ref) =
+                owned_segment.find_reference(*jumptable_vram, FindSettings::new(false))
+            {
+                for jtbl_label_vram in jumptable_ref.table_labels() {
+                    let branch_offset = *jtbl_label_vram - instr.vram();
+                    let current_rom = section_ranges.rom().start() + Size::new(local_offset as u32);
 
-                        if branch_offset > farthest_branch {
-                            farthest_branch = branch_offset;
-                        }
-                    }
+                    farthest_branch.update(current_rom, branch_offset);
                 }
             }
         }
-        InstrProcessedResult::UnknownRegInfoJump { .. } => {}
-        InstrProcessedResult::DereferencedRegisterLink { .. } => {}
-        InstrProcessedResult::RawRegisterLink { .. } => {}
-        InstrProcessedResult::UnknownJumpAndLinkRegister { .. } => {}
-        InstrProcessedResult::Hi { .. } => {}
-        InstrProcessedResult::PairedLo { .. } => {}
-        InstrProcessedResult::GpRel { .. } => {}
-        InstrProcessedResult::GpGotGlobal { .. } => {}
-        InstrProcessedResult::GpGotLazyResolver { .. } => {}
-        InstrProcessedResult::GpGotLocal { .. } => {}
-        InstrProcessedResult::PairedGpGotLo { .. } => {}
-        InstrProcessedResult::DanglingLo { .. } => {}
-        InstrProcessedResult::Constant { .. } => {}
-        InstrProcessedResult::UnpairedConstant { .. } => {}
-        InstrProcessedResult::UnhandledOpcode { .. } => {}
-        InstrProcessedResult::InvalidInstr { .. } => {}
-    }
 
-    (farthest_branch, halt_function_searching)
+        InstructionOperation::Link { .. }
+        | InstructionOperation::TailCall { .. }
+        | InstructionOperation::ReturnJump
+        | InstructionOperation::Hi { .. }
+        | InstructionOperation::PairedAddress { .. }
+        | InstructionOperation::GpSet { .. }
+        | InstructionOperation::DereferencedRawAddress { .. }
+        | InstructionOperation::DanglingLo { .. }
+        | InstructionOperation::Constant { .. }
+        | InstructionOperation::UnpairedConstant { .. }
+        | InstructionOperation::RegisterOperation { .. }
+        | InstructionOperation::UnhandledOpcode { .. }
+        | InstructionOperation::InvalidInstr { .. } => {}
+    }
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -569,16 +523,18 @@ enum FunctionEndedState {
 #[expect(clippy::too_many_arguments)]
 fn find_functions_check_function_ended(
     owned_segment: &SegmentMetadata,
+    instr_processed_result: &InstructionOperation,
     settings: &ExecutableSectionSettings,
     index: usize,
     instrs: &[Instruction],
     current_rom: Rom,
     current_vram: Vram,
     current_function_ref: Option<ReferenceWrapper>,
-    farthest_branch: VramOffset,
+    farthest_branch: &FarthestBranch,
     current_function_start: usize,
 ) -> (FunctionEndedState, bool) {
     let instr = &instrs[index];
+    let opcode = instr.opcode();
 
     if let Some(reference) = current_function_ref {
         if let Some(user_declared_size) = reference.user_declared_size() {
@@ -608,13 +564,13 @@ fn find_functions_check_function_ended(
         }
     }
 
-    if farthest_branch.is_positive() {
+    if farthest_branch.farthest().is_positive() {
+        // We still have a branch that branched even farther than where we currently are, so we
+        // must still be inside the same function.
         return (FunctionEndedState::No, false);
     }
 
-    if instr.opcode().causes_unconditional_exception()
-        && !instr.opcode().causes_returnable_exception()
-    {
+    if opcode.causes_unconditional_exception() && !opcode.causes_returnable_exception() {
         return (FunctionEndedState::ByException, false);
     }
 
@@ -626,64 +582,96 @@ fn find_functions_check_function_ended(
         }
     }
 
-    if !instr.opcode().is_jump() {
+    if !opcode.is_jump() {
         return (FunctionEndedState::No, false);
     }
 
-    if instr.is_return() {
-        // Found a jr $ra and there are no branches outside of this function
-        if settings.detect_redundant_end() {
-            // The IDO compiler may generate a a redundant and unused `jr $ra; nop` at the end of the functions the
-            // flags `-g`, `-g1` or `-g2` are used.
-            // In normal conditions this would be detected as its own separate empty function, which may cause
-            // issues on a decompilation project.
-            // In other words, we try to detect the following pattern:
-            // ```
-            // jr         $ra
-            //  nop
-            // jr         $ra
-            //  nop
-            // ```
-            // where the last two instructions do not belong to being an already existing function (either
-            // referenced by code or user-declared).
-            let mut redundant_pattern_detected = false;
-            if index + 3 < instrs.len() {
-                let instr1 = instrs[index + 1];
-                let instr2 = instrs[index + 2];
-                let instr3 = instrs[index + 3];
-                // We already checked if there is a function in the previous block, so we don't need to check it again.
-                if instr1.is_nop() && instr2.is_return() && instr3.is_nop() {
-                    redundant_pattern_detected = true;
-                }
-            }
-            if !redundant_pattern_detected {
-                return (FunctionEndedState::WithDelaySlot, false);
-            }
-        } else {
-            return (FunctionEndedState::WithDelaySlot, false);
+    match instr_processed_result {
+        InstructionOperation::Link { .. } => {
+            debug_assert!(opcode.does_link(), "{:?} {:?}", current_rom, opcode);
+            (FunctionEndedState::No, false)
         }
-    } else if instr.is_jumptable_jump() {
-        // Usually jumptables, ignore
-    } else if instr.opcode().does_link() {
-        // Just a function call, nothing to see here
-    } else if instr.opcode().is_jump_with_address() {
-        // If this instruction is a jump and it is jumping to a function then
-        // we can consider this as a function end. This can happen as a
-        // tail-optimization in "modern" compilers
-        if settings.instruction_flags.j_as_branch() {
-            return (FunctionEndedState::No, false);
-        } else if let Some(target_vram) = instr.get_instr_index_as_vram() {
-            if let Some(aux_ref) =
-                owned_segment.find_reference(target_vram, FindSettings::new(false))
-            {
-                if aux_ref.is_trustable_function() && Some(aux_ref) != current_function_ref {
-                    return (FunctionEndedState::WithDelaySlot, false);
-                }
-            }
-        }
-    }
+        InstructionOperation::TailCall { info } => match info {
+            InstrOpTailCall::MaybeDirectTailCall { .. } => {
+                debug_assert!(
+                    opcode.is_jump_with_address(),
+                    "{:?} {:?}",
+                    current_rom,
+                    opcode
+                );
+                debug_assert!(
+                    !settings.instruction_flags.j_as_branch(),
+                    "{:?} {:?}",
+                    current_rom,
+                    opcode
+                );
 
-    (FunctionEndedState::No, false)
+                (FunctionEndedState::WithDelaySlot, false)
+            }
+            InstrOpTailCall::RawRegisterTailCall { .. }
+            | InstrOpTailCall::DereferencedRegisterTailCall { .. } => {
+                (FunctionEndedState::WithDelaySlot, false)
+            }
+            InstrOpTailCall::UnknownRegisterJump { .. } => {
+                (FunctionEndedState::WithDelaySlot, false)
+            }
+        },
+
+        InstructionOperation::JumptableJump { .. } => {
+            debug_assert!(instr.is_jumptable_jump(), "{:?} {:?}", current_rom, opcode);
+            (FunctionEndedState::No, false)
+        }
+
+        InstructionOperation::ReturnJump => {
+            debug_assert!(instr.is_return(), "{:?} {:?}", current_rom, opcode);
+
+            // Found a jr $ra and there are no branches outside of this function
+            if settings.detect_redundant_end() {
+                // The IDO compiler may generate a a redundant and unused `jr $ra; nop` at the end of the functions the
+                // flags `-g`, `-g1` or `-g2` are used.
+                // In normal conditions this would be detected as its own separate empty function, which may cause
+                // issues on a decompilation project.
+                // In other words, we try to detect the following pattern:
+                // ```
+                // jr         $ra
+                //  nop
+                // jr         $ra
+                //  nop
+                // ```
+                // where the last two instructions do not belong to being an already existing function (either
+                // referenced by code or user-declared).
+                let mut redundant_pattern_detected = false;
+                if index + 3 < instrs.len() {
+                    let instr1 = instrs[index + 1];
+                    let instr2 = instrs[index + 2];
+                    let instr3 = instrs[index + 3];
+                    // We already checked if there is a function in the previous block, so we don't need to check it again.
+                    if instr1.is_nop() && instr2.is_return() && instr3.is_nop() {
+                        redundant_pattern_detected = true;
+                    }
+                }
+                if !redundant_pattern_detected {
+                    (FunctionEndedState::WithDelaySlot, false)
+                } else {
+                    (FunctionEndedState::No, false)
+                }
+            } else {
+                (FunctionEndedState::WithDelaySlot, false)
+            }
+        }
+
+        InstructionOperation::Branch { .. }
+        | InstructionOperation::Hi { .. }
+        | InstructionOperation::PairedAddress { .. }
+        | InstructionOperation::GpSet { .. }
+        | InstructionOperation::DereferencedRawAddress { .. }
+        | InstructionOperation::DanglingLo { .. }
+        | InstructionOperation::Constant { .. }
+        | InstructionOperation::UnpairedConstant { .. }
+        | InstructionOperation::RegisterOperation { .. }
+        | InstructionOperation::UnhandledOpcode { .. }
+        | InstructionOperation::InvalidInstr {} => (FunctionEndedState::No, false),
+    }
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]

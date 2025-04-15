@@ -6,7 +6,7 @@ use pyo3::prelude::*;
 
 use crate::addresses::GpValue;
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct GpConfig {
     gp_value: GpValue,

@@ -4,13 +4,13 @@
 use rabbitizer::Instruction;
 
 use crate::{
-    addresses::{GlobalOffsetTable, RomVramRange, Vram},
+    addresses::{GlobalOffsetTable, RomVramRange, Size, Vram},
     collections::{addended_ordered_map::FindSettings, unordered_set::UnorderedSet},
     context::{Context, OwnedSegmentNotFoundError},
     parent_segment_info::ParentSegmentInfo,
 };
 
-use super::{InstructionAnalysisResult, RegisterTracker};
+use super::{InstrAnalysisInfo, InstructionAnalysisResult, RegisterTracker};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InstructionAnalyzer {
@@ -32,14 +32,20 @@ impl InstructionAnalyzer {
             ranges,
             branches_taken: UnorderedSet::new(),
         };
-        let mut regs_tracker = RegisterTracker::new();
-        let mut result = InstructionAnalysisResult::new(ranges, context.global_config());
+        let mut regs_tracker = RegisterTracker::new(
+            instrs[0].abi(),
+            Some(ranges.vram().start()),
+            context.global_config().gp_config().copied(),
+        );
+        let mut result = InstructionAnalysisResult::new(ranges);
         let global_offset_table = context
             .find_owned_segment(parent_info)?
             .global_offset_table();
 
         // The below iteration skips the first instruction so we have to process it explicitly here.
-        result.process_instr(&mut regs_tracker, &instrs[0], global_offset_table);
+        let mut prev_instr_analysis_info =
+            Some(result.process_instr(&mut regs_tracker, &instrs[0], global_offset_table));
+        regs_tracker.clear_afterwards(None, None);
 
         // TODO: maybe implement a way to know which instructions have been processed?
 
@@ -47,8 +53,11 @@ impl InstructionAnalyzer {
             let prev_instr = w[0];
             let instr = w[1];
             let local_offset = (i + 1) * 4;
+            let current_vram = instr.vram();
 
             if !instr.is_valid() {
+                regs_tracker.clear_afterwards(Some(&prev_instr), Some(current_vram + Size::new(4)));
+                prev_instr_analysis_info = None;
                 continue;
             }
 
@@ -59,37 +68,43 @@ impl InstructionAnalyzer {
 "
             */
 
-            if !prev_instr.opcode().is_branch_likely()
-            /*&& !prev_instr.is_unconditional_branch()*/
+            let info = if !prev_instr.opcode().is_branch_likely() {
+                Some(result.process_instr(&mut regs_tracker, &instr, global_offset_table))
+            } else {
+                None
+            };
+
+            if let Some(InstrAnalysisInfo::JumptableJump { jumptable_vram }) =
+                prev_instr_analysis_info
             {
-                result.process_instr(&mut regs_tracker, &instr, global_offset_table);
+                analyzer.follow_jumptable(
+                    context,
+                    parent_info,
+                    &mut result,
+                    &regs_tracker,
+                    instrs,
+                    &prev_instr,
+                    false,
+                    global_offset_table,
+                    jumptable_vram,
+                )?;
+            } else {
+                analyzer.look_ahead(
+                    context,
+                    parent_info,
+                    &mut result,
+                    &regs_tracker,
+                    instrs,
+                    &instr,
+                    &prev_instr,
+                    local_offset,
+                    prev_instr.opcode().is_branch_likely(),
+                    global_offset_table,
+                )?;
             }
 
-            analyzer.look_ahead(
-                context,
-                parent_info,
-                &mut result,
-                &regs_tracker,
-                instrs,
-                &instr,
-                &prev_instr,
-                local_offset,
-                prev_instr.opcode().is_branch_likely(),
-                global_offset_table,
-            )?;
-
-            analyzer.follow_jumptable(
-                context,
-                parent_info,
-                &mut result,
-                &regs_tracker,
-                instrs,
-                &prev_instr,
-                false,
-                global_offset_table,
-            )?;
-
-            regs_tracker.clear_afterwards(Some(&prev_instr));
+            regs_tracker.clear_afterwards(Some(&prev_instr), Some(current_vram + Size::new(4)));
+            prev_instr_analysis_info = info;
         }
 
         Ok(result)
@@ -110,6 +125,9 @@ impl InstructionAnalyzer {
         prev_is_likely: bool,
         global_offset_table: Option<&GlobalOffsetTable>,
     ) -> Result<(), OwnedSegmentNotFoundError> {
+        if prev_instr.opcode().does_link() {
+            return Ok(());
+        }
         let branch_offset = if let Some(offset) = prev_instr.get_branch_offset_generic() {
             offset
         } else {
@@ -137,9 +155,7 @@ impl InstructionAnalyzer {
         // Make a copy
         let mut regs_tracker = *original_regs_tracker;
 
-        if prev_is_likely
-        /*|| prev_instr.is_unconditional_branch()*/
-        {
+        if prev_is_likely {
             result.process_instr(&mut regs_tracker, instr, global_offset_table);
         }
 
@@ -166,18 +182,8 @@ impl InstructionAnalyzer {
         prev_instr: &Instruction,
         prev_is_likely: bool,
         global_offset_table: Option<&GlobalOffsetTable>,
+        jumptable_vram: Vram,
     ) -> Result<(), OwnedSegmentNotFoundError> {
-        let jumptable_address =
-            if let Some(jr_reg_data) = original_regs_tracker.get_jr_reg_data(prev_instr) {
-                if jr_reg_data.branch_info().is_none() {
-                    Vram::new(jr_reg_data.address())
-                } else {
-                    return Ok(());
-                }
-            } else {
-                return Ok(());
-            };
-
         if !self
             .branches_taken
             .insert((prev_instr.vram(), prev_is_likely))
@@ -188,7 +194,7 @@ impl InstructionAnalyzer {
 
         let jumptable_ref = if let Some(jumptable_ref) = context
             .find_owned_segment(parent_info)?
-            .find_reference(jumptable_address, FindSettings::new(false))
+            .find_reference(jumptable_vram, FindSettings::new(false))
         {
             jumptable_ref
         } else {
@@ -228,45 +234,56 @@ impl InstructionAnalyzer {
         prev_is_likely: bool,
         global_offset_table: Option<&GlobalOffsetTable>,
     ) -> Result<(), OwnedSegmentNotFoundError> {
+        let mut prev_instr_analysis_info = None;
+
         while target_local_offset / 4 < instrs.len() {
             let prev_target_instr = &instrs[target_local_offset / 4 - 1];
             let target_instr = &instrs[target_local_offset / 4];
 
-            if !prev_target_instr.opcode().is_branch_likely()
-            /*&& !prev_target_instr.is_unconditional_branch()*/
+            let info = if !prev_target_instr.opcode().is_branch_likely() {
+                Some(result.process_instr(&mut regs_tracker, target_instr, global_offset_table))
+            } else {
+                None
+            };
+            if let Some(InstrAnalysisInfo::JumptableJump { jumptable_vram }) =
+                prev_instr_analysis_info
             {
-                result.process_instr(&mut regs_tracker, target_instr, global_offset_table);
+                self.follow_jumptable(
+                    context,
+                    parent_info,
+                    result,
+                    &regs_tracker,
+                    instrs,
+                    prev_target_instr,
+                    prev_is_likely,
+                    global_offset_table,
+                    jumptable_vram,
+                )?;
+            } else {
+                self.look_ahead(
+                    context,
+                    parent_info,
+                    result,
+                    &regs_tracker,
+                    instrs,
+                    target_instr,
+                    prev_target_instr,
+                    target_local_offset,
+                    prev_is_likely || prev_target_instr.opcode().is_branch_likely(),
+                    global_offset_table,
+                )?;
             }
-            self.look_ahead(
-                context,
-                parent_info,
-                result,
-                &regs_tracker,
-                instrs,
-                target_instr,
-                prev_target_instr,
-                target_local_offset,
-                prev_is_likely || prev_target_instr.opcode().is_branch_likely(),
-                global_offset_table,
-            )?;
 
-            self.follow_jumptable(
-                context,
-                parent_info,
-                result,
-                &regs_tracker,
-                instrs,
-                prev_target_instr,
-                prev_is_likely,
-                global_offset_table,
-            )?;
-
-            if regs_tracker.clear_afterwards(Some(prev_target_instr)) {
+            let current_vram = target_instr.vram();
+            if regs_tracker
+                .clear_afterwards(Some(prev_target_instr), Some(current_vram + Size::new(4)))
+            {
                 // Since we took the branch on the previous `look_ahead` call then we don't have
                 // anything else to process here.
                 return Ok(());
             }
 
+            prev_instr_analysis_info = info;
             target_local_offset += 4;
         }
 

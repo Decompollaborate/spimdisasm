@@ -1,34 +1,26 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::vec::Vec;
-use rabbitizer::{
-    access_type::AccessType, opcodes::Opcode, registers::Gpr, registers_meta::Register,
-    Instruction, Vram,
-};
+use rabbitizer::{access_type::AccessType, registers::Gpr, Instruction, Vram};
 
 use crate::{
-    addresses::{GlobalOffsetTable, GpValue, Rom, RomVramRange},
+    addresses::{GlobalOffsetTable, Rom, RomVramRange},
     collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
-    config::{GlobalConfig, GpConfig},
 };
 
-use super::{InstrProcessedResult, JrRegData, RegisterTracker};
+use super::{
+    InstrOpJumptable, InstrOpLink, InstrOpPairedAddress, InstrOpRegisterOperation, InstrOpTailCall,
+    InstructionOperation, RegisterTracker,
+};
 
-/// Info for tracking when a $gp register is set to an explicit address
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct GpAddressSet {
+pub(crate) struct GpSetInfo {
     hi_rom: Rom,
     lo_rom: Rom,
-    value: GpValue,
 }
-impl GpAddressSet {
-    fn new(hi_rom: Rom, lo_rom: Rom, value: GpValue) -> Self {
-        Self {
-            hi_rom,
-            lo_rom,
-            value,
-        }
+impl GpSetInfo {
+    fn new_address(hi_rom: Rom, lo_rom: Rom) -> Self {
+        Self { hi_rom, lo_rom }
     }
 
     pub(crate) fn hi_rom(&self) -> Rom {
@@ -37,63 +29,11 @@ impl GpAddressSet {
     pub(crate) fn lo_rom(&self) -> Rom {
         self.lo_rom
     }
-    pub(crate) fn value(&self) -> GpValue {
-        self.value
-    }
-}
-
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct UnfinishedCpload {
-    hi_rom: Rom,
-    lo_rom: Rom,
-}
-
-impl UnfinishedCpload {
-    fn new(hi_rom: Rom, lo_rom: Rom) -> Self {
-        Self { hi_rom, lo_rom }
-    }
-
-    fn finish(self, addu_rom: Rom, reg: Gpr) -> CploadInfo {
-        CploadInfo::new(self.hi_rom, self.lo_rom, addu_rom, reg)
-    }
-}
-
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct CploadInfo {
-    hi_rom: Rom,
-    lo_rom: Rom,
-    addu_rom: Rom,
-    reg: Gpr,
-}
-
-impl CploadInfo {
-    fn new(hi_rom: Rom, lo_rom: Rom, addu_rom: Rom, reg: Gpr) -> Self {
-        Self {
-            hi_rom,
-            lo_rom,
-            addu_rom,
-            reg,
-        }
-    }
-}
-
-// Tracking when the $gp register is set to a value
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) enum GpSetInfo {
-    Address(GpAddressSet),
-    Unknown,
-}
-impl GpSetInfo {
-    fn new_address(hi_rom: Rom, lo_rom: Rom, value: GpValue) -> Self {
-        GpSetInfo::Address(GpAddressSet::new(hi_rom, lo_rom, value))
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct InstructionAnalysisResult {
     ranges: RomVramRange,
-    original_gp_config: Option<GpConfig>,
-    current_gp_value: Option<GpValue>,
 
     /// Every referenced vram found.
     referenced_vrams: UnorderedSet<Vram>,
@@ -122,6 +62,9 @@ pub(crate) struct InstructionAnalysisResult {
     address_per_hi_instr: UnorderedMap<Rom, Vram>,
     address_per_lo_instr: UnorderedMap<Rom, Vram>,
 
+    address_per_got_hi: UnorderedMap<Rom, Vram>,
+    address_per_got_lo: UnorderedMap<Rom, Vram>,
+
     type_info_per_address: UnorderedMap<Vram, UnorderedMap<(AccessType, bool), u32>>,
     type_info_per_instr: UnorderedMap<Rom, (AccessType, bool)>,
 
@@ -144,25 +87,17 @@ pub(crate) struct InstructionAnalysisResult {
 
     lo_rom_added_with_gp: UnorderedSet<Rom>,
 
-    /// `.cploads` which are not yet fully paired.
-    unfinished_cploads: Vec<UnfinishedCpload>,
     /// Rom address for every instruction that is part of a `.cpload`.
     cpload_roms: UnorderedSet<Rom>,
-    /// Completed cpload, key: rom of last instruction of the `.cpload`.
-    cploads: UnorderedMap<Rom, CploadInfo>,
 }
 
 impl InstructionAnalysisResult {
     #[must_use]
-    pub(crate) fn new(ranges: RomVramRange, global_config: &GlobalConfig) -> Self {
+    pub(crate) fn new(ranges: RomVramRange) -> Self {
         // TODO: require how many instructions this function has, so we can use `with_capacity`
-
-        let gp_config = global_config.gp_config();
 
         Self {
             ranges,
-            original_gp_config: gp_config.copied(),
-            current_gp_value: gp_config.map(|x| x.gp_value()),
             referenced_vrams: UnorderedSet::new(),
             referenced_vrams_by_rom: UnorderedMap::new(),
             branch_targets: UnorderedMap::new(),
@@ -177,6 +112,8 @@ impl InstructionAnalysisResult {
             address_per_instr: UnorderedMap::new(),
             address_per_hi_instr: UnorderedMap::new(),
             address_per_lo_instr: UnorderedMap::new(),
+            address_per_got_hi: UnorderedMap::new(),
+            address_per_got_lo: UnorderedMap::new(),
             type_info_per_address: UnorderedMap::new(),
             type_info_per_instr: UnorderedMap::new(),
             handwritten_instrs: UnorderedSet::new(),
@@ -190,9 +127,7 @@ impl InstructionAnalysisResult {
             indirect_function_call: UnorderedMap::new(),
             raw_indirect_function_call: UnorderedMap::new(),
             lo_rom_added_with_gp: UnorderedSet::new(),
-            unfinished_cploads: Vec::new(),
             cpload_roms: UnorderedSet::new(),
-            cploads: UnorderedMap::new(),
         }
     }
 
@@ -248,6 +183,15 @@ impl InstructionAnalysisResult {
     }
 
     #[must_use]
+    pub(crate) fn address_per_got_hi(&self) -> &UnorderedMap<Rom, Vram> {
+        &self.address_per_got_hi
+    }
+    #[must_use]
+    pub(crate) fn address_per_got_lo(&self) -> &UnorderedMap<Rom, Vram> {
+        &self.address_per_got_lo
+    }
+
+    #[must_use]
     pub(crate) fn referenced_jumptables(&self) -> &UnorderedMap<Rom, Vram> {
         &self.referenced_jumptables
     }
@@ -298,188 +242,183 @@ impl InstructionAnalysisResult {
     }
 }
 
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) enum InstrAnalysisInfo {
+    No,
+    JumptableJump { jumptable_vram: Vram },
+}
+
 impl InstructionAnalysisResult {
     pub(crate) fn process_instr(
         &mut self,
         regs_tracker: &mut RegisterTracker,
         instr: &Instruction,
         global_offset_table: Option<&GlobalOffsetTable>,
-    ) {
+    ) -> InstrAnalysisInfo {
         let instr_rom = self.rom_from_instr(instr);
 
         if instr.is_likely_handwritten() {
             self.handwritten_instrs.insert(instr_rom);
         }
 
-        let instr_processed_result = regs_tracker.process_instruction(
-            instr,
-            instr_rom,
-            global_offset_table,
-            self.original_gp_config.as_ref(),
-            self.current_gp_value.as_ref(),
-        );
-
-        let mut special_case = false;
+        let instr_processed_result =
+            regs_tracker.process_instruction(instr, instr_rom, global_offset_table);
 
         match instr_processed_result {
-            InstrProcessedResult::DirectLinkingCall { target_vram } => {
-                self.process_func_call(instr_rom, target_vram);
+            InstructionOperation::Link { info } => match info {
+                InstrOpLink::DirectLinkingCall { target_vram } => {
+                    self.process_func_call(instr_rom, target_vram);
+                    InstrAnalysisInfo::No
+                }
+                InstrOpLink::LinkingBranch { target_vram } => {
+                    self.process_branch_call(instr_rom, target_vram);
+                    InstrAnalysisInfo::No
+                }
+                InstrOpLink::RawRegisterLink { vram, rom }
+                | InstrOpLink::Call16RegisterLink { vram, rom }
+                | InstrOpLink::CallHiLoRegisterLink { vram, rom } => {
+                    self.process_jump_and_link_register(instr_rom, vram, rom, false);
+                    InstrAnalysisInfo::No
+                }
+                InstrOpLink::DereferencedRegisterLink {
+                    dereferenced_vram,
+                    dereferenced_rom,
+                } => {
+                    self.process_jump_and_link_register(
+                        instr_rom,
+                        dereferenced_vram,
+                        dereferenced_rom,
+                        true,
+                    );
+                    InstrAnalysisInfo::No
+                }
+                InstrOpLink::UnknownJumpAndLinkRegister { .. } => InstrAnalysisInfo::No,
+            },
+
+            InstructionOperation::TailCall { info } => match info {
+                InstrOpTailCall::MaybeDirectTailCall { target_vram } => {
+                    self.process_maybe_tail_call(instr_rom, target_vram);
+                    InstrAnalysisInfo::No
+                }
+                InstrOpTailCall::RawRegisterTailCall { .. } => {
+                    // TODO: do something with this info
+                    InstrAnalysisInfo::No
+                }
+                InstrOpTailCall::DereferencedRegisterTailCall { .. }
+                | InstrOpTailCall::UnknownRegisterJump { .. } => InstrAnalysisInfo::No,
+            },
+
+            InstructionOperation::JumptableJump {
+                jumptable_vram,
+                dereferenced_rom,
+                info,
+            } => {
+                self.process_jumptable_jump(
+                    instr_rom,
+                    jumptable_vram,
+                    dereferenced_rom,
+                    info == InstrOpJumptable::Pic,
+                );
+                InstrAnalysisInfo::JumptableJump { jumptable_vram }
             }
-            InstrProcessedResult::LinkingBranch { target_vram } => {
-                self.process_branch_call(instr_rom, target_vram);
-            }
-            InstrProcessedResult::MaybeDirectTailCall { target_vram } => {
-                self.process_maybe_tail_call(instr_rom, target_vram);
-            }
-            InstrProcessedResult::Branch { target_vram } => {
+
+            InstructionOperation::ReturnJump => InstrAnalysisInfo::No,
+
+            InstructionOperation::Branch { target_vram } => {
                 self.process_branch(instr_rom, target_vram);
+                InstrAnalysisInfo::No
             }
-            InstrProcessedResult::JumptableJump { jr_reg_data } => {
-                self.process_jumptable_jump(jr_reg_data, instr_rom);
-            }
-            InstrProcessedResult::UnknownRegInfoJump { .. } => {}
-            InstrProcessedResult::DereferencedRegisterLink { jr_reg_data } => {
-                self.process_jump_and_link_register(jr_reg_data, instr_rom, true)
-            }
-            InstrProcessedResult::RawRegisterLink { jr_reg_data } => {
-                self.process_jump_and_link_register(jr_reg_data, instr_rom, false)
-            }
-            InstrProcessedResult::UnknownJumpAndLinkRegister { .. } => {}
-            InstrProcessedResult::Hi { dst_reg, value } => {
+
+            InstructionOperation::Hi { dst_reg, value } => {
                 self.hi_instrs
                     .insert(instr_rom, (dst_reg, (value >> 16) as u16));
+                InstrAnalysisInfo::No
             }
-            InstrProcessedResult::PairedLo { hi_rom, vram, .. } => {
-                if let Some((hi_reg, hi_imm)) = self.hi_instrs.get(&hi_rom) {
-                    if hi_reg.is_global_pointer(instr.abi()) {
-                        if let Some(lo_rs) = instr.field_rs() {
-                            if instr.opcode().reads_rs() && lo_rs.is_global_pointer(instr.abi()) {
-                                if let Some(lo_rt) = instr.field_rt() {
-                                    if instr.opcode().modifies_rt()
-                                        && lo_rt.is_global_pointer(instr.abi())
-                                    {
-                                        if self.original_gp_config.is_some_and(|x| x.pic()) {
-                                            self.unfinished_cploads
-                                                .push(UnfinishedCpload::new(hi_rom, instr_rom));
-                                        } else if let Some(lo_gp_value) =
-                                            instr.get_processed_immediate()
-                                        {
-                                            let hi_gp_value = (*hi_imm as u32) << 16;
-                                            let gp_value = GpValue::new(
-                                                hi_gp_value.wrapping_add_signed(lo_gp_value),
-                                            );
-                                            let gp_set =
-                                                GpSetInfo::new_address(hi_rom, instr_rom, gp_value);
-                                            self.gp_sets.insert(instr_rom, gp_set);
-                                            self.gp_sets.insert(hi_rom, gp_set);
-                                            if self.original_gp_config.is_some_and(|x| !x.pic()) {
-                                                self.current_gp_value = Some(gp_value);
-                                            }
-                                        }
-                                        // Avoid counting this pairing as a normal symbol
-                                        special_case = true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
 
-                if !special_case {
-                    self.process_address(vram, Some(hi_rom), instr, instr_rom);
+            InstructionOperation::PairedAddress { vram, info } => match info {
+                InstrOpPairedAddress::PairedLo {
+                    hi_rom,
+                    access_info,
+                    ..
+                } => {
+                    self.process_address(vram, Some(hi_rom), instr_rom);
+                    if let Some(access_info) = access_info {
+                        self.apply_symbol_type(vram, instr_rom, access_info);
+                    }
+                    InstrAnalysisInfo::No
                 }
+                InstrOpPairedAddress::GpRel { access_info, .. } => {
+                    self.process_address(vram, None, instr_rom);
+                    if let Some(access_info) = access_info {
+                        self.apply_symbol_type(vram, instr_rom, access_info);
+                    }
+                    InstrAnalysisInfo::No
+                }
+                InstrOpPairedAddress::GpGotGlobal { .. }
+                | InstrOpPairedAddress::GpGotLazyResolver { .. } => {
+                    self.process_global_got_symbol(vram, instr_rom);
+                    InstrAnalysisInfo::No
+                }
+                InstrOpPairedAddress::GpGotLocal { .. } => {
+                    self.process_local_got_symbol(vram, instr_rom);
+                    InstrAnalysisInfo::No
+                }
+                InstrOpPairedAddress::PairedGpGotLo {
+                    upper_rom,
+                    access_info,
+                    ..
+                } => {
+                    // TODO: move all this code to a function
+                    self.unpaired_local_got_addresses.remove(&upper_rom);
+                    self.paired_local_got_addresses.insert(upper_rom, vram);
+                    self.paired_local_got_addresses.insert(instr_rom, vram);
+
+                    self.add_referenced_vram(instr_rom, vram);
+                    self.hi_to_lo.insert(upper_rom, instr_rom);
+                    self.lo_to_hi.insert(instr_rom, upper_rom);
+                    if let Some(access_info) = access_info {
+                        self.apply_symbol_type(vram, instr_rom, access_info);
+                    }
+                    InstrAnalysisInfo::No
+                }
+                InstrOpPairedAddress::PairedGotLo { hi_rom } => {
+                    self.process_paired_got_lo(vram, hi_rom, instr_rom);
+                    InstrAnalysisInfo::No
+                }
+            },
+
+            InstructionOperation::GpSet { hi_rom } => {
+                self.gp_sets
+                    .insert(instr_rom, GpSetInfo::new_address(hi_rom, instr_rom));
+                InstrAnalysisInfo::No
             }
-            InstrProcessedResult::GpRel { vram, .. } => {
-                self.process_address(vram, None, instr, instr_rom);
-            }
-            InstrProcessedResult::GpGotGlobal { vram, .. }
-            | InstrProcessedResult::GpGotLazyResolver { vram, .. } => {
-                self.process_global_got_symbol(vram, instr_rom);
-            }
-            InstrProcessedResult::GpGotLocal { vram, .. } => {
-                self.process_local_got_symbol(vram, instr_rom);
-            }
-            InstrProcessedResult::PairedGpGotLo {
-                upper_rom, vram, ..
+            InstructionOperation::DereferencedRawAddress {
+                original_address,
+                access_info,
+                ..
             } => {
-                self.unpaired_local_got_addresses.remove(&upper_rom);
-                self.paired_local_got_addresses.insert(upper_rom, vram);
-                self.paired_local_got_addresses.insert(instr_rom, vram);
-
-                self.add_referenced_vram(instr_rom, vram);
-                self.hi_to_lo.insert(upper_rom, instr_rom);
-                self.lo_to_hi.insert(instr_rom, upper_rom);
+                self.apply_symbol_type(original_address, instr_rom, access_info);
+                InstrAnalysisInfo::No
             }
-            InstrProcessedResult::DanglingLo { .. } => {}
-            InstrProcessedResult::Constant { constant, hi_rom } => {
+            InstructionOperation::DanglingLo { .. } => InstrAnalysisInfo::No,
+            InstructionOperation::Constant { constant, hi_rom } => {
                 self.process_constant(constant, instr_rom, hi_rom);
+                InstrAnalysisInfo::No
             }
-            InstrProcessedResult::UnpairedConstant { .. } => {}
-            InstrProcessedResult::UnhandledOpcode { opcode } => {
-                if opcode == Opcode::core_addu {
-                    let rd = instr.field_rd();
-                    let rs = instr.field_rs();
-                    let rt = instr.field_rt();
-
-                    if let (Some(rd), Some(rs), Some(rt)) = (rd, rs, rt) {
-                        let rs_is_gp = rs.is_global_pointer(instr.abi());
-                        let rt_is_gp = rt.is_global_pointer(instr.abi());
-
-                        if rd.is_global_pointer(instr.abi()) {
-                            // special check for .cpload
-                            if rs.is_global_pointer(instr.abi()) {
-                                if let Some(unfinished_cpload) = self.unfinished_cploads.pop() {
-                                    let cpload = unfinished_cpload.finish(instr_rom, rt);
-
-                                    self.cpload_roms.insert(cpload.hi_rom);
-                                    self.cpload_roms.insert(cpload.lo_rom);
-                                    self.cpload_roms.insert(cpload.addu_rom);
-                                    self.cploads.insert(instr_rom, cpload);
-                                }
-                            }
-                        } else if rs_is_gp ^ rt_is_gp {
-                            let reg = if !rs_is_gp { rs } else { rt };
-
-                            if reg == rd {
-                                // We have something like
-                                // addu        $t7, $t7, $gp
-
-                                regs_tracker.set_added_with_gp(reg, instr_rom);
-                                special_case = true;
-                            }
-                        }
-                    }
+            InstructionOperation::UnpairedConstant { .. } => InstrAnalysisInfo::No,
+            InstructionOperation::RegisterOperation { info } => match info {
+                InstrOpRegisterOperation::SuspectedCpload { hi_rom, lo_rom, .. } => {
+                    self.cpload_roms.insert(hi_rom);
+                    self.cpload_roms.insert(lo_rom);
+                    self.cpload_roms.insert(instr_rom);
+                    InstrAnalysisInfo::No
                 }
-            }
-            InstrProcessedResult::InvalidInstr { .. } => {}
-        }
-
-        // Consider including this info in `InstrProcessedResult::PairedLo` and family
-        self.process_symbol_dereference_type(regs_tracker, instr, instr_rom);
-
-        if !special_case {
-            regs_tracker.overwrite_registers(instr, instr_rom);
-        }
-
-        if let Some(reg) = instr.get_destination_gpr() {
-            if reg.is_global_pointer(instr.abi()) {
-                let gp_state = regs_tracker.get_gp_state();
-                let info = if let (Some(hi_info), Some(lo_info)) =
-                    (gp_state.hi_info(), gp_state.lo_info())
-                {
-                    GpSetInfo::new_address(
-                        hi_info.instr_rom,
-                        lo_info,
-                        GpValue::new(gp_state.value()),
-                    )
-                } else {
-                    if self.original_gp_config.is_some_and(|x| !x.pic()) {
-                        self.current_gp_value = None;
-                    }
-                    GpSetInfo::Unknown
-                };
-                self.gp_sets.entry(instr_rom).or_insert(info);
-            }
+                InstrOpRegisterOperation::RegisterAddition { .. }
+                | InstrOpRegisterOperation::RegisterSubtraction { .. }
+                | InstrOpRegisterOperation::Or { .. } => InstrAnalysisInfo::No,
+            },
+            InstructionOperation::UnhandledOpcode { .. }
+            | InstructionOperation::InvalidInstr { .. } => InstrAnalysisInfo::No,
         }
     }
 }
@@ -516,55 +455,40 @@ impl InstructionAnalysisResult {
         self.maybe_tail_calls.insert(instr_rom, target_vram);
     }
 
-    fn process_jumptable_jump(&mut self, jr_reg_data: JrRegData, instr_rom: Rom) {
-        let lo_rom = jr_reg_data.lo_rom();
-        let address = Vram::new(jr_reg_data.address());
+    fn process_jumptable_jump(
+        &mut self,
+        instr_rom: Rom,
+        jumptable_vram: Vram,
+        dereferenced_rom: Rom,
+        added_with_gp: bool,
+    ) {
+        self.referenced_jumptables
+            .insert(dereferenced_rom, jumptable_vram);
 
-        if jr_reg_data.branch_info().is_some() {
-            // Jumptables never check the register they are branching into,
-            // since the references should always be valid.
-            // This kind of check usually is performed on tail call
-            // optimizations when a function pointer is involved.
-            // For example:
-            // ```mips
-            // lw          $t0, ...
-            // beqz        $t0, .LXXXXXXXX
-            //  nop
-            // jr          $t0
-            //  nop
-            // ```
-            // TODO
-            // self.rejectedjumpRegisterIntrOffset[instrOffset] = (offset, address, jrRegData.lastBranchOffset())
-        } else {
-            self.referenced_jumptables.insert(lo_rom, address);
-        }
+        // self.jumpRegisterIntrOffset[instrOffset] = jumptable_vram
+        self.add_referenced_vram(instr_rom, jumptable_vram);
 
-        // self.jumpRegisterIntrOffset[instrOffset] = address
-        self.add_referenced_vram(instr_rom, address);
-
-        if jr_reg_data.added_with_gp().is_some() {
-            self.lo_rom_added_with_gp.insert(lo_rom);
+        if added_with_gp {
+            self.lo_rom_added_with_gp.insert(dereferenced_rom);
         }
     }
 
     fn process_jump_and_link_register(
         &mut self,
-        jr_reg_data: JrRegData,
         instr_rom: Rom,
+        address: Vram,
+        lo_rom: Rom,
         was_dereferenced: bool,
     ) {
-        let lo_rom = jr_reg_data.lo_rom();
-        let vram = Vram::new(jr_reg_data.address());
-
         if was_dereferenced {
-            self.indirect_function_call_instr.insert(instr_rom, vram);
-            self.indirect_function_call.insert(lo_rom, vram);
+            self.indirect_function_call_instr.insert(instr_rom, address);
+            self.indirect_function_call.insert(lo_rom, address);
         } else {
-            self.raw_indirect_function_call.insert(lo_rom, vram);
+            self.raw_indirect_function_call.insert(lo_rom, address);
         }
 
-        self.add_referenced_vram(instr_rom, vram);
-        self.add_referenced_vram(lo_rom, vram);
+        self.add_referenced_vram(instr_rom, address);
+        self.add_referenced_vram(lo_rom, address);
     }
 
     fn process_constant(&mut self, constant: u32, instr_rom: Rom, hi_rom: Rom) {
@@ -580,17 +504,6 @@ impl InstructionAnalysisResult {
         self.hi_to_lo.insert(hi_rom, instr_rom);
         self.lo_to_hi.insert(instr_rom, hi_rom);
     }
-
-    fn process_symbol_dereference_type(
-        &mut self,
-        regs_tracker: &mut RegisterTracker,
-        instr: &Instruction,
-        instr_rom: Rom,
-    ) {
-        if let Some(address) = regs_tracker.get_address_if_instr_can_set_type(instr, instr_rom) {
-            self.process_symbol_type(Vram::new(address), instr, instr_rom);
-        }
-    }
 }
 
 impl InstructionAnalysisResult {
@@ -602,13 +515,7 @@ impl InstructionAnalysisResult {
         self.unpaired_local_got_addresses.insert(instr_rom, address);
     }
 
-    fn process_address(
-        &mut self,
-        address: Vram,
-        hi_rom: Option<Rom>,
-        instr: &Instruction,
-        instr_rom: Rom,
-    ) {
+    fn process_address(&mut self, address: Vram, hi_rom: Option<Rom>, instr_rom: Rom) {
         self.add_referenced_vram(instr_rom, address);
 
         self.address_per_lo_instr
@@ -630,23 +537,35 @@ impl InstructionAnalysisResult {
             self.symbolInstrOffset[lowerOffset] = address
             */
         }
-
-        self.process_symbol_type(address, instr, instr_rom);
     }
 
-    fn process_symbol_type(&mut self, address: Vram, instr: &Instruction, instr_rom: Rom) {
-        if let Some(access_type) = instr.opcode().access_type() {
-            let unsigned_memory_address = instr.opcode().does_unsigned_memory_access();
+    fn process_paired_got_lo(&mut self, vram: Vram, hi_rom: Rom, lo_rom: Rom) {
+        self.add_referenced_vram(lo_rom, vram);
 
-            self.type_info_per_address
-                .entry(address)
-                .or_default()
-                .entry((access_type, unsigned_memory_address))
-                .and_modify(|v| *v += 1)
-                .or_insert(1);
-            self.type_info_per_instr
-                .insert(instr_rom, (access_type, unsigned_memory_address));
+        self.address_per_got_lo.insert(lo_rom, vram);
+
+        let entry = self.address_per_got_hi.entry(hi_rom);
+        if entry.is_vacant() {
+            entry.or_insert(vram);
+            self.add_referenced_vram(hi_rom, vram);
         }
+    }
+
+    fn apply_symbol_type(
+        &mut self,
+        address: Vram,
+        instr_rom: Rom,
+        access_info: (AccessType, bool),
+    ) {
+        let (access_type, unsigned_memory_address) = access_info;
+        self.type_info_per_address
+            .entry(address)
+            .or_default()
+            .entry((access_type, unsigned_memory_address))
+            .and_modify(|v| *v += 1)
+            .or_insert(1);
+        self.type_info_per_instr
+            .insert(instr_rom, (access_type, unsigned_memory_address));
     }
 }
 
@@ -658,10 +577,8 @@ impl InstructionAnalysisResult {
     }
 
     fn add_referenced_vram(&mut self, instr_rom: Rom, referenced_vram: Vram) {
-        if !self.original_gp_config.is_some_and(|x| x.pic()) {
-            self.referenced_vrams.insert(referenced_vram);
-            self.referenced_vrams_by_rom
-                .insert(instr_rom, referenced_vram);
-        }
+        self.referenced_vrams.insert(referenced_vram);
+        self.referenced_vrams_by_rom
+            .insert(instr_rom, referenced_vram);
     }
 }

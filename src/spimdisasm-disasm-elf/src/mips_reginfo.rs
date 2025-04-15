@@ -10,7 +10,7 @@ use crate::{elf_section_type::ElfSectionType, utils};
 pub struct MipsReginfo {
     ri_gprmask: u32,
     ri_cprmask: [u32; 4],
-    ri_gp_value: GpValue,
+    ri_gp_value: Option<GpValue>,
 }
 
 impl MipsReginfo {
@@ -63,12 +63,17 @@ impl MipsReginfo {
         );
         let ri_cprmask = [a, b, c, d];
 
-        let ri_gp_value = GpValue::new(
-            endian.word_from_bytes(
+        let ri_gp_value = {
+            let word = endian.word_from_bytes(
                 iter.next()
                     .expect("Shouldn't panic since size was already checked"),
-            ),
-        );
+            );
+            if word != 0 {
+                Some(GpValue::new(word))
+            } else {
+                None
+            }
+        };
 
         Some(Self {
             ri_gprmask,
@@ -78,7 +83,7 @@ impl MipsReginfo {
     }
 
     #[must_use]
-    pub fn ri_gp_value(&self) -> GpValue {
+    pub fn ri_gp_value(&self) -> Option<GpValue> {
         self.ri_gp_value
     }
 }
