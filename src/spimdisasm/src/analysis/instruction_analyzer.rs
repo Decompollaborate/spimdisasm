@@ -27,6 +27,7 @@ impl InstructionAnalyzer {
         instrs: &[Instruction],
     ) -> Result<InstructionAnalysisResult, OwnedSegmentNotFoundError> {
         assert!(!instrs.is_empty(), "Empty instruction list?. {:?}", ranges,);
+        let global_config = context.global_config();
 
         let mut analyzer = Self {
             ranges,
@@ -35,7 +36,8 @@ impl InstructionAnalyzer {
         let mut regs_tracker = RegisterTracker::new(
             instrs[0].abi(),
             Some(ranges.vram().start()),
-            context.global_config().gp_config().copied(),
+            global_config.gp_config().copied(),
+            global_config.endian(),
         );
         let mut result = InstructionAnalysisResult::new(ranges);
         let global_offset_table = context

@@ -77,6 +77,7 @@ impl Preheater {
             settings.instruction_flags().abi(),
             Some(vram),
             global_config.gp_config().copied(),
+            global_config.endian(),
         );
         let mut function_maybe_ended = false;
         // TODO: A bit of a hack, consider removing
@@ -262,6 +263,16 @@ impl Preheater {
                     InstrOpPairedAddress::PairedGotLo { .. } => {
                         Some((vram, Some(current_vram), None))
                     }
+                    InstrOpPairedAddress::PairedLoUnaligned {
+                        access_info,
+                        unaddended_address,
+                        ..
+                    }
+                    | InstrOpPairedAddress::GpRelUnaligned {
+                        access_info,
+                        unaddended_address,
+                        ..
+                    } => Some((unaddended_address, Some(current_vram), Some(access_info))),
                 },
 
                 InstructionOperation::GpSet { .. } => None,

@@ -9,7 +9,7 @@ use rabbitizer::{
 use crate::{
     addresses::{GlobalOffsetTable, Rom, Vram},
     analysis::gpr_register_value::{GprRegDereferencedAddress, GprRegRawAddress},
-    config::GpConfig,
+    config::{Endian, GpConfig},
 };
 
 use super::{gpr_register_value::GprRegConstantInfo, GprRegisterValue};
@@ -19,6 +19,7 @@ use super::{gpr_register_value::GprRegConstantInfo, GprRegisterValue};
 pub(crate) struct RegisterTracker {
     registers: [GprRegisterValue; Gpr::count()],
     gp_config: Option<GpConfig>,
+    endian: Endian,
 }
 
 impl RegisterTracker {
@@ -26,11 +27,13 @@ impl RegisterTracker {
         abi: Abi,
         function_address: Option<Vram>,
         gp_config: Option<GpConfig>,
+        endian: Endian,
     ) -> Self {
         let registers = [GprRegisterValue::Garbage; Gpr::count()];
         let mut slf = Self {
             registers,
             gp_config,
+            endian,
         };
 
         slf.soft_reset(abi, function_address);
@@ -103,15 +106,17 @@ pub(crate) enum InstructionOperation {
         info: InstrOpPairedAddress,
     },
 
-    GpSet {
-        hi_rom: Rom,
-    },
     DereferencedRawAddress {
         original_address: Vram,
         addend: i16,
         address_load_rom: Rom,
         access_info: (AccessType, bool),
     },
+
+    GpSet {
+        hi_rom: Rom,
+    },
+
     /// A "lo" kind of instruction that couldn't be paired to anything.
     DanglingLo {
         imm: i16,
@@ -268,6 +273,17 @@ pub(crate) enum InstrOpPairedAddress {
     ///
     /// Note this will also catch `%call_hi`/`%call_lo` pairings since they follow the same patter.
     PairedGotLo { hi_rom: Rom },
+
+    PairedLoUnaligned {
+        hi_rom: Rom,
+        access_info: (AccessType, bool),
+        unaddended_address: Vram,
+    },
+
+    GpRelUnaligned {
+        access_info: (AccessType, bool),
+        unaddended_address: Vram,
+    },
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -525,7 +541,14 @@ impl RegisterTracker {
                         }
                     }
                 }
+                GprRegDereferencedAddress::HiUnaligned { .. }
+                | GprRegDereferencedAddress::GpRelUnaligned { .. } => {
+                    InstructionOperation::TailCall {
+                        info: InstrOpTailCall::UnknownRegisterJump { reg: rs },
+                    }
+                }
             },
+
             GprRegisterValue::DereferencedAddressBranchChecked {
                 original_address,
                 deref_rom,
@@ -644,7 +667,13 @@ impl RegisterTracker {
             .expect("An instruction that dereferences the memory must have an access type");
         let does_unsigned_memory_access = opcode.does_unsigned_memory_access();
         let access_info = (access_type, does_unsigned_memory_access);
-        let reg_value = src_reg_value.dereference(imm, instr_rom, access_info, global_offset_table);
+        let reg_value = src_reg_value.dereference(
+            imm,
+            instr_rom,
+            access_info,
+            global_offset_table,
+            self.endian,
+        );
 
         let info = match &reg_value {
             GprRegisterValue::DereferencedAddress {
@@ -663,6 +692,12 @@ impl RegisterTracker {
                     vram: *original_address,
                     info: InstrOpPairedAddress::PairedLo {
                         hi_rom: *hi_rom,
+                        access_info: Some(*access_info),
+                    },
+                },
+                GprRegDereferencedAddress::GpRel {} => InstructionOperation::PairedAddress {
+                    vram: *original_address,
+                    info: InstrOpPairedAddress::GpRel {
                         access_info: Some(*access_info),
                     },
                 },
@@ -688,12 +723,6 @@ impl RegisterTracker {
                     address_load_rom: *address_load_rom,
                     access_info: *access_info,
                 },
-                GprRegDereferencedAddress::GpRel {} => InstructionOperation::PairedAddress {
-                    vram: *original_address,
-                    info: InstrOpPairedAddress::GpRel {
-                        access_info: Some(*access_info),
-                    },
-                },
                 GprRegDereferencedAddress::GpGotLocal { upper_rom } => {
                     InstructionOperation::PairedAddress {
                         vram: *original_address,
@@ -713,7 +742,28 @@ impl RegisterTracker {
                     address_load_rom: *address_load_rom,
                     access_info: *access_info,
                 },
+                GprRegDereferencedAddress::HiUnaligned {
+                    hi_rom,
+                    unaddended_address,
+                } => InstructionOperation::PairedAddress {
+                    vram: *original_address,
+                    info: InstrOpPairedAddress::PairedLoUnaligned {
+                        hi_rom: *hi_rom,
+                        access_info: *access_info,
+                        unaddended_address: *unaddended_address,
+                    },
+                },
+                GprRegDereferencedAddress::GpRelUnaligned { unaddended_address } => {
+                    InstructionOperation::PairedAddress {
+                        vram: *original_address,
+                        info: InstrOpPairedAddress::GpRelUnaligned {
+                            access_info: *access_info,
+                            unaddended_address: *unaddended_address,
+                        },
+                    }
+                }
             },
+
             GprRegisterValue::RawAddress { vram, info, .. } => match info {
                 GprRegRawAddress::GpGotGlobal {} => InstructionOperation::PairedAddress {
                     vram: *vram,
@@ -1105,7 +1155,7 @@ mod tests {
             })
             .collect();
 
-        let mut regs_tracker = RegisterTracker::new(abi, Some(vram), gp_config);
+        let mut regs_tracker = RegisterTracker::new(abi, Some(vram), gp_config, endian);
         let mut prev_instr = None;
         for (instr_index, instr) in instructions.into_iter().enumerate() {
             let opcode = instr.opcode();

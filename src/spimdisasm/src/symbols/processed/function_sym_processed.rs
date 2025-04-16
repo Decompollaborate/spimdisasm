@@ -152,7 +152,7 @@ impl FunctionSymProcessed {
                 let instr_index = (*instr_rom - ranges.rom().start()).inner() / 4;
                 relocs[instr_index as usize] = Some(
                     RelocationType::R_MIPS_PC16
-                        .new_reloc_info(RelocReferencedSym::Address(*target_vram)),
+                        .new_reloc_info(RelocReferencedSym::new_address(*target_vram)),
                 );
 
                 // TODO: keep here?
@@ -189,7 +189,7 @@ impl FunctionSymProcessed {
                 let instr_index = (*instr_rom - ranges.rom().start()).inner() / 4;
                 relocs[instr_index as usize] = Some(
                     RelocationType::R_MIPS_PC16
-                        .new_reloc_info(RelocReferencedSym::Address(*target_vram)),
+                        .new_reloc_info(RelocReferencedSym::new_address(*target_vram)),
                 );
             } else if owned_segment.find_label(*target_vram).is_some() {
                 let instr_index = (*instr_rom - ranges.rom().start()).inner() / 4;
@@ -237,7 +237,7 @@ impl FunctionSymProcessed {
                 )
                 .is_some()
             {
-                RelocReferencedSym::Address(*target_vram)
+                RelocReferencedSym::new_address(*target_vram)
             } else if context
                 .find_label_from_any_segment(*target_vram, parent_segment_info, |_| true)
                 .is_some()
@@ -250,7 +250,7 @@ impl FunctionSymProcessed {
                 RelocReferencedSym::Label(*target_vram)
             } else {
                 // whatever
-                RelocReferencedSym::Address(*target_vram)
+                RelocReferencedSym::new_address(*target_vram)
             };
 
             relocs[instr_index as usize] =
@@ -293,7 +293,7 @@ impl FunctionSymProcessed {
             );
 
             let referenced_sym = if metadata.is_some() {
-                RelocReferencedSym::Address(*symbol_vram)
+                RelocReferencedSym::new_address(*symbol_vram)
             } else {
                 referenced_labels_refer_segment.push((
                     *symbol_vram,
@@ -301,6 +301,51 @@ impl FunctionSymProcessed {
                 ));
 
                 RelocReferencedSym::Label(*symbol_vram)
+            };
+
+            relocs[instr_index] = Some(reloc_type.new_reloc_info(referenced_sym));
+        }
+
+        for (instr_rom, (unaddended_address, addended_address)) in
+            instr_analysis.address_per_lo_unaligned_instr()
+        {
+            let instr_index = (*instr_rom - ranges.rom().start()).inner() as usize / 4;
+
+            /*
+            if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
+                if getVromOffset(loOffset) in context.globalRelocationOverrides:
+                    # Avoid creating wrong symbols on elf files
+                    continue
+            */
+
+            if owned_segment.is_vram_ignored(*unaddended_address) {
+                continue;
+            }
+
+            // `_gp_disp`
+            if instr_analysis.cpload_roms().contains(instr_rom) {
+                continue;
+            }
+
+            let metadata = context.find_symbol_from_any_segment(
+                *unaddended_address,
+                parent_segment_info,
+                FindSettings::new(true),
+                |x| x.sym_type() != Some(SymbolType::Function) || x.vram() == *unaddended_address,
+            );
+
+            let reloc_type = Self::reloc_for_instruction(
+                context.global_config(),
+                &instructions[instr_index],
+                metadata,
+                instr_analysis,
+                *instr_rom,
+                false,
+            );
+
+            let referenced_sym = RelocReferencedSym::Address {
+                unaddended_address: *unaddended_address,
+                addended_address: *addended_address,
             };
 
             relocs[instr_index] = Some(reloc_type.new_reloc_info(referenced_sym));
@@ -344,7 +389,7 @@ impl FunctionSymProcessed {
             );
 
             let referenced_sym = if metadata.is_some() {
-                RelocReferencedSym::Address(*symbol_vram)
+                RelocReferencedSym::new_address(*symbol_vram)
             } else {
                 referenced_labels_refer_segment.push((
                     *symbol_vram,
@@ -352,6 +397,53 @@ impl FunctionSymProcessed {
                 ));
 
                 RelocReferencedSym::Label(*symbol_vram)
+            };
+
+            relocs[instr_index] = Some(reloc_type.new_reloc_info(referenced_sym));
+        }
+
+        for (instr_rom, (unaddended_address, addended_address)) in
+            instr_analysis.address_per_hi_unaligned_instr()
+        {
+            let instr_index = (*instr_rom - ranges.rom().start()).inner() as usize / 4;
+
+            // `_gp_disp`
+            if instr_analysis.cpload_roms().contains(instr_rom) {
+                continue;
+            }
+
+            if owned_segment.is_vram_ignored(*unaddended_address) {
+                if let Some(imm) = instructions[instr_index].get_processed_immediate() {
+                    relocs[instr_index] =
+                        Some(RelocationType::R_CUSTOM_CONSTANT_HI.new_reloc_info(
+                            RelocReferencedSym::SymName(
+                                Arc::from(format!("0x{:08X}", imm << 16)),
+                                0,
+                            ),
+                        ));
+                }
+                continue;
+            }
+
+            let metadata = context.find_symbol_from_any_segment(
+                *unaddended_address,
+                parent_segment_info,
+                FindSettings::new(true),
+                |x| x.sym_type() != Some(SymbolType::Function) || x.vram() == *unaddended_address,
+            );
+
+            let reloc_type = Self::reloc_for_instruction(
+                context.global_config(),
+                &instructions[instr_index],
+                metadata,
+                instr_analysis,
+                *instr_rom,
+                false,
+            );
+
+            let referenced_sym = RelocReferencedSym::Address {
+                unaddended_address: *unaddended_address,
+                addended_address: *addended_address,
             };
 
             relocs[instr_index] = Some(reloc_type.new_reloc_info(referenced_sym));
@@ -394,7 +486,7 @@ impl FunctionSymProcessed {
 
             // Check in case we are referencing a label/aent/etc
             let referenced_sym = if metadata.is_some() {
-                RelocReferencedSym::Address(*symbol_got_vram)
+                RelocReferencedSym::new_address(*symbol_got_vram)
             } else {
                 referenced_labels_refer_segment.push((
                     *symbol_got_vram,
@@ -480,7 +572,7 @@ impl FunctionSymProcessed {
             );
 
             let referenced_sym = if metadata.is_some() {
-                RelocReferencedSym::Address(*symbol_vram)
+                RelocReferencedSym::new_address(*symbol_vram)
             } else {
                 referenced_labels_refer_segment.push((
                     *symbol_vram,
@@ -531,7 +623,7 @@ impl FunctionSymProcessed {
             );
 
             let referenced_sym = if metadata.is_some() {
-                RelocReferencedSym::Address(*symbol_vram)
+                RelocReferencedSym::new_address(*symbol_vram)
             } else {
                 referenced_labels_refer_segment.push((
                     *symbol_vram,
@@ -659,6 +751,9 @@ impl FunctionSymProcessed {
                 .address_per_hi_instr()
                 .contains_key(instr_rom)
                 && !instr_analysis.constant_per_instr().contains_key(instr_rom)
+                && !instr_analysis
+                    .address_per_hi_unaligned_instr()
+                    .contains_key(instr_rom)
             {
                 let instr_index = (*instr_rom - ranges.rom().start()).inner() as usize / 4;
                 let constant = (*hi_imm as u32) << 16;

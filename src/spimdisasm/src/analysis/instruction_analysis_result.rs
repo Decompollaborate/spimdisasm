@@ -57,10 +57,12 @@ pub(crate) struct InstructionAnalysisResult {
 
     constant_per_instr: UnorderedMap<Rom, u32>,
 
-    // TODO: merge these 3 thingies
-    address_per_instr: UnorderedMap<Rom, Vram>,
+    // TODO: merge these thingies
     address_per_hi_instr: UnorderedMap<Rom, Vram>,
     address_per_lo_instr: UnorderedMap<Rom, Vram>,
+
+    address_per_hi_unaligned_instr: UnorderedMap<Rom, (Vram, Vram)>,
+    address_per_lo_unaligned_instr: UnorderedMap<Rom, (Vram, Vram)>,
 
     address_per_got_hi: UnorderedMap<Rom, Vram>,
     address_per_got_lo: UnorderedMap<Rom, Vram>,
@@ -76,9 +78,6 @@ pub(crate) struct InstructionAnalysisResult {
     global_got_addresses: UnorderedMap<Rom, Vram>,
     unpaired_local_got_addresses: UnorderedMap<Rom, Vram>,
     paired_local_got_addresses: UnorderedMap<Rom, Vram>,
-
-    hi_to_lo: UnorderedMap<Rom, Rom>,
-    lo_to_hi: UnorderedMap<Rom, Rom>,
 
     // Jump and link (functions)
     indirect_function_call_instr: UnorderedMap<Rom, Vram>,
@@ -109,9 +108,10 @@ impl InstructionAnalysisResult {
             hi_instrs: UnorderedMap::new(),
             non_lo_instrs: UnorderedSet::new(),
             constant_per_instr: UnorderedMap::new(),
-            address_per_instr: UnorderedMap::new(),
             address_per_hi_instr: UnorderedMap::new(),
             address_per_lo_instr: UnorderedMap::new(),
+            address_per_hi_unaligned_instr: UnorderedMap::new(),
+            address_per_lo_unaligned_instr: UnorderedMap::new(),
             address_per_got_hi: UnorderedMap::new(),
             address_per_got_lo: UnorderedMap::new(),
             type_info_per_address: UnorderedMap::new(),
@@ -121,8 +121,6 @@ impl InstructionAnalysisResult {
             global_got_addresses: UnorderedMap::new(),
             unpaired_local_got_addresses: UnorderedMap::new(),
             paired_local_got_addresses: UnorderedMap::new(),
-            hi_to_lo: UnorderedMap::new(),
-            lo_to_hi: UnorderedMap::new(),
             indirect_function_call_instr: UnorderedMap::new(),
             indirect_function_call: UnorderedMap::new(),
             raw_indirect_function_call: UnorderedMap::new(),
@@ -180,6 +178,14 @@ impl InstructionAnalysisResult {
     #[must_use]
     pub(crate) fn address_per_lo_instr(&self) -> &UnorderedMap<Rom, Vram> {
         &self.address_per_lo_instr
+    }
+    #[must_use]
+    pub(crate) fn address_per_hi_unaligned_instr(&self) -> &UnorderedMap<Rom, (Vram, Vram)> {
+        &self.address_per_hi_unaligned_instr
+    }
+    #[must_use]
+    pub(crate) fn address_per_lo_unaligned_instr(&self) -> &UnorderedMap<Rom, (Vram, Vram)> {
+        &self.address_per_lo_unaligned_instr
     }
 
     #[must_use]
@@ -374,8 +380,6 @@ impl InstructionAnalysisResult {
                     self.paired_local_got_addresses.insert(instr_rom, vram);
 
                     self.add_referenced_vram(instr_rom, vram);
-                    self.hi_to_lo.insert(upper_rom, instr_rom);
-                    self.lo_to_hi.insert(instr_rom, upper_rom);
                     if let Some(access_info) = access_info {
                         self.apply_symbol_type(vram, instr_rom, access_info);
                     }
@@ -383,6 +387,28 @@ impl InstructionAnalysisResult {
                 }
                 InstrOpPairedAddress::PairedGotLo { hi_rom } => {
                     self.process_paired_got_lo(vram, hi_rom, instr_rom);
+                    InstrAnalysisInfo::No
+                }
+                InstrOpPairedAddress::PairedLoUnaligned {
+                    hi_rom,
+                    access_info,
+                    unaddended_address,
+                } => {
+                    self.process_address_unaligned(
+                        unaddended_address,
+                        vram,
+                        Some(hi_rom),
+                        instr_rom,
+                    );
+                    self.apply_symbol_type(unaddended_address, instr_rom, access_info);
+                    InstrAnalysisInfo::No
+                }
+                InstrOpPairedAddress::GpRelUnaligned {
+                    access_info,
+                    unaddended_address,
+                } => {
+                    self.process_address_unaligned(unaddended_address, vram, None, instr_rom);
+                    self.apply_symbol_type(unaddended_address, instr_rom, access_info);
                     InstrAnalysisInfo::No
                 }
             },
@@ -500,9 +526,6 @@ impl InstructionAnalysisResult {
             self.constant_per_instr.entry(hi_rom).or_insert(constant);
         }
         self.constant_per_instr.insert(instr_rom, constant);
-
-        self.hi_to_lo.insert(hi_rom, instr_rom);
-        self.lo_to_hi.insert(instr_rom, hi_rom);
     }
 }
 
@@ -525,11 +548,35 @@ impl InstructionAnalysisResult {
             let entry = self.address_per_hi_instr.entry(hi_rom);
             if entry.is_vacant() {
                 entry.or_insert(address);
-                self.address_per_instr.insert(hi_rom, address);
                 self.add_referenced_vram(hi_rom, address);
             }
-            self.hi_to_lo.insert(hi_rom, instr_rom);
-            self.lo_to_hi.insert(instr_rom, hi_rom);
+        } else {
+            /*
+            self.symbolGpInstrOffset[lowerOffset] = address
+            self.gpReferencedSymbols.add(address)
+            self.symbolInstrOffset[lowerOffset] = address
+            */
+        }
+    }
+
+    fn process_address_unaligned(
+        &mut self,
+        unaddended_address: Vram,
+        addended_address: Vram,
+        hi_rom: Option<Rom>,
+        instr_rom: Rom,
+    ) {
+        self.add_referenced_vram(instr_rom, unaddended_address);
+
+        self.address_per_lo_unaligned_instr
+            .entry(instr_rom)
+            .or_insert((unaddended_address, addended_address));
+        if let Some(hi_rom) = hi_rom {
+            let entry = self.address_per_hi_unaligned_instr.entry(hi_rom);
+            if entry.is_vacant() {
+                entry.or_insert((unaddended_address, addended_address));
+                self.add_referenced_vram(hi_rom, unaddended_address);
+            }
         } else {
             /*
             self.symbolGpInstrOffset[lowerOffset] = address

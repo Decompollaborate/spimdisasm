@@ -201,8 +201,9 @@ impl DataSymProcessed {
                     });
 
                     if valid_reference {
-                        relocs[i] =
-                            Some(reloc_type.new_reloc_info(RelocReferencedSym::Address(word_vram)));
+                        relocs[i] = Some(
+                            reloc_type.new_reloc_info(RelocReferencedSym::new_address(word_vram)),
+                        );
                     }
                 }
             }

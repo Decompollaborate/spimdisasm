@@ -327,6 +327,7 @@ fn find_functions(
         settings.instruction_flags().abi(),
         Some(section_ranges.vram().start() + Size::new(index as u32 * 4)),
         global_config.gp_config().copied(),
+        global_config.endian(),
     );
     let mut prev_instr = None;
 
