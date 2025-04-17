@@ -177,7 +177,11 @@ pub(crate) enum InstrOpLink {
     /// A "Jump and link register" to a register that contains a raw address from the GOT. A `jalr`.
     ///
     /// This is the result of calling an address loaded with `%call_hi`/`%call_lo`. See `PairedGotLo`.
-    CallHiLoRegisterLink { vram: Vram, rom: Rom },
+    CallHiLoRegisterLink {
+        vram: Vram,
+        hi_rom: Rom,
+        lo_rom: Rom,
+    },
 
     /// A "Jump and link register" to a register that has been dereferenced. A `jalr`.
     ///
@@ -425,9 +429,10 @@ impl RegisterTracker {
                             rom: *setter_rom,
                         }
                     }
-                    GprRegRawAddress::HiLoGp { .. } => InstrOpLink::CallHiLoRegisterLink {
+                    GprRegRawAddress::HiLoGp { hi_rom } => InstrOpLink::CallHiLoRegisterLink {
                         vram: *vram,
-                        rom: *setter_rom,
+                        hi_rom: *hi_rom,
+                        lo_rom: *setter_rom,
                     },
                     GprRegRawAddress::GpGotLazyResolver { .. } => {
                         InstrOpLink::UnknownJumpAndLinkRegister { reg: rs }
@@ -519,7 +524,7 @@ impl RegisterTracker {
                         InstructionOperation::JumptableJump {
                             jumptable_vram: *original_address,
                             dereferenced_rom: *deref_rom,
-                            info: InstrOpJumptable::Pic,
+                            info: InstrOpJumptable::Simple,
                         }
                     }
                 }
@@ -3220,7 +3225,8 @@ mod tests {
             InstructionOperation::Link {
                 info: InstrOpLink::CallHiLoRegisterLink {
                     vram: Vram::new(0x800000C4),
-                    rom: Rom::new(0x000100A4),
+                    hi_rom: Rom::new(0x0001009C),
+                    lo_rom: Rom::new(0x000100A4),
                 },
             },
             InstructionOperation::UnhandledOpcode {

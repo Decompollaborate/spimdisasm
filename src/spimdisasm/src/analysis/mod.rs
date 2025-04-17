@@ -2,6 +2,7 @@
 /* SPDX-License-Identifier: MIT */
 
 mod gpr_register_value;
+mod instr_analysis_info;
 mod instruction_analysis_result;
 mod instruction_analyzer;
 pub(crate) mod preheat;
@@ -13,7 +14,8 @@ mod register_tracker;
 mod string_guesser;
 
 pub(crate) use gpr_register_value::GprRegisterValue;
-pub(crate) use instruction_analysis_result::{InstrAnalysisInfo, InstructionAnalysisResult};
+pub(crate) use instr_analysis_info::InstrAnalysisInfo;
+pub(crate) use instruction_analysis_result::InstructionAnalysisResult;
 pub(crate) use instruction_analyzer::InstructionAnalyzer;
 pub(crate) use preheat::Preheater;
 pub use preheat_error::PreheatError;

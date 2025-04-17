@@ -7,6 +7,7 @@ use crate::{
     addresses::{GlobalOffsetTable, RomVramRange, Size, Vram},
     collections::{addended_ordered_map::FindSettings, unordered_set::UnorderedSet},
     context::{Context, OwnedSegmentNotFoundError},
+    metadata::SegmentMetadata,
     parent_segment_info::ParentSegmentInfo,
 };
 
@@ -40,9 +41,8 @@ impl InstructionAnalyzer {
             global_config.endian(),
         );
         let mut result = InstructionAnalysisResult::new(ranges);
-        let global_offset_table = context
-            .find_owned_segment(parent_info)?
-            .global_offset_table();
+        let owned_segment = context.find_owned_segment(parent_info)?;
+        let global_offset_table = owned_segment.global_offset_table();
 
         // The below iteration skips the first instruction so we have to process it explicitly here.
         let mut prev_instr_analysis_info =
@@ -76,11 +76,11 @@ impl InstructionAnalyzer {
                 None
             };
 
-            if let Some(InstrAnalysisInfo::JumptableJump { jumptable_vram }) =
+            if let Some(InstrAnalysisInfo::Jumptable { jumptable_vram, .. }) =
                 prev_instr_analysis_info
             {
                 analyzer.follow_jumptable(
-                    context,
+                    owned_segment,
                     parent_info,
                     &mut result,
                     &regs_tracker,
@@ -92,7 +92,7 @@ impl InstructionAnalyzer {
                 )?;
             } else {
                 analyzer.look_ahead(
-                    context,
+                    owned_segment,
                     parent_info,
                     &mut result,
                     &regs_tracker,
@@ -116,7 +116,7 @@ impl InstructionAnalyzer {
     #[allow(clippy::too_many_arguments)]
     fn look_ahead(
         &mut self,
-        context: &Context,
+        owned_segment: &SegmentMetadata,
         parent_info: &ParentSegmentInfo,
         result: &mut InstructionAnalysisResult,
         original_regs_tracker: &RegisterTracker,
@@ -162,7 +162,7 @@ impl InstructionAnalyzer {
         }
 
         self.look_ahead_impl(
-            context,
+            owned_segment,
             parent_info,
             result,
             regs_tracker,
@@ -176,7 +176,7 @@ impl InstructionAnalyzer {
     #[expect(clippy::too_many_arguments)]
     fn follow_jumptable(
         &mut self,
-        context: &Context,
+        owned_segment: &SegmentMetadata,
         parent_info: &ParentSegmentInfo,
         result: &mut InstructionAnalysisResult,
         original_regs_tracker: &RegisterTracker,
@@ -194,9 +194,8 @@ impl InstructionAnalyzer {
             return Ok(());
         }
 
-        let jumptable_ref = if let Some(jumptable_ref) = context
-            .find_owned_segment(parent_info)?
-            .find_reference(jumptable_vram, FindSettings::new(false))
+        let jumptable_ref = if let Some(jumptable_ref) =
+            owned_segment.find_reference(jumptable_vram, FindSettings::new(false))
         {
             jumptable_ref
         } else {
@@ -209,7 +208,7 @@ impl InstructionAnalyzer {
                     (*jtbl_label_vram - result.ranges().vram().start()).inner() as usize;
 
                 self.look_ahead_impl(
-                    context,
+                    owned_segment,
                     parent_info,
                     result,
                     *original_regs_tracker,
@@ -227,7 +226,7 @@ impl InstructionAnalyzer {
     #[expect(clippy::too_many_arguments)]
     fn look_ahead_impl(
         &mut self,
-        context: &Context,
+        owned_segment: &SegmentMetadata,
         parent_info: &ParentSegmentInfo,
         result: &mut InstructionAnalysisResult,
         mut regs_tracker: RegisterTracker,
@@ -247,11 +246,11 @@ impl InstructionAnalyzer {
             } else {
                 None
             };
-            if let Some(InstrAnalysisInfo::JumptableJump { jumptable_vram }) =
+            if let Some(InstrAnalysisInfo::Jumptable { jumptable_vram, .. }) =
                 prev_instr_analysis_info
             {
                 self.follow_jumptable(
-                    context,
+                    owned_segment,
                     parent_info,
                     result,
                     &regs_tracker,
@@ -263,7 +262,7 @@ impl InstructionAnalyzer {
                 )?;
             } else {
                 self.look_ahead(
-                    context,
+                    owned_segment,
                     parent_info,
                     result,
                     &regs_tracker,

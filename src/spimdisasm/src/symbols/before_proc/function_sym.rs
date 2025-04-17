@@ -7,13 +7,15 @@ use rabbitizer::Instruction;
 
 use crate::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
-    analysis::{InstructionAnalysisResult, InstructionAnalyzer},
+    analysis::{
+        InstrAnalysisInfo, InstrOpJumptable, InstructionAnalysisResult, InstructionAnalyzer,
+    },
     collections::{addended_ordered_map::FindSettings, unordered_set::UnorderedSet},
     config::Compiler,
     context::Context,
     metadata::{
-        GeneratedBy, GotAccessKind, LabelType, ParentSectionMetadata, ReferrerInfo,
-        SegmentMetadata, SymbolMetadata, SymbolNameGenerationSettings, SymbolType,
+        GeneratedBy, GotAccessKind, LabelType, ParentSectionMetadata, ReferrerInfo, SymbolMetadata,
+        SymbolNameGenerationSettings, SymbolType,
     },
     parent_segment_info::ParentSegmentInfo,
     relocation::RelocationInfo,
@@ -50,7 +52,7 @@ impl FunctionSym {
         let vram_range = AddressRange::new(vram, vram + size);
         let ranges = RomVramRange::new(rom_range, vram_range);
 
-        let mut instr_analysis =
+        let instr_analysis =
             InstructionAnalyzer::analyze(context, &parent_segment_info, ranges, &instructions)?;
 
         let symbol_name_generation_settings = context
@@ -70,18 +72,11 @@ impl FunctionSym {
 
         properties.apply_to_metadata(metadata);
 
-        Self::process_instr_analysis_result_owned(
-            &instr_analysis,
-            &ranges,
-            &parent_segment_info,
-            owned_segment,
-        )?;
-        Self::process_instr_analysis_result_referenced(
-            &mut instr_analysis,
-            &ranges,
+        Self::process_instr_analysis_result(
             context,
+            &instr_analysis,
             &parent_segment_info,
-            &symbol_name_generation_settings,
+            symbol_name_generation_settings,
         )?;
 
         Ok(Self {
@@ -92,710 +87,683 @@ impl FunctionSym {
         })
     }
 
-    fn process_instr_analysis_result_owned(
+    fn process_instr_analysis_result(
+        context: &mut Context,
         instr_analysis: &InstructionAnalysisResult,
-        ranges: &RomVramRange,
         parent_segment_info: &ParentSegmentInfo,
-        owned_segment: &mut SegmentMetadata,
+        symbol_name_generation_settings: SymbolNameGenerationSettings,
     ) -> Result<(), SymbolCreationError> {
-        for (instr_rom, target_vram) in instr_analysis.branch_targets() {
-            /*
-            if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
-                if self.getVromOffset(instrOffset) in self.context.globalRelocationOverrides:
-                    # Avoid creating wrong symbols on elf files
-                    continue
-            */
+        let ranges = instr_analysis.ranges();
+        let self_vram = ranges.vram().start();
+        let self_rom = ranges.rom().start();
 
-            let referenced_info = ReferrerInfo::new_function(
-                ranges.vram().start(),
-                parent_segment_info.clone(),
-                *instr_rom,
-            );
-            let branch_label =
-                owned_segment.add_label(*target_vram, LabelType::Branch, referenced_info)?;
-            branch_label.set_rom(ranges.rom_from_vram(*target_vram).unwrap());
-            branch_label.set_defined();
+        for (instr_index, info) in instr_analysis.instruction_infos().iter().enumerate() {
+            let instr_rom = self_rom + Size::new(instr_index as u32 * 4);
 
-            /*
-            labelSym.referenceCounter += 1
-            labelSym.referenceFunctions.add(self.contextSym)
-            labelSym.parentFunction = self.contextSym
-            labelSym.parentFileName = self.contextSym.parentFileName
-            self.contextSym.branchLabels.add(labelSym.vram, labelSym)
-            */
-        }
-        for (instr_rom, target_vram) in instr_analysis.branch_targets_outside() {
-            /*
-            if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
-                if self.getVromOffset(instrOffset) in self.context.globalRelocationOverrides:
-                    # Avoid creating wrong symbols on elf files
-                    continue
-            */
+            match info {
+                InstrAnalysisInfo::No => {}
 
-            if owned_segment.in_vram_range(*target_vram)
-                && owned_segment
-                    .find_symbol(*target_vram, FindSettings::new(false))
-                    .is_none()
-            {
-                // Only generate a label if this outside-branch is not branching to the start of a function
+                InstrAnalysisInfo::DirectLink { target_vram } => {
+                    if context
+                        .find_owned_segment(parent_segment_info)?
+                        .is_vram_ignored(*target_vram)
+                    {
+                        continue;
+                    }
 
-                let referenced_info = ReferrerInfo::new_function(
-                    ranges.vram().start(),
-                    parent_segment_info.clone(),
-                    *instr_rom,
-                );
-                let branch_label = owned_segment.add_label(
-                    *target_vram,
-                    LabelType::AlternativeEntry,
-                    referenced_info,
-                )?;
-                let rom = ranges
-                    .rom()
-                    .start()
-                    .inner()
-                    .wrapping_add_signed((*target_vram - ranges.vram().start()).inner());
-                branch_label.set_rom(Rom::new(rom));
-                branch_label.set_defined();
+                    /*
+                    if self.context.isAddressBanned(targetVram):
+                        continue
+                    */
 
-                /*
-                labelSym.referenceCounter += 1
-                labelSym.referenceFunctions.add(self.contextSym)
-                labelSym.parentFunction = self.contextSym
-                labelSym.parentFileName = self.contextSym.parentFileName
-                self.contextSym.branchLabels.add(labelSym.vram, labelSym)
-                */
-                // TODO: add some kind of comment mentioning this instr is branching outside the current function.
-            }
-        }
-        for (instr_rom, target_vram) in instr_analysis.branch_calls() {
-            /*
-            if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
-                if self.getVromOffset(instrOffset) in self.context.globalRelocationOverrides:
-                    # Avoid creating wrong symbols on elf files
-                    continue
-            */
+                    /*
+                    if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
+                        if self.getVromOffset(instrOffset) in self.context.globalRelocationOverrides:
+                            # Avoid creating wrong symbols on elf files
+                            continue
+                    */
 
-            let referenced_info = ReferrerInfo::new_function(
-                ranges.vram().start(),
-                parent_segment_info.clone(),
-                *instr_rom,
-            );
-            owned_segment.add_label(*target_vram, LabelType::AlternativeEntry, referenced_info)?;
+                    let referenced_segment =
+                        context.find_referenced_segment_mut(*target_vram, parent_segment_info);
+                    let func_sym = referenced_segment.add_symbol(
+                        *target_vram,
+                        true,
+                        symbol_name_generation_settings.clone(),
+                    )?;
+                    if func_sym.vram() == *target_vram {
+                        func_sym.set_type(SymbolType::Function, GeneratedBy::Autogenerated);
+                        func_sym.add_reference_function(
+                            self_vram,
+                            parent_segment_info.clone(),
+                            instr_rom,
+                        );
+                    } else {
+                        let referenced_info = ReferrerInfo::new_function(
+                            self_vram,
+                            parent_segment_info.clone(),
+                            instr_rom,
+                        );
 
-            if let Some(func_sym) =
-                owned_segment.find_symbol_mut(*target_vram, FindSettings::new(false))
-            {
-                func_sym.set_type(SymbolType::Function, GeneratedBy::Autogenerated);
-                func_sym.add_reference_function(
-                    ranges.vram().start(),
-                    parent_segment_info.clone(),
-                    *instr_rom,
-                );
-            }
-
-            /*
-            labelSym.referenceCounter += 1
-            labelSym.referenceFunctions.add(self.contextSym)
-            labelSym.parentFunction = self.contextSym
-            labelSym.parentFileName = self.contextSym.parentFileName
-            self.contextSym.branchLabels.add(labelSym.vram, labelSym)
-            */
-        }
-
-        Ok(())
-    }
-
-    fn process_instr_analysis_result_referenced(
-        instr_analysis: &mut InstructionAnalysisResult,
-        ranges: &RomVramRange,
-        context: &mut Context,
-        parent_segment_info: &ParentSegmentInfo,
-        symbol_name_generation_settings: &SymbolNameGenerationSettings,
-    ) -> Result<(), SymbolCreationError> {
-        Self::process_got_syms(
-            instr_analysis,
-            ranges,
-            context,
-            parent_segment_info,
-            symbol_name_generation_settings,
-        )?;
-
-        // Jumptables
-        for (instr_rom, target_vram) in instr_analysis.referenced_jumptables() {
-            if context
-                .find_owned_segment(parent_segment_info)?
-                .is_vram_ignored(*target_vram)
-            {
-                continue;
-            }
-
-            let referenced_segment =
-                context.find_referenced_segment_mut(*target_vram, parent_segment_info);
-            let jumptable = referenced_segment.add_symbol(
-                *target_vram,
-                false,
-                symbol_name_generation_settings.clone(),
-            )?;
-            jumptable.set_type(SymbolType::Jumptable, GeneratedBy::Autogenerated);
-            jumptable.add_reference_function(
-                ranges.vram().start(),
-                parent_segment_info.clone(),
-                *instr_rom,
-            );
-            /*
-            jumpTable.parentFunction = self.contextSym
-            self.contextSym.jumpTables.add(jumpTable.vram, jumpTable)
-            */
-        }
-
-        for (instr_rom, target_vram) in instr_analysis.func_calls() {
-            if context
-                .find_owned_segment(parent_segment_info)?
-                .is_vram_ignored(*target_vram)
-            {
-                continue;
-            }
-
-            /*
-            if self.context.isAddressBanned(targetVram):
-                continue
-            */
-
-            /*
-            if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
-                if self.getVromOffset(instrOffset) in self.context.globalRelocationOverrides:
-                    # Avoid creating wrong symbols on elf files
-                    continue
-            */
-
-            let referenced_segment =
-                context.find_referenced_segment_mut(*target_vram, parent_segment_info);
-            let func_sym = referenced_segment.add_symbol(
-                *target_vram,
-                true,
-                symbol_name_generation_settings.clone(),
-            )?;
-            if func_sym.vram() == *target_vram {
-                func_sym.set_type(SymbolType::Function, GeneratedBy::Autogenerated);
-                func_sym.add_reference_function(
-                    ranges.vram().start(),
-                    parent_segment_info.clone(),
-                    *instr_rom,
-                );
-            } else {
-                let referenced_info = ReferrerInfo::new_function(
-                    ranges.vram().start(),
-                    parent_segment_info.clone(),
-                    *instr_rom,
-                );
-
-                referenced_segment.add_label(
-                    *target_vram,
-                    LabelType::AlternativeEntry,
-                    referenced_info,
-                )?;
-            }
-        }
-        for (instr_rom, target_vram) in instr_analysis.maybe_tail_calls() {
-            if context
-                .find_owned_segment(parent_segment_info)?
-                .is_vram_ignored(*target_vram)
-            {
-                continue;
-            }
-
-            /*
-            if self.context.isAddressBanned(targetVram):
-                continue
-            */
-
-            /*
-            if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
-                if self.getVromOffset(instrOffset) in self.context.globalRelocationOverrides:
-                    # Avoid creating wrong symbols on elf files
-                    continue
-            */
-
-            let referenced_segment =
-                context.find_referenced_segment_mut(*target_vram, parent_segment_info);
-
-            let referenced_info = ReferrerInfo::new_function(
-                ranges.vram().start(),
-                parent_segment_info.clone(),
-                *instr_rom,
-            );
-            referenced_segment.add_label(
-                *target_vram,
-                LabelType::AlternativeEntry,
-                referenced_info,
-            )?;
-
-            if let Some(func_sym) =
-                referenced_segment.find_symbol_mut(*target_vram, FindSettings::new(false))
-            {
-                func_sym.set_type(SymbolType::Function, GeneratedBy::Autogenerated);
-                func_sym.add_reference_function(
-                    ranges.vram().start(),
-                    parent_segment_info.clone(),
-                    *instr_rom,
-                );
-            }
-        }
-
-        for (instr_rom, symbol_vram) in instr_analysis.address_per_lo_instr() {
-            /*
-            if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
-                if self.getVromOffset(loOffset) in self.context.globalRelocationOverrides:
-                    # Avoid creating wrong symbols on elf files
-                    continue
-            */
-
-            // Avoid symbolizing `_gp_disp`
-            if instr_analysis.cpload_roms().contains(instr_rom) {
-                continue;
-            }
-
-            let sym_access = if let Some(sym_access_info) =
-                instr_analysis.type_info_per_address().get(symbol_vram)
-            {
-                if sym_access_info.len() == 1 {
-                    sym_access_info.iter().next().map(|(k, _v)| k)
-                } else {
-                    None
-                }
-            } else {
-                None
-            };
-
-            if context
-                .find_owned_segment(parent_segment_info)?
-                .is_vram_ignored(*symbol_vram)
-            {
-                continue;
-            }
-
-            let referenced_segment =
-                context.find_referenced_segment_mut(*symbol_vram, parent_segment_info);
-
-            let sym_metadata = referenced_segment.add_symbol(
-                *symbol_vram,
-                true,
-                symbol_name_generation_settings.clone(),
-            )?;
-            if sym_metadata.sym_type() != Some(SymbolType::Function)
-                || sym_metadata.vram() == *symbol_vram
-            {
-                sym_metadata.add_reference_function(
-                    ranges.vram().start(),
-                    parent_segment_info.clone(),
-                    *instr_rom,
-                );
-
-                /*
-                contextSym = sym_metadata
-                # TODO: do this in a less ugly way
-                if contextSym.address != symVram:
-                    if contextSym.address % 4 != 0 or symVram % 4 != 0:
-                        if contextSym.getType() in {"u16", "s16", "u8", "u8"} or (symAccess is not None and symAccess.accessType in {rabbitizer.AccessType.BYTE, rabbitizer.AccessType.SHORT}):
-                            if not (contextSym.getSize() > 4):
-                                if contextSym.userDeclaredSize is None or symVram >= contextSym.address + contextSym.userDeclaredSize:
-                                    if symAccess is not None:
-                                        contextSym.setAccessTypeIfUnset(symAccess.accessType, symAccess.unsignedMemoryAccess)
-                                    contextSym.setFirstLoAccessIfUnset(loOffset)
-                                    contextSym = self.addSymbol(symVram, isAutogenerated=True)
-                */
-
-                /*
-                contextSym.setFirstLoAccessIfUnset(loOffset)
-                */
-
-                if let Some(sym_access_info) =
-                    instr_analysis.type_info_per_address().get(symbol_vram)
-                {
-                    for (k, _) in sym_access_info {
-                        sym_metadata.set_access_type(*k);
+                        referenced_segment.add_label(
+                            *target_vram,
+                            LabelType::AlternativeEntry,
+                            referenced_info,
+                        )?;
                     }
                 }
-
-                if let Some(_sym_access) = sym_access {
+                InstrAnalysisInfo::BranchLink { target_vram } => {
                     /*
-                    if contextSym.isAutogenerated:
-                        # Handle mips1 doublefloats
-                        if contextSym.accessType == rabbitizer.AccessType.FLOAT and common.GlobalConfig.ABI == common.Abi.O32:
-                            instr = self.instructions[loOffset//4]
-                            if instr.doesDereference() and instr.isFloat() and not instr.isDouble():
-                                if instr.ft.value % 2 != 0:
-                                    # lwc1/swc1 with an odd fpr means it is an mips1 doublefloats reference
-                                    if symVram % 8 != 0:
-                                        # We need to remove the the symbol pointing to the middle of this doublefloats
-                                        got = contextSym.isGot
-                                        gotLocal = contextSym.isGotLocal
-                                        gotGlobal = contextSym.isGotGlobal
-                                        self.removeSymbol(symVram)
+                    if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
+                        if self.getVromOffset(instrOffset) in self.context.globalRelocationOverrides:
+                            # Avoid creating wrong symbols on elf files
+                            continue
+                    */
 
-                                        # Align down to 8
-                                        symVram = (symVram >> 3) << 3
-                                        contextSym = self.addSymbol(symVram, isAutogenerated=True)
-                                        contextSym.referenceCounter += 1
-                                        contextSym.referenceFunctions.add(self.contextSym)
-                                        contextSym.setFirstLoAccessIfUnset(loOffset)
-                                        contextSym.isGot = got
-                                        contextSym.isGotLocal = gotLocal
-                                        contextSym.isGotGlobal = gotGlobal
-                                    contextSym.accessType = rabbitizer.AccessType.DOUBLEFLOAT
-                                    contextSym.unsignedAccessType = False
-                                    contextSym.isMips1Double = True
+                    let referenced_info = ReferrerInfo::new_function(
+                        self_vram,
+                        parent_segment_info.clone(),
+                        instr_rom,
+                    );
+                    let owned_segment = context.find_owned_segment_mut(parent_segment_info)?;
+                    owned_segment.add_label(
+                        *target_vram,
+                        LabelType::AlternativeEntry,
+                        referenced_info,
+                    )?;
+
+                    if let Some(func_sym) =
+                        owned_segment.find_symbol_mut(*target_vram, FindSettings::new(false))
+                    {
+                        func_sym.set_type(SymbolType::Function, GeneratedBy::Autogenerated);
+                        func_sym.add_reference_function(
+                            self_vram,
+                            parent_segment_info.clone(),
+                            instr_rom,
+                        );
+                    }
+
+                    /*
+                    labelSym.referenceCounter += 1
+                    labelSym.referenceFunctions.add(self.contextSym)
+                    labelSym.parentFunction = self.contextSym
+                    labelSym.parentFileName = self.contextSym.parentFileName
+                    self.contextSym.branchLabels.add(labelSym.vram, labelSym)
                     */
                 }
-            }
+                InstrAnalysisInfo::JumpAndLinkRegisterRaw { .. } => { /* TODO? */ }
+                InstrAnalysisInfo::JumpAndLinkRegisterDereferenced { .. } => { /* TODO? */ }
+                InstrAnalysisInfo::MaybeDirectTailCall { target_vram } => {
+                    if context
+                        .find_owned_segment(parent_segment_info)?
+                        .is_vram_ignored(*target_vram)
+                    {
+                        continue;
+                    }
 
-            if !sym_metadata.is_defined() || sym_metadata.vram() != *symbol_vram {
-                let referenced_info = ReferrerInfo::new_function(
-                    ranges.vram().start(),
-                    parent_segment_info.clone(),
-                    *instr_rom,
-                );
+                    /*
+                    if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
+                        if self.getVromOffset(instrOffset) in self.context.globalRelocationOverrides:
+                            # Avoid creating wrong symbols on elf files
+                            continue
+                    */
 
-                referenced_segment.add_label(
-                    *symbol_vram,
-                    LabelType::AlternativeEntry,
-                    referenced_info,
-                )?;
-            }
-        }
+                    let referenced_segment =
+                        context.find_referenced_segment_mut(*target_vram, parent_segment_info);
 
-        for (instr_rom, (unaddended_address, _addended_address)) in
-            instr_analysis.address_per_lo_unaligned_instr()
-        {
-            /*
-            if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
-                if self.getVromOffset(loOffset) in self.context.globalRelocationOverrides:
-                    # Avoid creating wrong symbols on elf files
-                    continue
-            */
+                    let referenced_info = ReferrerInfo::new_function(
+                        self_vram,
+                        parent_segment_info.clone(),
+                        instr_rom,
+                    );
+                    referenced_segment.add_label(
+                        *target_vram,
+                        LabelType::AlternativeEntry,
+                        referenced_info,
+                    )?;
 
-            // Avoid symbolizing `_gp_disp`
-            if instr_analysis.cpload_roms().contains(instr_rom) {
-                continue;
-            }
-
-            let sym_access = if let Some(sym_access_info) = instr_analysis
-                .type_info_per_address()
-                .get(unaddended_address)
-            {
-                if sym_access_info.len() == 1 {
-                    sym_access_info.iter().next().map(|(k, _v)| k)
-                } else {
-                    None
-                }
-            } else {
-                None
-            };
-
-            if context
-                .find_owned_segment(parent_segment_info)?
-                .is_vram_ignored(*unaddended_address)
-            {
-                continue;
-            }
-
-            let referenced_segment =
-                context.find_referenced_segment_mut(*unaddended_address, parent_segment_info);
-
-            let sym_metadata = referenced_segment.add_symbol(
-                *unaddended_address,
-                true,
-                symbol_name_generation_settings.clone(),
-            )?;
-            if sym_metadata.sym_type() != Some(SymbolType::Function)
-                || sym_metadata.vram() == *unaddended_address
-            {
-                sym_metadata.add_reference_function(
-                    ranges.vram().start(),
-                    parent_segment_info.clone(),
-                    *instr_rom,
-                );
-
-                /*
-                contextSym = sym_metadata
-                # TODO: do this in a less ugly way
-                if contextSym.address != symVram:
-                    if contextSym.address % 4 != 0 or symVram % 4 != 0:
-                        if contextSym.getType() in {"u16", "s16", "u8", "u8"} or (symAccess is not None and symAccess.accessType in {rabbitizer.AccessType.BYTE, rabbitizer.AccessType.SHORT}):
-                            if not (contextSym.getSize() > 4):
-                                if contextSym.userDeclaredSize is None or symVram >= contextSym.address + contextSym.userDeclaredSize:
-                                    if symAccess is not None:
-                                        contextSym.setAccessTypeIfUnset(symAccess.accessType, symAccess.unsignedMemoryAccess)
-                                    contextSym.setFirstLoAccessIfUnset(loOffset)
-                                    contextSym = self.addSymbol(symVram, isAutogenerated=True)
-                */
-
-                /*
-                contextSym.setFirstLoAccessIfUnset(loOffset)
-                */
-
-                if let Some(sym_access_info) = instr_analysis
-                    .type_info_per_address()
-                    .get(unaddended_address)
-                {
-                    for (k, _) in sym_access_info {
-                        sym_metadata.set_access_type(*k);
+                    if let Some(func_sym) =
+                        referenced_segment.find_symbol_mut(*target_vram, FindSettings::new(false))
+                    {
+                        func_sym.set_type(SymbolType::Function, GeneratedBy::Autogenerated);
+                        func_sym.add_reference_function(
+                            self_vram,
+                            parent_segment_info.clone(),
+                            instr_rom,
+                        );
                     }
                 }
+                InstrAnalysisInfo::RawRegisterTailCall { .. } => { /* TODO? */ }
+                InstrAnalysisInfo::DereferencedRegisterTailCall { .. } => { /* TODO? */ }
+                InstrAnalysisInfo::Jumptable {
+                    jumptable_vram,
+                    kind,
+                } => {
+                    if context
+                        .find_owned_segment(parent_segment_info)?
+                        .is_vram_ignored(*jumptable_vram)
+                    {
+                        continue;
+                    }
 
-                if let Some(_sym_access) = sym_access {
+                    let referenced_segment =
+                        context.find_referenced_segment_mut(*jumptable_vram, parent_segment_info);
+                    let jumptable = referenced_segment.add_symbol(
+                        *jumptable_vram,
+                        false,
+                        symbol_name_generation_settings.clone(),
+                    )?;
+                    jumptable.set_type(SymbolType::Jumptable, GeneratedBy::Autogenerated);
+                    jumptable.add_reference_function(
+                        self_vram,
+                        parent_segment_info.clone(),
+                        instr_rom,
+                    );
+
+                    match kind {
+                        InstrOpJumptable::Simple => {}
+                        InstrOpJumptable::Pic => {
+                            jumptable.set_add_gp_to_pointed_data();
+                        }
+                    }
                     /*
-                    if contextSym.isAutogenerated:
-                        # Handle mips1 doublefloats
-                        if contextSym.accessType == rabbitizer.AccessType.FLOAT and common.GlobalConfig.ABI == common.Abi.O32:
-                            instr = self.instructions[loOffset//4]
-                            if instr.doesDereference() and instr.isFloat() and not instr.isDouble():
-                                if instr.ft.value % 2 != 0:
-                                    # lwc1/swc1 with an odd fpr means it is an mips1 doublefloats reference
-                                    if symVram % 8 != 0:
-                                        # We need to remove the the symbol pointing to the middle of this doublefloats
-                                        got = contextSym.isGot
-                                        gotLocal = contextSym.isGotLocal
-                                        gotGlobal = contextSym.isGotGlobal
-                                        self.removeSymbol(symVram)
-
-                                        # Align down to 8
-                                        symVram = (symVram >> 3) << 3
-                                        contextSym = self.addSymbol(symVram, isAutogenerated=True)
-                                        contextSym.referenceCounter += 1
-                                        contextSym.referenceFunctions.add(self.contextSym)
-                                        contextSym.setFirstLoAccessIfUnset(loOffset)
-                                        contextSym.isGot = got
-                                        contextSym.isGotLocal = gotLocal
-                                        contextSym.isGotGlobal = gotGlobal
-                                    contextSym.accessType = rabbitizer.AccessType.DOUBLEFLOAT
-                                    contextSym.unsignedAccessType = False
-                                    contextSym.isMips1Double = True
+                    jumpTable.parentFunction = self.contextSym
+                    self.contextSym.jumpTables.add(jumpTable.vram, jumpTable)
                     */
                 }
-            }
+                InstrAnalysisInfo::Branch { target_vram } => {
+                    /*
+                    if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
+                        if self.getVromOffset(instrOffset) in self.context.globalRelocationOverrides:
+                            # Avoid creating wrong symbols on elf files
+                            continue
+                    */
 
-            if !sym_metadata.is_defined() || sym_metadata.vram() != *unaddended_address {
-                let referenced_info = ReferrerInfo::new_function(
-                    ranges.vram().start(),
-                    parent_segment_info.clone(),
-                    *instr_rom,
-                );
+                    let referenced_info = ReferrerInfo::new_function(
+                        self_vram,
+                        parent_segment_info.clone(),
+                        instr_rom,
+                    );
+                    let owned_segment = context.find_owned_segment_mut(parent_segment_info)?;
+                    let branch_label = owned_segment.add_label(
+                        *target_vram,
+                        LabelType::Branch,
+                        referenced_info,
+                    )?;
+                    branch_label.set_rom(
+                        ranges
+                            .rom_from_vram(*target_vram)
+                            .expect("This should not panic"),
+                    );
+                    branch_label.set_defined();
 
-                referenced_segment.add_label(
-                    *unaddended_address,
-                    LabelType::AlternativeEntry,
-                    referenced_info,
-                )?;
-            }
-        }
-
-        for (instr_rom, symbol_vram) in instr_analysis.address_per_got_lo() {
-            let sym_access = if let Some(sym_access_info) =
-                instr_analysis.type_info_per_address().get(symbol_vram)
-            {
-                if sym_access_info.len() == 1 {
-                    sym_access_info.iter().next().map(|(k, _v)| k)
-                } else {
-                    None
+                    /*
+                    labelSym.referenceCounter += 1
+                    labelSym.referenceFunctions.add(self.contextSym)
+                    labelSym.parentFunction = self.contextSym
+                    labelSym.parentFileName = self.contextSym.parentFileName
+                    self.contextSym.branchLabels.add(labelSym.vram, labelSym)
+                    */
                 }
-            } else {
-                None
-            };
+                InstrAnalysisInfo::BranchOutside { target_vram } => {
+                    /*
+                    if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
+                        if self.getVromOffset(instrOffset) in self.context.globalRelocationOverrides:
+                            # Avoid creating wrong symbols on elf files
+                            continue
+                    */
 
-            if context
-                .find_owned_segment(parent_segment_info)?
-                .is_vram_ignored(*symbol_vram)
-            {
-                continue;
-            }
+                    let owned_segment = context.find_owned_segment_mut(parent_segment_info)?;
+                    if owned_segment.in_vram_range(*target_vram)
+                        && owned_segment
+                            .find_symbol(*target_vram, FindSettings::new(false))
+                            .is_none()
+                    {
+                        // Only generate a label if this outside-branch is not branching to the start of a function
 
-            let referenced_segment =
-                context.find_referenced_segment_mut(*symbol_vram, parent_segment_info);
+                        let referenced_info = ReferrerInfo::new_function(
+                            self_vram,
+                            parent_segment_info.clone(),
+                            instr_rom,
+                        );
+                        let branch_label = owned_segment.add_label(
+                            *target_vram,
+                            LabelType::AlternativeEntry,
+                            referenced_info,
+                        )?;
+                        let rom = self_rom
+                            .inner()
+                            .wrapping_add_signed((*target_vram - self_vram).inner());
+                        branch_label.set_rom(Rom::new(rom));
+                        branch_label.set_defined();
 
-            let sym_metadata = referenced_segment.add_symbol(
-                *symbol_vram,
-                true,
-                symbol_name_generation_settings.clone(),
-            )?;
-            if sym_metadata.sym_type() != Some(SymbolType::Function)
-                || sym_metadata.vram() == *symbol_vram
-            {
-                sym_metadata.add_reference_function(
-                    ranges.vram().start(),
-                    parent_segment_info.clone(),
-                    *instr_rom,
-                );
-
-                /*
-                contextSym = sym_metadata
-                # TODO: do this in a less ugly way
-                if contextSym.address != symVram:
-                    if contextSym.address % 4 != 0 or symVram % 4 != 0:
-                        if contextSym.getType() in {"u16", "s16", "u8", "u8"} or (symAccess is not None and symAccess.accessType in {rabbitizer.AccessType.BYTE, rabbitizer.AccessType.SHORT}):
-                            if not (contextSym.getSize() > 4):
-                                if contextSym.userDeclaredSize is None or symVram >= contextSym.address + contextSym.userDeclaredSize:
-                                    if symAccess is not None:
-                                        contextSym.setAccessTypeIfUnset(symAccess.accessType, symAccess.unsignedMemoryAccess)
-                                    contextSym.setFirstLoAccessIfUnset(loOffset)
-                                    contextSym = self.addSymbol(symVram, isAutogenerated=True)
-                */
-
-                /*
-                contextSym.setFirstLoAccessIfUnset(loOffset)
-                */
-
-                if let Some(sym_access_info) =
-                    instr_analysis.type_info_per_address().get(symbol_vram)
-                {
-                    for (k, _) in sym_access_info {
-                        sym_metadata.set_access_type(*k);
+                        /*
+                        labelSym.referenceCounter += 1
+                        labelSym.referenceFunctions.add(self.contextSym)
+                        labelSym.parentFunction = self.contextSym
+                        labelSym.parentFileName = self.contextSym.parentFileName
+                        self.contextSym.branchLabels.add(labelSym.vram, labelSym)
+                        */
+                        // TODO: add some kind of comment mentioning this instr is branching outside the current function.
                     }
                 }
-
-                if let Some(_sym_access) = sym_access {
+                InstrAnalysisInfo::UnpairedHi { .. } | InstrAnalysisInfo::PairedHi { .. } => {}
+                InstrAnalysisInfo::PairedLo { vram } | InstrAnalysisInfo::GpRel { vram } => {
                     /*
-                    if contextSym.isAutogenerated:
-                        # Handle mips1 doublefloats
-                        if contextSym.accessType == rabbitizer.AccessType.FLOAT and common.GlobalConfig.ABI == common.Abi.O32:
-                            instr = self.instructions[loOffset//4]
-                            if instr.doesDereference() and instr.isFloat() and not instr.isDouble():
-                                if instr.ft.value % 2 != 0:
-                                    # lwc1/swc1 with an odd fpr means it is an mips1 doublefloats reference
-                                    if symVram % 8 != 0:
-                                        # We need to remove the the symbol pointing to the middle of this doublefloats
-                                        got = contextSym.isGot
-                                        gotLocal = contextSym.isGotLocal
-                                        gotGlobal = contextSym.isGotGlobal
-                                        self.removeSymbol(symVram)
-
-                                        # Align down to 8
-                                        symVram = (symVram >> 3) << 3
-                                        contextSym = self.addSymbol(symVram, isAutogenerated=True)
-                                        contextSym.referenceCounter += 1
-                                        contextSym.referenceFunctions.add(self.contextSym)
-                                        contextSym.setFirstLoAccessIfUnset(loOffset)
-                                        contextSym.isGot = got
-                                        contextSym.isGotLocal = gotLocal
-                                        contextSym.isGotGlobal = gotGlobal
-                                    contextSym.accessType = rabbitizer.AccessType.DOUBLEFLOAT
-                                    contextSym.unsignedAccessType = False
-                                    contextSym.isMips1Double = True
+                    if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
+                        if self.getVromOffset(loOffset) in self.context.globalRelocationOverrides:
+                            # Avoid creating wrong symbols on elf files
+                            continue
                     */
+
+                    let sym_access = if let Some(sym_access_info) =
+                        instr_analysis.type_info_per_address().get(vram)
+                    {
+                        if sym_access_info.len() == 1 {
+                            sym_access_info.iter().next().map(|(k, _v)| k)
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    };
+
+                    if context
+                        .find_owned_segment(parent_segment_info)?
+                        .is_vram_ignored(*vram)
+                    {
+                        continue;
+                    }
+
+                    let referenced_segment =
+                        context.find_referenced_segment_mut(*vram, parent_segment_info);
+
+                    let sym_metadata = referenced_segment.add_symbol(
+                        *vram,
+                        true,
+                        symbol_name_generation_settings.clone(),
+                    )?;
+                    if sym_metadata.sym_type() != Some(SymbolType::Function)
+                        || sym_metadata.vram() == *vram
+                    {
+                        sym_metadata.add_reference_function(
+                            self_vram,
+                            parent_segment_info.clone(),
+                            instr_rom,
+                        );
+
+                        /*
+                        contextSym = sym_metadata
+                        # TODO: do this in a less ugly way
+                        if contextSym.address != symVram:
+                            if contextSym.address % 4 != 0 or symVram % 4 != 0:
+                                if contextSym.getType() in {"u16", "s16", "u8", "u8"} or (symAccess is not None and symAccess.accessType in {rabbitizer.AccessType.BYTE, rabbitizer.AccessType.SHORT}):
+                                    if not (contextSym.getSize() > 4):
+                                        if contextSym.userDeclaredSize is None or symVram >= contextSym.address + contextSym.userDeclaredSize:
+                                            if symAccess is not None:
+                                                contextSym.setAccessTypeIfUnset(symAccess.accessType, symAccess.unsignedMemoryAccess)
+                                            contextSym.setFirstLoAccessIfUnset(loOffset)
+                                            contextSym = self.addSymbol(symVram, isAutogenerated=True)
+                        */
+
+                        /*
+                        contextSym.setFirstLoAccessIfUnset(loOffset)
+                        */
+
+                        if let Some(sym_access_info) =
+                            instr_analysis.type_info_per_address().get(vram)
+                        {
+                            for (k, _) in sym_access_info {
+                                sym_metadata.set_access_type(*k);
+                            }
+                        }
+
+                        if let Some(_sym_access) = sym_access {
+                            /*
+                            if contextSym.isAutogenerated:
+                                # Handle mips1 doublefloats
+                                if contextSym.accessType == rabbitizer.AccessType.FLOAT and common.GlobalConfig.ABI == common.Abi.O32:
+                                    instr = self.instructions[loOffset//4]
+                                    if instr.doesDereference() and instr.isFloat() and not instr.isDouble():
+                                        if instr.ft.value % 2 != 0:
+                                            # lwc1/swc1 with an odd fpr means it is an mips1 doublefloats reference
+                                            if symVram % 8 != 0:
+                                                # We need to remove the the symbol pointing to the middle of this doublefloats
+                                                got = contextSym.isGot
+                                                gotLocal = contextSym.isGotLocal
+                                                gotGlobal = contextSym.isGotGlobal
+                                                self.removeSymbol(symVram)
+
+                                                # Align down to 8
+                                                symVram = (symVram >> 3) << 3
+                                                contextSym = self.addSymbol(symVram, isAutogenerated=True)
+                                                contextSym.referenceCounter += 1
+                                                contextSym.referenceFunctions.add(self.contextSym)
+                                                contextSym.setFirstLoAccessIfUnset(loOffset)
+                                                contextSym.isGot = got
+                                                contextSym.isGotLocal = gotLocal
+                                                contextSym.isGotGlobal = gotGlobal
+                                            contextSym.accessType = rabbitizer.AccessType.DOUBLEFLOAT
+                                            contextSym.unsignedAccessType = False
+                                            contextSym.isMips1Double = True
+                            */
+                        }
+                    }
+
+                    if !sym_metadata.is_defined() || sym_metadata.vram() != *vram {
+                        let referenced_info = ReferrerInfo::new_function(
+                            self_vram,
+                            parent_segment_info.clone(),
+                            instr_rom,
+                        );
+
+                        referenced_segment.add_label(
+                            *vram,
+                            LabelType::AlternativeEntry,
+                            referenced_info,
+                        )?;
+                    }
                 }
-            }
+                InstrAnalysisInfo::PairedHiUnaligned { .. } => {}
+                InstrAnalysisInfo::PairedLoUnaligned {
+                    unaddended_vram, ..
+                }
+                | InstrAnalysisInfo::GpRelUnaligned {
+                    unaddended_vram, ..
+                } => {
+                    /*
+                    if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
+                        if self.getVromOffset(loOffset) in self.context.globalRelocationOverrides:
+                            # Avoid creating wrong symbols on elf files
+                            continue
+                    */
 
-            if !sym_metadata.is_defined() || sym_metadata.vram() != *symbol_vram {
-                let referenced_info = ReferrerInfo::new_function(
-                    ranges.vram().start(),
-                    parent_segment_info.clone(),
-                    *instr_rom,
-                );
+                    let sym_access = if let Some(sym_access_info) =
+                        instr_analysis.type_info_per_address().get(unaddended_vram)
+                    {
+                        if sym_access_info.len() == 1 {
+                            sym_access_info.iter().next().map(|(k, _v)| k)
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    };
 
-                referenced_segment.add_label(
-                    *symbol_vram,
-                    LabelType::AlternativeEntry,
-                    referenced_info,
-                )?;
-            }
-        }
+                    if context
+                        .find_owned_segment(parent_segment_info)?
+                        .is_vram_ignored(*unaddended_vram)
+                    {
+                        continue;
+                    }
 
-        /*
-        # To debug jumptable rejection change this check to `True`
-        if False:
-            for jrInstrOffset, (referenceOffset, jtblAddress, branchOffset) in self.instrAnalyzer.rejectedjumpRegisterIntrOffset.items():
-                self.endOfLineComment[jrInstrOffset//4] = f" /* Jumping to something at address 0x{jtblAddress:08X} (inferred from 0x{self.getVromOffset(referenceOffset):X}). Jumptable rejected by instruction at vrom 0x{self.getVromOffset(branchOffset):X} */
-        "
-        */
+                    let referenced_segment =
+                        context.find_referenced_segment_mut(*unaddended_vram, parent_segment_info);
 
-        /*
-        if self.isLikelyHandwritten:
-            for instr in self.instructions:
-                instr.inHandwrittenFunction = self.isLikelyHandwritten
-        */
+                    let sym_metadata = referenced_segment.add_symbol(
+                        *unaddended_vram,
+                        true,
+                        symbol_name_generation_settings.clone(),
+                    )?;
+                    if sym_metadata.sym_type() != Some(SymbolType::Function)
+                        || sym_metadata.vram() == *unaddended_vram
+                    {
+                        sym_metadata.add_reference_function(
+                            self_vram,
+                            parent_segment_info.clone(),
+                            instr_rom,
+                        );
 
-        Ok(())
-    }
+                        /*
+                        contextSym = sym_metadata
+                        # TODO: do this in a less ugly way
+                        if contextSym.address != symVram:
+                            if contextSym.address % 4 != 0 or symVram % 4 != 0:
+                                if contextSym.getType() in {"u16", "s16", "u8", "u8"} or (symAccess is not None and symAccess.accessType in {rabbitizer.AccessType.BYTE, rabbitizer.AccessType.SHORT}):
+                                    if not (contextSym.getSize() > 4):
+                                        if contextSym.userDeclaredSize is None or symVram >= contextSym.address + contextSym.userDeclaredSize:
+                                            if symAccess is not None:
+                                                contextSym.setAccessTypeIfUnset(symAccess.accessType, symAccess.unsignedMemoryAccess)
+                                            contextSym.setFirstLoAccessIfUnset(loOffset)
+                                            contextSym = self.addSymbol(symVram, isAutogenerated=True)
+                        */
 
-    fn process_got_syms(
-        instr_analysis: &mut InstructionAnalysisResult,
-        ranges: &RomVramRange,
-        context: &mut Context,
-        parent_segment_info: &ParentSegmentInfo,
-        symbol_name_generation_settings: &SymbolNameGenerationSettings,
-    ) -> Result<(), SymbolCreationError> {
-        for (instr_rom, symbol_vram) in instr_analysis
-            .global_got_addresses()
-            .iter()
-            .chain(instr_analysis.unpaired_local_got_addresses())
-        {
-            let referenced_segment =
-                context.find_referenced_segment_mut(*symbol_vram, parent_segment_info);
-            let sym_metadata = referenced_segment.add_symbol(
-                *symbol_vram,
-                true,
-                symbol_name_generation_settings.clone(),
-            )?;
+                        /*
+                        contextSym.setFirstLoAccessIfUnset(loOffset)
+                        */
 
-            sym_metadata.set_got_access_kind(GotAccessKind::Global);
-            sym_metadata.add_reference_function(
-                ranges.vram().start(),
-                parent_segment_info.clone(),
-                *instr_rom,
-            );
+                        if let Some(sym_access_info) =
+                            instr_analysis.type_info_per_address().get(unaddended_vram)
+                        {
+                            for (k, _) in sym_access_info {
+                                sym_metadata.set_access_type(*k);
+                            }
+                        }
 
-            if !sym_metadata.is_defined() || sym_metadata.vram() != *symbol_vram {
-                let referenced_info = ReferrerInfo::new_function(
-                    ranges.vram().start(),
-                    parent_segment_info.clone(),
-                    *instr_rom,
-                );
+                        if let Some(_sym_access) = sym_access {
+                            /*
+                            if contextSym.isAutogenerated:
+                                # Handle mips1 doublefloats
+                                if contextSym.accessType == rabbitizer.AccessType.FLOAT and common.GlobalConfig.ABI == common.Abi.O32:
+                                    instr = self.instructions[loOffset//4]
+                                    if instr.doesDereference() and instr.isFloat() and not instr.isDouble():
+                                        if instr.ft.value % 2 != 0:
+                                            # lwc1/swc1 with an odd fpr means it is an mips1 doublefloats reference
+                                            if symVram % 8 != 0:
+                                                # We need to remove the the symbol pointing to the middle of this doublefloats
+                                                got = contextSym.isGot
+                                                gotLocal = contextSym.isGotLocal
+                                                gotGlobal = contextSym.isGotGlobal
+                                                self.removeSymbol(symVram)
 
-                referenced_segment.add_label(
-                    *symbol_vram,
-                    LabelType::AlternativeEntry,
-                    referenced_info,
-                )?;
-            }
-        }
+                                                # Align down to 8
+                                                symVram = (symVram >> 3) << 3
+                                                contextSym = self.addSymbol(symVram, isAutogenerated=True)
+                                                contextSym.referenceCounter += 1
+                                                contextSym.referenceFunctions.add(self.contextSym)
+                                                contextSym.setFirstLoAccessIfUnset(loOffset)
+                                                contextSym.isGot = got
+                                                contextSym.isGotLocal = gotLocal
+                                                contextSym.isGotGlobal = gotGlobal
+                                            contextSym.accessType = rabbitizer.AccessType.DOUBLEFLOAT
+                                            contextSym.unsignedAccessType = False
+                                            contextSym.isMips1Double = True
+                            */
+                        }
+                    }
 
-        // TODO
-        // for (instr_rom, symbol_vram) in instr_analysis.unpaired_local_got_addresses() {
-        //     panic!("\n\n\n{:?} {:?}\n", instr_rom, symbol_vram);
-        // }
+                    if !sym_metadata.is_defined() || sym_metadata.vram() != *unaddended_vram {
+                        let referenced_info = ReferrerInfo::new_function(
+                            self_vram,
+                            parent_segment_info.clone(),
+                            instr_rom,
+                        );
 
-        for (instr_rom, symbol_vram) in instr_analysis.paired_local_got_addresses() {
-            let referenced_segment =
-                context.find_referenced_segment_mut(*symbol_vram, parent_segment_info);
-            let sym_metadata = referenced_segment.add_symbol(
-                *symbol_vram,
-                true,
-                symbol_name_generation_settings.clone(),
-            )?;
+                        referenced_segment.add_label(
+                            *unaddended_vram,
+                            LabelType::AlternativeEntry,
+                            referenced_info,
+                        )?;
+                    }
+                }
+                InstrAnalysisInfo::ConstantHi { .. } | InstrAnalysisInfo::ConstantLo { .. } => {}
+                InstrAnalysisInfo::GotLazyResolver { .. } => {}
+                InstrAnalysisInfo::GotGlobal { vram }
+                | InstrAnalysisInfo::GotLocal { vram }
+                | InstrAnalysisInfo::GotCall16 { vram } => {
+                    let referenced_segment =
+                        context.find_referenced_segment_mut(*vram, parent_segment_info);
+                    let sym_metadata = referenced_segment.add_symbol(
+                        *vram,
+                        true,
+                        symbol_name_generation_settings.clone(),
+                    )?;
 
-            sym_metadata.set_got_access_kind(GotAccessKind::Local);
-            sym_metadata.add_reference_function(
-                ranges.vram().start(),
-                parent_segment_info.clone(),
-                *instr_rom,
-            );
+                    sym_metadata.set_got_access_kind(GotAccessKind::Global);
+                    sym_metadata.add_reference_function(
+                        self_vram,
+                        parent_segment_info.clone(),
+                        instr_rom,
+                    );
 
-            if instr_analysis.lo_rom_added_with_gp().contains(instr_rom) {
-                sym_metadata.set_add_gp_to_pointed_data();
-            }
+                    if !sym_metadata.is_defined() || sym_metadata.vram() != *vram {
+                        let referenced_info = ReferrerInfo::new_function(
+                            self_vram,
+                            parent_segment_info.clone(),
+                            instr_rom,
+                        );
 
-            if !sym_metadata.is_defined() || sym_metadata.vram() != *symbol_vram {
-                let referenced_info = ReferrerInfo::new_function(
-                    ranges.vram().start(),
-                    parent_segment_info.clone(),
-                    *instr_rom,
-                );
+                        referenced_segment.add_label(
+                            *vram,
+                            LabelType::AlternativeEntry,
+                            referenced_info,
+                        )?;
+                    }
+                }
+                InstrAnalysisInfo::GotLocalPaired { vram } => {
+                    let referenced_segment =
+                        context.find_referenced_segment_mut(*vram, parent_segment_info);
+                    let sym_metadata = referenced_segment.add_symbol(
+                        *vram,
+                        true,
+                        symbol_name_generation_settings.clone(),
+                    )?;
 
-                referenced_segment.add_label(
-                    *symbol_vram,
-                    LabelType::AlternativeEntry,
-                    referenced_info,
-                )?;
+                    sym_metadata.set_got_access_kind(GotAccessKind::Local);
+                    sym_metadata.add_reference_function(
+                        self_vram,
+                        parent_segment_info.clone(),
+                        instr_rom,
+                    );
+
+                    if !sym_metadata.is_defined() || sym_metadata.vram() != *vram {
+                        let referenced_info = ReferrerInfo::new_function(
+                            self_vram,
+                            parent_segment_info.clone(),
+                            instr_rom,
+                        );
+
+                        referenced_segment.add_label(
+                            *vram,
+                            LabelType::AlternativeEntry,
+                            referenced_info,
+                        )?;
+                    }
+                }
+                InstrAnalysisInfo::PairedGotHi { .. } | InstrAnalysisInfo::GotCallHi { .. } => {}
+                InstrAnalysisInfo::PairedGotLo { vram } | InstrAnalysisInfo::GotCallLo { vram } => {
+                    let sym_access = if let Some(sym_access_info) =
+                        instr_analysis.type_info_per_address().get(vram)
+                    {
+                        if sym_access_info.len() == 1 {
+                            sym_access_info.iter().next().map(|(k, _v)| k)
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    };
+
+                    if context
+                        .find_owned_segment(parent_segment_info)?
+                        .is_vram_ignored(*vram)
+                    {
+                        continue;
+                    }
+
+                    let referenced_segment =
+                        context.find_referenced_segment_mut(*vram, parent_segment_info);
+
+                    let sym_metadata = referenced_segment.add_symbol(
+                        *vram,
+                        true,
+                        symbol_name_generation_settings.clone(),
+                    )?;
+                    if sym_metadata.sym_type() != Some(SymbolType::Function)
+                        || sym_metadata.vram() == *vram
+                    {
+                        sym_metadata.add_reference_function(
+                            self_vram,
+                            parent_segment_info.clone(),
+                            instr_rom,
+                        );
+
+                        /*
+                        contextSym = sym_metadata
+                        # TODO: do this in a less ugly way
+                        if contextSym.address != symVram:
+                            if contextSym.address % 4 != 0 or symVram % 4 != 0:
+                                if contextSym.getType() in {"u16", "s16", "u8", "u8"} or (symAccess is not None and symAccess.accessType in {rabbitizer.AccessType.BYTE, rabbitizer.AccessType.SHORT}):
+                                    if not (contextSym.getSize() > 4):
+                                        if contextSym.userDeclaredSize is None or symVram >= contextSym.address + contextSym.userDeclaredSize:
+                                            if symAccess is not None:
+                                                contextSym.setAccessTypeIfUnset(symAccess.accessType, symAccess.unsignedMemoryAccess)
+                                            contextSym.setFirstLoAccessIfUnset(loOffset)
+                                            contextSym = self.addSymbol(symVram, isAutogenerated=True)
+                        */
+
+                        /*
+                        contextSym.setFirstLoAccessIfUnset(loOffset)
+                        */
+
+                        if let Some(sym_access_info) =
+                            instr_analysis.type_info_per_address().get(vram)
+                        {
+                            for (k, _) in sym_access_info {
+                                sym_metadata.set_access_type(*k);
+                            }
+                        }
+
+                        if let Some(_sym_access) = sym_access {
+                            /*
+                            if contextSym.isAutogenerated:
+                                # Handle mips1 doublefloats
+                                if contextSym.accessType == rabbitizer.AccessType.FLOAT and common.GlobalConfig.ABI == common.Abi.O32:
+                                    instr = self.instructions[loOffset//4]
+                                    if instr.doesDereference() and instr.isFloat() and not instr.isDouble():
+                                        if instr.ft.value % 2 != 0:
+                                            # lwc1/swc1 with an odd fpr means it is an mips1 doublefloats reference
+                                            if symVram % 8 != 0:
+                                                # We need to remove the the symbol pointing to the middle of this doublefloats
+                                                got = contextSym.isGot
+                                                gotLocal = contextSym.isGotLocal
+                                                gotGlobal = contextSym.isGotGlobal
+                                                self.removeSymbol(symVram)
+
+                                                # Align down to 8
+                                                symVram = (symVram >> 3) << 3
+                                                contextSym = self.addSymbol(symVram, isAutogenerated=True)
+                                                contextSym.referenceCounter += 1
+                                                contextSym.referenceFunctions.add(self.contextSym)
+                                                contextSym.setFirstLoAccessIfUnset(loOffset)
+                                                contextSym.isGot = got
+                                                contextSym.isGotLocal = gotLocal
+                                                contextSym.isGotGlobal = gotGlobal
+                                            contextSym.accessType = rabbitizer.AccessType.DOUBLEFLOAT
+                                            contextSym.unsignedAccessType = False
+                                            contextSym.isMips1Double = True
+                            */
+                        }
+                    }
+
+                    if !sym_metadata.is_defined() || sym_metadata.vram() != *vram {
+                        let referenced_info = ReferrerInfo::new_function(
+                            self_vram,
+                            parent_segment_info.clone(),
+                            instr_rom,
+                        );
+
+                        referenced_segment.add_label(
+                            *vram,
+                            LabelType::AlternativeEntry,
+                            referenced_info,
+                        )?;
+                    }
+                }
+                InstrAnalysisInfo::GpSetHi
+                | InstrAnalysisInfo::GpSetLo
+                | InstrAnalysisInfo::CploadHi
+                | InstrAnalysisInfo::CploadLo
+                | InstrAnalysisInfo::CploadAddu => {}
             }
         }
 

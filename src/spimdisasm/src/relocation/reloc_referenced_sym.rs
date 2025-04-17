@@ -8,6 +8,7 @@ use crate::addresses::Vram;
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
 pub enum RelocReferencedSym {
+    // TODO: rename to Symbol
     Address {
         unaddended_address: Vram,
         addended_address: Vram,

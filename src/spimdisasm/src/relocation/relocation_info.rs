@@ -198,7 +198,7 @@ impl<'ctx, 'rel, 'prnt> RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
                             | RelocationType::R_MIPS_CALL_HI16
                             | RelocationType::R_MIPS_CALL_LO16 => {
                                 // TODO: check symbol is present in the GOT.
-                                false
+                                metadata.label_type() == LabelType::AlternativeEntry
                             }
 
                             RelocationType::R_MIPS_GOT16

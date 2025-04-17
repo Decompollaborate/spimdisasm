@@ -18,6 +18,7 @@ use spimdisasm::{
     symbols::display::FunctionDisplaySettings,
 };
 
+#[expect(clippy::too_many_arguments)]
 fn disassemble_text(
     raw_bytes: &[u8],
     rom: Rom,
