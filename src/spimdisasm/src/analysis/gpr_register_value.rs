@@ -133,7 +133,34 @@ pub(crate) enum GprRegDereferencedAddress {
     /// lui         $reg, %hi(EXAMPLE)
     /// lw          $reg2, %lo(EXAMPLE)($reg)
     /// ```
-    Hi { hi_rom: Rom },
+    ///
+    /// In most cases `unaddended_vram` is equal to the actual `vram`.
+    /// Some examples where it isn't:
+    ///
+    /// Unaligned word big endian:
+    /// ```mips
+    /// lui         $reg, %hi(EXAMPLE)
+    /// lwr         $reg2, %lo(EXAMPLE + 0x3)($reg)
+    /// ```
+    ///
+    /// Unaligned doubleword big endian:
+    /// ```mips
+    /// lui         $reg, %hi(EXAMPLE)
+    /// ldr         $reg2, %lo(EXAMPLE + 0x7)($reg)
+    /// ```
+    ///
+    /// Unaligned word little endian:
+    /// ```mips
+    /// lui         $reg, %hi(EXAMPLE)
+    /// lwl         $reg2, %lo(EXAMPLE + 0x3)($reg)
+    /// ```
+    ///
+    /// Unaligned doubleword little endian:
+    /// ```mips
+    /// lui         $reg, %hi(EXAMPLE)
+    /// ldl         $reg2, %lo(EXAMPLE + 0x7)($reg)
+    /// ```
+    Hi { hi_rom: Rom, unaddended_vram: Vram },
 
     /// ```mips
     /// lui         $reg, %hi(EXAMPLE)
@@ -145,7 +172,30 @@ pub(crate) enum GprRegDereferencedAddress {
     /// ```mips
     /// lw       $reg, %gp_rel(EXAMPLE)($gp)
     /// ```
-    GpRel {},
+    ///
+    /// In most cases `unaddended_vram` is equal to the actual `vram`.
+    /// Some examples where it isn't:
+    ///
+    /// Unaligned word big endian:
+    /// ```mips
+    /// lwr         $reg, %lo(EXAMPLE + 0x3)($gp)
+    /// ```
+    ///
+    /// Unaligned doubleword big endian:
+    /// ```mips
+    /// ldr         $reg, %lo(EXAMPLE + 0x7)($gp)
+    /// ```
+    ///
+    /// Unaligned word little endian:
+    /// ```mips
+    /// lwl         $reg, %lo(EXAMPLE + 0x3)($gp)
+    /// ```
+    ///
+    /// Unaligned doubleword little endian:
+    /// ```mips
+    /// ldl         $reg, %lo(EXAMPLE + 0x7)($gp)
+    /// ```
+    GpRel { unaddended_vram: Vram },
 
     /// ```mips
     /// addiu       $reg, $gp, %gp_rel(EXAMPLE)
@@ -179,55 +229,6 @@ pub(crate) enum GprRegDereferencedAddress {
     /// lw          $reg4, 0xXXXX($reg3)
     /// ```
     HiLoGp { lo_rom: Rom, addend: i16 },
-
-    /// Unaligned word big endian:
-    /// ```mips
-    /// lui         $reg, %hi(EXAMPLE)
-    /// lwr         $reg2, %lo(EXAMPLE + 0x3)($reg)
-    /// ```
-    ///
-    /// Unaligned doubleword big endian:
-    /// ```mips
-    /// lui         $reg, %hi(EXAMPLE)
-    /// ldr         $reg2, %lo(EXAMPLE + 0x7)($reg)
-    /// ```
-    ///
-    /// Unaligned word little endian:
-    /// ```mips
-    /// lui         $reg, %hi(EXAMPLE)
-    /// lwl         $reg2, %lo(EXAMPLE + 0x3)($reg)
-    /// ```
-    ///
-    /// Unaligned doubleword little endian:
-    /// ```mips
-    /// lui         $reg, %hi(EXAMPLE)
-    /// ldl         $reg2, %lo(EXAMPLE + 0x7)($reg)
-    /// ```
-    HiUnaligned {
-        hi_rom: Rom,
-        unaddended_address: Vram,
-    },
-
-    /// Unaligned word big endian:
-    /// ```mips
-    /// lwr         $reg, %lo(EXAMPLE + 0x3)($gp)
-    /// ```
-    ///
-    /// Unaligned doubleword big endian:
-    /// ```mips
-    /// ldr         $reg, %lo(EXAMPLE + 0x7)($gp)
-    /// ```
-    ///
-    /// Unaligned word little endian:
-    /// ```mips
-    /// lwl         $reg, %lo(EXAMPLE + 0x3)($gp)
-    /// ```
-    ///
-    /// Unaligned doubleword little endian:
-    /// ```mips
-    /// ldl         $reg, %lo(EXAMPLE + 0x7)($gp)
-    /// ```
-    GpRelUnaligned { unaddended_address: Vram },
 }
 
 impl GprRegisterValue {
@@ -406,35 +407,27 @@ impl GprRegisterValue {
                         },
                     }
                 } else {
-                    let info = match (access_info.0, endian) {
+                    let unaddended_vram = match (access_info.0, endian) {
                         (AccessType::UNALIGNED_WORD_LEFT, Endian::Little) => {
-                            GprRegDereferencedAddress::GpRelUnaligned {
-                                unaddended_address: vram + VramOffset::new(-0x3),
-                            }
+                            vram + VramOffset::new(-0x3)
                         }
                         (AccessType::UNALIGNED_WORD_RIGHT, Endian::Big) => {
-                            GprRegDereferencedAddress::GpRelUnaligned {
-                                unaddended_address: vram + VramOffset::new(-0x3),
-                            }
+                            vram + VramOffset::new(-0x3)
                         }
                         (AccessType::UNALIGNED_DOUBLEWORD_LEFT, Endian::Little) => {
-                            GprRegDereferencedAddress::GpRelUnaligned {
-                                unaddended_address: vram + VramOffset::new(-0x7),
-                            }
+                            vram + VramOffset::new(-0x7)
                         }
                         (AccessType::UNALIGNED_DOUBLEWORD_RIGHT, Endian::Big) => {
-                            GprRegDereferencedAddress::GpRelUnaligned {
-                                unaddended_address: vram + VramOffset::new(-0x7),
-                            }
+                            vram + VramOffset::new(-0x7)
                         }
-                        (_, _) => GprRegDereferencedAddress::GpRel {},
+                        (_, _) => vram,
                     };
 
                     Self::DereferencedAddress {
                         original_address: vram,
                         deref_rom: current_rom,
                         access_info,
-                        info,
+                        info: GprRegDereferencedAddress::GpRel { unaddended_vram },
                     }
                 }
             }
@@ -447,39 +440,30 @@ impl GprRegisterValue {
 
             Self::Hi { value, rom } => {
                 let original_address = Vram::new(value.wrapping_add_signed(imm.into()));
-                let info = match (access_info.0, endian) {
+                let unaddended_vram = match (access_info.0, endian) {
                     (AccessType::UNALIGNED_WORD_LEFT, Endian::Little) => {
-                        GprRegDereferencedAddress::HiUnaligned {
-                            hi_rom: *rom,
-                            unaddended_address: original_address + VramOffset::new(-0x3),
-                        }
+                        original_address + VramOffset::new(-0x3)
                     }
                     (AccessType::UNALIGNED_WORD_RIGHT, Endian::Big) => {
-                        GprRegDereferencedAddress::HiUnaligned {
-                            hi_rom: *rom,
-                            unaddended_address: original_address + VramOffset::new(-0x3),
-                        }
+                        original_address + VramOffset::new(-0x3)
                     }
                     (AccessType::UNALIGNED_DOUBLEWORD_LEFT, Endian::Little) => {
-                        GprRegDereferencedAddress::HiUnaligned {
-                            hi_rom: *rom,
-                            unaddended_address: original_address + VramOffset::new(-0x7),
-                        }
+                        original_address + VramOffset::new(-0x7)
                     }
                     (AccessType::UNALIGNED_DOUBLEWORD_RIGHT, Endian::Big) => {
-                        GprRegDereferencedAddress::HiUnaligned {
-                            hi_rom: *rom,
-                            unaddended_address: original_address + VramOffset::new(-0x7),
-                        }
+                        original_address + VramOffset::new(-0x7)
                     }
-                    (_, _) => GprRegDereferencedAddress::Hi { hi_rom: *rom },
+                    (_, _) => original_address,
                 };
 
                 Self::DereferencedAddress {
                     original_address,
                     deref_rom: current_rom,
                     access_info,
-                    info,
+                    info: GprRegDereferencedAddress::Hi {
+                        hi_rom: *rom,
+                        unaddended_vram,
+                    },
                 }
             }
 

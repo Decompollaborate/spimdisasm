@@ -225,7 +225,11 @@ impl Preheater {
 
                 InstructionOperation::Hi { .. } => None,
 
-                InstructionOperation::PairedAddress { vram, info } => match info {
+                InstructionOperation::PairedAddress {
+                    unaddended_vram,
+                    addended_vram: _,
+                    info,
+                } => match info {
                     InstrOpPairedAddress::PairedLo { access_info, .. } => {
                         let mut special_case = false;
 
@@ -244,35 +248,25 @@ impl Preheater {
                         if special_case {
                             None
                         } else {
-                            Some((vram, Some(current_vram), access_info))
+                            Some((unaddended_vram, Some(current_vram), access_info))
                         }
                     }
                     InstrOpPairedAddress::GpRel { access_info, .. } => {
-                        Some((vram, Some(current_vram), access_info))
+                        Some((unaddended_vram, Some(current_vram), access_info))
                     }
                     InstrOpPairedAddress::GpGotGlobal { .. }
                     | InstrOpPairedAddress::GpGotLazyResolver { .. } => {
-                        Some((vram, Some(current_vram), None))
+                        Some((unaddended_vram, Some(current_vram), None))
                     }
                     InstrOpPairedAddress::GpGotLocal { .. } => None,
                     InstrOpPairedAddress::PairedGpGotLo { access_info, .. } => {
-                        pic_locals.insert(current_rom, vram);
+                        pic_locals.insert(current_rom, unaddended_vram);
 
-                        Some((vram, Some(current_vram), access_info))
+                        Some((unaddended_vram, Some(current_vram), access_info))
                     }
                     InstrOpPairedAddress::PairedGotLo { .. } => {
-                        Some((vram, Some(current_vram), None))
+                        Some((unaddended_vram, Some(current_vram), None))
                     }
-                    InstrOpPairedAddress::PairedLoUnaligned {
-                        access_info,
-                        unaddended_address,
-                        ..
-                    }
-                    | InstrOpPairedAddress::GpRelUnaligned {
-                        access_info,
-                        unaddended_address,
-                        ..
-                    } => Some((unaddended_address, Some(current_vram), Some(access_info))),
                 },
 
                 InstructionOperation::GpSet { .. } => None,

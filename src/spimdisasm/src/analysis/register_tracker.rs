@@ -102,7 +102,8 @@ pub(crate) enum InstructionOperation {
     },
 
     PairedAddress {
-        vram: Vram,
+        addended_vram: Vram,
+        unaddended_vram: Vram,
         info: InstrOpPairedAddress,
     },
 
@@ -277,17 +278,6 @@ pub(crate) enum InstrOpPairedAddress {
     ///
     /// Note this will also catch `%call_hi`/`%call_lo` pairings since they follow the same patter.
     PairedGotLo { hi_rom: Rom },
-
-    PairedLoUnaligned {
-        hi_rom: Rom,
-        access_info: (AccessType, bool),
-        unaddended_address: Vram,
-    },
-
-    GpRelUnaligned {
-        access_info: (AccessType, bool),
-        unaddended_address: Vram,
-    },
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -546,12 +536,6 @@ impl RegisterTracker {
                         }
                     }
                 }
-                GprRegDereferencedAddress::HiUnaligned { .. }
-                | GprRegDereferencedAddress::GpRelUnaligned { .. } => {
-                    InstructionOperation::TailCall {
-                        info: InstrOpTailCall::UnknownRegisterJump { reg: rs },
-                    }
-                }
             },
 
             GprRegisterValue::DereferencedAddressBranchChecked {
@@ -693,19 +677,26 @@ impl RegisterTracker {
                 info,
                 ..
             } => match info {
-                GprRegDereferencedAddress::Hi { hi_rom } => InstructionOperation::PairedAddress {
-                    vram: *original_address,
+                GprRegDereferencedAddress::Hi {
+                    hi_rom,
+                    unaddended_vram,
+                } => InstructionOperation::PairedAddress {
+                    addended_vram: *original_address,
+                    unaddended_vram: *unaddended_vram,
                     info: InstrOpPairedAddress::PairedLo {
                         hi_rom: *hi_rom,
                         access_info: Some(*access_info),
                     },
                 },
-                GprRegDereferencedAddress::GpRel {} => InstructionOperation::PairedAddress {
-                    vram: *original_address,
-                    info: InstrOpPairedAddress::GpRel {
-                        access_info: Some(*access_info),
-                    },
-                },
+                GprRegDereferencedAddress::GpRel { unaddended_vram } => {
+                    InstructionOperation::PairedAddress {
+                        addended_vram: *original_address,
+                        unaddended_vram: *unaddended_vram,
+                        info: InstrOpPairedAddress::GpRel {
+                            access_info: Some(*access_info),
+                        },
+                    }
+                }
                 GprRegDereferencedAddress::HiLo {
                     lo_rom: address_load_rom,
                     addend,
@@ -730,7 +721,8 @@ impl RegisterTracker {
                 },
                 GprRegDereferencedAddress::GpGotLocal { upper_rom } => {
                     InstructionOperation::PairedAddress {
-                        vram: *original_address,
+                        addended_vram: *original_address,
+                        unaddended_vram: *original_address,
                         info: InstrOpPairedAddress::PairedGpGotLo {
                             upper_rom: *upper_rom,
                             access_info: Some(*access_info),
@@ -747,43 +739,27 @@ impl RegisterTracker {
                     address_load_rom: *address_load_rom,
                     access_info: *access_info,
                 },
-                GprRegDereferencedAddress::HiUnaligned {
-                    hi_rom,
-                    unaddended_address,
-                } => InstructionOperation::PairedAddress {
-                    vram: *original_address,
-                    info: InstrOpPairedAddress::PairedLoUnaligned {
-                        hi_rom: *hi_rom,
-                        access_info: *access_info,
-                        unaddended_address: *unaddended_address,
-                    },
-                },
-                GprRegDereferencedAddress::GpRelUnaligned { unaddended_address } => {
-                    InstructionOperation::PairedAddress {
-                        vram: *original_address,
-                        info: InstrOpPairedAddress::GpRelUnaligned {
-                            access_info: *access_info,
-                            unaddended_address: *unaddended_address,
-                        },
-                    }
-                }
             },
 
             GprRegisterValue::RawAddress { vram, info, .. } => match info {
                 GprRegRawAddress::GpGotGlobal {} => InstructionOperation::PairedAddress {
-                    vram: *vram,
+                    addended_vram: *vram,
+                    unaddended_vram: *vram,
                     info: InstrOpPairedAddress::GpGotGlobal {},
                 },
                 GprRegRawAddress::GpGotLazyResolver {} => InstructionOperation::PairedAddress {
-                    vram: *vram,
+                    addended_vram: *vram,
+                    unaddended_vram: *vram,
                     info: InstrOpPairedAddress::GpGotLazyResolver {},
                 },
                 GprRegRawAddress::GpGotLocal {} => InstructionOperation::PairedAddress {
-                    vram: *vram,
+                    addended_vram: *vram,
+                    unaddended_vram: *vram,
                     info: InstrOpPairedAddress::GpGotLocal {},
                 },
                 GprRegRawAddress::HiLoGp { hi_rom } => InstructionOperation::PairedAddress {
-                    vram: *vram,
+                    addended_vram: *vram,
+                    unaddended_vram: *vram,
                     info: InstrOpPairedAddress::PairedGotLo { hi_rom: *hi_rom },
                 },
                 GprRegRawAddress::HiLo { .. }
@@ -849,19 +825,22 @@ impl RegisterTracker {
         let info = match &reg_value {
             GprRegisterValue::RawAddress { vram, info, .. } => match info {
                 GprRegRawAddress::HiLo { hi_rom } => InstructionOperation::PairedAddress {
-                    vram: *vram,
+                    addended_vram: *vram,
+                    unaddended_vram: *vram,
                     info: InstrOpPairedAddress::PairedLo {
                         hi_rom: *hi_rom,
                         access_info: None,
                     },
                 },
                 GprRegRawAddress::GpRel {} => InstructionOperation::PairedAddress {
-                    vram: *vram,
+                    addended_vram: *vram,
+                    unaddended_vram: *vram,
                     info: InstrOpPairedAddress::GpRel { access_info: None },
                 },
-                GprRegRawAddress::PairedGpGotLo { upper_rom, .. } => {
+                GprRegRawAddress::PairedGpGotLo { upper_rom } => {
                     InstructionOperation::PairedAddress {
-                        vram: *vram,
+                        addended_vram: *vram,
+                        unaddended_vram: *vram,
                         info: InstrOpPairedAddress::PairedGpGotLo {
                             upper_rom: *upper_rom,
                             access_info: None,
@@ -1236,6 +1215,7 @@ mod tests {
                 access_info: (AccessType::WORD, false),
                 info: GprRegDereferencedAddress::Hi {
                     hi_rom: Rom::new(0x00010004),
+                    unaddended_vram: Vram::new(0x80000090),
                 },
             }),
         ];
@@ -1256,7 +1236,8 @@ mod tests {
             },
             InstructionOperation::ReturnJump,
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x80000090),
+                addended_vram: Vram::new(0x80000090),
+                unaddended_vram: Vram::new(0x80000090),
                 info: InstrOpPairedAddress::PairedLo {
                     hi_rom: Rom::new(0x00010004),
                     access_info: Some((AccessType::WORD, false)),
@@ -1299,6 +1280,7 @@ mod tests {
                 access_info: (AccessType::BYTE, true),
                 info: GprRegDereferencedAddress::Hi {
                     hi_rom: Rom::new(0x00010000),
+                    unaddended_vram: Vram::new(0x800000C0),
                 },
             }),
         ];
@@ -1316,7 +1298,8 @@ mod tests {
             },
             InstructionOperation::ReturnJump,
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x800000C0),
+                addended_vram: Vram::new(0x800000C0),
+                unaddended_vram: Vram::new(0x800000C0),
                 info: InstrOpPairedAddress::PairedLo {
                     hi_rom: Rom::new(0x00010000),
                     access_info: Some((AccessType::BYTE, true)),
@@ -1357,7 +1340,8 @@ mod tests {
         ];
         static EXPECTED_OPERATIONS: [InstructionOperation; 3] = [
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x800000B0),
+                addended_vram: Vram::new(0x800000B0),
+                unaddended_vram: Vram::new(0x800000B0),
                 info: InstrOpPairedAddress::GpRel { access_info: None },
             },
             InstructionOperation::ReturnJump,
@@ -1398,8 +1382,9 @@ mod tests {
                 original_address: Vram::new(0x800000B1),
                 deref_rom: Rom::new(0x00010008),
                 access_info: (AccessType::BYTE, true),
-
-                info: GprRegDereferencedAddress::GpRel {},
+                info: GprRegDereferencedAddress::GpRel {
+                    unaddended_vram: Vram::new(0x800000B1),
+                },
             }),
         ];
         static EXPECTED_OPERATIONS: [InstructionOperation; 3] = [
@@ -1412,7 +1397,8 @@ mod tests {
             },
             InstructionOperation::ReturnJump,
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x800000B1),
+                addended_vram: Vram::new(0x800000B1),
+                unaddended_vram: Vram::new(0x800000B1),
                 info: InstrOpPairedAddress::GpRel {
                     access_info: Some((AccessType::BYTE, true)),
                 },
@@ -1457,7 +1443,8 @@ mod tests {
                 opcode: Opcode::core_sll,
             },
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x800000B4),
+                addended_vram: Vram::new(0x800000B4),
+                unaddended_vram: Vram::new(0x800000B4),
                 info: InstrOpPairedAddress::GpRel { access_info: None },
             },
             InstructionOperation::ReturnJump,
@@ -1500,8 +1487,9 @@ mod tests {
                 original_address: Vram::new(0x800000B8),
                 deref_rom: Rom::new(0x0001000C),
                 access_info: (AccessType::WORD, false),
-
-                info: GprRegDereferencedAddress::GpRel {},
+                info: GprRegDereferencedAddress::GpRel {
+                    unaddended_vram: Vram::new(0x800000B8),
+                },
             }),
         ];
         static EXPECTED_OPERATIONS: [InstructionOperation; 4] = [
@@ -1517,7 +1505,8 @@ mod tests {
             },
             InstructionOperation::ReturnJump,
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x800000B8),
+                addended_vram: Vram::new(0x800000B8),
+                unaddended_vram: Vram::new(0x800000B8),
                 info: InstrOpPairedAddress::GpRel {
                     access_info: Some((AccessType::WORD, false)),
                 },
@@ -1572,7 +1561,8 @@ mod tests {
                 dst_reg: Gpr::t7,
             },
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x80000090),
+                addended_vram: Vram::new(0x80000090),
+                unaddended_vram: Vram::new(0x80000090),
                 info: InstrOpPairedAddress::PairedLo {
                     hi_rom: Rom::new(0x00010000),
                     access_info: None,
@@ -1730,9 +1720,9 @@ mod tests {
                 original_address: Vram::new(0x800000C0),
                 deref_rom: Rom::new(0x00010014),
                 access_info: (AccessType::WORD, false),
-
                 info: GprRegDereferencedAddress::Hi {
                     hi_rom: Rom::new(0x0001000C),
+                    unaddended_vram: Vram::new(0x800000C0),
                 },
             }),
             None,
@@ -1751,9 +1741,9 @@ mod tests {
                 original_address: Vram::new(0x80000100),
                 deref_rom: Rom::new(0x0001003C),
                 access_info: (AccessType::WORD, false),
-
                 info: GprRegDereferencedAddress::Hi {
                     hi_rom: Rom::new(0x00010038),
+                    unaddended_vram: Vram::new(0x80000100),
                 },
             }),
             None,
@@ -1796,7 +1786,8 @@ mod tests {
                 },
             },
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x800000C0),
+                addended_vram: Vram::new(0x800000C0),
+                unaddended_vram: Vram::new(0x800000C0),
                 info: InstrOpPairedAddress::PairedLo {
                     hi_rom: Rom::new(0x0001000C),
                     access_info: Some((AccessType::WORD, false)),
@@ -1837,7 +1828,8 @@ mod tests {
                 dst_reg: Gpr::t9,
             },
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x80000100),
+                addended_vram: Vram::new(0x80000100),
+                unaddended_vram: Vram::new(0x80000100),
                 info: InstrOpPairedAddress::PairedLo {
                     hi_rom: Rom::new(0x00010038),
                     access_info: Some((AccessType::WORD, false)),
@@ -1857,7 +1849,8 @@ mod tests {
                 dst_reg: Gpr::t9,
             },
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x80000070),
+                addended_vram: Vram::new(0x80000070),
+                unaddended_vram: Vram::new(0x80000070),
                 info: InstrOpPairedAddress::PairedLo {
                     hi_rom: Rom::new(0x00010048),
                     access_info: None,
@@ -1917,6 +1910,7 @@ mod tests {
 
                 info: GprRegDereferencedAddress::Hi {
                     hi_rom: Rom::new(0x00010000),
+                    unaddended_vram: Vram::new(0x80000100),
                 },
             }),
             None,
@@ -1928,7 +1922,8 @@ mod tests {
                 dst_reg: Gpr::t0,
             },
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x80000100),
+                addended_vram: Vram::new(0x80000100),
+                unaddended_vram: Vram::new(0x80000100),
                 info: InstrOpPairedAddress::PairedLo {
                     hi_rom: Rom::new(0x00010000),
                     access_info: Some((AccessType::WORD, false)),
@@ -1977,6 +1972,7 @@ mod tests {
 
                 info: GprRegDereferencedAddress::Hi {
                     hi_rom: Rom::new(0x00010000),
+                    unaddended_vram: Vram::new(0x80000100),
                 },
             }),
             None,
@@ -1992,7 +1988,8 @@ mod tests {
                 dst_reg: Gpr::t0,
             },
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x80000100),
+                addended_vram: Vram::new(0x80000100),
+                unaddended_vram: Vram::new(0x80000100),
                 info: InstrOpPairedAddress::PairedLo {
                     hi_rom: Rom::new(0x00010000),
                     access_info: Some((AccessType::WORD, false)),
@@ -2061,7 +2058,8 @@ mod tests {
                 dst_reg: Gpr::t0,
             },
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x80000070),
+                addended_vram: Vram::new(0x80000070),
+                unaddended_vram: Vram::new(0x80000070),
                 info: InstrOpPairedAddress::PairedLo {
                     hi_rom: Rom::new(0x00010000),
                     access_info: None,
@@ -2157,7 +2155,8 @@ mod tests {
                 dst_reg: Gpr::gp,
             },
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x0000808C),
+                addended_vram: Vram::new(0x0000808C),
+                unaddended_vram: Vram::new(0x0000808C),
                 info: InstrOpPairedAddress::PairedLo {
                     hi_rom: Rom::new(0x00010014),
                     access_info: None,
@@ -2211,6 +2210,7 @@ mod tests {
 
                 info: GprRegDereferencedAddress::Hi {
                     hi_rom: Rom::new(0x00010000),
+                    unaddended_vram: Vram::new(0x800EFCD0),
                 },
             }),
             Some(GprRegisterValue::Hi {
@@ -2228,6 +2228,7 @@ mod tests {
 
                 info: GprRegDereferencedAddress::Hi {
                     hi_rom: Rom::new(0x00010008),
+                    unaddended_vram: Vram::new(0x800ACE84),
                 },
             }),
         ];
@@ -2237,7 +2238,8 @@ mod tests {
                 dst_reg: Gpr::v1,
             },
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x800EFCD0),
+                addended_vram: Vram::new(0x800EFCD0),
+                unaddended_vram: Vram::new(0x800EFCD0),
                 info: InstrOpPairedAddress::PairedLo {
                     hi_rom: Rom::new(0x00010000),
                     access_info: Some((AccessType::WORD, false)),
@@ -2255,7 +2257,8 @@ mod tests {
                 },
             },
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x800ACE84),
+                addended_vram: Vram::new(0x800ACE84),
+                unaddended_vram: Vram::new(0x800ACE84),
                 info: InstrOpPairedAddress::PairedLo {
                     hi_rom: Rom::new(0x00010008),
                     access_info: Some((AccessType::BYTE, true)),
@@ -2309,7 +2312,8 @@ mod tests {
                 },
             },
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x8012374C),
+                addended_vram: Vram::new(0x8012374C),
+                unaddended_vram: Vram::new(0x8012374C),
                 info: InstrOpPairedAddress::PairedLo {
                     hi_rom: Rom::new(0x00010004),
                     access_info: Some((AccessType::BYTE, false)),
@@ -2364,7 +2368,8 @@ mod tests {
                 dst_reg: Gpr::v0,
             },
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x80216540),
+                addended_vram: Vram::new(0x80216540),
+                unaddended_vram: Vram::new(0x80216540),
                 info: InstrOpPairedAddress::PairedLo {
                     hi_rom: Rom::new(0x00010000),
                     access_info: None,
@@ -2503,11 +2508,13 @@ mod tests {
         ];
         static EXPECTED_OPERATIONS: [InstructionOperation; 4] = [
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x80000000),
+                addended_vram: Vram::new(0x80000000),
+                unaddended_vram: Vram::new(0x80000000),
                 info: InstrOpPairedAddress::GpGotLocal {},
             },
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x80000080),
+                addended_vram: Vram::new(0x80000080),
+                unaddended_vram: Vram::new(0x80000080),
                 info: InstrOpPairedAddress::PairedGpGotLo {
                     upper_rom: Rom::new(0x00010000),
                     access_info: None,
@@ -2568,11 +2575,13 @@ mod tests {
         ];
         static EXPECTED_OPERATIONS: [InstructionOperation; 4] = [
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x80000000),
+                addended_vram: Vram::new(0x80000000),
+                unaddended_vram: Vram::new(0x80000000),
                 info: InstrOpPairedAddress::GpGotLocal {},
             },
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x80000080),
+                addended_vram: Vram::new(0x80000080),
+                unaddended_vram: Vram::new(0x80000080),
                 info: InstrOpPairedAddress::PairedGpGotLo {
                     upper_rom: Rom::new(0x00010000),
                     access_info: None,
@@ -2853,17 +2862,18 @@ mod tests {
                 original_address: Vram::new(0x80000130),
                 deref_rom: Rom::new(0x00010028),
                 access_info: (AccessType::WORD, false),
-
                 info: GprRegDereferencedAddress::Hi {
                     hi_rom: Rom::new(0x00010024),
+                    unaddended_vram: Vram::new(0x80000130),
                 },
             }),
             Some(GprRegisterValue::DereferencedAddress {
                 original_address: Vram::new(0x80000130),
                 deref_rom: Rom::new(0x0001002C),
                 access_info: (AccessType::WORD, false),
-
-                info: GprRegDereferencedAddress::GpRel {},
+                info: GprRegDereferencedAddress::GpRel {
+                    unaddended_vram: Vram::new(0x80000130),
+                },
             }),
             Some(GprRegisterValue::RawAddress {
                 vram: Vram::new(0x80000134),
@@ -3025,7 +3035,8 @@ mod tests {
                 value: 0x00010000,
             },
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x00008100),
+                addended_vram: Vram::new(0x00008100),
+                unaddended_vram: Vram::new(0x00008100),
                 info: InstrOpPairedAddress::PairedLo {
                     hi_rom: Rom::new(0x00010000),
                     access_info: None,
@@ -3047,7 +3058,8 @@ mod tests {
                 value: 0x80000000,
             },
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x8000012C),
+                addended_vram: Vram::new(0x8000012C),
+                unaddended_vram: Vram::new(0x8000012C),
                 info: InstrOpPairedAddress::PairedLo {
                     hi_rom: Rom::new(0x00010018),
                     access_info: None,
@@ -3065,7 +3077,8 @@ mod tests {
                 value: 0x80000000,
             },
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x80000130),
+                addended_vram: Vram::new(0x80000130),
+                unaddended_vram: Vram::new(0x80000130),
                 info: InstrOpPairedAddress::PairedLo {
                     hi_rom: Rom::new(0x00010024),
                     access_info: Some((AccessType::WORD, false)),
@@ -3073,23 +3086,27 @@ mod tests {
             },
             // some_var + 0x4
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x80000130),
+                addended_vram: Vram::new(0x80000130),
+                unaddended_vram: Vram::new(0x80000130),
                 info: InstrOpPairedAddress::GpRel {
                     access_info: Some((AccessType::WORD, false)),
                 },
             },
             // some_var + 0x8
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x80000134),
+                addended_vram: Vram::new(0x80000134),
+                unaddended_vram: Vram::new(0x80000134),
                 info: InstrOpPairedAddress::GpGotGlobal {},
             },
             // static_sym
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x80000000),
+                addended_vram: Vram::new(0x80000000),
+                unaddended_vram: Vram::new(0x80000000),
                 info: InstrOpPairedAddress::GpGotLocal {},
             },
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x8000013C),
+                addended_vram: Vram::new(0x8000013C),
+                unaddended_vram: Vram::new(0x8000013C),
                 info: InstrOpPairedAddress::PairedGpGotLo {
                     upper_rom: Rom::new(0x00010034),
                     access_info: Some((AccessType::WORD, false)),
@@ -3097,7 +3114,8 @@ mod tests {
             },
             // global_function
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x800000C4),
+                addended_vram: Vram::new(0x800000C4),
+                unaddended_vram: Vram::new(0x800000C4),
                 info: InstrOpPairedAddress::GpGotGlobal {},
             },
             InstructionOperation::Link {
@@ -3112,7 +3130,8 @@ mod tests {
             InstructionOperation::DanglingLo { imm: 0x18 },
             // global_function
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x800000C4),
+                addended_vram: Vram::new(0x800000C4),
+                unaddended_vram: Vram::new(0x800000C4),
                 info: InstrOpPairedAddress::GpGotGlobal {},
             },
             InstructionOperation::Link {
@@ -3127,11 +3146,13 @@ mod tests {
             InstructionOperation::DanglingLo { imm: 0x18 },
             // non_global_function
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x80000000),
+                addended_vram: Vram::new(0x80000000),
+                unaddended_vram: Vram::new(0x80000000),
                 info: InstrOpPairedAddress::GpGotLocal {},
             },
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x800000CC),
+                addended_vram: Vram::new(0x800000CC),
+                unaddended_vram: Vram::new(0x800000CC),
                 info: InstrOpPairedAddress::PairedGpGotLo {
                     upper_rom: Rom::new(0x0001005C),
                     access_info: None,
@@ -3149,7 +3170,8 @@ mod tests {
             InstructionOperation::DanglingLo { imm: 0x18 },
             // func_arr
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x8000014C),
+                addended_vram: Vram::new(0x8000014C),
+                unaddended_vram: Vram::new(0x8000014C),
                 info: InstrOpPairedAddress::GpGotGlobal {},
             },
             InstructionOperation::DereferencedRawAddress {
@@ -3181,7 +3203,8 @@ mod tests {
                 },
             },
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x8000012C),
+                addended_vram: Vram::new(0x8000012C),
+                unaddended_vram: Vram::new(0x8000012C),
                 info: InstrOpPairedAddress::PairedGotLo {
                     hi_rom: Rom::new(0x00010084),
                 },
@@ -3217,7 +3240,8 @@ mod tests {
                 },
             },
             InstructionOperation::PairedAddress {
-                vram: Vram::new(0x800000C4),
+                addended_vram: Vram::new(0x800000C4),
+                unaddended_vram: Vram::new(0x800000C4),
                 info: InstrOpPairedAddress::PairedGotLo {
                     hi_rom: Rom::new(0x0001009C),
                 },

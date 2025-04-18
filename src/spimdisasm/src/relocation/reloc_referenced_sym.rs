@@ -10,18 +10,18 @@ use crate::addresses::Vram;
 pub enum RelocReferencedSym {
     // TODO: rename to Symbol
     Address {
-        unaddended_address: Vram,
-        addended_address: Vram,
+        addended_vram: Vram,
+        unaddended_vram: Vram,
     },
     Label(Vram),
     SymName(Arc<str>, i64),
 }
 
 impl RelocReferencedSym {
-    pub const fn new_address(address: Vram) -> Self {
+    pub const fn new_address(vram: Vram) -> Self {
         Self::Address {
-            unaddended_address: address,
-            addended_address: address,
+            unaddended_vram: vram,
+            addended_vram: vram,
         }
     }
 }

@@ -97,14 +97,14 @@ impl<'ctx, 'rel, 'prnt> RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
                 RelocSymState::LiteralSymName(name, *addend)
             }
             RelocReferencedSym::Address {
-                unaddended_address,
-                addended_address,
+                unaddended_vram,
+                addended_vram,
             } => {
                 let find_settings = FindSettings::new(
                     allow_ref_with_addend && rel.reloc_type.allow_addends_on_ref(),
                 );
                 if let Some(sym_metadata) = context.find_symbol_from_any_segment(
-                    *unaddended_address,
+                    *unaddended_vram,
                     segment_info,
                     find_settings,
                     |metadata| {
@@ -115,7 +115,7 @@ impl<'ctx, 'rel, 'prnt> RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
                             RelocationType::R_MIPS_32 => {
                                 if metadata.sym_type() == Some(SymbolType::Function) {
                                     // Avoid referencing addends of functions
-                                    metadata.vram() == *unaddended_address
+                                    metadata.vram() == *unaddended_vram
                                 } else {
                                     true
                                 }
@@ -130,7 +130,7 @@ impl<'ctx, 'rel, 'prnt> RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
                             RelocationType::R_MIPS_HI16 | RelocationType::R_MIPS_LO16 => {
                                 if metadata.sym_type() == Some(SymbolType::Function) {
                                     // Avoid referencing addends of functions
-                                    metadata.vram() == *unaddended_address
+                                    metadata.vram() == *unaddended_vram
                                 } else {
                                     true
                                 }
@@ -163,12 +163,12 @@ impl<'ctx, 'rel, 'prnt> RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
                         }
                     },
                 ) {
-                    RelocSymState::Sym(*addended_address, sym_metadata)
+                    RelocSymState::Sym(*addended_vram, sym_metadata)
                 } else {
                     if false {
                         return None;
                     }
-                    RelocSymState::SegmentNotFound(*addended_address)
+                    RelocSymState::SegmentNotFound(*addended_vram)
                 }
             }
             RelocReferencedSym::Label(vram) => {

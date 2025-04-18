@@ -187,22 +187,13 @@ impl FunctionSym {
                     meta.generate_label = GenerateLabel::Maybe(LabelType::AlternativeEntry);
                 }
                 InstrAnalysisInfo::UnpairedHi { .. } | InstrAnalysisInfo::PairedHi { .. } => {}
-                InstrAnalysisInfo::PairedLo { vram } | InstrAnalysisInfo::GpRel { vram } => {
-                    if owned_segment.is_vram_ignored(*vram) {
-                        continue;
-                    }
-
-                    let meta = paired_symbols
-                        .entry(*vram)
-                        .or_insert(PairedAddressMeta::new(instr_rom));
-                    meta.rom_referencers.insert(instr_rom);
+                InstrAnalysisInfo::PairedLo {
+                    addended_vram: _,
+                    unaddended_vram,
                 }
-                InstrAnalysisInfo::PairedHiUnaligned { .. } => {}
-                InstrAnalysisInfo::PairedLoUnaligned {
-                    unaddended_vram, ..
-                }
-                | InstrAnalysisInfo::GpRelUnaligned {
-                    unaddended_vram, ..
+                | InstrAnalysisInfo::GpRel {
+                    addended_vram: _,
+                    unaddended_vram,
                 } => {
                     if owned_segment.is_vram_ignored(*unaddended_vram) {
                         continue;
@@ -215,8 +206,14 @@ impl FunctionSym {
                 }
                 InstrAnalysisInfo::ConstantHi { .. } | InstrAnalysisInfo::ConstantLo { .. } => {}
                 InstrAnalysisInfo::GotLazyResolver { .. } => {}
-                InstrAnalysisInfo::GotGlobal { vram }
-                | InstrAnalysisInfo::GotLocal { vram }
+                InstrAnalysisInfo::GotGlobal {
+                    addended_vram: vram,
+                    unaddended_vram: _,
+                }
+                | InstrAnalysisInfo::GotLocal {
+                    addended_vram: vram,
+                    unaddended_vram: _,
+                }
                 | InstrAnalysisInfo::GotCall16 { vram } => {
                     if owned_segment.is_vram_ignored(*vram) {
                         continue;
@@ -228,13 +225,16 @@ impl FunctionSym {
                     meta.rom_referencers.insert(instr_rom);
                     meta.got_access_kind = Some(GotAccessKind::Global);
                 }
-                InstrAnalysisInfo::GotLocalPaired { vram } => {
-                    if owned_segment.is_vram_ignored(*vram) {
+                InstrAnalysisInfo::GotLocalPaired {
+                    addended_vram: _,
+                    unaddended_vram,
+                } => {
+                    if owned_segment.is_vram_ignored(*unaddended_vram) {
                         continue;
                     }
 
                     let meta = paired_symbols
-                        .entry(*vram)
+                        .entry(*unaddended_vram)
                         .or_insert(PairedAddressMeta::new(instr_rom));
                     meta.rom_referencers.insert(instr_rom);
                     meta.got_access_kind = Some(GotAccessKind::Local);

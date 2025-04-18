@@ -48,18 +48,12 @@ pub(crate) enum InstrAnalysisInfo {
         value: u32,
     },
     PairedHi {
-        vram: Vram,
+        addended_vram: Vram,
+        unaddended_vram: Vram,
     },
     PairedLo {
-        vram: Vram,
-    },
-    PairedHiUnaligned {
-        unaddended_vram: Vram,
         addended_vram: Vram,
-    },
-    PairedLoUnaligned {
         unaddended_vram: Vram,
-        addended_vram: Vram,
     },
     ConstantHi {
         constant: u32,
@@ -68,23 +62,24 @@ pub(crate) enum InstrAnalysisInfo {
         constant: u32,
     },
     GpRel {
-        vram: Vram,
-    },
-    GpRelUnaligned {
-        unaddended_vram: Vram,
         addended_vram: Vram,
+        unaddended_vram: Vram,
     },
     GotLazyResolver {
-        vram: Vram,
+        addended_vram: Vram,
+        unaddended_vram: Vram,
     },
     GotGlobal {
-        vram: Vram,
+        addended_vram: Vram,
+        unaddended_vram: Vram,
     },
     GotLocal {
-        vram: Vram,
+        addended_vram: Vram,
+        unaddended_vram: Vram,
     },
     GotLocalPaired {
-        vram: Vram,
+        addended_vram: Vram,
+        unaddended_vram: Vram,
     },
     GotCall16 {
         vram: Vram,

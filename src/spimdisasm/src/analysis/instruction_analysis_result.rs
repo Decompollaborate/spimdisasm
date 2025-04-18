@@ -174,88 +174,88 @@ impl InstructionAnalysisResult {
 
             InstructionOperation::Hi { value, .. } => InstrAnalysisInfo::UnpairedHi { value },
 
-            InstructionOperation::PairedAddress { vram, info } => match info {
+            InstructionOperation::PairedAddress {
+                addended_vram,
+                unaddended_vram,
+                info,
+            } => match info {
                 InstrOpPairedAddress::PairedLo {
                     hi_rom,
                     access_info,
                     ..
                 } => {
-                    self.add_referenced_vram(vram);
+                    self.add_referenced_vram(unaddended_vram);
 
-                    self.apply_symbol_type(vram, access_info.into());
+                    self.apply_symbol_type(unaddended_vram, access_info.into());
                     self.set_info_if_empty(
                         self.index_from_rom(hi_rom),
-                        InstrAnalysisInfo::PairedHi { vram },
+                        InstrAnalysisInfo::PairedHi {
+                            addended_vram,
+                            unaddended_vram,
+                        },
                     );
-                    InstrAnalysisInfo::PairedLo { vram }
+                    InstrAnalysisInfo::PairedLo {
+                        addended_vram,
+                        unaddended_vram,
+                    }
                 }
                 InstrOpPairedAddress::GpRel { access_info, .. } => {
-                    self.add_referenced_vram(vram);
-                    self.apply_symbol_type(vram, access_info.into());
-                    InstrAnalysisInfo::GpRel { vram }
+                    self.add_referenced_vram(unaddended_vram);
+                    self.apply_symbol_type(unaddended_vram, access_info.into());
+                    InstrAnalysisInfo::GpRel {
+                        addended_vram,
+                        unaddended_vram,
+                    }
                 }
                 InstrOpPairedAddress::GpGotLazyResolver {} => {
-                    self.apply_symbol_type(vram, TypeInfo::No);
-                    InstrAnalysisInfo::GotLazyResolver { vram }
+                    self.apply_symbol_type(addended_vram, TypeInfo::No);
+                    InstrAnalysisInfo::GotLazyResolver {
+                        addended_vram,
+                        unaddended_vram: addended_vram,
+                    }
                 }
                 InstrOpPairedAddress::GpGotGlobal {} => {
-                    self.add_referenced_vram(vram);
-                    self.apply_symbol_type(vram, TypeInfo::No);
-                    InstrAnalysisInfo::GotGlobal { vram }
+                    self.add_referenced_vram(addended_vram);
+                    self.apply_symbol_type(addended_vram, TypeInfo::No);
+                    InstrAnalysisInfo::GotGlobal {
+                        addended_vram,
+                        unaddended_vram: addended_vram,
+                    }
                 }
-                InstrOpPairedAddress::GpGotLocal { .. } => InstrAnalysisInfo::GotLocal { vram },
+                InstrOpPairedAddress::GpGotLocal { .. } => InstrAnalysisInfo::GotLocal {
+                    addended_vram,
+                    unaddended_vram: addended_vram,
+                },
                 InstrOpPairedAddress::PairedGpGotLo {
                     upper_rom,
                     access_info,
                     ..
                 } => {
-                    self.add_referenced_vram(vram);
-                    self.apply_symbol_type(vram, access_info.into());
+                    self.add_referenced_vram(unaddended_vram);
+                    self.apply_symbol_type(unaddended_vram, access_info.into());
                     self.set_info(
                         self.index_from_rom(upper_rom),
-                        InstrAnalysisInfo::GotLocalPaired { vram },
-                    );
-                    InstrAnalysisInfo::PairedLo { vram }
-                }
-                InstrOpPairedAddress::PairedGotLo { hi_rom } => {
-                    self.add_referenced_vram(vram);
-                    self.apply_symbol_type(vram, TypeInfo::No);
-                    self.set_info_if_empty(
-                        self.index_from_rom(hi_rom),
-                        InstrAnalysisInfo::PairedGotHi { vram },
-                    );
-                    InstrAnalysisInfo::PairedGotLo { vram }
-                }
-                InstrOpPairedAddress::PairedLoUnaligned {
-                    hi_rom,
-                    access_info,
-                    unaddended_address,
-                } => {
-                    self.add_referenced_vram(unaddended_address);
-
-                    self.apply_symbol_type(unaddended_address, access_info.into());
-                    self.set_info_if_empty(
-                        self.index_from_rom(hi_rom),
-                        InstrAnalysisInfo::PairedHiUnaligned {
-                            unaddended_vram: unaddended_address,
-                            addended_vram: vram,
+                        InstrAnalysisInfo::GotLocalPaired {
+                            addended_vram,
+                            unaddended_vram,
                         },
                     );
-                    InstrAnalysisInfo::PairedLoUnaligned {
-                        unaddended_vram: unaddended_address,
-                        addended_vram: vram,
+                    InstrAnalysisInfo::PairedLo {
+                        addended_vram,
+                        unaddended_vram,
                     }
                 }
-                InstrOpPairedAddress::GpRelUnaligned {
-                    access_info,
-                    unaddended_address,
-                } => {
-                    self.add_referenced_vram(unaddended_address);
-
-                    self.apply_symbol_type(unaddended_address, access_info.into());
-                    InstrAnalysisInfo::GpRelUnaligned {
-                        unaddended_vram: unaddended_address,
-                        addended_vram: vram,
+                InstrOpPairedAddress::PairedGotLo { hi_rom } => {
+                    self.add_referenced_vram(addended_vram);
+                    self.apply_symbol_type(addended_vram, TypeInfo::No);
+                    self.set_info_if_empty(
+                        self.index_from_rom(hi_rom),
+                        InstrAnalysisInfo::PairedGotHi {
+                            vram: addended_vram,
+                        },
+                    );
+                    InstrAnalysisInfo::PairedGotLo {
+                        vram: addended_vram,
                     }
                 }
             },
