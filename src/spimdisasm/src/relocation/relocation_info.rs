@@ -182,9 +182,7 @@ impl<'ctx, 'rel, 'prnt> RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
 
                             RelocationType::R_MIPS_REL32 => true,
 
-                            RelocationType::R_MIPS_26 => {
-                                metadata.label_type() == LabelType::AlternativeEntry
-                            }
+                            RelocationType::R_MIPS_26 => true,
 
                             RelocationType::R_MIPS_HI16 => true,
                             RelocationType::R_MIPS_LO16 => true,

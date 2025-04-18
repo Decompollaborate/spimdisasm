@@ -23,7 +23,7 @@ pub(crate) struct InstructionAnalysisResult {
     /// Every referenced vram found.
     referenced_vrams: UnorderedSet<Vram>,
 
-    type_info_per_address: UnorderedMap<Vram, UnorderedMap<(AccessType, bool), u32>>,
+    type_info_per_address: UnorderedMap<Vram, GatheredTypeInfo>,
 
     handwritten_instrs: UnorderedSet<Rom>,
 }
@@ -59,9 +59,7 @@ impl InstructionAnalysisResult {
     }
 
     #[must_use]
-    pub(crate) fn type_info_per_address(
-        &self,
-    ) -> &UnorderedMap<Vram, UnorderedMap<(AccessType, bool), u32>> {
+    pub(crate) fn type_info_per_address(&self) -> &UnorderedMap<Vram, GatheredTypeInfo> {
         &self.type_info_per_address
     }
 
@@ -92,16 +90,20 @@ impl InstructionAnalysisResult {
             InstructionOperation::Link { info } => match info {
                 InstrOpLink::DirectLinkingCall { target_vram } => {
                     self.add_referenced_vram(target_vram);
+                    self.apply_symbol_type(target_vram, TypeInfo::Function);
                     InstrAnalysisInfo::DirectLink { target_vram }
                 }
                 InstrOpLink::LinkingBranch { target_vram } => {
                     self.add_referenced_vram(target_vram);
+                    self.apply_symbol_type(target_vram, TypeInfo::Function);
                     InstrAnalysisInfo::BranchLink { target_vram }
                 }
                 InstrOpLink::RawRegisterLink { vram, .. } => {
+                    self.apply_symbol_type(vram, TypeInfo::Function);
                     InstrAnalysisInfo::JumpAndLinkRegisterRaw { raw_vram: vram }
                 }
                 InstrOpLink::Call16RegisterLink { vram, rom } => {
+                    self.apply_symbol_type(vram, TypeInfo::Function);
                     self.set_info(
                         self.index_from_rom(rom),
                         InstrAnalysisInfo::GotCall16 { vram },
@@ -113,6 +115,7 @@ impl InstructionAnalysisResult {
                     hi_rom,
                     lo_rom,
                 } => {
+                    self.apply_symbol_type(vram, TypeInfo::Function);
                     self.set_info(
                         self.index_from_rom(hi_rom),
                         InstrAnalysisInfo::GotCallHi { vram },
@@ -132,9 +135,11 @@ impl InstructionAnalysisResult {
             InstructionOperation::TailCall { info } => match info {
                 InstrOpTailCall::MaybeDirectTailCall { target_vram } => {
                     self.add_referenced_vram(target_vram);
+                    self.apply_symbol_type(target_vram, TypeInfo::Function);
                     InstrAnalysisInfo::MaybeDirectTailCall { target_vram }
                 }
                 InstrOpTailCall::RawRegisterTailCall { vram, .. } => {
+                    self.apply_symbol_type(vram, TypeInfo::Function);
                     InstrAnalysisInfo::RawRegisterTailCall { raw_vram: vram }
                 }
                 InstrOpTailCall::DereferencedRegisterTailCall {
@@ -147,15 +152,19 @@ impl InstructionAnalysisResult {
                 jumptable_vram,
                 info,
                 ..
-            } => InstrAnalysisInfo::Jumptable {
-                jumptable_vram,
-                kind: info,
-            },
+            } => {
+                self.apply_symbol_type(jumptable_vram, TypeInfo::Jumptable);
+                InstrAnalysisInfo::Jumptable {
+                    jumptable_vram,
+                    kind: info,
+                }
+            }
 
             InstructionOperation::ReturnJump => InstrAnalysisInfo::No,
 
             InstructionOperation::Branch { target_vram } => {
                 self.add_referenced_vram(target_vram);
+                self.apply_symbol_type(target_vram, TypeInfo::BranchTarget);
                 if self.ranges.in_vram_range(target_vram) {
                     InstrAnalysisInfo::Branch { target_vram }
                 } else {
@@ -173,9 +182,7 @@ impl InstructionAnalysisResult {
                 } => {
                     self.add_referenced_vram(vram);
 
-                    if let Some(access_info) = access_info {
-                        self.apply_symbol_type(vram, access_info);
-                    }
+                    self.apply_symbol_type(vram, access_info.into());
                     self.set_info_if_empty(
                         self.index_from_rom(hi_rom),
                         InstrAnalysisInfo::PairedHi { vram },
@@ -184,16 +191,16 @@ impl InstructionAnalysisResult {
                 }
                 InstrOpPairedAddress::GpRel { access_info, .. } => {
                     self.add_referenced_vram(vram);
-                    if let Some(access_info) = access_info {
-                        self.apply_symbol_type(vram, access_info);
-                    }
+                    self.apply_symbol_type(vram, access_info.into());
                     InstrAnalysisInfo::GpRel { vram }
                 }
                 InstrOpPairedAddress::GpGotLazyResolver {} => {
+                    self.apply_symbol_type(vram, TypeInfo::No);
                     InstrAnalysisInfo::GotLazyResolver { vram }
                 }
                 InstrOpPairedAddress::GpGotGlobal {} => {
                     self.add_referenced_vram(vram);
+                    self.apply_symbol_type(vram, TypeInfo::No);
                     InstrAnalysisInfo::GotGlobal { vram }
                 }
                 InstrOpPairedAddress::GpGotLocal { .. } => InstrAnalysisInfo::GotLocal { vram },
@@ -203,9 +210,7 @@ impl InstructionAnalysisResult {
                     ..
                 } => {
                     self.add_referenced_vram(vram);
-                    if let Some(access_info) = access_info {
-                        self.apply_symbol_type(vram, access_info);
-                    }
+                    self.apply_symbol_type(vram, access_info.into());
                     self.set_info(
                         self.index_from_rom(upper_rom),
                         InstrAnalysisInfo::GotLocalPaired { vram },
@@ -214,6 +219,7 @@ impl InstructionAnalysisResult {
                 }
                 InstrOpPairedAddress::PairedGotLo { hi_rom } => {
                     self.add_referenced_vram(vram);
+                    self.apply_symbol_type(vram, TypeInfo::No);
                     self.set_info_if_empty(
                         self.index_from_rom(hi_rom),
                         InstrAnalysisInfo::PairedGotHi { vram },
@@ -227,7 +233,7 @@ impl InstructionAnalysisResult {
                 } => {
                     self.add_referenced_vram(unaddended_address);
 
-                    self.apply_symbol_type(unaddended_address, access_info);
+                    self.apply_symbol_type(unaddended_address, access_info.into());
                     self.set_info_if_empty(
                         self.index_from_rom(hi_rom),
                         InstrAnalysisInfo::PairedHiUnaligned {
@@ -246,7 +252,7 @@ impl InstructionAnalysisResult {
                 } => {
                     self.add_referenced_vram(unaddended_address);
 
-                    self.apply_symbol_type(unaddended_address, access_info);
+                    self.apply_symbol_type(unaddended_address, access_info.into());
                     InstrAnalysisInfo::GpRelUnaligned {
                         unaddended_vram: unaddended_address,
                         addended_vram: vram,
@@ -263,7 +269,7 @@ impl InstructionAnalysisResult {
                 access_info,
                 ..
             } => {
-                self.apply_symbol_type(original_address, access_info);
+                self.apply_symbol_type(original_address, access_info.into());
                 InstrAnalysisInfo::No
             }
             InstructionOperation::DanglingLo { .. } => InstrAnalysisInfo::No,
@@ -293,18 +299,6 @@ impl InstructionAnalysisResult {
         self.set_info(instr_index, info);
 
         info
-    }
-}
-
-impl InstructionAnalysisResult {
-    fn apply_symbol_type(&mut self, address: Vram, access_info: (AccessType, bool)) {
-        let (access_type, unsigned_memory_address) = access_info;
-        self.type_info_per_address
-            .entry(address)
-            .or_default()
-            .entry((access_type, unsigned_memory_address))
-            .and_modify(|v| *v += 1)
-            .or_insert(1);
     }
 }
 
@@ -354,5 +348,100 @@ impl InstructionAnalysisResult {
 
     fn add_referenced_vram(&mut self, referenced_vram: Vram) {
         self.referenced_vrams.insert(referenced_vram);
+    }
+
+    fn apply_symbol_type(&mut self, address: Vram, type_info: TypeInfo) {
+        self.type_info_per_address
+            .entry(address)
+            .or_default()
+            .insert(type_info);
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub(crate) enum GatheredTypeInfo {
+    #[default]
+    No,
+    Function,
+    Jumptable,
+    BranchTarget,
+    AccessInfoCounter(UnorderedMap<(AccessType, bool), u32>),
+}
+
+impl GatheredTypeInfo {
+    fn insert(&mut self, type_info: TypeInfo) {
+        let myself = core::mem::take(self);
+
+        *self = match (myself, type_info) {
+            (_, TypeInfo::Function) => Self::Function,
+            (_, TypeInfo::Jumptable) => Self::Jumptable,
+            (GatheredTypeInfo::No, TypeInfo::BranchTarget) => Self::BranchTarget,
+
+            (Self::Function, _) => Self::Function,
+            (Self::Jumptable, _) => Self::Jumptable,
+            (
+                GatheredTypeInfo::BranchTarget,
+                TypeInfo::No | TypeInfo::BranchTarget | TypeInfo::AccessInfo(_),
+            ) => GatheredTypeInfo::BranchTarget,
+            (GatheredTypeInfo::AccessInfoCounter(_), TypeInfo::BranchTarget) => {
+                GatheredTypeInfo::BranchTarget
+            }
+
+            (Self::No, TypeInfo::No) => Self::No,
+            (Self::AccessInfoCounter(unordered_map), TypeInfo::No) => {
+                Self::AccessInfoCounter(unordered_map)
+            }
+
+            (Self::No, TypeInfo::AccessInfo(access_info)) => {
+                let mut counter = UnorderedMap::new();
+                counter.insert(access_info, 1);
+                Self::AccessInfoCounter(counter)
+            }
+
+            (Self::AccessInfoCounter(mut counter), TypeInfo::AccessInfo(access_info)) => {
+                counter
+                    .entry(access_info)
+                    .and_modify(|v| *v += 1)
+                    .or_insert(1);
+                Self::AccessInfoCounter(counter)
+            }
+        };
+    }
+
+    #[expect(dead_code)]
+    pub(crate) fn get_access_info(&self) -> Option<(AccessType, bool)> {
+        if let Self::AccessInfoCounter(counter) = self {
+            if counter.len() == 1 {
+                counter.iter().next().map(|(k, _v)| *k)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+enum TypeInfo {
+    No,
+    Function,
+    Jumptable,
+    BranchTarget,
+    AccessInfo((AccessType, bool)),
+}
+
+impl From<Option<(AccessType, bool)>> for TypeInfo {
+    fn from(value: Option<(AccessType, bool)>) -> Self {
+        match value {
+            Some(x) => Self::AccessInfo(x),
+            None => Self::No,
+        }
+    }
+}
+
+impl From<(AccessType, bool)> for TypeInfo {
+    fn from(value: (AccessType, bool)) -> Self {
+        Self::AccessInfo(value)
     }
 }
