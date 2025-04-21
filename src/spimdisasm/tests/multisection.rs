@@ -5,8 +5,11 @@ use std::collections::BTreeMap;
 
 use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
 use spimdisasm::{
-    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
-    config::{Endian, GlobalConfig},
+    addresses::{
+        AddressRange, GlobalOffsetTable, GotGlobalEntry, GotLocalEntry, GpValue, Rom, RomVramRange,
+        Size, Vram,
+    },
+    config::{Endian, GlobalConfig, GpConfig},
     context::{builder::UserSegmentBuilder, Context, ContextBuilder, GlobalSegmentBuilder},
     metadata::SegmentMetadata,
     parent_segment_info::ParentSegmentInfo,
@@ -70,6 +73,8 @@ impl Sections {
         rodata_info: (RawSectionInfo, DataSectionSettings),
         gcc_except_table_info: (RawSectionInfo, DataSectionSettings),
         bss_info: (RawNoloadSectionInfo, NoloadSectionSettings),
+        gp_config: Option<GpConfig>,
+        global_offset_table: Option<GlobalOffsetTable>,
     ) -> Self {
         let mut global_ranges = text_info.0.ranges();
 
@@ -78,9 +83,15 @@ impl Sections {
         global_ranges.expand_ranges(&gcc_except_table_info.0.ranges());
         global_ranges.expand_ranges(&bss_info.0.ranges());
 
-        let global_config = GlobalConfig::new(endian);
+        let global_config = GlobalConfig::new(endian).with_gp_config(gp_config);
         let mut context = {
-            let mut global_heater = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
+            let mut global_builder = GlobalSegmentBuilder::new(global_ranges);
+            if let Some(global_offset_table) = global_offset_table {
+                global_builder
+                    .add_global_offset_table(&global_config, global_offset_table)
+                    .unwrap();
+            }
+            let mut global_heater = global_builder.finish_symbols();
 
             if !text_info.0.bytes.is_empty() {
                 global_heater
@@ -416,6 +427,9 @@ fn test_jumptable_with_lo_in_each_case_for_same_hi() {
     let bss_size = Size::new(0x20);
     let bss_vram = Vram::new(0x800040A0);
 
+    let gp_config = None;
+    let global_offset_table = None;
+
     let executable_settings =
         ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
     let data_settings = DataSectionSettings::new(None);
@@ -447,6 +461,8 @@ fn test_jumptable_with_lo_in_each_case_for_same_hi() {
             RawNoloadSectionInfo::new(bss_size, bss_vram),
             noload_settings,
         ),
+        gp_config,
+        global_offset_table,
     );
 
     sections.print_global_segment_info();
@@ -532,6 +548,344 @@ dlabel jtbl_80004080
 
 dlabel B_800040A0
     /* 800040A0 */ .space 0x20
+";
+
+    assert_eq!(disassembled_str, expected_str);
+}
+
+#[test]
+fn test_mips1_doubles_eb() {
+    let text_bytes: [u8; 21 * 4] = [
+        // function
+        0x3C, 0x04, 0x80, 0x00, // lui
+        0xC4, 0x80, 0x00, 0xA4, // lwc1
+        0x03, 0xE0, 0x00, 0x08, // jr
+        0xC4, 0x81, 0x00, 0xA0, // lwc1
+        // function
+        0xC7, 0x80, 0x80, 0x24, // lwc1
+        0x03, 0xE0, 0x00, 0x08, // jr
+        0xC7, 0x81, 0x80, 0x20, // lwc1
+        // function
+        0x3C, 0x1C, 0x00, 0x01, // lui
+        0x27, 0x9C, 0x80, 0x64, // addiu
+        0x03, 0x99, 0xE0, 0x21, // addu
+        0x8F, 0x84, 0x80, 0x1C, // lw
+        0xC4, 0x80, 0x00, 0x04, // lwc1
+        0x03, 0xE0, 0x00, 0x08, // jr
+        0xC4, 0x81, 0x00, 0x00, // lwc1
+        // function
+        0x3C, 0x1C, 0x00, 0x01, // lui
+        0x27, 0x9C, 0x80, 0x48, // addiu
+        0x03, 0x99, 0xE0, 0x21, // addu
+        0x8F, 0x84, 0x80, 0x18, // lw
+        0xC4, 0x81, 0x00, 0xA8, // lwc1
+        0x03, 0xE0, 0x00, 0x08, // jr
+        0xC4, 0x80, 0x00, 0xAC, // lwc1
+    ];
+    let text_rom = Rom::new(0x0);
+    let text_vram = Vram::new(0x80000000);
+
+    let data_bytes: [u8; 0] = [];
+    let data_rom = Rom::new(0x60);
+    let data_vram = Vram::new(0x80000060);
+
+    let rodata_bytes: [u8; 4 * 4] = [
+        0x40, 0x93, 0x48, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x93, 0x48, 0x00, 0x00, 0x00, 0x00,
+        0x00,
+    ];
+    let rodata_rom = Rom::new(0xA0);
+    let rodata_vram = Vram::new(0x800000A0);
+
+    let gcc_except_table_bytes: [u8; 0] = [];
+    let gcc_except_table_rom = Rom::new(0xB0);
+    let gcc_except_table_vram = Vram::new(0x800000B0);
+
+    let bss_size = Size::new(0x0);
+    let bss_vram = Vram::new(0x800000B0);
+
+    let gp_config = Some(GpConfig::new_pic(GpValue::new(0x80008080)));
+    let got_locals = vec![
+        /* -0x7FF0($gp) */ GotLocalEntry::new(0x00000000), /* Lazy resolver */
+        /* -0x7FEC($gp) */ GotLocalEntry::new(0x80000000), /* GNU extension */
+        /* -0x7FE8($gp) */ GotLocalEntry::new(0x80000000), /* */
+    ];
+    let got_globals = vec![
+        /* -0x7FE4($gp) */
+        GotGlobalEntry::new(0x800000A0, 0x800000A0, false), /* R_FLT_800000A0 */
+    ];
+    let global_offset_table = Some(GlobalOffsetTable::new(
+        Vram::new(0x80000090),
+        got_locals,
+        got_globals,
+    ));
+
+    let executable_settings =
+        ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
+    let data_settings = DataSectionSettings::new(None);
+    let noload_settings = NoloadSectionSettings::new(None);
+
+    let sections = Sections::new(
+        Endian::Big,
+        (
+            RawSectionInfo::new(&text_bytes, text_rom, text_vram),
+            executable_settings,
+        ),
+        (
+            RawSectionInfo::new(&data_bytes, data_rom, data_vram),
+            data_settings,
+        ),
+        (
+            RawSectionInfo::new(&rodata_bytes, rodata_rom, rodata_vram),
+            data_settings,
+        ),
+        (
+            RawSectionInfo::new(
+                &gcc_except_table_bytes,
+                gcc_except_table_rom,
+                gcc_except_table_vram,
+            ),
+            data_settings,
+        ),
+        (
+            RawNoloadSectionInfo::new(bss_size, bss_vram),
+            noload_settings,
+        ),
+        gp_config,
+        global_offset_table,
+    );
+
+    sections.print_global_segment_info();
+
+    let instr_display_flags = InstructionDisplayFlags::default();
+    let text_display_settings = FunctionDisplaySettings::new(instr_display_flags);
+
+    let data_display_settings = SymDataDisplaySettings::new();
+    let bss_display_settings = SymNoloadDisplaySettings::new();
+
+    let disassembled_str = sections.display_to_string(
+        &text_display_settings,
+        &data_display_settings,
+        &data_display_settings,
+        &data_display_settings,
+        &bss_display_settings,
+    );
+
+    println!("{}", disassembled_str);
+
+    let expected_str = "\
+.section .text
+
+glabel func_80000000
+    /* 000000 80000000 3C048000 */  lui         $a0, %hi(R_DBL_800000A0 + 0x4)
+    /* 000004 80000004 C48000A4 */  lwc1        $fv0, %lo(R_DBL_800000A0 + 0x4)($a0)
+    /* 000008 80000008 03E00008 */  jr          $ra
+    /* 00000C 8000000C C48100A0 */   lwc1       $fv0f, %lo(R_DBL_800000A0)($a0)
+.size func_80000000, . - func_80000000
+
+glabel func_80000010
+    /* 000010 80000010 C7808024 */  lwc1        $fv0, %gp_rel(R_DBL_800000A0 + 0x4)($gp)
+    /* 000014 80000014 03E00008 */  jr          $ra
+    /* 000018 80000018 C7818020 */   lwc1       $fv0f, %gp_rel(R_DBL_800000A0)($gp)
+.size func_80000010, . - func_80000010
+
+glabel func_8000001C
+    /* 00001C 8000001C 3C1C0001 */  lui         $gp, %hi(_gp_disp)
+    /* 000020 80000020 279C8064 */  addiu       $gp, $gp, %lo(_gp_disp)
+    /* 000024 80000024 0399E021 */  addu        $gp, $gp, $t9
+    /* 000028 80000028 8F84801C */  lw          $a0, %got(R_DBL_800000A0)($gp)
+    /* 00002C 8000002C C4800004 */  lwc1        $fv0, 0x4($a0)
+    /* 000030 80000030 03E00008 */  jr          $ra
+    /* 000034 80000034 C4810000 */   lwc1       $fv0f, 0x0($a0)
+.size func_8000001C, . - func_8000001C
+
+glabel func_80000038
+    /* 000038 80000038 3C1C0001 */  lui         $gp, %hi(_gp_disp)
+    /* 00003C 8000003C 279C8048 */  addiu       $gp, $gp, %lo(_gp_disp)
+    /* 000040 80000040 0399E021 */  addu        $gp, $gp, $t9
+    /* 000044 80000044 8F848018 */  lw          $a0, %got(R_DBL_800000A8 + 0x4)($gp)
+    /* 000048 80000048 C48100A8 */  lwc1        $fv0f, %lo(R_DBL_800000A8)($a0)
+    /* 00004C 8000004C 03E00008 */  jr          $ra
+    /* 000050 80000050 C48000AC */   lwc1       $fv0, %lo(R_DBL_800000A8 + 0x4)($a0)
+.size func_80000038, . - func_80000038
+
+.section .rodata
+
+dlabel R_DBL_800000A0
+    /* 0000A0 800000A0 4093480000000000 */ .double 1234.0
+.size R_DBL_800000A0, . - R_DBL_800000A0
+
+dlabel R_DBL_800000A8
+    /* 0000A8 800000A8 4093480000000000 */ .double 1234.0
+.size R_DBL_800000A8, . - R_DBL_800000A8
+";
+
+    assert_eq!(disassembled_str, expected_str);
+}
+
+#[test]
+fn test_mips1_doubles_el() {
+    let text_bytes: [u8; 21 * 4] = [
+        // function
+        0x00, 0x80, 0x04, 0x3C, // lui
+        0xA0, 0x00, 0x80, 0xC4, // lwc1
+        0x08, 0x00, 0xE0, 0x03, // jr
+        0xA4, 0x00, 0x81, 0xC4, // lwc1
+        // function
+        0x24, 0x80, 0x81, 0xC7, // lwc1
+        0x08, 0x00, 0xE0, 0x03, // jr
+        0x20, 0x80, 0x80, 0xC7, // lwc1
+        // function
+        0x01, 0x00, 0x1C, 0x3C, // lui
+        0x64, 0x80, 0x9C, 0x27, // addiu
+        0x21, 0xE0, 0x99, 0x03, // addu
+        0x1C, 0x80, 0x84, 0x8F, // lw
+        0x04, 0x00, 0x81, 0xC4, // lwc1
+        0x08, 0x00, 0xE0, 0x03, // jr
+        0x00, 0x00, 0x80, 0xC4, // lwc1
+        // function
+        0x01, 0x00, 0x1C, 0x3C, // lui
+        0x48, 0x80, 0x9C, 0x27, // addiu
+        0x21, 0xE0, 0x99, 0x03, // addu
+        0x18, 0x80, 0x84, 0x8F, // lw
+        0xAC, 0x00, 0x81, 0xC4, // lwc1
+        0x08, 0x00, 0xE0, 0x03, // jr
+        0xA8, 0x00, 0x80, 0xC4, // lwc1
+    ];
+    let text_rom = Rom::new(0x0);
+    let text_vram = Vram::new(0x80000000);
+
+    let data_bytes: [u8; 0] = [];
+    let data_rom = Rom::new(0x60);
+    let data_vram = Vram::new(0x80000060);
+
+    let rodata_bytes: [u8; 4 * 4] = [
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x48, 0x93, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48, 0x93,
+        0x40,
+    ];
+    let rodata_rom = Rom::new(0xA0);
+    let rodata_vram = Vram::new(0x800000A0);
+
+    let gcc_except_table_bytes: [u8; 0] = [];
+    let gcc_except_table_rom = Rom::new(0xB0);
+    let gcc_except_table_vram = Vram::new(0x800000B0);
+
+    let bss_size = Size::new(0x0);
+    let bss_vram = Vram::new(0x800000B0);
+
+    let gp_config = Some(GpConfig::new_pic(GpValue::new(0x80008080)));
+    let got_locals = vec![
+        /* -0x7FF0($gp) */ GotLocalEntry::new(0x00000000), /* Lazy resolver */
+        /* -0x7FEC($gp) */ GotLocalEntry::new(0x80000000), /* GNU extension */
+        /* -0x7FE8($gp) */ GotLocalEntry::new(0x80000000), /* */
+    ];
+    let got_globals = vec![
+        /* -0x7FE4($gp) */
+        GotGlobalEntry::new(0x800000A0, 0x800000A0, false), /* R_FLT_800000A0 */
+    ];
+    let global_offset_table = Some(GlobalOffsetTable::new(
+        Vram::new(0x80000090),
+        got_locals,
+        got_globals,
+    ));
+
+    let executable_settings =
+        ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
+    let data_settings = DataSectionSettings::new(None);
+    let noload_settings = NoloadSectionSettings::new(None);
+
+    let sections = Sections::new(
+        Endian::Little,
+        (
+            RawSectionInfo::new(&text_bytes, text_rom, text_vram),
+            executable_settings,
+        ),
+        (
+            RawSectionInfo::new(&data_bytes, data_rom, data_vram),
+            data_settings,
+        ),
+        (
+            RawSectionInfo::new(&rodata_bytes, rodata_rom, rodata_vram),
+            data_settings,
+        ),
+        (
+            RawSectionInfo::new(
+                &gcc_except_table_bytes,
+                gcc_except_table_rom,
+                gcc_except_table_vram,
+            ),
+            data_settings,
+        ),
+        (
+            RawNoloadSectionInfo::new(bss_size, bss_vram),
+            noload_settings,
+        ),
+        gp_config,
+        global_offset_table,
+    );
+
+    sections.print_global_segment_info();
+
+    let instr_display_flags = InstructionDisplayFlags::default();
+    let text_display_settings = FunctionDisplaySettings::new(instr_display_flags);
+
+    let data_display_settings = SymDataDisplaySettings::new();
+    let bss_display_settings = SymNoloadDisplaySettings::new();
+
+    let disassembled_str = sections.display_to_string(
+        &text_display_settings,
+        &data_display_settings,
+        &data_display_settings,
+        &data_display_settings,
+        &bss_display_settings,
+    );
+
+    println!("{}", disassembled_str);
+
+    let expected_str = "\
+.section .text
+
+glabel func_80000000
+    /* 000000 80000000 0080043C */  lui         $a0, %hi(R_DBL_800000A0)
+    /* 000004 80000004 A00080C4 */  lwc1        $fv0, %lo(R_DBL_800000A0)($a0)
+    /* 000008 80000008 0800E003 */  jr          $ra
+    /* 00000C 8000000C A40081C4 */   lwc1       $fv0f, %lo(R_DBL_800000A0 + 0x4)($a0)
+.size func_80000000, . - func_80000000
+
+glabel func_80000010
+    /* 000010 80000010 248081C7 */  lwc1        $fv0f, %gp_rel(R_DBL_800000A0 + 0x4)($gp)
+    /* 000014 80000014 0800E003 */  jr          $ra
+    /* 000018 80000018 208080C7 */   lwc1       $fv0, %gp_rel(R_DBL_800000A0)($gp)
+.size func_80000010, . - func_80000010
+
+glabel func_8000001C
+    /* 00001C 8000001C 01001C3C */  lui         $gp, %hi(_gp_disp)
+    /* 000020 80000020 64809C27 */  addiu       $gp, $gp, %lo(_gp_disp)
+    /* 000024 80000024 21E09903 */  addu        $gp, $gp, $t9
+    /* 000028 80000028 1C80848F */  lw          $a0, %got(R_DBL_800000A0)($gp)
+    /* 00002C 8000002C 040081C4 */  lwc1        $fv0f, 0x4($a0)
+    /* 000030 80000030 0800E003 */  jr          $ra
+    /* 000034 80000034 000080C4 */   lwc1       $fv0, 0x0($a0)
+.size func_8000001C, . - func_8000001C
+
+glabel func_80000038
+    /* 000038 80000038 01001C3C */  lui         $gp, %hi(_gp_disp)
+    /* 00003C 8000003C 48809C27 */  addiu       $gp, $gp, %lo(_gp_disp)
+    /* 000040 80000040 21E09903 */  addu        $gp, $gp, $t9
+    /* 000044 80000044 1880848F */  lw          $a0, %got(R_DBL_800000A8)($gp)
+    /* 000048 80000048 AC0081C4 */  lwc1        $fv0f, %lo(R_DBL_800000A8 + 0x4)($a0)
+    /* 00004C 8000004C 0800E003 */  jr          $ra
+    /* 000050 80000050 A80080C4 */   lwc1       $fv0, %lo(R_DBL_800000A8)($a0)
+.size func_80000038, . - func_80000038
+
+.section .rodata
+
+dlabel R_DBL_800000A0
+    /* 0000A0 800000A0 0000000000489340 */ .double 1234.0
+.size R_DBL_800000A0, . - R_DBL_800000A0
+
+dlabel R_DBL_800000A8
+    /* 0000A8 800000A8 0000000000489340 */ .double 1234.0
+.size R_DBL_800000A8, . - R_DBL_800000A8
 ";
 
     assert_eq!(disassembled_str, expected_str);

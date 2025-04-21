@@ -3,13 +3,14 @@
 
 use alloc::{collections::btree_map::BTreeMap, sync::Arc};
 
-use rabbitizer::{registers_meta::Register, Instruction};
+use rabbitizer::{access_type::AccessType, registers_meta::Register, Instruction};
 
 use crate::{
     addresses::{AddressRange, GlobalOffsetTable, Rom, RomVramRange, Size, SizedAddress, Vram},
     collections::{
         addended_ordered_map::{AddendedOrderedMap, FindSettings},
         unordered_map::UnorderedMap,
+        unordered_set::UnorderedSet,
     },
     config::GlobalConfig,
     metadata::{IgnoredAddressRange, LabelMetadata, LabelType, SymbolMetadata, SymbolType},
@@ -87,6 +88,8 @@ impl Preheater {
         // This is a pretty uncommon thing to happen, but it annoyed me enough to actually implement
         // this hack.
         let mut jumptable_silly_hack = 0;
+
+        let mut accesses_to_remove = UnorderedSet::new();
 
         for b in raw_bytes.chunks_exact(4) {
             let word = global_config.endian().word_from_bytes(b);
@@ -290,7 +293,13 @@ impl Preheater {
                     user_symbols,
                     ignored_addresses,
                 ) {
-                    if let Some((access_type, _)) = access_info {
+                    if let Some((access_type, y)) = access_info {
+                        if let (AccessType::DOUBLEFLOAT, true) = (access_type, y) {
+                            // We want to avoid creating a symbol in the middle of the doublefloat.
+                            let unaddended_vram = paired_address.align_down(8) + Size::new(0x4);
+                            accesses_to_remove.insert(unaddended_vram);
+                        }
+
                         reference.set_access_type(access_type);
                     }
                 }
@@ -305,6 +314,11 @@ impl Preheater {
             current_rom += Size::new(4);
             current_vram += Size::new(4);
             jumptable_silly_hack -= 1;
+        }
+
+        if !accesses_to_remove.is_empty() {
+            self.references
+                .retain(|vram, _| !accesses_to_remove.contains(vram));
         }
 
         Ok(())

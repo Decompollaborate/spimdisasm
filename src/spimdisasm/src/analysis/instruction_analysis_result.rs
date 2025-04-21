@@ -1,11 +1,12 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::vec::Vec;
+use alloc::{sync::Arc, vec::Vec};
+use core::mem;
 use rabbitizer::{access_type::AccessType, Instruction};
 
 use crate::{
-    addresses::{GlobalOffsetTable, Rom, RomVramRange, Vram},
+    addresses::{GlobalOffsetTable, Rom, RomVramRange, Size, Vram},
     collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
 };
 
@@ -15,10 +16,11 @@ use super::{
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[must_use]
 pub(crate) struct InstructionAnalysisResult {
     ranges: RomVramRange,
 
-    instruction_infos: Vec<InstrAnalysisInfo>,
+    instruction_infos: Arc<[InstrAnalysisInfo]>,
 
     /// Every referenced vram found.
     referenced_vrams: UnorderedSet<Vram>,
@@ -29,20 +31,6 @@ pub(crate) struct InstructionAnalysisResult {
 }
 
 impl InstructionAnalysisResult {
-    #[must_use]
-    pub(crate) fn new(ranges: RomVramRange) -> Self {
-        let instr_count = ranges.rom().size().inner() / 4;
-        let instruction_infos = vec![InstrAnalysisInfo::No; instr_count as usize];
-
-        Self {
-            ranges,
-            instruction_infos,
-            referenced_vrams: UnorderedSet::new(),
-            type_info_per_address: UnorderedMap::new(),
-            handwritten_instrs: UnorderedSet::new(),
-        }
-    }
-
     #[must_use]
     pub(crate) fn ranges(&self) -> &RomVramRange {
         &self.ranges
@@ -69,7 +57,116 @@ impl InstructionAnalysisResult {
     }
 }
 
-impl InstructionAnalysisResult {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct InstructionAnalysisBuilder {
+    ranges: RomVramRange,
+
+    instruction_infos: Vec<InstrAnalysisInfo>,
+
+    /// Every referenced vram found.
+    referenced_vrams: UnorderedSet<Vram>,
+
+    type_info_per_address: UnorderedMap<Vram, GatheredTypeInfo>,
+
+    handwritten_instrs: UnorderedSet<Rom>,
+}
+
+impl InstructionAnalysisBuilder {
+    #[must_use]
+    pub(crate) fn new(ranges: RomVramRange) -> Self {
+        let instr_count = ranges.rom().size().inner() / 4;
+        let instruction_infos = vec![InstrAnalysisInfo::No; instr_count as usize];
+
+        Self {
+            ranges,
+            instruction_infos,
+            referenced_vrams: UnorderedSet::new(),
+            type_info_per_address: UnorderedMap::new(),
+            handwritten_instrs: UnorderedSet::new(),
+        }
+    }
+
+    #[must_use]
+    pub(crate) fn ranges(&self) -> &RomVramRange {
+        &self.ranges
+    }
+
+    pub(crate) fn finish(self) -> InstructionAnalysisResult {
+        let InstructionAnalysisBuilder {
+            ranges,
+            mut instruction_infos,
+            mut referenced_vrams,
+            type_info_per_address: type_info_per_address_old,
+            handwritten_instrs,
+        } = self;
+
+        let type_info_per_address = {
+            let mut type_info_per_address = UnorderedMap::new();
+            let mut mips1_doublefloats = UnorderedMap::new();
+
+            // Fixup access types.
+            for (vram, info) in type_info_per_address_old {
+                if let GatheredTypeInfo::AccessInfoCounter(counter) = info {
+                    if counter.contains_key(&(AccessType::DOUBLEFLOAT, true)) {
+                        // MIPS1 doublefloat
+
+                        let actual_address = vram.align_down(8);
+                        // let addended_address = actual_address + Size::new(0x4);
+                        mips1_doublefloats.insert(actual_address, counter);
+                    } else {
+                        type_info_per_address
+                            .insert(vram, GatheredTypeInfo::AccessInfoCounter(counter));
+                    }
+                } else {
+                    type_info_per_address.insert(vram, info);
+                }
+            }
+
+            for (actual_address, mut counter) in mips1_doublefloats {
+                let addended_address = actual_address + Size::new(0x4);
+                referenced_vrams.remove(&addended_address);
+                if let Some(GatheredTypeInfo::AccessInfoCounter(other_counter)) =
+                    type_info_per_address.remove(&addended_address)
+                {
+                    // Tell the other half of the doublefloat access that it shuold use an unaddended address.
+                    for instr_rom in other_counter.into_iter().flat_map(|(_, rom_list)| rom_list) {
+                        let index = (instr_rom - ranges.rom().start()).inner() as usize / 4;
+
+                        let value = instruction_infos[index].align_down_unaddended(8);
+                        if let Some(upper_rom) = value.upper_rom() {
+                            let upper_index =
+                                (upper_rom - ranges.rom().start()).inner() as usize / 4;
+
+                            // Update the upper half too.
+                            let upper_value =
+                                instruction_infos[upper_index].align_down_unaddended(8);
+                            instruction_infos[upper_index] = upper_value;
+                        }
+                        instruction_infos[index] = value;
+                    }
+                }
+
+                // The type inferrer only works if we have a single access type, so we remove the
+                // `FLOAT` one. Keep the rest in case this points to an struct or something else.
+                counter.remove(&(AccessType::FLOAT, false));
+                type_info_per_address
+                    .insert(actual_address, GatheredTypeInfo::AccessInfoCounter(counter));
+            }
+
+            type_info_per_address
+        };
+
+        InstructionAnalysisResult {
+            ranges,
+            instruction_infos: instruction_infos.into(),
+            referenced_vrams,
+            type_info_per_address,
+            handwritten_instrs,
+        }
+    }
+}
+
+impl InstructionAnalysisBuilder {
     pub(crate) fn process_instr(
         &mut self,
         regs_tracker: &mut RegisterTracker,
@@ -90,20 +187,20 @@ impl InstructionAnalysisResult {
             InstructionOperation::Link { info } => match info {
                 InstrOpLink::DirectLinkingCall { target_vram } => {
                     self.add_referenced_vram(target_vram);
-                    self.apply_symbol_type(target_vram, TypeInfo::Function);
+                    self.apply_symbol_type(target_vram, TypeInfo::Function, instr_rom);
                     InstrAnalysisInfo::DirectLink { target_vram }
                 }
                 InstrOpLink::LinkingBranch { target_vram } => {
                     self.add_referenced_vram(target_vram);
-                    self.apply_symbol_type(target_vram, TypeInfo::Function);
+                    self.apply_symbol_type(target_vram, TypeInfo::Function, instr_rom);
                     InstrAnalysisInfo::BranchLink { target_vram }
                 }
                 InstrOpLink::RawRegisterLink { vram, .. } => {
-                    self.apply_symbol_type(vram, TypeInfo::Function);
+                    self.apply_symbol_type(vram, TypeInfo::Function, instr_rom);
                     InstrAnalysisInfo::JumpAndLinkRegisterRaw { raw_vram: vram }
                 }
                 InstrOpLink::Call16RegisterLink { vram, rom } => {
-                    self.apply_symbol_type(vram, TypeInfo::Function);
+                    self.apply_symbol_type(vram, TypeInfo::Function, instr_rom);
                     self.set_info(
                         self.index_from_rom(rom),
                         InstrAnalysisInfo::GotCall16 { vram },
@@ -115,7 +212,7 @@ impl InstructionAnalysisResult {
                     hi_rom,
                     lo_rom,
                 } => {
-                    self.apply_symbol_type(vram, TypeInfo::Function);
+                    self.apply_symbol_type(vram, TypeInfo::Function, instr_rom);
                     self.set_info(
                         self.index_from_rom(hi_rom),
                         InstrAnalysisInfo::GotCallHi { vram },
@@ -135,11 +232,11 @@ impl InstructionAnalysisResult {
             InstructionOperation::TailCall { info } => match info {
                 InstrOpTailCall::MaybeDirectTailCall { target_vram } => {
                     self.add_referenced_vram(target_vram);
-                    self.apply_symbol_type(target_vram, TypeInfo::Function);
+                    self.apply_symbol_type(target_vram, TypeInfo::Function, instr_rom);
                     InstrAnalysisInfo::MaybeDirectTailCall { target_vram }
                 }
                 InstrOpTailCall::RawRegisterTailCall { vram, .. } => {
-                    self.apply_symbol_type(vram, TypeInfo::Function);
+                    self.apply_symbol_type(vram, TypeInfo::Function, instr_rom);
                     InstrAnalysisInfo::RawRegisterTailCall { raw_vram: vram }
                 }
                 InstrOpTailCall::DereferencedRegisterTailCall {
@@ -153,7 +250,7 @@ impl InstructionAnalysisResult {
                 info,
                 ..
             } => {
-                self.apply_symbol_type(jumptable_vram, TypeInfo::Jumptable);
+                self.apply_symbol_type(jumptable_vram, TypeInfo::Jumptable, instr_rom);
                 InstrAnalysisInfo::Jumptable {
                     jumptable_vram,
                     kind: info,
@@ -164,7 +261,7 @@ impl InstructionAnalysisResult {
 
             InstructionOperation::Branch { target_vram } => {
                 self.add_referenced_vram(target_vram);
-                self.apply_symbol_type(target_vram, TypeInfo::BranchTarget);
+                self.apply_symbol_type(target_vram, TypeInfo::BranchTarget, instr_rom);
                 if self.ranges.in_vram_range(target_vram) {
                     InstrAnalysisInfo::Branch { target_vram }
                 } else {
@@ -182,11 +279,10 @@ impl InstructionAnalysisResult {
                 InstrOpPairedAddress::PairedLo {
                     hi_rom,
                     access_info,
-                    ..
                 } => {
                     self.add_referenced_vram(unaddended_vram);
 
-                    self.apply_symbol_type(unaddended_vram, access_info.into());
+                    self.apply_symbol_type(unaddended_vram, access_info.into(), instr_rom);
                     self.set_info_if_empty(
                         self.index_from_rom(hi_rom),
                         InstrAnalysisInfo::PairedHi {
@@ -197,18 +293,19 @@ impl InstructionAnalysisResult {
                     InstrAnalysisInfo::PairedLo {
                         addended_vram,
                         unaddended_vram,
+                        upper_rom: hi_rom,
                     }
                 }
-                InstrOpPairedAddress::GpRel { access_info, .. } => {
+                InstrOpPairedAddress::GpRel { access_info } => {
                     self.add_referenced_vram(unaddended_vram);
-                    self.apply_symbol_type(unaddended_vram, access_info.into());
+                    self.apply_symbol_type(unaddended_vram, access_info.into(), instr_rom);
                     InstrAnalysisInfo::GpRel {
                         addended_vram,
                         unaddended_vram,
                     }
                 }
                 InstrOpPairedAddress::GpGotLazyResolver {} => {
-                    self.apply_symbol_type(addended_vram, TypeInfo::No);
+                    self.apply_symbol_type(addended_vram, TypeInfo::No, instr_rom);
                     InstrAnalysisInfo::GotLazyResolver {
                         addended_vram,
                         unaddended_vram: addended_vram,
@@ -216,23 +313,22 @@ impl InstructionAnalysisResult {
                 }
                 InstrOpPairedAddress::GpGotGlobal {} => {
                     self.add_referenced_vram(addended_vram);
-                    self.apply_symbol_type(addended_vram, TypeInfo::No);
+                    self.apply_symbol_type(addended_vram, TypeInfo::No, instr_rom);
                     InstrAnalysisInfo::GotGlobal {
                         addended_vram,
                         unaddended_vram: addended_vram,
                     }
                 }
-                InstrOpPairedAddress::GpGotLocal { .. } => InstrAnalysisInfo::GotLocal {
+                InstrOpPairedAddress::GpGotLocal {} => InstrAnalysisInfo::GotLocal {
                     addended_vram,
                     unaddended_vram: addended_vram,
                 },
                 InstrOpPairedAddress::PairedGpGotLo {
                     upper_rom,
                     access_info,
-                    ..
                 } => {
                     self.add_referenced_vram(unaddended_vram);
-                    self.apply_symbol_type(unaddended_vram, access_info.into());
+                    self.apply_symbol_type(unaddended_vram, access_info.into(), instr_rom);
                     self.set_info(
                         self.index_from_rom(upper_rom),
                         InstrAnalysisInfo::GotLocalPaired {
@@ -243,11 +339,12 @@ impl InstructionAnalysisResult {
                     InstrAnalysisInfo::PairedLo {
                         addended_vram,
                         unaddended_vram,
+                        upper_rom,
                     }
                 }
                 InstrOpPairedAddress::PairedGotLo { hi_rom } => {
                     self.add_referenced_vram(addended_vram);
-                    self.apply_symbol_type(addended_vram, TypeInfo::No);
+                    self.apply_symbol_type(addended_vram, TypeInfo::No, instr_rom);
                     self.set_info_if_empty(
                         self.index_from_rom(hi_rom),
                         InstrAnalysisInfo::PairedGotHi {
@@ -269,7 +366,7 @@ impl InstructionAnalysisResult {
                 access_info,
                 ..
             } => {
-                self.apply_symbol_type(original_address, access_info.into());
+                self.apply_symbol_type(original_address, access_info.into(), instr_rom);
                 InstrAnalysisInfo::No
             }
             InstructionOperation::DanglingLo { .. } => InstrAnalysisInfo::No,
@@ -278,11 +375,14 @@ impl InstructionAnalysisResult {
                     self.index_from_rom(hi_rom),
                     InstrAnalysisInfo::ConstantHi { constant },
                 );
-                InstrAnalysisInfo::ConstantLo { constant }
+                InstrAnalysisInfo::ConstantLo {
+                    constant,
+                    upper_rom: hi_rom,
+                }
             }
             InstructionOperation::UnpairedConstant { .. } => InstrAnalysisInfo::No,
             InstructionOperation::RegisterOperation { info } => match info {
-                InstrOpRegisterOperation::SuspectedCpload { hi_rom, lo_rom, .. } => {
+                InstrOpRegisterOperation::SuspectedCpload { hi_rom, lo_rom } => {
                     self.set_info(self.index_from_rom(hi_rom), InstrAnalysisInfo::CploadHi);
                     self.set_info(self.index_from_rom(lo_rom), InstrAnalysisInfo::CploadLo);
                     InstrAnalysisInfo::CploadAddu
@@ -293,7 +393,7 @@ impl InstructionAnalysisResult {
             },
 
             InstructionOperation::UnhandledOpcode { .. }
-            | InstructionOperation::InvalidInstr { .. } => InstrAnalysisInfo::No,
+            | InstructionOperation::InvalidInstr {} => InstrAnalysisInfo::No,
         };
 
         self.set_info(instr_index, info);
@@ -302,7 +402,7 @@ impl InstructionAnalysisResult {
     }
 }
 
-impl InstructionAnalysisResult {
+impl InstructionAnalysisBuilder {
     fn rom_from_instr(&self, instr: &Instruction) -> Rom {
         self.ranges
             .rom_from_vram(instr.vram())
@@ -350,11 +450,11 @@ impl InstructionAnalysisResult {
         self.referenced_vrams.insert(referenced_vram);
     }
 
-    fn apply_symbol_type(&mut self, address: Vram, type_info: TypeInfo) {
+    fn apply_symbol_type(&mut self, address: Vram, type_info: TypeInfo, instr_rom: Rom) {
         self.type_info_per_address
             .entry(address)
             .or_default()
-            .insert(type_info);
+            .insert(type_info, instr_rom);
     }
 }
 
@@ -365,12 +465,12 @@ pub(crate) enum GatheredTypeInfo {
     Function,
     Jumptable,
     BranchTarget,
-    AccessInfoCounter(UnorderedMap<(AccessType, bool), u32>),
+    AccessInfoCounter(UnorderedMap<(AccessType, bool), UnorderedSet<Rom>>),
 }
 
 impl GatheredTypeInfo {
-    fn insert(&mut self, type_info: TypeInfo) {
-        let myself = core::mem::take(self);
+    fn insert(&mut self, type_info: TypeInfo, instr_rom: Rom) {
+        let myself = mem::take(self);
 
         *self = match (myself, type_info) {
             (_, TypeInfo::Function) => Self::Function,
@@ -394,15 +494,23 @@ impl GatheredTypeInfo {
 
             (Self::No, TypeInfo::AccessInfo(access_info)) => {
                 let mut counter = UnorderedMap::new();
-                counter.insert(access_info, 1);
+                let mut aux = UnorderedSet::new();
+                aux.insert(instr_rom);
+                counter.insert(access_info, aux);
                 Self::AccessInfoCounter(counter)
             }
 
             (Self::AccessInfoCounter(mut counter), TypeInfo::AccessInfo(access_info)) => {
                 counter
                     .entry(access_info)
-                    .and_modify(|v| *v += 1)
-                    .or_insert(1);
+                    .and_modify(|v| {
+                        v.insert(instr_rom);
+                    })
+                    .or_insert({
+                        let mut aux = UnorderedSet::new();
+                        aux.insert(instr_rom);
+                        aux
+                    });
                 Self::AccessInfoCounter(counter)
             }
         };

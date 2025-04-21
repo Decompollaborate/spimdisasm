@@ -354,6 +354,7 @@ impl FunctionSymProcessed {
                 InstrAnalysisInfo::PairedLo {
                     addended_vram,
                     unaddended_vram,
+                    upper_rom: _,
                 } => {
                     /*
                     if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
@@ -404,7 +405,10 @@ impl FunctionSymProcessed {
                         RelocReferencedSym::SymName(Arc::from(format!("0x{:X}", constant)), 0),
                     ))
                 }
-                InstrAnalysisInfo::ConstantLo { constant } => {
+                InstrAnalysisInfo::ConstantLo {
+                    constant,
+                    upper_rom: _,
+                } => {
                     // TODO: use `:08X`.
                     Some(RelocationType::R_CUSTOM_CONSTANT_LO.new_reloc_info(
                         RelocReferencedSym::SymName(Arc::from(format!("0x{:X}", constant)), 0),

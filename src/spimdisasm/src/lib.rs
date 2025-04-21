@@ -80,6 +80,8 @@ fn spimdisasm(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     m.add_class::<rabbitizer::instr::InstructionFlags>()?;
 
+    m.add_class::<rabbitizer::abi::Abi>()?;
+
     m.add_class::<rabbitizer::isa::IsaVersion>()?;
     m.add_class::<rabbitizer::isa::IsaExtension>()?;
 

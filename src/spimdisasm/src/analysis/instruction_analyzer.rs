@@ -11,7 +11,9 @@ use crate::{
     parent_segment_info::ParentSegmentInfo,
 };
 
-use super::{InstrAnalysisInfo, InstructionAnalysisResult, RegisterTracker};
+use super::{
+    InstrAnalysisInfo, InstructionAnalysisBuilder, InstructionAnalysisResult, RegisterTracker,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InstructionAnalyzer {
@@ -40,7 +42,7 @@ impl InstructionAnalyzer {
             global_config.gp_config().copied(),
             global_config.endian(),
         );
-        let mut result = InstructionAnalysisResult::new(ranges);
+        let mut result = InstructionAnalysisBuilder::new(ranges);
         let owned_segment = context.find_owned_segment(parent_info)?;
         let global_offset_table = owned_segment.global_offset_table();
 
@@ -109,7 +111,7 @@ impl InstructionAnalyzer {
             prev_instr_analysis_info = info;
         }
 
-        Ok(result)
+        Ok(result.finish())
     }
 
     // TODO
@@ -118,7 +120,7 @@ impl InstructionAnalyzer {
         &mut self,
         owned_segment: &SegmentMetadata,
         parent_info: &ParentSegmentInfo,
-        result: &mut InstructionAnalysisResult,
+        result: &mut InstructionAnalysisBuilder,
         original_regs_tracker: &RegisterTracker,
         instrs: &[Instruction],
         instr: &Instruction,
@@ -178,7 +180,7 @@ impl InstructionAnalyzer {
         &mut self,
         owned_segment: &SegmentMetadata,
         parent_info: &ParentSegmentInfo,
-        result: &mut InstructionAnalysisResult,
+        result: &mut InstructionAnalysisBuilder,
         original_regs_tracker: &RegisterTracker,
         instrs: &[Instruction],
         prev_instr: &Instruction,
@@ -228,7 +230,7 @@ impl InstructionAnalyzer {
         &mut self,
         owned_segment: &SegmentMetadata,
         parent_info: &ParentSegmentInfo,
-        result: &mut InstructionAnalysisResult,
+        result: &mut InstructionAnalysisBuilder,
         mut regs_tracker: RegisterTracker,
         instrs: &[Instruction],
         mut target_local_offset: usize,

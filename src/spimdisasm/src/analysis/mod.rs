@@ -15,7 +15,9 @@ mod string_guesser;
 
 pub(crate) use gpr_register_value::GprRegisterValue;
 pub(crate) use instr_analysis_info::InstrAnalysisInfo;
-pub(crate) use instruction_analysis_result::{GatheredTypeInfo, InstructionAnalysisResult};
+pub(crate) use instruction_analysis_result::{
+    GatheredTypeInfo, InstructionAnalysisBuilder, InstructionAnalysisResult,
+};
 pub(crate) use instruction_analyzer::InstructionAnalyzer;
 pub(crate) use preheat::Preheater;
 pub use preheat_error::PreheatError;

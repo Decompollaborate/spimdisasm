@@ -680,21 +680,41 @@ impl RegisterTracker {
                 GprRegDereferencedAddress::Hi {
                     hi_rom,
                     unaddended_vram,
-                } => InstructionOperation::PairedAddress {
-                    addended_vram: *original_address,
-                    unaddended_vram: *unaddended_vram,
-                    info: InstrOpPairedAddress::PairedLo {
-                        hi_rom: *hi_rom,
-                        access_info: Some(*access_info),
-                    },
-                },
-                GprRegDereferencedAddress::GpRel { unaddended_vram } => {
+                } => {
+                    let (unaddended_vram, access_info) =
+                        if Self::check_mips1_doublefloat(instr, access_info) {
+                            (
+                                original_address.align_down(8),
+                                Some((AccessType::DOUBLEFLOAT, true)),
+                            )
+                        } else {
+                            (*unaddended_vram, Some(*access_info))
+                        };
+
                     InstructionOperation::PairedAddress {
                         addended_vram: *original_address,
-                        unaddended_vram: *unaddended_vram,
-                        info: InstrOpPairedAddress::GpRel {
-                            access_info: Some(*access_info),
+                        unaddended_vram,
+                        info: InstrOpPairedAddress::PairedLo {
+                            hi_rom: *hi_rom,
+                            access_info,
                         },
+                    }
+                }
+                GprRegDereferencedAddress::GpRel { unaddended_vram } => {
+                    let (unaddended_vram, access_info) =
+                        if Self::check_mips1_doublefloat(instr, access_info) {
+                            (
+                                original_address.align_down(8),
+                                Some((AccessType::DOUBLEFLOAT, true)),
+                            )
+                        } else {
+                            (*unaddended_vram, Some(*access_info))
+                        };
+
+                    InstructionOperation::PairedAddress {
+                        addended_vram: *original_address,
+                        unaddended_vram,
+                        info: InstrOpPairedAddress::GpRel { access_info },
                     }
                 }
                 GprRegDereferencedAddress::HiLo {
@@ -713,26 +733,43 @@ impl RegisterTracker {
                     addend,
                     lo_rom: address_load_rom,
                     ..
-                } => InstructionOperation::DereferencedRawAddress {
-                    original_address: *original_address,
-                    addend: *addend,
-                    address_load_rom: *address_load_rom,
-                    access_info: *access_info,
-                },
+                } => {
+                    let access_info = if Self::check_mips1_doublefloat(instr, access_info) {
+                        (AccessType::DOUBLEFLOAT, true)
+                    } else {
+                        *access_info
+                    };
+
+                    InstructionOperation::DereferencedRawAddress {
+                        original_address: *original_address,
+                        addend: *addend,
+                        address_load_rom: *address_load_rom,
+                        access_info,
+                    }
+                }
                 GprRegDereferencedAddress::GpGotLocal { upper_rom } => {
+                    let (unaddended_vram, access_info) =
+                        if Self::check_mips1_doublefloat(instr, access_info) {
+                            (
+                                original_address.align_down(8),
+                                Some((AccessType::DOUBLEFLOAT, true)),
+                            )
+                        } else {
+                            (*original_address, Some(*access_info))
+                        };
+
                     InstructionOperation::PairedAddress {
                         addended_vram: *original_address,
-                        unaddended_vram: *original_address,
+                        unaddended_vram,
                         info: InstrOpPairedAddress::PairedGpGotLo {
                             upper_rom: *upper_rom,
-                            access_info: Some(*access_info),
+                            access_info,
                         },
                     }
                 }
                 GprRegDereferencedAddress::PairedGpGotLo {
                     addend,
                     lo_rom: address_load_rom,
-                    ..
                 } => InstructionOperation::DereferencedRawAddress {
                     original_address: *original_address,
                     addend: *addend,
@@ -784,7 +821,7 @@ impl RegisterTracker {
         };
 
         let new_val = if let (true, Some(rt)) = (opcode.does_load(), instr.field_rt()) {
-            // Hack to avoid ovewriting the $gp value when the asm is restoring it from the stack.
+            // Hack: Avoid ovewriting the $gp value when the asm is restoring it from the stack.
             if matches!(
                 self.registers[rt.as_index()],
                 GprRegisterValue::GlobalPointer { .. }
@@ -1083,6 +1120,30 @@ impl RegisterTracker {
                 self.set_gpr_value(reg, GprRegisterValue::Garbage);
             }
         }
+    }
+
+    /// The `ldc1` and `sdc1` instructions were added in the MIPS II isa, so to be able to load
+    /// doubles into Coprocessor 1 registers (float registers) the MIPS I isa relies on O32
+    /// float registers being used in pairs.
+    ///
+    /// So we check if an odd float register is being used to load or store a float value to
+    /// determine if the referenced address corresponds to a double.
+    ///
+    /// We explicitly check for the O32 ABI instead of checking if the ISA version is MIPS I
+    /// because some compilers (cough SN64 cough cough...) may decide to emit this pattern even
+    /// when emitting code for later ISA versions.
+    ///
+    /// This asm pattern looks more or less like the following:
+    ///
+    /// ```mips
+    /// lui         $a0, %hi(R_DBL_800000A0)
+    /// lwc1        $fv0, %lo(R_DBL_800000A0)($a0)
+    /// lwc1        $fv0f, %lo(R_DBL_800000A0 + 0x4)($a0)
+    /// ```
+    fn check_mips1_doublefloat(instr: &Instruction, access_info: &(AccessType, bool)) -> bool {
+        access_info.0 == AccessType::FLOAT
+            && instr.abi() == Abi::O32
+            && instr.field_ft().is_some_and(|ft| ft.as_index() % 2 != 0)
     }
 }
 
