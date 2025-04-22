@@ -48,6 +48,10 @@ bitflags! {
     /// if something is a string with the [`full`] function, this only avoids guessing if the
     /// user provided a type or a size for the symbol.
     ///
+    /// If the user specifies the size for a string symbol it must include the null terminator,
+    /// otherwise the symbol will be rejected as a string. The given size may be optionally aligned
+    /// to the next word boundary.
+    ///
     /// [`no`]: StringGuesserFlags::no
     /// [`Basic`]: StringGuesserFlags::Basic
     /// [`MultipleReferences`]: StringGuesserFlags::MultipleReferences
@@ -230,9 +234,12 @@ impl StringGuesserFlags {
 
                 if let Some(str_end) = bytes.iter().position(|x| *x == 0) {
                     // User may give us the precise size or a word-aligned size, accept both
-                    if user_size.inner().next_multiple_of(4) as usize
-                        == (str_end + 1).next_multiple_of(4)
-                    {
+                    let user_size = user_size.inner() as usize;
+
+                    if user_size < str_end + 1 {
+                        // The given user size must include the null terminator.
+                        return Err(StringGuessError::UserSizeButTerminatorMismatch);
+                    } else if user_size.next_multiple_of(4) == (str_end + 1).next_multiple_of(4) {
                         // Do not return the size here, we still have to check if this is a valid string
                     } else {
                         return Err(StringGuessError::UserSizeButTerminatorMismatch);
