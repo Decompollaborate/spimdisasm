@@ -707,6 +707,8 @@ impl Preheater {
                         }
                     }
 
+                    // Only try to guess if this data is a string if we don't suspect this word may
+                    // be an address.
                     if ignored_addresses
                         .find(&current_vram, FindSettings::new(true))
                         .is_none()

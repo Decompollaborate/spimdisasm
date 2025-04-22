@@ -285,6 +285,10 @@ fn fill_dyn_symbols(
     let dynsym = elf_file.elf_dynamic_symbol_table();
     let dynstr = dynsym.strings();
 
+    utils::pretty_unwrap(
+        global_segment.add_ignored_address_range(Vram::new(0x0A000000), Size::new(1)),
+    );
+
     for (i, sym) in dynsym.enumerate() {
         let st_type = sym.st_type();
         let st_shndx = sym.st_shndx(elf_endian);
@@ -560,7 +564,7 @@ fn preheat_sections(
                     rom,
                     vram,
                 )),
-                ProgbitsType::Rodata => utils::pretty_unwrap(global_segment.preheat_data(
+                ProgbitsType::Rodata => utils::pretty_unwrap(global_segment.preheat_rodata(
                     global_config,
                     data_settings,
                     name,
