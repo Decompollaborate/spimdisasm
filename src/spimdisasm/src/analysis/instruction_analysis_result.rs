@@ -132,14 +132,15 @@ impl InstructionAnalysisBuilder {
                     for instr_rom in other_counter.into_iter().flat_map(|(_, rom_list)| rom_list) {
                         let index = (instr_rom - ranges.rom().start()).inner() as usize / 4;
 
-                        let value = instruction_infos[index].align_down_unaddended(8);
+                        let value = instruction_infos[index].clone().align_down_unaddended(8);
                         if let Some(upper_rom) = value.upper_rom() {
                             let upper_index =
                                 (upper_rom - ranges.rom().start()).inner() as usize / 4;
 
                             // Update the upper half too.
-                            let upper_value =
-                                instruction_infos[upper_index].align_down_unaddended(8);
+                            let upper_value = instruction_infos[upper_index]
+                                .clone()
+                                .align_down_unaddended(8);
                             instruction_infos[upper_index] = upper_value;
                         }
                         instruction_infos[index] = value;
@@ -211,15 +212,19 @@ impl InstructionAnalysisBuilder {
                     vram,
                     hi_rom,
                     lo_rom,
+                    got_entry,
                 } => {
                     self.apply_symbol_type(vram, TypeInfo::Function, instr_rom);
                     self.set_info(
                         self.index_from_rom(hi_rom),
-                        InstrAnalysisInfo::GotCallHi { vram },
+                        InstrAnalysisInfo::GotCallHi {
+                            vram,
+                            got_entry: got_entry.clone(),
+                        },
                     );
                     self.set_info(
                         self.index_from_rom(lo_rom),
-                        InstrAnalysisInfo::GotCallLo { vram },
+                        InstrAnalysisInfo::GotCallLo { vram, got_entry },
                     );
                     InstrAnalysisInfo::JumpAndLinkRegisterRaw { raw_vram: vram }
                 }
@@ -311,12 +316,13 @@ impl InstructionAnalysisBuilder {
                         unaddended_vram: addended_vram,
                     }
                 }
-                InstrOpPairedAddress::GpGotGlobal {} => {
+                InstrOpPairedAddress::GpGotGlobal { global_entry } => {
                     self.add_referenced_vram(addended_vram);
                     self.apply_symbol_type(addended_vram, TypeInfo::No, instr_rom);
                     InstrAnalysisInfo::GotGlobal {
                         addended_vram,
                         unaddended_vram: addended_vram,
+                        global_entry,
                     }
                 }
                 InstrOpPairedAddress::GpGotLocal {} => InstrAnalysisInfo::GotLocal {
@@ -342,17 +348,19 @@ impl InstructionAnalysisBuilder {
                         upper_rom,
                     }
                 }
-                InstrOpPairedAddress::PairedGotLo { hi_rom } => {
+                InstrOpPairedAddress::PairedGotLo { hi_rom, got_entry } => {
                     self.add_referenced_vram(addended_vram);
                     self.apply_symbol_type(addended_vram, TypeInfo::No, instr_rom);
                     self.set_info_if_empty(
                         self.index_from_rom(hi_rom),
                         InstrAnalysisInfo::PairedGotHi {
                             vram: addended_vram,
+                            got_entry: got_entry.clone(),
                         },
                     );
                     InstrAnalysisInfo::PairedGotLo {
                         vram: addended_vram,
+                        got_entry,
                     }
                 }
             },
@@ -396,7 +404,7 @@ impl InstructionAnalysisBuilder {
             | InstructionOperation::InvalidInstr {} => InstrAnalysisInfo::No,
         };
 
-        self.set_info(instr_index, info);
+        self.set_info(instr_index, info.clone());
 
         info
     }

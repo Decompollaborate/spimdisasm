@@ -7,14 +7,14 @@ use rabbitizer::{
 };
 
 use crate::{
-    addresses::{GlobalOffsetTable, Rom, Vram},
+    addresses::{GlobalOffsetTable, GotGlobalEntry, GotRequestedAddress, Rom, Vram},
     analysis::gpr_register_value::{GprRegDereferencedAddress, GprRegRawAddress},
     config::{Endian, GpConfig},
 };
 
 use super::{gpr_register_value::GprRegConstantInfo, GprRegisterValue};
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[must_use]
 pub(crate) struct RegisterTracker {
     registers: [GprRegisterValue; Gpr::count()],
@@ -29,7 +29,7 @@ impl RegisterTracker {
         gp_config: Option<GpConfig>,
         endian: Endian,
     ) -> Self {
-        let registers = [GprRegisterValue::Garbage; Gpr::count()];
+        let registers = [const { GprRegisterValue::Garbage }; Gpr::count()];
         let mut slf = Self {
             registers,
             gp_config,
@@ -67,7 +67,7 @@ impl RegisterTracker {
     }
 }
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[must_use]
 pub(crate) enum InstructionOperation {
     Link {
@@ -149,7 +149,7 @@ pub(crate) enum InstructionOperation {
     InvalidInstr {},
 }
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[must_use]
 pub(crate) enum InstrOpLink {
     /// "Branch and link" kind of instructions.
@@ -182,6 +182,7 @@ pub(crate) enum InstrOpLink {
         vram: Vram,
         hi_rom: Rom,
         lo_rom: Rom,
+        got_entry: GotRequestedAddress,
     },
 
     /// A "Jump and link register" to a register that has been dereferenced. A `jalr`.
@@ -232,7 +233,7 @@ pub(crate) enum InstrOpJumptable {
     Pic,
 }
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[must_use]
 pub(crate) enum InstrOpPairedAddress {
     /// This instruction was paired to the `%hi` part of a reloc as a `%lo`.
@@ -247,7 +248,7 @@ pub(crate) enum InstrOpPairedAddress {
     },
 
     /// A pointer to a symbol contained within the global part of the Global Offset Table (GOT).
-    GpGotGlobal {},
+    GpGotGlobal { global_entry: GotGlobalEntry },
 
     /// A pointer to the Lazy Resolver.
     GpGotLazyResolver {},
@@ -277,7 +278,10 @@ pub(crate) enum InstrOpPairedAddress {
     /// This will only happen if it detects the used register has the "global pointer" value.
     ///
     /// Note this will also catch `%call_hi`/`%call_lo` pairings since they follow the same patter.
-    PairedGotLo { hi_rom: Rom },
+    PairedGotLo {
+        hi_rom: Rom,
+        got_entry: GotRequestedAddress,
+    },
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -419,11 +423,14 @@ impl RegisterTracker {
                             rom: *setter_rom,
                         }
                     }
-                    GprRegRawAddress::HiLoGp { hi_rom } => InstrOpLink::CallHiLoRegisterLink {
-                        vram: *vram,
-                        hi_rom: *hi_rom,
-                        lo_rom: *setter_rom,
-                    },
+                    GprRegRawAddress::HiLoGp { hi_rom, got_entry } => {
+                        InstrOpLink::CallHiLoRegisterLink {
+                            vram: *vram,
+                            hi_rom: *hi_rom,
+                            lo_rom: *setter_rom,
+                            got_entry: got_entry.clone(),
+                        }
+                    }
                     GprRegRawAddress::GpGotLazyResolver { .. } => {
                         InstrOpLink::UnknownJumpAndLinkRegister { reg: rs }
                     }
@@ -779,11 +786,15 @@ impl RegisterTracker {
             },
 
             GprRegisterValue::RawAddress { vram, info, .. } => match info {
-                GprRegRawAddress::GpGotGlobal {} => InstructionOperation::PairedAddress {
-                    addended_vram: *vram,
-                    unaddended_vram: *vram,
-                    info: InstrOpPairedAddress::GpGotGlobal {},
-                },
+                GprRegRawAddress::GpGotGlobal { global_entry } => {
+                    InstructionOperation::PairedAddress {
+                        addended_vram: *vram,
+                        unaddended_vram: *vram,
+                        info: InstrOpPairedAddress::GpGotGlobal {
+                            global_entry: global_entry.clone(),
+                        },
+                    }
+                }
                 GprRegRawAddress::GpGotLazyResolver {} => InstructionOperation::PairedAddress {
                     addended_vram: *vram,
                     unaddended_vram: *vram,
@@ -794,11 +805,16 @@ impl RegisterTracker {
                     unaddended_vram: *vram,
                     info: InstrOpPairedAddress::GpGotLocal {},
                 },
-                GprRegRawAddress::HiLoGp { hi_rom } => InstructionOperation::PairedAddress {
-                    addended_vram: *vram,
-                    unaddended_vram: *vram,
-                    info: InstrOpPairedAddress::PairedGotLo { hi_rom: *hi_rom },
-                },
+                GprRegRawAddress::HiLoGp { hi_rom, got_entry } => {
+                    InstructionOperation::PairedAddress {
+                        addended_vram: *vram,
+                        unaddended_vram: *vram,
+                        info: InstrOpPairedAddress::PairedGotLo {
+                            hi_rom: *hi_rom,
+                            got_entry: got_entry.clone(),
+                        },
+                    }
+                }
                 GprRegRawAddress::HiLo { .. }
                 | GprRegRawAddress::GpRel { .. }
                 | GprRegRawAddress::PairedGpGotLo { .. } => {
@@ -1222,7 +1238,7 @@ mod tests {
 
             let gpr_value =
                 if let (false, Some(reg)) = (opcode.does_link(), instr.get_destination_gpr()) {
-                    Some(regs_tracker.get(reg)).copied()
+                    Some(regs_tracker.get(reg)).cloned()
                 } else {
                     None
                 };
@@ -2875,7 +2891,7 @@ mod tests {
             0x03, 0xE0, 0x00, 0x08, // jr
             0x00, 0x00, 0x00, 0x00, // nop
         ];
-        static EXPECTED_GPR_VALUES: [Option<GprRegisterValue>; 49] = [
+        let expected_gpr_values: [Option<GprRegisterValue>; 49] = [
             Some(GprRegisterValue::Hi {
                 value: 0x00010000,
                 rom: Rom::new(0x00010000),
@@ -2939,7 +2955,9 @@ mod tests {
             Some(GprRegisterValue::RawAddress {
                 vram: Vram::new(0x80000134),
                 setter_rom: Rom::new(0x00010030),
-                info: GprRegRawAddress::GpGotGlobal {},
+                info: GprRegRawAddress::GpGotGlobal {
+                    global_entry: GotGlobalEntry::new(0x80000134, 0x80000134, false, "some_var"),
+                },
             }),
             Some(GprRegisterValue::RawAddress {
                 vram: Vram::new(0x80000000),
@@ -2958,7 +2976,14 @@ mod tests {
             Some(GprRegisterValue::RawAddress {
                 vram: Vram::new(0x800000C4),
                 setter_rom: Rom::new(0x0001003C),
-                info: GprRegRawAddress::GpGotGlobal {},
+                info: GprRegRawAddress::GpGotGlobal {
+                    global_entry: GotGlobalEntry::new(
+                        0x800000C4,
+                        0x800000C4,
+                        false,
+                        "global_function",
+                    ),
+                },
             }),
             None,
             None,
@@ -2969,7 +2994,14 @@ mod tests {
             Some(GprRegisterValue::RawAddress {
                 vram: Vram::new(0x800000C4),
                 setter_rom: Rom::new(0x0001004C),
-                info: GprRegRawAddress::GpGotGlobal {},
+                info: GprRegRawAddress::GpGotGlobal {
+                    global_entry: GotGlobalEntry::new(
+                        0x800000C4,
+                        0x800000C4,
+                        false,
+                        "global_function",
+                    ),
+                },
             }),
             None,
             None,
@@ -2998,7 +3030,9 @@ mod tests {
             Some(GprRegisterValue::RawAddress {
                 vram: Vram::new(0x8000014C),
                 setter_rom: Rom::new(0x00010070),
-                info: GprRegRawAddress::GpGotGlobal {},
+                info: GprRegRawAddress::GpGotGlobal {
+                    global_entry: GotGlobalEntry::new(0x8000014C, 0x8000014C, false, "func_arr"),
+                },
             }),
             Some(GprRegisterValue::DereferencedAddress {
                 original_address: Vram::new(0x8000014C),
@@ -3030,6 +3064,9 @@ mod tests {
                 setter_rom: Rom::new(0x0001008C),
                 info: GprRegRawAddress::HiLoGp {
                     hi_rom: Rom::new(0x00010084),
+                    got_entry: GotRequestedAddress::Global(GotGlobalEntry::new(
+                        0x8000012C, 0x8000012C, false, "some_var",
+                    )),
                 },
             }),
             Some(GprRegisterValue::DereferencedAddress {
@@ -3076,6 +3113,12 @@ mod tests {
                 setter_rom: Rom::new(0x000100A4),
                 info: GprRegRawAddress::HiLoGp {
                     hi_rom: Rom::new(0x0001009C),
+                    got_entry: GotRequestedAddress::Global(GotGlobalEntry::new(
+                        0x800000C4,
+                        0x800000C4,
+                        false,
+                        "global_function",
+                    )),
                 },
             }),
             None,
@@ -3089,7 +3132,7 @@ mod tests {
             None,
             None,
         ];
-        static EXPECTED_OPERATIONS: [InstructionOperation; 49] = [
+        let expected_operations: [InstructionOperation; 49] = [
             // `.cpload`
             InstructionOperation::Hi {
                 dst_reg: Gpr::gp,
@@ -3157,7 +3200,9 @@ mod tests {
             InstructionOperation::PairedAddress {
                 addended_vram: Vram::new(0x80000134),
                 unaddended_vram: Vram::new(0x80000134),
-                info: InstrOpPairedAddress::GpGotGlobal {},
+                info: InstrOpPairedAddress::GpGotGlobal {
+                    global_entry: GotGlobalEntry::new(0x80000134, 0x80000134, false, "some_var"),
+                },
             },
             // static_sym
             InstructionOperation::PairedAddress {
@@ -3177,7 +3222,14 @@ mod tests {
             InstructionOperation::PairedAddress {
                 addended_vram: Vram::new(0x800000C4),
                 unaddended_vram: Vram::new(0x800000C4),
-                info: InstrOpPairedAddress::GpGotGlobal {},
+                info: InstrOpPairedAddress::GpGotGlobal {
+                    global_entry: GotGlobalEntry::new(
+                        0x800000C4,
+                        0x800000C4,
+                        false,
+                        "global_function",
+                    ),
+                },
             },
             InstructionOperation::Link {
                 info: InstrOpLink::Call16RegisterLink {
@@ -3193,7 +3245,14 @@ mod tests {
             InstructionOperation::PairedAddress {
                 addended_vram: Vram::new(0x800000C4),
                 unaddended_vram: Vram::new(0x800000C4),
-                info: InstrOpPairedAddress::GpGotGlobal {},
+                info: InstrOpPairedAddress::GpGotGlobal {
+                    global_entry: GotGlobalEntry::new(
+                        0x800000C4,
+                        0x800000C4,
+                        false,
+                        "global_function",
+                    ),
+                },
             },
             InstructionOperation::Link {
                 info: InstrOpLink::Call16RegisterLink {
@@ -3233,7 +3292,9 @@ mod tests {
             InstructionOperation::PairedAddress {
                 addended_vram: Vram::new(0x8000014C),
                 unaddended_vram: Vram::new(0x8000014C),
-                info: InstrOpPairedAddress::GpGotGlobal {},
+                info: InstrOpPairedAddress::GpGotGlobal {
+                    global_entry: GotGlobalEntry::new(0x8000014C, 0x8000014C, false, "func_arr"),
+                },
             },
             InstructionOperation::DereferencedRawAddress {
                 original_address: Vram::new(0x8000014C),
@@ -3268,6 +3329,9 @@ mod tests {
                 unaddended_vram: Vram::new(0x8000012C),
                 info: InstrOpPairedAddress::PairedGotLo {
                     hi_rom: Rom::new(0x00010084),
+                    got_entry: GotRequestedAddress::Global(GotGlobalEntry::new(
+                        0x8000012C, 0x8000012C, false, "some_var",
+                    )),
                 },
             },
             InstructionOperation::DereferencedRawAddress {
@@ -3305,6 +3369,12 @@ mod tests {
                 unaddended_vram: Vram::new(0x800000C4),
                 info: InstrOpPairedAddress::PairedGotLo {
                     hi_rom: Rom::new(0x0001009C),
+                    got_entry: GotRequestedAddress::Global(GotGlobalEntry::new(
+                        0x800000C4,
+                        0x800000C4,
+                        false,
+                        "global_function",
+                    )),
                 },
             },
             InstructionOperation::Link {
@@ -3312,6 +3382,12 @@ mod tests {
                     vram: Vram::new(0x800000C4),
                     hi_rom: Rom::new(0x0001009C),
                     lo_rom: Rom::new(0x000100A4),
+                    got_entry: GotRequestedAddress::Global(GotGlobalEntry::new(
+                        0x800000C4,
+                        0x800000C4,
+                        false,
+                        "global_function",
+                    )),
                 },
             },
             InstructionOperation::UnhandledOpcode {
@@ -3335,13 +3411,13 @@ mod tests {
         ];
         let got_globals = vec![
             /* -0x7FE4($gp) */
-            GotGlobalEntry::new(0x80000134, 0x80000134, false), /* some_var + 0x8 */
+            GotGlobalEntry::new(0x80000134, 0x80000134, false, "some_var"), /* some_var + 0x8 */
             /* -0x7FE0($gp) */
-            GotGlobalEntry::new(0x800000C4, 0x800000C4, false), /* global_function */
+            GotGlobalEntry::new(0x800000C4, 0x800000C4, false, "global_function"), /* global_function */
             /* -0x7FDC($gp) */
-            GotGlobalEntry::new(0x8000014C, 0x8000014C, false), /* func_arr */
+            GotGlobalEntry::new(0x8000014C, 0x8000014C, false, "func_arr"), /* func_arr */
             /* -0x7FD8($gp) */
-            GotGlobalEntry::new(0x8000012C, 0x8000012C, false), /* some_var */
+            GotGlobalEntry::new(0x8000012C, 0x8000012C, false, "some_var"), /* some_var */
         ];
         let got = GlobalOffsetTable::new(Vram::new(0x80000110), got_locals, got_globals);
 
@@ -3350,8 +3426,8 @@ mod tests {
 
         register_tracking_general_test(
             &BYTES,
-            &EXPECTED_GPR_VALUES,
-            &EXPECTED_OPERATIONS,
+            &expected_gpr_values,
+            &expected_operations,
             gp_config,
             global_offset_table,
         );

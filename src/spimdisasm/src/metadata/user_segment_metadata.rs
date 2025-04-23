@@ -9,7 +9,7 @@ use crate::{
 use super::SymbolMetadata;
 
 #[derive(Debug, Clone, Hash, PartialEq, PartialOrd)]
-pub(crate) struct UserSegmentMetadata {
+pub struct UserSegmentMetadata {
     symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
 }
 
@@ -19,11 +19,7 @@ impl UserSegmentMetadata {
     }
 
     #[must_use]
-    pub(crate) fn find_symbol(
-        &self,
-        vram: Vram,
-        settings: FindSettings,
-    ) -> Option<&SymbolMetadata> {
+    pub fn find_symbol(&self, vram: Vram, settings: FindSettings) -> Option<&SymbolMetadata> {
         self.symbols.find(&vram, settings)
     }
 }

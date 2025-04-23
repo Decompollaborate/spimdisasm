@@ -6,11 +6,11 @@ use rabbitizer::{
 };
 
 use crate::{
-    addresses::{GlobalOffsetTable, GotRequestedAddress, GpValue, Rom, Vram},
+    addresses::{GlobalOffsetTable, GotGlobalEntry, GotRequestedAddress, GpValue, Rom, Vram},
     config::{Endian, GpConfig},
 };
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum GprRegisterValue {
     Garbage,
     HardwiredZero,
@@ -91,7 +91,7 @@ pub(crate) enum GprRegConstantInfo {
     OredHi { value: u32, hi_rom: Rom },
 }
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum GprRegRawAddress {
     /// ```mips
     /// lui         $reg, %hi(EXAMPLE)
@@ -105,7 +105,7 @@ pub(crate) enum GprRegRawAddress {
     /// ```mips
     /// lw          $reg, %got(EXAMPLE)($gp)
     /// ```
-    GpGotGlobal {},
+    GpGotGlobal { global_entry: GotGlobalEntry },
     /// ```mips
     /// lw          $reg, %got(EXAMPLE)($gp)
     /// ```
@@ -124,7 +124,10 @@ pub(crate) enum GprRegRawAddress {
     /// addu        $reg2, $reg, $gp
     /// lw          $reg3, %got_lo(EXAMPLE)($reg2)
     /// ```
-    HiLoGp { hi_rom: Rom },
+    HiLoGp {
+        hi_rom: Rom,
+        got_entry: GotRequestedAddress,
+    },
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -400,10 +403,10 @@ impl GprRegisterValue {
                             setter_rom: current_rom,
                             info: GprRegRawAddress::GpGotLocal {},
                         },
-                        GotRequestedAddress::Global(_) => Self::RawAddress {
+                        GotRequestedAddress::Global(global_entry) => Self::RawAddress {
                             vram: new_address,
                             setter_rom: current_rom,
-                            info: GprRegRawAddress::GpGotGlobal {},
+                            info: GprRegRawAddress::GpGotGlobal { global_entry },
                         },
                     }
                 } else {
@@ -476,7 +479,10 @@ impl GprRegisterValue {
                     Self::RawAddress {
                         vram: new_address,
                         setter_rom: current_rom,
-                        info: GprRegRawAddress::HiLoGp { hi_rom: *hi_rom },
+                        info: GprRegRawAddress::HiLoGp {
+                            hi_rom: *hi_rom,
+                            got_entry: requested_address,
+                        },
                     }
                 } else {
                     Self::Garbage
@@ -609,14 +615,14 @@ impl GprRegisterValue {
             }
 
             // Adding zero to something gives something
-            (x, Self::HardwiredZero | Self::SoftZero) => *x,
-            (Self::HardwiredZero | Self::SoftZero, y) => *y,
+            (x, Self::HardwiredZero | Self::SoftZero) => x.clone(),
+            (Self::HardwiredZero | Self::SoftZero, y) => y.clone(),
 
             // Adding garbage to something gives something
             // We do this because a very typical pattern is to add "garbage" to something else as a
             // way to index into an array or offset into an struct
-            (x, Self::Garbage) => *x,
-            (Self::Garbage, y) => *y,
+            (x, Self::Garbage) => x.clone(),
+            (Self::Garbage, y) => y.clone(),
 
             // Prioritize the pointer-ness
             (
@@ -624,13 +630,13 @@ impl GprRegisterValue {
                 Self::DereferencedAddress { .. }
                 | Self::DereferencedAddressBranchChecked { .. }
                 | Self::DereferencedAddressAddedWithGp { .. },
-            ) => *self,
+            ) => self.clone(),
             (
                 Self::DereferencedAddress { .. }
                 | Self::DereferencedAddressBranchChecked { .. }
                 | Self::DereferencedAddressAddedWithGp { .. },
                 Self::Hi { .. } | Self::HiGp { .. } | Self::RawAddress { .. },
-            ) => *other,
+            ) => other.clone(),
 
             // $gp stuff
             (Self::GlobalPointer { .. }, Self::GlobalPointer { .. }) => Self::Garbage,
@@ -857,7 +863,7 @@ impl GprRegisterValue {
     pub(crate) fn sub_register(&self, other: &Self, _current_rom: Rom) -> Self {
         match (self, other) {
             (Self::HardwiredZero, Self::HardwiredZero | Self::SoftZero) => Self::SoftZero,
-            (_, Self::HardwiredZero | Self::SoftZero) => *self,
+            (_, Self::HardwiredZero | Self::SoftZero) => self.clone(),
 
             (Self::StackPointer { offset }, Self::ConstantInfo { info, .. }) => match info {
                 GprRegConstantInfo::Constant { value, .. } => Self::StackPointer {
@@ -881,8 +887,8 @@ impl GprRegisterValue {
             }
 
             // zero to something gives something
-            (x, Self::HardwiredZero | Self::SoftZero) => *x,
-            (Self::HardwiredZero | Self::SoftZero, y) => *y,
+            (x, Self::HardwiredZero | Self::SoftZero) => x.clone(),
+            (Self::HardwiredZero | Self::SoftZero, y) => y.clone(),
 
             (
                 Self::Hi { value, rom },

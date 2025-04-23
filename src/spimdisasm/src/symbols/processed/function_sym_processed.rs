@@ -6,7 +6,7 @@ use core::hash;
 use rabbitizer::Instruction;
 
 use crate::{
-    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
+    addresses::{AddressRange, GotRequestedAddress, Rom, RomVramRange, Size, Vram},
     analysis::{InstrAnalysisInfo, InstructionAnalysisResult},
     collections::{addended_ordered_map::FindSettings, unordered_set::UnorderedSet},
     context::Context,
@@ -111,6 +111,7 @@ impl FunctionSymProcessed {
         for (instr_index, info) in instr_analysis.instruction_infos().iter().enumerate() {
             let instr_rom = self_rom + Size::new(instr_index as u32 * 4);
 
+            // TODO: deduplicate a lot of code from each case
             let reloc = match info {
                 InstrAnalysisInfo::No => None,
                 InstrAnalysisInfo::DirectLink { target_vram }
@@ -465,10 +466,6 @@ impl FunctionSymProcessed {
                     addended_vram,
                     unaddended_vram,
                 }
-                | InstrAnalysisInfo::GotGlobal {
-                    addended_vram,
-                    unaddended_vram,
-                }
                 | InstrAnalysisInfo::GotLocal {
                     addended_vram,
                     unaddended_vram,
@@ -521,6 +518,61 @@ impl FunctionSymProcessed {
                         Some(reloc_type.new_reloc_info(referenced_sym))
                     }
                 }
+                InstrAnalysisInfo::GotGlobal {
+                    addended_vram,
+                    unaddended_vram,
+                    global_entry,
+                } => {
+                    /*
+                    if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
+                        if getVromOffset(loOffset) in context.globalRelocationOverrides:
+                            # Avoid creating wrong symbols on elf files
+                            continue
+                    */
+
+                    if owned_segment.is_vram_ignored(*unaddended_vram) {
+                        None
+                    } else {
+                        let reloc_type = RelocationType::R_MIPS_GOT16;
+
+                        let sym_name = global_entry.sym_name();
+                        let referenced_sym =
+                            if global_entry.undef_com_or_abs() && !sym_name.is_empty() {
+                                RelocReferencedSym::SymName(sym_name, 0)
+                            } else {
+                                let metadata = context.find_symbol_from_any_segment(
+                                    *unaddended_vram,
+                                    parent_segment_info,
+                                    FindSettings::new(true),
+                                    |x| {
+                                        x.sym_type() != Some(SymbolType::Function)
+                                            || x.vram() == *unaddended_vram
+                                    },
+                                );
+
+                                // Check in case we are referencing a label/aent/etc
+                                if metadata.is_some() {
+                                    RelocReferencedSym::Address {
+                                        addended_vram: *addended_vram,
+                                        unaddended_vram: *unaddended_vram,
+                                    }
+                                } else {
+                                    referenced_labels_refer_segment.push((
+                                        *addended_vram,
+                                        ReferrerInfo::new_function(
+                                            self_vram,
+                                            parent_segment_info.clone(),
+                                            instr_rom,
+                                        ),
+                                    ));
+
+                                    RelocReferencedSym::Label(*addended_vram)
+                                }
+                            };
+
+                        Some(reloc_type.new_reloc_info(referenced_sym))
+                    }
+                }
                 InstrAnalysisInfo::GotCall16 { vram } => {
                     /*
                     if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
@@ -560,7 +612,7 @@ impl FunctionSymProcessed {
                         Some(reloc_type.new_reloc_info(referenced_sym))
                     }
                 }
-                InstrAnalysisInfo::PairedGotHi { vram } => {
+                InstrAnalysisInfo::PairedGotHi { vram, got_entry } => {
                     if owned_segment.is_vram_ignored(*vram) {
                         instructions[instr_index]
                             .get_processed_immediate()
@@ -573,34 +625,49 @@ impl FunctionSymProcessed {
                                 )
                             })
                     } else {
-                        let metadata = context.find_symbol_from_any_segment(
-                            *vram,
-                            parent_segment_info,
-                            FindSettings::new(true),
-                            |x| x.sym_type() != Some(SymbolType::Function) || x.vram() == *vram,
-                        );
+                        let got_data = if let GotRequestedAddress::Global(global_entry) = got_entry
+                        {
+                            let sym_name = global_entry.sym_name();
+                            if global_entry.undef_com_or_abs() && !sym_name.is_empty() {
+                                Some(sym_name)
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        };
 
                         let reloc_type = RelocationType::R_MIPS_GOT_HI16;
 
-                        let referenced_sym = if metadata.is_some() {
-                            RelocReferencedSym::new_address(*vram)
+                        let referenced_sym = if let Some(sym_name) = got_data {
+                            RelocReferencedSym::SymName(sym_name, 0)
                         } else {
-                            referenced_labels_refer_segment.push((
+                            let metadata = context.find_symbol_from_any_segment(
                                 *vram,
-                                ReferrerInfo::new_function(
-                                    self_vram,
-                                    parent_segment_info.clone(),
-                                    instr_rom,
-                                ),
-                            ));
+                                parent_segment_info,
+                                FindSettings::new(true),
+                                |x| x.sym_type() != Some(SymbolType::Function) || x.vram() == *vram,
+                            );
 
-                            RelocReferencedSym::Label(*vram)
+                            if metadata.is_some() {
+                                RelocReferencedSym::new_address(*vram)
+                            } else {
+                                referenced_labels_refer_segment.push((
+                                    *vram,
+                                    ReferrerInfo::new_function(
+                                        self_vram,
+                                        parent_segment_info.clone(),
+                                        instr_rom,
+                                    ),
+                                ));
+
+                                RelocReferencedSym::Label(*vram)
+                            }
                         };
-
                         Some(reloc_type.new_reloc_info(referenced_sym))
                     }
                 }
-                InstrAnalysisInfo::PairedGotLo { vram } => {
+                InstrAnalysisInfo::PairedGotLo { vram, got_entry } => {
                     /*
                     if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
                         if getVromOffset(loOffset) in context.globalRelocationOverrides:
@@ -611,34 +678,50 @@ impl FunctionSymProcessed {
                     if owned_segment.is_vram_ignored(*vram) {
                         None
                     } else {
-                        let metadata = context.find_symbol_from_any_segment(
-                            *vram,
-                            parent_segment_info,
-                            FindSettings::new(true),
-                            |x| x.sym_type() != Some(SymbolType::Function) || x.vram() == *vram,
-                        );
+                        let got_data = if let GotRequestedAddress::Global(global_entry) = got_entry
+                        {
+                            let sym_name = global_entry.sym_name();
+                            if global_entry.undef_com_or_abs() && !sym_name.is_empty() {
+                                Some(sym_name)
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        };
 
                         let reloc_type = RelocationType::R_MIPS_GOT_LO16;
 
-                        let referenced_sym = if metadata.is_some() {
-                            RelocReferencedSym::new_address(*vram)
+                        let referenced_sym = if let Some(sym_name) = got_data {
+                            RelocReferencedSym::SymName(sym_name, 0)
                         } else {
-                            referenced_labels_refer_segment.push((
+                            let metadata = context.find_symbol_from_any_segment(
                                 *vram,
-                                ReferrerInfo::new_function(
-                                    self_vram,
-                                    parent_segment_info.clone(),
-                                    instr_rom,
-                                ),
-                            ));
+                                parent_segment_info,
+                                FindSettings::new(true),
+                                |x| x.sym_type() != Some(SymbolType::Function) || x.vram() == *vram,
+                            );
 
-                            RelocReferencedSym::Label(*vram)
+                            if metadata.is_some() {
+                                RelocReferencedSym::new_address(*vram)
+                            } else {
+                                referenced_labels_refer_segment.push((
+                                    *vram,
+                                    ReferrerInfo::new_function(
+                                        self_vram,
+                                        parent_segment_info.clone(),
+                                        instr_rom,
+                                    ),
+                                ));
+
+                                RelocReferencedSym::Label(*vram)
+                            }
                         };
 
                         Some(reloc_type.new_reloc_info(referenced_sym))
                     }
                 }
-                InstrAnalysisInfo::GotCallHi { vram } => {
+                InstrAnalysisInfo::GotCallHi { vram, got_entry } => {
                     if owned_segment.is_vram_ignored(*vram) {
                         instructions[instr_index]
                             .get_processed_immediate()
@@ -651,34 +734,50 @@ impl FunctionSymProcessed {
                                 )
                             })
                     } else {
-                        let metadata = context.find_symbol_from_any_segment(
-                            *vram,
-                            parent_segment_info,
-                            FindSettings::new(true),
-                            |x| x.sym_type() != Some(SymbolType::Function) || x.vram() == *vram,
-                        );
+                        let got_data = if let GotRequestedAddress::Global(global_entry) = got_entry
+                        {
+                            let sym_name = global_entry.sym_name();
+                            if global_entry.undef_com_or_abs() && !sym_name.is_empty() {
+                                Some(sym_name)
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        };
 
                         let reloc_type = RelocationType::R_MIPS_CALL_HI16;
 
-                        let referenced_sym = if metadata.is_some() {
-                            RelocReferencedSym::new_address(*vram)
+                        let referenced_sym = if let Some(sym_name) = got_data {
+                            RelocReferencedSym::SymName(sym_name, 0)
                         } else {
-                            referenced_labels_refer_segment.push((
+                            let metadata = context.find_symbol_from_any_segment(
                                 *vram,
-                                ReferrerInfo::new_function(
-                                    self_vram,
-                                    parent_segment_info.clone(),
-                                    instr_rom,
-                                ),
-                            ));
+                                parent_segment_info,
+                                FindSettings::new(true),
+                                |x| x.sym_type() != Some(SymbolType::Function) || x.vram() == *vram,
+                            );
 
-                            RelocReferencedSym::Label(*vram)
+                            if metadata.is_some() {
+                                RelocReferencedSym::new_address(*vram)
+                            } else {
+                                referenced_labels_refer_segment.push((
+                                    *vram,
+                                    ReferrerInfo::new_function(
+                                        self_vram,
+                                        parent_segment_info.clone(),
+                                        instr_rom,
+                                    ),
+                                ));
+
+                                RelocReferencedSym::Label(*vram)
+                            }
                         };
 
                         Some(reloc_type.new_reloc_info(referenced_sym))
                     }
                 }
-                InstrAnalysisInfo::GotCallLo { vram } => {
+                InstrAnalysisInfo::GotCallLo { vram, got_entry } => {
                     /*
                     if common.GlobalConfig.INPUT_FILE_TYPE == common.InputFileType.ELF:
                         if getVromOffset(loOffset) in context.globalRelocationOverrides:
@@ -689,28 +788,44 @@ impl FunctionSymProcessed {
                     if owned_segment.is_vram_ignored(*vram) {
                         None
                     } else {
-                        let metadata = context.find_symbol_from_any_segment(
-                            *vram,
-                            parent_segment_info,
-                            FindSettings::new(true),
-                            |x| x.sym_type() != Some(SymbolType::Function) || x.vram() == *vram,
-                        );
+                        let got_data = if let GotRequestedAddress::Global(global_entry) = got_entry
+                        {
+                            let sym_name = global_entry.sym_name();
+                            if global_entry.undef_com_or_abs() && !sym_name.is_empty() {
+                                Some(sym_name)
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        };
 
                         let reloc_type = RelocationType::R_MIPS_CALL_LO16;
 
-                        let referenced_sym = if metadata.is_some() {
-                            RelocReferencedSym::new_address(*vram)
+                        let referenced_sym = if let Some(sym_name) = got_data {
+                            RelocReferencedSym::SymName(sym_name, 0)
                         } else {
-                            referenced_labels_refer_segment.push((
+                            let metadata = context.find_symbol_from_any_segment(
                                 *vram,
-                                ReferrerInfo::new_function(
-                                    self_vram,
-                                    parent_segment_info.clone(),
-                                    instr_rom,
-                                ),
-                            ));
+                                parent_segment_info,
+                                FindSettings::new(true),
+                                |x| x.sym_type() != Some(SymbolType::Function) || x.vram() == *vram,
+                            );
 
-                            RelocReferencedSym::Label(*vram)
+                            if metadata.is_some() {
+                                RelocReferencedSym::new_address(*vram)
+                            } else {
+                                referenced_labels_refer_segment.push((
+                                    *vram,
+                                    ReferrerInfo::new_function(
+                                        self_vram,
+                                        parent_segment_info.clone(),
+                                        instr_rom,
+                                    ),
+                                ));
+
+                                RelocReferencedSym::Label(*vram)
+                            }
                         };
 
                         Some(reloc_type.new_reloc_info(referenced_sym))

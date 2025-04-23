@@ -89,7 +89,7 @@ impl fmt::Display for AddUserSegmentSymbolError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Error while trying to add a symbol \"")?;
         if let Some(name) = &self.name {
-            write!(f, "{} ", name)?;
+            write!(f, "'{}' ", name)?;
         }
         write!(f, "{:?} {:?}\" to the user segment: ", self.vram, self.size)?;
 
@@ -104,7 +104,7 @@ impl fmt::Display for AddUserSegmentSymbolError {
 
         write!(f, " \"")?;
         if let Some(name) = &self.other_sym_name {
-            write!(f, "{} ", name)?;
+            write!(f, "'{}' ", name)?;
         }
         write!(f, "{:?} {:?}\"", self.other_sym_vram, self.other_sym_size)
     }

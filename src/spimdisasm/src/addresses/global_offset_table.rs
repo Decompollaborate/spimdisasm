@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::vec::Vec;
+use alloc::{sync::Arc, vec::Vec};
 use core::fmt;
 use rabbitizer::Vram;
 
@@ -63,7 +63,7 @@ impl GlobalOffsetTable {
             let global_index = index - self.locals.len();
             self.globals
                 .get(global_index)
-                .map(|x| GotRequestedAddress::Global(*x))
+                .map(|x| GotRequestedAddress::Global(x.clone()))
         }
     }
 }
@@ -96,20 +96,35 @@ impl fmt::Debug for GotLocalEntry {
     }
 }
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct GotGlobalEntry {
     initial: u32,
     sym_val: u32,
-    undef_or_com: bool,
+    undef_com_or_abs: bool,
+    sym_name: Arc<str>,
 }
 
 impl GotGlobalEntry {
     #[must_use]
-    pub const fn new(initial: u32, sym_val: u32, undef_or_com: bool) -> Self {
+    pub fn new<T>(initial: u32, sym_val: u32, undef_com_or_abs: bool, sym_name: T) -> Self
+    where
+        T: Into<Arc<str>>,
+    {
+        Self::new_impl(initial, sym_val, undef_com_or_abs, sym_name.into())
+    }
+
+    #[must_use]
+    const fn new_impl(
+        initial: u32,
+        sym_val: u32,
+        undef_com_or_abs: bool,
+        sym_name: Arc<str>,
+    ) -> Self {
         Self {
             initial,
             sym_val,
-            undef_or_com,
+            undef_com_or_abs,
+            sym_name,
         }
     }
 
@@ -119,13 +134,18 @@ impl GotGlobalEntry {
     }
 
     #[must_use]
-    pub const fn undef_or_com(&self) -> bool {
-        self.undef_or_com
+    pub const fn undef_com_or_abs(&self) -> bool {
+        self.undef_com_or_abs
     }
 
     #[must_use]
-    pub(crate) const fn address(&self) -> u32 {
-        if self.sym_val != 0 && !self.undef_or_com {
+    pub fn sym_name(&self) -> Arc<str> {
+        self.sym_name.clone()
+    }
+
+    #[must_use]
+    pub const fn address(&self) -> u32 {
+        if self.sym_val != 0 && !self.undef_com_or_abs {
             self.sym_val
         } else {
             self.initial
@@ -133,7 +153,7 @@ impl GotGlobalEntry {
     }
 }
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum GotRequestedAddress {
     // TODO: consider using references here instead of copying the data
     LazyResolver(GotLocalEntry),

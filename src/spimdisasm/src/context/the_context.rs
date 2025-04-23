@@ -83,6 +83,10 @@ impl Context {
         &self.global_segment
     }
     #[must_use]
+    pub const fn user_segment(&self) -> &UserSegmentMetadata {
+        &self.user_segment
+    }
+    #[must_use]
     pub const fn overlay_segments(&self) -> &UnorderedMap<OverlayCategoryName, OverlayCategory> {
         &self.overlay_segments
     }

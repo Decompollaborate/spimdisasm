@@ -157,7 +157,7 @@ impl InstructionAnalyzer {
         };
 
         // Make a copy
-        let mut regs_tracker = *original_regs_tracker;
+        let mut regs_tracker = original_regs_tracker.clone();
 
         if prev_is_likely {
             result.process_instr(&mut regs_tracker, instr, global_offset_table);
@@ -213,7 +213,7 @@ impl InstructionAnalyzer {
                     owned_segment,
                     parent_info,
                     result,
-                    *original_regs_tracker,
+                    original_regs_tracker.clone(),
                     instrs,
                     target_local_offset,
                     prev_is_likely,

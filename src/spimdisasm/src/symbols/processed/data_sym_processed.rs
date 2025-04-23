@@ -176,8 +176,15 @@ impl DataSymProcessed {
                         ));
                     }
                 } else {
-                    let valid_reference = if owned_segment.in_vram_range(word_vram) {
-                        owned_segment.find_symbol(word_vram, find_settings)
+                    let reference = if owned_segment.in_vram_range(word_vram) {
+                        if let Some(found_sym) = owned_segment.find_symbol(word_vram, find_settings)
+                        {
+                            Some(found_sym)
+                        } else {
+                            context
+                                .user_segment()
+                                .find_symbol(word_vram, FindSettings::new(true))
+                        }
                     } else {
                         context.find_symbol_from_any_segment(
                             word_vram,
@@ -192,8 +199,8 @@ impl DataSymProcessed {
                                 }
                             },
                         )
-                    }
-                    .is_some_and(|other_metadata| {
+                    };
+                    let valid_reference = reference.is_some_and(|other_metadata| {
                         other_metadata.vram() == word_vram
                             || other_metadata
                                 .sym_type()

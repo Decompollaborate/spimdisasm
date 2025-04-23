@@ -82,6 +82,8 @@ impl ExecutableSection {
         let ranges = RomVramRange::new(rom_range, vram_range);
 
         let instrs = instrs_from_bytes(settings, context.global_config().endian(), raw_bytes, vram);
+        debug_assert!(!instrs.is_empty(), "{}, {:?}, {:?}", name, vram, rom);
+
         let owned_segment = context.find_owned_segment(&parent_segment_info)?;
         let funcs_start_data = find_functions(
             context.global_config(),
@@ -89,6 +91,14 @@ impl ExecutableSection {
             owned_segment,
             ranges,
             &instrs,
+        );
+
+        debug_assert!(
+            !funcs_start_data.is_empty(),
+            "{}, {:?}, {:?}",
+            name,
+            vram,
+            rom
         );
 
         let mut functions = Vec::new();

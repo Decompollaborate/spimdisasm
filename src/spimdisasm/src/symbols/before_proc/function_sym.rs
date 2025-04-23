@@ -6,7 +6,7 @@ use core::hash;
 use rabbitizer::Instruction;
 
 use crate::{
-    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
+    addresses::{AddressRange, GotRequestedAddress, Rom, RomVramRange, Size, Vram},
     analysis::{
         GatheredTypeInfo, InstrAnalysisInfo, InstrOpJumptable, InstructionAnalysisResult,
         InstructionAnalyzer,
@@ -210,8 +210,22 @@ impl FunctionSym {
                 InstrAnalysisInfo::GotGlobal {
                     addended_vram: vram,
                     unaddended_vram: _,
+                    global_entry,
+                } => {
+                    if owned_segment.is_vram_ignored(*vram) {
+                        continue;
+                    }
+                    if global_entry.undef_com_or_abs() {
+                        continue;
+                    }
+
+                    let meta = paired_symbols
+                        .entry(*vram)
+                        .or_insert(PairedAddressMeta::new(instr_rom));
+                    meta.rom_referencers.insert(instr_rom);
+                    meta.got_access_kind = Some(GotAccessKind::Global);
                 }
-                | InstrAnalysisInfo::GotLocal {
+                InstrAnalysisInfo::GotLocal {
                     addended_vram: vram,
                     unaddended_vram: _,
                 }
@@ -241,9 +255,15 @@ impl FunctionSym {
                     meta.got_access_kind = Some(GotAccessKind::Local);
                 }
                 InstrAnalysisInfo::PairedGotHi { .. } | InstrAnalysisInfo::GotCallHi { .. } => {}
-                InstrAnalysisInfo::PairedGotLo { vram } | InstrAnalysisInfo::GotCallLo { vram } => {
+                InstrAnalysisInfo::PairedGotLo { vram, got_entry }
+                | InstrAnalysisInfo::GotCallLo { vram, got_entry } => {
                     if owned_segment.is_vram_ignored(*vram) {
                         continue;
+                    }
+                    if let GotRequestedAddress::Global(global_entry) = got_entry {
+                        if global_entry.undef_com_or_abs() {
+                            continue;
+                        }
                     }
 
                     let meta = paired_symbols

@@ -34,4 +34,4 @@ pub use symbol_metadata::{
 pub use symbol_metadata_name_display::SymbolMetadataNameDisplay;
 pub use symbol_name_generation_settings::SymbolNameGenerationSettings;
 pub use symbol_type::SymbolType;
-pub(crate) use user_segment_metadata::UserSegmentMetadata;
+pub use user_segment_metadata::UserSegmentMetadata;

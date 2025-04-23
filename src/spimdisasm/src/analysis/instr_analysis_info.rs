@@ -1,11 +1,11 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use crate::addresses::{Rom, Vram};
+use crate::addresses::{GotGlobalEntry, GotRequestedAddress, Rom, Vram};
 
 use super::InstrOpJumptable;
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum InstrAnalysisInfo {
     No,
 
@@ -74,6 +74,7 @@ pub(crate) enum InstrAnalysisInfo {
     GotGlobal {
         addended_vram: Vram,
         unaddended_vram: Vram,
+        global_entry: GotGlobalEntry,
     },
     GotLocal {
         addended_vram: Vram,
@@ -88,15 +89,19 @@ pub(crate) enum InstrAnalysisInfo {
     },
     PairedGotHi {
         vram: Vram,
+        got_entry: GotRequestedAddress,
     },
     PairedGotLo {
         vram: Vram,
+        got_entry: GotRequestedAddress,
     },
     GotCallHi {
         vram: Vram,
+        got_entry: GotRequestedAddress,
     },
     GotCallLo {
         vram: Vram,
+        got_entry: GotRequestedAddress,
     },
 
     GpSetHi,
@@ -154,6 +159,7 @@ impl InstrAnalysisInfo {
             InstrAnalysisInfo::GotGlobal {
                 addended_vram: _,
                 unaddended_vram: _,
+                global_entry: _,
             } => None,
             InstrAnalysisInfo::GotLocal {
                 addended_vram: _,
@@ -164,10 +170,22 @@ impl InstrAnalysisInfo {
                 unaddended_vram: _,
             } => None,
             InstrAnalysisInfo::GotCall16 { vram: _ } => None,
-            InstrAnalysisInfo::PairedGotHi { vram: _ } => None,
-            InstrAnalysisInfo::PairedGotLo { vram: _ } => None,
-            InstrAnalysisInfo::GotCallHi { vram: _ } => None,
-            InstrAnalysisInfo::GotCallLo { vram: _ } => None,
+            InstrAnalysisInfo::PairedGotHi {
+                vram: _,
+                got_entry: _,
+            } => None,
+            InstrAnalysisInfo::PairedGotLo {
+                vram: _,
+                got_entry: _,
+            } => None,
+            InstrAnalysisInfo::GotCallHi {
+                vram: _,
+                got_entry: _,
+            } => None,
+            InstrAnalysisInfo::GotCallLo {
+                vram: _,
+                got_entry: _,
+            } => None,
             InstrAnalysisInfo::GpSetHi => None,
             InstrAnalysisInfo::GpSetLo => None,
             InstrAnalysisInfo::CploadHi => None,
@@ -211,9 +229,11 @@ impl InstrAnalysisInfo {
             InstrAnalysisInfo::GotGlobal {
                 addended_vram,
                 unaddended_vram: _,
+                global_entry,
             } => InstrAnalysisInfo::GotGlobal {
                 addended_vram,
                 unaddended_vram: addended_vram.align_down(alignment),
+                global_entry,
             },
             InstrAnalysisInfo::GotLocal {
                 addended_vram,

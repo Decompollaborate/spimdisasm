@@ -285,8 +285,14 @@ fn fill_dyn_symbols(
     let dynsym = elf_file.elf_dynamic_symbol_table();
     let dynstr = dynsym.strings();
 
+    // Silly hack to allow strings starting with `0x0A` (\n) or `0x09` (\t) to be detected as strings.
+    // We need to do this because otherwise spimdisasm will think those values look like addresses,
+    // because they happen to be in the middle of the non contiguous address space of the elf.
     utils::pretty_unwrap(
-        global_segment.add_ignored_address_range(Vram::new(0x0A000000), Size::new(1)),
+        global_segment.add_ignored_address_range(Vram::new(0x09000000), Size::new(0x00800000)),
+    );
+    utils::pretty_unwrap(
+        global_segment.add_ignored_address_range(Vram::new(0x0A000000), Size::new(0x00800000)),
     );
 
     for (i, sym) in dynsym.enumerate() {
@@ -306,7 +312,7 @@ fn fill_dyn_symbols(
             let initial = got_entry.initial();
             if initial != 0 {
                 let got_entry = Vram::new(initial);
-                if !initials.contains(&got_entry) {
+                if !initials.contains(&got_entry) && initial >= 0x10 {
                     let sym_type = match st_type {
                         elf::STT_FUNC => Some(SymbolType::Function),
                         _ => None,
@@ -314,12 +320,15 @@ fn fill_dyn_symbols(
 
                     let size = {
                         let s = sym.st_size(elf_endian);
-                        // This size seems to only be valid for `initial` for `UNDEF` symbols.
+                        // This size seems to only be valid for `initial` for `UNDEF` and `COM` symbols.
                         // TODO: investigate COM symbols
-                        if s != 0 && st_shndx == elf::SHN_UNDEF {
-                            Size::new(s)
-                        } else {
+                        if s == 0
+                            || (st_shndx != elf::SHN_UNDEF && st_shndx != elf::SHN_COMMON)
+                            || st_type == elf::STT_FUNC
+                        {
                             Size::new(1)
+                        } else {
+                            Size::new(s)
                         }
                     };
 
@@ -345,6 +354,10 @@ fn fill_dyn_symbols(
 
         let vram = Vram::new(sym.st_value(elf_endian));
         let rom = None;
+        if vram < Vram::new(0x10) {
+            continue;
+        }
+
         let size = {
             let s = sym.st_size(elf_endian);
             if s == 0 || st_shndx == elf::SHN_UNDEF {
@@ -421,7 +434,7 @@ fn fill_dyn_symbols(
     for (name, vram, rom, size, sym_type, st_visibility, got_entry) in remaining_symbols {
         if let Some(got_entry) = got_entry {
             // Check for `COMMON` those symbols do not contain an address on their value, they contain an alignment instead.
-            if vram == Vram::new(0) || got_entry.undef_or_com() {
+            if vram == Vram::new(0) || got_entry.undef_com_or_abs() {
                 let initial = got_entry.initial();
                 if initial != 0 {
                     let got_entry = Vram::new(initial);

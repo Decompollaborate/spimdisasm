@@ -611,7 +611,7 @@ fn test_mips1_doubles_eb() {
     ];
     let got_globals = vec![
         /* -0x7FE4($gp) */
-        GotGlobalEntry::new(0x800000A0, 0x800000A0, false), /* R_FLT_800000A0 */
+        GotGlobalEntry::new(0x800000A0, 0x800000A0, false, "R_FLT_800000A0"), /* R_FLT_800000A0 */
     ];
     let global_offset_table = Some(GlobalOffsetTable::new(
         Vram::new(0x80000090),
@@ -780,7 +780,7 @@ fn test_mips1_doubles_el() {
     ];
     let got_globals = vec![
         /* -0x7FE4($gp) */
-        GotGlobalEntry::new(0x800000A0, 0x800000A0, false), /* R_FLT_800000A0 */
+        GotGlobalEntry::new(0x800000A0, 0x800000A0, false, "R_FLT_800000A0"), /* R_FLT_800000A0 */
     ];
     let global_offset_table = Some(GlobalOffsetTable::new(
         Vram::new(0x80000090),
