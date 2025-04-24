@@ -369,7 +369,24 @@ impl FunctionSymProcessed {
                     let reloc_type = RelocationType::R_MIPS_GOT16;
                     reloc_type.new_reloc_info(referenced_sym)
                 }),
-                InstrAnalysisInfo::GotCall16 { vram } => Self::get_reloc_ref_from_sym(
+                InstrAnalysisInfo::GotGlobalCall16 { vram, global_entry } => {
+                    Self::get_reloc_ref_from_sym(
+                        *vram,
+                        *vram,
+                        context,
+                        owned_segment,
+                        parent_segment_info,
+                        &mut referenced_labels_refer_segment,
+                        self_vram,
+                        instr_rom,
+                        Some(global_entry),
+                    )
+                    .map(|referenced_sym| {
+                        let reloc_type = RelocationType::R_MIPS_CALL16;
+                        reloc_type.new_reloc_info(referenced_sym)
+                    })
+                }
+                InstrAnalysisInfo::GotLocalCall16 { vram } => Self::get_reloc_ref_from_sym(
                     *vram,
                     *vram,
                     context,
@@ -527,46 +544,41 @@ impl FunctionSymProcessed {
         instr_rom: Rom,
         global_entry: Option<&GotGlobalEntry>,
     ) -> Option<RelocReferencedSym> {
-        if owned_segment.is_vram_ignored(unaddended_vram) {
+        let sym_name = global_entry.and_then(|x| {
+            let sym_name = x.sym_name();
+            if !sym_name.is_empty() {
+                Some(sym_name)
+            } else {
+                None
+            }
+        });
+
+        if let Some(sym_name) = sym_name {
+            // Prioritize symbols from the got table
+            Some(RelocReferencedSym::SymName(sym_name, 0))
+        } else if owned_segment.is_vram_ignored(unaddended_vram) {
             None
         } else {
-            let sym_name = global_entry.and_then(|x| {
-                let sym_name = x.sym_name();
-                if !sym_name.is_empty() {
-                    Some(sym_name)
-                } else {
-                    None
-                }
-            });
+            let metadata = context.find_symbol_from_any_segment(
+                unaddended_vram,
+                parent_segment_info,
+                FindSettings::new(true),
+                |x| x.sym_type() != Some(SymbolType::Function) || x.vram() == unaddended_vram,
+            );
 
-            let referenced_sym = if let Some(sym_name) = sym_name {
-                RelocReferencedSym::SymName(sym_name, 0)
-            } else {
-                let metadata = context.find_symbol_from_any_segment(
+            // Check in case we are referencing a label/aent/etc
+            let referenced_sym = if metadata.is_some() {
+                RelocReferencedSym::Address {
+                    addended_vram,
                     unaddended_vram,
-                    parent_segment_info,
-                    FindSettings::new(true),
-                    |x| x.sym_type() != Some(SymbolType::Function) || x.vram() == unaddended_vram,
-                );
-
-                // Check in case we are referencing a label/aent/etc
-                if metadata.is_some() {
-                    RelocReferencedSym::Address {
-                        addended_vram,
-                        unaddended_vram,
-                    }
-                } else {
-                    referenced_labels_refer_segment.push((
-                        addended_vram,
-                        ReferrerInfo::new_function(
-                            self_vram,
-                            parent_segment_info.clone(),
-                            instr_rom,
-                        ),
-                    ));
-
-                    RelocReferencedSym::Label(addended_vram)
                 }
+            } else {
+                referenced_labels_refer_segment.push((
+                    addended_vram,
+                    ReferrerInfo::new_function(self_vram, parent_segment_info.clone(), instr_rom),
+                ));
+
+                RelocReferencedSym::Label(addended_vram)
             };
 
             Some(referenced_sym)

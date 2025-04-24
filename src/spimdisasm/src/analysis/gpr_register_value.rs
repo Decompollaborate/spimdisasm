@@ -406,7 +406,9 @@ impl GprRegisterValue {
                         GotRequestedAddress::Global(global_entry) => Self::RawAddress {
                             vram: new_address,
                             setter_rom: current_rom,
-                            info: GprRegRawAddress::GpGotGlobal { global_entry },
+                            info: GprRegRawAddress::GpGotGlobal {
+                                global_entry: global_entry.clone(),
+                            },
                         },
                     }
                 } else {
@@ -478,7 +480,7 @@ impl GprRegisterValue {
                     let new_address = Vram::new(requested_address.address());
                     let global_entry =
                         if let GotRequestedAddress::Global(global_entry) = requested_address {
-                            Some(global_entry)
+                            Some(global_entry.clone())
                         } else {
                             None
                         };

@@ -162,6 +162,7 @@ impl Preheater {
                         }
                         None
                     }
+                    InstrOpLink::Call16LocalRegisterLink { .. } => None,
                     InstrOpLink::DereferencedRegisterLink { .. }
                     | InstrOpLink::UnknownJumpAndLinkRegister { .. } => None,
                 },

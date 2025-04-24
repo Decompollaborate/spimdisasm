@@ -29,15 +29,15 @@ impl GlobalOffsetTable {
     }
 
     #[must_use]
-    pub fn vram(&self) -> AddressRange<Vram> {
+    pub const fn vram(&self) -> AddressRange<Vram> {
         self.vram
     }
     #[must_use]
-    pub fn locals(&self) -> &Vec<GotLocalEntry> {
+    pub const fn locals(&self) -> &Vec<GotLocalEntry> {
         &self.locals
     }
     #[must_use]
-    pub fn globals(&self) -> &Vec<GotGlobalEntry> {
+    pub const fn globals(&self) -> &Vec<GotGlobalEntry> {
         &self.globals
     }
 
@@ -55,16 +55,20 @@ impl GlobalOffsetTable {
         let index = (diff / 4) as usize;
         if let Some(x) = self.locals.get(index) {
             if index == 0 {
-                Some(GotRequestedAddress::LazyResolver(*x))
+                Some(GotRequestedAddress::LazyResolver(x))
             } else {
-                Some(GotRequestedAddress::Local(*x))
+                Some(GotRequestedAddress::Local(x))
             }
         } else {
             let global_index = index - self.locals.len();
             self.globals
                 .get(global_index)
-                .map(|x| GotRequestedAddress::Global(x.clone()))
+                .map(GotRequestedAddress::Global)
         }
+    }
+
+    pub fn iter(&self) -> GlobalOffsetTableIter {
+        GlobalOffsetTableIter::new(self)
     }
 }
 
@@ -153,15 +157,15 @@ impl GotGlobalEntry {
     }
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) enum GotRequestedAddress {
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub enum GotRequestedAddress<'got> {
     // TODO: consider using references here instead of copying the data
-    LazyResolver(GotLocalEntry),
-    Local(GotLocalEntry),
-    Global(GotGlobalEntry),
+    LazyResolver(&'got GotLocalEntry),
+    Local(&'got GotLocalEntry),
+    Global(&'got GotGlobalEntry),
 }
 
-impl GotRequestedAddress {
+impl GotRequestedAddress<'_> {
     #[must_use]
     pub(crate) const fn address(&self) -> u32 {
         match self {
@@ -169,5 +173,42 @@ impl GotRequestedAddress {
             GotRequestedAddress::Local(x) => x.address(),
             GotRequestedAddress::Global(x) => x.address(),
         }
+    }
+}
+
+#[must_use]
+pub struct GlobalOffsetTableIter<'got> {
+    current_vram: Vram,
+    got: &'got GlobalOffsetTable,
+}
+
+impl<'got> GlobalOffsetTableIter<'got> {
+    const fn new(got: &'got GlobalOffsetTable) -> Self {
+        Self {
+            current_vram: got.vram().start(),
+            got,
+        }
+    }
+}
+
+impl<'got> Iterator for GlobalOffsetTableIter<'got> {
+    type Item = (Vram, GotRequestedAddress<'got>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let current_vram = self.current_vram;
+
+        if let Some(requested_address) = self.got.request_address(current_vram) {
+            self.current_vram += Size::new(4);
+            Some((current_vram, requested_address))
+        } else {
+            None
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let left = (self.got.vram().end() - self.current_vram).inner() / 4;
+        let left = left.max(0) as usize;
+
+        (left, Some(left))
     }
 }

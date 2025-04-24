@@ -229,7 +229,11 @@ impl FunctionSym {
                     addended_vram: vram,
                     unaddended_vram: _,
                 }
-                | InstrAnalysisInfo::GotCall16 { vram } => {
+                | InstrAnalysisInfo::GotGlobalCall16 {
+                    vram,
+                    global_entry: _,
+                }
+                | InstrAnalysisInfo::GotLocalCall16 { vram } => {
                     if owned_segment.is_vram_ignored(*vram) {
                         continue;
                     }

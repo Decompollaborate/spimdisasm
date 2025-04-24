@@ -196,15 +196,27 @@ impl InstructionAnalysisBuilder {
                     self.apply_symbol_type(target_vram, TypeInfo::Function, instr_rom);
                     InstrAnalysisInfo::BranchLink { target_vram }
                 }
-                InstrOpLink::RawRegisterLink { vram, .. } => {
+                InstrOpLink::RawRegisterLink { vram, rom: _ } => {
                     self.apply_symbol_type(vram, TypeInfo::Function, instr_rom);
                     InstrAnalysisInfo::JumpAndLinkRegisterRaw { raw_vram: vram }
                 }
-                InstrOpLink::Call16RegisterLink { vram, rom } => {
+                InstrOpLink::Call16RegisterLink {
+                    vram,
+                    rom,
+                    global_entry,
+                } => {
                     self.apply_symbol_type(vram, TypeInfo::Function, instr_rom);
                     self.set_info(
                         self.index_from_rom(rom),
-                        InstrAnalysisInfo::GotCall16 { vram },
+                        InstrAnalysisInfo::GotGlobalCall16 { vram, global_entry },
+                    );
+                    InstrAnalysisInfo::JumpAndLinkRegisterRaw { raw_vram: vram }
+                }
+                InstrOpLink::Call16LocalRegisterLink { vram, rom } => {
+                    self.apply_symbol_type(vram, TypeInfo::Function, instr_rom);
+                    self.set_info(
+                        self.index_from_rom(rom),
+                        InstrAnalysisInfo::GotLocalCall16 { vram },
                     );
                     InstrAnalysisInfo::JumpAndLinkRegisterRaw { raw_vram: vram }
                 }
@@ -229,9 +241,10 @@ impl InstructionAnalysisBuilder {
                     InstrAnalysisInfo::JumpAndLinkRegisterRaw { raw_vram: vram }
                 }
                 InstrOpLink::DereferencedRegisterLink {
-                    dereferenced_vram, ..
+                    dereferenced_vram,
+                    dereferenced_rom: _,
                 } => InstrAnalysisInfo::JumpAndLinkRegisterDereferenced { dereferenced_vram },
-                InstrOpLink::UnknownJumpAndLinkRegister { .. } => InstrAnalysisInfo::No,
+                InstrOpLink::UnknownJumpAndLinkRegister { reg: _ } => InstrAnalysisInfo::No,
             },
 
             InstructionOperation::TailCall { info } => match info {
@@ -240,20 +253,21 @@ impl InstructionAnalysisBuilder {
                     self.apply_symbol_type(target_vram, TypeInfo::Function, instr_rom);
                     InstrAnalysisInfo::MaybeDirectTailCall { target_vram }
                 }
-                InstrOpTailCall::RawRegisterTailCall { vram, .. } => {
+                InstrOpTailCall::RawRegisterTailCall { vram, rom: _ } => {
                     self.apply_symbol_type(vram, TypeInfo::Function, instr_rom);
                     InstrAnalysisInfo::RawRegisterTailCall { raw_vram: vram }
                 }
                 InstrOpTailCall::DereferencedRegisterTailCall {
-                    dereferenced_vram, ..
+                    dereferenced_vram,
+                    dereferenced_rom: _,
                 } => InstrAnalysisInfo::DereferencedRegisterTailCall { dereferenced_vram },
-                InstrOpTailCall::UnknownRegisterJump { .. } => InstrAnalysisInfo::No,
+                InstrOpTailCall::UnknownRegisterJump { reg: _ } => InstrAnalysisInfo::No,
             },
 
             InstructionOperation::JumptableJump {
                 jumptable_vram,
+                dereferenced_rom: _,
                 info,
-                ..
             } => {
                 self.apply_symbol_type(jumptable_vram, TypeInfo::Jumptable, instr_rom);
                 InstrAnalysisInfo::Jumptable {
@@ -274,7 +288,9 @@ impl InstructionAnalysisBuilder {
                 }
             }
 
-            InstructionOperation::Hi { value, .. } => InstrAnalysisInfo::UnpairedHi { value },
+            InstructionOperation::Hi { value, dst_reg: _ } => {
+                InstrAnalysisInfo::UnpairedHi { value }
+            }
 
             InstructionOperation::PairedAddress {
                 addended_vram,
@@ -374,13 +390,14 @@ impl InstructionAnalysisBuilder {
             }
             InstructionOperation::DereferencedRawAddress {
                 original_address,
+                addend: _,
+                address_load_rom: _,
                 access_info,
-                ..
             } => {
                 self.apply_symbol_type(original_address, access_info.into(), instr_rom);
                 InstrAnalysisInfo::No
             }
-            InstructionOperation::DanglingLo { .. } => InstrAnalysisInfo::No,
+            InstructionOperation::DanglingLo { imm: _ } => InstrAnalysisInfo::No,
             InstructionOperation::Constant { constant, hi_rom } => {
                 self.set_info_if_empty(
                     self.index_from_rom(hi_rom),
@@ -391,19 +408,31 @@ impl InstructionAnalysisBuilder {
                     upper_rom: hi_rom,
                 }
             }
-            InstructionOperation::UnpairedConstant { .. } => InstrAnalysisInfo::No,
+            InstructionOperation::UnpairedConstant { imm: _ } => InstrAnalysisInfo::No,
             InstructionOperation::RegisterOperation { info } => match info {
                 InstrOpRegisterOperation::SuspectedCpload { hi_rom, lo_rom } => {
                     self.set_info(self.index_from_rom(hi_rom), InstrAnalysisInfo::CploadHi);
                     self.set_info(self.index_from_rom(lo_rom), InstrAnalysisInfo::CploadLo);
                     InstrAnalysisInfo::CploadAddu
                 }
-                InstrOpRegisterOperation::RegisterAddition { .. }
-                | InstrOpRegisterOperation::RegisterSubtraction { .. }
-                | InstrOpRegisterOperation::Or { .. } => InstrAnalysisInfo::No,
+                InstrOpRegisterOperation::RegisterAddition {
+                    rd: _,
+                    rs: _,
+                    rt: _,
+                }
+                | InstrOpRegisterOperation::RegisterSubtraction {
+                    rd: _,
+                    rs: _,
+                    rt: _,
+                }
+                | InstrOpRegisterOperation::Or {
+                    rd: _,
+                    rs: _,
+                    rt: _,
+                } => InstrAnalysisInfo::No,
             },
 
-            InstructionOperation::UnhandledOpcode { .. }
+            InstructionOperation::UnhandledOpcode { opcode: _ }
             | InstructionOperation::InvalidInstr {} => InstrAnalysisInfo::No,
         };
 

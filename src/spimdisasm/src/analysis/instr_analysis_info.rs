@@ -84,7 +84,11 @@ pub(crate) enum InstrAnalysisInfo {
         addended_vram: Vram,
         unaddended_vram: Vram,
     },
-    GotCall16 {
+    GotGlobalCall16 {
+        vram: Vram,
+        global_entry: GotGlobalEntry,
+    },
+    GotLocalCall16 {
         vram: Vram,
     },
     PairedGotHi {
@@ -169,7 +173,11 @@ impl InstrAnalysisInfo {
                 addended_vram: _,
                 unaddended_vram: _,
             } => None,
-            InstrAnalysisInfo::GotCall16 { vram: _ } => None,
+            InstrAnalysisInfo::GotGlobalCall16 {
+                vram: _,
+                global_entry: _,
+            } => None,
+            InstrAnalysisInfo::GotLocalCall16 { vram: _ } => None,
             InstrAnalysisInfo::PairedGotHi {
                 vram: _,
                 global_entry: _,

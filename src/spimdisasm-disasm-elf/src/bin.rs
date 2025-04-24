@@ -274,6 +274,14 @@ fn fill_dyn_symbols(
     let elf_endian = elf_file.endian();
 
     let global_offset_table = parse_got(elf_file, dynamic, got_vram, raw_got);
+
+    /*
+    println!("\nGlobal offset table:");
+    for (vram, entry) in global_offset_table.iter() {
+        println!("{:?} {:?}", vram, entry);
+    }
+    */
+
     let mut global_got = global_offset_table.globals().iter();
 
     let mut addresses = HashSet::new();
