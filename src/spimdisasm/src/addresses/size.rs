@@ -152,6 +152,12 @@ impl SizedAddress for Size {
     }
 }
 
+impl SizedAddress for (Vram, Size) {
+    fn size(&self) -> Size {
+        self.1
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

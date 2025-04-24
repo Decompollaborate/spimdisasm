@@ -460,9 +460,11 @@ impl SymbolMetadata {
     pub fn visibility(&self) -> Option<Arc<str>> {
         self.visibility.clone()
     }
-    #[allow(dead_code)]
-    pub(crate) fn set_visibility(&mut self, visibility: Arc<str>) {
-        self.visibility = Some(visibility)
+    pub fn set_visibility<T>(&mut self, visibility: T)
+    where
+        T: Into<Arc<str>>,
+    {
+        self.visibility = Some(visibility.into())
     }
 
     pub(crate) fn compiler(&self) -> Option<Compiler> {

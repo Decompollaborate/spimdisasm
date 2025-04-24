@@ -11,12 +11,13 @@ use spimdisasm::{
     self,
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     analysis::StringGuesserFlags,
+    collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
     config::{GlobalConfig, GpConfig},
     context::{
         builder::{GlobalSegmentHeater, UserSegmentBuilder},
         Context, ContextBuilder, GlobalSegmentBuilder,
     },
-    metadata::{GotAccessKind, SymbolType},
+    metadata::{GotAccessKind, LabelType, SymbolType},
     parent_segment_info::ParentSegmentInfo,
     rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion},
     relocation::RelocationInfo,
@@ -303,6 +304,9 @@ fn fill_dyn_symbols(
         global_segment.add_ignored_address_range(Vram::new(0x0A000000), Size::new(0x00800000)),
     );
 
+    let mut seen_symbols = AddendedOrderedMap::new();
+    let mut labels = Vec::new();
+
     for (i, sym) in dynsym.enumerate() {
         let st_type = sym.st_type();
         let st_shndx = sym.st_shndx(elf_endian);
@@ -375,7 +379,17 @@ fn fill_dyn_symbols(
             }
         };
 
-        match sym.st_visibility() {
+        // This vram overlaps another symbol, so we'll add it as a label instead.
+        if seen_symbols.find(&vram, FindSettings::new(true)).is_some() {
+            labels.push((name, vram, rom, sym.st_bind(), got_entry));
+            continue;
+        }
+
+        seen_symbols.find_mut_or_insert_with(vram, FindSettings::new(true), || {
+            (vram, size.unwrap_or(Size::new(1)))
+        });
+
+        match sym.st_bind() {
             elf::STB_LOCAL => {
                 local_syms.push((name, vram, rom, size, sym_type, got_entry));
                 continue;
@@ -385,7 +399,7 @@ fn fill_dyn_symbols(
                 weak_syms.push((name, vram, rom, size, sym_type, got_entry));
                 continue;
             }
-            x => panic!("Unhandled st_visibility: {}", x),
+            x => panic!("Unhandled st_bind: {}", x),
         }
 
         if global_ranges.in_vram_range(vram) {
@@ -413,7 +427,9 @@ fn fill_dyn_symbols(
             if got_entry.is_some() {
                 sym_metadata.set_got_access_kind(GotAccessKind::Global);
             }
-            // TODO: set local visibiility
+            if let Some(vis) = st_bind_to_str(elf::STB_LOCAL) {
+                sym_metadata.set_visibility(vis);
+            }
             addresses.insert(vram);
         } else {
             remaining_symbols.push((name, vram, rom, size, sym_type, elf::STB_LOCAL, got_entry));
@@ -432,14 +448,16 @@ fn fill_dyn_symbols(
             if got_entry.is_some() {
                 sym_metadata.set_got_access_kind(GotAccessKind::Global);
             }
-            // TODO: set weak visibiility
+            if let Some(vis) = st_bind_to_str(elf::STB_WEAK) {
+                sym_metadata.set_visibility(vis);
+            }
             addresses.insert(vram);
         } else {
             remaining_symbols.push((name, vram, rom, size, sym_type, elf::STB_WEAK, got_entry));
         }
     }
 
-    for (name, vram, rom, size, sym_type, st_visibility, got_entry) in remaining_symbols {
+    for (name, vram, rom, size, sym_type, st_bind, got_entry) in remaining_symbols {
         if let Some(got_entry) = got_entry {
             // Check for `COMMON` those symbols do not contain an address on their value, they contain an alignment instead.
             if vram == Vram::new(0) || got_entry.undef_com_or_abs() {
@@ -463,14 +481,35 @@ fn fill_dyn_symbols(
             } else {
                 eprintln!(
                     "Unhandled dynamic symbol: {:?}, {:?}, {:?}, {:?}, {:?}, {:?}, {:?}",
-                    name, vram, rom, size, sym_type, st_visibility, got_entry
+                    name, vram, rom, size, sym_type, st_bind, got_entry
                 );
             }
         } else {
             eprintln!(
                 "Unhandled dynamic symbol: {:?}, {:?}, {:?}, {:?}, {:?}, {:?}, {:?}",
-                name, vram, rom, size, sym_type, st_visibility, got_entry
+                name, vram, rom, size, sym_type, st_bind, got_entry
             );
+        }
+    }
+
+    {
+        let mut added_labels = HashSet::new();
+        for (name, vram, rom, st_bind, _got_entry) in labels {
+            if added_labels.contains(&vram) {
+                // There may be multiple aents at the same address.
+                // For now only pick the first one.
+                continue;
+            }
+            let label = utils::pretty_unwrap(global_segment.add_user_label(
+                name,
+                vram,
+                rom,
+                LabelType::AlternativeEntry,
+            ));
+            if let Some(vis) = st_bind_to_str(st_bind) {
+                label.set_visibility(vis);
+            }
+            added_labels.insert(vram);
         }
     }
 
@@ -509,6 +548,16 @@ fn fill_symtab(
     // TODO: handle relocatable elfs
 
     (global_segment.finish_symbols(), user_segment)
+}
+
+fn st_bind_to_str(st_bind: u8) -> Option<&'static str> {
+    #[expect(clippy::wildcard_in_or_patterns)]
+    match st_bind {
+        elf::STB_LOCAL => Some("local"),
+        elf::STB_WEAK => Some("weak"),
+        // Default binding is global, so there's no need to specify it explicitly
+        elf::STB_GLOBAL | _ => None,
+    }
 }
 
 fn preheat_sections(
