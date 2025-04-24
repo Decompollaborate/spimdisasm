@@ -126,7 +126,7 @@ pub(crate) enum GprRegRawAddress {
     /// ```
     HiLoGp {
         hi_rom: Rom,
-        got_entry: GotRequestedAddress,
+        global_entry: Option<GotGlobalEntry>,
     },
 }
 
@@ -476,12 +476,18 @@ impl GprRegisterValue {
                     global_offset_table.and_then(|x| x.request_address(vram))
                 {
                     let new_address = Vram::new(requested_address.address());
+                    let global_entry =
+                        if let GotRequestedAddress::Global(global_entry) = requested_address {
+                            Some(global_entry)
+                        } else {
+                            None
+                        };
                     Self::RawAddress {
                         vram: new_address,
                         setter_rom: current_rom,
                         info: GprRegRawAddress::HiLoGp {
                             hi_rom: *hi_rom,
-                            got_entry: requested_address,
+                            global_entry,
                         },
                     }
                 } else {

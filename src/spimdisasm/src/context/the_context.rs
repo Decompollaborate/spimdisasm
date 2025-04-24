@@ -355,7 +355,33 @@ impl Context {
             return find_within_segment(&self.global_segment).filter(|&t| sym_validation(t));
         }
 
-        if let Some(overlay_category_name) = info.overlay_category_name() {
+        if !self.overlay_segments.is_empty() {
+            if let Some(t) =
+                self.find_from_overlay_segments(vram, info, &find_within_segment, &sym_validation)
+            {
+                return Some(t);
+            }
+        }
+
+        // If we still can't find it, fall back to the unknown segment
+        find_within_segment(&self.unknown_segment).filter(|&t| sym_validation(t))
+    }
+
+    #[must_use]
+    fn find_from_overlay_segments<T, FS, FV>(
+        &self,
+        vram: Vram,
+        info: &ParentSegmentInfo,
+        find_within_segment: FS,
+        sym_validation: FV,
+    ) -> Option<&T>
+    where
+        FS: Fn(&SegmentMetadata) -> Option<&T>,
+        FV: Fn(&T) -> bool,
+    {
+        let overlay_category_name = info.overlay_category_name();
+
+        if let Some(overlay_category_name) = overlay_category_name {
             // First check the segment associated to this category that matches the rom address of the parent segment to prioritize it.
             if let Some(segments_per_rom) = self.overlay_segments.get(overlay_category_name) {
                 if let Some(owned_segment) = segments_per_rom.segments().get(&info.segment_rom()) {
@@ -373,10 +399,10 @@ impl Context {
                                 if segment.name().as_ref() == Some(prioritised_overlay)
                                     && segment.in_vram_range(vram)
                                 {
-                                    if let Some(t) = find_within_segment(segment) {
-                                        if sym_validation(t) {
-                                            return Some(t);
-                                        }
+                                    if let Some(t) =
+                                        find_within_segment(segment).filter(|&t| sym_validation(t))
+                                    {
+                                        return Some(t);
                                     }
                                 }
                             }
@@ -389,7 +415,6 @@ impl Context {
         // If not found, then we should check every category except the one that associated to the parent segment.
 
         // First we look for segments categories that only contain a single segment, since it is less likely to grab the wrong symbol.
-        let overlay_category_name = info.overlay_category_name();
         for (ovl_cat, segments_per_rom) in self.overlay_segments.iter() {
             if overlay_category_name == Some(ovl_cat)
                 || !segments_per_rom.ranges().in_vram_range(vram)
@@ -404,10 +429,8 @@ impl Context {
                     .next()
                     .expect("Should exist since we already checked the length");
                 if segment.in_vram_range(vram) {
-                    if let Some(t) = find_within_segment(segment) {
-                        if sym_validation(t) {
-                            return Some(t);
-                        }
+                    if let Some(t) = find_within_segment(segment).filter(|&t| sym_validation(t)) {
+                        return Some(t);
                     }
                 }
             }
@@ -425,20 +448,12 @@ impl Context {
             if segments.len() != 1 {
                 for (_, segment) in segments {
                     if segment.in_vram_range(vram) {
-                        if let Some(t) = find_within_segment(segment) {
-                            if sym_validation(t) {
-                                return Some(t);
-                            }
+                        if let Some(t) = find_within_segment(segment).filter(|&t| sym_validation(t))
+                        {
+                            return Some(t);
                         }
                     }
                 }
-            }
-        }
-
-        // If we still can't find it, fall back to the unknown segment
-        if let Some(t) = find_within_segment(&self.unknown_segment) {
-            if sym_validation(t) {
-                return Some(t);
             }
         }
 

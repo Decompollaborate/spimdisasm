@@ -212,19 +212,19 @@ impl InstructionAnalysisBuilder {
                     vram,
                     hi_rom,
                     lo_rom,
-                    got_entry,
+                    global_entry,
                 } => {
                     self.apply_symbol_type(vram, TypeInfo::Function, instr_rom);
                     self.set_info(
                         self.index_from_rom(hi_rom),
                         InstrAnalysisInfo::GotCallHi {
                             vram,
-                            got_entry: got_entry.clone(),
+                            global_entry: global_entry.clone(),
                         },
                     );
                     self.set_info(
                         self.index_from_rom(lo_rom),
-                        InstrAnalysisInfo::GotCallLo { vram, got_entry },
+                        InstrAnalysisInfo::GotCallLo { vram, global_entry },
                     );
                     InstrAnalysisInfo::JumpAndLinkRegisterRaw { raw_vram: vram }
                 }
@@ -348,19 +348,22 @@ impl InstructionAnalysisBuilder {
                         upper_rom,
                     }
                 }
-                InstrOpPairedAddress::PairedGotLo { hi_rom, got_entry } => {
+                InstrOpPairedAddress::PairedGotLo {
+                    hi_rom,
+                    global_entry,
+                } => {
                     self.add_referenced_vram(addended_vram);
                     self.apply_symbol_type(addended_vram, TypeInfo::No, instr_rom);
                     self.set_info_if_empty(
                         self.index_from_rom(hi_rom),
                         InstrAnalysisInfo::PairedGotHi {
                             vram: addended_vram,
-                            got_entry: got_entry.clone(),
+                            global_entry: global_entry.clone(),
                         },
                     );
                     InstrAnalysisInfo::PairedGotLo {
                         vram: addended_vram,
-                        got_entry,
+                        global_entry,
                     }
                 }
             },

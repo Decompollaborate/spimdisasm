@@ -6,7 +6,7 @@ use core::hash;
 use rabbitizer::Instruction;
 
 use crate::{
-    addresses::{AddressRange, GotRequestedAddress, Rom, RomVramRange, Size, Vram},
+    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     analysis::{
         GatheredTypeInfo, InstrAnalysisInfo, InstrOpJumptable, InstructionAnalysisResult,
         InstructionAnalyzer,
@@ -255,15 +255,16 @@ impl FunctionSym {
                     meta.got_access_kind = Some(GotAccessKind::Local);
                 }
                 InstrAnalysisInfo::PairedGotHi { .. } | InstrAnalysisInfo::GotCallHi { .. } => {}
-                InstrAnalysisInfo::PairedGotLo { vram, got_entry }
-                | InstrAnalysisInfo::GotCallLo { vram, got_entry } => {
+                InstrAnalysisInfo::PairedGotLo { vram, global_entry }
+                | InstrAnalysisInfo::GotCallLo { vram, global_entry } => {
                     if owned_segment.is_vram_ignored(*vram) {
                         continue;
                     }
-                    if let GotRequestedAddress::Global(global_entry) = got_entry {
-                        if global_entry.undef_com_or_abs() {
-                            continue;
-                        }
+                    if global_entry
+                        .as_ref()
+                        .is_some_and(|global_entry| global_entry.undef_com_or_abs())
+                    {
+                        continue;
                     }
 
                     let meta = paired_symbols

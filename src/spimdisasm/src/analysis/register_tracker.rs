@@ -7,7 +7,7 @@ use rabbitizer::{
 };
 
 use crate::{
-    addresses::{GlobalOffsetTable, GotGlobalEntry, GotRequestedAddress, Rom, Vram},
+    addresses::{GlobalOffsetTable, GotGlobalEntry, Rom, Vram},
     analysis::gpr_register_value::{GprRegDereferencedAddress, GprRegRawAddress},
     config::{Endian, GpConfig},
 };
@@ -182,7 +182,7 @@ pub(crate) enum InstrOpLink {
         vram: Vram,
         hi_rom: Rom,
         lo_rom: Rom,
-        got_entry: GotRequestedAddress,
+        global_entry: Option<GotGlobalEntry>,
     },
 
     /// A "Jump and link register" to a register that has been dereferenced. A `jalr`.
@@ -280,7 +280,7 @@ pub(crate) enum InstrOpPairedAddress {
     /// Note this will also catch `%call_hi`/`%call_lo` pairings since they follow the same patter.
     PairedGotLo {
         hi_rom: Rom,
-        got_entry: GotRequestedAddress,
+        global_entry: Option<GotGlobalEntry>,
     },
 }
 
@@ -423,14 +423,15 @@ impl RegisterTracker {
                             rom: *setter_rom,
                         }
                     }
-                    GprRegRawAddress::HiLoGp { hi_rom, got_entry } => {
-                        InstrOpLink::CallHiLoRegisterLink {
-                            vram: *vram,
-                            hi_rom: *hi_rom,
-                            lo_rom: *setter_rom,
-                            got_entry: got_entry.clone(),
-                        }
-                    }
+                    GprRegRawAddress::HiLoGp {
+                        hi_rom,
+                        global_entry,
+                    } => InstrOpLink::CallHiLoRegisterLink {
+                        vram: *vram,
+                        hi_rom: *hi_rom,
+                        lo_rom: *setter_rom,
+                        global_entry: global_entry.clone(),
+                    },
                     GprRegRawAddress::GpGotLazyResolver { .. } => {
                         InstrOpLink::UnknownJumpAndLinkRegister { reg: rs }
                     }
@@ -805,16 +806,17 @@ impl RegisterTracker {
                     unaddended_vram: *vram,
                     info: InstrOpPairedAddress::GpGotLocal {},
                 },
-                GprRegRawAddress::HiLoGp { hi_rom, got_entry } => {
-                    InstructionOperation::PairedAddress {
-                        addended_vram: *vram,
-                        unaddended_vram: *vram,
-                        info: InstrOpPairedAddress::PairedGotLo {
-                            hi_rom: *hi_rom,
-                            got_entry: got_entry.clone(),
-                        },
-                    }
-                }
+                GprRegRawAddress::HiLoGp {
+                    hi_rom,
+                    global_entry,
+                } => InstructionOperation::PairedAddress {
+                    addended_vram: *vram,
+                    unaddended_vram: *vram,
+                    info: InstrOpPairedAddress::PairedGotLo {
+                        hi_rom: *hi_rom,
+                        global_entry: global_entry.clone(),
+                    },
+                },
                 GprRegRawAddress::HiLo { .. }
                 | GprRegRawAddress::GpRel { .. }
                 | GprRegRawAddress::PairedGpGotLo { .. } => {
@@ -3064,7 +3066,7 @@ mod tests {
                 setter_rom: Rom::new(0x0001008C),
                 info: GprRegRawAddress::HiLoGp {
                     hi_rom: Rom::new(0x00010084),
-                    got_entry: GotRequestedAddress::Global(GotGlobalEntry::new(
+                    global_entry: Some(GotGlobalEntry::new(
                         0x8000012C, 0x8000012C, false, "some_var",
                     )),
                 },
@@ -3113,7 +3115,7 @@ mod tests {
                 setter_rom: Rom::new(0x000100A4),
                 info: GprRegRawAddress::HiLoGp {
                     hi_rom: Rom::new(0x0001009C),
-                    got_entry: GotRequestedAddress::Global(GotGlobalEntry::new(
+                    global_entry: Some(GotGlobalEntry::new(
                         0x800000C4,
                         0x800000C4,
                         false,
@@ -3329,7 +3331,7 @@ mod tests {
                 unaddended_vram: Vram::new(0x8000012C),
                 info: InstrOpPairedAddress::PairedGotLo {
                     hi_rom: Rom::new(0x00010084),
-                    got_entry: GotRequestedAddress::Global(GotGlobalEntry::new(
+                    global_entry: Some(GotGlobalEntry::new(
                         0x8000012C, 0x8000012C, false, "some_var",
                     )),
                 },
@@ -3369,7 +3371,7 @@ mod tests {
                 unaddended_vram: Vram::new(0x800000C4),
                 info: InstrOpPairedAddress::PairedGotLo {
                     hi_rom: Rom::new(0x0001009C),
-                    got_entry: GotRequestedAddress::Global(GotGlobalEntry::new(
+                    global_entry: Some(GotGlobalEntry::new(
                         0x800000C4,
                         0x800000C4,
                         false,
@@ -3382,7 +3384,7 @@ mod tests {
                     vram: Vram::new(0x800000C4),
                     hi_rom: Rom::new(0x0001009C),
                     lo_rom: Rom::new(0x000100A4),
-                    got_entry: GotRequestedAddress::Global(GotGlobalEntry::new(
+                    global_entry: Some(GotGlobalEntry::new(
                         0x800000C4,
                         0x800000C4,
                         false,

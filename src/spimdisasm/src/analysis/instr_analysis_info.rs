@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use crate::addresses::{GotGlobalEntry, GotRequestedAddress, Rom, Vram};
+use crate::addresses::{GotGlobalEntry, Rom, Vram};
 
 use super::InstrOpJumptable;
 
@@ -89,19 +89,19 @@ pub(crate) enum InstrAnalysisInfo {
     },
     PairedGotHi {
         vram: Vram,
-        got_entry: GotRequestedAddress,
+        global_entry: Option<GotGlobalEntry>,
     },
     PairedGotLo {
         vram: Vram,
-        got_entry: GotRequestedAddress,
+        global_entry: Option<GotGlobalEntry>,
     },
     GotCallHi {
         vram: Vram,
-        got_entry: GotRequestedAddress,
+        global_entry: Option<GotGlobalEntry>,
     },
     GotCallLo {
         vram: Vram,
-        got_entry: GotRequestedAddress,
+        global_entry: Option<GotGlobalEntry>,
     },
 
     GpSetHi,
@@ -172,19 +172,19 @@ impl InstrAnalysisInfo {
             InstrAnalysisInfo::GotCall16 { vram: _ } => None,
             InstrAnalysisInfo::PairedGotHi {
                 vram: _,
-                got_entry: _,
+                global_entry: _,
             } => None,
             InstrAnalysisInfo::PairedGotLo {
                 vram: _,
-                got_entry: _,
+                global_entry: _,
             } => None,
             InstrAnalysisInfo::GotCallHi {
                 vram: _,
-                got_entry: _,
+                global_entry: _,
             } => None,
             InstrAnalysisInfo::GotCallLo {
                 vram: _,
-                got_entry: _,
+                global_entry: _,
             } => None,
             InstrAnalysisInfo::GpSetHi => None,
             InstrAnalysisInfo::GpSetLo => None,
