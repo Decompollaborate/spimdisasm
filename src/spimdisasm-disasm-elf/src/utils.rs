@@ -18,6 +18,15 @@ where
     }
 }
 
+#[track_caller]
+#[inline]
+pub fn set_valid_option_on_none<T>(dst: &mut Option<T>, val: Option<T>) {
+    // Missing a previous value is bad.
+    assert!(dst.is_none());
+    // Unwrap to make sure it is "valid".
+    *dst = Some(val.unwrap());
+}
+
 #[inline]
 #[must_use]
 pub fn endian_to_endian(endian: object::Endianness) -> Endian {
