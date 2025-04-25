@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.34.0] - 2025-04-25
+
 ### Added
 
 - `suspectedPaddingGarbage()` function for sections.
@@ -1807,6 +1809,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.34.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.33.0...1.34.0
 [1.33.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.32.4...1.33.0
 [1.32.4]: https://github.com/Decompollaborate/spimdisasm/compare/1.32.3...1.32.4
 [1.32.3]: https://github.com/Decompollaborate/spimdisasm/compare/1.32.2...1.32.3
