@@ -115,7 +115,10 @@ class FunctionRodataEntry:
 
 
     @staticmethod
-    def _shouldMigrateRodataSymbolToFunction(rodataSym: symbols.SymbolBase, intersection: set[int], funcName: str) -> bool:
+    def _shouldMigrateRodataSymbolToFunction(rodataSym: symbols.SymbolBase, intersection: set[int], funcName: str, already_migrated_syms: set[int]) -> bool:
+        if rodataSym.vram in already_migrated_syms:
+            return False
+
         functionOwner = rodataSym.contextSym.functionOwnerForMigration
         if functionOwner is not None:
             # If a function owner was specified for this symbol then it is only
@@ -133,7 +136,7 @@ class FunctionRodataEntry:
         return True
 
     @staticmethod
-    def _updateMigrableSymbolsSets(rodataSym: symbols.SymbolBase, intersection: set[int], funcName: str, migrableRodataSyms: set[int], maybeMigrableRodataSyms: set[int], rodataMigratedSomewhereElse: bool) -> bool:
+    def _updateMigrableSymbolsSets(rodataSym: symbols.SymbolBase, intersection: set[int], funcName: str, migrableRodataSyms: set[int], maybeMigrableRodataSyms: set[int], rodataMigratedSomewhereElse: bool, already_migrated_syms: set[int]) -> bool:
         # We try to decide which symbols should be migrated by checking from left
         # to right.
         # Completely unreferenced symbols may get migrated to the current
@@ -146,7 +149,7 @@ class FunctionRodataEntry:
         if rodataMigratedSomewhereElse:
             return rodataMigratedSomewhereElse
 
-        if FunctionRodataEntry._shouldMigrateRodataSymbolToFunction(rodataSym, intersection, funcName):
+        if FunctionRodataEntry._shouldMigrateRodataSymbolToFunction(rodataSym, intersection, funcName, already_migrated_syms):
             migrableRodataSyms.add(rodataSym.vram)
 
             migrableRodataSyms.update(maybeMigrableRodataSyms)
@@ -155,14 +158,17 @@ class FunctionRodataEntry:
             if len(rodataSym.contextSym.referenceSymbols) > 0 or len(rodataSym.contextSym.referenceFunctions) > 0:
                 rodataMigratedSomewhereElse = True
             elif rodataSym.shouldMigrate():
-                maybeMigrableRodataSyms.add(rodataSym.vram)
+                if rodataSym.vram in already_migrated_syms:
+                    rodataMigratedSomewhereElse = True
+                else:
+                    maybeMigrableRodataSyms.add(rodataSym.vram)
             else:
                 rodataMigratedSomewhereElse = True
 
         return rodataMigratedSomewhereElse
 
     @staticmethod
-    def getEntryForFuncFromSection(func: symbols.SymbolFunction, rodataSection: sections.SectionRodata|None) -> FunctionRodataEntry:
+    def getEntryForFuncFromSection(func: symbols.SymbolFunction, rodataSection: sections.SectionRodata|None, already_migrated_syms: set[int]=set()) -> FunctionRodataEntry:
         """
         Pairs the given function to the migrable rodata symbols of the given
         rodata section.
@@ -196,9 +202,9 @@ class FunctionRodataEntry:
                     break
 
             if rodataSym.contextSym.isLateRodata():
-                lateRodataMigratedSomewhereElse = FunctionRodataEntry._updateMigrableSymbolsSets(rodataSym, intersection, funcName, migrableLateRodataSyms, maybeMigrableLateRodataSyms, lateRodataMigratedSomewhereElse)
+                lateRodataMigratedSomewhereElse = FunctionRodataEntry._updateMigrableSymbolsSets(rodataSym, intersection, funcName, migrableLateRodataSyms, maybeMigrableLateRodataSyms, lateRodataMigratedSomewhereElse, already_migrated_syms)
             else:
-                rodataMigratedSomewhereElse = FunctionRodataEntry._updateMigrableSymbolsSets(rodataSym, intersection, funcName, migrableRodataSyms, maybeMigrableRodataSyms, rodataMigratedSomewhereElse)
+                rodataMigratedSomewhereElse = FunctionRodataEntry._updateMigrableSymbolsSets(rodataSym, intersection, funcName, migrableRodataSyms, maybeMigrableRodataSyms, rodataMigratedSomewhereElse, already_migrated_syms)
 
         for rodataSym in rodataSection.symbolList:
             if rodataSym.vram in migrableLateRodataSyms:
@@ -258,7 +264,7 @@ class FunctionRodataEntry:
         for func in textSymbols:
             assert isinstance(func, symbols.SymbolFunction)
 
-            entry = FunctionRodataEntry.getEntryForFuncFromSection(func, rodataSection)
+            entry = FunctionRodataEntry.getEntryForFuncFromSection(func, rodataSection, handledSymbols)
 
             for sym in entry.iterRodataSyms():
                 handledSymbols.add(sym.vram)

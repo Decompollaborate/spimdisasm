@@ -79,6 +79,10 @@ class SectionText(SectionBase):
             if auxSym is not None and auxSym.isTrustableFunction(self.instrCat == rabbitizer.InstrCategory.RSP):
                 return farthestBranch, haltFunctionSearching
 
+        if instr.doesLink():
+            # This is used more as a function call than as an actual branch
+            return farthestBranch, haltFunctionSearching
+
         branchOffset = instr.getBranchOffsetGeneric()
         if branchOffset > farthestBranch:
             # keep track of the farthest branch target
@@ -109,9 +113,22 @@ class SectionText(SectionBase):
                     j -= 1
         return farthestBranch, haltFunctionSearching
 
-    def _findFunctions_checkFunctionEnded(self, instructionOffset: int, instr: rabbitizer.Instruction, index: int, currentVrom: int, currentVram: int, currentFunctionSym: common.ContextSymbol|None, farthestBranch: int, currentInstructionStart: int, isLikelyHandwritten: bool, instrsList: list[rabbitizer.Instruction], nInstr: int) -> tuple[bool, bool]:
+    def _findFunctions_checkFunctionHalted(self, instructionOffset: int, currentVrom: int, currentVram: int, currentInstructionStart: int) -> bool:
+        if instructionOffset == currentInstructionStart:
+            # Check if we have a function after the first instruction of the current function.
+            # This can happen when a garbage instruction was emitted and it was misinterpreted as
+            # the beginning of a function. This seems to be a common situation section padding on SN64.
+            funcSymbol = self.getSymbol(currentVram + 4, vromAddress=currentVrom + 4, tryPlusOffset=False, checkGlobalSegment=False)
+            if funcSymbol is not None and funcSymbol.isTrustableFunction(self.instrCat == rabbitizer.InstrCategory.RSP):
+                if funcSymbol.vromAddress is None or currentVrom + 4 == funcSymbol.vromAddress:
+                    return True
+
+        return False
+
+    def _findFunctions_checkFunctionEnded(self, instructionOffset: int, instr: rabbitizer.Instruction, index: int, currentVrom: int, currentVram: int, currentFunctionSym: common.ContextSymbol|None, farthestBranch: int, currentInstructionStart: int, isLikelyHandwritten: bool, instrsList: list[rabbitizer.Instruction], nInstr: int) -> tuple[bool, bool, bool]:
         functionEnded = False
         prevFuncHadUserDeclaredSize = False
+        functionHalted = False
 
         # Try to find the end of the function
         if currentFunctionSym is not None and currentFunctionSym.userDeclaredSize is not None:
@@ -119,6 +136,9 @@ class SectionText(SectionBase):
             if instructionOffset + 8 == currentInstructionStart + currentFunctionSym.getSize():
                 functionEnded = True
                 prevFuncHadUserDeclaredSize = True
+        elif self._findFunctions_checkFunctionHalted(instructionOffset, currentVrom, currentVram, currentInstructionStart):
+            functionEnded = True
+            functionHalted = True
         else:
             funcSymbol = self.getSymbol(currentVram + 8, vromAddress=currentVrom + 8, tryPlusOffset=False, checkGlobalSegment=False)
             # If there's another function after this then the current function has ended
@@ -168,7 +188,7 @@ class SectionText(SectionBase):
                             if auxSym is not None and auxSym.isTrustableFunction(self.instrCat == rabbitizer.InstrCategory.RSP):
                                 functionEnded = True
 
-        return functionEnded, prevFuncHadUserDeclaredSize
+        return functionEnded, prevFuncHadUserDeclaredSize, functionHalted
 
     def _findFunctions(self, instrsList: list[rabbitizer.Instruction]) -> tuple[list[int], list[bool]]:
         nInstr = len(instrsList)
@@ -177,6 +197,7 @@ class SectionText(SectionBase):
             return [0], [False]
 
         functionEnded = False
+        functionHalted = False
         farthestBranch = 0
         funcsStartsList: list[int] = [0]
         unimplementedInstructionsFuncList: list[bool] = []
@@ -220,8 +241,10 @@ class SectionText(SectionBase):
                 functionEnded = False
 
                 isLikelyHandwritten = self.isHandwritten
-                index += 1
-                instructionOffset += 4
+                if not functionHalted:
+                    index += 1
+                    instructionOffset += 4
+                functionHalted = False
 
                 auxSym = self.getSymbol(self.getVramOffset(instructionOffset), vromAddress=self.getVromOffset(instructionOffset), tryPlusOffset=False, checkGlobalSegment=False)
 
@@ -263,7 +286,7 @@ class SectionText(SectionBase):
                 if haltFunctionSearching:
                     break
 
-            functionEnded, prevFuncHadUserDeclaredSize = self._findFunctions_checkFunctionEnded(instructionOffset, instr, index, currentVrom, currentVram, currentFunctionSym, farthestBranch, currentInstructionStart, isLikelyHandwritten, instrsList, nInstr)
+            functionEnded, prevFuncHadUserDeclaredSize, functionHalted = self._findFunctions_checkFunctionEnded(instructionOffset, instr, index, currentVrom, currentVram, currentFunctionSym, farthestBranch, currentInstructionStart, isLikelyHandwritten, instrsList, nInstr)
 
             index += 1
             farthestBranch -= 4
@@ -272,11 +295,22 @@ class SectionText(SectionBase):
         unimplementedInstructionsFuncList.append(not isInstrImplemented)
         return funcsStartsList, unimplementedInstructionsFuncList
 
+    def _findCalls(self, instrsList: list[rabbitizer.Instruction]) -> None:
+        # A simple pass to gather function calls.
+        # Hopefully should improve function starts found by `_findFunctions`
+
+        for instr in instrsList:
+            if instr.doesLink():
+                if instr.isJumpWithAddress() or instr.isBranch():
+                    funcVram = instr.getBranchVramGeneric()
+                    self.addFunction(funcVram, isAutogenerated=True)
+
 
     def analyze(self) -> None:
         instrsList = self.wordListToInstructions(self.words, self.getVramOffset(0), self.instrCat)
         nInstr = len(instrsList)
 
+        self._findCalls(instrsList)
         funcsStartsList, unimplementedInstructionsFuncList = self._findFunctions(instrsList)
 
         previousSymbolExtraPadding = 0
@@ -428,3 +462,33 @@ class SectionText(SectionBase):
         for func in self.symbolList:
             assert isinstance(func, symbols.SymbolFunction)
             func.gpRelHack = value
+
+    def suspectedPaddingGarbage(self) -> list[int]:
+        garbage: list[int] = []
+
+        sectionAlign_text = common.GlobalConfig.COMPILER.value.sectionAlign_text
+        textAlignment = 1 << sectionAlign_text if sectionAlign_text is not None else None
+        if textAlignment is None:
+            return garbage
+
+        for func in self.symbolList:
+            assert isinstance(func, symbols.SymbolFunction)
+            if func.sizew * 4 >= textAlignment:
+                # i.e. if textAlignment is 0x10, then reject functions with more than 3 instructions
+                continue
+            if (func.vram + func.sizew * 4) % textAlignment != 0:
+                # Only functions that may be at the end of a section
+                continue
+            if func.contextSym.referenceCounter != 0:
+                # Only unused functions
+                continue
+
+            if func.sizew >= 2:
+                instr = func.instructions[-2]
+                if instr.isJump() or instr.isBranch():
+                    # Only count as garbage functions that do not have a proper jump at its end
+                    continue
+
+            garbage.append(func.inFileOffset + func.sizew * 4)
+
+        return garbage

@@ -67,7 +67,7 @@ class FileSplitFormat:
                     nextOffsetStr = self.splits[i+2][0]
                 else:
                     nextOffsetStr = self.splits[i+1][0]
-                if nextOffsetStr.upper()[-1] == "H":
+                if nextOffsetStr.upper()[-1] in ("H", "R"):
                     nextOffsetStr = nextOffsetStr[:-1]
                 nextOffset = int(nextOffsetStr, 16)
 
