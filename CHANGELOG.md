@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.34.1] - 2025-04-25
+## [1.34.2] - 2025-04-25
+
+### Fixed
+
+- Try to fix an issue with the release, again.
+
+## [1.34.1] - 2025-04-25 [YANKED]
 
 ### Fixed
 
@@ -1816,6 +1822,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.34.2]: https://github.com/Decompollaborate/spimdisasm/compare/1.34.1...1.34.2
 [1.34.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.34.0...1.34.1
 [1.34.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.33.0...1.34.0
 [1.33.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.32.4...1.33.0
