@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fix some edge cases on the rodata migration, where some rodata symbols would
+  be both migrated to a function and generated on its own.
 - csv file format fixes:
   - Avoid keeping spaces between the end of the line and the `#` comment sign.
   - Account for RSP indicator in csv offsets.
