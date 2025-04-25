@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Try to fix an issue with the release.
+- Update CI to use PyPI's Trusted Publisher stuff.
 
 ## [1.34.0] - 2025-04-25 [YANKED]
 
@@ -1815,6 +1816,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.34.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.34.0...1.34.1
 [1.34.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.33.0...1.34.0
 [1.33.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.32.4...1.33.0
 [1.32.4]: https://github.com/Decompollaborate/spimdisasm/compare/1.32.3...1.32.4
