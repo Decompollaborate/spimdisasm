@@ -47,7 +47,7 @@ impl ReferrerInfo {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct Referrers {
+pub struct Referrers {
     /// Which functions reference this.
     /// Key is the vram of the function and the segment it is contained on (since vrams can overlap
     /// on different segments).
@@ -73,6 +73,15 @@ impl Referrers {
     /// How much this address is referenced by something else.
     pub fn reference_counter(&self) -> usize {
         self.reference_functions.values().count() + self.reference_symbols.values().count()
+    }
+
+    pub fn reference_functions(
+        &self,
+    ) -> &UnorderedMap<(Vram, ParentSegmentInfo), UnorderedSet<Rom>> {
+        &self.reference_functions
+    }
+    pub fn reference_symbols(&self) -> &UnorderedMap<(Vram, ParentSegmentInfo), UnorderedSet<Rom>> {
+        &self.reference_symbols
     }
 
     pub(crate) fn add(&mut self, referrer: ReferrerInfo) {

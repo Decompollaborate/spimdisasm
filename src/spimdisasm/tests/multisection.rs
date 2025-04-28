@@ -526,6 +526,7 @@ glabel func_80004000
     /* 000074 80004074 8C42000C */   lw         $v0, 0xC($v0)
 .size func_80004000, . - func_80004000
 
+/* Automatically generated and unreferenced pad */
 glabel func_80004078
     /* 000078 80004078 03E00008 */  jr          $ra
     /* 00007C 8000407C 00000000 */   nop
@@ -611,7 +612,7 @@ fn test_mips1_doubles_eb() {
     ];
     let got_globals = vec![
         /* -0x7FE4($gp) */
-        GotGlobalEntry::new(0x800000A0, 0x800000A0, false, "R_FLT_800000A0"), /* R_FLT_800000A0 */
+        GotGlobalEntry::new(0x800000A0, 0x800000A0, false, "R_DBL_800000A0"), /* R_DBL_800000A0 */
     ];
     let global_offset_table = Some(GlobalOffsetTable::new(
         Vram::new(0x80000090),
@@ -675,6 +676,7 @@ fn test_mips1_doubles_eb() {
     let expected_str = "\
 .section .text
 
+/* Automatically generated and unreferenced pad */
 glabel func_80000000
     /* 000000 80000000 3C048000 */  lui         $a0, %hi(R_DBL_800000A0 + 0x4)
     /* 000004 80000004 C48000A4 */  lwc1        $fv0, %lo(R_DBL_800000A0 + 0x4)($a0)
@@ -682,12 +684,14 @@ glabel func_80000000
     /* 00000C 8000000C C48100A0 */   lwc1       $fv0f, %lo(R_DBL_800000A0)($a0)
 .size func_80000000, . - func_80000000
 
+/* Automatically generated and unreferenced pad */
 glabel func_80000010
     /* 000010 80000010 C7808024 */  lwc1        $fv0, %gp_rel(R_DBL_800000A0 + 0x4)($gp)
     /* 000014 80000014 03E00008 */  jr          $ra
     /* 000018 80000018 C7818020 */   lwc1       $fv0f, %gp_rel(R_DBL_800000A0)($gp)
 .size func_80000010, . - func_80000010
 
+/* Automatically generated and unreferenced pad */
 glabel func_8000001C
     /* 00001C 8000001C 3C1C0001 */  lui         $gp, %hi(_gp_disp)
     /* 000020 80000020 279C8064 */  addiu       $gp, $gp, %lo(_gp_disp)
@@ -698,6 +702,7 @@ glabel func_8000001C
     /* 000034 80000034 C4810000 */   lwc1       $fv0f, 0x0($a0)
 .size func_8000001C, . - func_8000001C
 
+/* Automatically generated and unreferenced pad */
 glabel func_80000038
     /* 000038 80000038 3C1C0001 */  lui         $gp, %hi(_gp_disp)
     /* 00003C 8000003C 279C8048 */  addiu       $gp, $gp, %lo(_gp_disp)
@@ -780,7 +785,7 @@ fn test_mips1_doubles_el() {
     ];
     let got_globals = vec![
         /* -0x7FE4($gp) */
-        GotGlobalEntry::new(0x800000A0, 0x800000A0, false, "R_FLT_800000A0"), /* R_FLT_800000A0 */
+        GotGlobalEntry::new(0x800000A0, 0x800000A0, false, "R_DBL_800000A0"), /* R_DBL_800000A0 */
     ];
     let global_offset_table = Some(GlobalOffsetTable::new(
         Vram::new(0x80000090),
@@ -844,6 +849,7 @@ fn test_mips1_doubles_el() {
     let expected_str = "\
 .section .text
 
+/* Automatically generated and unreferenced pad */
 glabel func_80000000
     /* 000000 80000000 0080043C */  lui         $a0, %hi(R_DBL_800000A0)
     /* 000004 80000004 A00080C4 */  lwc1        $fv0, %lo(R_DBL_800000A0)($a0)
@@ -851,12 +857,14 @@ glabel func_80000000
     /* 00000C 8000000C A40081C4 */   lwc1       $fv0f, %lo(R_DBL_800000A0 + 0x4)($a0)
 .size func_80000000, . - func_80000000
 
+/* Automatically generated and unreferenced pad */
 glabel func_80000010
     /* 000010 80000010 248081C7 */  lwc1        $fv0f, %gp_rel(R_DBL_800000A0 + 0x4)($gp)
     /* 000014 80000014 0800E003 */  jr          $ra
     /* 000018 80000018 208080C7 */   lwc1       $fv0, %gp_rel(R_DBL_800000A0)($gp)
 .size func_80000010, . - func_80000010
 
+/* Automatically generated and unreferenced pad */
 glabel func_8000001C
     /* 00001C 8000001C 01001C3C */  lui         $gp, %hi(_gp_disp)
     /* 000020 80000020 64809C27 */  addiu       $gp, $gp, %lo(_gp_disp)
@@ -867,6 +875,7 @@ glabel func_8000001C
     /* 000034 80000034 000080C4 */   lwc1       $fv0, 0x0($a0)
 .size func_8000001C, . - func_8000001C
 
+/* Automatically generated and unreferenced pad */
 glabel func_80000038
     /* 000038 80000038 01001C3C */  lui         $gp, %hi(_gp_disp)
     /* 00003C 8000003C 48809C27 */  addiu       $gp, $gp, %lo(_gp_disp)

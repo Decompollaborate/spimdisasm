@@ -103,6 +103,8 @@ impl FunctionSymProcessed {
 
         let mut relocs = vec![None; instructions.len()];
 
+        let mut referenced_symbols_owned_segment = Vec::new();
+
         let mut referenced_labels_owned_segment = Vec::new();
         let mut referenced_labels_refer_segment = Vec::new();
 
@@ -158,24 +160,25 @@ impl FunctionSymProcessed {
                 }
                 InstrAnalysisInfo::BranchLink { target_vram } => {
                     let reloc_type = RelocationType::R_MIPS_PC16;
+                    let referrer_info = ReferrerInfo::new_function(
+                        self_vram,
+                        parent_segment_info.clone(),
+                        instr_rom,
+                    );
+
                     if let Some(branch_sym) = owned_segment
                         .find_symbol(*target_vram, FindSettings::new(false))
                         .filter(|x| x.sym_type() == Some(SymbolType::Function))
                     {
                         debug_assert!(branch_sym.vram() == *target_vram);
+                        referenced_symbols_owned_segment.push((*target_vram, referrer_info));
+
                         Some(
                             reloc_type
                                 .new_reloc_info(RelocReferencedSym::new_address(*target_vram)),
                         )
                     } else if owned_segment.find_label(*target_vram).is_some() {
-                        referenced_labels_owned_segment.push((
-                            *target_vram,
-                            ReferrerInfo::new_function(
-                                self_vram,
-                                parent_segment_info.clone(),
-                                instr_rom,
-                            ),
-                        ));
+                        referenced_labels_owned_segment.push((*target_vram, referrer_info));
 
                         Some(reloc_type.new_reloc_info(RelocReferencedSym::Label(*target_vram)))
                     } else {
@@ -510,6 +513,15 @@ impl FunctionSymProcessed {
             };
 
             relocs[instr_index] = reloc;
+        }
+
+        // Tell symbols they have been referenced
+        let owned_segment_mut = context.find_owned_segment_mut(parent_segment_info)?;
+        for (sym_vram, referrer) in referenced_symbols_owned_segment {
+            if let Some(sym) = owned_segment_mut.find_symbol_mut(sym_vram, FindSettings::new(true))
+            {
+                sym.add_referenced_info(referrer);
+            }
         }
 
         // Tell labels they have been referenced

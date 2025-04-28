@@ -242,6 +242,7 @@ fn test_section_text_1() {
     let expected_disassembly = "\
 .section .text
 
+/* Automatically generated and unreferenced pad */
 glabel func_80000400
     /* 001050 80000400 27BDFFE8 */  addiu       $sp, $sp, -0x18
     /* 001054 80000404 AFB00010 */  sw          $s0, 0x10($sp)
@@ -270,6 +271,7 @@ glabel func_80000400
     /* 0010AC 8000045C 00000000 */   nop
 .size func_80000400, . - func_80000400
 
+/* Automatically generated and unreferenced pad */
 glabel func_80000460
     /* 0010B0 80000460 27BDFFD0 */  addiu       $sp, $sp, -0x30
     /* 0010B4 80000464 3C040107 */  lui         $a0, %hi(UNK_01077C60)
@@ -391,6 +393,7 @@ fn test_section_text_lui_delay_slot() {
     let expected_disassembly = "\
 .section .text
 
+/* Automatically generated and unreferenced pad */
 glabel func_80081738
     /* 069558 80081738 94A3009A */  lhu         $v1, 0x9A($a1)
     /* 06955C 8008173C 24027FFF */  addiu       $v0, $zero, 0x7FFF
@@ -505,6 +508,7 @@ fn test_section_text_pairing_on_delay_slot() {
     let expected_disassembly = "\
 .section .text
 
+/* Automatically generated and unreferenced pad */
 glabel func_80002518
     /* 003118 80002518 27BDFF80 */  addiu       $sp, $sp, -0x80
     /* 00311C 8000251C AFBF001C */  sw          $ra, 0x1C($sp)
@@ -617,6 +621,7 @@ fn test_section_text_lui_paired_with_lw_and_ori() {
     let expected_disassembly = "\
 .section .text
 
+/* Automatically generated and unreferenced pad */
 glabel func_80007860
     /* 008460 80007860 3C03A480 */  lui         $v1, %hi(SI_DRAM_ADDR_REG)
     /* 008464 80007864 AC620000 */  sw          $v0, %lo(SI_DRAM_ADDR_REG)($v1)
@@ -684,6 +689,7 @@ fn test_section_text_gp_rels() {
     let expected_disassembly = "\
 .section .text
 
+/* Automatically generated and unreferenced pad */
 glabel func_80000000
     /* 000000 80000000 01801C3C */  lui         $gp, %hi(_gp)
     /* 000004 80000004 14809C27 */  addiu       $gp, $gp, %lo(_gp)
@@ -807,6 +813,7 @@ fn test_section_text_type_inference_on_complex_control_flow() {
     let expected_disassembly = "\
 .section .text
 
+/* Automatically generated and unreferenced pad */
 glabel func_8080010C
     /* 2139F0C 8080010C 27BDFFC8 */  addiu       $sp, $sp, -0x38
     /* 2139F10 80800110 AFB70030 */  sw          $s7, 0x30($sp)
@@ -951,6 +958,7 @@ fn test_section_text_exception_control_flow() {
     let expected_disassembly = "\
 .section .text
 
+/* Automatically generated and unreferenced pad */
 .align 3
 glabel func_80000000
     /* 000000 80000000 00801D3C */  lui         $sp, %hi(UNK_800064E0)
@@ -959,6 +967,7 @@ glabel func_80000000
     /* 00000C 8000000C 0D000000 */  break       0
 .size func_80000000, . - func_80000000
 
+/* Automatically generated and unreferenced pad */
 .align 3
 glabel func_80000010
     /* 000010 80000010 801F000C */  jal         UNK_func_80007E00
@@ -967,6 +976,7 @@ glabel func_80000010
 .size func_80000010, . - func_80000010
 
 /* Handwritten function */
+/* Automatically generated and unreferenced pad */
 glabel func_8000001C
     /* 00001C 8000001C C01F000C */  jal         UNK_func_80007F00
     /* 000020 80000020 00000000 */   nop
@@ -974,6 +984,7 @@ glabel func_8000001C
 .size func_8000001C, . - func_8000001C
 
 /* Handwritten function */
+/* Automatically generated and unreferenced pad */
 .align 3
 glabel func_80000028
     /* 000028 80000028 00000324 */  addiu       $v1, $zero, 0x0
@@ -1027,6 +1038,7 @@ fn test_section_text_forward_bal() {
 .section .text
 
 /* Handwritten function */
+/* Automatically generated and unreferenced pad */
 glabel func_80000000
     /* 000000 80000000 27BDFFE0 */  addiu       $sp, $sp, -0x20
     /* 000004 80000004 AFBF0010 */  sw          $ra, 0x10($sp)
@@ -1099,6 +1111,7 @@ fn test_section_text_negative_branch_end() {
     let expected_disassembly = "\
 .section .text
 
+/* Automatically generated and unreferenced pad */
 glabel func_80000000
     /* 000000 80000000 00001025 */  or          $v0, $zero, $zero
     /* 000004 80000004 3C038000 */  lui         $v1, %hi(UNK_80000100)
@@ -1113,6 +1126,7 @@ glabel func_80000000
     /* 000020 80000020 24420001 */   addiu      $v0, $v0, 0x1
 .size func_80000000, . - func_80000000
 
+/* Automatically generated and unreferenced pad */
 glabel func_80000024
     /* 000024 80000024 00001025 */  or          $v0, $zero, $zero
     /* 000028 80000028 3C038000 */  lui         $v1, %hi(UNK_80000104)
@@ -1127,6 +1141,7 @@ glabel func_80000024
     /* 000044 80000044 24420001 */   addiu      $v0, $v0, 0x1
 .size func_80000024, . - func_80000024
 
+/* Automatically generated and unreferenced pad */
 glabel func_80000048
     /* 000048 80000048 03E00008 */  jr          $ra
     /* 00004C 8000004C 00000000 */   nop
@@ -1180,6 +1195,7 @@ fn test_section_text_lwl_lwr_individual() {
     let expected_disassembly = "\
 .section .text
 
+/* Automatically generated and unreferenced pad */
 glabel func_80000000
     /* 000000 80000000 3C028000 */  lui         $v0, %hi(UNK_80000090)
     /* 000004 80000004 8C420090 */  lw          $v0, %lo(UNK_80000090)($v0)
@@ -1247,6 +1263,7 @@ fn test_section_text_ldl_ldr_mixed() {
     let expected_disassembly = "\
 .section .text
 
+/* Automatically generated and unreferenced pad */
 glabel func_80000000
     /* 000000 80000000 F0FFBD27 */  addiu       $sp, $sp, -0x10
     /* 000004 80000004 2D108000 */  daddu       $v0, $a0, $zero
@@ -1304,6 +1321,7 @@ fn test_section_text_ldl_ldr_gp_rel() {
     let expected_disassembly = "\
 .section .text
 
+/* Automatically generated and unreferenced pad */
 glabel func_80070018
     /* 000000 80070018 6B88DF64 */  ldl         $t0, %gp_rel(UNK_100A695C)($gp)
     /* 000004 8007001C 6F88DF6B */  ldr         $t0, %gp_rel(UNK_100A695C + 0x7)($gp)

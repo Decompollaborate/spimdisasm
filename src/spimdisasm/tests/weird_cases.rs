@@ -320,6 +320,7 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
     let expected_str = "\
 .section .text
 
+/* Automatically generated and unreferenced pad */
 glabel func_8081CE54
     /* 001050 8081CE54 27BDFDC0 */  addiu       $sp, $sp, -0x240
     /* 001054 8081CE58 AFB00020 */  sw          $s0, 0x20($sp)
@@ -662,6 +663,7 @@ fn weird_case_use_gp_as_temp() {
 .section .text
 
 /* Handwritten function */
+/* Automatically generated and unreferenced pad */
 glabel func_8004E3C8
     /* 03EBC8 8004E3C8 0780013C */  lui         $at, %hi(UNK_80077DD8)
     /* 03EBCC 8004E3CC D87D2124 */  addiu       $at, $at, %lo(UNK_80077DD8)

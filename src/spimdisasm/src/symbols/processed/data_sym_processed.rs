@@ -261,11 +261,11 @@ impl DataSymProcessed {
                     if let Some(sym_metadata) =
                         owned_segment.find_symbol_mut(word_vram, FindSettings::new(true))
                     {
-                        sym_metadata.add_reference_symbol(
+                        sym_metadata.add_referenced_info(ReferrerInfo::new_data(
                             vram,
                             parent_segment_info.clone(),
                             rom + offset,
-                        );
+                        ));
                     }
                 } else {
                     // TODO
