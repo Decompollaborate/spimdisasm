@@ -152,6 +152,12 @@ impl SizedAddress for Size {
     }
 }
 
+impl SizedAddress for Option<Size> {
+    fn size(&self) -> Size {
+        self.unwrap_or(Size::new(1))
+    }
+}
+
 impl SizedAddress for (Vram, Size) {
     fn size(&self) -> Size {
         self.1

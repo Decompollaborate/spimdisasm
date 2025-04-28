@@ -111,7 +111,7 @@ impl PartialEq for ElfSymbol {
             visibility,
             section_index: _section_index,
             name,
-            is_got_global,
+            is_got_global: _is_got_global,
         } = self;
         let ElfSymbol {
             value: other_value,
@@ -121,8 +121,10 @@ impl PartialEq for ElfSymbol {
             visibility: other_visibility,
             section_index: _other_section_index,
             name: other_name,
-            is_got_global: other_is_got_global,
+            is_got_global: _other_is_got_global,
         } = other;
+
+        // Avoid comparing is_got_global so symtab and dynsym symbols are considered equal.
 
         value == other_value
             && size == other_size
@@ -130,7 +132,6 @@ impl PartialEq for ElfSymbol {
             && bind == other_bind
             && visibility == other_visibility
             && name == other_name
-            && is_got_global == other_is_got_global
     }
 }
 
@@ -146,7 +147,7 @@ impl Hash for ElfSymbol {
             visibility,
             section_index: _section_index,
             name,
-            is_got_global,
+            is_got_global: _is_got_global,
         } = self;
         value.hash(state);
         size.hash(state);
@@ -154,7 +155,6 @@ impl Hash for ElfSymbol {
         bind.hash(state);
         visibility.hash(state);
         name.hash(state);
-        is_got_global.hash(state);
     }
 }
 

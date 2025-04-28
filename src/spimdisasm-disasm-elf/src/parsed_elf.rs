@@ -449,7 +449,50 @@ fn parse_dynsym(
     (global_offset_table, got_global_symbols)
 }
 
-fn parse_symtab(_symbols: &mut BTreeMap<u32, SymbolsPerValueBuilder>, _elf_file: &ElfFile32) {}
+fn parse_symtab(symbols: &mut BTreeMap<u32, SymbolsPerValueBuilder>, elf_file: &ElfFile32) {
+    match elf_file.kind() {
+        object::ObjectKind::Unknown => eprintln!("\nUnknown elf kind??\n"),
+        object::ObjectKind::Relocatable => {
+            // TODO
+            return;
+        }
+        object::ObjectKind::Executable => {}
+        object::ObjectKind::Dynamic => {}
+        object::ObjectKind::Core => eprintln!("\nWARNING: core elf kind hasn't been tested\n"),
+        x => panic!("Unhandled elf kind {:?}", x),
+    }
+
+    let elf_endian = elf_file.endian();
+
+    let symtab = elf_file.elf_symbol_table();
+    let strtab = symtab.strings();
+
+    for sym in symtab.iter() {
+        let elf_sym = ElfSymbol::new(sym, elf_endian, strtab);
+
+        // We only want **symbols** here.
+        // TODO: Can we use the other stuff somehow?
+        match elf_sym.typ() {
+            ElfSymType::NoType => {}
+            ElfSymType::Object => {}
+            ElfSymType::Function => {}
+            ElfSymType::Section
+            | ElfSymType::File
+            | ElfSymType::Common
+            | ElfSymType::Tls
+            | ElfSymType::Unknown(_) => continue,
+        }
+
+        match symbols.entry(elf_sym.value()) {
+            btree_map::Entry::Occupied(mut occupied_entry) => {
+                occupied_entry.get_mut().insert(elf_sym);
+            }
+            btree_map::Entry::Vacant(vacant_entry) => {
+                vacant_entry.insert(SymbolsPerValueBuilder::new(elf_sym));
+            }
+        }
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SymbolsPerValue {
