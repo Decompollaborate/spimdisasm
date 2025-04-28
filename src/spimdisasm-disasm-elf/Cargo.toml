@@ -5,13 +5,19 @@
 name = "spimdisasm-disasm-elf"
 version.workspace = true
 edition.workspace = true
-# rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
 # description = ""
-# readme = "README.md"
+readme = "README.md"
 # keywords = ["MIPS"]
+
+# Use https://github.com/foresterre/cargo-msrv to check the MSRV
+# ```
+# cargo install cargo-msrv --locked
+# cargo msrv find -- cargo check -p spimdisasm-disasm-elf
+# ```
+rust-version.workspace = true
 
 [[bin]]
 name = "spimdisasm-disasm-elf"
