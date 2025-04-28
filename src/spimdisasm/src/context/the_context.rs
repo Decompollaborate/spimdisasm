@@ -334,17 +334,17 @@ impl Context {
     }
 
     #[must_use]
-    fn find_from_any_segment<T, FS, FU, FV>(
-        &self,
+    fn find_from_any_segment<'a, T: 'a, FS, FU, FV>(
+        &'a self,
         vram: Vram,
         info: &ParentSegmentInfo,
         find_within_segment: FS,
         find_within_user_segment: FU,
-        sym_validation: FV,
-    ) -> Option<&T>
+        validate: FV,
+    ) -> Option<T>
     where
-        FS: Fn(&SegmentMetadata) -> Option<&T>,
-        FU: Fn(&UserSegmentMetadata) -> Option<&T>,
+        FS: Fn(&'a SegmentMetadata) -> Option<T>,
+        FU: Fn(&'a UserSegmentMetadata) -> Option<T>,
         FV: Fn(&T) -> bool,
     {
         if let Some(t) = find_within_user_segment(&self.user_segment) {
@@ -352,31 +352,31 @@ impl Context {
         }
 
         if self.global_segment.in_vram_range(vram) {
-            return find_within_segment(&self.global_segment).filter(|&t| sym_validation(t));
+            return find_within_segment(&self.global_segment).filter(|t| validate(t));
         }
 
         if !self.overlay_segments.is_empty() {
             if let Some(t) =
-                self.find_from_overlay_segments(vram, info, &find_within_segment, &sym_validation)
+                self.find_from_overlay_segments(vram, info, &find_within_segment, &validate)
             {
                 return Some(t);
             }
         }
 
         // If we still can't find it, fall back to the unknown segment
-        find_within_segment(&self.unknown_segment).filter(|&t| sym_validation(t))
+        find_within_segment(&self.unknown_segment).filter(|t| validate(t))
     }
 
     #[must_use]
-    fn find_from_overlay_segments<T, FS, FV>(
-        &self,
+    fn find_from_overlay_segments<'a, T: 'a, FS, FV>(
+        &'a self,
         vram: Vram,
         info: &ParentSegmentInfo,
         find_within_segment: FS,
-        sym_validation: FV,
-    ) -> Option<&T>
+        validate: FV,
+    ) -> Option<T>
     where
-        FS: Fn(&SegmentMetadata) -> Option<&T>,
+        FS: Fn(&'a SegmentMetadata) -> Option<T>,
         FV: Fn(&T) -> bool,
     {
         let overlay_category_name = info.overlay_category_name();
@@ -400,7 +400,7 @@ impl Context {
                                     && segment.in_vram_range(vram)
                                 {
                                     if let Some(t) =
-                                        find_within_segment(segment).filter(|&t| sym_validation(t))
+                                        find_within_segment(segment).filter(|t| validate(t))
                                     {
                                         return Some(t);
                                     }
@@ -429,7 +429,7 @@ impl Context {
                     .next()
                     .expect("Should exist since we already checked the length");
                 if segment.in_vram_range(vram) {
-                    if let Some(t) = find_within_segment(segment).filter(|&t| sym_validation(t)) {
+                    if let Some(t) = find_within_segment(segment).filter(|t| validate(t)) {
                         return Some(t);
                     }
                 }
@@ -448,8 +448,7 @@ impl Context {
             if segments.len() != 1 {
                 for (_, segment) in segments {
                     if segment.in_vram_range(vram) {
-                        if let Some(t) = find_within_segment(segment).filter(|&t| sym_validation(t))
-                        {
+                        if let Some(t) = find_within_segment(segment).filter(|t| validate(t)) {
                             return Some(t);
                         }
                     }
@@ -469,7 +468,7 @@ impl Context {
         sym_validation: V,
     ) -> Option<&SymbolMetadata>
     where
-        V: Fn(&SymbolMetadata) -> bool,
+        V: Fn(&&SymbolMetadata) -> bool,
     {
         self.find_from_any_segment(
             vram,
@@ -488,7 +487,7 @@ impl Context {
         label_validation: V,
     ) -> Option<&LabelMetadata>
     where
-        V: Fn(&LabelMetadata) -> bool,
+        V: Fn(&&LabelMetadata) -> bool,
     {
         self.find_from_any_segment(
             vram,
@@ -509,18 +508,35 @@ fn find_referenced_segment_mut_impl<'ctx>(
         return &mut slf.global_segment;
     }
 
+    if !slf.overlay_segments.is_empty() {
+        polonius!(|slf| -> &'polonius mut SegmentMetadata {
+            if let Some(owned_segment) = find_referenced_overlay_segment_mut(slf, vram, info) {
+                polonius_return!(owned_segment);
+            }
+        });
+    }
+
+    // Fallback to the unknown segment
+    &mut slf.unknown_segment
+}
+
+fn find_referenced_overlay_segment_mut<'ctx>(
+    mut slf: &'ctx mut Context,
+    vram: Vram,
+    info: &ParentSegmentInfo,
+) -> Option<&'ctx mut SegmentMetadata> {
     if let Some(overlay_category_name) = info.overlay_category_name() {
         // First check the segment associated to this category that matches the rom address of the parent segment to prioritize it.
 
         let mut has_prioritised_overlays = false;
 
-        polonius!(|slf| -> &'polonius mut SegmentMetadata {
+        polonius!(|slf| -> Option<&'polonius mut SegmentMetadata> {
             if let Some(segments_per_rom) = slf.overlay_segments.get_mut(overlay_category_name) {
                 if let Some(owned_segment) =
                     segments_per_rom.segments_mut().get_mut(&info.segment_rom())
                 {
                     if owned_segment.in_vram_range(vram) {
-                        polonius_return!(owned_segment);
+                        polonius_return!(Some(owned_segment));
                     }
 
                     has_prioritised_overlays = !owned_segment.prioritised_overlays().is_empty();
@@ -561,21 +577,20 @@ fn find_referenced_segment_mut_impl<'ctx>(
             }
 
             if let Some((ovl_cat, segment_rom)) = prioritised_overlay_info {
-                polonius!(|slf| -> &'polonius mut SegmentMetadata {
+                polonius!(|slf| -> Option<&'polonius mut SegmentMetadata> {
                     if let Some(segment) = slf
                         .overlay_segments
                         .get_mut(&ovl_cat)
                         .and_then(|x| x.segments_mut().get_mut(&segment_rom))
                     {
-                        polonius_return!(segment);
+                        polonius_return!(Some(segment));
                     }
                 });
             }
         }
     }
 
-    // Fallback to the unknown segment
-    &mut slf.unknown_segment
+    None
 }
 
 impl Context {
