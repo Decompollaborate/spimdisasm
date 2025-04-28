@@ -6,8 +6,8 @@ use core::hash::Hash;
 use rabbitizer::access_type::AccessType;
 
 use crate::{
-    addresses::{Size, SizedAddress, Vram},
-    collections::unordered_map::UnorderedMap,
+    addresses::{Size, Vram},
+    collections::{addended_ordered_map::SizedValue, unordered_map::UnorderedMap},
     metadata::SymbolType,
 };
 
@@ -252,7 +252,7 @@ impl Hash for ReferencedAddress {
     }
 }
 
-impl SizedAddress for ReferencedAddress {
+impl SizedValue for ReferencedAddress {
     fn size(&self) -> Size {
         self.size().unwrap_or(Size::new(1))
     }

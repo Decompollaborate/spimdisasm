@@ -6,6 +6,8 @@ use core::{error, fmt, ops};
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
+use crate::collections::addended_ordered_map::SizedValue;
+
 use super::{Rom, Vram, VramOffset};
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -142,23 +144,19 @@ impl TryFrom<VramOffset> for Size {
     }
 }
 
-pub trait SizedAddress {
-    fn size(&self) -> Size;
-}
-
-impl SizedAddress for Size {
+impl SizedValue for Size {
     fn size(&self) -> Size {
         *self
     }
 }
 
-impl SizedAddress for Option<Size> {
+impl SizedValue for Option<Size> {
     fn size(&self) -> Size {
         self.unwrap_or(Size::new(1))
     }
 }
 
-impl SizedAddress for (Vram, Size) {
+impl SizedValue for (Vram, Size) {
     fn size(&self) -> Size {
         self.1
     }

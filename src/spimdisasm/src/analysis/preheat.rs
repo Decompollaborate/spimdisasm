@@ -6,9 +6,9 @@ use alloc::{collections::btree_map::BTreeMap, sync::Arc};
 use rabbitizer::{access_type::AccessType, registers_meta::Register, Instruction};
 
 use crate::{
-    addresses::{AddressRange, GlobalOffsetTable, Rom, RomVramRange, Size, SizedAddress, Vram},
+    addresses::{AddressRange, GlobalOffsetTable, Rom, RomVramRange, Size, Vram},
     collections::{
-        addended_ordered_map::{AddendedOrderedMap, FindSettings},
+        addended_ordered_map::{AddendedOrderedMap, FindSettings, SizedValue},
         unordered_map::UnorderedMap,
         unordered_set::UnorderedSet,
     },
@@ -872,7 +872,7 @@ impl Preheater {
     ) -> &mut ReferencedAddress {
         let (refer, _) = self
             .references
-            .find_mut_or_insert_with_key_value(vram, settings, || {
+            .find_mut_or_insert_with_key_value(&vram, settings, || {
                 if let Some(metadata) = user_symbols.find(&vram, settings) {
                     let vram = metadata.vram();
                     let mut refer = ReferencedAddress::new_user_declared(vram);
@@ -991,7 +991,7 @@ impl Preheater {
     }
 }
 
-impl SizedAddress for (Arc<str>, Vram, Size) {
+impl SizedValue for (Arc<str>, Vram, Size) {
     fn size(&self) -> Size {
         self.2
     }

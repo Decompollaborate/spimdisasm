@@ -1,7 +1,10 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use crate::addresses::{Size, SizedAddress, Vram};
+use crate::{
+    addresses::{Size, Vram},
+    collections::addended_ordered_map::SizedValue,
+};
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct IgnoredAddressRange {
@@ -22,7 +25,7 @@ impl IgnoredAddressRange {
     }
 }
 
-impl SizedAddress for IgnoredAddressRange {
+impl SizedValue for IgnoredAddressRange {
     fn size(&self) -> Size {
         self.size
     }

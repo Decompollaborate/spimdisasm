@@ -4,6 +4,7 @@
 use alloc::collections::btree_map::{self, BTreeMap};
 use core::{
     fmt,
+    marker::PhantomData,
     ops::{Add, RangeBounds},
 };
 
@@ -13,36 +14,38 @@ use ::polonius_the_crab::prelude::*;
 #[cfg(feature = "nightly")]
 use core::ops::Bound;
 
-use crate::addresses::{Size, SizedAddress};
+use crate::addresses::Size;
 
 pub type Range<'a, K, V> = btree_map::Range<'a, K, V>;
 pub type RangeMut<'a, K, V> = btree_map::RangeMut<'a, K, V>;
 
 #[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct AddendedOrderedMap<K, V>
+pub struct AddendedOrderedMap<K, V, SIZE = Size>
 where
-    K: Ord,
-    V: SizedAddress,
+    K: Ord + Copy + Add<SIZE, Output = K>,
+    V: SizedValue<SIZE>,
 {
     inner: BTreeMap<K, V>,
+    phantom: PhantomData<SIZE>,
 }
 
-impl<K, V> AddendedOrderedMap<K, V>
+impl<K, V, SIZE> AddendedOrderedMap<K, V, SIZE>
 where
-    K: Ord,
-    V: SizedAddress,
+    K: Ord + Copy + Add<SIZE, Output = K>,
+    V: SizedValue<SIZE>,
 {
     pub const fn new() -> Self {
         Self {
             inner: BTreeMap::new(),
+            phantom: PhantomData,
         }
     }
 }
 
-impl<K, V> AddendedOrderedMap<K, V>
+impl<K, V, SIZE> AddendedOrderedMap<K, V, SIZE>
 where
-    K: Ord + Copy + Add<Size, Output = K>,
-    V: SizedAddress,
+    K: Ord + Copy + Add<SIZE, Output = K>,
+    V: SizedValue<SIZE>,
 {
     #[must_use]
     pub fn find(&self, key: &K, settings: FindSettings) -> Option<&V> {
@@ -82,10 +85,10 @@ where
     }
 }
 
-impl<K, V> AddendedOrderedMap<K, V>
+impl<K, V, SIZE> AddendedOrderedMap<K, V, SIZE>
 where
-    K: Ord + Copy + Add<Size, Output = K>,
-    V: SizedAddress,
+    K: Ord + Copy + Add<SIZE, Output = K>,
+    V: SizedValue<SIZE>,
 {
     #[must_use]
     pub fn find_mut(&mut self, key: &K, settings: FindSettings) -> Option<&mut V> {
@@ -108,21 +111,21 @@ where
 }
 
 #[cfg(not(feature = "nightly"))]
-fn add_impl<'slf, K, V, F>(
-    mut slf: &'slf mut AddendedOrderedMap<K, V>,
-    key: K,
+fn add_impl<'slf, K, V, SIZE, F>(
+    mut slf: &'slf mut AddendedOrderedMap<K, V, SIZE>,
+    key: &K,
     settings: FindSettings,
     default: F,
 ) -> (&'slf mut V, bool)
 where
-    K: Ord + Copy + Add<Size, Output = K>,
-    V: SizedAddress,
+    K: Ord + Copy + Add<SIZE, Output = K>,
+    V: SizedValue<SIZE>,
     F: FnOnce() -> (K, V),
 {
     // TODO: get rid of the polonius stuff when the new borrow checker has been released.
 
     polonius!(|slf| -> (&'polonius mut V, bool) {
-        if let Some(x) = slf.find_mut(&key, settings) {
+        if let Some(x) = slf.find_mut(key, settings) {
             polonius_return!((x, false));
         }
     });
@@ -135,26 +138,26 @@ where
 }
 
 #[cfg(feature = "nightly")]
-fn add_impl<'slf, K, V, F>(
-    slf: &'slf mut AddendedOrderedMap<K, V>,
-    key: K,
+fn add_impl<'slf, K, V, SIZE, F>(
+    slf: &'slf mut AddendedOrderedMap<K, V, SIZE>,
+    key: &K,
     settings: FindSettings,
     default: F,
 ) -> (&'slf mut V, bool)
 where
-    K: Ord + Copy + Add<Size, Output = K>,
-    V: SizedAddress,
+    K: Ord + Copy + Add<SIZE, Output = K>,
+    V: SizedValue<SIZE>,
     F: FnOnce() -> (K, V),
 {
-    let mut cursor = slf.inner.upper_bound_mut(Bound::Included(&key));
+    let mut cursor = slf.inner.upper_bound_mut(Bound::Included(key));
 
     let must_insert_new = if let Some((other_key, v)) = cursor.peek_prev() {
-        if &key == other_key {
+        if key == other_key {
             false
         } else if !settings.allow_addend {
             true
         } else {
-            key >= *other_key + v.size()
+            *key >= *other_key + v.size()
         }
     } else {
         true
@@ -189,10 +192,10 @@ fn into_prev_and_next<'a, K, V>(
     (prev, next)
 }
 
-impl<K, V> AddendedOrderedMap<K, V>
+impl<K, V, SIZE> AddendedOrderedMap<K, V, SIZE>
 where
-    K: Ord + Copy + Add<Size, Output = K>,
-    V: SizedAddress,
+    K: Ord + Copy + Add<SIZE, Output = K>,
+    V: SizedValue<SIZE>,
 {
     pub fn find_mut_or_insert_with<F>(
         &mut self,
@@ -201,14 +204,15 @@ where
         default: F,
     ) -> (&mut V, bool)
     where
+        K: Copy,
         F: FnOnce() -> V,
     {
-        add_impl(self, key, settings, || (key, default()))
+        add_impl(self, &key, settings, || (key, default()))
     }
 
     pub fn find_mut_or_insert_with_key_value<F>(
         &mut self,
-        key: K,
+        key: &K,
         settings: FindSettings,
         default: F,
     ) -> (&mut V, bool)
@@ -219,10 +223,10 @@ where
     }
 }
 
-impl<K, V> AddendedOrderedMap<K, V>
+impl<K, V, SIZE> AddendedOrderedMap<K, V, SIZE>
 where
-    K: Ord,
-    V: SizedAddress,
+    K: Ord + Copy + Add<SIZE, Output = K>,
+    V: SizedValue<SIZE>,
 {
     /*
     pub fn clear(&mut self) {
@@ -254,10 +258,10 @@ where
     }
 }
 
-impl<K, V> AddendedOrderedMap<K, V>
+impl<K, V, SIZE> AddendedOrderedMap<K, V, SIZE>
 where
-    K: Ord,
-    V: SizedAddress,
+    K: Ord + Copy + Add<SIZE, Output = K>,
+    V: SizedValue<SIZE>,
 {
     pub fn iter(&self) -> btree_map::Iter<K, V> {
         self.inner.iter()
@@ -304,10 +308,10 @@ where
     }
 }
 
-impl<K, V> fmt::Debug for AddendedOrderedMap<K, V>
+impl<K, V, SIZE> fmt::Debug for AddendedOrderedMap<K, V, SIZE>
 where
-    K: Ord + fmt::Debug,
-    V: SizedAddress + fmt::Debug,
+    K: Ord + Copy + Add<SIZE, Output = K> + fmt::Debug,
+    V: SizedValue<SIZE> + fmt::Debug,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Manually implement Debug to hide the `inner` indirection
@@ -315,20 +319,20 @@ where
     }
 }
 
-impl<K, V> Default for AddendedOrderedMap<K, V>
+impl<K, V, SIZE> Default for AddendedOrderedMap<K, V, SIZE>
 where
-    K: Ord,
-    V: SizedAddress,
+    K: Ord + Copy + Add<SIZE, Output = K>,
+    V: SizedValue<SIZE>,
 {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<'a, K, V> IntoIterator for &'a AddendedOrderedMap<K, V>
+impl<'a, K, V, SIZE> IntoIterator for &'a AddendedOrderedMap<K, V, SIZE>
 where
-    K: Ord,
-    V: SizedAddress,
+    K: Ord + Copy + Add<SIZE, Output = K>,
+    V: SizedValue<SIZE>,
 {
     type Item = (&'a K, &'a V);
     type IntoIter = btree_map::Iter<'a, K, V>;
@@ -341,8 +345,8 @@ where
 /*
 impl<'a, K, V> IntoIterator for &'a mut AddendedOrderedMap<K, V>
 where
-    K: Ord,
-    V: SizedAddress,
+    K: Ord + Copy + Add<SIZE, Output = K>,
+    V: SizedValue<SIZE>,
 {
     type Item = (&'a K, &'a mut V);
     type IntoIter = btree_map::IterMut<'a, K, V>;
@@ -353,10 +357,10 @@ where
 }
 */
 
-impl<K, V> IntoIterator for AddendedOrderedMap<K, V>
+impl<K, V, SIZE> IntoIterator for AddendedOrderedMap<K, V, SIZE>
 where
-    K: Ord,
-    V: SizedAddress,
+    K: Ord + Copy + Add<SIZE, Output = K>,
+    V: SizedValue<SIZE>,
 {
     type Item = (K, V);
     type IntoIter = btree_map::IntoIter<K, V>;
@@ -369,8 +373,8 @@ where
 /*
 impl<'a, K, V> Extend<(&'a K, &'a V)> for AddendedOrderedMap<K, V>
 where
-    K: 'a + Ord + Copy,
-    V: SizedAddress + Copy,
+    K: 'a + Ord,
+    V: SizedValue<SIZE>,
 {
     fn extend<I: IntoIterator<Item = (&'a K, &'a V)>>(&mut self, iter: I) {
         self.inner.extend(iter)
@@ -381,8 +385,8 @@ where
 /*
 impl<K, V> Extend<(K, V)> for AddendedOrderedMap<K, V>
 where
-    K: Ord,
-    V: SizedAddress,
+    K: Ord + Copy + Add<SIZE, Output = K>,
+    V: SizedValue<SIZE>,
 {
     fn extend<I: IntoIterator<Item = (K, V)>>(&mut self, iter: I) {
         self.inner.extend(iter)
@@ -393,8 +397,8 @@ where
 /*
 impl<K, V> FromIterator<(K, V)> for AddendedOrderedMap<K, V>
 where
-    K: Ord,
-    V: SizedAddress,
+    K: Ord + Copy + Add<SIZE, Output = K>,
+    V: SizedValue<SIZE>,
 {
     fn from_iter<I: IntoIterator<Item = (K, V)>>(iter: I) -> Self {
         let mut s = Self::new();
@@ -403,6 +407,10 @@ where
     }
 }
 */
+
+pub trait SizedValue<SIZE = Size> {
+    fn size(&self) -> SIZE;
+}
 
 // TODO: use the bitflags crate instead of a plain struct
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]

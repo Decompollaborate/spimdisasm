@@ -9,8 +9,8 @@ use rabbitizer::access_type::AccessType;
 //use pyo3::prelude::*;
 
 use crate::{
-    addresses::{Rom, Size, SizedAddress, Vram},
-    collections::unordered_map::UnorderedMap,
+    addresses::{Rom, Size, Vram},
+    collections::{addended_ordered_map::SizedValue, unordered_map::UnorderedMap},
     config::Compiler,
     section_type::SectionType,
 };
@@ -623,7 +623,7 @@ impl fmt::Debug for SymbolMetadata {
     }
 }
 
-impl SizedAddress for SymbolMetadata {
+impl SizedValue for SymbolMetadata {
     fn size(&self) -> Size {
         self.size().unwrap_or(Size::new(1))
     }

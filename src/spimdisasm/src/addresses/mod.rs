@@ -16,4 +16,4 @@ pub use global_offset_table::{GlobalOffsetTable, GotGlobalEntry, GotLocalEntry};
 pub use gp_value::GpValue;
 pub use rom::Rom;
 pub use rom_vram_range::RomVramRange;
-pub use size::{Size, SizedAddress};
+pub use size::Size;
