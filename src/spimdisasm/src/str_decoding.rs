@@ -273,7 +273,7 @@ impl<'a> DecoderIterator<'a> {
         if len == 0 && self.index == 0 {
             // handle empty strings
             self.index = 1;
-            return Some((format!(""), true));
+            return Some((DecodingResult::DecodedString(format!("")), true));
         }
 
         if self.index >= len {

@@ -633,12 +633,23 @@ impl Preheater {
                                 );
                                 Some((new_ref.vram(), false))
                             } else {
-                                let new_ref = self.new_ref(
-                                    word_vram,
-                                    Some(current_vram),
-                                    user_symbols,
-                                    ignored_addresses,
-                                );
+                                let new_ref = if word_vram.inner() % 4 == 0 {
+                                    // Only add references if they are word-aligned.
+                                    // Non word-aligned symbols are pretty uncommon. It is a lot
+                                    // more common for unaligned references to be addended
+                                    // references instead.
+                                    // Not adding the reference here allows us to minimize splitting
+                                    // real symbols by half (by trading of the small posibility that
+                                    // these references may actually be non-word aligned).
+                                    self.new_ref(
+                                        word_vram,
+                                        Some(current_vram),
+                                        user_symbols,
+                                        ignored_addresses,
+                                    )
+                                } else {
+                                    None
+                                };
 
                                 new_ref
                                     .map(|x| (x.vram(), x.sym_type() == Some(SymbolType::Function)))
