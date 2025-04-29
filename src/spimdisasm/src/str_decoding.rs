@@ -18,7 +18,7 @@ pub enum Encoding {
 }
 
 // Escape characters that are unlikely to be used
-static BANNED_ESCAPE_CHARACTERS: [u8; 28] = [
+static BANNED_ESCAPE_CHARACTERS: [u8; 25] = [
     0x00, // '\0'
     0x01, //
     0x02, //
@@ -26,12 +26,12 @@ static BANNED_ESCAPE_CHARACTERS: [u8; 28] = [
     0x04, //
     0x05, //
     0x06, //
-    0x07, // '\a'
+    // 0x07, // '\a'
     0x08, // '\b'
     // 0x09, // '\t'
     // 0x0A, // '\n'
     0x0B, // '\v'
-    0x0C, // '\f'
+    // 0x0C, // '\f'
     // 0x0D, // '\r'
     0x0E, //
     0x0F, //
@@ -51,12 +51,12 @@ static BANNED_ESCAPE_CHARACTERS: [u8; 28] = [
     0x1D, //
     0x1E, //
     0x1F, //
-    0x7F, //
 ];
 
-static ESCAPE_CHARACTERS_SPECIAL_CASES: [u8; 2] = [
+static ESCAPE_CHARACTERS_SPECIAL_CASES: [u8; 3] = [
     0x1A, // Arbitrary escape character
     0x1B, // VT escape sequences
+    0x7F, //
 ];
 
 impl Encoding {
@@ -102,13 +102,19 @@ impl Encoding {
                 let sequence_length = match *self {
                     Encoding::Ascii => {
                         // ASCII CHECK: prevent decoding bytes outside the ASCII range as ASCII.
-                        return Err(DecodingError::AsciiOutOfRange);
+                        return Err(DecodingError::AsciiOutOfRange {
+                            index: i,
+                            character: char,
+                        });
                     }
                     Encoding::ShiftJis => {
                         // Invalid first byte according to https://en.wikipedia.org/wiki/Shift_JIS#Shift_JIS_byte_map
                         match char {
                             0x80 | 0xA0 | 0xFD..=0xFF => {
-                                return Err(DecodingError::InvalidFirstByteOfMultibyte);
+                                return Err(DecodingError::InvalidFirstByteOfMultibyte {
+                                    index: i,
+                                    character: char,
+                                });
                             }
                             _ => 2,
                         }
@@ -123,7 +129,10 @@ impl Encoding {
                                 continue;
                             }
                             0x80..=0x8D | 0x8F..=0xA0 | 0xA9..=0xAF | 0xF5..=0xFF => {
-                                return Err(DecodingError::InvalidFirstByteOfMultibyte);
+                                return Err(DecodingError::InvalidFirstByteOfMultibyte {
+                                    index: i,
+                                    character: char,
+                                });
                             }
                             _ => 2,
                         }
@@ -132,7 +141,10 @@ impl Encoding {
                         // Invalid first byte according to https://uic.io/en/charset/show/euc-cn/
                         match char {
                             0x80..=0xA0 | 0xAA..=0xAF | 0xF8..=0xFF => {
-                                return Err(DecodingError::InvalidFirstByteOfMultibyte);
+                                return Err(DecodingError::InvalidFirstByteOfMultibyte {
+                                    index: i,
+                                    character: char,
+                                });
                             }
                             _ => 2,
                         }
@@ -140,21 +152,37 @@ impl Encoding {
                 };
 
                 if i + sequence_length > bytes.len() {
-                    return Err(DecodingError::MultibyteNotLongEnough);
+                    return Err(DecodingError::MultibyteNotLongEnough {
+                        index: i,
+                        character: char,
+                        expected_sequence_length: sequence_length,
+                    });
                 }
 
                 if self
                     .decode_to_string(&bytes[i..i + sequence_length])
                     .is_none()
                 {
-                    return Err(DecodingError::InvalidMultibyte);
+                    // TODO: there must be a better way to handle this, right?
+                    let chars = match sequence_length {
+                        1 => [bytes[i], 0, 0],
+                        2 => [bytes[i], bytes[i + 1], 0],
+                        3 => [bytes[i], bytes[i + 1], bytes[i + 2]],
+                        _ => unreachable!(
+                            "Oh no! We have a silly bug on the string decoding code! :c"
+                        ),
+                    };
+                    return Err(DecodingError::InvalidMultibyte { index: i, chars });
                 }
 
                 i += sequence_length;
                 continue;
             } else {
                 if BANNED_ESCAPE_CHARACTERS.contains(&char) {
-                    return Err(DecodingError::InvalidEscapeCharacter);
+                    return Err(DecodingError::InvalidEscapeCharacter {
+                        index: i,
+                        character: char,
+                    });
                 }
 
                 i += 1;
@@ -174,8 +202,12 @@ impl Encoding {
         let mut check_start_offset = i;
         let check_end_offset = bytes.len().min((check_start_offset & !3) + 4);
         while check_start_offset < check_end_offset {
-            if bytes[check_start_offset] != 0 {
-                return Err(DecodingError::InvalidPad);
+            let char = bytes[check_start_offset];
+            if char != 0 {
+                return Err(DecodingError::InvalidPad {
+                    index: i,
+                    character: char,
+                });
             }
             check_start_offset += 1
         }
@@ -201,7 +233,7 @@ impl Encoding {
             if finished {
                 return Some(
                     ret.into_iter()
-                        .map(|(x, finished)| (escape_string(&x), finished))
+                        .map(|(x, finished)| (x.into_string(), finished))
                         .collect(),
                 );
             }
@@ -234,7 +266,7 @@ impl<'a> DecoderIterator<'a> {
         }
     }
 
-    pub(crate) fn next(&mut self) -> Option<(String, bool)> {
+    pub(crate) fn next(&mut self) -> Option<(DecodingResult, bool)> {
         let len = self.bytes.len();
 
         #[cfg(feature = "pyo3")]
@@ -252,7 +284,7 @@ impl<'a> DecoderIterator<'a> {
         if self.trailing_backslash {
             self.index += 1;
             self.trailing_backslash = false;
-            return Some((format!("\\x{:02X}", c), self.index >= len));
+            return Some((DecodingResult::RawChar(c), self.index >= len));
         }
         if c > 0x7F {
             // Non ASCII
@@ -266,7 +298,7 @@ impl<'a> DecoderIterator<'a> {
                 if next_char == 0x5C {
                     self.index += 1;
                     self.trailing_backslash = true;
-                    return Some((format!("\\x{:02X}", c), self.index >= len));
+                    return Some((DecodingResult::RawChar(c), self.index >= len));
                 }
             }
         }
@@ -275,7 +307,7 @@ impl<'a> DecoderIterator<'a> {
             || (self.encoding == Encoding::EucJp && (c == 0x8C || c == 0x8D))
         {
             self.index += 1;
-            return Some((format!("\\x{:02X}", c), self.index >= len));
+            return Some((DecodingResult::RawChar(c), self.index >= len));
         }
 
         for i in self.index..len {
@@ -296,7 +328,7 @@ impl<'a> DecoderIterator<'a> {
                         return self
                             .encoding
                             .decode_to_string(&self.bytes[start..i])
-                            .map(|x| (x, self.index >= len));
+                            .map(|x| (DecodingResult::DecodedString(x), self.index >= len));
                     }
                 }
             }
@@ -309,7 +341,7 @@ impl<'a> DecoderIterator<'a> {
                 return self
                     .encoding
                     .decode_to_string(&self.bytes[start..i])
-                    .map(|x| (x, self.index >= len));
+                    .map(|x| (DecodingResult::DecodedString(x), self.index >= len));
             }
         }
 
@@ -317,32 +349,67 @@ impl<'a> DecoderIterator<'a> {
         self.index = len;
         self.encoding
             .decode_to_string(&self.bytes[start..len])
-            .map(|x| (x, true))
+            .map(|x| (DecodingResult::DecodedString(x), true))
     }
 }
 
 impl Iterator for DecoderIterator<'_> {
-    type Item = (String, bool);
+    type Item = (DecodingResult, bool);
 
     fn next(&mut self) -> Option<Self::Item> {
         self.next()
     }
 }
 
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+enum DecodingResult {
+    DecodedString(String),
+    RawChar(u8),
+}
+
+impl DecodingResult {
+    fn into_string(self) -> String {
+        match self {
+            DecodingResult::DecodedString(x) => escape_string(&x),
+            DecodingResult::RawChar(c) => format!("\\x{:02X}", c),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
 pub(crate) enum DecodingError {
-    InvalidEscapeCharacter,
-    AsciiOutOfRange,
-    MultibyteNotLongEnough,
-    InvalidFirstByteOfMultibyte,
-    InvalidMultibyte,
+    InvalidEscapeCharacter {
+        index: usize,
+        character: u8,
+    },
+    AsciiOutOfRange {
+        index: usize,
+        character: u8,
+    },
+    MultibyteNotLongEnough {
+        index: usize,
+        character: u8,
+        expected_sequence_length: usize,
+    },
+    InvalidFirstByteOfMultibyte {
+        index: usize,
+        character: u8,
+    },
+    InvalidMultibyte {
+        index: usize,
+        chars: [u8; 3],
+    },
     TerminatorNotFound,
-    InvalidPad,
+    InvalidPad {
+        index: usize,
+        character: u8,
+    },
 }
 impl fmt::Display for DecodingError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!("TODO: display decoding errors")
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // TODO: Consider writing an actual impl here
+        fmt::Debug::fmt(&self, f)
     }
 }
 impl error::Error for DecodingError {}
@@ -382,7 +449,6 @@ pub(crate) fn escape_string(val: &str) -> String {
                 escaped_buf.push(b'"');
             }
             b'\\' => {
-                // \a
                 escaped_buf.push(b'\\');
                 escaped_buf.push(b'\\');
             }
@@ -468,7 +534,13 @@ mod tests {
         #[cfg(feature = "std")]
         println!("{:?}", encoding.decode_to_string(&BYTES));
 
-        assert_eq!(maybe_size, Err(DecodingError::InvalidFirstByteOfMultibyte));
+        assert_eq!(
+            maybe_size,
+            Err(DecodingError::InvalidFirstByteOfMultibyte {
+                index: 0,
+                character: 0x80
+            })
+        );
     }
 
     #[test]
@@ -481,7 +553,13 @@ mod tests {
         #[cfg(feature = "std")]
         println!("{:?}", encoding.decode_to_string(&BYTES));
 
-        assert_eq!(maybe_size, Err(DecodingError::InvalidFirstByteOfMultibyte));
+        assert_eq!(
+            maybe_size,
+            Err(DecodingError::InvalidFirstByteOfMultibyte {
+                index: 0,
+                character: 0x80
+            })
+        );
     }
 
     #[test]
