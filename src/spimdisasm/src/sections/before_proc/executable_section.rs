@@ -4,7 +4,7 @@
 use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
 use core::hash;
 
-use rabbitizer::{Instruction, InstructionFlags, IsaExtension};
+use rabbitizer::{Instruction, InstructionFlags};
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
@@ -128,7 +128,15 @@ impl ExecutableSection {
                 compiler: settings.compiler,
                 auto_pad_by: auto_pad_by.map(|x| ranges.vram().start() + Size::new(x as u32)),
             };
-            let /*mut*/ func = FunctionSym::new(context, instrs[*start..end].into(), current_rom, current_vram, local_offset, parent_segment_info.clone(), properties)?;
+            let func = FunctionSym::new(
+                context,
+                instrs[*start..end].into(),
+                current_rom,
+                current_vram,
+                local_offset,
+                parent_segment_info.clone(),
+                properties,
+            )?;
 
             functions.push(func);
         }
@@ -290,7 +298,7 @@ fn find_functions(
         return vec![(0, None)];
     }
 
-    let mut starts_data = Vec::new();
+    let mut starts_data = vec![(0, None)];
 
     let mut function_ended = FunctionEndedState::No;
     let mut farthest_branch = FarthestBranch::new(section_ranges.rom().start());
@@ -302,37 +310,42 @@ fn find_functions(
         FindSettings::new(false),
     );
 
-    let mut prev_start = index;
-    let mut is_likely_handwritten = settings.is_handwritten;
-
     let mut prev_func_had_user_declared_size = false;
 
-    if instrs[0].is_nop() {
-        // Loop over until we find a instruction that isn't a nop
-        while index < instrs.len() {
-            if current_function_ref.is_some() {
-                break;
-            }
+    let mut auto_pad_by = None;
 
-            if !instrs[index].is_nop() {
-                break;
-            }
-
+    {
+        let check_current_start = if instrs[0].is_nop() {
+            true
+        } else if let Some(maybe_next) = owned_segment.find_reference(
+            section_ranges.vram().start() + Size::new((index as u32 + 1) * 4),
+            FindSettings::new(false),
+        ) {
+            current_function_ref = Some(maybe_next);
             index += 1;
-            current_function_start = index * 4;
-            current_function_ref = owned_segment.find_reference(
-                section_ranges.vram().start() + Size::new(index as u32 * 4),
-                FindSettings::new(false),
-            );
-        }
+            true
+        } else {
+            false
+        };
 
-        if index != 0 {
-            starts_data.push((prev_start, None));
-            prev_start = index;
+        if check_current_start {
+            current_function_start = match find_current_start(
+                owned_segment,
+                section_ranges.vram().start(),
+                instrs,
+                &mut index,
+                &mut current_function_ref,
+                prev_func_had_user_declared_size,
+                &mut auto_pad_by,
+                &mut starts_data,
+                true,
+            ) {
+                NextStartResult::FunctionStart(x) => x,
+                NextStartResult::SectionEnded => return starts_data,
+            };
         }
     }
 
-    let mut auto_pad_by = None;
     let mut regs_tracker = RegisterTracker::new(
         settings.instruction_flags().abi(),
         Some(section_ranges.vram().start() + Size::new(index as u32 * 4)),
@@ -345,68 +358,40 @@ fn find_functions(
 
     while index < instrs.len() {
         if function_ended != FunctionEndedState::No {
-            is_likely_handwritten = settings.is_handwritten;
-
             if function_ended == FunctionEndedState::WithDelaySlot {
                 index += 1;
             }
 
-            let mut aux_ref = owned_segment.find_reference(
+            current_function_ref = owned_segment.find_reference(
                 section_ranges.vram().start() + Size::new(index as u32 * 4),
                 FindSettings::new(false),
             );
 
-            // Loop over until we find a instruction that isn't a nop
-            while index < instrs.len() {
-                if aux_ref.is_some() {
-                    break;
-                }
-
-                let instr = &instrs[index];
-                if !instr.is_nop() {
-                    break;
-                }
-
-                index += 1;
-
-                aux_ref = owned_segment.find_reference(
-                    section_ranges.vram().start() + Size::new(index as u32 * 4),
-                    FindSettings::new(false),
-                );
-            }
-
-            current_function_start = index * 4;
-            current_function_ref = aux_ref;
-
-            if !owned_segment
-                .is_vram_ignored(section_ranges.vram().start() + Size::new(prev_start as u32 * 4))
-            {
-                starts_data.push((prev_start, auto_pad_by));
-                auto_pad_by = if prev_func_had_user_declared_size {
-                    Some(prev_start)
-                } else {
-                    None
-                };
-            }
-
-            prev_start = index;
-
-            if index >= instrs.len() {
-                return starts_data;
-            }
+            current_function_start = match find_current_start(
+                owned_segment,
+                section_ranges.vram().start(),
+                instrs,
+                &mut index,
+                &mut current_function_ref,
+                prev_func_had_user_declared_size,
+                &mut auto_pad_by,
+                &mut starts_data,
+                false,
+            ) {
+                NextStartResult::FunctionStart(x) => x,
+                NextStartResult::SectionEnded => return starts_data,
+            };
 
             prev_instr = None;
             regs_tracker.soft_reset(
                 instrs[index].abi(),
                 Some(section_ranges.vram().start() + Size::new(index as u32 * 4)),
             );
+            farthest_branch =
+                FarthestBranch::new(section_ranges.rom().start() + Size::new(index as u32 * 4));
         }
 
         let instr = &instrs[index];
-
-        if instr.isa_extension() != Some(IsaExtension::RSP) && !is_likely_handwritten {
-            is_likely_handwritten = instr.is_likely_handwritten();
-        }
 
         let current_rom = section_ranges.rom().start() + Size::new(index as u32 * 4);
         let instr_processed_result =
@@ -449,13 +434,6 @@ fn find_functions(
 
         index += 1;
         farthest_branch.decrease();
-    }
-
-    if prev_start != index
-        && !owned_segment
-            .is_vram_ignored(section_ranges.vram().start() + Size::new(prev_start as u32 * 4))
-    {
-        starts_data.push((prev_start, auto_pad_by));
     }
 
     starts_data
@@ -682,6 +660,100 @@ fn find_functions_check_function_ended(
         | InstructionOperation::RegisterOperation { .. }
         | InstructionOperation::UnhandledOpcode { .. }
         | InstructionOperation::InvalidInstr {} => (FunctionEndedState::No, false),
+    }
+}
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[must_use]
+enum NextStartResult {
+    FunctionStart(usize),
+    SectionEnded,
+}
+
+#[expect(clippy::too_many_arguments)]
+fn find_current_start<'segment>(
+    owned_segment: &'segment SegmentMetadata,
+    section_vram: Vram,
+    instrs: &[Instruction],
+    index: &mut usize,
+    current_function_ref: &mut Option<ReferenceWrapper<'segment, 'segment>>,
+    prev_func_had_user_declared_size: bool,
+    auto_pad_by: &mut Option<usize>,
+    starts_data: &mut Vec<(usize, Option<usize>)>,
+    is_first: bool,
+) -> NextStartResult {
+    find_current_start_advance_nops(
+        owned_segment,
+        section_vram,
+        instrs,
+        index,
+        current_function_ref,
+    );
+
+    // We run out of functions
+    if *index >= instrs.len() {
+        return NextStartResult::SectionEnded;
+    }
+
+    if is_first {
+        if *index != 0 {
+            starts_data.push((*index, None));
+        }
+    } else if !owned_segment.is_vram_ignored(section_vram + Size::new(*index as u32 * 4)) {
+        starts_data.push((*index, *auto_pad_by));
+        *auto_pad_by = if prev_func_had_user_declared_size {
+            Some(*index)
+        } else {
+            None
+        };
+    }
+
+    if let Some(maybe_next) = owned_segment.find_reference(
+        section_vram + Size::new((*index as u32 + 1) * 4),
+        FindSettings::new(false),
+    ) {
+        *current_function_ref = Some(maybe_next);
+        *index += 1;
+        return find_current_start(
+            owned_segment,
+            section_vram,
+            instrs,
+            index,
+            current_function_ref,
+            false,
+            auto_pad_by,
+            starts_data,
+            false,
+        );
+    }
+
+    NextStartResult::FunctionStart(*index * 4)
+}
+
+fn find_current_start_advance_nops<'segment>(
+    owned_segment: &'segment SegmentMetadata,
+    section_vram: Vram,
+    instrs: &[Instruction],
+    index: &mut usize,
+    current_function_ref: &mut Option<ReferenceWrapper<'segment, 'segment>>,
+) {
+    // Loop over until we find a instruction that isn't a nop
+    while *index < instrs.len() {
+        if current_function_ref.is_some() {
+            break;
+        }
+
+        let instr = &instrs[*index];
+        if !instr.is_nop() {
+            break;
+        }
+
+        *index += 1;
+
+        *current_function_ref = owned_segment.find_reference(
+            section_vram + Size::new(*index as u32 * 4),
+            FindSettings::new(false),
+        );
     }
 }
 

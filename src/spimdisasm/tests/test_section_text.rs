@@ -12,7 +12,7 @@ use spimdisasm::{
         builder::UserSegmentBuilder, Context, ContextBuilder, GlobalSegmentBuilder,
         OverlaySegmentBuilder,
     },
-    metadata::OverlayCategoryName,
+    metadata::{OverlayCategoryName, SymbolType},
     parent_segment_info::ParentSegmentInfo,
     sections::{before_proc::ExecutableSectionSettings, processed::ExecutableSectionProcessed},
     symbols::display::FunctionDisplaySettings,
@@ -28,6 +28,7 @@ fn disassemble_text(
     text_settings: ExecutableSectionSettings,
     fill_n64_symbols: bool,
     add_segmented_assets: bool,
+    user_symbols: Vec<(String, Vram, Option<Rom>, Option<Size>, Option<SymbolType>)>,
 ) -> (String, Context, ExecutableSectionProcessed) {
     let segment_rom = Rom::new(0x00000000);
     let segment_vram = Vram::new(0x80000000);
@@ -41,9 +42,17 @@ fn disassemble_text(
             AddressRange::new(segment_rom, Rom::new(0x04000000)),
             AddressRange::new(segment_vram, Vram::new(0x84000000)),
         );
-        let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
+        let mut global_segment_builder = GlobalSegmentBuilder::new(global_ranges);
 
-        global_segment
+        for (name, vram, rom, size, sym_type) in user_symbols {
+            global_segment_builder
+                .add_user_symbol(name, vram, rom, size, sym_type)
+                .unwrap();
+        }
+
+        let mut global_segment_heater = global_segment_builder.finish_symbols();
+
+        global_segment_heater
             .preheat_text(
                 &global_config,
                 &text_settings,
@@ -65,7 +74,7 @@ fn disassemble_text(
             user_segment.n64_hardware_registers(true, true).unwrap();
         }
 
-        let mut builder = ContextBuilder::new(global_segment, user_segment);
+        let mut builder = ContextBuilder::new(global_segment_heater, user_segment);
 
         if add_segmented_assets {
             matches!(
@@ -227,6 +236,7 @@ fn test_section_text_1() {
         Some(Compiler::KMC),
         InstructionFlags::new(IsaVersion::MIPS_III),
     );
+    let user_symbols = Vec::new();
 
     let (disassembly, context, section_text) = disassemble_text(
         &BYTES,
@@ -237,6 +247,7 @@ fn test_section_text_1() {
         text_settings,
         false,
         true,
+        user_symbols,
     );
 
     let expected_disassembly = "\
@@ -378,6 +389,7 @@ fn test_section_text_lui_delay_slot() {
 
     let text_settings =
         ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
+    let user_symbols = Vec::new();
 
     let (disassembly, _context, _section_text) = disassemble_text(
         &BYTES,
@@ -388,6 +400,7 @@ fn test_section_text_lui_delay_slot() {
         text_settings,
         false,
         false,
+        user_symbols,
     );
 
     let expected_disassembly = "\
@@ -493,6 +506,7 @@ fn test_section_text_pairing_on_delay_slot() {
         Some(Compiler::IDO),
         InstructionFlags::new(IsaVersion::MIPS_III),
     );
+    let user_symbols = Vec::new();
 
     let (disassembly, _context, _section_text) = disassemble_text(
         &BYTES,
@@ -503,6 +517,7 @@ fn test_section_text_pairing_on_delay_slot() {
         text_settings,
         false,
         false,
+        user_symbols,
     );
 
     let expected_disassembly = "\
@@ -606,6 +621,7 @@ fn test_section_text_lui_paired_with_lw_and_ori() {
         Some(Compiler::KMC),
         InstructionFlags::new(IsaVersion::MIPS_III),
     );
+    let user_symbols = Vec::new();
 
     let (disassembly, _context, _section_text) = disassemble_text(
         &BYTES,
@@ -616,6 +632,7 @@ fn test_section_text_lui_paired_with_lw_and_ori() {
         text_settings,
         true,
         false,
+        user_symbols,
     );
 
     let expected_disassembly = "\
@@ -674,6 +691,7 @@ fn test_section_text_gp_rels() {
         Some(Compiler::PSYQ),
         InstructionFlags::new_extension(IsaExtension::R3000GTE),
     );
+    let user_symbols = Vec::new();
 
     let (disassembly, _context, _section_text) = disassemble_text(
         &BYTES,
@@ -684,6 +702,7 @@ fn test_section_text_gp_rels() {
         text_settings,
         false,
         false,
+        user_symbols,
     );
 
     let expected_disassembly = "\
@@ -798,6 +817,7 @@ fn test_section_text_type_inference_on_complex_control_flow() {
         Some(Compiler::IDO),
         InstructionFlags::new_isa(IsaVersion::MIPS_III, None),
     );
+    let user_symbols = Vec::new();
 
     let (disassembly, context, _section_text) = disassemble_text(
         &BYTES,
@@ -808,6 +828,7 @@ fn test_section_text_type_inference_on_complex_control_flow() {
         text_settings,
         false,
         false,
+        user_symbols,
     );
 
     let expected_disassembly = "\
@@ -943,6 +964,7 @@ fn test_section_text_exception_control_flow() {
         Some(Compiler::EEGCC),
         InstructionFlags::new_extension(IsaExtension::R5900EE),
     );
+    let user_symbols = Vec::new();
 
     let (disassembly, _context, _section_text) = disassemble_text(
         &BYTES,
@@ -953,6 +975,7 @@ fn test_section_text_exception_control_flow() {
         text_settings,
         false,
         false,
+        user_symbols,
     );
 
     let expected_disassembly = "\
@@ -1022,6 +1045,7 @@ fn test_section_text_forward_bal() {
 
     let text_settings =
         ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
+    let user_symbols = Vec::new();
 
     let (disassembly, _context, _section_text) = disassemble_text(
         &BYTES,
@@ -1032,6 +1056,7 @@ fn test_section_text_forward_bal() {
         text_settings,
         false,
         false,
+        user_symbols,
     );
 
     let expected_disassembly = "\
@@ -1096,6 +1121,7 @@ fn test_section_text_negative_branch_end() {
     let text_settings =
         ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III))
             .with_negative_branch_as_end(true);
+    let user_symbols = Vec::new();
 
     let (disassembly, _context, _section_text) = disassemble_text(
         &BYTES,
@@ -1106,6 +1132,7 @@ fn test_section_text_negative_branch_end() {
         text_settings,
         false,
         false,
+        user_symbols,
     );
 
     let expected_disassembly = "\
@@ -1180,6 +1207,7 @@ fn test_section_text_lwl_lwr_individual() {
 
     let text_settings =
         ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
+    let user_symbols = Vec::new();
 
     let (disassembly, _context, _section_text) = disassemble_text(
         &BYTES,
@@ -1190,6 +1218,7 @@ fn test_section_text_lwl_lwr_individual() {
         text_settings,
         false,
         false,
+        user_symbols,
     );
 
     let expected_disassembly = "\
@@ -1248,6 +1277,7 @@ fn test_section_text_ldl_ldr_mixed() {
         None,
         InstructionFlags::new_extension(IsaExtension::R5900EE),
     );
+    let user_symbols = Vec::new();
 
     let (disassembly, _context, _section_text) = disassemble_text(
         &BYTES,
@@ -1258,6 +1288,7 @@ fn test_section_text_ldl_ldr_mixed() {
         text_settings,
         false,
         false,
+        user_symbols,
     );
 
     let expected_disassembly = "\
@@ -1306,6 +1337,7 @@ fn test_section_text_ldl_ldr_gp_rel() {
 
     let text_settings =
         ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
+    let user_symbols = Vec::new();
 
     let (disassembly, _context, _section_text) = disassemble_text(
         &BYTES,
@@ -1316,6 +1348,7 @@ fn test_section_text_ldl_ldr_gp_rel() {
         text_settings,
         false,
         false,
+        user_symbols,
     );
 
     let expected_disassembly = "\
@@ -1334,4 +1367,96 @@ glabel func_80070018
 ";
 
     assert_eq!(disassembly, expected_disassembly);
+}
+
+#[test]
+fn test_section_text_1_instr_function() {
+    // From IDO's 5.3 libc.so.1
+    static BYTES: [u8; 4 * 10] = [
+        // func
+        0x8D, 0x49, 0x00, 0x00, // lw
+        // func
+        0x00, 0x00, 0x00, 0x00, // nop
+        0x31, 0x29, 0x00, 0x01, // andi
+        0x15, 0x20, 0xFF, 0xFC, // bnez
+        0x00, 0x00, 0x00, 0x00, // nop
+        // func
+        0x8C, 0x88, 0x00, 0x00, // lw
+        0x00, 0x00, 0x00, 0x00, // nop
+        0x15, 0x05, 0x00, 0x05, // bne
+        0x24, 0x02, 0x00, 0x01, // addiu
+        0xAC, 0x86, 0x00, 0x00, // sw
+    ];
+
+    let rom = Rom::new(0x0);
+    let vram = Vram::new(0x80000000);
+
+    let endian = Endian::Big;
+    let gp_config = None;
+
+    let text_settings = ExecutableSectionSettings::new(
+        Some(Compiler::IDO),
+        InstructionFlags::new(IsaVersion::MIPS_I),
+    )
+    .with_negative_branch_as_end(true);
+
+    let mut user_symbols = Vec::new();
+    user_symbols.push((
+        "_hcasstart".to_string(),
+        Vram::new(0x80000000),
+        None,
+        None,
+        None,
+    ));
+    user_symbols.push((
+        "_hcasmayhave".to_string(),
+        Vram::new(0x80000004),
+        None,
+        None,
+        None,
+    ));
+    user_symbols.push((
+        "_hcashavelock".to_string(),
+        Vram::new(0x80000014),
+        None,
+        None,
+        None,
+    ));
+
+    let (disassembly, _context, _section_text) = disassemble_text(
+        &BYTES,
+        rom,
+        vram,
+        endian,
+        gp_config,
+        text_settings,
+        false,
+        false,
+        user_symbols,
+    );
+
+    let expected_disassembly = "\
+.section .text
+
+glabel _hcasstart
+    /* 000000 80000000 8D490000 */  lw          $t1, 0x0($t2)
+.size _hcasstart, . - _hcasstart
+
+glabel _hcasmayhave
+    /* 000004 80000004 00000000 */  nop
+    /* 000008 80000008 31290001 */  andi        $t1, $t1, 0x1
+    /* 00000C 8000000C 1520FFFC */  bnez        $t1, _hcasstart
+    /* 000010 80000010 00000000 */   nop
+.size _hcasmayhave, . - _hcasmayhave
+
+glabel _hcashavelock
+    /* 000014 80000014 8C880000 */  lw          $t0, 0x0($a0)
+    /* 000018 80000018 00000000 */  nop
+    /* 00001C 8000001C 15050005 */  bne         $t0, $a1, UNK_aent_80000034
+    /* 000020 80000020 24020001 */   addiu      $v0, $zero, 0x1
+    /* 000024 80000024 AC860000 */  sw          $a2, 0x0($a0)
+.size _hcashavelock, . - _hcashavelock
+";
+
+    assert_eq!(disassembly, expected_disassembly,);
 }

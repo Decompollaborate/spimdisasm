@@ -382,7 +382,7 @@ fn drmario64_us_without_symbols() {
         }
     }
 
-    assert_eq!(context.global_segment().symbols().len(), 3393);
+    assert_eq!(context.global_segment().symbols().len(), 3397);
     assert_eq!(context.global_segment().labels().len(), 8594);
 
     /*
@@ -401,7 +401,7 @@ fn drmario64_us_without_symbols() {
                 .sum::<usize>()
         })
         .sum();
-    assert_eq!(function_count, 1412);
+    assert_eq!(function_count, 1416);
 
     let data_syms_count: usize = segments
         .iter()
