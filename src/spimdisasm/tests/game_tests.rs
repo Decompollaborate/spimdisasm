@@ -382,7 +382,7 @@ fn drmario64_us_without_symbols() {
         }
     }
 
-    assert_eq!(context.global_segment().symbols().len(), 3397);
+    assert_eq!(context.global_segment().symbols().len(), 3398);
     assert_eq!(context.global_segment().labels().len(), 8594);
 
     /*
@@ -401,7 +401,7 @@ fn drmario64_us_without_symbols() {
                 .sum::<usize>()
         })
         .sum();
-    assert_eq!(function_count, 1416);
+    assert_eq!(function_count, 1417);
 
     let data_syms_count: usize = segments
         .iter()
@@ -477,7 +477,7 @@ fn drmario64_us_with_symbols() {
         }
     }
 
-    assert_eq!(context.global_segment().symbols().len(), 3096);
+    assert_eq!(context.global_segment().symbols().len(), 3097);
     assert_eq!(context.global_segment().labels().len(), 8637);
 
     /*
@@ -496,7 +496,7 @@ fn drmario64_us_with_symbols() {
                 .sum::<usize>()
         })
         .sum();
-    assert_eq!(function_count, 1412);
+    assert_eq!(function_count, 1413);
 
     let data_syms_count: usize = segments
         .iter()

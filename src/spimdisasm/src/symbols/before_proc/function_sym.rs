@@ -47,7 +47,6 @@ impl FunctionSym {
         instructions: Arc<[Instruction]>,
         rom: Rom,
         vram: Vram,
-        _in_section_offset: usize,
         parent_segment_info: ParentSegmentInfo,
         properties: FunctionSymProperties,
     ) -> Result<Self, SymbolCreationError> {

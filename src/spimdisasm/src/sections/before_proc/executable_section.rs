@@ -35,6 +35,8 @@ use crate::sections::{
     {Section, SectionCreationError},
 };
 
+const BYTES_PER_INSTR: u32 = 4;
+
 #[derive(Debug, Clone)]
 #[must_use]
 pub struct ExecutableSection {
@@ -66,14 +68,16 @@ impl ExecutableSection {
         if raw_bytes.is_empty() {
             return Err(EmptySectionError::new(name, vram).into());
         }
-        if raw_bytes.len() % 4 != 0 {
-            return Err(BadBytesSizeError::new(name, raw_bytes.len(), 4).into());
+        if raw_bytes.len() % BYTES_PER_INSTR as usize != 0 {
+            return Err(
+                BadBytesSizeError::new(name, raw_bytes.len(), BYTES_PER_INSTR as usize).into(),
+            );
         }
-        if vram.inner() % 4 != 0 {
-            return Err(UnalignedVramError::new(name, vram, 4).into());
+        if vram.inner() % BYTES_PER_INSTR != 0 {
+            return Err(UnalignedVramError::new(name, vram, BYTES_PER_INSTR as usize).into());
         }
-        if rom.inner() % 4 != 0 {
-            return Err(UnalignedRomError::new(name, rom, 4).into());
+        if rom.inner() % BYTES_PER_INSTR != 0 {
+            return Err(UnalignedRomError::new(name, rom, BYTES_PER_INSTR as usize).into());
         }
 
         let size = Size::new(raw_bytes.len() as u32);
@@ -112,8 +116,8 @@ impl ExecutableSection {
             };
             debug_assert!(*start < end, "{:?} {} {} {}", rom, vram, *start, end);
 
-            let local_offset = start * 4;
-            let s = Size::new(local_offset as u32);
+            let local_offset = *start as u32 * BYTES_PER_INSTR;
+            let s = Size::new(local_offset);
             let current_vram = vram + s;
             let current_rom = rom + s;
 
@@ -126,14 +130,13 @@ impl ExecutableSection {
                     parent_segment_info.clone(),
                 ),
                 compiler: settings.compiler,
-                auto_pad_by: auto_pad_by.map(|x| ranges.vram().start() + Size::new(x as u32)),
+                auto_pad_by: *auto_pad_by,
             };
             let func = FunctionSym::new(
                 context,
                 instrs[*start..end].into(),
                 current_rom,
                 current_vram,
-                local_offset,
                 parent_segment_info.clone(),
                 properties,
             )?;
@@ -246,11 +249,11 @@ fn instrs_from_bytes(
 ) -> Vec<Instruction> {
     let mut instrs = Vec::new();
 
-    for b in raw_bytes.chunks_exact(4) {
+    for b in raw_bytes.chunks_exact(BYTES_PER_INSTR as usize) {
         let word = endian.word_from_bytes(b);
 
         instrs.push(Instruction::new(word, vram, settings.instruction_flags));
-        vram += VramOffset::new(4);
+        vram += VramOffset::new(BYTES_PER_INSTR as i32);
     }
 
     instrs
@@ -283,7 +286,7 @@ impl FarthestBranch {
     }
 
     fn decrease(&mut self) {
-        self.farthest = VramOffset::new(self.farthest.inner() - 4);
+        self.farthest = VramOffset::new(self.farthest.inner() - BYTES_PER_INSTR as i32);
     }
 }
 
@@ -293,62 +296,36 @@ fn find_functions(
     owned_segment: &SegmentMetadata,
     section_ranges: RomVramRange,
     instrs: &[Instruction],
-) -> Vec<(usize, Option<usize>)> {
+) -> Vec<(usize, Option<Vram>)> {
     if instrs.is_empty() {
         return vec![(0, None)];
     }
 
     let mut starts_data = vec![(0, None)];
 
-    let mut function_ended = FunctionEndedState::No;
+    let mut function_ended = None;
     let mut farthest_branch = FarthestBranch::new(section_ranges.rom().start());
 
     let mut index: usize = 0;
-    let mut current_function_start = index * 4;
-    let mut current_function_ref = owned_segment.find_reference(
-        section_ranges.vram().start() + Size::new(index as u32 * 4),
-        FindSettings::new(false),
-    );
 
-    let mut prev_func_had_user_declared_size = false;
-
-    let mut auto_pad_by = None;
-
-    {
-        let check_current_start = if instrs[0].is_nop() {
-            true
-        } else if let Some(maybe_next) = owned_segment.find_reference(
-            section_ranges.vram().start() + Size::new((index as u32 + 1) * 4),
-            FindSettings::new(false),
-        ) {
-            current_function_ref = Some(maybe_next);
-            index += 1;
-            true
-        } else {
-            false
-        };
-
-        if check_current_start {
-            current_function_start = match find_current_start(
-                owned_segment,
-                section_ranges.vram().start(),
-                instrs,
-                &mut index,
-                &mut current_function_ref,
-                prev_func_had_user_declared_size,
-                &mut auto_pad_by,
-                &mut starts_data,
-                true,
-            ) {
-                NextStartResult::FunctionStart(x) => x,
-                NextStartResult::SectionEnded => return starts_data,
-            };
+    let (mut current_function_start, mut current_function_ref) = match find_current_start(
+        owned_segment,
+        section_ranges.vram().start(),
+        instrs,
+        &mut index,
+        None,
+        &mut starts_data,
+        true,
+    ) {
+        NextStartResult::FunctionStart(current_function_start, current_function_ref) => {
+            (current_function_start, current_function_ref)
         }
-    }
+        NextStartResult::SectionEnded => return starts_data,
+    };
 
     let mut regs_tracker = RegisterTracker::new(
         settings.instruction_flags().abi(),
-        Some(section_ranges.vram().start() + Size::new(index as u32 * 4)),
+        Some(section_ranges.vram().start() + Size::new(index as u32 * BYTES_PER_INSTR)),
         global_config.gp_config().copied(),
         global_config.endian(),
     );
@@ -357,43 +334,42 @@ fn find_functions(
     let global_offset_table = owned_segment.global_offset_table();
 
     while index < instrs.len() {
-        if function_ended != FunctionEndedState::No {
-            if function_ended == FunctionEndedState::WithDelaySlot {
-                index += 1;
+        if let Some(function_ended) = function_ended {
+            match function_ended {
+                FunctionEndedState::WithDelaySlot => {
+                    index += 1;
+                }
+                FunctionEndedState::ByException => {}
             }
 
-            current_function_ref = owned_segment.find_reference(
-                section_ranges.vram().start() + Size::new(index as u32 * 4),
-                FindSettings::new(false),
-            );
-
-            current_function_start = match find_current_start(
+            (current_function_start, current_function_ref) = match find_current_start(
                 owned_segment,
                 section_ranges.vram().start(),
                 instrs,
                 &mut index,
-                &mut current_function_ref,
-                prev_func_had_user_declared_size,
-                &mut auto_pad_by,
+                current_function_ref.as_ref(),
                 &mut starts_data,
                 false,
             ) {
-                NextStartResult::FunctionStart(x) => x,
+                NextStartResult::FunctionStart(current_function_start, current_function_ref) => {
+                    (current_function_start, current_function_ref)
+                }
                 NextStartResult::SectionEnded => return starts_data,
             };
 
             prev_instr = None;
             regs_tracker.soft_reset(
                 instrs[index].abi(),
-                Some(section_ranges.vram().start() + Size::new(index as u32 * 4)),
+                Some(section_ranges.vram().start() + Size::new(index as u32 * BYTES_PER_INSTR)),
             );
-            farthest_branch =
-                FarthestBranch::new(section_ranges.rom().start() + Size::new(index as u32 * 4));
+            farthest_branch = FarthestBranch::new(
+                section_ranges.rom().start() + Size::new(index as u32 * BYTES_PER_INSTR),
+            );
         }
 
         let instr = &instrs[index];
 
-        let current_rom = section_ranges.rom().start() + Size::new(index as u32 * 4);
+        let current_rom = section_ranges.rom().start() + Size::new(index as u32 * BYTES_PER_INSTR);
         let instr_processed_result =
             regs_tracker.process_instruction(instr, current_rom, global_offset_table);
 
@@ -405,20 +381,20 @@ fn find_functions(
                 owned_segment,
                 &instr_processed_result,
                 section_ranges,
-                index * 4,
+                index * BYTES_PER_INSTR as usize,
                 instr,
                 &mut farthest_branch,
             );
         }
 
-        (function_ended, prev_func_had_user_declared_size) = find_functions_check_function_ended(
+        function_ended = find_functions_check_function_ended(
             owned_segment,
             &instr_processed_result,
             settings,
             index,
             instrs,
-            section_ranges.rom().start() + Size::new(index as u32 * 4),
-            section_ranges.vram().start() + Size::new(index as u32 * 4),
+            section_ranges.rom().start() + Size::new(index as u32 * BYTES_PER_INSTR),
+            section_ranges.vram().start() + Size::new(index as u32 * BYTES_PER_INSTR),
             current_function_ref,
             &farthest_branch,
             current_function_start,
@@ -503,7 +479,6 @@ fn find_functions_branch_checker(
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 enum FunctionEndedState {
-    No,
     WithDelaySlot,
     ByException,
 }
@@ -521,19 +496,19 @@ fn find_functions_check_function_ended(
     current_function_ref: Option<ReferenceWrapper>,
     farthest_branch: &FarthestBranch,
     current_function_start: usize,
-) -> (FunctionEndedState, bool) {
+) -> Option<FunctionEndedState> {
     let instr = &instrs[index];
     let opcode = instr.opcode();
 
     if let Some(reference) = current_function_ref {
         if let Some(user_declared_size) = reference.user_declared_size() {
             // If the function has a size set by the user then only use that and ignore the other ways of determining function-ends
-            return if (index + 2) * 4
+            return if (index + 2) * BYTES_PER_INSTR as usize
                 == current_function_start + user_declared_size.inner() as usize
             {
-                (FunctionEndedState::WithDelaySlot, true)
+                Some(FunctionEndedState::WithDelaySlot)
             } else {
-                (FunctionEndedState::No, false)
+                None
             };
         }
     }
@@ -545,10 +520,10 @@ fn find_functions_check_function_ended(
         if reference.is_trustable_function() {
             if let Some(sym_rom) = reference.rom() {
                 if current_rom + Size::new(8) == sym_rom {
-                    return (FunctionEndedState::WithDelaySlot, false);
+                    return Some(FunctionEndedState::WithDelaySlot);
                 }
             } else {
-                return (FunctionEndedState::WithDelaySlot, false);
+                return Some(FunctionEndedState::WithDelaySlot);
             }
         }
     }
@@ -556,29 +531,29 @@ fn find_functions_check_function_ended(
     if farthest_branch.farthest().is_positive() {
         // We still have a branch that branched even farther than where we currently are, so we
         // must still be inside the same function.
-        return (FunctionEndedState::No, false);
+        return None;
     }
 
     if opcode.causes_unconditional_exception() && !opcode.causes_returnable_exception() {
-        return (FunctionEndedState::ByException, false);
+        return Some(FunctionEndedState::ByException);
     }
 
     if settings.negative_branch_as_end() && instr.is_unconditional_branch() {
         if let Some(target_vram) = instr.get_branch_vram_generic() {
             if target_vram < current_vram {
-                return (FunctionEndedState::WithDelaySlot, false);
+                return Some(FunctionEndedState::WithDelaySlot);
             }
         }
     }
 
     if !opcode.is_jump() {
-        return (FunctionEndedState::No, false);
+        return None;
     }
 
     match instr_processed_result {
         InstructionOperation::Link { .. } => {
             debug_assert!(opcode.does_link(), "{:?} {:?}", current_rom, opcode);
-            (FunctionEndedState::No, false)
+            None
         }
         InstructionOperation::TailCall { info } => match info {
             InstrOpTailCall::MaybeDirectTailCall { .. } => {
@@ -595,20 +570,18 @@ fn find_functions_check_function_ended(
                     opcode
                 );
 
-                (FunctionEndedState::WithDelaySlot, false)
+                Some(FunctionEndedState::WithDelaySlot)
             }
             InstrOpTailCall::RawRegisterTailCall { .. }
             | InstrOpTailCall::DereferencedRegisterTailCall { .. } => {
-                (FunctionEndedState::WithDelaySlot, false)
+                Some(FunctionEndedState::WithDelaySlot)
             }
-            InstrOpTailCall::UnknownRegisterJump { .. } => {
-                (FunctionEndedState::WithDelaySlot, false)
-            }
+            InstrOpTailCall::UnknownRegisterJump { .. } => Some(FunctionEndedState::WithDelaySlot),
         },
 
         InstructionOperation::JumptableJump { .. } => {
             debug_assert!(instr.is_jumptable_jump(), "{:?} {:?}", current_rom, opcode);
-            (FunctionEndedState::No, false)
+            None
         }
 
         InstructionOperation::ReturnJump => {
@@ -640,12 +613,12 @@ fn find_functions_check_function_ended(
                     }
                 }
                 if !redundant_pattern_detected {
-                    (FunctionEndedState::WithDelaySlot, false)
+                    Some(FunctionEndedState::WithDelaySlot)
                 } else {
-                    (FunctionEndedState::No, false)
+                    None
                 }
             } else {
-                (FunctionEndedState::WithDelaySlot, false)
+                Some(FunctionEndedState::WithDelaySlot)
             }
         }
 
@@ -659,75 +632,88 @@ fn find_functions_check_function_ended(
         | InstructionOperation::UnpairedConstant { .. }
         | InstructionOperation::RegisterOperation { .. }
         | InstructionOperation::UnhandledOpcode { .. }
-        | InstructionOperation::InvalidInstr {} => (FunctionEndedState::No, false),
+        | InstructionOperation::InvalidInstr {} => None,
     }
 }
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, PartialOrd)]
 #[must_use]
-enum NextStartResult {
-    FunctionStart(usize),
+enum NextStartResult<'segment> {
+    FunctionStart(usize, Option<ReferenceWrapper<'segment, 'segment>>),
     SectionEnded,
 }
 
-#[expect(clippy::too_many_arguments)]
 fn find_current_start<'segment>(
     owned_segment: &'segment SegmentMetadata,
     section_vram: Vram,
     instrs: &[Instruction],
     index: &mut usize,
-    current_function_ref: &mut Option<ReferenceWrapper<'segment, 'segment>>,
-    prev_func_had_user_declared_size: bool,
-    auto_pad_by: &mut Option<usize>,
-    starts_data: &mut Vec<(usize, Option<usize>)>,
+    prev_function_ref: Option<&ReferenceWrapper<'segment, 'segment>>,
+    starts_data: &mut Vec<(usize, Option<Vram>)>,
     is_first: bool,
-) -> NextStartResult {
-    find_current_start_advance_nops(
-        owned_segment,
-        section_vram,
-        instrs,
-        index,
-        current_function_ref,
-    );
+) -> NextStartResult<'segment> {
+    let current_function_ref = if is_first && !instrs[0].is_nop() {
+        owned_segment.find_reference(
+            section_vram + Size::new(*index as u32 * BYTES_PER_INSTR),
+            FindSettings::new(false),
+        )
+    } else {
+        find_current_start_advance_nops(owned_segment, section_vram, instrs, index)
+    };
 
-    // We run out of functions
+    // We ran out of functions
     if *index >= instrs.len() {
-        return NextStartResult::SectionEnded;
-    }
-
-    if is_first {
-        if *index != 0 {
-            starts_data.push((*index, None));
+        NextStartResult::SectionEnded
+    } else {
+        // Add this function to our vec of functions
+        if is_first {
+            if *index != 0 {
+                starts_data.push((*index, None));
+            }
+        } else if !owned_segment
+            .is_vram_ignored(section_vram + Size::new(*index as u32 * BYTES_PER_INSTR))
+        {
+            let auto_pad_by = prev_function_ref
+                .filter(|x| x.user_declared_size().is_some())
+                .map(|x| x.vram());
+            starts_data.push((*index, auto_pad_by));
         }
-    } else if !owned_segment.is_vram_ignored(section_vram + Size::new(*index as u32 * 4)) {
-        starts_data.push((*index, *auto_pad_by));
-        *auto_pad_by = if prev_func_had_user_declared_size {
-            Some(*index)
+
+        // Decide if we need to keep checking
+        if let Some(user_size) = current_function_ref.and_then(|x| x.user_declared_size()) {
+            // If the user told us about the size of this function then we should blindly trust it
+            *index += (user_size.inner() / BYTES_PER_INSTR) as usize;
+            find_current_start(
+                owned_segment,
+                section_vram,
+                instrs,
+                index,
+                current_function_ref.as_ref(),
+                starts_data,
+                false,
+            )
+        } else if owned_segment
+            .find_reference(
+                section_vram + Size::new((*index as u32 + 1) * BYTES_PER_INSTR),
+                FindSettings::new(false),
+            )
+            .is_some()
+        {
+            // Check for 1 instruction functions
+            *index += 1;
+            find_current_start(
+                owned_segment,
+                section_vram,
+                instrs,
+                index,
+                current_function_ref.as_ref(),
+                starts_data,
+                false,
+            )
         } else {
-            None
-        };
+            NextStartResult::FunctionStart(*index * BYTES_PER_INSTR as usize, current_function_ref)
+        }
     }
-
-    if let Some(maybe_next) = owned_segment.find_reference(
-        section_vram + Size::new((*index as u32 + 1) * 4),
-        FindSettings::new(false),
-    ) {
-        *current_function_ref = Some(maybe_next);
-        *index += 1;
-        return find_current_start(
-            owned_segment,
-            section_vram,
-            instrs,
-            index,
-            current_function_ref,
-            false,
-            auto_pad_by,
-            starts_data,
-            false,
-        );
-    }
-
-    NextStartResult::FunctionStart(*index * 4)
 }
 
 fn find_current_start_advance_nops<'segment>(
@@ -735,10 +721,16 @@ fn find_current_start_advance_nops<'segment>(
     section_vram: Vram,
     instrs: &[Instruction],
     index: &mut usize,
-    current_function_ref: &mut Option<ReferenceWrapper<'segment, 'segment>>,
-) {
-    // Loop over until we find a instruction that isn't a nop
+) -> Option<ReferenceWrapper<'segment, 'segment>> {
+    let mut current_function_ref = None;
+
+    // Loop over until we find a instruction that isn't a nop or a referenced function
     while *index < instrs.len() {
+        current_function_ref = owned_segment.find_reference(
+            section_vram + Size::new(*index as u32 * BYTES_PER_INSTR),
+            FindSettings::new(false),
+        );
+
         if current_function_ref.is_some() {
             break;
         }
@@ -749,12 +741,9 @@ fn find_current_start_advance_nops<'segment>(
         }
 
         *index += 1;
-
-        *current_function_ref = owned_segment.find_reference(
-            section_vram + Size::new(*index as u32 * 4),
-            FindSettings::new(false),
-        );
     }
+
+    current_function_ref
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
