@@ -14,8 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Allows to specify custom alignment to each symbol.
   - The symbol's address must already be aligned to the given custom alignment,
     otherwise it will be discarded.
-  - This value is stored in `log2`. For example passing `3` to this value will
-    result on an final alignment of `8` bytes.
+  - This value must be a power of two, otherwise it will be discarded.
 
 ## [1.34.2] - 2025-04-25
 

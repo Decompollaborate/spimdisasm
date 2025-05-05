@@ -247,7 +247,7 @@ class ContextSymbol:
 
     visibility: str|None = None
 
-    alignment: int|None = None
+    alignmentShift: int|None = None
     """
     Set an specific alignment for this symbol, possibly overriding any other
     alignment setting from the selected compiler.
@@ -743,33 +743,45 @@ class ContextSymbol:
 
 
     def getAlignment(self) -> int|None:
-        return self.alignment
+        if self.alignmentShift is not None:
+            return 1 << self.alignmentShift
+        return None
     def setAlignment(self, alignment: int) -> None:
         """
         Set an specific alignment for this symbol, possibly overriding any other
         alignment setting from the selected compiler.
 
-        IMPORTANT: This value won't be used as-is to calculate the actual symbol
-        alignment, instead this value corresponds to "the number of low-order zero
-        bits the location counter must have after advancement", or in other words,
-        it will be used as the exponent of a power of two. For example the value `3`
-        will make this symbol to be aligned to a position multiple of `8`.
-
         This directive will be emitted before the symbol label.
 
-        This directive won't be emitted if the symbol is not already aligned to the
-        given value.
+        The given alignment must be a power of two (1, 2, 4, 8, 16, etc),
+        otherwise the value will be discarded.
+
+        This value will be discarded if the symbol is not already aligned to
+        the given alignment.
         """
-        alignedVram = self.vram >> alignment
-        alignedVram = alignedVram << alignment
-        if alignedVram != self.vram:
+        if alignment <= 0:
             Utils.eprint(f"""
-Warning: Tried to set an alignment of `{alignment}` (`0x{1 << alignment:X}`) to symbol `{self.getName()}` (`0x{self.vram:08X}`), but the given alignment does not match the alignment the symbol currently has.
+Warning: Tried to set an alignment of `{alignment}` to symbol `{self.getName()}` (`0x{self.vram:08X}`), but the given alignment is negative.
 This alignment will be discarded.
 """)
-        else:
-            self.alignment = alignment
-
+            return
+        # Calculate the alignment shift value
+        alignmentShift = (alignment & (-alignment)).bit_length() - 1
+        if (1 << alignmentShift) != alignment:
+            Utils.eprint(f"""
+Warning: Tried to set an alignment of `{alignment}` to symbol `{self.getName()}` (`0x{self.vram:08X}`), but the given alignment isn't a power of two.
+This alignment will be discarded.
+""")
+            return
+        alignedVram = self.vram >> alignmentShift
+        alignedVram = alignedVram << alignmentShift
+        if alignedVram != self.vram:
+            Utils.eprint(f"""
+Warning: Tried to set an alignment of `{alignment}` to symbol `{self.getName()}` (`0x{self.vram:08X}`), but the given alignment does not match the alignment the symbol currently has.
+This alignment will be discarded.
+""")
+            return
+        self.alignmentShift = alignmentShift
 
     @staticmethod
     def getCsvHeader() -> str:

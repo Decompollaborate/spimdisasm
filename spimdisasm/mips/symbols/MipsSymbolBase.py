@@ -563,10 +563,10 @@ class SymbolBase(common.ElementBase):
         return f".align {shiftValue}{common.GlobalConfig.LINE_ENDS}"
 
     def getPrevAlignDirective(self, i: int) -> str:
-        symAlignment = self.contextSym.getAlignment()
+        symAlignmentShift = self.contextSym.alignmentShift
 
-        if symAlignment is not None:
-            return self._getAlignDirectiveStr(symAlignment, i)
+        if symAlignmentShift is not None:
+            return self._getAlignDirectiveStr(symAlignmentShift, i)
         elif self.isDouble(i):
             shiftValue = common.GlobalConfig.COMPILER.value.prevAlign_double
             if shiftValue is not None:
