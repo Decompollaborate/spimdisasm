@@ -622,3 +622,7 @@ class SymbolsSegment:
                     contextSym.allowedToBeReferenced = allowBeReferenced
 
                 contextSym.visibility = pairs.get("visibility")
+
+                align = pairs.get("align")
+                if align is not None:
+                    contextSym.setAlignment(int(align, 0))

@@ -10,10 +10,11 @@ import enum
 from typing import Callable
 import rabbitizer
 
-from .GlobalConfig import GlobalConfig, Compiler
+from .GlobalConfig import GlobalConfig
 from .FileSectionType import FileSectionType
 from .SortedDict import SortedDict
 
+from . import Utils
 
 class SymbolSpecialType(enum.Enum):
     function            = enum.auto()
@@ -246,6 +247,22 @@ class ContextSymbol:
 
     visibility: str|None = None
 
+    alignment: int|None = None
+    """
+    Set an specific alignment for this symbol, possibly overriding any other
+    alignment setting from the selected compiler.
+
+    IMPORTANT: This value won't be used as-is to calculate the actual symbol
+    alignment, instead this value corresponds to "the number of low-order zero
+    bits the location counter must have after advancement", or in other words,
+    it will be used as the exponent of a power of two. For example the value `3`
+    will make this symbol to be aligned to a position multiple of `8`.
+
+    This directive will be emitted before the symbol label.
+
+    This directive won't be emitted if the symbol is not already aligned to the
+    given value.
+    """
 
     @property
     def vram(self) -> int:
@@ -723,6 +740,35 @@ class ContextSymbol:
                 output += f" {sym.getName()}"
             return f"{output} */{GlobalConfig.LINE_ENDS}"
         return ""
+
+
+    def getAlignment(self) -> int|None:
+        return self.alignment
+    def setAlignment(self, alignment: int) -> None:
+        """
+        Set an specific alignment for this symbol, possibly overriding any other
+        alignment setting from the selected compiler.
+
+        IMPORTANT: This value won't be used as-is to calculate the actual symbol
+        alignment, instead this value corresponds to "the number of low-order zero
+        bits the location counter must have after advancement", or in other words,
+        it will be used as the exponent of a power of two. For example the value `3`
+        will make this symbol to be aligned to a position multiple of `8`.
+
+        This directive will be emitted before the symbol label.
+
+        This directive won't be emitted if the symbol is not already aligned to the
+        given value.
+        """
+        alignedVram = self.vram >> alignment
+        alignedVram = alignedVram << alignment
+        if alignedVram != self.vram:
+            Utils.eprint(f"""
+Warning: Tried to set an alignment of `{alignment}` (`0x{1 << alignment:X}`) to symbol `{self.getName()}` (`0x{self.vram:08X}`), but the given alignment does not match the alignment the symbol currently has.
+This alignment will be discarded.
+""")
+        else:
+            self.alignment = alignment
 
 
     @staticmethod
