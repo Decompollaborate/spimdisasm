@@ -874,7 +874,9 @@ fn main() {
     // start detection will be borked either way.
     let string_guesser_flags = StringGuesserFlags::default()
         .union(StringGuesserFlags::AllowLateRodata)
-        .union(StringGuesserFlags::IgnoreDetectedType);
+        .union(StringGuesserFlags::AllowUnalignedDereferences)
+        .union(StringGuesserFlags::AllowMixedAlignedDereferences)
+        .union(StringGuesserFlags::AllowSingleAlignedDereferences);
     let data_settings =
         DataSectionSettings::new(compiler).with_string_guesser_flags(string_guesser_flags);
     let noload_settings = NoloadSectionSettings::new(compiler);

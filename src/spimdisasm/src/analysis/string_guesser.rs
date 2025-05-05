@@ -3,6 +3,7 @@
 
 use bitflags::bitflags;
 use core::{error, fmt};
+use rabbitizer::access_type::AccessType;
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
@@ -33,15 +34,23 @@ bitflags! {
     ///   considered a string candidate. This may happen because of a deduplication optimization or
     ///   by plain `data` strings.
     /// - [`EmptyStrings`]: Allow empty strings. Likely to yield false positives.
-    /// - [`IgnoreDetectedType`]: Symbols with autodetected type information but no user type
-    ///   information can still be guessed as strings.
     /// - [`UnreferencedStrings`]: Allow completely unreferenced data to be guessed as a string.
     /// - [`UnreferencedButSymbolized`]: Allow unreferenced data that is after a sized-symbol to be
     ///   guessed as a string.
+    /// - [`AllowLateRodata`]: Allow guessing strings even after we have reached the "late rodata".
+    ///   This only applies to compilers that have a concept of "late rodata" (i.e. [`IDO`]).
+    /// - [`IgnoreDetectedType`]: Symbols with autodetected type information but no user type
+    ///   information can still be guessed as strings.
+    /// - [`AllowUnalignedDereferences`]: Allow guessing when a symbol has been dereferenced by at
+    ///   least one unaligned access instruction (i.e. `lwl`, `ldr`). This will allow guessing this
+    ///   symbol even if it was dereferenced by other aligned instructions as long as there's at
+    ///   least one unaligned access.
     /// - [`AllowMixedAlignedDereferences`]: Allow guessing if the symbol has been aligned
-    ///   dereferenced by different access types
-    /// - [`AllowUnalignedDereferences`]: Allow guessing if the symbol has been unaligned
-    ///   dereferenced.
+    ///   dereferenced by multiple different access types (i.e. `lh`, `lb`). Note this does not
+    ///   allow coprocessor access instructions (i.e. `lwc1`, `sdc2`).
+    /// - [`AllowSingleAlignedDereferences`]: Allow guessing when a symbol has been dereferenced by
+    ///   a single aligned access type (i.e. `lh`, `lb`). Note this does not allow coprocessor
+    ///   access instructions (i.e. `lwc1`, `sdc2`).
     ///
     /// Additionally it is possible to completely disable guessing for strings with the [`no`]
     /// function. On the hand it is possible to enable all settings and almost always try to guess
@@ -52,16 +61,23 @@ bitflags! {
     /// otherwise the symbol will be rejected as a string. The given size may be optionally aligned
     /// to the next word boundary.
     ///
+    /// Currently this type is implemented as a set of bitflags. The internal bit value that
+    /// corresponds to each flag is considered an implementation detail and may change at any given
+    /// time. You should not depend on the raw numerical value.
+    ///
     /// [`no`]: StringGuesserFlags::no
     /// [`Basic`]: StringGuesserFlags::Basic
     /// [`MultipleReferences`]: StringGuesserFlags::MultipleReferences
     /// [`EmptyStrings`]: StringGuesserFlags::EmptyStrings
-    /// [`IgnoreDetectedType`]: StringGuesserFlags::IgnoreDetectedType
     /// [`UnreferencedStrings`]: StringGuesserFlags::UnreferencedStrings
     /// [`UnreferencedButSymbolized`]: StringGuesserFlags::UnreferencedButSymbolized
-    /// [`AllowMixedAlignedDereferences`]: StringGuesserFlags::AllowMixedAlignedDereferences
+    /// [`AllowLateRodata`]: StringGuesserFlags::AllowLateRodata
+    /// [`IgnoreDetectedType`]: StringGuesserFlags::IgnoreDetectedType
     /// [`AllowUnalignedDereferences`]: StringGuesserFlags::AllowUnalignedDereferences
+    /// [`AllowMixedAlignedDereferences`]: StringGuesserFlags::AllowMixedAlignedDereferences
+    /// [`AllowSingleAlignedDereferences`]: StringGuesserFlags::AllowSingleAlignedDereferences
     /// [`full`]: StringGuesserFlags::full
+    /// [`IDO`]: crate::config::compiler::IDO
     #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
     #[non_exhaustive]
     #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", eq))]
@@ -82,28 +98,38 @@ bitflags! {
         /// Allow empty strings. Likely to yield false positives.
         const EmptyStrings = 1 << 2;
 
-        /// Symbols with autodetected type information but no user type information can still be
-        /// guessed as strings.
-        const IgnoreDetectedType = 1 << 3;
-
         /// Allow completely unreferenced data to be guessed as a string.
-        const UnreferencedStrings = 1 << 4;
+        const UnreferencedStrings = 1 << 3;
 
         /// Allow unreferenced data that is after a sized-symbol to be guessed as a string.
-        const UnreferencedButSymbolized = 1 << 5;
-
-        /// Allow guessing when a symbol has been dereferenced by different aligned access types.
-        const AllowMixedAlignedDereferences = 1 << 6;
-
-        /// Allow guessing when a symbol has been unaligned dereferenced.
-        const AllowUnalignedDereferences = 1 << 7;
+        const UnreferencedButSymbolized = 1 << 4;
 
         /// Allow guessing strings even after we have reached the "late rodata".
         ///
         /// This only applies to compilers that have a concept of "late rodata" (i.e. [`IDO`]).
         ///
         /// [`IDO`]: crate::config::compiler::IDO
-        const AllowLateRodata = 1 << 8;
+        const AllowLateRodata = 1 << 5;
+
+        /// Symbols with autodetected type information but no user type information can still be
+        /// guessed as strings.
+        const IgnoreDetectedType = 1 << 16;
+
+        /// Allow guessing when a symbol has been dereferenced by at least one unaligned access
+        /// instruction (i.e. `lwl`, `ldr`). This will allow guessing this symbol even if it was
+        /// dereferenced by other aligned instructions as long as there's at least one unaligned
+        /// access.
+        const AllowUnalignedDereferences = 1 << 17;
+
+        /// Allow guessing when a symbol has been dereferenced by multiple different aligned access
+        /// types (i.e. `lh`, `lb`). Note this does not allow coprocessor access instructions
+        /// (i.e. `lwc1`, `sdc2`).
+        const AllowMixedAlignedDereferences = 1 << 18;
+
+        /// Allow guessing when a symbol has been dereferenced by a single aligned access type
+        /// (i.e. `lh`, `lb`). Note this does not allow coprocessor access instructions
+        /// (i.e. `lwc1`, `sdc2`).
+        const AllowSingleAlignedDereferences = 1 << 19;
     }
 }
 
@@ -120,8 +146,9 @@ pub(crate) enum StringGuessError {
     ReferencedMoreThanOnce,
     EmptyString,
     HasDetectedType,
-    HasBeenDereferencedMixedAligned,
     HasBeenDereferencedUnaligned,
+    HasBeenDereferencedMixedAligned,
+    CoprocessorDereferenced,
     InvalidString,
     UnreferencedString,
 }
@@ -144,11 +171,14 @@ impl fmt::Display for StringGuessError {
             StringGuessError::ReferencedMoreThanOnce => write!(f, "ReferencedMoreThanOnce"),
             StringGuessError::EmptyString => write!(f, "EmptyString"),
             StringGuessError::HasDetectedType => write!(f, "HasDetectedType"),
+            StringGuessError::HasBeenDereferencedUnaligned => {
+                write!(f, "HasBeenDereferencedUnaligned")
+            }
             StringGuessError::HasBeenDereferencedMixedAligned => {
                 write!(f, "HasBeenDereferencedMixedAligned")
             }
-            StringGuessError::HasBeenDereferencedUnaligned => {
-                write!(f, "HasBeenDereferencedUnaligned")
+            StringGuessError::CoprocessorDereferenced => {
+                write!(f, "CoprocessorDereferenced")
             }
             StringGuessError::InvalidString => write!(f, "InvalidString"),
             StringGuessError::UnreferencedString => write!(f, "UnreferencedString"),
@@ -158,6 +188,17 @@ impl fmt::Display for StringGuessError {
 impl error::Error for StringGuessError {}
 
 impl StringGuesserFlags {
+    /// Creates an instance with a few recommended flags turned on that should be fine for most
+    /// cases.
+    ///
+    /// It currently turns on the following flags:
+    /// - [`Basic`]
+    /// - [`MultipleReferences`]
+    /// - [`UnreferencedButSymbolized`]
+    /// - [`AllowUnalignedDereferences`]
+    ///
+    /// Please note the flags that are turned on by this function may change (either adding or
+    /// removing flags) at any given time without prior notice.
     pub const fn default() -> Self {
         Self::Basic
             .union(Self::MultipleReferences)
@@ -173,7 +214,7 @@ impl StringGuesserFlags {
         Self::empty()
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub(crate) fn guess(
         &self,
         ref_wrapper: Option<ReferenceWrapper>,
@@ -184,11 +225,6 @@ impl StringGuesserFlags {
         reached_late_rodata: bool,
         prev_sym_ended_here: bool,
     ) -> Result<usize, StringGuessError> {
-        /*
-        if contextSym._ranStringCheck:
-            return contextSym.isMaybeString
-        */
-
         if !self.contains(Self::AllowLateRodata) && reached_late_rodata {
             return Err(StringGuessError::ReachedLateRodata);
         }
@@ -301,13 +337,64 @@ impl StringGuesserFlags {
 
         match all_access_types.len() {
             0 => Ok(()),
-            1 => Err(StringGuessError::HasDetectedType),
-            _ => {
-                if self.contains(Self::AllowMixedAlignedDereferences) {
-                    Ok(())
-                } else {
-                    Err(StringGuessError::HasBeenDereferencedMixedAligned)
+            1 => {
+                let (access_type, _) = all_access_types
+                    .iter()
+                    .next()
+                    .expect("Already checked the length");
+
+                match access_type {
+                    AccessType::FLOAT
+                    | AccessType::DOUBLEFLOAT
+                    | AccessType::WORD_COP2
+                    | AccessType::DOUBLEWORD_COP2 => {
+                        return Err(StringGuessError::CoprocessorDereferenced)
+                    }
+                    AccessType::BYTE
+                    | AccessType::SHORT
+                    | AccessType::WORD
+                    | AccessType::DOUBLEWORD
+                    | AccessType::QUADWORD
+                    | AccessType::UNALIGNED_WORD_LEFT
+                    | AccessType::UNALIGNED_WORD_RIGHT
+                    | AccessType::UNALIGNED_DOUBLEWORD_LEFT
+                    | AccessType::UNALIGNED_DOUBLEWORD_RIGHT
+                    | AccessType::LINKED_WORD_WORD
+                    | AccessType::LINKED_WORD_DOUBLEWORD => {
+                        if !self.contains(Self::AllowSingleAlignedDereferences) {
+                            return Err(StringGuessError::HasDetectedType);
+                        };
+                    }
                 }
+                Ok(())
+            }
+            _ => {
+                for (access_type, _) in all_access_types {
+                    match access_type {
+                        AccessType::FLOAT
+                        | AccessType::DOUBLEFLOAT
+                        | AccessType::WORD_COP2
+                        | AccessType::DOUBLEWORD_COP2 => {
+                            return Err(StringGuessError::CoprocessorDereferenced)
+                        }
+                        AccessType::BYTE
+                        | AccessType::SHORT
+                        | AccessType::WORD
+                        | AccessType::DOUBLEWORD
+                        | AccessType::QUADWORD
+                        | AccessType::UNALIGNED_WORD_LEFT
+                        | AccessType::UNALIGNED_WORD_RIGHT
+                        | AccessType::UNALIGNED_DOUBLEWORD_LEFT
+                        | AccessType::UNALIGNED_DOUBLEWORD_RIGHT
+                        | AccessType::LINKED_WORD_WORD
+                        | AccessType::LINKED_WORD_DOUBLEWORD => {
+                            if !self.contains(Self::AllowMixedAlignedDereferences) {
+                                return Err(StringGuessError::HasBeenDereferencedMixedAligned);
+                            };
+                        }
+                    }
+                }
+                Ok(())
             }
         }
     }
