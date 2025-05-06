@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaExtension, IsaVersion};
 use spimdisasm::{
     addresses::{AddressRange, GpValue, Rom, RomVramRange, Size, Vram},
-    config::{Compiler, Endian, GlobalConfig, GpConfig},
+    config::{Compiler, Endian, GlobalConfigBuilder, GpConfig},
     context::{builder::UserSegmentBuilder, ContextBuilder, GlobalSegmentBuilder},
     parent_segment_info::ParentSegmentInfo,
     sections::before_proc::ExecutableSectionSettings,
@@ -249,7 +249,7 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
     let vram = Vram::new(0x8081CE54);
     let size = Size::new(bytes.len() as u32);
 
-    let global_config = GlobalConfig::new(Endian::Big);
+    let global_config = GlobalConfigBuilder::new(Endian::Big).build();
     let global_ranges = RomVramRange::new(
         AddressRange::new(rom, rom + size),
         AddressRange::new(vram, vram + size),
@@ -609,8 +609,9 @@ fn weird_case_use_gp_as_temp() {
     );
 
     let mut context = {
-        let global_config = GlobalConfig::new(Endian::Little)
-            .with_gp_config(Some(GpConfig::new_sdata(GpValue::new(0x80075264))));
+        let global_config = GlobalConfigBuilder::new(Endian::Little)
+            .with_gp_config(Some(GpConfig::new_sdata(GpValue::new(0x80075264))))
+            .build();
 
         let global_ranges = RomVramRange::new(
             AddressRange::new(segment_rom, Rom::new(0x0003F3A4)),

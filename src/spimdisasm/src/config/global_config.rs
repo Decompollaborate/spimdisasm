@@ -22,12 +22,49 @@ pub struct GlobalConfig {
     // ASM_PRELUDE_USE_INSTRUCTION_DIRECTIVES: bool = True
     // ASM_PRELUDE_USE_SECTION_START: bool = True
     // ASM_GENERATED_BY: bool = True
-
-    // TODO: ABI
     symbol_name_generation_settings: SymbolNameGenerationSettings,
 }
 
 impl GlobalConfig {
+    pub const fn endian(&self) -> Endian {
+        self.endian
+    }
+
+    pub const fn gp_config(&self) -> Option<&GpConfig> {
+        self.gp_config.as_ref()
+    }
+
+    pub const fn macro_labels(&self) -> Option<&MacroLabels> {
+        self.macro_labels.as_ref()
+    }
+
+    pub const fn emit_size_directive(&self) -> bool {
+        self.emit_size_directive
+    }
+
+    pub const fn symbol_name_generation_settings(&self) -> &SymbolNameGenerationSettings {
+        &self.symbol_name_generation_settings
+    }
+}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+pub struct GlobalConfigBuilder {
+    endian: Endian,
+    gp_config: Option<GpConfig>,
+
+    macro_labels: Option<MacroLabels>,
+    // TODO: Maybe move to each section's disassembly settings
+    emit_size_directive: bool,
+    // ASM_USE_PRELUDE: bool = True
+    // ASM_PRELUDE_USE_INCLUDES: bool = True
+    // ASM_PRELUDE_USE_INSTRUCTION_DIRECTIVES: bool = True
+    // ASM_PRELUDE_USE_SECTION_START: bool = True
+    // ASM_GENERATED_BY: bool = True
+    symbol_name_generation_settings: SymbolNameGenerationSettings,
+}
+
+impl GlobalConfigBuilder {
     pub fn new(endian: Endian) -> Self {
         Self {
             endian,
@@ -39,17 +76,29 @@ impl GlobalConfig {
             symbol_name_generation_settings: SymbolNameGenerationSettings::new(),
         }
     }
+
+    pub fn build(self) -> GlobalConfig {
+        let Self {
+            endian,
+            gp_config,
+            macro_labels,
+            emit_size_directive,
+            symbol_name_generation_settings,
+        } = self;
+
+        GlobalConfig {
+            endian,
+            gp_config,
+            macro_labels,
+            emit_size_directive,
+            symbol_name_generation_settings,
+        }
+    }
 }
 
-impl GlobalConfig {
+impl GlobalConfigBuilder {
     pub const fn endian(&self) -> Endian {
         self.endian
-    }
-    pub fn endian_mut(&mut self) -> &mut Endian {
-        &mut self.endian
-    }
-    pub fn with_endian(self, endian: Endian) -> Self {
-        Self { endian, ..self }
     }
 
     pub const fn gp_config(&self) -> Option<&GpConfig> {
@@ -110,7 +159,7 @@ pub(crate) mod python_bindings {
     use super::*;
 
     #[pymethods]
-    impl GlobalConfig {
+    impl GlobalConfigBuilder {
         #[new]
         pub fn py_new(endian: Endian) -> Self {
             let mut myself = Self::new(endian);
@@ -122,7 +171,13 @@ pub(crate) mod python_bindings {
             myself
         }
 
-        pub fn set_gp_config(&mut self, gp_config: GpConfig) {
+        #[pyo3(name = "build")]
+        pub fn py_build(&self) -> GlobalConfig {
+            self.clone().build()
+        }
+
+        #[pyo3(name = "set_gp_config")]
+        pub fn py_set_gp_config(&mut self, gp_config: GpConfig) {
             self.gp_config = Some(gp_config);
         }
 

@@ -7,7 +7,7 @@ use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaExtension, IsaVer
 use spimdisasm::{
     addresses::{AddressRange, GpValue, Rom, RomVramRange, Size, Vram},
     collections::addended_ordered_map::FindSettings,
-    config::{Compiler, Endian, GlobalConfig, GpConfig},
+    config::{Compiler, Endian, GlobalConfigBuilder, GpConfig},
     context::{
         builder::UserSegmentBuilder, Context, ContextBuilder, GlobalSegmentBuilder,
         OverlaySegmentBuilder,
@@ -36,7 +36,9 @@ fn disassemble_text(
     let section_name = "text";
 
     let mut context = {
-        let global_config = GlobalConfig::new(endian).with_gp_config(gp_config);
+        let global_config = GlobalConfigBuilder::new(endian)
+            .with_gp_config(gp_config)
+            .build();
 
         let global_ranges = RomVramRange::new(
             AddressRange::new(segment_rom, Rom::new(0x04000000)),

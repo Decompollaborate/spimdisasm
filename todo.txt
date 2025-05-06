@@ -1,7 +1,5 @@
 Implement constants
 Address #[allow(dead_code)]
-Test pic code
-Test `j func` code
 Try to break out from non word-aligned symbols
 Sealed functions for traits / seal traits
 Avoid disassembling as bytes/shorts if there are user relocs for a given symbol
@@ -44,8 +42,6 @@ Change the order of checks in InstructionAnalysisResult::process_instr
     Check and_link before everything else
 
 Some functions may end with `jr` with a non-$ra register that hasn't loaded a jumptable either.
-
-Make a builder for GlobalConfig
 
 Parse `.rel.dyn` when it is available
 

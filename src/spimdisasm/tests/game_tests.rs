@@ -4,7 +4,7 @@
 use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
 use spimdisasm::{
     addresses::{AddressRange, RomVramRange},
-    config::{Compiler, Endian, GlobalConfig},
+    config::{Compiler, Endian, GlobalConfigBuilder},
     context::{builder::UserSegmentBuilder, Context, ContextBuilder, GlobalSegmentBuilder},
     parent_segment_info::ParentSegmentInfo,
     sections::before_proc::{
@@ -70,7 +70,7 @@ fn init_context(
 ) -> Context {
     assert!(user_segments.len() >= 2);
 
-    let global_config = GlobalConfig::new(Endian::Big);
+    let global_config = GlobalConfigBuilder::new(Endian::Big).build();
     let mut global_segment = GlobalSegmentBuilder::new(global_ranges);
 
     for sym in symbols {

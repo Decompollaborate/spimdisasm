@@ -13,7 +13,7 @@ use spimdisasm::{
     self,
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     analysis::StringGuesserFlags,
-    config::{GlobalConfig, GpConfig},
+    config::{GlobalConfig, GlobalConfigBuilder, GpConfig},
     context::{
         builder::{GlobalSegmentHeater, UserSegmentBuilder},
         Context, ContextBuilder, GlobalSegmentBuilder,
@@ -573,7 +573,9 @@ fn create_context(
         None
     };
 
-    let global_config = GlobalConfig::new(elf.endian()).with_gp_config(gp_config);
+    let global_config = GlobalConfigBuilder::new(elf.endian())
+        .with_gp_config(gp_config)
+        .build();
 
     print!("    symbols");
     let start = utils::get_time_now();

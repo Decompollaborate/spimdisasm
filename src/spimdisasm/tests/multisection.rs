@@ -9,7 +9,7 @@ use spimdisasm::{
         AddressRange, GlobalOffsetTable, GotGlobalEntry, GotLocalEntry, GpValue, Rom, RomVramRange,
         Size, Vram,
     },
-    config::{Endian, GlobalConfig, GpConfig},
+    config::{Endian, GlobalConfigBuilder, GpConfig},
     context::{builder::UserSegmentBuilder, Context, ContextBuilder, GlobalSegmentBuilder},
     metadata::SegmentMetadata,
     parent_segment_info::ParentSegmentInfo,
@@ -83,7 +83,9 @@ impl Sections {
         global_ranges.expand_ranges(&gcc_except_table_info.0.ranges());
         global_ranges.expand_ranges(&bss_info.0.ranges());
 
-        let global_config = GlobalConfig::new(endian).with_gp_config(gp_config);
+        let global_config = GlobalConfigBuilder::new(endian)
+            .with_gp_config(gp_config)
+            .build();
         let mut context = {
             let mut global_builder = GlobalSegmentBuilder::new(global_ranges);
             if let Some(global_offset_table) = global_offset_table {
