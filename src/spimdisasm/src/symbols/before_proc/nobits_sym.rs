@@ -10,7 +10,7 @@ use crate::{
     metadata::{ParentSectionMetadata, SymbolMetadata},
     parent_segment_info::ParentSegmentInfo,
     section_type::SectionType,
-    symbols::{processed::NoloadSymProcessed, SymbolPreprocessed},
+    symbols::{processed::NobitsSymProcessed, SymbolPreprocessed},
 };
 
 use crate::symbols::{Symbol, SymbolCreationError, SymbolPostProcessError};
@@ -18,18 +18,18 @@ use crate::symbols::{Symbol, SymbolCreationError, SymbolPostProcessError};
 const SECTION_TYPE: SectionType = SectionType::Bss;
 
 #[derive(Debug, Clone)]
-pub struct NoloadSym {
+pub struct NobitsSym {
     vram_range: AddressRange<Vram>,
     parent_segment_info: ParentSegmentInfo,
 }
 
-impl NoloadSym {
+impl NobitsSym {
     pub(crate) fn new(
         context: &mut Context,
         vram_range: AddressRange<Vram>,
         _in_section_offset: usize,
         parent_segment_info: ParentSegmentInfo,
-        properties: NoloadSymProperties,
+        properties: NobitsSymProperties,
     ) -> Result<Self, SymbolCreationError> {
         let symbol_name_generation_settings = context
             .global_config()
@@ -55,16 +55,16 @@ impl NoloadSym {
     }
 }
 
-impl NoloadSym {
+impl NobitsSym {
     pub(crate) fn post_process(
         self,
         context: &mut Context,
-    ) -> Result<NoloadSymProcessed, SymbolPostProcessError> {
-        NoloadSymProcessed::new(context, self.vram_range, self.parent_segment_info)
+    ) -> Result<NobitsSymProcessed, SymbolPostProcessError> {
+        NobitsSymProcessed::new(context, self.vram_range, self.parent_segment_info)
     }
 }
 
-impl Symbol for NoloadSym {
+impl Symbol for NobitsSym {
     fn vram_range(&self) -> &AddressRange<Vram> {
         &self.vram_range
     }
@@ -78,20 +78,20 @@ impl Symbol for NoloadSym {
         SECTION_TYPE
     }
 }
-impl SymbolPreprocessed for NoloadSym {}
+impl SymbolPreprocessed for NobitsSym {}
 
-impl hash::Hash for NoloadSym {
+impl hash::Hash for NobitsSym {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.parent_segment_info.hash(state);
         self.vram_range.hash(state);
     }
 }
-impl PartialEq for NoloadSym {
+impl PartialEq for NobitsSym {
     fn eq(&self, other: &Self) -> bool {
         self.parent_segment_info == other.parent_segment_info && self.vram_range == other.vram_range
     }
 }
-impl PartialOrd for NoloadSym {
+impl PartialOrd for NobitsSym {
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         // Compare segment info first, so symbols get sorted by segment
         match self
@@ -106,13 +106,13 @@ impl PartialOrd for NoloadSym {
 }
 
 #[derive(Debug, Clone, Hash, PartialEq)]
-pub(crate) struct NoloadSymProperties {
+pub(crate) struct NobitsSymProperties {
     pub parent_metadata: ParentSectionMetadata,
     pub compiler: Option<Compiler>,
     pub auto_pad_by: Option<Vram>,
 }
 
-impl NoloadSymProperties {
+impl NobitsSymProperties {
     fn apply_to_metadata(self, metadata: &mut SymbolMetadata) {
         metadata.set_parent_metadata(self.parent_metadata);
 

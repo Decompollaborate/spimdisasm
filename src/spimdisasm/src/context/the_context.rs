@@ -25,7 +25,7 @@ use crate::{
     sections::{
         before_proc::{
             DataSection, DataSectionSettings, ExecutableSection, ExecutableSectionSettings,
-            NoloadSection, NoloadSectionSettings,
+            NobitsSection, NobitsSectionSettings,
         },
         SectionAlreadyCreatedError, SectionCreationError, SectionNotPreheatedError,
     },
@@ -238,11 +238,11 @@ impl Context {
 
     pub fn create_section_bss<T>(
         &mut self,
-        settings: &NoloadSectionSettings,
+        settings: &NobitsSectionSettings,
         name: T,
         vram_range: AddressRange<Vram>,
         parent_segment_info: ParentSegmentInfo,
-    ) -> Result<NoloadSection, SectionCreationError>
+    ) -> Result<NobitsSection, SectionCreationError>
     where
         T: Into<Arc<str>>,
     {
@@ -255,7 +255,7 @@ impl Context {
             return Err(SectionAlreadyCreatedError::new(name, None, vram_range.start()).into());
         }
 
-        NoloadSection::new(self, settings, name, vram_range, parent_segment_info)
+        NobitsSection::new(self, settings, name, vram_range, parent_segment_info)
     }
 }
 
@@ -612,7 +612,7 @@ pub(crate) mod python_bindings {
 
     use crate::sections::python_bindings::{
         py_data_section::PyDataSection, py_executable_section::PyExecutableSection,
-        py_noload_section::PyNoloadSection,
+        py_nobits_section::PyNobitsSection,
     };
 
     use super::*;
@@ -682,15 +682,15 @@ pub(crate) mod python_bindings {
         #[pyo3(name = "create_section_bss")]
         pub fn py_create_section_bss(
             &mut self,
-            settings: &NoloadSectionSettings,
+            settings: &NobitsSectionSettings,
             name: String,
             vram_start: Vram,
             vram_end: Vram,
             parent_segment_info: ParentSegmentInfo,
-        ) -> Result<PyNoloadSection, SectionCreationError> {
+        ) -> Result<PyNobitsSection, SectionCreationError> {
             let vram_ranges = AddressRange::new(vram_start, vram_end);
 
-            Ok(PyNoloadSection::new(self.create_section_bss(
+            Ok(PyNobitsSection::new(self.create_section_bss(
                 settings,
                 name,
                 vram_ranges,

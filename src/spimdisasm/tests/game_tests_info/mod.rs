@@ -10,8 +10,8 @@ use spimdisasm::{
     context::Context,
     metadata::{LabelType, RodataMigrationBehavior, SymbolType},
     sections::{
-        before_proc::{DataSection, ExecutableSection, NoloadSection},
-        processed::{DataSectionProcessed, ExecutableSectionProcessed, NoloadSectionProcessed},
+        before_proc::{DataSection, ExecutableSection, NobitsSection},
+        processed::{DataSectionProcessed, ExecutableSectionProcessed, NobitsSectionProcessed},
         SectionPostProcessError,
     },
 };
@@ -56,7 +56,7 @@ pub struct SegmentData {
     pub text_sections: Vec<ExecutableSection>,
     pub data_sections: Vec<DataSection>,
     pub rodata_sections: Vec<DataSection>,
-    pub bss_sections: Vec<NoloadSection>,
+    pub bss_sections: Vec<NobitsSection>,
 }
 
 impl SegmentData {
@@ -86,7 +86,7 @@ impl SegmentData {
                 .bss_sections
                 .into_iter()
                 .map(|x| x.post_process(context))
-                .collect::<Result<Vec<NoloadSectionProcessed>, SectionPostProcessError>>()
+                .collect::<Result<Vec<NobitsSectionProcessed>, SectionPostProcessError>>()
                 .unwrap(),
         }
     }
@@ -97,7 +97,7 @@ pub struct SegmentDataProcessed {
     pub text_sections: Vec<ExecutableSectionProcessed>,
     pub data_sections: Vec<DataSectionProcessed>,
     pub rodata_sections: Vec<DataSectionProcessed>,
-    pub bss_sections: Vec<NoloadSectionProcessed>,
+    pub bss_sections: Vec<NobitsSectionProcessed>,
 }
 
 pub struct UserSymbolInfo {

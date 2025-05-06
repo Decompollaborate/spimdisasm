@@ -15,9 +15,9 @@ use crate::{
     metadata::ParentSectionMetadata,
     parent_segment_info::ParentSegmentInfo,
     section_type::SectionType,
-    sections::{processed::NoloadSectionProcessed, EmptySectionError, SectionPreprocessed},
+    sections::{processed::NobitsSectionProcessed, EmptySectionError, SectionPreprocessed},
     symbols::{
-        before_proc::{noload_sym::NoloadSymProperties, NoloadSym},
+        before_proc::{nobits_sym::NobitsSymProperties, NobitsSym},
         Symbol, SymbolPreprocessed,
     },
 };
@@ -26,7 +26,7 @@ use crate::sections::{Section, SectionCreationError, SectionPostProcessError};
 
 #[derive(Debug, Clone)]
 #[must_use]
-pub struct NoloadSection {
+pub struct NobitsSection {
     name: Arc<str>,
 
     vram_range: AddressRange<Vram>,
@@ -36,15 +36,15 @@ pub struct NoloadSection {
     // in_section_offset: u32,
 
     //
-    noload_symbols: Vec<NoloadSym>,
+    noload_symbols: Vec<NobitsSym>,
 
     symbol_vrams: UnorderedSet<Vram>,
 }
 
-impl NoloadSection {
+impl NobitsSection {
     pub(crate) fn new(
         context: &mut Context,
-        settings: &NoloadSectionSettings,
+        settings: &NobitsSectionSettings,
         name: Arc<str>,
         vram_range: AddressRange<Vram>,
         parent_segment_info: ParentSegmentInfo,
@@ -109,7 +109,7 @@ impl NoloadSection {
 
             symbol_vrams.insert(*new_sym_vram);
 
-            let properties = NoloadSymProperties {
+            let properties = NobitsSymProperties {
                 parent_metadata: ParentSectionMetadata::new(
                     name.clone(),
                     vram_range.start(),
@@ -118,7 +118,7 @@ impl NoloadSection {
                 compiler: settings.compiler,
                 auto_pad_by: auto_pads.get(new_sym_vram).copied(),
             };
-            let /*mut*/ sym = NoloadSym::new(context, AddressRange::new(*new_sym_vram, new_sym_vram_end), start, parent_segment_info.clone(), properties)?;
+            let /*mut*/ sym = NobitsSym::new(context, AddressRange::new(*new_sym_vram, new_sym_vram_end), start, parent_segment_info.clone(), properties)?;
 
             noload_symbols.push(sym);
         }
@@ -133,18 +133,18 @@ impl NoloadSection {
     }
 }
 
-impl NoloadSection {
-    pub fn noload_symbols(&self) -> &[NoloadSym] {
+impl NobitsSection {
+    pub fn noload_symbols(&self) -> &[NobitsSym] {
         &self.noload_symbols
     }
 }
 
-impl NoloadSection {
+impl NobitsSection {
     pub fn post_process(
         self,
         context: &mut Context,
-    ) -> Result<NoloadSectionProcessed, SectionPostProcessError> {
-        NoloadSectionProcessed::new(
+    ) -> Result<NobitsSectionProcessed, SectionPostProcessError> {
+        NobitsSectionProcessed::new(
             context,
             self.name,
             self.vram_range,
@@ -155,7 +155,7 @@ impl NoloadSection {
     }
 }
 
-impl Section for NoloadSection {
+impl Section for NobitsSection {
     fn name(&self) -> Arc<str> {
         self.name.clone()
     }
@@ -181,24 +181,24 @@ impl Section for NoloadSection {
         &self.symbol_vrams
     }
 }
-impl SectionPreprocessed for NoloadSection {
+impl SectionPreprocessed for NobitsSection {
     fn symbol_list(&self) -> &[impl SymbolPreprocessed] {
         &self.noload_symbols
     }
 }
 
-impl hash::Hash for NoloadSection {
+impl hash::Hash for NobitsSection {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.parent_segment_info.hash(state);
         self.vram_range.hash(state);
     }
 }
-impl PartialEq for NoloadSection {
+impl PartialEq for NobitsSection {
     fn eq(&self, other: &Self) -> bool {
         self.parent_segment_info == other.parent_segment_info && self.vram_range == other.vram_range
     }
 }
-impl PartialOrd for NoloadSection {
+impl PartialOrd for NobitsSection {
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         // Compare segment info first, so symbols get sorted by segment
         match self
@@ -214,11 +214,11 @@ impl PartialOrd for NoloadSection {
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
-pub struct NoloadSectionSettings {
+pub struct NobitsSectionSettings {
     compiler: Option<Compiler>,
 }
 
-impl NoloadSectionSettings {
+impl NobitsSectionSettings {
     pub fn new(compiler: Option<Compiler>) -> Self {
         Self { compiler }
     }
@@ -229,7 +229,7 @@ pub(crate) mod python_bindings {
     use super::*;
 
     #[pymethods]
-    impl NoloadSectionSettings {
+    impl NobitsSectionSettings {
         #[new]
         #[pyo3(signature = (compiler))]
         pub fn py_new(compiler: Option<Compiler>) -> Self {

@@ -14,10 +14,10 @@ use spimdisasm::{
     metadata::SegmentMetadata,
     parent_segment_info::ParentSegmentInfo,
     sections::{
-        before_proc::{DataSectionSettings, ExecutableSectionSettings, NoloadSectionSettings},
-        processed::{DataSectionProcessed, ExecutableSectionProcessed, NoloadSectionProcessed},
+        before_proc::{DataSectionSettings, ExecutableSectionSettings, NobitsSectionSettings},
+        processed::{DataSectionProcessed, ExecutableSectionProcessed, NobitsSectionProcessed},
     },
-    symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings, SymNoloadDisplaySettings},
+    symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings, SymNobitsDisplaySettings},
 };
 
 #[must_use]
@@ -40,11 +40,11 @@ impl<'a> RawSectionInfo<'a> {
 }
 
 #[must_use]
-struct RawNoloadSectionInfo {
+struct RawNobitsSectionInfo {
     size: Size,
     vram: Vram,
 }
-impl RawNoloadSectionInfo {
+impl RawNobitsSectionInfo {
     pub fn new(size: Size, vram: Vram) -> Self {
         Self { size, vram }
     }
@@ -63,7 +63,7 @@ struct Sections {
     data: Option<DataSectionProcessed>,
     rodata: Option<DataSectionProcessed>,
     gcc_except_table: Option<DataSectionProcessed>,
-    bss: Option<NoloadSectionProcessed>,
+    bss: Option<NobitsSectionProcessed>,
 }
 impl Sections {
     pub fn new(
@@ -72,7 +72,7 @@ impl Sections {
         data_info: (RawSectionInfo, DataSectionSettings),
         rodata_info: (RawSectionInfo, DataSectionSettings),
         gcc_except_table_info: (RawSectionInfo, DataSectionSettings),
-        bss_info: (RawNoloadSectionInfo, NoloadSectionSettings),
+        bss_info: (RawNobitsSectionInfo, NobitsSectionSettings),
         gp_config: Option<GpConfig>,
         global_offset_table: Option<GlobalOffsetTable>,
     ) -> Self {
@@ -239,7 +239,7 @@ impl Sections {
         data_display_settings: &SymDataDisplaySettings,
         rodata_display_settings: &SymDataDisplaySettings,
         gcc_except_table_display_settings: &SymDataDisplaySettings,
-        bss_display_settings: &SymNoloadDisplaySettings,
+        bss_display_settings: &SymNobitsDisplaySettings,
     ) -> String {
         let mut out = String::new();
 
@@ -433,7 +433,7 @@ fn test_jumptable_with_lo_in_each_case_for_same_hi() {
     let executable_settings =
         ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
     let data_settings = DataSectionSettings::new(None);
-    let noload_settings = NoloadSectionSettings::new(None);
+    let noload_settings = NobitsSectionSettings::new(None);
 
     let sections = Sections::new(
         Endian::Big,
@@ -458,7 +458,7 @@ fn test_jumptable_with_lo_in_each_case_for_same_hi() {
             data_settings,
         ),
         (
-            RawNoloadSectionInfo::new(bss_size, bss_vram),
+            RawNobitsSectionInfo::new(bss_size, bss_vram),
             noload_settings,
         ),
         gp_config,
@@ -471,7 +471,7 @@ fn test_jumptable_with_lo_in_each_case_for_same_hi() {
     let text_display_settings = FunctionDisplaySettings::new(instr_display_flags);
 
     let data_display_settings = SymDataDisplaySettings::new();
-    let bss_display_settings = SymNoloadDisplaySettings::new();
+    let bss_display_settings = SymNobitsDisplaySettings::new();
 
     let disassembled_str = sections.display_to_string(
         &text_display_settings,
@@ -623,7 +623,7 @@ fn test_mips1_doubles_eb() {
     let executable_settings =
         ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
     let data_settings = DataSectionSettings::new(None);
-    let noload_settings = NoloadSectionSettings::new(None);
+    let noload_settings = NobitsSectionSettings::new(None);
 
     let sections = Sections::new(
         Endian::Big,
@@ -648,7 +648,7 @@ fn test_mips1_doubles_eb() {
             data_settings,
         ),
         (
-            RawNoloadSectionInfo::new(bss_size, bss_vram),
+            RawNobitsSectionInfo::new(bss_size, bss_vram),
             noload_settings,
         ),
         gp_config,
@@ -661,7 +661,7 @@ fn test_mips1_doubles_eb() {
     let text_display_settings = FunctionDisplaySettings::new(instr_display_flags);
 
     let data_display_settings = SymDataDisplaySettings::new();
-    let bss_display_settings = SymNoloadDisplaySettings::new();
+    let bss_display_settings = SymNobitsDisplaySettings::new();
 
     let disassembled_str = sections.display_to_string(
         &text_display_settings,
@@ -796,7 +796,7 @@ fn test_mips1_doubles_el() {
     let executable_settings =
         ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
     let data_settings = DataSectionSettings::new(None);
-    let noload_settings = NoloadSectionSettings::new(None);
+    let noload_settings = NobitsSectionSettings::new(None);
 
     let sections = Sections::new(
         Endian::Little,
@@ -821,7 +821,7 @@ fn test_mips1_doubles_el() {
             data_settings,
         ),
         (
-            RawNoloadSectionInfo::new(bss_size, bss_vram),
+            RawNobitsSectionInfo::new(bss_size, bss_vram),
             noload_settings,
         ),
         gp_config,
@@ -834,7 +834,7 @@ fn test_mips1_doubles_el() {
     let text_display_settings = FunctionDisplaySettings::new(instr_display_flags);
 
     let data_display_settings = SymDataDisplaySettings::new();
-    let bss_display_settings = SymNoloadDisplaySettings::new();
+    let bss_display_settings = SymNobitsDisplaySettings::new();
 
     let disassembled_str = sections.display_to_string(
         &text_display_settings,

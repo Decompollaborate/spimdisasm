@@ -25,12 +25,12 @@ use spimdisasm::{
     sections::{
         before_proc::{
             DataSection, DataSectionSettings, ExecutableSection, ExecutableSectionSettings,
-            NoloadSection, NoloadSectionSettings,
+            NobitsSection, NobitsSectionSettings,
         },
-        processed::{DataSectionProcessed, ExecutableSectionProcessed, NoloadSectionProcessed},
+        processed::{DataSectionProcessed, ExecutableSectionProcessed, NobitsSectionProcessed},
         Section, SectionPostProcessError,
     },
-    symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings, SymNoloadDisplaySettings},
+    symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings, SymNobitsDisplaySettings},
 };
 use std::{
     collections::{BTreeMap, HashSet},
@@ -601,8 +601,8 @@ fn create_sections(
     context: &mut Context,
     executable_settings: ExecutableSectionSettings,
     data_settings: DataSectionSettings,
-    noload_settings: NoloadSectionSettings,
-) -> (Vec<ExecutableSection>, Vec<DataSection>, Vec<NoloadSection>) {
+    noload_settings: NobitsSectionSettings,
+) -> (Vec<ExecutableSection>, Vec<DataSection>, Vec<NobitsSection>) {
     let mut executable_sections = Vec::new();
     let mut data_sections = Vec::new();
     let mut noload_sections = Vec::new();
@@ -724,11 +724,11 @@ fn post_process_sections(
     user_relocs: BTreeMap<Rom, RelocationInfo>,
     executable_sections: Vec<ExecutableSection>,
     data_sections: Vec<DataSection>,
-    noload_sections: Vec<NoloadSection>,
+    noload_sections: Vec<NobitsSection>,
 ) -> (
     Vec<ExecutableSectionProcessed>,
     Vec<DataSectionProcessed>,
-    Vec<NoloadSectionProcessed>,
+    Vec<NobitsSectionProcessed>,
 ) {
     let executable_sections = utils::pretty_unwrap(
         executable_sections
@@ -746,7 +746,7 @@ fn post_process_sections(
         noload_sections
             .into_iter()
             .map(|x| x.post_process(context))
-            .collect::<Result<Vec<NoloadSectionProcessed>, SectionPostProcessError>>(),
+            .collect::<Result<Vec<NobitsSectionProcessed>, SectionPostProcessError>>(),
     );
 
     (executable_sections, data_sections, noload_sections)
@@ -757,7 +757,7 @@ fn write_sections_to_files(
     context: Context,
     executable_sections: Vec<ExecutableSectionProcessed>,
     data_sections: Vec<DataSectionProcessed>,
-    noload_sections: Vec<NoloadSectionProcessed>,
+    noload_sections: Vec<NobitsSectionProcessed>,
 ) {
     utils::pretty_unwrap(fs::create_dir_all(&output_dir));
 
@@ -819,7 +819,7 @@ fn write_sections_to_files(
         }
     }
 
-    let noload_display_settings = SymNoloadDisplaySettings::new();
+    let noload_display_settings = SymNobitsDisplaySettings::new();
     for section in noload_sections {
         let name = section.name();
         let sep = if name.starts_with(".") { "" } else { "." };
@@ -879,7 +879,7 @@ fn main() {
         .union(StringGuesserFlags::AllowSingleAlignedDereferences);
     let data_settings =
         DataSectionSettings::new(compiler).with_string_guesser_flags(string_guesser_flags);
-    let noload_settings = NoloadSectionSettings::new(compiler);
+    let noload_settings = NobitsSectionSettings::new(compiler);
 
     println!("context:");
     let start = utils::get_time_now();

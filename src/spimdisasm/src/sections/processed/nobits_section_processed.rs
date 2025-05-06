@@ -12,7 +12,7 @@ use crate::{
     section_type::SectionType,
     sections::{Section, SectionPostProcessError, SectionProcessed},
     symbols::{
-        before_proc::NoloadSym, processed::NoloadSymProcessed, Symbol, SymbolPostProcessError,
+        before_proc::NobitsSym, processed::NobitsSymProcessed, Symbol, SymbolPostProcessError,
         SymbolProcessed,
     },
 };
@@ -21,27 +21,27 @@ const SECTION_TYPE: SectionType = SectionType::Bss;
 
 #[derive(Debug, Clone)]
 #[must_use]
-pub struct NoloadSectionProcessed {
+pub struct NobitsSectionProcessed {
     name: Arc<str>,
     vram_range: AddressRange<Vram>,
     parent_segment_info: ParentSegmentInfo,
-    noload_symbols: Arc<[NoloadSymProcessed]>,
+    noload_symbols: Arc<[NobitsSymProcessed]>,
     symbol_vrams: UnorderedSet<Vram>,
 }
 
-impl NoloadSectionProcessed {
+impl NobitsSectionProcessed {
     pub(crate) fn new(
         context: &mut Context,
         name: Arc<str>,
         vram_range: AddressRange<Vram>,
         parent_segment_info: ParentSegmentInfo,
-        noload_symbols: Vec<NoloadSym>,
+        noload_symbols: Vec<NobitsSym>,
         symbol_vrams: UnorderedSet<Vram>,
     ) -> Result<Self, SectionPostProcessError> {
         let noload_symbols = noload_symbols
             .into_iter()
             .map(|x| x.post_process(context))
-            .collect::<Result<Arc<[NoloadSymProcessed]>, SymbolPostProcessError>>()?;
+            .collect::<Result<Arc<[NobitsSymProcessed]>, SymbolPostProcessError>>()?;
 
         Ok(Self {
             name,
@@ -53,13 +53,13 @@ impl NoloadSectionProcessed {
     }
 }
 
-impl NoloadSectionProcessed {
-    pub fn noload_symbols(&self) -> &[NoloadSymProcessed] {
+impl NobitsSectionProcessed {
+    pub fn noload_symbols(&self) -> &[NobitsSymProcessed] {
         &self.noload_symbols
     }
 }
 
-impl Section for NoloadSectionProcessed {
+impl Section for NobitsSectionProcessed {
     fn name(&self) -> Arc<str> {
         self.name.clone()
     }
@@ -85,24 +85,24 @@ impl Section for NoloadSectionProcessed {
         &self.symbol_vrams
     }
 }
-impl SectionProcessed for NoloadSectionProcessed {
+impl SectionProcessed for NobitsSectionProcessed {
     fn symbol_list(&self) -> &[impl SymbolProcessed] {
         &self.noload_symbols
     }
 }
 
-impl hash::Hash for NoloadSectionProcessed {
+impl hash::Hash for NobitsSectionProcessed {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.parent_segment_info.hash(state);
         self.vram_range.hash(state);
     }
 }
-impl PartialEq for NoloadSectionProcessed {
+impl PartialEq for NobitsSectionProcessed {
     fn eq(&self, other: &Self) -> bool {
         self.parent_segment_info == other.parent_segment_info && self.vram_range == other.vram_range
     }
 }
-impl PartialOrd for NoloadSectionProcessed {
+impl PartialOrd for NobitsSectionProcessed {
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         // Compare segment info first, so symbols get sorted by segment
         match self

@@ -10,7 +10,7 @@ use crate::{
     collections::addended_ordered_map::FindSettings,
     context::Context,
     metadata::{SegmentMetadata, SymbolMetadata},
-    symbols::{processed::NoloadSymProcessed, Symbol},
+    symbols::{processed::NobitsSymProcessed, Symbol},
 };
 
 use super::{
@@ -20,17 +20,17 @@ use super::{
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
-pub struct SymNoloadDisplaySettings {
+pub struct SymNobitsDisplaySettings {
     common: SymCommonDisplaySettings,
 }
 
-impl Default for SymNoloadDisplaySettings {
+impl Default for SymNobitsDisplaySettings {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl SymNoloadDisplaySettings {
+impl SymNobitsDisplaySettings {
     pub fn new() -> Self {
         Self {
             common: SymCommonDisplaySettings::new(),
@@ -44,10 +44,10 @@ impl SymNoloadDisplaySettings {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[must_use]
-pub struct SymNoloadDisplay<'ctx, 'sym, 'flg> {
+pub struct SymNobitsDisplay<'ctx, 'sym, 'flg> {
     context: &'ctx Context,
-    sym: &'sym NoloadSymProcessed,
-    settings: &'flg SymNoloadDisplaySettings,
+    sym: &'sym NobitsSymProcessed,
+    settings: &'flg SymNobitsDisplaySettings,
 
     owned_segment: &'ctx SegmentMetadata,
     metadata: &'ctx SymbolMetadata,
@@ -55,11 +55,11 @@ pub struct SymNoloadDisplay<'ctx, 'sym, 'flg> {
     internal_settings: InternalSymDisplSettings,
 }
 
-impl<'ctx, 'sym, 'flg> SymNoloadDisplay<'ctx, 'sym, 'flg> {
+impl<'ctx, 'sym, 'flg> SymNobitsDisplay<'ctx, 'sym, 'flg> {
     pub(crate) fn new(
         context: &'ctx Context,
-        sym: &'sym NoloadSymProcessed,
-        settings: &'flg SymNoloadDisplaySettings,
+        sym: &'sym NobitsSymProcessed,
+        settings: &'flg SymNobitsDisplaySettings,
         internal_settings: InternalSymDisplSettings,
     ) -> Result<Self, SymDisplayError> {
         let owned_segment = context.find_owned_segment(sym.parent_segment_info())?;
@@ -79,7 +79,7 @@ impl<'ctx, 'sym, 'flg> SymNoloadDisplay<'ctx, 'sym, 'flg> {
     }
 }
 
-impl fmt::Display for SymNoloadDisplay<'_, '_, '_> {
+impl fmt::Display for SymNobitsDisplay<'_, '_, '_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.settings
             .common
@@ -117,7 +117,7 @@ pub(crate) mod python_bindings {
     use super::*;
 
     #[pymethods]
-    impl SymNoloadDisplaySettings {
+    impl SymNobitsDisplaySettings {
         #[new]
         pub fn py_new() -> Self {
             Self::new()

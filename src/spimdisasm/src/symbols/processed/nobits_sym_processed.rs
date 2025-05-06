@@ -10,7 +10,7 @@ use crate::{
     section_type::SectionType,
     symbols::{
         display::{
-            InternalSymDisplSettings, SymDisplayError, SymNoloadDisplay, SymNoloadDisplaySettings,
+            InternalSymDisplSettings, SymDisplayError, SymNobitsDisplay, SymNobitsDisplaySettings,
         },
         Symbol, SymbolPostProcessError, SymbolProcessed,
     },
@@ -19,12 +19,12 @@ use crate::{
 const SECTION_TYPE: SectionType = SectionType::Bss;
 
 #[derive(Debug, Clone)]
-pub struct NoloadSymProcessed {
+pub struct NobitsSymProcessed {
     vram_range: AddressRange<Vram>,
     parent_segment_info: ParentSegmentInfo,
 }
 
-impl NoloadSymProcessed {
+impl NobitsSymProcessed {
     pub(crate) fn new(
         _context: &mut Context,
         vram_range: AddressRange<Vram>,
@@ -37,26 +37,26 @@ impl NoloadSymProcessed {
     }
 }
 
-impl<'ctx, 'sym, 'flg> NoloadSymProcessed {
+impl<'ctx, 'sym, 'flg> NobitsSymProcessed {
     pub fn display(
         &'sym self,
         context: &'ctx Context,
-        settings: &'flg SymNoloadDisplaySettings,
-    ) -> Result<SymNoloadDisplay<'ctx, 'sym, 'flg>, SymDisplayError> {
+        settings: &'flg SymNobitsDisplaySettings,
+    ) -> Result<SymNobitsDisplay<'ctx, 'sym, 'flg>, SymDisplayError> {
         self.display_internal(context, settings, InternalSymDisplSettings::new(false))
     }
 
     pub(crate) fn display_internal(
         &'sym self,
         context: &'ctx Context,
-        settings: &'flg SymNoloadDisplaySettings,
+        settings: &'flg SymNobitsDisplaySettings,
         internal_settings: InternalSymDisplSettings,
-    ) -> Result<SymNoloadDisplay<'ctx, 'sym, 'flg>, SymDisplayError> {
-        SymNoloadDisplay::new(context, self, settings, internal_settings)
+    ) -> Result<SymNobitsDisplay<'ctx, 'sym, 'flg>, SymDisplayError> {
+        SymNobitsDisplay::new(context, self, settings, internal_settings)
     }
 }
 
-impl Symbol for NoloadSymProcessed {
+impl Symbol for NobitsSymProcessed {
     fn vram_range(&self) -> &AddressRange<Vram> {
         &self.vram_range
     }
@@ -69,20 +69,20 @@ impl Symbol for NoloadSymProcessed {
         SECTION_TYPE
     }
 }
-impl SymbolProcessed for NoloadSymProcessed {}
+impl SymbolProcessed for NobitsSymProcessed {}
 
-impl hash::Hash for NoloadSymProcessed {
+impl hash::Hash for NobitsSymProcessed {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.parent_segment_info.hash(state);
         self.vram_range.hash(state);
     }
 }
-impl PartialEq for NoloadSymProcessed {
+impl PartialEq for NobitsSymProcessed {
     fn eq(&self, other: &Self) -> bool {
         self.parent_segment_info == other.parent_segment_info && self.vram_range == other.vram_range
     }
 }
-impl PartialOrd for NoloadSymProcessed {
+impl PartialOrd for NobitsSymProcessed {
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         // Compare segment info first, so symbols get sorted by segment
         match self

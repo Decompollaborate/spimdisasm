@@ -9,55 +9,55 @@ use crate::{
     metadata::SymbolType,
     relocation::python_bindings::py_user_relocs::PyUserRelocs,
     sections::{
-        before_proc::NoloadSection, processed::NoloadSectionProcessed, Section,
+        before_proc::NobitsSection, processed::NobitsSectionProcessed, Section,
         SectionPostProcessError,
     },
     symbols::{
-        display::{SymDisplayError, SymNoloadDisplaySettings},
+        display::{SymDisplayError, SymNobitsDisplaySettings},
         Symbol,
     },
 };
 
 #[derive(Debug, Clone, Hash, PartialEq, PartialOrd)]
-enum PyNoloadSectionInner {
+enum PyNobitsSectionInner {
     Invalid,
-    Preprocessed(NoloadSection),
-    Processed(NoloadSectionProcessed),
+    Preprocessed(NobitsSection),
+    Processed(NobitsSectionProcessed),
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, PartialOrd)]
 #[cfg_attr(
     feature = "pyo3",
-    pyclass(module = "spimdisasm", name = "NoloadSection")
+    pyclass(module = "spimdisasm", name = "NobitsSection")
 )]
-pub struct PyNoloadSection {
-    inner: PyNoloadSectionInner,
+pub struct PyNobitsSection {
+    inner: PyNobitsSectionInner,
 }
 
-impl PyNoloadSection {
-    pub fn new(section: NoloadSection) -> Self {
+impl PyNobitsSection {
+    pub fn new(section: NobitsSection) -> Self {
         Self {
-            inner: PyNoloadSectionInner::Preprocessed(section),
+            inner: PyNobitsSectionInner::Preprocessed(section),
         }
     }
 }
 
 #[pymethods]
-impl PyNoloadSection {
+impl PyNobitsSection {
     #[pyo3(name = "post_process")]
     fn py_post_process(
         &mut self,
         context: &mut Context,
         _user_relocs: &PyUserRelocs,
     ) -> Result<(), SectionPostProcessError> {
-        let section = core::mem::replace(&mut self.inner, PyNoloadSectionInner::Invalid);
+        let section = core::mem::replace(&mut self.inner, PyNobitsSectionInner::Invalid);
 
         let new_value = match section {
-            PyNoloadSectionInner::Invalid => return Err(SectionPostProcessError::InvalidState()),
-            PyNoloadSectionInner::Preprocessed(data_section) => {
+            PyNobitsSectionInner::Invalid => return Err(SectionPostProcessError::InvalidState()),
+            PyNobitsSectionInner::Preprocessed(data_section) => {
                 data_section.post_process(context)?
             }
-            PyNoloadSectionInner::Processed(data_section_processed) => {
+            PyNobitsSectionInner::Processed(data_section_processed) => {
                 return Err(SectionPostProcessError::AlreadyPostProcessed {
                     name: data_section_processed.name().to_string(),
                     vram_start: data_section_processed.vram_range().start(),
@@ -66,16 +66,16 @@ impl PyNoloadSection {
             }
         };
 
-        self.inner = PyNoloadSectionInner::Processed(new_value);
+        self.inner = PyNobitsSectionInner::Processed(new_value);
         Ok(())
     }
 
     #[pyo3(name = "sym_count")]
     pub fn py_sym_count(&self) -> usize {
         match &self.inner {
-            PyNoloadSectionInner::Invalid => panic!(),
-            PyNoloadSectionInner::Preprocessed(section) => section.symbol_list().len(),
-            PyNoloadSectionInner::Processed(section) => section.symbol_list().len(),
+            PyNobitsSectionInner::Invalid => panic!(),
+            PyNobitsSectionInner::Preprocessed(section) => section.symbol_list().len(),
+            PyNobitsSectionInner::Processed(section) => section.symbol_list().len(),
         }
     }
 
@@ -94,12 +94,12 @@ impl PyNoloadSection {
         Option<String>,
     )> {
         let metadata = match &self.inner {
-            PyNoloadSectionInner::Invalid => panic!(),
-            PyNoloadSectionInner::Preprocessed(section) => section
+            PyNobitsSectionInner::Invalid => panic!(),
+            PyNobitsSectionInner::Preprocessed(section) => section
                 .symbol_list()
                 .get(index)
                 .map(|x| x.find_own_metadata(context)),
-            PyNoloadSectionInner::Processed(section) => section
+            PyNobitsSectionInner::Processed(section) => section
                 .symbol_list()
                 .get(index)
                 .map(|x| x.find_own_metadata(context)),
@@ -125,12 +125,12 @@ impl PyNoloadSection {
     #[pyo3(name = "set_sym_name")]
     pub fn py_set_sym_name(&mut self, context: &mut Context, index: usize, new_name: String) {
         let metadata = match &self.inner {
-            PyNoloadSectionInner::Invalid => panic!(),
-            PyNoloadSectionInner::Preprocessed(section) => section
+            PyNobitsSectionInner::Invalid => panic!(),
+            PyNobitsSectionInner::Preprocessed(section) => section
                 .symbol_list()
                 .get(index)
                 .map(|x| x.find_own_metadata_mut(context)),
-            PyNoloadSectionInner::Processed(section) => section
+            PyNobitsSectionInner::Processed(section) => section
                 .symbol_list()
                 .get(index)
                 .map(|x| x.find_own_metadata_mut(context)),
@@ -146,18 +146,18 @@ impl PyNoloadSection {
         &self,
         context: &Context,
         index: usize,
-        settings: &SymNoloadDisplaySettings,
+        settings: &SymNobitsDisplaySettings,
     ) -> Result<Option<String>, SymDisplayError> {
         let sym = match &self.inner {
-            PyNoloadSectionInner::Invalid => panic!(),
-            PyNoloadSectionInner::Preprocessed(section) => {
+            PyNobitsSectionInner::Invalid => panic!(),
+            PyNobitsSectionInner::Preprocessed(section) => {
                 return Err(SymDisplayError::NotPostProcessedYet {
                     name: section.name().to_string(),
                     vram_start: section.vram_range().start(),
                     vram_end: section.vram_range().end(),
                 })
             }
-            PyNoloadSectionInner::Processed(section) => section.noload_symbols().get(index),
+            PyNobitsSectionInner::Processed(section) => section.noload_symbols().get(index),
         };
 
         Ok(if let Some(sym) = sym {

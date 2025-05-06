@@ -66,11 +66,11 @@ fn spimdisasm(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     m.add_class::<sections::before_proc::ExecutableSectionSettings>()?;
     m.add_class::<sections::before_proc::DataSectionSettings>()?;
-    m.add_class::<sections::before_proc::NoloadSectionSettings>()?;
+    m.add_class::<sections::before_proc::NobitsSectionSettings>()?;
 
     m.add_class::<symbols::display::FunctionDisplaySettings>()?;
     m.add_class::<symbols::display::SymDataDisplaySettings>()?;
-    m.add_class::<symbols::display::SymNoloadDisplaySettings>()?;
+    m.add_class::<symbols::display::SymNobitsDisplaySettings>()?;
 
     m.add_class::<migration::func_rodata_migration::python_bindings::PyFuncRodataPairing>()?;
     m.add_class::<migration::PairingError>()?;

@@ -8,9 +8,9 @@ use spimdisasm::{
     context::{builder::UserSegmentBuilder, Context, ContextBuilder, GlobalSegmentBuilder},
     parent_segment_info::ParentSegmentInfo,
     sections::before_proc::{
-        DataSectionSettings, ExecutableSectionSettings, NoloadSectionSettings,
+        DataSectionSettings, ExecutableSectionSettings, NobitsSectionSettings,
     },
-    symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings, SymNoloadDisplaySettings},
+    symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings, SymNobitsDisplaySettings},
 };
 
 mod game_tests_info;
@@ -273,7 +273,7 @@ fn init_segments(
                             );
                         }
                         TestSection::Bss(vram, name) => {
-                            let bss_settings = NoloadSectionSettings::new(COMPILER);
+                            let bss_settings = NobitsSectionSettings::new(COMPILER);
 
                             let bss_section_vram_end = if i + 1 < info.sections.len() {
                                 match info.sections[i + 1] {
@@ -342,7 +342,7 @@ fn drmario64_us_without_symbols() {
     let instr_display_flags = InstructionDisplayFlags::default();
     let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
     let sym_data_display_settings = SymDataDisplaySettings::new();
-    let sym_noload_display_settings = SymNoloadDisplaySettings::new();
+    let sym_noload_display_settings = SymNobitsDisplaySettings::new();
     for seg in &segments {
         for sect in &seg.text_sections {
             for sym in sect.functions() {
@@ -437,7 +437,7 @@ fn drmario64_us_with_symbols() {
     let instr_display_flags = InstructionDisplayFlags::default();
     let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
     let sym_data_display_settings = SymDataDisplaySettings::new();
-    let sym_noload_display_settings = SymNoloadDisplaySettings::new();
+    let sym_noload_display_settings = SymNobitsDisplaySettings::new();
     for seg in &segments {
         for sect in &seg.text_sections {
             for sym in sect.functions() {
