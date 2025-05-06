@@ -35,8 +35,11 @@ bitflags! {
     ///   by plain `data` strings.
     /// - [`EmptyStrings`]: Allow empty strings. Likely to yield false positives.
     /// - [`UnreferencedStrings`]: Allow completely unreferenced data to be guessed as a string.
-    /// - [`UnreferencedButSymbolized`]: Allow unreferenced data that is after a sized-symbol to be
-    ///   guessed as a string.
+    /// - [`UnreferencedButSymbolized`]: Allow unreferenced data that comes after a sized-symbol to
+    ///   be guessed as a string.
+    /// - [`UnreferencedAfterZeroPadding`]: Allow to guess for strings if there's only zeroes since
+    ///   the end of the last known symbol.
+    ///   Doesn't affect symbols with user-defined sizes.
     /// - [`AllowLateRodata`]: Allow guessing strings even after we have reached the "late rodata".
     ///   This only applies to compilers that have a concept of "late rodata" (i.e. [`IDO`]).
     /// - [`IgnoreDetectedType`]: Symbols with autodetected type information but no user type
@@ -71,6 +74,7 @@ bitflags! {
     /// [`EmptyStrings`]: StringGuesserFlags::EmptyStrings
     /// [`UnreferencedStrings`]: StringGuesserFlags::UnreferencedStrings
     /// [`UnreferencedButSymbolized`]: StringGuesserFlags::UnreferencedButSymbolized
+    /// [`UnreferencedAfterZeroPadding`]: StringGuesserFlags::UnreferencedAfterZeroPadding
     /// [`AllowLateRodata`]: StringGuesserFlags::AllowLateRodata
     /// [`IgnoreDetectedType`]: StringGuesserFlags::IgnoreDetectedType
     /// [`AllowUnalignedDereferences`]: StringGuesserFlags::AllowUnalignedDereferences
@@ -101,18 +105,27 @@ bitflags! {
         /// Allow completely unreferenced data to be guessed as a string.
         const UnreferencedStrings = 1 << 3;
 
-        /// Allow unreferenced data that is after a sized-symbol to be guessed as a string.
+        /// Allow unreferenced data that comes after a sized-symbol to be guessed as a string.
         const UnreferencedButSymbolized = 1 << 4;
+
+        /// Allow to guess for strings if there's only zeroes since the end of the last known
+        /// symbol.
+        ///
+        /// Doesn't affect symbols with user-defined sizes.
+        const UnreferencedAfterZeroPadding = 1 << 5;
 
         /// Allow guessing strings even after we have reached the "late rodata".
         ///
         /// This only applies to compilers that have a concept of "late rodata" (i.e. [`IDO`]).
         ///
         /// [`IDO`]: crate::config::compiler::IDO
-        const AllowLateRodata = 1 << 5;
+        const AllowLateRodata = 1 << 6;
 
         /// Symbols with autodetected type information but no user type information can still be
         /// guessed as strings.
+        ///
+        /// This takes precedence over `AllowUnalignedDereferences`, `AllowMixedAlignedDereferences`
+        /// and `AllowSingleAlignedDereferences`.
         const IgnoreDetectedType = 1 << 16;
 
         /// Allow guessing when a symbol has been dereferenced by at least one unaligned access
@@ -195,14 +208,22 @@ impl StringGuesserFlags {
     /// - [`Basic`]
     /// - [`MultipleReferences`]
     /// - [`UnreferencedButSymbolized`]
+    /// - [`UnreferencedAfterZeroPadding`]
     /// - [`AllowUnalignedDereferences`]
     ///
     /// Please note the flags that are turned on by this function may change (either adding or
     /// removing flags) at any given time without prior notice.
+    ///
+    /// [`Basic`]: StringGuesserFlags::Basic
+    /// [`MultipleReferences`]: StringGuesserFlags::MultipleReferences
+    /// [`UnreferencedButSymbolized`]: StringGuesserFlags::UnreferencedButSymbolized
+    /// [`UnreferencedAfterZeroPadding`]: StringGuesserFlags::UnreferencedAfterZeroPadding
+    /// [`AllowUnalignedDereferences`]: StringGuesserFlags::AllowUnalignedDereferences
     pub const fn default() -> Self {
         Self::Basic
             .union(Self::MultipleReferences)
             .union(Self::UnreferencedButSymbolized)
+            .union(Self::UnreferencedAfterZeroPadding)
             .union(Self::AllowUnalignedDereferences)
     }
 
@@ -224,6 +245,7 @@ impl StringGuesserFlags {
         compiler: Option<Compiler>,
         reached_late_rodata: bool,
         prev_sym_ended_here: bool,
+        seen_zeroes_only: bool,
     ) -> Result<usize, StringGuessError> {
         if !self.contains(Self::AllowLateRodata) && reached_late_rodata {
             return Err(StringGuessError::ReachedLateRodata);
@@ -292,10 +314,20 @@ impl StringGuesserFlags {
             }
 
             self.handle_access_types(ref_wrapper)?;
-        } else if !self.contains(Self::UnreferencedStrings) {
-            if self.contains(StringGuesserFlags::UnreferencedButSymbolized) && prev_sym_ended_here {
+        } else {
+            // We don't have a symbol.
+
+            if self.contains(Self::UnreferencedStrings) {
+                // Allow unreferenced strings. Likely to hallucinate stuff.
+            } else if self.contains(StringGuesserFlags::UnreferencedButSymbolized)
+                && prev_sym_ended_here
+            {
                 // Previous symbol was sized and it ended here, so it should be fine to guess this new
                 // symbol as a string, even if nobody references it.
+            } else if self.contains(StringGuesserFlags::UnreferencedAfterZeroPadding)
+                && seen_zeroes_only
+            {
+                // yey
             } else {
                 // Completely unreferenced strings can lead to many hallucinated symbols in the middle
                 // of other symbols.
@@ -422,7 +454,7 @@ mod tests {
         let vram = Vram::new(0x80000000);
         let guesser = StringGuesserFlags::default();
 
-        let maybe_size = guesser.guess(None, vram, &BYTES, encoding, None, false, true);
+        let maybe_size = guesser.guess(None, vram, &BYTES, encoding, None, false, true, false);
 
         #[cfg(feature = "std")]
         println!("{:?}", maybe_size);
@@ -438,7 +470,7 @@ mod tests {
         let vram = Vram::new(0x80000000);
         let guesser = StringGuesserFlags::default();
 
-        let maybe_size = guesser.guess(None, vram, &BYTES, encoding, None, false, true);
+        let maybe_size = guesser.guess(None, vram, &BYTES, encoding, None, false, true, false);
 
         #[cfg(feature = "std")]
         println!("{:?}", maybe_size);
@@ -505,6 +537,11 @@ pub(crate) mod python_bindings {
         #[pyo3(name = "AllowUnalignedDereferences")]
         pub const fn py_allow_unaligned_dereferences() -> Self {
             Self::AllowUnalignedDereferences
+        }
+        #[staticmethod]
+        #[pyo3(name = "UnreferencedAfterZeroPadding")]
+        pub const fn py_unreferenced_after_zero_padding() -> Self {
+            Self::UnreferencedAfterZeroPadding
         }
 
         pub fn __or__(&self, other: Self) -> Self {

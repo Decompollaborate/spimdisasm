@@ -471,6 +471,8 @@ impl Preheater {
         let mut first_table_label: Option<Vram> = None;
         let mut new_ref_scheduled_due_to_jtbl_ended = false;
 
+        let mut seen_zeroes_only = false;
+
         let endian = global_config.endian();
         let gp_value = global_config.gp_config().map(|x| x.gp_value());
 
@@ -515,7 +517,7 @@ impl Preheater {
                 let d =
                     ReferenceWrapper::find(user_symbols, self, d_vram, FindSettings::new(false));
 
-                let a_type = (
+                let mut a_type = (
                     a.is_some(),
                     current_vram,
                     a.and_then(|x| x.sym_type()),
@@ -742,6 +744,7 @@ impl Preheater {
                                 settings.compiler(),
                                 maybe_reached_late_rodata || reached_late_rodata,
                                 prev_sym_ended_here,
+                                seen_zeroes_only,
                             );
 
                             match guessed_size {
@@ -768,11 +771,21 @@ impl Preheater {
                                             user_symbols,
                                             ignored_addresses,
                                         ) {
-                                            reference.set_sym_type(SymbolType::CString);
-                                            reference.set_autodetected_size(Size::new(
-                                                str_sym_size as u32,
-                                            ));
+                                            let sym_type = SymbolType::CString;
+                                            let sym_size = Size::new(str_sym_size as u32);
+
+                                            reference.set_sym_type(sym_type);
+                                            reference.set_autodetected_size(sym_size);
                                             new_ref_scheduled_due_to_jtbl_ended = false;
+
+                                            // Update `a_type` to reflect a reference at this address exists now.
+                                            a_type = (
+                                                true,
+                                                current_vram,
+                                                Some(sym_type),
+                                                Some(sym_size),
+                                                false,
+                                            );
                                         }
                                         // Do not create a symbol at `current_vram + Size::new(str_sym_size as u32)` here,
                                         // because it can mess the logic to merge trailing padding due to next's symbol alignment
@@ -798,6 +811,22 @@ impl Preheater {
                         prev_sym_info =
                             Some((sym_vram, sym_type, sym_size, add_gp_to_pointed_data));
                         new_ref_scheduled_due_to_jtbl_ended = false;
+
+                        // We only care about word-aligned zeroes (at least for now).
+                        // Also check for the symbol size to avoid splitting it in half.
+                        seen_zeroes_only =
+                            sym_vram == current_vram && sym_size.is_none() && word == 0;
+                    }
+                }
+
+                if prev_sym_ended_here && prev_sym_info.is_none() {
+                    // We are at an unreferenced symbol created because the previous symbol ended
+                    // here, meaning the previous `for` wouldn't catch this word properly.
+                    seen_zeroes_only = word == 0;
+                } else if seen_zeroes_only {
+                    // Continue checking if there has only been zeroes up until now.
+                    if word != 0 {
+                        seen_zeroes_only = false;
                     }
                 }
 

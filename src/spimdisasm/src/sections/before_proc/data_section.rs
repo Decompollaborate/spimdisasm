@@ -409,6 +409,7 @@ impl DataSection {
             remaining_string_size -= 4;
         }
 
+        // Merge padding with string
         if let Some(compiler) = settings.compiler {
             if compiler.prev_align_for_type(SymbolType::CString) > Some(2) {
                 for (v, padded_by) in &auto_pads {
@@ -483,6 +484,7 @@ impl DataSection {
             settings.compiler(),
             reached_late_rodata,
             prev_sym_ended_here,
+            false,
         );
 
         match guessed_size {
