@@ -8,7 +8,9 @@ use std::{
 
 use object::{read::elf::ElfFile32, Object};
 use spimdisasm::{
-    addresses::{GlobalOffsetTable, GotGlobalEntry, GotLocalEntry, GpValue, Rom, Size, Vram},
+    addresses::{
+        GlobalOffsetTable, GotGlobalEntry, GotLocalEntry, GpValue, Rom, Size, UserSize, Vram,
+    },
     collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
     config::Endian,
 };
@@ -102,7 +104,7 @@ impl ParsedElf {
             parse_dynsym(&mut symbols_map, &elf_file, raw_got_info, dynamic.as_ref());
         parse_symtab(&mut symbols_map, &elf_file);
 
-        let mut seen_symbols = AddendedOrderedMap::new();
+        let mut seen_symbols: AddendedOrderedMap<Vram, UserSize> = AddendedOrderedMap::new();
 
         let mut symbols = HashMap::new();
         let mut labels = HashMap::new();
@@ -120,7 +122,7 @@ impl ParsedElf {
 
             let (_, newly_created) =
                 seen_symbols.find_mut_or_insert_with(vram, FindSettings::new(true), || {
-                    size.unwrap_or(Size::new(1))
+                    size.unwrap_or(const { UserSize::new_checked(1).unwrap() })
                 });
 
             if newly_created {

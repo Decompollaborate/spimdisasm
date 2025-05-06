@@ -12,7 +12,7 @@ use alloc::{
 use pyo3::prelude::*;
 
 use crate::{
-    addresses::{GlobalOffsetTable, Rom, RomVramRange, Size, Vram},
+    addresses::{GlobalOffsetTable, Rom, RomVramRange, Size, UserSize, Vram},
     collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
     config::GlobalConfig,
     metadata::{
@@ -108,6 +108,7 @@ impl SegmentBuilder {
             ));
         }
 
+        // Check overlaps
         if let Some(size) = size {
             if let Some(other) = self.user_symbols.find(
                 &(vram + Size::new(size.inner() - 1)),
@@ -329,14 +330,14 @@ impl GlobalSegmentBuilder {
         name: T,
         vram: Vram,
         rom: Option<Rom>,
-        size: Option<Size>,
+        size: Option<UserSize>,
         sym_type: Option<SymbolType>,
     ) -> Result<UserSymMetadata, AddUserSymbolError>
     where
         T: Into<Arc<str>>,
     {
         self.inner
-            .add_user_symbol(name.into(), vram, rom, size, sym_type)
+            .add_user_symbol(name.into(), vram, rom, size.map(|x| x.into()), sym_type)
     }
 
     pub fn add_user_label<T>(
@@ -356,9 +357,9 @@ impl GlobalSegmentBuilder {
     pub fn add_ignored_address_range(
         &mut self,
         vram: Vram,
-        size: Size,
+        size: UserSize,
     ) -> Result<(), AddIgnoredAddressRangeError> {
-        self.inner.add_ignored_address_range(vram, size)
+        self.inner.add_ignored_address_range(vram, size.into())
     }
 
     pub fn n64_default_banned_addresses(&mut self) -> Result<(), AddIgnoredAddressRangeError> {
@@ -420,14 +421,14 @@ impl OverlaySegmentBuilder {
         name: T,
         vram: Vram,
         rom: Option<Rom>,
-        size: Option<Size>,
+        size: Option<UserSize>,
         sym_type: Option<SymbolType>,
     ) -> Result<UserSymMetadata, AddUserSymbolError>
     where
         T: Into<Arc<str>>,
     {
         self.inner
-            .add_user_symbol(name.into(), vram, rom, size, sym_type)
+            .add_user_symbol(name.into(), vram, rom, size.map(|x| x.into()), sym_type)
     }
 
     pub fn add_user_label<T>(
@@ -447,9 +448,9 @@ impl OverlaySegmentBuilder {
     pub fn add_ignored_address_range(
         &mut self,
         vram: Vram,
-        size: Size,
+        size: UserSize,
     ) -> Result<(), AddIgnoredAddressRangeError> {
-        self.inner.add_ignored_address_range(vram, size)
+        self.inner.add_ignored_address_range(vram, size.into())
     }
 
     pub fn n64_default_banned_addresses(&mut self) -> Result<(), AddIgnoredAddressRangeError> {
@@ -522,9 +523,9 @@ pub(crate) mod python_bindings {
         pub fn py_add_ignored_address_range(
             &mut self,
             vram: Vram,
-            size: Size,
+            size: UserSize,
         ) -> Result<(), AddIgnoredAddressRangeError> {
-            self.add_ignored_address_range(vram, size)
+            self.add_ignored_address_range(vram, size.into())
         }
 
         #[pyo3(name = "n64_default_banned_addresses")]
@@ -588,9 +589,9 @@ pub(crate) mod python_bindings {
         pub fn py_add_ignored_address_range(
             &mut self,
             vram: Vram,
-            size: Size,
+            size: UserSize,
         ) -> Result<(), AddIgnoredAddressRangeError> {
-            self.add_ignored_address_range(vram, size)
+            self.add_ignored_address_range(vram, size.into())
         }
 
         #[pyo3(name = "n64_default_banned_addresses")]

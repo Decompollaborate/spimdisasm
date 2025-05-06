@@ -4,7 +4,7 @@
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use super::{AddressRange, Rom, Vram};
+use super::{AddressRange, Rom, Size, Vram};
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
@@ -65,7 +65,7 @@ impl RomVramRange {
     #[must_use]
     pub fn rom_from_vram(&self, vram: Vram) -> Option<Rom> {
         self.vram.in_range(vram).then(|| {
-            let diff = (vram - self.vram.start())
+            let diff: Size = (vram - self.vram.start())
                 .try_into()
                 .expect("This should not panic");
             self.rom.start() + diff

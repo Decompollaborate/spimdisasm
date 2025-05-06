@@ -412,6 +412,15 @@ pub trait SizedValue<SIZE = Size> {
     fn size(&self) -> SIZE;
 }
 
+impl<T> SizedValue<T> for T
+where
+    T: Copy,
+{
+    fn size(&self) -> T {
+        *self
+    }
+}
+
 // TODO: use the bitflags crate instead of a plain struct
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct FindSettings {

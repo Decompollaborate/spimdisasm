@@ -7,7 +7,7 @@ use alloc::sync::Arc;
 use pyo3::prelude::*;
 
 use crate::{
-    addresses::{Size, Vram},
+    addresses::{Size, UserSize, Vram},
     collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
     metadata::{
         GeneratedBy, OwnerSegmentKind, SymbolMetadata, SymbolNameGenerationSettings, SymbolType,
@@ -95,13 +95,13 @@ impl UserSegmentBuilder {
         &mut self,
         vram: Vram,
         name: T,
-        size: Size,
+        size: UserSize,
         typ: Option<SymbolType>,
     ) -> Result<UserSymMetadata, AddUserSegmentSymbolError>
     where
         T: Into<Arc<str>>,
     {
-        self.add_symbol_impl(vram, size, Some(name.into()), typ)
+        self.add_symbol_impl(vram, size.into(), Some(name.into()), typ)
     }
 
     fn add_symbols(
@@ -366,10 +366,10 @@ pub(crate) mod python_bindings {
             &mut self,
             vram: Vram,
             name: String,
-            size: Size,
+            size: UserSize,
             typ: Option<SymbolType>,
         ) -> Result<(), AddUserSegmentSymbolError> {
-            self.add_user_symbol(vram, name, size, typ)?;
+            self.add_user_symbol(vram, name, size.into(), typ)?;
             Ok(())
         }
 

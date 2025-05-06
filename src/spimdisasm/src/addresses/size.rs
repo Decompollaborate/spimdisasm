@@ -144,15 +144,9 @@ impl TryFrom<VramOffset> for Size {
     }
 }
 
-impl SizedValue for Size {
-    fn size(&self) -> Size {
-        *self
-    }
-}
-
 impl SizedValue for Option<Size> {
     fn size(&self) -> Size {
-        self.unwrap_or(Size::new(1))
+        self.unwrap_or(const { Size::new(1) })
     }
 }
 

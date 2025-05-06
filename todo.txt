@@ -44,6 +44,3 @@ Change the order of checks in InstructionAnalysisResult::process_instr
 Some functions may end with `jr` with a non-$ra register that hasn't loaded a jumptable either.
 
 Parse `.rel.dyn` when it is available
-
-Add an `UserSize` type.
-    Use `NonZeroU32` internally to avoid users from creating zero-sized sizes.

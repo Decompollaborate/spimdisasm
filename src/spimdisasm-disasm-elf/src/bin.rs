@@ -11,7 +11,7 @@ use object::{
 use parsed_elf::ParsedElf;
 use spimdisasm::{
     self,
-    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
+    addresses::{AddressRange, Rom, RomVramRange, UserSize, Vram},
     analysis::StringGuesserFlags,
     config::{GlobalConfig, GlobalConfigBuilder, GpConfig},
     context::{
@@ -320,12 +320,14 @@ fn fill_symbols(
     // Silly hack to allow strings starting with `0x0A` (\n) or `0x09` (\t) to be detected as strings.
     // We need to do this because otherwise spimdisasm will think those values look like addresses,
     // because they happen to be in the middle of the non contiguous address space of the elf.
-    utils::pretty_unwrap(
-        global_segment.add_ignored_address_range(Vram::new(0x09000000), Size::new(0x00800000)),
-    );
-    utils::pretty_unwrap(
-        global_segment.add_ignored_address_range(Vram::new(0x0A000000), Size::new(0x00800000)),
-    );
+    utils::pretty_unwrap(global_segment.add_ignored_address_range(
+        Vram::new(0x09000000),
+        const { UserSize::new_checked(0x00800000).unwrap() },
+    ));
+    utils::pretty_unwrap(global_segment.add_ignored_address_range(
+        Vram::new(0x0A000000),
+        const { UserSize::new_checked(0x00800000).unwrap() },
+    ));
 
     for global_entry in elf.got_global_symbols() {
         let got_entry = global_entry.got_entry();
@@ -349,7 +351,7 @@ fn fill_symbols(
                             ElfSymSectionIndex::Undef | ElfSymSectionIndex::Common
                         ) && !matches!(elf_sym.typ(), ElfSymType::Function)
                     })
-                    .unwrap_or(Size::new(1));
+                    .unwrap_or(const { UserSize::new_checked(1).unwrap() });
 
                 let mut sym_metadata = utils::pretty_unwrap(user_segment.add_user_symbol(
                     initial_vram,
@@ -463,7 +465,7 @@ fn fill_symbols(
             if vram != Vram::new(0) {
                 // Something silly, so the user doesn't confuse this as a real symbol
                 let name = "$$.LazyResolver";
-                let size = Size::new(4);
+                let size = const { UserSize::new_checked(4).unwrap() };
                 let typ = None;
 
                 let mut sym_metadata =

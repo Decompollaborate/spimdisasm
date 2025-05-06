@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 
 use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaExtension, IsaVersion};
 use spimdisasm::{
-    addresses::{AddressRange, GpValue, Rom, RomVramRange, Size, Vram},
+    addresses::{AddressRange, GpValue, Rom, RomVramRange, Size, UserSize, Vram},
     collections::addended_ordered_map::FindSettings,
     config::{Compiler, Endian, GlobalConfigBuilder, GpConfig},
     context::{
@@ -18,6 +18,32 @@ use spimdisasm::{
     symbols::display::FunctionDisplaySettings,
 };
 
+struct UserSym {
+    name: &'static str,
+    vram: Vram,
+    rom: Option<Rom>,
+    size: Option<UserSize>,
+    sym_type: Option<SymbolType>,
+}
+
+impl UserSym {
+    const fn new(
+        name: &'static str,
+        vram: Vram,
+        rom: Option<Rom>,
+        size: Option<UserSize>,
+        sym_type: Option<SymbolType>,
+    ) -> Self {
+        Self {
+            name,
+            vram,
+            rom,
+            size,
+            sym_type,
+        }
+    }
+}
+
 #[expect(clippy::too_many_arguments)]
 fn disassemble_text(
     raw_bytes: &[u8],
@@ -28,7 +54,7 @@ fn disassemble_text(
     text_settings: ExecutableSectionSettings,
     fill_n64_symbols: bool,
     add_segmented_assets: bool,
-    user_symbols: Vec<(String, Vram, Option<Rom>, Option<Size>, Option<SymbolType>)>,
+    user_symbols: Vec<UserSym>,
 ) -> (String, Context, ExecutableSectionProcessed) {
     let segment_rom = Rom::new(0x00000000);
     let segment_vram = Vram::new(0x80000000);
@@ -46,7 +72,15 @@ fn disassemble_text(
         );
         let mut global_segment_builder = GlobalSegmentBuilder::new(global_ranges);
 
-        for (name, vram, rom, size, sym_type) in user_symbols {
+        for user_sym in user_symbols {
+            let UserSym {
+                name,
+                vram,
+                rom,
+                size,
+                sym_type,
+            } = user_sym;
+
             global_segment_builder
                 .add_user_symbol(name, vram, rom, size, sym_type)
                 .unwrap();
@@ -1402,28 +1436,11 @@ fn test_section_text_1_instr_function() {
     )
     .with_negative_branch_as_end(true);
 
-    let mut user_symbols = Vec::new();
-    user_symbols.push((
-        "_hcasstart".to_string(),
-        Vram::new(0x80000000),
-        None,
-        None,
-        None,
-    ));
-    user_symbols.push((
-        "_hcasmayhave".to_string(),
-        Vram::new(0x80000004),
-        None,
-        None,
-        None,
-    ));
-    user_symbols.push((
-        "_hcashavelock".to_string(),
-        Vram::new(0x80000014),
-        None,
-        None,
-        None,
-    ));
+    let user_symbols = vec![
+        UserSym::new("_hcasstart", Vram::new(0x80000000), None, None, None),
+        UserSym::new("_hcasmayhave", Vram::new(0x80000004), None, None, None),
+        UserSym::new("_hcashavelock", Vram::new(0x80000014), None, None, None),
+    ];
 
     let (disassembly, _context, _section_text) = disassemble_text(
         &BYTES,

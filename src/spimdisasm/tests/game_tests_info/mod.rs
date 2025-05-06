@@ -3,10 +3,10 @@
 
 #![allow(dead_code)]
 
-use std::{collections::BTreeMap, sync::Arc};
+use std::{collections::BTreeMap, num::NonZeroU32, sync::Arc};
 
 use spimdisasm::{
-    addresses::{Rom, Size, Vram},
+    addresses::{Rom, Size, UserSize, Vram},
     context::Context,
     metadata::{LabelType, RodataMigrationBehavior, SymbolType},
     sections::{
@@ -105,7 +105,7 @@ pub struct UserSymbolInfo {
     pub vram: Vram,
     pub rom: Option<Rom>,
     pub name_end: Option<Arc<str>>,
-    pub size: Option<Size>,
+    pub size: Option<UserSize>,
     pub typ: Option<SymbolType>,
     pub migration_behavior: RodataMigrationBehavior,
     pub dont_allow_addend: bool,
@@ -113,7 +113,7 @@ pub struct UserSymbolInfo {
 pub enum UserSymbol {
     Info(UserSymbolInfo),
     Label(Arc<str>, Vram, LabelType),
-    Ignored(Vram, Option<Size>),
+    Ignored(Vram, Option<UserSize>),
 }
 
 impl UserSymbol {
@@ -154,7 +154,7 @@ impl UserSymbol {
             UserSymbol::Label(..) | UserSymbol::Ignored(..) => panic!("no"),
         }
     }
-    pub fn with_size(self, size: Size) -> Self {
+    pub fn with_size(self, size: UserSize) -> Self {
         match self {
             UserSymbol::Info(s) => UserSymbol::Info(UserSymbolInfo {
                 size: Some(size),
@@ -673,165 +673,248 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("DecompressRomToRam".into(), Vram::new(0x80002380)),
         UserSymbol::new("WrapI".into(), Vram::new(0x800023B4)),
         UserSymbol::new("WrapF".into(), Vram::new(0x80002400)),
-        UserSymbol::new("osEepromProbe".into(), Vram::new(0x800024A0)).with_size(Size::new(0x74)),
+        UserSymbol::new("osEepromProbe".into(), Vram::new(0x800024A0))
+            .with_size(UserSize::new(NonZeroU32::new(0x74).unwrap())),
         UserSymbol::new("osEepromLongWrite".into(), Vram::new(0x80002520))
-            .with_size(Size::new(0xE4)),
+            .with_size(UserSize::new(NonZeroU32::new(0xE4).unwrap())),
         UserSymbol::new("osEepromLongRead".into(), Vram::new(0x80002610))
-            .with_size(Size::new(0x70)),
+            .with_size(UserSize::new(NonZeroU32::new(0x70).unwrap())),
         UserSymbol::new("osCreatePiManager".into(), Vram::new(0x80002680))
-            .with_size(Size::new(0x190)),
+            .with_size(UserSize::new(NonZeroU32::new(0x190).unwrap())),
         UserSymbol::new("__osEPiRawStartDma".into(), Vram::new(0x80002810))
-            .with_size(Size::new(0x1EC)),
-        UserSymbol::new("osEPiStartDma".into(), Vram::new(0x80002A00)).with_size(Size::new(0x94)),
-        UserSymbol::new("osCartRomInit".into(), Vram::new(0x80002AA0)).with_size(Size::new(0x178)),
-        UserSymbol::new("__osDevMgrMain".into(), Vram::new(0x80002C20)).with_size(Size::new(0x3B8)),
+            .with_size(UserSize::new(NonZeroU32::new(0x1EC).unwrap())),
+        UserSymbol::new("osEPiStartDma".into(), Vram::new(0x80002A00))
+            .with_size(UserSize::new(NonZeroU32::new(0x94).unwrap())),
+        UserSymbol::new("osCartRomInit".into(), Vram::new(0x80002AA0))
+            .with_size(UserSize::new(NonZeroU32::new(0x178).unwrap())),
+        UserSymbol::new("__osDevMgrMain".into(), Vram::new(0x80002C20))
+            .with_size(UserSize::new(NonZeroU32::new(0x3B8).unwrap())),
         UserSymbol::new("__osPiCreateAccessQueue".into(), Vram::new(0x80002FE0)),
         UserSymbol::new("__osPiGetAccess".into(), Vram::new(0x80003034)),
         UserSymbol::new("__osPiRelAccess".into(), Vram::new(0x800030A0)),
-        UserSymbol::new("osPiStartDma".into(), Vram::new(0x800030D0)).with_size(Size::new(0xA8)),
-        UserSymbol::new("osAiGetLength".into(), Vram::new(0x80003180)).with_size(Size::new(0x10)),
-        UserSymbol::new("osAiGetStatus".into(), Vram::new(0x80003190)).with_size(Size::new(0x10)),
+        UserSymbol::new("osPiStartDma".into(), Vram::new(0x800030D0))
+            .with_size(UserSize::new(NonZeroU32::new(0xA8).unwrap())),
+        UserSymbol::new("osAiGetLength".into(), Vram::new(0x80003180))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
+        UserSymbol::new("osAiGetStatus".into(), Vram::new(0x80003190))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
         UserSymbol::new("osAiSetFrequency".into(), Vram::new(0x800031A0))
-            .with_size(Size::new(0x118)),
+            .with_size(UserSize::new(NonZeroU32::new(0x118).unwrap())),
         UserSymbol::new("osAiSetNextBuffer".into(), Vram::new(0x800032C0))
-            .with_size(Size::new(0x94)),
-        UserSymbol::new("alEnvmixerPull".into(), Vram::new(0x80003360)).with_size(Size::new(0x500)),
-        UserSymbol::new("alEnvmixerParam".into(), Vram::new(0x80003860)).with_size(Size::new(0xD4)),
-        UserSymbol::new("_pullSubFrame".into(), Vram::new(0x80003934)).with_size(Size::new(0x2D4)),
-        UserSymbol::new("_frexpf".into(), Vram::new(0x80003C08)).with_size(Size::new(0xE0)),
-        UserSymbol::new("_ldexpf".into(), Vram::new(0x80003CE8)).with_size(Size::new(0x24)),
-        UserSymbol::new("_getRate".into(), Vram::new(0x80003D0C)).with_size(Size::new(0x280)),
-        UserSymbol::new("_getVol".into(), Vram::new(0x80003F8C)).with_size(Size::new(0x84)),
-        UserSymbol::new("alInit".into(), Vram::new(0x80004010)).with_size(Size::new(0x2C)),
-        UserSymbol::new("alClose".into(), Vram::new(0x8000403C)).with_size(Size::new(0x30)),
-        UserSymbol::new("alLink".into(), Vram::new(0x8000406C)).with_size(Size::new(0x20)),
-        UserSymbol::new("alUnlink".into(), Vram::new(0x8000408C)).with_size(Size::new(0x30)),
-        UserSymbol::new("alHeapInit".into(), Vram::new(0x800040C0)).with_size(Size::new(0x34)),
-        UserSymbol::new("alSynNew".into(), Vram::new(0x80004100)).with_size(Size::new(0x2CC)),
-        UserSymbol::new("alAudioFrame".into(), Vram::new(0x800043CC)).with_size(Size::new(0x1B0)),
-        UserSymbol::new("__allocParam".into(), Vram::new(0x8000457C)).with_size(Size::new(0x2C)),
-        UserSymbol::new("__freeParam".into(), Vram::new(0x800045A8)).with_size(Size::new(0x18)),
-        UserSymbol::new("_collectPVoices".into(), Vram::new(0x800045C0)).with_size(Size::new(0x54)),
-        UserSymbol::new("_freePVoice".into(), Vram::new(0x80004614)).with_size(Size::new(0x40)),
+            .with_size(UserSize::new(NonZeroU32::new(0x94).unwrap())),
+        UserSymbol::new("alEnvmixerPull".into(), Vram::new(0x80003360))
+            .with_size(UserSize::new(NonZeroU32::new(0x500).unwrap())),
+        UserSymbol::new("alEnvmixerParam".into(), Vram::new(0x80003860))
+            .with_size(UserSize::new(NonZeroU32::new(0xD4).unwrap())),
+        UserSymbol::new("_pullSubFrame".into(), Vram::new(0x80003934))
+            .with_size(UserSize::new(NonZeroU32::new(0x2D4).unwrap())),
+        UserSymbol::new("_frexpf".into(), Vram::new(0x80003C08))
+            .with_size(UserSize::new(NonZeroU32::new(0xE0).unwrap())),
+        UserSymbol::new("_ldexpf".into(), Vram::new(0x80003CE8))
+            .with_size(UserSize::new(NonZeroU32::new(0x24).unwrap())),
+        UserSymbol::new("_getRate".into(), Vram::new(0x80003D0C))
+            .with_size(UserSize::new(NonZeroU32::new(0x280).unwrap())),
+        UserSymbol::new("_getVol".into(), Vram::new(0x80003F8C))
+            .with_size(UserSize::new(NonZeroU32::new(0x84).unwrap())),
+        UserSymbol::new("alInit".into(), Vram::new(0x80004010))
+            .with_size(UserSize::new(NonZeroU32::new(0x2C).unwrap())),
+        UserSymbol::new("alClose".into(), Vram::new(0x8000403C))
+            .with_size(UserSize::new(NonZeroU32::new(0x30).unwrap())),
+        UserSymbol::new("alLink".into(), Vram::new(0x8000406C))
+            .with_size(UserSize::new(NonZeroU32::new(0x20).unwrap())),
+        UserSymbol::new("alUnlink".into(), Vram::new(0x8000408C))
+            .with_size(UserSize::new(NonZeroU32::new(0x30).unwrap())),
+        UserSymbol::new("alHeapInit".into(), Vram::new(0x800040C0))
+            .with_size(UserSize::new(NonZeroU32::new(0x34).unwrap())),
+        UserSymbol::new("alSynNew".into(), Vram::new(0x80004100))
+            .with_size(UserSize::new(NonZeroU32::new(0x2CC).unwrap())),
+        UserSymbol::new("alAudioFrame".into(), Vram::new(0x800043CC))
+            .with_size(UserSize::new(NonZeroU32::new(0x1B0).unwrap())),
+        UserSymbol::new("__allocParam".into(), Vram::new(0x8000457C))
+            .with_size(UserSize::new(NonZeroU32::new(0x2C).unwrap())),
+        UserSymbol::new("__freeParam".into(), Vram::new(0x800045A8))
+            .with_size(UserSize::new(NonZeroU32::new(0x18).unwrap())),
+        UserSymbol::new("_collectPVoices".into(), Vram::new(0x800045C0))
+            .with_size(UserSize::new(NonZeroU32::new(0x54).unwrap())),
+        UserSymbol::new("_freePVoice".into(), Vram::new(0x80004614))
+            .with_size(UserSize::new(NonZeroU32::new(0x40).unwrap())),
         UserSymbol::new("_timeToSamplesNoRound".into(), Vram::new(0x80004654))
-            .with_size(Size::new(0x48)),
-        UserSymbol::new("_timeToSamples".into(), Vram::new(0x8000469C)).with_size(Size::new(0x4C)),
+            .with_size(UserSize::new(NonZeroU32::new(0x48).unwrap())),
+        UserSymbol::new("_timeToSamples".into(), Vram::new(0x8000469C))
+            .with_size(UserSize::new(NonZeroU32::new(0x4C).unwrap())),
         UserSymbol::new("__nextSampleTime".into(), Vram::new(0x800046E8))
-            .with_size(Size::new(0x54)),
-        UserSymbol::new("alSynDelete".into(), Vram::new(0x80004740)).with_size(Size::new(0x8)),
-        UserSymbol::new("alSynAddPlayer".into(), Vram::new(0x80004750)).with_size(Size::new(0x50)),
+            .with_size(UserSize::new(NonZeroU32::new(0x54).unwrap())),
+        UserSymbol::new("alSynDelete".into(), Vram::new(0x80004740))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
+        UserSymbol::new("alSynAddPlayer".into(), Vram::new(0x80004750))
+            .with_size(UserSize::new(NonZeroU32::new(0x50).unwrap())),
         UserSymbol::new("alSynAllocVoice".into(), Vram::new(0x800047A0))
-            .with_size(Size::new(0x128)),
-        UserSymbol::new("_allocatePVoice".into(), Vram::new(0x800048C8)).with_size(Size::new(0xB8)),
-        UserSymbol::new("alSynStopVoice".into(), Vram::new(0x80004980)).with_size(Size::new(0x7C)),
-        UserSymbol::new("alSynStartVoice".into(), Vram::new(0x80004A00)).with_size(Size::new(0x94)),
-        UserSymbol::new("alSynSetPitch".into(), Vram::new(0x80004AA0)).with_size(Size::new(0x90)),
-        UserSymbol::new("alSynSetVol".into(), Vram::new(0x80004B30)).with_size(Size::new(0xB8)),
-        UserSymbol::new("alSynSetFXMix".into(), Vram::new(0x80004BF0)).with_size(Size::new(0xA0)),
-        UserSymbol::new("alSynSetPan".into(), Vram::new(0x80004C90)).with_size(Size::new(0x90)),
-        UserSymbol::new("alSynAllocFX".into(), Vram::new(0x80004D20)).with_size(Size::new(0x94)),
+            .with_size(UserSize::new(NonZeroU32::new(0x128).unwrap())),
+        UserSymbol::new("_allocatePVoice".into(), Vram::new(0x800048C8))
+            .with_size(UserSize::new(NonZeroU32::new(0xB8).unwrap())),
+        UserSymbol::new("alSynStopVoice".into(), Vram::new(0x80004980))
+            .with_size(UserSize::new(NonZeroU32::new(0x7C).unwrap())),
+        UserSymbol::new("alSynStartVoice".into(), Vram::new(0x80004A00))
+            .with_size(UserSize::new(NonZeroU32::new(0x94).unwrap())),
+        UserSymbol::new("alSynSetPitch".into(), Vram::new(0x80004AA0))
+            .with_size(UserSize::new(NonZeroU32::new(0x90).unwrap())),
+        UserSymbol::new("alSynSetVol".into(), Vram::new(0x80004B30))
+            .with_size(UserSize::new(NonZeroU32::new(0xB8).unwrap())),
+        UserSymbol::new("alSynSetFXMix".into(), Vram::new(0x80004BF0))
+            .with_size(UserSize::new(NonZeroU32::new(0xA0).unwrap())),
+        UserSymbol::new("alSynSetPan".into(), Vram::new(0x80004C90))
+            .with_size(UserSize::new(NonZeroU32::new(0x90).unwrap())),
+        UserSymbol::new("alSynAllocFX".into(), Vram::new(0x80004D20))
+            .with_size(UserSize::new(NonZeroU32::new(0x94).unwrap())),
         UserSymbol::new("osInvalDCache".into(), Vram::new(0x80004DC0)),
         UserSymbol::new("osWritebackDCacheAll".into(), Vram::new(0x80004E70)),
         UserSymbol::new("osContStartQuery".into(), Vram::new(0x80004EA0))
-            .with_size(Size::new(0x80)),
-        UserSymbol::new("osContGetQuery".into(), Vram::new(0x80004F20)).with_size(Size::new(0x20)),
+            .with_size(UserSize::new(NonZeroU32::new(0x80).unwrap())),
+        UserSymbol::new("osContGetQuery".into(), Vram::new(0x80004F20))
+            .with_size(UserSize::new(NonZeroU32::new(0x20).unwrap())),
         UserSymbol::new("osContStartReadData".into(), Vram::new(0x80004F40))
-            .with_size(Size::new(0x88)),
+            .with_size(UserSize::new(NonZeroU32::new(0x88).unwrap())),
         UserSymbol::new("osContGetReadData".into(), Vram::new(0x80004FC8))
-            .with_size(Size::new(0x9C)),
+            .with_size(UserSize::new(NonZeroU32::new(0x9C).unwrap())),
         UserSymbol::new("__osPackReadData".into(), Vram::new(0x80005064))
-            .with_size(Size::new(0xB8)),
-        UserSymbol::new("osContInit".into(), Vram::new(0x80005120)).with_size(Size::new(0x19C)),
+            .with_size(UserSize::new(NonZeroU32::new(0xB8).unwrap())),
+        UserSymbol::new("osContInit".into(), Vram::new(0x80005120))
+            .with_size(UserSize::new(NonZeroU32::new(0x19C).unwrap())),
         UserSymbol::new("__osContGetInitData".into(), Vram::new(0x800052BC))
-            .with_size(Size::new(0xB4)),
+            .with_size(UserSize::new(NonZeroU32::new(0xB4).unwrap())),
         UserSymbol::new("__osPackRequestData".into(), Vram::new(0x80005370))
-            .with_size(Size::new(0xBC)),
-        UserSymbol::new("osContSetCh".into(), Vram::new(0x80005430)).with_size(Size::new(0x60)),
+            .with_size(UserSize::new(NonZeroU32::new(0xBC).unwrap())),
+        UserSymbol::new("osContSetCh".into(), Vram::new(0x80005430))
+            .with_size(UserSize::new(NonZeroU32::new(0x60).unwrap())),
         UserSymbol::new("osVirtualToPhysical".into(), Vram::new(0x80005490))
-            .with_size(Size::new(0x54)),
+            .with_size(UserSize::new(NonZeroU32::new(0x54).unwrap())),
         UserSymbol::new("sqrtf".into(), Vram::new(0x800054F0)),
         UserSymbol::new("cosf".into(), Vram::new(0x80005500)),
-        UserSymbol::new("guOrthoF".into(), Vram::new(0x80005650)).with_size(Size::new(0x130)),
-        UserSymbol::new("guOrtho".into(), Vram::new(0x80005780)).with_size(Size::new(0x14C)),
-        UserSymbol::new("guPerspectiveF".into(), Vram::new(0x800058D0)).with_size(Size::new(0x1B0)),
-        UserSymbol::new("guPerspective".into(), Vram::new(0x80005A80)).with_size(Size::new(0x1C8)),
-        UserSymbol::new("guRotateRPYF".into(), Vram::new(0x80005C50)).with_size(Size::new(0x188)),
-        UserSymbol::new("guRotateRPY".into(), Vram::new(0x80005DD8)).with_size(Size::new(0x18C)),
-        UserSymbol::new("sinf".into(), Vram::new(0x80005F70)).with_size(Size::new(0x1A0)),
-        UserSymbol::new("sins".into(), Vram::new(0x80006110)).with_size(Size::new(0x54)),
+        UserSymbol::new("guOrthoF".into(), Vram::new(0x80005650))
+            .with_size(UserSize::new(NonZeroU32::new(0x130).unwrap())),
+        UserSymbol::new("guOrtho".into(), Vram::new(0x80005780))
+            .with_size(UserSize::new(NonZeroU32::new(0x14C).unwrap())),
+        UserSymbol::new("guPerspectiveF".into(), Vram::new(0x800058D0))
+            .with_size(UserSize::new(NonZeroU32::new(0x1B0).unwrap())),
+        UserSymbol::new("guPerspective".into(), Vram::new(0x80005A80))
+            .with_size(UserSize::new(NonZeroU32::new(0x1C8).unwrap())),
+        UserSymbol::new("guRotateRPYF".into(), Vram::new(0x80005C50))
+            .with_size(UserSize::new(NonZeroU32::new(0x188).unwrap())),
+        UserSymbol::new("guRotateRPY".into(), Vram::new(0x80005DD8))
+            .with_size(UserSize::new(NonZeroU32::new(0x18C).unwrap())),
+        UserSymbol::new("sinf".into(), Vram::new(0x80005F70))
+            .with_size(UserSize::new(NonZeroU32::new(0x1A0).unwrap())),
+        UserSymbol::new("sins".into(), Vram::new(0x80006110))
+            .with_size(UserSize::new(NonZeroU32::new(0x54).unwrap())),
         UserSymbol::new("bcmp".into(), Vram::new(0x80006170)),
         UserSymbol::new("bcopy".into(), Vram::new(0x80006280)),
         UserSymbol::new("bzero".into(), Vram::new(0x800065A0)),
-        UserSymbol::new("strchr".into(), Vram::new(0x80006640)).with_size(Size::new(0x40)),
-        UserSymbol::new("strlen".into(), Vram::new(0x80006680)).with_size(Size::new(0x24)),
-        UserSymbol::new("memcpy".into(), Vram::new(0x800066A4)).with_size(Size::new(0x28)),
+        UserSymbol::new("strchr".into(), Vram::new(0x80006640))
+            .with_size(UserSize::new(NonZeroU32::new(0x40).unwrap())),
+        UserSymbol::new("strlen".into(), Vram::new(0x80006680))
+            .with_size(UserSize::new(NonZeroU32::new(0x24).unwrap())),
+        UserSymbol::new("memcpy".into(), Vram::new(0x800066A4))
+            .with_size(UserSize::new(NonZeroU32::new(0x28).unwrap())),
         UserSymbol::new("osCreateMesgQueue".into(), Vram::new(0x800066D0))
-            .with_size(Size::new(0x24)),
-        UserSymbol::new("osJamMesg".into(), Vram::new(0x80006700)).with_size(Size::new(0x134)),
-        UserSymbol::new("osRecvMesg".into(), Vram::new(0x80006840)).with_size(Size::new(0x124)),
-        UserSymbol::new("osSendMesg".into(), Vram::new(0x80006970)).with_size(Size::new(0x130)),
-        UserSymbol::new("osSetEventMesg".into(), Vram::new(0x80006AA0)).with_size(Size::new(0xAC)),
-        UserSymbol::new("osSpTaskLoad".into(), Vram::new(0x80006B50)).with_size(Size::new(0x20C)),
-        UserSymbol::new("osSpTaskStartGo".into(), Vram::new(0x80006D5C)).with_size(Size::new(0x2C)),
-        UserSymbol::new("osSpTaskYield".into(), Vram::new(0x80006D90)).with_size(Size::new(0x1C)),
-        UserSymbol::new("osSpTaskYielded".into(), Vram::new(0x80006DB0)).with_size(Size::new(0x4C)),
+            .with_size(UserSize::new(NonZeroU32::new(0x24).unwrap())),
+        UserSymbol::new("osJamMesg".into(), Vram::new(0x80006700))
+            .with_size(UserSize::new(NonZeroU32::new(0x134).unwrap())),
+        UserSymbol::new("osRecvMesg".into(), Vram::new(0x80006840))
+            .with_size(UserSize::new(NonZeroU32::new(0x124).unwrap())),
+        UserSymbol::new("osSendMesg".into(), Vram::new(0x80006970))
+            .with_size(UserSize::new(NonZeroU32::new(0x130).unwrap())),
+        UserSymbol::new("osSetEventMesg".into(), Vram::new(0x80006AA0))
+            .with_size(UserSize::new(NonZeroU32::new(0xAC).unwrap())),
+        UserSymbol::new("osSpTaskLoad".into(), Vram::new(0x80006B50))
+            .with_size(UserSize::new(NonZeroU32::new(0x20C).unwrap())),
+        UserSymbol::new("osSpTaskStartGo".into(), Vram::new(0x80006D5C))
+            .with_size(UserSize::new(NonZeroU32::new(0x2C).unwrap())),
+        UserSymbol::new("osSpTaskYield".into(), Vram::new(0x80006D90))
+            .with_size(UserSize::new(NonZeroU32::new(0x1C).unwrap())),
+        UserSymbol::new("osSpTaskYielded".into(), Vram::new(0x80006DB0))
+            .with_size(UserSize::new(NonZeroU32::new(0x4C).unwrap())),
         UserSymbol::new("osCreateScheduler".into(), Vram::new(0x80006E00))
-            .with_size(Size::new(0x148)),
-        UserSymbol::new("osScAddClient".into(), Vram::new(0x80006F48)).with_size(Size::new(0x58)),
+            .with_size(UserSize::new(NonZeroU32::new(0x148).unwrap())),
+        UserSymbol::new("osScAddClient".into(), Vram::new(0x80006F48))
+            .with_size(UserSize::new(NonZeroU32::new(0x58).unwrap())),
         UserSymbol::new("osScRemoveClient".into(), Vram::new(0x80006FA0))
-            .with_size(Size::new(0x90)),
-        UserSymbol::new("osScGetCmdQ".into(), Vram::new(0x80007030)).with_size(Size::new(0x8)),
-        UserSymbol::new("__scMain".into(), Vram::new(0x80007038)).with_size(Size::new(0x104)),
+            .with_size(UserSize::new(NonZeroU32::new(0x90).unwrap())),
+        UserSymbol::new("osScGetCmdQ".into(), Vram::new(0x80007030))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
+        UserSymbol::new("__scMain".into(), Vram::new(0x80007038))
+            .with_size(UserSize::new(NonZeroU32::new(0x104).unwrap())),
         UserSymbol::new("__scHandleRetrace".into(), Vram::new(0x8000713C))
-            .with_size(Size::new(0x100)),
-        UserSymbol::new("__scHandleRSP".into(), Vram::new(0x8000723C)).with_size(Size::new(0xF0)),
-        UserSymbol::new("__scHandleRDP".into(), Vram::new(0x8000732C)).with_size(Size::new(0x90)),
-        UserSymbol::new("__scTaskReady".into(), Vram::new(0x800073BC)).with_size(Size::new(0x54)),
+            .with_size(UserSize::new(NonZeroU32::new(0x100).unwrap())),
+        UserSymbol::new("__scHandleRSP".into(), Vram::new(0x8000723C))
+            .with_size(UserSize::new(NonZeroU32::new(0xF0).unwrap())),
+        UserSymbol::new("__scHandleRDP".into(), Vram::new(0x8000732C))
+            .with_size(UserSize::new(NonZeroU32::new(0x90).unwrap())),
+        UserSymbol::new("__scTaskReady".into(), Vram::new(0x800073BC))
+            .with_size(UserSize::new(NonZeroU32::new(0x54).unwrap())),
         UserSymbol::new("__scTaskComplete".into(), Vram::new(0x80007410))
-            .with_size(Size::new(0x8C)),
-        UserSymbol::new("__scAppendList".into(), Vram::new(0x8000749C)).with_size(Size::new(0x58)),
-        UserSymbol::new("__scExec".into(), Vram::new(0x800074F4)).with_size(Size::new(0xD0)),
-        UserSymbol::new("__scYield".into(), Vram::new(0x800075C4)).with_size(Size::new(0x38)),
-        UserSymbol::new("__scSchedule".into(), Vram::new(0x800075FC)).with_size(Size::new(0x214)),
+            .with_size(UserSize::new(NonZeroU32::new(0x8C).unwrap())),
+        UserSymbol::new("__scAppendList".into(), Vram::new(0x8000749C))
+            .with_size(UserSize::new(NonZeroU32::new(0x58).unwrap())),
+        UserSymbol::new("__scExec".into(), Vram::new(0x800074F4))
+            .with_size(UserSize::new(NonZeroU32::new(0xD0).unwrap())),
+        UserSymbol::new("__scYield".into(), Vram::new(0x800075C4))
+            .with_size(UserSize::new(NonZeroU32::new(0x38).unwrap())),
+        UserSymbol::new("__scSchedule".into(), Vram::new(0x800075FC))
+            .with_size(UserSize::new(NonZeroU32::new(0x214).unwrap())),
         UserSymbol::new("__osSiRawStartDma".into(), Vram::new(0x80007810))
-            .with_size(Size::new(0xA4)),
+            .with_size(UserSize::new(NonZeroU32::new(0xA4).unwrap())),
         UserSymbol::new("__osSiCreateAccessQueue".into(), Vram::new(0x800078C0)),
         UserSymbol::new("__osSiGetAccess".into(), Vram::new(0x80007914)),
         UserSymbol::new("__osSiRelAccess".into(), Vram::new(0x80007980)),
-        UserSymbol::new("osCreateThread".into(), Vram::new(0x800079B0)).with_size(Size::new(0xD0)),
-        UserSymbol::new("osGetThreadPri".into(), Vram::new(0x80007A80)).with_size(Size::new(0x18)),
-        UserSymbol::new("osSetThreadPri".into(), Vram::new(0x80007AA0)).with_size(Size::new(0xC8)),
-        UserSymbol::new("osStartThread".into(), Vram::new(0x80007B70)).with_size(Size::new(0x118)),
-        UserSymbol::new("osStopThread".into(), Vram::new(0x80007C90)).with_size(Size::new(0xB4)),
+        UserSymbol::new("osCreateThread".into(), Vram::new(0x800079B0))
+            .with_size(UserSize::new(NonZeroU32::new(0xD0).unwrap())),
+        UserSymbol::new("osGetThreadPri".into(), Vram::new(0x80007A80))
+            .with_size(UserSize::new(NonZeroU32::new(0x18).unwrap())),
+        UserSymbol::new("osSetThreadPri".into(), Vram::new(0x80007AA0))
+            .with_size(UserSize::new(NonZeroU32::new(0xC8).unwrap())),
+        UserSymbol::new("osStartThread".into(), Vram::new(0x80007B70))
+            .with_size(UserSize::new(NonZeroU32::new(0x118).unwrap())),
+        UserSymbol::new("osStopThread".into(), Vram::new(0x80007C90))
+            .with_size(UserSize::new(NonZeroU32::new(0xB4).unwrap())),
         UserSymbol::new("__osDequeueThread".into(), Vram::new(0x80007D50))
-            .with_size(Size::new(0x34)),
-        UserSymbol::new("osYieldThread".into(), Vram::new(0x80007D90)).with_size(Size::new(0x48)),
-        UserSymbol::new("osGetTime".into(), Vram::new(0x80007DE0)).with_size(Size::new(0x84)),
-        UserSymbol::new("osSetTime".into(), Vram::new(0x80007E70)).with_size(Size::new(0x14)),
-        UserSymbol::new("osSetTimer".into(), Vram::new(0x80007E90)).with_size(Size::new(0x12C)),
+            .with_size(UserSize::new(NonZeroU32::new(0x34).unwrap())),
+        UserSymbol::new("osYieldThread".into(), Vram::new(0x80007D90))
+            .with_size(UserSize::new(NonZeroU32::new(0x48).unwrap())),
+        UserSymbol::new("osGetTime".into(), Vram::new(0x80007DE0))
+            .with_size(UserSize::new(NonZeroU32::new(0x84).unwrap())),
+        UserSymbol::new("osSetTime".into(), Vram::new(0x80007E70))
+            .with_size(UserSize::new(NonZeroU32::new(0x14).unwrap())),
+        UserSymbol::new("osSetTimer".into(), Vram::new(0x80007E90))
+            .with_size(UserSize::new(NonZeroU32::new(0x12C).unwrap())),
         UserSymbol::new("__osTimerServicesInit".into(), Vram::new(0x80007FC0))
-            .with_size(Size::new(0x54)),
+            .with_size(UserSize::new(NonZeroU32::new(0x54).unwrap())),
         UserSymbol::new("__osTimerInterrupt".into(), Vram::new(0x80008014))
-            .with_size(Size::new(0x13C)),
+            .with_size(UserSize::new(NonZeroU32::new(0x13C).unwrap())),
         UserSymbol::new("__osSetTimerIntr".into(), Vram::new(0x80008150))
-            .with_size(Size::new(0x80)),
+            .with_size(UserSize::new(NonZeroU32::new(0x80).unwrap())),
         UserSymbol::new("__osInsertTimer".into(), Vram::new(0x800081D0))
-            .with_size(Size::new(0x108)),
+            .with_size(UserSize::new(NonZeroU32::new(0x108).unwrap())),
         UserSymbol::new("__osProbeTLB".into(), Vram::new(0x800082E0)),
         UserSymbol::new("osViGetCurrentFramebuffer".into(), Vram::new(0x800083A0)),
         UserSymbol::new("osViGetNextFramebuffer".into(), Vram::new(0x800083E0)),
         UserSymbol::new("osCreateViManager".into(), Vram::new(0x80008420))
-            .with_size(Size::new(0x1A0)),
-        UserSymbol::new("viMgrMain".into(), Vram::new(0x800085C0)).with_size(Size::new(0x198)),
-        UserSymbol::new("osViSetEvent".into(), Vram::new(0x80008760)).with_size(Size::new(0x58)),
-        UserSymbol::new("osViSetMode".into(), Vram::new(0x800087C0)).with_size(Size::new(0x4C)),
+            .with_size(UserSize::new(NonZeroU32::new(0x1A0).unwrap())),
+        UserSymbol::new("viMgrMain".into(), Vram::new(0x800085C0))
+            .with_size(UserSize::new(NonZeroU32::new(0x198).unwrap())),
+        UserSymbol::new("osViSetEvent".into(), Vram::new(0x80008760))
+            .with_size(UserSize::new(NonZeroU32::new(0x58).unwrap())),
+        UserSymbol::new("osViSetMode".into(), Vram::new(0x800087C0))
+            .with_size(UserSize::new(NonZeroU32::new(0x4C).unwrap())),
         UserSymbol::new("osViSetSpecialFeatures".into(), Vram::new(0x80008810))
-            .with_size(Size::new(0x164)),
-        UserSymbol::new("osViSetYScale".into(), Vram::new(0x80008980)).with_size(Size::new(0x44)),
-        UserSymbol::new("osViSwapBuffer".into(), Vram::new(0x800089D0)).with_size(Size::new(0x44)),
+            .with_size(UserSize::new(NonZeroU32::new(0x164).unwrap())),
+        UserSymbol::new("osViSetYScale".into(), Vram::new(0x80008980))
+            .with_size(UserSize::new(NonZeroU32::new(0x44).unwrap())),
+        UserSymbol::new("osViSwapBuffer".into(), Vram::new(0x800089D0))
+            .with_size(UserSize::new(NonZeroU32::new(0x44).unwrap())),
         UserSymbol::new("__osViSwapContext".into(), Vram::new(0x80008A20))
-            .with_size(Size::new(0x308)),
-        UserSymbol::new("osViBlack".into(), Vram::new(0x80008D30)).with_size(Size::new(0x5C)),
+            .with_size(UserSize::new(NonZeroU32::new(0x308).unwrap())),
+        UserSymbol::new("osViBlack".into(), Vram::new(0x80008D30))
+            .with_size(UserSize::new(NonZeroU32::new(0x5C).unwrap())),
         UserSymbol::new("guMtxIdent".into(), Vram::new(0x80008DA0)),
         UserSymbol::new("guMtxIdentF".into(), Vram::new(0x80008E00)),
         UserSymbol::new("guMtxF2L".into(), Vram::new(0x80008E60)),
@@ -842,17 +925,19 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("guTranslate".into(), Vram::new(0x80009180)),
         UserSymbol::new("guTranslateF".into(), Vram::new(0x80009260)),
         UserSymbol::new("__createSpeedParam".into(), Vram::new(0x800092C0))
-            .with_size(Size::new(0xB8)),
+            .with_size(UserSize::new(NonZeroU32::new(0xB8).unwrap())),
         UserSymbol::new("__osInitialize_common".into(), Vram::new(0x80009378))
-            .with_size(Size::new(0x2D8)),
+            .with_size(UserSize::new(NonZeroU32::new(0x2D8).unwrap())),
         UserSymbol::new("__osInitialize_autodetect".into(), Vram::new(0x80009650))
-            .with_size(Size::new(0x8)),
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
         UserSymbol::new("osEepromRead".into(), Vram::new(0x80009660)),
         UserSymbol::new("__osPackEepReadData".into(), Vram::new(0x800097F8)),
-        UserSymbol::new("osEepromWrite".into(), Vram::new(0x80009880)).with_size(Size::new(0x168)),
+        UserSymbol::new("osEepromWrite".into(), Vram::new(0x80009880))
+            .with_size(UserSize::new(NonZeroU32::new(0x168).unwrap())),
         UserSymbol::new("__osPackEepWriteData".into(), Vram::new(0x800099E8))
-            .with_size(Size::new(0xA8)),
-        UserSymbol::new("__osEepStatus".into(), Vram::new(0x80009A90)).with_size(Size::new(0x19C)),
+            .with_size(UserSize::new(NonZeroU32::new(0xA8).unwrap())),
+        UserSymbol::new("__osEepStatus".into(), Vram::new(0x80009A90))
+            .with_size(UserSize::new(NonZeroU32::new(0x19C).unwrap())),
         UserSymbol::new("__osExceptionPreamble".into(), Vram::new(0x80009C30)),
         UserSymbol::new("__osException".into(), Vram::new(0x80009C40)),
         UserSymbol::new_label(
@@ -871,54 +956,85 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("__osRestoreInt".into(), Vram::new(0x8000A610)),
         UserSymbol::new("osSetIntMask".into(), Vram::new(0x8000A630)),
         UserSymbol::new("__osSetGlobalIntMask".into(), Vram::new(0x8000A6D0))
-            .with_size(Size::new(0x40)),
+            .with_size(UserSize::new(NonZeroU32::new(0x40).unwrap())),
         UserSymbol::new("__osResetGlobalIntMask".into(), Vram::new(0x8000A710))
-            .with_size(Size::new(0x48)),
+            .with_size(UserSize::new(NonZeroU32::new(0x48).unwrap())),
         UserSymbol::new("__osPiRawStartDma".into(), Vram::new(0x8000A760))
-            .with_size(Size::new(0xD0)),
-        UserSymbol::new("osPiGetCmdQueue".into(), Vram::new(0x8000A830)).with_size(Size::new(0x20)),
+            .with_size(UserSize::new(NonZeroU32::new(0xD0).unwrap())),
+        UserSymbol::new("osPiGetCmdQueue".into(), Vram::new(0x8000A830))
+            .with_size(UserSize::new(NonZeroU32::new(0x20).unwrap())),
         UserSymbol::new("__osEPiRawReadIo".into(), Vram::new(0x8000A850))
-            .with_size(Size::new(0x168)),
+            .with_size(UserSize::new(NonZeroU32::new(0x168).unwrap())),
         UserSymbol::new("__osEPiRawWriteIo".into(), Vram::new(0x8000A9C0))
-            .with_size(Size::new(0x164)),
+            .with_size(UserSize::new(NonZeroU32::new(0x164).unwrap())),
         UserSymbol::new("__osAiDeviceBusy".into(), Vram::new(0x8000AB30))
-            .with_size(Size::new(0x14)),
-        UserSymbol::new("_init_lpfilter".into(), Vram::new(0x8000AB50)).with_size(Size::new(0xA4)),
-        UserSymbol::new("alFxNew".into(), Vram::new(0x8000ABF4)).with_size(Size::new(0x498)),
-        UserSymbol::new("alEnvmixerNew".into(), Vram::new(0x8000B08C)).with_size(Size::new(0xB8)),
-        UserSymbol::new("alLoadNew".into(), Vram::new(0x8000B144)).with_size(Size::new(0xB0)),
-        UserSymbol::new("alResampleNew".into(), Vram::new(0x8000B1F4)).with_size(Size::new(0x8C)),
-        UserSymbol::new("alAuxBusNew".into(), Vram::new(0x8000B280)).with_size(Size::new(0x5C)),
-        UserSymbol::new("alMainBusNew".into(), Vram::new(0x8000B2DC)).with_size(Size::new(0x5C)),
-        UserSymbol::new("alSaveNew".into(), Vram::new(0x8000B338)).with_size(Size::new(0x44)),
-        UserSymbol::new("alAdpcmPull".into(), Vram::new(0x8000B380)).with_size(Size::new(0x444)),
-        UserSymbol::new("alRaw16Pull".into(), Vram::new(0x8000B7C4)).with_size(Size::new(0x39C)),
-        UserSymbol::new("alLoadParam".into(), Vram::new(0x8000BB60)).with_size(Size::new(0x1AC)),
-        UserSymbol::new("_decodeChunk".into(), Vram::new(0x8000BD0C)).with_size(Size::new(0x178)),
-        UserSymbol::new("alAuxBusPull".into(), Vram::new(0x8000BE90)).with_size(Size::new(0xDC)),
-        UserSymbol::new("alAuxBusParam".into(), Vram::new(0x8000BF6C)).with_size(Size::new(0x30)),
-        UserSymbol::new("alFilterNew".into(), Vram::new(0x8000BFA0)).with_size(Size::new(0x1C)),
-        UserSymbol::new("alMainBusPull".into(), Vram::new(0x8000BFC0)).with_size(Size::new(0x140)),
-        UserSymbol::new("alMainBusParam".into(), Vram::new(0x8000C100)).with_size(Size::new(0x30)),
-        UserSymbol::new("alResamplePull".into(), Vram::new(0x8000C130)).with_size(Size::new(0x1EC)),
-        UserSymbol::new("alResampleParam".into(), Vram::new(0x8000C31C)).with_size(Size::new(0xC0)),
-        UserSymbol::new("alFxPull".into(), Vram::new(0x8000C3E0)).with_size(Size::new(0x374)),
-        UserSymbol::new("alFxParam".into(), Vram::new(0x8000C754)).with_size(Size::new(0x14)),
-        UserSymbol::new("alFxParamHdl".into(), Vram::new(0x8000C768)).with_size(Size::new(0x1F0)),
+            .with_size(UserSize::new(NonZeroU32::new(0x14).unwrap())),
+        UserSymbol::new("_init_lpfilter".into(), Vram::new(0x8000AB50))
+            .with_size(UserSize::new(NonZeroU32::new(0xA4).unwrap())),
+        UserSymbol::new("alFxNew".into(), Vram::new(0x8000ABF4))
+            .with_size(UserSize::new(NonZeroU32::new(0x498).unwrap())),
+        UserSymbol::new("alEnvmixerNew".into(), Vram::new(0x8000B08C))
+            .with_size(UserSize::new(NonZeroU32::new(0xB8).unwrap())),
+        UserSymbol::new("alLoadNew".into(), Vram::new(0x8000B144))
+            .with_size(UserSize::new(NonZeroU32::new(0xB0).unwrap())),
+        UserSymbol::new("alResampleNew".into(), Vram::new(0x8000B1F4))
+            .with_size(UserSize::new(NonZeroU32::new(0x8C).unwrap())),
+        UserSymbol::new("alAuxBusNew".into(), Vram::new(0x8000B280))
+            .with_size(UserSize::new(NonZeroU32::new(0x5C).unwrap())),
+        UserSymbol::new("alMainBusNew".into(), Vram::new(0x8000B2DC))
+            .with_size(UserSize::new(NonZeroU32::new(0x5C).unwrap())),
+        UserSymbol::new("alSaveNew".into(), Vram::new(0x8000B338))
+            .with_size(UserSize::new(NonZeroU32::new(0x44).unwrap())),
+        UserSymbol::new("alAdpcmPull".into(), Vram::new(0x8000B380))
+            .with_size(UserSize::new(NonZeroU32::new(0x444).unwrap())),
+        UserSymbol::new("alRaw16Pull".into(), Vram::new(0x8000B7C4))
+            .with_size(UserSize::new(NonZeroU32::new(0x39C).unwrap())),
+        UserSymbol::new("alLoadParam".into(), Vram::new(0x8000BB60))
+            .with_size(UserSize::new(NonZeroU32::new(0x1AC).unwrap())),
+        UserSymbol::new("_decodeChunk".into(), Vram::new(0x8000BD0C))
+            .with_size(UserSize::new(NonZeroU32::new(0x178).unwrap())),
+        UserSymbol::new("alAuxBusPull".into(), Vram::new(0x8000BE90))
+            .with_size(UserSize::new(NonZeroU32::new(0xDC).unwrap())),
+        UserSymbol::new("alAuxBusParam".into(), Vram::new(0x8000BF6C))
+            .with_size(UserSize::new(NonZeroU32::new(0x30).unwrap())),
+        UserSymbol::new("alFilterNew".into(), Vram::new(0x8000BFA0))
+            .with_size(UserSize::new(NonZeroU32::new(0x1C).unwrap())),
+        UserSymbol::new("alMainBusPull".into(), Vram::new(0x8000BFC0))
+            .with_size(UserSize::new(NonZeroU32::new(0x140).unwrap())),
+        UserSymbol::new("alMainBusParam".into(), Vram::new(0x8000C100))
+            .with_size(UserSize::new(NonZeroU32::new(0x30).unwrap())),
+        UserSymbol::new("alResamplePull".into(), Vram::new(0x8000C130))
+            .with_size(UserSize::new(NonZeroU32::new(0x1EC).unwrap())),
+        UserSymbol::new("alResampleParam".into(), Vram::new(0x8000C31C))
+            .with_size(UserSize::new(NonZeroU32::new(0xC0).unwrap())),
+        UserSymbol::new("alFxPull".into(), Vram::new(0x8000C3E0))
+            .with_size(UserSize::new(NonZeroU32::new(0x374).unwrap())),
+        UserSymbol::new("alFxParam".into(), Vram::new(0x8000C754))
+            .with_size(UserSize::new(NonZeroU32::new(0x14).unwrap())),
+        UserSymbol::new("alFxParamHdl".into(), Vram::new(0x8000C768))
+            .with_size(UserSize::new(NonZeroU32::new(0x1F0).unwrap())),
         UserSymbol::new("_loadOutputBuffer".into(), Vram::new(0x8000C958))
-            .with_size(Size::new(0x218)),
-        UserSymbol::new("_loadBuffer".into(), Vram::new(0x8000CB70)).with_size(Size::new(0x170)),
-        UserSymbol::new("_saveBuffer".into(), Vram::new(0x8000CCE0)).with_size(Size::new(0x170)),
-        UserSymbol::new("_filterBuffer".into(), Vram::new(0x8000CE50)).with_size(Size::new(0x9C)),
-        UserSymbol::new("_doModFunc".into(), Vram::new(0x8000CEEC)).with_size(Size::new(0x8C)),
-        UserSymbol::new("alSavePull".into(), Vram::new(0x8000CF80)).with_size(Size::new(0xA8)),
-        UserSymbol::new("alSaveParam".into(), Vram::new(0x8000D028)).with_size(Size::new(0x28)),
-        UserSymbol::new("alHeapDBAlloc".into(), Vram::new(0x8000D050)).with_size(Size::new(0x48)),
-        UserSymbol::new("alCopy".into(), Vram::new(0x8000D0A0)).with_size(Size::new(0x34)),
+            .with_size(UserSize::new(NonZeroU32::new(0x218).unwrap())),
+        UserSymbol::new("_loadBuffer".into(), Vram::new(0x8000CB70))
+            .with_size(UserSize::new(NonZeroU32::new(0x170).unwrap())),
+        UserSymbol::new("_saveBuffer".into(), Vram::new(0x8000CCE0))
+            .with_size(UserSize::new(NonZeroU32::new(0x170).unwrap())),
+        UserSymbol::new("_filterBuffer".into(), Vram::new(0x8000CE50))
+            .with_size(UserSize::new(NonZeroU32::new(0x9C).unwrap())),
+        UserSymbol::new("_doModFunc".into(), Vram::new(0x8000CEEC))
+            .with_size(UserSize::new(NonZeroU32::new(0x8C).unwrap())),
+        UserSymbol::new("alSavePull".into(), Vram::new(0x8000CF80))
+            .with_size(UserSize::new(NonZeroU32::new(0xA8).unwrap())),
+        UserSymbol::new("alSaveParam".into(), Vram::new(0x8000D028))
+            .with_size(UserSize::new(NonZeroU32::new(0x28).unwrap())),
+        UserSymbol::new("alHeapDBAlloc".into(), Vram::new(0x8000D050))
+            .with_size(UserSize::new(NonZeroU32::new(0x48).unwrap())),
+        UserSymbol::new("alCopy".into(), Vram::new(0x8000D0A0))
+            .with_size(UserSize::new(NonZeroU32::new(0x34).unwrap())),
         UserSymbol::new("osInvalICache".into(), Vram::new(0x8000D0E0)),
         UserSymbol::new("osWritebackDCache".into(), Vram::new(0x8000D160)),
         UserSymbol::new("osDpSetNextBuffer".into(), Vram::new(0x8000D1E0))
-            .with_size(Size::new(0x98)),
+            .with_size(UserSize::new(NonZeroU32::new(0x98).unwrap())),
         UserSymbol::new("__osGetCause".into(), Vram::new(0x8000D280)),
         UserSymbol::new("osGetCount".into(), Vram::new(0x8000D290)),
         UserSymbol::new("__osGetSR".into(), Vram::new(0x8000D2A0)),
@@ -927,23 +1043,28 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("__osSetSR".into(), Vram::new(0x8000D2D0)),
         UserSymbol::new("__osSetWatchLo".into(), Vram::new(0x8000D2E0)),
         UserSymbol::new("__osSpDeviceBusy".into(), Vram::new(0x8000D2F0))
-            .with_size(Size::new(0x18)),
-        UserSymbol::new("__osSpGetStatus".into(), Vram::new(0x8000D310)).with_size(Size::new(0x10)),
-        UserSymbol::new("__osSpSetStatus".into(), Vram::new(0x8000D320)).with_size(Size::new(0x10)),
-        UserSymbol::new("__osSpSetPc".into(), Vram::new(0x8000D330)).with_size(Size::new(0x30)),
+            .with_size(UserSize::new(NonZeroU32::new(0x18).unwrap())),
+        UserSymbol::new("__osSpGetStatus".into(), Vram::new(0x8000D310))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
+        UserSymbol::new("__osSpSetStatus".into(), Vram::new(0x8000D320))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
+        UserSymbol::new("__osSpSetPc".into(), Vram::new(0x8000D330))
+            .with_size(UserSize::new(NonZeroU32::new(0x30).unwrap())),
         UserSymbol::new("__osSpRawStartDma".into(), Vram::new(0x8000D360))
-            .with_size(Size::new(0x8C)),
+            .with_size(UserSize::new(NonZeroU32::new(0x8C).unwrap())),
         UserSymbol::new("__osSiRawReadIo".into(), Vram::new(0x8000D3F0)),
         UserSymbol::new("__osSiRawWriteIo".into(), Vram::new(0x8000D440)),
-        UserSymbol::new("osDestroyThread".into(), Vram::new(0x8000D490)).with_size(Size::new(0xD8)),
+        UserSymbol::new("osDestroyThread".into(), Vram::new(0x8000D490))
+            .with_size(UserSize::new(NonZeroU32::new(0xD8).unwrap())),
         UserSymbol::new("osMapTLBRdb".into(), Vram::new(0x8000D570)),
         UserSymbol::new("osUnmapTLBAll".into(), Vram::new(0x8000D5D0)),
-        UserSymbol::new("__osViInit".into(), Vram::new(0x8000D620)).with_size(Size::new(0x104)),
+        UserSymbol::new("__osViInit".into(), Vram::new(0x8000D620))
+            .with_size(UserSize::new(NonZeroU32::new(0x104).unwrap())),
         UserSymbol::new("__osViGetCurrentContext".into(), Vram::new(0x8000D730)),
         UserSymbol::new("__osDpDeviceBusy".into(), Vram::new(0x8000D7A0))
-            .with_size(Size::new(0x18)),
+            .with_size(UserSize::new(NonZeroU32::new(0x18).unwrap())),
         UserSymbol::new("__osSiDeviceBusy".into(), Vram::new(0x8000D7C0))
-            .with_size(Size::new(0x18)),
+            .with_size(UserSize::new(NonZeroU32::new(0x18).unwrap())),
         UserSymbol::new("__fint".into(), Vram::new(0x8000D7E0)),
         UserSymbol::new("fmod".into(), Vram::new(0x8000D868)),
         UserSymbol::new("ceil".into(), Vram::new(0x8000D8C4)),
@@ -966,7 +1087,7 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("__umoddi3".into(), Vram::new(0x8000E150)).with_typ(SymbolType::Function),
         UserSymbol::new("D_8000E190".into(), Vram::new(0x8000E190)),
         UserSymbol::new("sDmaDataNeedsInitialization".into(), Vram::new(0x8000E1A0))
-            .with_size(Size::new(0x1)),
+            .with_size(UserSize::new(NonZeroU32::new(0x1).unwrap())),
         UserSymbol::new("border".into(), Vram::new(0x8000E1B0)),
         UserSymbol::new("cplens".into(), Vram::new(0x8000E1FC)),
         UserSymbol::new("cplext".into(), Vram::new(0x8000E23C)),
@@ -980,21 +1101,26 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("D_8000E330".into(), Vram::new(0x8000E330)).with_typ(SymbolType::Word),
         UserSymbol::new("crc_32_tab".into(), Vram::new(0x8000E338)),
         UserSymbol::new("crc_132".into(), Vram::new(0x8000E738)),
-        UserSymbol::new("storyRomData".into(), Vram::new(0x8000E740)).with_size(Size::new(0x38)),
-        UserSymbol::new("bgRomData".into(), Vram::new(0x8000E778)).with_size(Size::new(0xC0)),
-        UserSymbol::new("_romDataTbl".into(), Vram::new(0x8000E838)).with_size(Size::new(0x218)),
-        UserSymbol::new("__osPiDevMgr".into(), Vram::new(0x8000EA50)).with_size(Size::new(0x1C)),
+        UserSymbol::new("storyRomData".into(), Vram::new(0x8000E740))
+            .with_size(UserSize::new(NonZeroU32::new(0x38).unwrap())),
+        UserSymbol::new("bgRomData".into(), Vram::new(0x8000E778))
+            .with_size(UserSize::new(NonZeroU32::new(0xC0).unwrap())),
+        UserSymbol::new("_romDataTbl".into(), Vram::new(0x8000E838))
+            .with_size(UserSize::new(NonZeroU32::new(0x218).unwrap())),
+        UserSymbol::new("__osPiDevMgr".into(), Vram::new(0x8000EA50))
+            .with_size(UserSize::new(NonZeroU32::new(0x1C).unwrap())),
         UserSymbol::new("__osPiTable".into(), Vram::new(0x8000EA6C)),
         UserSymbol::new("__osCurrentHandle".into(), Vram::new(0x8000EA70)),
         UserSymbol::new(
             "osCartRomInit$in_function_static$osCartRomInit".into(),
             Vram::new(0x8000EA80),
         )
-        .with_size(Size::new(0x4))
+        .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap()))
         .with_typ(SymbolType::Word),
         UserSymbol::new("__osPiAccessQueueEnabled".into(), Vram::new(0x8000EA90)),
         UserSymbol::new("hdwrBugFlag".into(), Vram::new(0x8000EAA0)),
-        UserSymbol::new("eqpower".into(), Vram::new(0x8000EAB0)).with_size(Size::new(0x100)),
+        UserSymbol::new("eqpower".into(), Vram::new(0x8000EAB0))
+            .with_size(UserSize::new(NonZeroU32::new(0x100).unwrap())),
         UserSymbol::new("alGlobals".into(), Vram::new(0x8000EBB0)),
         UserSymbol::new("__osContinitialized".into(), Vram::new(0x8000EBC0)),
         UserSymbol::new("D_8000EBD0".into(), Vram::new(0x8000EBD0)),
@@ -1004,16 +1130,20 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("dpCount".into(), Vram::new(0x8000F3F8)),
         UserSymbol::new("D_8000F3FC".into(), Vram::new(0x8000F3FC)),
         UserSymbol::new("__osSiAccessQueueEnabled".into(), Vram::new(0x8000F400)),
-        UserSymbol::new("__osThreadTail".into(), Vram::new(0x8000F410)).with_size(Size::new(0x8)),
+        UserSymbol::new("__osThreadTail".into(), Vram::new(0x8000F410))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
         UserSymbol::new("__osRunQueue".into(), Vram::new(0x8000F418)),
         UserSymbol::new("__osActiveQueue".into(), Vram::new(0x8000F41C)),
         UserSymbol::new("__osRunningThread".into(), Vram::new(0x8000F420)),
         UserSymbol::new("__osFaultedThread".into(), Vram::new(0x8000F424)),
         UserSymbol::new("__osTimerList".into(), Vram::new(0x8000F430)),
-        UserSymbol::new("__osViDevMgr".into(), Vram::new(0x8000F440)).with_size(Size::new(0x1C)),
+        UserSymbol::new("__osViDevMgr".into(), Vram::new(0x8000F440))
+            .with_size(UserSize::new(NonZeroU32::new(0x1C).unwrap())),
         UserSymbol::new("__additional_scanline".into(), Vram::new(0x8000F45C)),
-        UserSymbol::new("osViModeTable".into(), Vram::new(0x8000F460)).with_size(Size::new(0x10A0)),
-        UserSymbol::new("osClockRate".into(), Vram::new(0x800105E0)).with_size(Size::new(0x8)),
+        UserSymbol::new("osViModeTable".into(), Vram::new(0x8000F460))
+            .with_size(UserSize::new(NonZeroU32::new(0x10A0).unwrap())),
+        UserSymbol::new("osClockRate".into(), Vram::new(0x800105E0))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
         UserSymbol::new("osViClock".into(), Vram::new(0x800105E8)),
         UserSymbol::new("__osShutdown".into(), Vram::new(0x800105EC)),
         UserSymbol::new("__OSGlobalIntMask".into(), Vram::new(0x800105F0)),
@@ -1025,7 +1155,8 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("CHORUS_PARAMS".into(), Vram::new(0x80010748)),
         UserSymbol::new("FLANGE_PARAMS".into(), Vram::new(0x80010770)),
         UserSymbol::new("NULL_PARAMS".into(), Vram::new(0x80010798)),
-        UserSymbol::new("L_INC".into(), Vram::new(0x800107C0)).with_size(Size::new(0xC)),
+        UserSymbol::new("L_INC".into(), Vram::new(0x800107C0))
+            .with_size(UserSize::new(NonZeroU32::new(0xC).unwrap())),
         UserSymbol::new(
             "_loadOutputBuffer$in_function_static$val".into(),
             Vram::new(0x800107CC),
@@ -1041,15 +1172,16 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
             Vram::new(0x800107D4),
         )
         .with_typ(SymbolType::Float32),
-        UserSymbol::new("vi".into(), Vram::new(0x800107E0)).with_size(Size::new(0x60)),
+        UserSymbol::new("vi".into(), Vram::new(0x800107E0))
+            .with_size(UserSize::new(NonZeroU32::new(0x60).unwrap())),
         UserSymbol::new("__osViCurr".into(), Vram::new(0x80010840)),
         UserSymbol::new("__osViNext".into(), Vram::new(0x80010844)),
         UserSymbol::new("osViModeNtscLan1".into(), Vram::new(0x80010850)),
         UserSymbol::new("osViModePalLan1".into(), Vram::new(0x800108A0)),
         UserSymbol::new("osViModeMpalLan1".into(), Vram::new(0x800108F0))
-            .with_size(Size::new(0x50)),
+            .with_size(UserSize::new(NonZeroU32::new(0x50).unwrap())),
         UserSymbol::new("__ctype_map".into(), Vram::new(0x80010940))
-            .with_size(Size::new(0x100))
+            .with_size(UserSize::new(NonZeroU32::new(0x100).unwrap()))
             .with_typ(SymbolType::Byte),
         UserSymbol::new("__osIntOffTable".into(), Vram::new(0x80010CB0)),
         UserSymbol::new("__osIntTable".into(), Vram::new(0x80010CD0))
@@ -1058,83 +1190,107 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("__libm_qnan_f".into(), Vram::new(0x80010E40)),
         UserSymbol::new("sIdleThread".into(), Vram::new(0x80010E60)),
         UserSymbol::new("sMainThread".into(), Vram::new(0x80011010)),
-        UserSymbol::new("sIdleStack".into(), Vram::new(0x800111C0)).with_size(Size::new(0x2000)),
-        UserSymbol::new("sMainStack".into(), Vram::new(0x800131C0)).with_size(Size::new(0x2000)),
+        UserSymbol::new("sIdleStack".into(), Vram::new(0x800111C0))
+            .with_size(UserSize::new(NonZeroU32::new(0x2000).unwrap())),
+        UserSymbol::new("sMainStack".into(), Vram::new(0x800131C0))
+            .with_size(UserSize::new(NonZeroU32::new(0x2000).unwrap())),
         UserSymbol::new("B_800151C0".into(), Vram::new(0x800151C0)),
         UserSymbol::new("B_800151D8".into(), Vram::new(0x800151D8)),
         UserSymbol::new("gzip_mem_buff".into(), Vram::new(0x800151E0)),
-        UserSymbol::new("piThread".into(), Vram::new(0x800191E0)).with_size(Size::new(0x1B0)),
+        UserSymbol::new("piThread".into(), Vram::new(0x800191E0))
+            .with_size(UserSize::new(NonZeroU32::new(0x1B0).unwrap())),
         UserSymbol::new("piThreadStack".into(), Vram::new(0x80019390)),
         UserSymbol::new("piEventQueue".into(), Vram::new(0x8001A390)),
         UserSymbol::new("piEventBuf".into(), Vram::new(0x8001A3A8)),
-        UserSymbol::new("piAccessBuf".into(), Vram::new(0x8001A3B0)).with_size(Size::new(0x4)),
+        UserSymbol::new("piAccessBuf".into(), Vram::new(0x8001A3B0))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
         UserSymbol::new("tmp_task".into(), Vram::new(0x8001A3C0))
-            .with_size(Size::new(0x40))
+            .with_size(UserSize::new(NonZeroU32::new(0x40).unwrap()))
             .with_typ(SymbolType::UserCustom),
-        UserSymbol::new("siAccessBuf".into(), Vram::new(0x8001A400)).with_size(Size::new(0x4)),
+        UserSymbol::new("siAccessBuf".into(), Vram::new(0x8001A400))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
         UserSymbol::new(
             "viMgrMain$in_function_static$retrace".into(),
             Vram::new(0x8001A410),
         )
-        .with_size(Size::new(0x2))
+        .with_size(UserSize::new(NonZeroU32::new(0x2).unwrap()))
         .with_typ(SymbolType::Short),
-        UserSymbol::new("viThread".into(), Vram::new(0x8001A418)).with_size(Size::new(0x1B0)),
+        UserSymbol::new("viThread".into(), Vram::new(0x8001A418))
+            .with_size(UserSize::new(NonZeroU32::new(0x1B0).unwrap())),
         UserSymbol::new("viThreadStack".into(), Vram::new(0x8001A5D0)),
         UserSymbol::new("viEventQueue".into(), Vram::new(0x8001B5D0)),
         UserSymbol::new("viEventBuf".into(), Vram::new(0x8001B5E8)),
-        UserSymbol::new("viRetraceMsg".into(), Vram::new(0x8001B600)).with_size(Size::new(0x18)),
-        UserSymbol::new("viCounterMsg".into(), Vram::new(0x8001B618)).with_size(Size::new(0x18)),
+        UserSymbol::new("viRetraceMsg".into(), Vram::new(0x8001B600))
+            .with_size(UserSize::new(NonZeroU32::new(0x18).unwrap())),
+        UserSymbol::new("viCounterMsg".into(), Vram::new(0x8001B618))
+            .with_size(UserSize::new(NonZeroU32::new(0x18).unwrap())),
         UserSymbol::new("sRandNext".into(), Vram::new(0x8001B630)),
         UserSymbol::new("inbuf".into(), Vram::new(0x8001B640)),
         UserSymbol::new("bk".into(), Vram::new(0x8001D640)),
         UserSymbol::new("__osBaseCounter".into(), Vram::new(0x8001D644)),
         UserSymbol::new("__osThreadSave".into(), Vram::new(0x8001D648)),
-        UserSymbol::new("ofd".into(), Vram::new(0x8001D7F8)).with_size(Size::new(0x8)),
-        UserSymbol::new("__osContPifRam".into(), Vram::new(0x8001D800)).with_size(Size::new(0x40)),
+        UserSymbol::new("ofd".into(), Vram::new(0x8001D7F8))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
+        UserSymbol::new("__osContPifRam".into(), Vram::new(0x8001D800))
+            .with_size(UserSize::new(NonZeroU32::new(0x40).unwrap())),
         UserSymbol::new("__Dom2SpeedParam".into(), Vram::new(0x8001D840))
-            .with_size(Size::new(0x74)),
+            .with_size(UserSize::new(NonZeroU32::new(0x74).unwrap())),
         UserSymbol::new("gBootThreadStack".into(), Vram::new(0x8001D8C0))
-            .with_size(Size::new(0x2000)),
-        UserSymbol::new("sPiMgrCmdBuff".into(), Vram::new(0x8001F8C0)).with_size(Size::new(0xC8)),
+            .with_size(UserSize::new(NonZeroU32::new(0x2000).unwrap())),
+        UserSymbol::new("sPiMgrCmdBuff".into(), Vram::new(0x8001F8C0))
+            .with_size(UserSize::new(NonZeroU32::new(0xC8).unwrap())),
         UserSymbol::new("__osViIntrCount".into(), Vram::new(0x8001F988)),
         UserSymbol::new("insize".into(), Vram::new(0x8001F98C)),
         UserSymbol::new("outcnt".into(), Vram::new(0x8001F990)),
         UserSymbol::new("__osMaxControllers".into(), Vram::new(0x8001F994))
-            .with_size(Size::new(0x1)),
-        UserSymbol::new("bb".into(), Vram::new(0x8001F998)).with_size(Size::new(0x4)),
-        UserSymbol::new("__osCurrentTime".into(), Vram::new(0x8001F9A0)).with_size(Size::new(0x8)),
-        UserSymbol::new("hufts".into(), Vram::new(0x8001F9A8)).with_size(Size::new(0x4)),
-        UserSymbol::new("__CartRomHandle".into(), Vram::new(0x8001F9B0)).with_size(Size::new(0x74)),
+            .with_size(UserSize::new(NonZeroU32::new(0x1).unwrap())),
+        UserSymbol::new("bb".into(), Vram::new(0x8001F998))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
+        UserSymbol::new("__osCurrentTime".into(), Vram::new(0x8001F9A0))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
+        UserSymbol::new("hufts".into(), Vram::new(0x8001F9A8))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
+        UserSymbol::new("__CartRomHandle".into(), Vram::new(0x8001F9B0))
+            .with_size(UserSize::new(NonZeroU32::new(0x74).unwrap())),
         UserSymbol::new("__osEepPifRam".into(), Vram::new(0x8001FA30))
-            .with_size(Size::new(0x40))
+            .with_size(UserSize::new(NonZeroU32::new(0x40).unwrap()))
             .with_typ(SymbolType::UserCustom),
         UserSymbol::new("__osPiAccessQueue".into(), Vram::new(0x8001FA70)),
         UserSymbol::new("__Dom1SpeedParam".into(), Vram::new(0x8001FA88))
-            .with_size(Size::new(0x74)),
+            .with_size(UserSize::new(NonZeroU32::new(0x74).unwrap())),
         UserSymbol::new("bytes_in".into(), Vram::new(0x8001FAFC)),
         UserSymbol::new("bytes_out".into(), Vram::new(0x8001FB00)),
-        UserSymbol::new("__osContLastCmd".into(), Vram::new(0x8001FB04)).with_size(Size::new(0x1)),
+        UserSymbol::new("__osContLastCmd".into(), Vram::new(0x8001FB04))
+            .with_size(UserSize::new(NonZeroU32::new(0x1).unwrap())),
         UserSymbol::new("__osEepromTimerMsg".into(), Vram::new(0x8001FB08))
-            .with_size(Size::new(0x4)),
-        UserSymbol::new("__osBaseTimer".into(), Vram::new(0x8001FB10)).with_size(Size::new(0x20)),
-        UserSymbol::new("__osTimerCounter".into(), Vram::new(0x8001FB30)).with_size(Size::new(0x4)),
-        UserSymbol::new("D_8001FB40".into(), Vram::new(0x8001FB40)).with_size(Size::new(0x2000)),
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
+        UserSymbol::new("__osBaseTimer".into(), Vram::new(0x8001FB10))
+            .with_size(UserSize::new(NonZeroU32::new(0x20).unwrap())),
+        UserSymbol::new("__osTimerCounter".into(), Vram::new(0x8001FB30))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
+        UserSymbol::new("D_8001FB40".into(), Vram::new(0x8001FB40))
+            .with_size(UserSize::new(NonZeroU32::new(0x2000).unwrap())),
         UserSymbol::new("__osEepromTimer".into(), Vram::new(0x80021B40)),
         UserSymbol::new("__osEventStateTab".into(), Vram::new(0x80021B60))
-            .with_size(Size::new(0x78)),
-        UserSymbol::new("__osFinalrom".into(), Vram::new(0x80021BD8)).with_size(Size::new(0x4)),
+            .with_size(UserSize::new(NonZeroU32::new(0x78).unwrap())),
+        UserSymbol::new("__osFinalrom".into(), Vram::new(0x80021BD8))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
         UserSymbol::new("window".into(), Vram::new(0x80021BE0)),
-        UserSymbol::new("inptr".into(), Vram::new(0x80029BE0)).with_size(Size::new(0x4)),
+        UserSymbol::new("inptr".into(), Vram::new(0x80029BE0))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
         UserSymbol::new("__osEepromTimerQ".into(), Vram::new(0x80029BE8)),
-        UserSymbol::new("ifd".into(), Vram::new(0x80029C00)).with_size(Size::new(0x8)),
+        UserSymbol::new("ifd".into(), Vram::new(0x80029C00))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
         UserSymbol::new("sPiMgrCmdQueue".into(), Vram::new(0x80029C08)),
         UserSymbol::new("__osSiAccessQueue".into(), Vram::new(0x80029C20)),
-        UserSymbol::new("Heap_bufferp".into(), Vram::new(0x80124610)).with_size(Size::new(0xE09F0)),
-        UserSymbol::new("gfx_freebuf".into(), Vram::new(0x80205000)).with_size(Size::new(0x1B0000)),
+        UserSymbol::new("Heap_bufferp".into(), Vram::new(0x80124610))
+            .with_size(UserSize::new(NonZeroU32::new(0xE09F0).unwrap())),
+        UserSymbol::new("gfx_freebuf".into(), Vram::new(0x80205000))
+            .with_size(UserSize::new(NonZeroU32::new(0x1B0000).unwrap())),
         UserSymbol::new("gFramebuffers".into(), Vram::new(0x803B5000))
-            .with_size(Size::new(0x4B000)),
+            .with_size(UserSize::new(NonZeroU32::new(0x4B000).unwrap())),
         UserSymbol::new("gMainSegmentDmaInfo".into(), Vram::new(0x80029C40))
-            .with_size(Size::new(0x10)),
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
         UserSymbol::new("mainproc".into(), Vram::new(0x80029C50)),
         UserSymbol::new("nnScCreateScheduler".into(), Vram::new(0x80029ED0)),
         UserSymbol::new("nnScGetAudioMQ".into(), Vram::new(0x8002A0CC)),
@@ -2357,9 +2513,12 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
             .with_name_end("gspS2DEX_fifoTextEnd".into())
             .with_dont_allow_addend(),
         UserSymbol::new("framecont".into(), Vram::new(0x80088100)),
-        UserSymbol::new("D_80088104".into(), Vram::new(0x80088104)).with_size(Size::new(0x1)),
-        UserSymbol::new("D_80088105".into(), Vram::new(0x80088105)).with_size(Size::new(0x1)),
-        UserSymbol::new("gfx_ucode".into(), Vram::new(0x80088110)).with_size(Size::new(0x10)),
+        UserSymbol::new("D_80088104".into(), Vram::new(0x80088104))
+            .with_size(UserSize::new(NonZeroU32::new(0x1).unwrap())),
+        UserSymbol::new("D_80088105".into(), Vram::new(0x80088105))
+            .with_size(UserSize::new(NonZeroU32::new(0x1).unwrap())),
+        UserSymbol::new("gfx_ucode".into(), Vram::new(0x80088110))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
         UserSymbol::new("gCurrentFramebufferIndex".into(), Vram::new(0x80088120)),
         UserSymbol::new("graphic_no".into(), Vram::new(0x80088124)),
         UserSymbol::new("pendingGFX".into(), Vram::new(0x80088128)),
@@ -2381,51 +2540,71 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
             .with_typ(SymbolType::UserCustom),
         UserSymbol::new("D_800883A8".into(), Vram::new(0x800883A8))
             .with_typ(SymbolType::UserCustom),
-        UserSymbol::new("nn_mus_sched".into(), Vram::new(0x800883F0)).with_size(Size::new(0xC)),
+        UserSymbol::new("nn_mus_sched".into(), Vram::new(0x800883F0))
+            .with_size(UserSize::new(NonZeroU32::new(0xC).unwrap())),
         UserSymbol::new("evs_stereo".into(), Vram::new(0x80088400)),
         UserSymbol::new("evs_seqence".into(), Vram::new(0x80088401)),
         UserSymbol::new("evs_seqnumb".into(), Vram::new(0x80088402)),
         UserSymbol::new("evs_playcnt".into(), Vram::new(0x80088403)),
-        UserSymbol::new("evs_keyrept".into(), Vram::new(0x80088404)).with_size(Size::new(0x2)),
+        UserSymbol::new("evs_keyrept".into(), Vram::new(0x80088404))
+            .with_size(UserSize::new(NonZeroU32::new(0x2).unwrap())),
         UserSymbol::new("evs_gamespeed".into(), Vram::new(0x80088406)),
         UserSymbol::new("evs_score_flag".into(), Vram::new(0x80088407)),
         UserSymbol::new("evs_story_flg".into(), Vram::new(0x80088408)),
-        UserSymbol::new("evs_story_no".into(), Vram::new(0x80088409)).with_size(Size::new(0x1)),
+        UserSymbol::new("evs_story_no".into(), Vram::new(0x80088409))
+            .with_size(UserSize::new(NonZeroU32::new(0x1).unwrap())),
         UserSymbol::new("evs_story_level".into(), Vram::new(0x8008840A)),
-        UserSymbol::new("evs_secret_flg".into(), Vram::new(0x8008840C)).with_size(Size::new(0x2)),
+        UserSymbol::new("evs_secret_flg".into(), Vram::new(0x8008840C))
+            .with_size(UserSize::new(NonZeroU32::new(0x2).unwrap())),
         UserSymbol::new("evs_one_game_flg".into(), Vram::new(0x8008840E)),
         UserSymbol::new("evs_level_21".into(), Vram::new(0x8008840F)),
         UserSymbol::new("evs_manual_no".into(), Vram::new(0x80088410)),
         UserSymbol::new("evs_high_score".into(), Vram::new(0x80088414)),
         UserSymbol::new("evs_vs_count".into(), Vram::new(0x80088418)),
-        UserSymbol::new("FlyingCnt".into(), Vram::new(0x8008841C)).with_size(Size::new(0x3)),
-        UserSymbol::new("BonusWait".into(), Vram::new(0x80088420)).with_size(Size::new(0x9)),
+        UserSymbol::new("FlyingCnt".into(), Vram::new(0x8008841C))
+            .with_size(UserSize::new(NonZeroU32::new(0x3).unwrap())),
+        UserSymbol::new("BonusWait".into(), Vram::new(0x80088420))
+            .with_size(UserSize::new(NonZeroU32::new(0x9).unwrap())),
         UserSymbol::new("D_8008842C".into(), Vram::new(0x8008842C)),
-        UserSymbol::new("GameSpeed".into(), Vram::new(0x80088430)).with_size(Size::new(0x4)),
-        UserSymbol::new("FallSpeed".into(), Vram::new(0x80088434)).with_size(Size::new(0x38)),
-        UserSymbol::new("Score1p".into(), Vram::new(0x8008846C)).with_size(Size::new(0x12)),
+        UserSymbol::new("GameSpeed".into(), Vram::new(0x80088430))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
+        UserSymbol::new("FallSpeed".into(), Vram::new(0x80088434))
+            .with_size(UserSize::new(NonZeroU32::new(0x38).unwrap())),
+        UserSymbol::new("Score1p".into(), Vram::new(0x8008846C))
+            .with_size(UserSize::new(NonZeroU32::new(0x12).unwrap())),
         UserSymbol::new("mti".into(), Vram::new(0x80088480)),
-        UserSymbol::new("mag01_108".into(), Vram::new(0x80088484)).with_size(Size::new(0x8)),
+        UserSymbol::new("mag01_108".into(), Vram::new(0x80088484))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
         UserSymbol::new("D_80088490".into(), Vram::new(0x80088490)),
         UserSymbol::new("aiVirusLevel".into(), Vram::new(0x800884A8)),
         UserSymbol::new("aiDownSpeed".into(), Vram::new(0x800884C0)),
-        UserSymbol::new("aiSlideFSpeed".into(), Vram::new(0x800884D8)).with_size(Size::new(0x18)),
+        UserSymbol::new("aiSlideFSpeed".into(), Vram::new(0x800884D8))
+            .with_size(UserSize::new(NonZeroU32::new(0x18).unwrap())),
         UserSymbol::new("aiSlideSpeed".into(), Vram::new(0x800884F0)),
         UserSymbol::new("aiDebugP1".into(), Vram::new(0x80088508)),
-        UserSymbol::new("capsGCnv_122".into(), Vram::new(0x8008850C)).with_size(Size::new(0x16)),
-        UserSymbol::new("capsCCnv_123".into(), Vram::new(0x80088524)).with_size(Size::new(0x6)),
+        UserSymbol::new("capsGCnv_122".into(), Vram::new(0x8008850C))
+            .with_size(UserSize::new(NonZeroU32::new(0x16).unwrap())),
+        UserSymbol::new("capsCCnv_123".into(), Vram::new(0x80088524))
+            .with_size(UserSize::new(NonZeroU32::new(0x6).unwrap())),
         UserSymbol::new("aiLinePri".into(), Vram::new(0x8008852C)),
-        UserSymbol::new("srh_466".into(), Vram::new(0x80088534)).with_size(Size::new(0x8)),
+        UserSymbol::new("srh_466".into(), Vram::new(0x80088534))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
         UserSymbol::new("bad_point".into(), Vram::new(0x8008853C)),
         UserSymbol::new("bad_point2".into(), Vram::new(0x8008854C)),
-        UserSymbol::new("pri_point".into(), Vram::new(0x8008855C)).with_size(Size::new(0x12)),
-        UserSymbol::new("EraseLinP".into(), Vram::new(0x80088570)).with_size(Size::new(0x12)),
+        UserSymbol::new("pri_point".into(), Vram::new(0x8008855C))
+            .with_size(UserSize::new(NonZeroU32::new(0x12).unwrap())),
+        UserSymbol::new("EraseLinP".into(), Vram::new(0x80088570))
+            .with_size(UserSize::new(NonZeroU32::new(0x12).unwrap())),
         UserSymbol::new("HeiEraseLinRate".into(), Vram::new(0x80088584)),
         UserSymbol::new("WidEraseLinRate".into(), Vram::new(0x80088588)),
-        UserSymbol::new("HeiLinesAllp".into(), Vram::new(0x8008858C)).with_size(Size::new(0x12)),
-        UserSymbol::new("WidLinesAllp".into(), Vram::new(0x800885A0)).with_size(Size::new(0x12)),
-        UserSymbol::new("AloneCapP".into(), Vram::new(0x800885B4)).with_size(Size::new(0xC)),
-        UserSymbol::new("AloneCapWP".into(), Vram::new(0x800885C0)).with_size(Size::new(0xC)),
+        UserSymbol::new("HeiLinesAllp".into(), Vram::new(0x8008858C))
+            .with_size(UserSize::new(NonZeroU32::new(0x12).unwrap())),
+        UserSymbol::new("WidLinesAllp".into(), Vram::new(0x800885A0))
+            .with_size(UserSize::new(NonZeroU32::new(0x12).unwrap())),
+        UserSymbol::new("AloneCapP".into(), Vram::new(0x800885B4))
+            .with_size(UserSize::new(NonZeroU32::new(0xC).unwrap())),
+        UserSymbol::new("AloneCapWP".into(), Vram::new(0x800885C0))
+            .with_size(UserSize::new(NonZeroU32::new(0xC).unwrap())),
         UserSymbol::new("OnVirusP".into(), Vram::new(0x800885CC)),
         UserSymbol::new("D_800885D0".into(), Vram::new(0x800885D0)),
         UserSymbol::new("RensaP".into(), Vram::new(0x800885D2)),
@@ -2437,28 +2616,35 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("ai_param_org".into(), Vram::new(0x80088660)),
         UserSymbol::new("ai_char_data_org".into(), Vram::new(0x800890E0)),
         UserSymbol::new("mess_panel_tex_size".into(), Vram::new(0x800897A0))
-            .with_size(Size::new(0x8)),
-        UserSymbol::new("mess_panel_lut".into(), Vram::new(0x800897A8)).with_size(Size::new(0x200)),
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
+        UserSymbol::new("mess_panel_lut".into(), Vram::new(0x800897A8))
+            .with_size(UserSize::new(NonZeroU32::new(0x200).unwrap())),
         UserSymbol::new("mess_panel_tex".into(), Vram::new(0x800899A8)),
         UserSymbol::new("_cached_1332".into(), Vram::new(0x8008CF90)),
         UserSymbol::new("D_8008CFA0".into(), Vram::new(0x8008CFA0)),
         UserSymbol::new("D_8008CFE0".into(), Vram::new(0x8008CFE0)),
-        UserSymbol::new("pause_table".into(), Vram::new(0x8008CFF0)).with_size(Size::new(0x30)),
-        UserSymbol::new("cont_table".into(), Vram::new(0x8008D020)).with_size(Size::new(0x60)),
-        UserSymbol::new("etc_parts_tbl".into(), Vram::new(0x8008D080)).with_size(Size::new(0x40)),
+        UserSymbol::new("pause_table".into(), Vram::new(0x8008CFF0))
+            .with_size(UserSize::new(NonZeroU32::new(0x30).unwrap())),
+        UserSymbol::new("cont_table".into(), Vram::new(0x8008D020))
+            .with_size(UserSize::new(NonZeroU32::new(0x60).unwrap())),
+        UserSymbol::new("etc_parts_tbl".into(), Vram::new(0x8008D080))
+            .with_size(UserSize::new(NonZeroU32::new(0x40).unwrap())),
         UserSymbol::new("x2p".into(), Vram::new(0x8008D0C0)),
         UserSymbol::new("x4p".into(), Vram::new(0x8008D0C8)),
         UserSymbol::new("etc_vp".into(), Vram::new(0x8008D0D8)),
-        UserSymbol::new("etc_setup".into(), Vram::new(0x8008D0E8)).with_size(Size::new(0x98)),
-        UserSymbol::new("col_prim_434".into(), Vram::new(0x8008D180)).with_size(Size::new(0x30)),
-        UserSymbol::new("col_env_435".into(), Vram::new(0x8008D1B0)).with_size(Size::new(0x30)),
+        UserSymbol::new("etc_setup".into(), Vram::new(0x8008D0E8))
+            .with_size(UserSize::new(NonZeroU32::new(0x98).unwrap())),
+        UserSymbol::new("col_prim_434".into(), Vram::new(0x8008D180))
+            .with_size(UserSize::new(NonZeroU32::new(0x30).unwrap())),
+        UserSymbol::new("col_env_435".into(), Vram::new(0x8008D1B0))
+            .with_size(UserSize::new(NonZeroU32::new(0x30).unwrap())),
         UserSymbol::new("basc".into(), Vram::new(0x8008D1E0)),
         UserSymbol::new("BASC".into(), Vram::new(0x8008D1F4)),
         UserSymbol::new("_div_data".into(), Vram::new(0x8008D208))
-            .with_size(Size::new(0x48))
+            .with_size(UserSize::new(NonZeroU32::new(0x48).unwrap()))
             .with_typ(SymbolType::Float64),
         UserSymbol::new("_mul_data".into(), Vram::new(0x8008D250))
-            .with_size(Size::new(0x48))
+            .with_size(UserSize::new(NonZeroU32::new(0x48).unwrap()))
             .with_typ(SymbolType::Float64),
         UserSymbol::new("D_8008D2A0".into(), Vram::new(0x8008D2A0))
             .with_typ(SymbolType::UserCustom),
@@ -2466,7 +2652,7 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("D_8008D2C8".into(), Vram::new(0x8008D2C8))
             .with_typ(SymbolType::UserCustom),
         UserSymbol::new("sDebugPrintFontTex".into(), Vram::new(0x8008D2D0))
-            .with_size(Size::new(0xF00)),
+            .with_size(UserSize::new(NonZeroU32::new(0xF00).unwrap())),
         UserSymbol::new("sDebugPrintFontMap".into(), Vram::new(0x8008E1D0)),
         UserSymbol::new("D_8008E290".into(), Vram::new(0x8008E290)),
         UserSymbol::new("D_8008E340".into(), Vram::new(0x8008E340)),
@@ -2475,7 +2661,8 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("D_8008E370".into(), Vram::new(0x8008E370)),
         UserSymbol::new("D_8008E380".into(), Vram::new(0x8008E380)),
         UserSymbol::new("D_8008E398".into(), Vram::new(0x8008E398)),
-        UserSymbol::new("D_8008E3B8".into(), Vram::new(0x8008E3B8)).with_size(Size::new(0x8)),
+        UserSymbol::new("D_8008E3B8".into(), Vram::new(0x8008E3B8))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
         UserSymbol::new("D_8008E3C0".into(), Vram::new(0x8008E3C0)),
         UserSymbol::new("D_8008E400".into(), Vram::new(0x8008E400)),
         UserSymbol::new("D_8008E420".into(), Vram::new(0x8008E420)),
@@ -2492,12 +2679,13 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("D_8008E508".into(), Vram::new(0x8008E508)),
         UserSymbol::new("D_8008E538".into(), Vram::new(0x8008E538)),
         UserSymbol::new("D_8008E540".into(), Vram::new(0x8008E540)),
-        UserSymbol::new("D_8008E548".into(), Vram::new(0x8008E548)).with_size(Size::new(0x10)),
+        UserSymbol::new("D_8008E548".into(), Vram::new(0x8008E548))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
         UserSymbol::new(
             "sDebugMenu_CharacterEdit_RowsPerColumn".into(),
             Vram::new(0x8008E558),
         )
-        .with_size(Size::new(0x10)),
+        .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
         UserSymbol::new("D_8008E568".into(), Vram::new(0x8008E568)),
         UserSymbol::new("D_8008E574".into(), Vram::new(0x8008E574)),
         UserSymbol::new("D_8008E57C".into(), Vram::new(0x8008E57C)),
@@ -2525,25 +2713,28 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("_yn_1767".into(), Vram::new(0x8008E770)),
         UserSymbol::new("_type_1949".into(), Vram::new(0x8008E778)),
         UserSymbol::new("_menuMain_lastMode".into(), Vram::new(0x8008E788))
-            .with_size(Size::new(0x4)),
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
         UserSymbol::new("_tblMain_5279".into(), Vram::new(0x8008E78C)),
         UserSymbol::new("_tblPlay1_5280".into(), Vram::new(0x8008E79C)),
-        UserSymbol::new("_tblPlay2_5281".into(), Vram::new(0x8008E7B4)).with_size(Size::new(0xC)),
+        UserSymbol::new("_tblPlay2_5281".into(), Vram::new(0x8008E7B4))
+            .with_size(UserSize::new(NonZeroU32::new(0xC).unwrap())),
         UserSymbol::new("D_8008E7C0".into(), Vram::new(0x8008E7C0)),
         UserSymbol::new("_tblBaTyp_5282".into(), Vram::new(0x8008E7D0)),
         UserSymbol::new("_tblOpt_5283".into(), Vram::new(0x8008E7DC)),
         UserSymbol::new("_tblTutol_5284".into(), Vram::new(0x8008E7F0)),
         UserSymbol::new("_tblSound_5285".into(), Vram::new(0x8008E804)),
         UserSymbol::new("_tblMisc_5286".into(), Vram::new(0x8008E814)),
-        UserSymbol::new("_loopTbl_5287".into(), Vram::new(0x8008E820)).with_size(Size::new(0x40)),
-        UserSymbol::new("mes_5577".into(), Vram::new(0x8008E860)).with_size(Size::new(0xC)),
+        UserSymbol::new("_loopTbl_5287".into(), Vram::new(0x8008E820))
+            .with_size(UserSize::new(NonZeroU32::new(0x40).unwrap())),
+        UserSymbol::new("mes_5577".into(), Vram::new(0x8008E860))
+            .with_size(UserSize::new(NonZeroU32::new(0xC).unwrap())),
         UserSymbol::new("_nameEntry_charTable".into(), Vram::new(0x8008E86C)),
         UserSymbol::new("_code_9711".into(), Vram::new(0x8008E870))
-            .with_size(Size::new(0x26))
+            .with_size(UserSize::new(NonZeroU32::new(0x26).unwrap()))
             .with_typ(SymbolType::Byte),
         UserSymbol::new("_posX_tbl_9716".into(), Vram::new(0x8008E898)),
         UserSymbol::new("_menuAll_lastMode".into(), Vram::new(0x8008E8B4))
-            .with_size(Size::new(0x4)),
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
         UserSymbol::new("font_a_tex".into(), Vram::new(0x8008E8C0)).with_typ(SymbolType::Byte),
         UserSymbol::new("font_2_tex".into(), Vram::new(0x80094350)).with_typ(SymbolType::Byte),
         UserSymbol::new("font_e_tex".into(), Vram::new(0x8009F870))
@@ -2557,12 +2748,13 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("D_800A6D90".into(), Vram::new(0x800A6D90)),
         UserSymbol::new("_tbl_133".into(), Vram::new(0x800A6F70)),
         UserSymbol::new("virus_anime_table".into(), Vram::new(0x800A6F80))
-            .with_size(Size::new(0xC)),
+            .with_size(UserSize::new(NonZeroU32::new(0xC).unwrap())),
         UserSymbol::new("dm_chaine_se_table_vs_178".into(), Vram::new(0x800A6F8C)),
         UserSymbol::new("dm_chaine_se_table_4p_179".into(), Vram::new(0x800A6F90)),
         UserSymbol::new("rotate_table_474".into(), Vram::new(0x800A6F9C))
-            .with_size(Size::new(0x10)),
-        UserSymbol::new("rotate_mtx_475".into(), Vram::new(0x800A6FAC)).with_size(Size::new(0x18)),
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
+        UserSymbol::new("rotate_mtx_475".into(), Vram::new(0x800A6FAC))
+            .with_size(UserSize::new(NonZeroU32::new(0x18).unwrap())),
         UserSymbol::new("D_800A6FC4".into(), Vram::new(0x800A6FC4)),
         UserSymbol::new("visible_fall_point".into(), Vram::new(0x800A6FC8)),
         UserSymbol::new("_mesPassword".into(), Vram::new(0x800A6FD8)).with_typ(SymbolType::CString),
@@ -2584,7 +2776,7 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("D_800A7360".into(), Vram::new(0x800A7360)),
         UserSymbol::new("tbl_4589".into(), Vram::new(0x800A7374)),
         UserSymbol::new("col_4590".into(), Vram::new(0x800A7378))
-            .with_size(Size::new(0xC))
+            .with_size(UserSize::new(NonZeroU32::new(0xC).unwrap()))
             .with_typ(SymbolType::Byte),
         UserSymbol::new("title_demo_flg".into(), Vram::new(0x800A7390)),
         UserSymbol::new("title_demo_no".into(), Vram::new(0x800A7394)),
@@ -2596,7 +2788,8 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("curtain_alpha_00_tex".into(), Vram::new(0x800A73C0)),
         UserSymbol::new("curtain_00_tex".into(), Vram::new(0x800A76C0)),
         UserSymbol::new("changestar_tex".into(), Vram::new(0x800A82C0)),
-        UserSymbol::new("title_bmp_tbl".into(), Vram::new(0x800A8AC0)).with_size(Size::new(0xC)),
+        UserSymbol::new("title_bmp_tbl".into(), Vram::new(0x800A8AC0))
+            .with_size(UserSize::new(NonZeroU32::new(0xC).unwrap())),
         UserSymbol::new("mess_heap".into(), Vram::new(0x800A8ACC)),
         UserSymbol::new("st_staffroll_txt".into(), Vram::new(0x800A8AD0))
             .with_typ(SymbolType::CString),
@@ -2727,7 +2920,8 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("mes_ep1".into(), Vram::new(0x800AABE0)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_ep2".into(), Vram::new(0x800AAC10)).with_typ(SymbolType::CString),
         UserSymbol::new("mes_ep_data".into(), Vram::new(0x800AAC5C)),
-        UserSymbol::new("mes_data".into(), Vram::new(0x800AAC74)).with_size(Size::new(0x78)),
+        UserSymbol::new("mes_data".into(), Vram::new(0x800AAC74))
+            .with_size(UserSize::new(NonZeroU32::new(0x78).unwrap())),
         UserSymbol::new("story_proc_no".into(), Vram::new(0x800AACEC)),
         UserSymbol::new("STR_800AACF0".into(), Vram::new(0x800AACF0)).with_typ(SymbolType::CString),
         UserSymbol::new("EndingLastMessage".into(), Vram::new(0x800AAD04)),
@@ -2747,7 +2941,8 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("story_buffer".into(), Vram::new(0x800AAD3C)),
         UserSymbol::new("story_z_buffer".into(), Vram::new(0x800AAD40)),
         UserSymbol::new("objMtx_FF".into(), Vram::new(0x800AAD44)),
-        UserSymbol::new("wakuGraphic_ofs".into(), Vram::new(0x800AAD48)).with_size(Size::new(0xC)),
+        UserSymbol::new("wakuGraphic_ofs".into(), Vram::new(0x800AAD48))
+            .with_size(UserSize::new(NonZeroU32::new(0xC).unwrap())),
         UserSymbol::new("D_800AAD58".into(), Vram::new(0x800AAD58)),
         UserSymbol::new("story_setup".into(), Vram::new(0x800AAD68)),
         UserSymbol::new("snd_tbl_838".into(), Vram::new(0x800AAE00)),
@@ -2765,7 +2960,8 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("D_800AB32C".into(), Vram::new(0x800AB32C)),
         UserSymbol::new("D_800AB334".into(), Vram::new(0x800AB334)),
         UserSymbol::new("D_800AB3B4".into(), Vram::new(0x800AB3B4)),
-        UserSymbol::new("D_800AB440".into(), Vram::new(0x800AB440)).with_size(Size::new(0x810)),
+        UserSymbol::new("D_800AB440".into(), Vram::new(0x800AB440))
+            .with_size(UserSize::new(NonZeroU32::new(0x810).unwrap())),
         UserSymbol::new("jumptable".into(), Vram::new(0x800ABC50)),
         UserSymbol::new("SmallRoomParams".into(), Vram::new(0x800ABD10)),
         UserSymbol::new("BigRoomParams".into(), Vram::new(0x800ABD78)),
@@ -2777,7 +2973,8 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("EffectList".into(), Vram::new(0x800ABF04)),
         UserSymbol::new("default_sched".into(), Vram::new(0x800ABF20)),
         UserSymbol::new("__libmus_current_sched".into(), Vram::new(0x800ABF2C)),
-        UserSymbol::new("last_task".into(), Vram::new(0x800ABF30)).with_size(Size::new(0x4)),
+        UserSymbol::new("last_task".into(), Vram::new(0x800ABF30))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
         UserSymbol::new("aspMainDataStart".into(), Vram::new(0x800ABF40))
             .with_name_end("aspMainDataEnd".into())
             .with_dont_allow_addend(),
@@ -2790,7 +2987,8 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("jtbl_800AC9E0".into(), Vram::new(0x800AC9E0))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("_charSE_tbl".into(), Vram::new(0x800ACA10)),
-        UserSymbol::new("RO_800ACA20".into(), Vram::new(0x800ACA20)).with_size(Size::new(0x60)),
+        UserSymbol::new("RO_800ACA20".into(), Vram::new(0x800ACA20))
+            .with_size(UserSize::new(NonZeroU32::new(0x60).unwrap())),
         UserSymbol::new("gSndsEntries".into(), Vram::new(0x800ACA80)),
         UserSymbol::new("DBL_800ACCF0".into(), Vram::new(0x800ACCF0)).with_typ(SymbolType::Float64),
         UserSymbol::new("DBL_800ACCF8".into(), Vram::new(0x800ACCF8)).with_typ(SymbolType::Float64),
@@ -2805,28 +3003,28 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("jtbl_800ACDE0".into(), Vram::new(0x800ACDE0))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("_seqTbl_224".into(), Vram::new(0x800ACE1C))
-            .with_size(Size::new(0xA))
+            .with_size(UserSize::new(NonZeroU32::new(0xA).unwrap()))
             .with_typ(SymbolType::Byte),
         UserSymbol::new("_demoSeqTbl_225".into(), Vram::new(0x800ACE28))
-            .with_size(Size::new(0x2))
+            .with_size(UserSize::new(NonZeroU32::new(0x2).unwrap()))
             .with_typ(SymbolType::Byte),
         UserSymbol::new("StoryVirLv_226".into(), Vram::new(0x800ACE2C))
-            .with_size(Size::new(0x1E))
+            .with_size(UserSize::new(NonZeroU32::new(0x1E).unwrap()))
             .with_typ(SymbolType::Byte),
         UserSymbol::new("_charToAi_227".into(), Vram::new(0x800ACE4C))
-            .with_size(Size::new(0xF))
+            .with_size(UserSize::new(NonZeroU32::new(0xF).unwrap()))
             .with_typ(SymbolType::Byte),
         UserSymbol::new("_stageToChar_tbl_228".into(), Vram::new(0x800ACE5C))
-            .with_size(Size::new(0x14))
+            .with_size(UserSize::new(NonZeroU32::new(0x14).unwrap()))
             .with_typ(SymbolType::Byte),
         UserSymbol::new("_story4PChar_tbl_229".into(), Vram::new(0x800ACE70))
-            .with_size(Size::new(0x8))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap()))
             .with_typ(SymbolType::Byte),
         UserSymbol::new("_team_flg_230".into(), Vram::new(0x800ACE78))
-            .with_size(Size::new(0xC))
+            .with_size(UserSize::new(NonZeroU32::new(0xC).unwrap()))
             .with_typ(SymbolType::Byte),
         UserSymbol::new("GameSize_231".into(), Vram::new(0x800ACE84))
-            .with_size(Size::new(0x7))
+            .with_size(UserSize::new(NonZeroU32::new(0x7).unwrap()))
             .with_typ(SymbolType::Byte),
         UserSymbol::new("jtbl_800ACE90".into(), Vram::new(0x800ACE90))
             .with_typ(SymbolType::Jumptable),
@@ -2836,7 +3034,8 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("jtbl_800ACEE8".into(), Vram::new(0x800ACEE8))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("RO_800ACF10".into(), Vram::new(0x800ACF10)),
-        UserSymbol::new("wave_tbl_2879".into(), Vram::new(0x800ACF20)).with_size(Size::new(0x20)),
+        UserSymbol::new("wave_tbl_2879".into(), Vram::new(0x800ACF20))
+            .with_size(UserSize::new(NonZeroU32::new(0x20).unwrap())),
         UserSymbol::new("eeprom_header".into(), Vram::new(0x800ACF40)),
         UserSymbol::new("eeprom_header_bits".into(), Vram::new(0x800ACF44)),
         UserSymbol::new("_defName".into(), Vram::new(0x800ACF48)),
@@ -2848,12 +3047,14 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("jtbl_800ACF98".into(), Vram::new(0x800ACF98))
             .with_typ(SymbolType::Jumptable),
-        UserSymbol::new("RO_800ACFB0".into(), Vram::new(0x800ACFB0)).with_size(Size::new(0x18)),
+        UserSymbol::new("RO_800ACFB0".into(), Vram::new(0x800ACFB0))
+            .with_size(UserSize::new(NonZeroU32::new(0x18).unwrap())),
         UserSymbol::new("RO_800ACFC8".into(), Vram::new(0x800ACFC8)),
         UserSymbol::new("DBL_800AD068".into(), Vram::new(0x800AD068)).with_typ(SymbolType::Float64),
         UserSymbol::new("DBL_800AD070".into(), Vram::new(0x800AD070)).with_typ(SymbolType::Float64),
         UserSymbol::new("DBL_800AD078".into(), Vram::new(0x800AD078)).with_typ(SymbolType::Float64),
-        UserSymbol::new("RO_800AD080".into(), Vram::new(0x800AD080)).with_size(Size::new(0x18)),
+        UserSymbol::new("RO_800AD080".into(), Vram::new(0x800AD080))
+            .with_size(UserSize::new(NonZeroU32::new(0x18).unwrap())),
         UserSymbol::new("RO_800AD098".into(), Vram::new(0x800AD098)),
         UserSymbol::new("DBL_800AD138".into(), Vram::new(0x800AD138)).with_typ(SymbolType::Float64),
         UserSymbol::new("DBL_800AD140".into(), Vram::new(0x800AD140)).with_typ(SymbolType::Float64),
@@ -3333,22 +3534,22 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("color_251".into(), Vram::new(0x800ADC50))
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
         UserSymbol::new("fade_normal_texture_init_dl".into(), Vram::new(0x800ADC60))
-            .with_size(Size::new(0x18))
+            .with_size(UserSize::new(NonZeroU32::new(0x18).unwrap()))
             .with_typ(SymbolType::UserCustom),
         UserSymbol::new("fade_alpha_texture_init_dl".into(), Vram::new(0x800ADC78))
-            .with_size(Size::new(0x18))
+            .with_size(UserSize::new(NonZeroU32::new(0x18).unwrap()))
             .with_typ(SymbolType::UserCustom),
         UserSymbol::new(
             "fade_intensity_texture_init_dl".into(),
             Vram::new(0x800ADC90),
         )
-        .with_size(Size::new(0x28))
+        .with_size(UserSize::new(NonZeroU32::new(0x28).unwrap()))
         .with_typ(SymbolType::UserCustom),
         UserSymbol::new("fade_fillrect_init_dl".into(), Vram::new(0x800ADCB8))
-            .with_size(Size::new(0x28))
+            .with_size(UserSize::new(NonZeroU32::new(0x28).unwrap()))
             .with_typ(SymbolType::UserCustom),
         UserSymbol::new("fade_shadow_texture_init_dl".into(), Vram::new(0x800ADCE0))
-            .with_size(Size::new(0x20))
+            .with_size(UserSize::new(NonZeroU32::new(0x20).unwrap()))
             .with_typ(SymbolType::UserCustom)
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
         UserSymbol::new("FLT_800ADD00".into(), Vram::new(0x800ADD00)).with_typ(SymbolType::Float32),
@@ -3454,37 +3655,47 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
             .with_typ(SymbolType::CString)
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
         UserSymbol::new("_gameLvItemColor".into(), Vram::new(0x800AF514))
-            .with_size(Size::new(0x18))
+            .with_size(UserSize::new(NonZeroU32::new(0x18).unwrap()))
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
         UserSymbol::new("_musicItemColor".into(), Vram::new(0x800AF52C))
-            .with_size(Size::new(0x8))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap()))
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
         UserSymbol::new("RO_800AF534".into(), Vram::new(0x800AF534))
-            .with_size(Size::new(0x4))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap()))
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
         UserSymbol::new("jtbl_800AF538".into(), Vram::new(0x800AF538))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("_menuCursor_cursor_4_pattern".into(), Vram::new(0x800AF660))
-            .with_size(Size::new(0x78)),
+            .with_size(UserSize::new(NonZeroU32::new(0x78).unwrap())),
         UserSymbol::new("_color_1040".into(), Vram::new(0x800AF6D8))
-            .with_size(Size::new(0x30))
+            .with_size(UserSize::new(NonZeroU32::new(0x30).unwrap()))
             .with_typ(SymbolType::Float32),
-        UserSymbol::new("_pnts_1106".into(), Vram::new(0x800AF708)).with_size(Size::new(0x120)),
+        UserSymbol::new("_pnts_1106".into(), Vram::new(0x800AF708))
+            .with_size(UserSize::new(NonZeroU32::new(0x120).unwrap())),
         UserSymbol::new("jtbl_800AF828".into(), Vram::new(0x800AF828))
-            .with_size(Size::new(0x24))
+            .with_size(UserSize::new(NonZeroU32::new(0x24).unwrap()))
             .with_typ(SymbolType::Jumptable),
-        UserSymbol::new("_type_1345".into(), Vram::new(0x800AF84C)).with_size(Size::new(0x40)),
-        UserSymbol::new("cap_pos_1442".into(), Vram::new(0x800AF88C)).with_size(Size::new(0x23C)),
-        UserSymbol::new("_lvGauge_step".into(), Vram::new(0x800AFAC8)).with_size(Size::new(0xC)),
-        UserSymbol::new("_size_1542".into(), Vram::new(0x800AFAD4)).with_size(Size::new(0x18)),
-        UserSymbol::new("_type_1543".into(), Vram::new(0x800AFAEC)).with_size(Size::new(0xC)),
-        UserSymbol::new("_yn_1691".into(), Vram::new(0x800AFAF8)).with_size(Size::new(0x10)),
+        UserSymbol::new("_type_1345".into(), Vram::new(0x800AF84C))
+            .with_size(UserSize::new(NonZeroU32::new(0x40).unwrap())),
+        UserSymbol::new("cap_pos_1442".into(), Vram::new(0x800AF88C))
+            .with_size(UserSize::new(NonZeroU32::new(0x23C).unwrap())),
+        UserSymbol::new("_lvGauge_step".into(), Vram::new(0x800AFAC8))
+            .with_size(UserSize::new(NonZeroU32::new(0xC).unwrap())),
+        UserSymbol::new("_size_1542".into(), Vram::new(0x800AFAD4))
+            .with_size(UserSize::new(NonZeroU32::new(0x18).unwrap())),
+        UserSymbol::new("_type_1543".into(), Vram::new(0x800AFAEC))
+            .with_size(UserSize::new(NonZeroU32::new(0xC).unwrap())),
+        UserSymbol::new("_yn_1691".into(), Vram::new(0x800AFAF8))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
         UserSymbol::new("STR_800AFB08".into(), Vram::new(0x800AFB08)).with_typ(SymbolType::CString),
         UserSymbol::new("STR_800AFB10".into(), Vram::new(0x800AFB10)).with_typ(SymbolType::CString),
-        UserSymbol::new("_tex_1865".into(), Vram::new(0x800AFB18)).with_size(Size::new(0x20)),
+        UserSymbol::new("_tex_1865".into(), Vram::new(0x800AFB18))
+            .with_size(UserSize::new(NonZeroU32::new(0x20).unwrap())),
         UserSymbol::new("_row_1866".into(), Vram::new(0x800AFB38)),
-        UserSymbol::new("_size_1948".into(), Vram::new(0x800AFB48)).with_size(Size::new(0x20)),
-        UserSymbol::new("_pos_1959".into(), Vram::new(0x800AFB68)).with_size(Size::new(0x8)),
+        UserSymbol::new("_size_1948".into(), Vram::new(0x800AFB48))
+            .with_size(UserSize::new(NonZeroU32::new(0x20).unwrap())),
+        UserSymbol::new("_pos_1959".into(), Vram::new(0x800AFB68))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
         UserSymbol::new("DBL_800AFB70".into(), Vram::new(0x800AFB70)).with_typ(SymbolType::Float64),
         UserSymbol::new("DBL_800AFB78".into(), Vram::new(0x800AFB78)).with_typ(SymbolType::Float64),
         UserSymbol::new("DBL_800AFB80".into(), Vram::new(0x800AFB80)).with_typ(SymbolType::Float64),
@@ -3497,15 +3708,18 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("RO_800AFBE0".into(), Vram::new(0x800AFBE0))
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
         UserSymbol::new("_posDesc_2860".into(), Vram::new(0x800AFBEC))
-            .with_size(Size::new(0x28))
+            .with_size(UserSize::new(NonZeroU32::new(0x28).unwrap()))
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
-        UserSymbol::new("_posLine_2861".into(), Vram::new(0x800AFC14)).with_size(Size::new(0x8)),
-        UserSymbol::new("_line_2914".into(), Vram::new(0x800AFC1C)).with_size(Size::new(0x4)),
+        UserSymbol::new("_posLine_2861".into(), Vram::new(0x800AFC14))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
+        UserSymbol::new("_line_2914".into(), Vram::new(0x800AFC1C))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
         UserSymbol::new("_desc_2915".into(), Vram::new(0x800AFC20)),
-        UserSymbol::new("_panel_3220".into(), Vram::new(0x800AFC24)).with_size(Size::new(0x14)),
+        UserSymbol::new("_panel_3220".into(), Vram::new(0x800AFC24))
+            .with_size(UserSize::new(NonZeroU32::new(0x14).unwrap())),
         UserSymbol::new("DBL_800AFC38".into(), Vram::new(0x800AFC38)).with_typ(SymbolType::Float64),
         UserSymbol::new("_texEndOrGuest_3608".into(), Vram::new(0x800AFC40))
-            .with_size(Size::new(0x8)),
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
         UserSymbol::new("_name_3803".into(), Vram::new(0x800AFC48)),
         UserSymbol::new("_panel_3859".into(), Vram::new(0x800AFC4C)),
         UserSymbol::new("_pos_4015".into(), Vram::new(0x800AFC5C)),
@@ -3513,30 +3727,45 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("_tbl_4036".into(), Vram::new(0x800AFC74)),
         UserSymbol::new("_panel_4108".into(), Vram::new(0x800AFCDC)),
         UserSymbol::new("_lvNumScale_4308".into(), Vram::new(0x800AFCEC))
-            .with_size(Size::new(0x10))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap()))
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
-        UserSymbol::new("_player_4309".into(), Vram::new(0x800AFCFC)).with_size(Size::new(0x10)),
-        UserSymbol::new("_lvNum_4310".into(), Vram::new(0x800AFD0C)).with_size(Size::new(0x10)),
-        UserSymbol::new("_lvGauge_4311".into(), Vram::new(0x800AFD1C)).with_size(Size::new(0x10)),
-        UserSymbol::new("_speedAsk_4312".into(), Vram::new(0x800AFD2C)).with_size(Size::new(0x10)),
-        UserSymbol::new("_speedItem_4313".into(), Vram::new(0x800AFD3C)).with_size(Size::new(0x10)),
-        UserSymbol::new("_glvAsk_4314".into(), Vram::new(0x800AFD4C)).with_size(Size::new(0x10)),
-        UserSymbol::new("_glvItem_4315".into(), Vram::new(0x800AFD5C)).with_size(Size::new(0x10)),
-        UserSymbol::new("_okY_4316".into(), Vram::new(0x800AFD6C)).with_size(Size::new(0x8)),
-        UserSymbol::new("_cursor_4317".into(), Vram::new(0x800AFD74)).with_size(Size::new(0x40)),
+        UserSymbol::new("_player_4309".into(), Vram::new(0x800AFCFC))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
+        UserSymbol::new("_lvNum_4310".into(), Vram::new(0x800AFD0C))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
+        UserSymbol::new("_lvGauge_4311".into(), Vram::new(0x800AFD1C))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
+        UserSymbol::new("_speedAsk_4312".into(), Vram::new(0x800AFD2C))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
+        UserSymbol::new("_speedItem_4313".into(), Vram::new(0x800AFD3C))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
+        UserSymbol::new("_glvAsk_4314".into(), Vram::new(0x800AFD4C))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
+        UserSymbol::new("_glvItem_4315".into(), Vram::new(0x800AFD5C))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
+        UserSymbol::new("_okY_4316".into(), Vram::new(0x800AFD6C))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
+        UserSymbol::new("_cursor_4317".into(), Vram::new(0x800AFD74))
+            .with_size(UserSize::new(NonZeroU32::new(0x40).unwrap())),
         UserSymbol::new("jtbl_800AFDB8".into(), Vram::new(0x800AFDB8))
             .with_typ(SymbolType::Jumptable),
-        UserSymbol::new("_charTbl_4601".into(), Vram::new(0x800AFE2C)).with_size(Size::new(0x3C)),
-        UserSymbol::new("_type_4602".into(), Vram::new(0x800AFE68)).with_size(Size::new(0x40)),
-        UserSymbol::new("_texPanelP4_4617".into(), Vram::new(0x800AFEA8)).with_size(Size::new(0x8)),
+        UserSymbol::new("_charTbl_4601".into(), Vram::new(0x800AFE2C))
+            .with_size(UserSize::new(NonZeroU32::new(0x3C).unwrap())),
+        UserSymbol::new("_type_4602".into(), Vram::new(0x800AFE68))
+            .with_size(UserSize::new(NonZeroU32::new(0x40).unwrap())),
+        UserSymbol::new("_texPanelP4_4617".into(), Vram::new(0x800AFEA8))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
         UserSymbol::new("_texPanelP2_4618".into(), Vram::new(0x800AFEB0)),
         UserSymbol::new("_bgDataNo_to_stageNo".into(), Vram::new(0x800AFEB8))
-            .with_size(Size::new(0x14)),
-        UserSymbol::new("_bgCursor_4920".into(), Vram::new(0x800AFECC)).with_size(Size::new(0x10)),
-        UserSymbol::new("_cursor_4921".into(), Vram::new(0x800AFEDC)).with_size(Size::new(0x20)),
+            .with_size(UserSize::new(NonZeroU32::new(0x14).unwrap())),
+        UserSymbol::new("_bgCursor_4920".into(), Vram::new(0x800AFECC))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
+        UserSymbol::new("_cursor_4921".into(), Vram::new(0x800AFEDC))
+            .with_size(UserSize::new(NonZeroU32::new(0x20).unwrap())),
         UserSymbol::new("jtbl_800AFF00".into(), Vram::new(0x800AFF00))
             .with_typ(SymbolType::Jumptable),
-        UserSymbol::new("_root_5339".into(), Vram::new(0x800B0028)).with_size(Size::new(0x10)),
+        UserSymbol::new("_root_5339".into(), Vram::new(0x800B0028))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
         UserSymbol::new("_play1_5340".into(), Vram::new(0x800B0038)),
         UserSymbol::new("_play2_5341".into(), Vram::new(0x800B0050)),
         UserSymbol::new("_play4_5342".into(), Vram::new(0x800B005C)),
@@ -3559,10 +3788,14 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("_mode_5538".into(), Vram::new(0x800B0338)),
         UserSymbol::new("mode_5557".into(), Vram::new(0x800B0350)),
         UserSymbol::new("_mode_5570".into(), Vram::new(0x800B035C)),
-        UserSymbol::new("_tbl_5598".into(), Vram::new(0x800B0360)).with_size(Size::new(0x18)),
-        UserSymbol::new("_tblLS_5599".into(), Vram::new(0x800B0378)).with_size(Size::new(0x24)),
-        UserSymbol::new("_tblVM_5600".into(), Vram::new(0x800B039C)).with_size(Size::new(0x24)),
-        UserSymbol::new("_tblVC_5601".into(), Vram::new(0x800B03C0)).with_size(Size::new(0x18)),
+        UserSymbol::new("_tbl_5598".into(), Vram::new(0x800B0360))
+            .with_size(UserSize::new(NonZeroU32::new(0x18).unwrap())),
+        UserSymbol::new("_tblLS_5599".into(), Vram::new(0x800B0378))
+            .with_size(UserSize::new(NonZeroU32::new(0x24).unwrap())),
+        UserSymbol::new("_tblVM_5600".into(), Vram::new(0x800B039C))
+            .with_size(UserSize::new(NonZeroU32::new(0x24).unwrap())),
+        UserSymbol::new("_tblVC_5601".into(), Vram::new(0x800B03C0))
+            .with_size(UserSize::new(NonZeroU32::new(0x18).unwrap())),
         UserSymbol::new("tbl_5648".into(), Vram::new(0x800B03D8)),
         UserSymbol::new("tbl_5664".into(), Vram::new(0x800B03EC)),
         UserSymbol::new("_team_5687".into(), Vram::new(0x800B03F8)),
@@ -3587,14 +3820,18 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("jtbl_800B08D8".into(), Vram::new(0x800B08D8))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("DBL_800B0938".into(), Vram::new(0x800B0938)).with_typ(SymbolType::Float64),
-        UserSymbol::new("_pat_6137".into(), Vram::new(0x800B0940)).with_size(Size::new(0x18)),
+        UserSymbol::new("_pat_6137".into(), Vram::new(0x800B0940))
+            .with_size(UserSize::new(NonZeroU32::new(0x18).unwrap())),
         UserSymbol::new("DBL_800B0958".into(), Vram::new(0x800B0958)).with_typ(SymbolType::Float64),
         UserSymbol::new("DBL_800B0960".into(), Vram::new(0x800B0960)).with_typ(SymbolType::Float64),
-        UserSymbol::new("_pos_6413".into(), Vram::new(0x800B0968)).with_size(Size::new(0x90)),
-        UserSymbol::new("_posChar_6445".into(), Vram::new(0x800B09F8)).with_size(Size::new(0x10)),
+        UserSymbol::new("_pos_6413".into(), Vram::new(0x800B0968))
+            .with_size(UserSize::new(NonZeroU32::new(0x90).unwrap())),
+        UserSymbol::new("_posChar_6445".into(), Vram::new(0x800B09F8))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
         UserSymbol::new("_posBgCursor_6446".into(), Vram::new(0x800B0A08))
-            .with_size(Size::new(0x10)),
-        UserSymbol::new("_cursor_6447".into(), Vram::new(0x800B0A18)).with_size(Size::new(0x30)),
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
+        UserSymbol::new("_cursor_6447".into(), Vram::new(0x800B0A18))
+            .with_size(UserSize::new(NonZeroU32::new(0x30).unwrap())),
         UserSymbol::new("DBL_800B0A48".into(), Vram::new(0x800B0A48)).with_typ(SymbolType::Float64),
         UserSymbol::new("RO_800B0A50".into(), Vram::new(0x800B0A50))
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
@@ -3602,29 +3839,35 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("_cover_6929".into(), Vram::new(0x800B0A6C)),
         UserSymbol::new("_filter_6930".into(), Vram::new(0x800B0A7C)),
         UserSymbol::new("_wchar_6931".into(), Vram::new(0x800B0B0C)),
-        UserSymbol::new("_cursor_7325".into(), Vram::new(0x800B0B14)).with_size(Size::new(0x30)),
+        UserSymbol::new("_cursor_7325".into(), Vram::new(0x800B0B14))
+            .with_size(UserSize::new(NonZeroU32::new(0x30).unwrap())),
         UserSymbol::new("RO_800B0B44".into(), Vram::new(0x800B0B44)),
         UserSymbol::new("_pos_7882".into(), Vram::new(0x800B0B50))
-            .with_size(Size::new(0x20))
+            .with_size(UserSize::new(NonZeroU32::new(0x20).unwrap()))
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
         UserSymbol::new("jtbl_800B0B70".into(), Vram::new(0x800B0B70))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("jtbl_800B0BE8".into(), Vram::new(0x800B0BE8))
             .with_typ(SymbolType::Jumptable),
-        UserSymbol::new("_charTbl_8108".into(), Vram::new(0x800B0C5C)).with_size(Size::new(0x3C)),
+        UserSymbol::new("_charTbl_8108".into(), Vram::new(0x800B0C5C))
+            .with_size(UserSize::new(NonZeroU32::new(0x3C).unwrap())),
         UserSymbol::new("jtbl_800B0C98".into(), Vram::new(0x800B0C98))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("jtbl_800B0D10".into(), Vram::new(0x800B0D10))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("_star_8183".into(), Vram::new(0x800B0D84)),
-        UserSymbol::new("_tex_8297".into(), Vram::new(0x800B0D94)).with_size(Size::new(0x8)),
+        UserSymbol::new("_tex_8297".into(), Vram::new(0x800B0D94))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
         UserSymbol::new("_pos_8298".into(), Vram::new(0x800B0D9C))
-            .with_size(Size::new(0x10))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap()))
             .with_typ(SymbolType::Word),
         UserSymbol::new("_moveTbl_8521".into(), Vram::new(0x800B0DAC)).with_typ(SymbolType::Word),
-        UserSymbol::new("_onaji_8534".into(), Vram::new(0x800B0DB4)).with_size(Size::new(0x10)),
-        UserSymbol::new("_panel2_8535".into(), Vram::new(0x800B0DC4)).with_size(Size::new(0x10)),
-        UserSymbol::new("_panel4_8536".into(), Vram::new(0x800B0DD4)).with_size(Size::new(0x20)),
+        UserSymbol::new("_onaji_8534".into(), Vram::new(0x800B0DB4))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
+        UserSymbol::new("_panel2_8535".into(), Vram::new(0x800B0DC4))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
+        UserSymbol::new("_panel4_8536".into(), Vram::new(0x800B0DD4))
+            .with_size(UserSize::new(NonZeroU32::new(0x20).unwrap())),
         UserSymbol::new("jtbl_800B0DF8".into(), Vram::new(0x800B0DF8))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("jtbl_800B0E70".into(), Vram::new(0x800B0E70))
@@ -3676,11 +3919,13 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("jtbl_800B13D0".into(), Vram::new(0x800B13D0))
             .with_typ(SymbolType::Jumptable)
             .with_migration_behavior(RodataMigrationBehavior::ForceMigrate),
-        UserSymbol::new("_lr_10544".into(), Vram::new(0x800B13F8)).with_size(Size::new(0x10)),
+        UserSymbol::new("_lr_10544".into(), Vram::new(0x800B13F8))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
         UserSymbol::new("jtbl_800B1408".into(), Vram::new(0x800B1408))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("RO_800B1430".into(), Vram::new(0x800B1430)),
-        UserSymbol::new("_dir_10660".into(), Vram::new(0x800B1438)).with_size(Size::new(0x8)),
+        UserSymbol::new("_dir_10660".into(), Vram::new(0x800B1438))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
         UserSymbol::new("jtbl_800B1440".into(), Vram::new(0x800B1440))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("jtbl_800B14F8".into(), Vram::new(0x800B14F8))
@@ -3703,7 +3948,7 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("DBL_800B1980".into(), Vram::new(0x800B1980)).with_typ(SymbolType::Float64),
         UserSymbol::new("DBL_800B1988".into(), Vram::new(0x800B1988)).with_typ(SymbolType::Float64),
         UserSymbol::new("sMessageColorTable".into(), Vram::new(0x800B1990))
-            .with_size(Size::new(0x18)),
+            .with_size(UserSize::new(NonZeroU32::new(0x18).unwrap())),
         UserSymbol::new("jtbl_800B19A8".into(), Vram::new(0x800B19A8))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("DBL_800B19F8".into(), Vram::new(0x800B19F8)).with_typ(SymbolType::Float64),
@@ -3714,9 +3959,12 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
             .with_typ(SymbolType::CString)
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
         UserSymbol::new("DBL_800B1A58".into(), Vram::new(0x800B1A58)).with_typ(SymbolType::Float64),
-        UserSymbol::new("_size_122".into(), Vram::new(0x800B1A60)).with_size(Size::new(0x50)),
-        UserSymbol::new("_addrTbl_124".into(), Vram::new(0x800B1AB0)).with_size(Size::new(0x50)),
-        UserSymbol::new("_centerTbl_125".into(), Vram::new(0x800B1B00)).with_size(Size::new(0xA0)),
+        UserSymbol::new("_size_122".into(), Vram::new(0x800B1A60))
+            .with_size(UserSize::new(NonZeroU32::new(0x50).unwrap())),
+        UserSymbol::new("_addrTbl_124".into(), Vram::new(0x800B1AB0))
+            .with_size(UserSize::new(NonZeroU32::new(0x50).unwrap())),
+        UserSymbol::new("_centerTbl_125".into(), Vram::new(0x800B1B00))
+            .with_size(UserSize::new(NonZeroU32::new(0xA0).unwrap())),
         UserSymbol::new("limit_table".into(), Vram::new(0x800B1BA0)),
         UserSymbol::new("RO_800B1BBC".into(), Vram::new(0x800B1BBC)),
         UserSymbol::new("_n_343".into(), Vram::new(0x800B1BC8)),
@@ -3730,7 +3978,7 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("rotate_mtx_400".into(), Vram::new(0x800B1C5C)),
         UserSymbol::new("_speed_561".into(), Vram::new(0x800B1C74)),
         UserSymbol::new("_retryMenu_itemCount".into(), Vram::new(0x800B1C78))
-            .with_size(Size::new(0x6)),
+            .with_size(UserSize::new(NonZeroU32::new(0x6).unwrap())),
         UserSymbol::new("_big_virus_def_wait".into(), Vram::new(0x800B1C80))
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
         UserSymbol::new("_big_virus_min_wait".into(), Vram::new(0x800B1C8C))
@@ -3738,7 +3986,7 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("_big_virus_max_wait".into(), Vram::new(0x800B1C98))
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
         UserSymbol::new("_scoreNumsColor".into(), Vram::new(0x800B1CA4))
-            .with_size(Size::new(0x12))
+            .with_size(UserSize::new(NonZeroU32::new(0x12).unwrap()))
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
         UserSymbol::new("_mesWriting_dmgamemain".into(), Vram::new(0x800B1CB8))
             .with_typ(SymbolType::CString)
@@ -3747,21 +3995,31 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
             .with_typ(SymbolType::CString)
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
         UserSymbol::new("_posStP4StarX".into(), Vram::new(0x800B1D08)),
-        UserSymbol::new("_posStStar".into(), Vram::new(0x800B1D18)).with_size(Size::new(0x10)),
-        UserSymbol::new("RO_800B1D28".into(), Vram::new(0x800B1D28)).with_size(Size::new(0x8)),
-        UserSymbol::new("_posP2StarX".into(), Vram::new(0x800B1D30)).with_size(Size::new(0x8)),
-        UserSymbol::new("_posP2StarY".into(), Vram::new(0x800B1D38)).with_size(Size::new(0x24)),
-        UserSymbol::new("_posP4Bottle".into(), Vram::new(0x800B1D5C)).with_size(Size::new(0x20)),
-        UserSymbol::new("RO_800B1D7C".into(), Vram::new(0x800B1D7C)).with_size(Size::new(0x8)),
-        UserSymbol::new("_posP4CharBase".into(), Vram::new(0x800B1D84)).with_size(Size::new(0x20)),
-        UserSymbol::new("_posP4TeamStarX".into(), Vram::new(0x800B1DA4)).with_size(Size::new(0x48)),
-        UserSymbol::new("_posP4CharStarX".into(), Vram::new(0x800B1DEC)).with_size(Size::new(0x90)),
+        UserSymbol::new("_posStStar".into(), Vram::new(0x800B1D18))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
+        UserSymbol::new("RO_800B1D28".into(), Vram::new(0x800B1D28))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
+        UserSymbol::new("_posP2StarX".into(), Vram::new(0x800B1D30))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
+        UserSymbol::new("_posP2StarY".into(), Vram::new(0x800B1D38))
+            .with_size(UserSize::new(NonZeroU32::new(0x24).unwrap())),
+        UserSymbol::new("_posP4Bottle".into(), Vram::new(0x800B1D5C))
+            .with_size(UserSize::new(NonZeroU32::new(0x20).unwrap())),
+        UserSymbol::new("RO_800B1D7C".into(), Vram::new(0x800B1D7C))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
+        UserSymbol::new("_posP4CharBase".into(), Vram::new(0x800B1D84))
+            .with_size(UserSize::new(NonZeroU32::new(0x20).unwrap())),
+        UserSymbol::new("_posP4TeamStarX".into(), Vram::new(0x800B1DA4))
+            .with_size(UserSize::new(NonZeroU32::new(0x48).unwrap())),
+        UserSymbol::new("_posP4CharStarX".into(), Vram::new(0x800B1DEC))
+            .with_size(UserSize::new(NonZeroU32::new(0x90).unwrap())),
         UserSymbol::new("_posP4StockCap".into(), Vram::new(0x800B1E7C))
-            .with_size(Size::new(0x10))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap()))
             .with_typ(SymbolType::Word),
-        UserSymbol::new("_posP2VirusNum".into(), Vram::new(0x800B1E8C)).with_size(Size::new(0x10)),
+        UserSymbol::new("_posP2VirusNum".into(), Vram::new(0x800B1E8C))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
         UserSymbol::new("_posP2CharFrm".into(), Vram::new(0x800B1E9C))
-            .with_size(Size::new(0x10))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap()))
             .with_typ(SymbolType::Word)
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
         UserSymbol::new("RO_800B1EB0".into(), Vram::new(0x800B1EB0)),
@@ -3778,7 +4036,8 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("jtbl_800B2008".into(), Vram::new(0x800B2008))
             .with_typ(SymbolType::Jumptable),
-        UserSymbol::new("_tbl_2997".into(), Vram::new(0x800B2020)).with_size(Size::new(0xC)),
+        UserSymbol::new("_tbl_2997".into(), Vram::new(0x800B2020))
+            .with_size(UserSize::new(NonZeroU32::new(0xC).unwrap())),
         UserSymbol::new("_clr_3004".into(), Vram::new(0x800B202C)),
         UserSymbol::new("DBL_800B2030".into(), Vram::new(0x800B2030)).with_typ(SymbolType::Float64),
         UserSymbol::new("DBL_800B2038".into(), Vram::new(0x800B2038)).with_typ(SymbolType::Float64),
@@ -3787,14 +4046,15 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("jtbl_800B2050".into(), Vram::new(0x800B2050))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("cap_tex_4162".into(), Vram::new(0x800B2068)),
-        UserSymbol::new("cap_pal_4164".into(), Vram::new(0x800B2070)).with_size(Size::new(0x30)),
+        UserSymbol::new("cap_pal_4164".into(), Vram::new(0x800B2070))
+            .with_size(UserSize::new(NonZeroU32::new(0x30).unwrap())),
         UserSymbol::new("DBL_800B20A0".into(), Vram::new(0x800B20A0)).with_typ(SymbolType::Float64),
         UserSymbol::new("DBL_800B20A8".into(), Vram::new(0x800B20A8)).with_typ(SymbolType::Float64),
         UserSymbol::new("DBL_800B20B0".into(), Vram::new(0x800B20B0)).with_typ(SymbolType::Float64),
         UserSymbol::new("DBL_800B20B8".into(), Vram::new(0x800B20B8)).with_typ(SymbolType::Float64),
         UserSymbol::new("DBL_800B20C0".into(), Vram::new(0x800B20C0)).with_typ(SymbolType::Float64),
         UserSymbol::new("DBL_800B20C8".into(), Vram::new(0x800B20C8))
-            .with_size(Size::new(0x8))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap()))
             .with_typ(SymbolType::Float64)
             .with_migration_behavior(RodataMigrationBehavior::ForceMigrate),
         UserSymbol::new("_tbl_4274".into(), Vram::new(0x800B20D0))
@@ -3807,8 +4067,10 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("_col_4416".into(), Vram::new(0x800B2108)),
         UserSymbol::new("_pos_4426".into(), Vram::new(0x800B210C)),
         UserSymbol::new("_col_4427".into(), Vram::new(0x800B2114)),
-        UserSymbol::new("_tex_4459".into(), Vram::new(0x800B211C)).with_size(Size::new(0x18)),
-        UserSymbol::new("RO_800B2134".into(), Vram::new(0x800B2134)).with_size(Size::new(0x10)),
+        UserSymbol::new("_tex_4459".into(), Vram::new(0x800B211C))
+            .with_size(UserSize::new(NonZeroU32::new(0x18).unwrap())),
+        UserSymbol::new("RO_800B2134".into(), Vram::new(0x800B2134))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
         UserSymbol::new("DBL_800B2148".into(), Vram::new(0x800B2148)).with_typ(SymbolType::Float64),
         UserSymbol::new("DBL_800B2150".into(), Vram::new(0x800B2150)).with_typ(SymbolType::Float64),
         UserSymbol::new("DBL_800B2158".into(), Vram::new(0x800B2158)).with_typ(SymbolType::Float64),
@@ -3816,7 +4078,8 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("_x_4670".into(), Vram::new(0x800B2168)),
         UserSymbol::new("_x_4676".into(), Vram::new(0x800B2170)),
         UserSymbol::new("_x_4693".into(), Vram::new(0x800B2178)),
-        UserSymbol::new("_rect_4752".into(), Vram::new(0x800B2180)).with_size(Size::new(0x50)),
+        UserSymbol::new("_rect_4752".into(), Vram::new(0x800B2180))
+            .with_size(UserSize::new(NonZeroU32::new(0x50).unwrap())),
         UserSymbol::new("_pat_4838".into(), Vram::new(0x800B21D0)),
         UserSymbol::new("DBL_800B21E8".into(), Vram::new(0x800B21E8)).with_typ(SymbolType::Float64),
         UserSymbol::new("DBL_800B21F0".into(), Vram::new(0x800B21F0)).with_typ(SymbolType::Float64),
@@ -3836,16 +4099,17 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("jtbl_800B22F8".into(), Vram::new(0x800B22F8))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("_bgPos_5792".into(), Vram::new(0x800B2314))
-            .with_size(Size::new(0x1C))
+            .with_size(UserSize::new(NonZeroU32::new(0x1C).unwrap()))
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
         UserSymbol::new("_panelPos_5793".into(), Vram::new(0x800B2330))
-            .with_size(Size::new(0xC))
+            .with_size(UserSize::new(NonZeroU32::new(0xC).unwrap()))
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
         UserSymbol::new("_bgTex_5794".into(), Vram::new(0x800B233C)),
         UserSymbol::new("_magTex_5795".into(), Vram::new(0x800B2340)),
         UserSymbol::new("_scrTex_5796".into(), Vram::new(0x800B2344)),
         UserSymbol::new("_panelTex_5797".into(), Vram::new(0x800B2348)),
-        UserSymbol::new("tbl_5867".into(), Vram::new(0x800B2354)).with_size(Size::new(0x10)),
+        UserSymbol::new("tbl_5867".into(), Vram::new(0x800B2354))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
         UserSymbol::new("jtbl_800B2368".into(), Vram::new(0x800B2368))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("jtbl_800B2388".into(), Vram::new(0x800B2388))
@@ -3860,27 +4124,48 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("jtbl_800B23E0".into(), Vram::new(0x800B23E0))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("DBL_800B2400".into(), Vram::new(0x800B2400)).with_typ(SymbolType::Float64),
-        UserSymbol::new("RO_800B2408".into(), Vram::new(0x800B2408)).with_size(Size::new(0x8)),
-        UserSymbol::new("RO_800B2410".into(), Vram::new(0x800B2410)).with_size(Size::new(0x8)),
-        UserSymbol::new("RO_800B2418".into(), Vram::new(0x800B2418)).with_size(Size::new(0x8)),
-        UserSymbol::new("RO_800B2420".into(), Vram::new(0x800B2420)).with_size(Size::new(0x8)),
-        UserSymbol::new("RO_800B2428".into(), Vram::new(0x800B2428)).with_size(Size::new(0x8)),
-        UserSymbol::new("RO_800B2430".into(), Vram::new(0x800B2430)).with_size(Size::new(0x8)),
-        UserSymbol::new("RO_800B2438".into(), Vram::new(0x800B2438)).with_size(Size::new(0x8)),
-        UserSymbol::new("RO_800B2440".into(), Vram::new(0x800B2440)).with_size(Size::new(0x8)),
-        UserSymbol::new("virus_1_1".into(), Vram::new(0x800B2448)).with_size(Size::new(0x24)),
-        UserSymbol::new("RO_800B246C".into(), Vram::new(0x800B246C)).with_size(Size::new(0x5)),
-        UserSymbol::new("RO_800B2474".into(), Vram::new(0x800B2474)).with_size(Size::new(0x5)),
-        UserSymbol::new("position_1_1".into(), Vram::new(0x800B247C)).with_size(Size::new(0x10)),
-        UserSymbol::new("virus_2_1".into(), Vram::new(0x800B248C)).with_size(Size::new(0x3C)),
-        UserSymbol::new("capsel_2_1".into(), Vram::new(0x800B24C8)).with_size(Size::new(0xC)),
-        UserSymbol::new("position_2_1".into(), Vram::new(0x800B24D4)).with_size(Size::new(0x28)),
-        UserSymbol::new("virus_3_1".into(), Vram::new(0x800B24FC)).with_size(Size::new(0x3C)),
-        UserSymbol::new("capsel_3_1".into(), Vram::new(0x800B2538)).with_size(Size::new(0xB)),
-        UserSymbol::new("position_3_1".into(), Vram::new(0x800B2544)).with_size(Size::new(0x28)),
-        UserSymbol::new("virus_4_1".into(), Vram::new(0x800B256C)).with_size(Size::new(0x30)),
-        UserSymbol::new("capsel_4_1".into(), Vram::new(0x800B259C)).with_size(Size::new(0x11)),
-        UserSymbol::new("position_4_1".into(), Vram::new(0x800B25B0)).with_size(Size::new(0x40)),
+        UserSymbol::new("RO_800B2408".into(), Vram::new(0x800B2408))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
+        UserSymbol::new("RO_800B2410".into(), Vram::new(0x800B2410))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
+        UserSymbol::new("RO_800B2418".into(), Vram::new(0x800B2418))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
+        UserSymbol::new("RO_800B2420".into(), Vram::new(0x800B2420))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
+        UserSymbol::new("RO_800B2428".into(), Vram::new(0x800B2428))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
+        UserSymbol::new("RO_800B2430".into(), Vram::new(0x800B2430))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
+        UserSymbol::new("RO_800B2438".into(), Vram::new(0x800B2438))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
+        UserSymbol::new("RO_800B2440".into(), Vram::new(0x800B2440))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
+        UserSymbol::new("virus_1_1".into(), Vram::new(0x800B2448))
+            .with_size(UserSize::new(NonZeroU32::new(0x24).unwrap())),
+        UserSymbol::new("RO_800B246C".into(), Vram::new(0x800B246C))
+            .with_size(UserSize::new(NonZeroU32::new(0x5).unwrap())),
+        UserSymbol::new("RO_800B2474".into(), Vram::new(0x800B2474))
+            .with_size(UserSize::new(NonZeroU32::new(0x5).unwrap())),
+        UserSymbol::new("position_1_1".into(), Vram::new(0x800B247C))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
+        UserSymbol::new("virus_2_1".into(), Vram::new(0x800B248C))
+            .with_size(UserSize::new(NonZeroU32::new(0x3C).unwrap())),
+        UserSymbol::new("capsel_2_1".into(), Vram::new(0x800B24C8))
+            .with_size(UserSize::new(NonZeroU32::new(0xC).unwrap())),
+        UserSymbol::new("position_2_1".into(), Vram::new(0x800B24D4))
+            .with_size(UserSize::new(NonZeroU32::new(0x28).unwrap())),
+        UserSymbol::new("virus_3_1".into(), Vram::new(0x800B24FC))
+            .with_size(UserSize::new(NonZeroU32::new(0x3C).unwrap())),
+        UserSymbol::new("capsel_3_1".into(), Vram::new(0x800B2538))
+            .with_size(UserSize::new(NonZeroU32::new(0xB).unwrap())),
+        UserSymbol::new("position_3_1".into(), Vram::new(0x800B2544))
+            .with_size(UserSize::new(NonZeroU32::new(0x28).unwrap())),
+        UserSymbol::new("virus_4_1".into(), Vram::new(0x800B256C))
+            .with_size(UserSize::new(NonZeroU32::new(0x30).unwrap())),
+        UserSymbol::new("capsel_4_1".into(), Vram::new(0x800B259C))
+            .with_size(UserSize::new(NonZeroU32::new(0x11).unwrap())),
+        UserSymbol::new("position_4_1".into(), Vram::new(0x800B25B0))
+            .with_size(UserSize::new(NonZeroU32::new(0x40).unwrap())),
         UserSymbol::new("mes_1_1".into(), Vram::new(0x800B25F0))
             .with_typ(SymbolType::CString)
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
@@ -4014,17 +4299,17 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("jtbl_800B3118".into(), Vram::new(0x800B3118))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("_tex_884".into(), Vram::new(0x800B3130))
-            .with_size(Size::new(0x10))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap()))
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
         UserSymbol::new("_pos_885".into(), Vram::new(0x800B3140))
-            .with_size(Size::new(0x10))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap()))
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
         UserSymbol::new("RO_800B3150".into(), Vram::new(0x800B3150))
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
         UserSymbol::new("DBL_800B3168".into(), Vram::new(0x800B3168)).with_typ(SymbolType::Float64),
         UserSymbol::new("DBL_800B3170".into(), Vram::new(0x800B3170)).with_typ(SymbolType::Float64),
         UserSymbol::new("_posContPanel".into(), Vram::new(0x800B3178))
-            .with_size(Size::new(0x8))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap()))
             .with_typ(SymbolType::Word)
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
         UserSymbol::new("_posCircle_924".into(), Vram::new(0x800B3180))
@@ -4032,10 +4317,13 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("_posFinger_925".into(), Vram::new(0x800B31A0))
             .with_migration_behavior(RodataMigrationBehavior::ForceNotMigrate),
         UserSymbol::new("map_x_table_1036".into(), Vram::new(0x800B31C0))
-            .with_size(Size::new(0x18)),
-        UserSymbol::new("_seqTbl_1037".into(), Vram::new(0x800B31D8)).with_size(Size::new(0x2)),
-        UserSymbol::new("map_y_table_1038".into(), Vram::new(0x800B31DC)).with_size(Size::new(0x2)),
-        UserSymbol::new("size_table_1039".into(), Vram::new(0x800B31E0)).with_size(Size::new(0x2)),
+            .with_size(UserSize::new(NonZeroU32::new(0x18).unwrap())),
+        UserSymbol::new("_seqTbl_1037".into(), Vram::new(0x800B31D8))
+            .with_size(UserSize::new(NonZeroU32::new(0x2).unwrap())),
+        UserSymbol::new("map_y_table_1038".into(), Vram::new(0x800B31DC))
+            .with_size(UserSize::new(NonZeroU32::new(0x2).unwrap())),
+        UserSymbol::new("size_table_1039".into(), Vram::new(0x800B31E0))
+            .with_size(UserSize::new(NonZeroU32::new(0x2).unwrap())),
         UserSymbol::new("jtbl_800B31E8".into(), Vram::new(0x800B31E8))
             .with_typ(SymbolType::Jumptable),
         UserSymbol::new("DBL_800B3200".into(), Vram::new(0x800B3200)).with_typ(SymbolType::Float64),
@@ -4045,7 +4333,8 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("DBL_800B3228".into(), Vram::new(0x800B3228)).with_typ(SymbolType::Float64),
         UserSymbol::new("DBL_800B3230".into(), Vram::new(0x800B3230)).with_typ(SymbolType::Float64),
         UserSymbol::new("DBL_800B3238".into(), Vram::new(0x800B3238)).with_typ(SymbolType::Float64),
-        UserSymbol::new("_stageTbl".into(), Vram::new(0x800B3240)).with_size(Size::new(0x12)),
+        UserSymbol::new("_stageTbl".into(), Vram::new(0x800B3240))
+            .with_size(UserSize::new(NonZeroU32::new(0x12).unwrap())),
         UserSymbol::new("DBL_800B3258".into(), Vram::new(0x800B3258)).with_typ(SymbolType::Float64),
         UserSymbol::new("DBL_800B3260".into(), Vram::new(0x800B3260)).with_typ(SymbolType::Float64),
         UserSymbol::new("DBL_800B3268".into(), Vram::new(0x800B3268)).with_typ(SymbolType::Float64),
@@ -4136,8 +4425,10 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("DBL_800B3620".into(), Vram::new(0x800B3620)).with_typ(SymbolType::Float64),
         UserSymbol::new("DBL_800B3630".into(), Vram::new(0x800B3630)).with_typ(SymbolType::Float64),
         UserSymbol::new("DBL_800B3638".into(), Vram::new(0x800B3638)).with_typ(SymbolType::Float64),
-        UserSymbol::new("audio_memory".into(), Vram::new(0x800B3640)).with_size(Size::new(0x31000)),
-        UserSymbol::new("mt".into(), Vram::new(0x800E4640)).with_size(Size::new(0x9C0)),
+        UserSymbol::new("audio_memory".into(), Vram::new(0x800B3640))
+            .with_size(UserSize::new(NonZeroU32::new(0x31000).unwrap())),
+        UserSymbol::new("mt".into(), Vram::new(0x800E4640))
+            .with_size(UserSize::new(NonZeroU32::new(0x9C0).unwrap())),
         UserSymbol::new("pGameState".into(), Vram::new(0x800E5000)),
         UserSymbol::new("delpos_tbl".into(), Vram::new(0x800E5008)),
         UserSymbol::new("delpos_cnt".into(), Vram::new(0x800E5198)),
@@ -4149,19 +4440,26 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("cont_bg_flg".into(), Vram::new(0x800E53C4)),
         UserSymbol::new("etcTexAddress".into(), Vram::new(0x800E53C8)),
         UserSymbol::new("etcLwsAddress".into(), Vram::new(0x800E53CC)),
-        UserSymbol::new("etcLwsTbl".into(), Vram::new(0x800E53D0)).with_size(Size::new(0x40)),
+        UserSymbol::new("etcLwsTbl".into(), Vram::new(0x800E53D0))
+            .with_size(UserSize::new(NonZeroU32::new(0x40).unwrap())),
         UserSymbol::new("logo_ofsY".into(), Vram::new(0x800E5410)),
         UserSymbol::new("etc_mode".into(), Vram::new(0x800E5414)),
-        UserSymbol::new("g_etc_work".into(), Vram::new(0x800E5418)).with_size(Size::new(0x3C0)),
+        UserSymbol::new("g_etc_work".into(), Vram::new(0x800E5418))
+            .with_size(UserSize::new(NonZeroU32::new(0x3C0).unwrap())),
         UserSymbol::new("D_800E57D8".into(), Vram::new(0x800E57D8)),
-        UserSymbol::new("etc_viewMtx".into(), Vram::new(0x800E5818)).with_size(Size::new(0x40)),
-        UserSymbol::new("fbuf".into(), Vram::new(0x800E5860)).with_size(Size::new(0x28)),
-        UserSymbol::new("sPrinterState".into(), Vram::new(0x800E5890)).with_size(Size::new(0x12)),
+        UserSymbol::new("etc_viewMtx".into(), Vram::new(0x800E5818))
+            .with_size(UserSize::new(NonZeroU32::new(0x40).unwrap())),
+        UserSymbol::new("fbuf".into(), Vram::new(0x800E5860))
+            .with_size(UserSize::new(NonZeroU32::new(0x28).unwrap())),
+        UserSymbol::new("sPrinterState".into(), Vram::new(0x800E5890))
+            .with_size(UserSize::new(NonZeroU32::new(0x12).unwrap())),
         UserSymbol::new("B_800E58B0".into(), Vram::new(0x800E58B0)),
         UserSymbol::new("B_800E58B4".into(), Vram::new(0x800E58B4)),
         UserSymbol::new("B_800E58B8".into(), Vram::new(0x800E58B8)),
-        UserSymbol::new("B_800E58BC".into(), Vram::new(0x800E58BC)).with_size(Size::new(0x4)),
-        UserSymbol::new("B_800E58C0".into(), Vram::new(0x800E58C0)).with_size(Size::new(0x50)),
+        UserSymbol::new("B_800E58BC".into(), Vram::new(0x800E58BC))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
+        UserSymbol::new("B_800E58C0".into(), Vram::new(0x800E58C0))
+            .with_size(UserSize::new(NonZeroU32::new(0x50).unwrap())),
         UserSymbol::new("sDebugMenu_CursorCounter".into(), Vram::new(0x800E5910)),
         UserSymbol::new("B_800E5914".into(), Vram::new(0x800E5914)),
         UserSymbol::new("B_800E5918".into(), Vram::new(0x800E5918)),
@@ -4186,7 +4484,7 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
             "sDebugMenu_CharacterEdit_DefaultStats".into(),
             Vram::new(0x800E5968),
         )
-        .with_size(Size::new(0x2)),
+        .with_size(UserSize::new(NonZeroU32::new(0x2).unwrap())),
         UserSymbol::new(
             "sDebugMenu_CharacterEdit_SelectedColumn".into(),
             Vram::new(0x800E596C),
@@ -4195,8 +4493,9 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
             "sDebugMenu_CharacterEdit_SelectedRow".into(),
             Vram::new(0x800E5970),
         )
-        .with_size(Size::new(0x10)),
-        UserSymbol::new("heapTop".into(), Vram::new(0x800E5980)).with_size(Size::new(0x4)),
+        .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
+        UserSymbol::new("heapTop".into(), Vram::new(0x800E5980))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
         UserSymbol::new("_texAll".into(), Vram::new(0x800E5990)),
         UserSymbol::new("_texKaSa".into(), Vram::new(0x800E5994)),
         UserSymbol::new("title_mode_type".into(), Vram::new(0x800E59A0)),
@@ -4218,8 +4517,10 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("title_bmp_data".into(), Vram::new(0x800E59E4)),
         UserSymbol::new("lws_data".into(), Vram::new(0x800E59E8)),
         UserSymbol::new("lws_scene".into(), Vram::new(0x800E59EC)),
-        UserSymbol::new("mess_st".into(), Vram::new(0x800E59F0)).with_size(Size::new(0x80)),
-        UserSymbol::new("mess_roll_st".into(), Vram::new(0x800E5A70)).with_size(Size::new(0x80)),
+        UserSymbol::new("mess_st".into(), Vram::new(0x800E59F0))
+            .with_size(UserSize::new(NonZeroU32::new(0x80).unwrap())),
+        UserSymbol::new("mess_roll_st".into(), Vram::new(0x800E5A70))
+            .with_size(UserSize::new(NonZeroU32::new(0x80).unwrap())),
         UserSymbol::new("mess_heap_area".into(), Vram::new(0x800E5AF0)),
         UserSymbol::new("mess_roll_heap".into(), Vram::new(0x800E5EF0)),
         UserSymbol::new("st_message_count".into(), Vram::new(0x800E5EF4)),
@@ -4227,26 +4528,38 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("loop_flg".into(), Vram::new(0x800E5EFC)),
         UserSymbol::new("story_staff_roll".into(), Vram::new(0x800E5F00)),
         UserSymbol::new("story_norm".into(), Vram::new(0x800E5F04)),
-        UserSymbol::new("story_viewMtx".into(), Vram::new(0x800E5F08)).with_size(Size::new(0x40)),
+        UserSymbol::new("story_viewMtx".into(), Vram::new(0x800E5F08))
+            .with_size(UserSize::new(NonZeroU32::new(0x40).unwrap())),
         UserSymbol::new("story_objectMtx".into(), Vram::new(0x800E5F50))
-            .with_size(Size::new(0x2800)),
-        UserSymbol::new("wakuGraphic".into(), Vram::new(0x800E8750)).with_size(Size::new(0x4)),
+            .with_size(UserSize::new(NonZeroU32::new(0x2800).unwrap())),
+        UserSymbol::new("wakuGraphic".into(), Vram::new(0x800E8750))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
         UserSymbol::new("bgGraphic".into(), Vram::new(0x800E87A8)),
         UserSymbol::new("storyGraphic".into(), Vram::new(0x800E87AC)),
         UserSymbol::new("messageData".into(), Vram::new(0x800E87B0)),
         UserSymbol::new("first_copy".into(), Vram::new(0x800E87B4)),
         UserSymbol::new("AnimProc".into(), Vram::new(0x800E87C0)),
         UserSymbol::new("randomindex".into(), Vram::new(0x800E97C0)),
-        UserSymbol::new("randomtable".into(), Vram::new(0x800E97C8)).with_size(Size::new(0xDC)),
-        UserSymbol::new("rec_buff".into(), Vram::new(0x800E98B0)).with_size(Size::new(0x4)),
-        UserSymbol::new("pRecBuff".into(), Vram::new(0x800E98B8)).with_size(Size::new(0x10)),
-        UserSymbol::new("oldCont".into(), Vram::new(0x800E98C8)).with_size(Size::new(0x8)),
-        UserSymbol::new("RecPos".into(), Vram::new(0x800E98D0)).with_size(Size::new(0x10)),
-        UserSymbol::new("PlayPos".into(), Vram::new(0x800E98E0)).with_size(Size::new(0x10)),
-        UserSymbol::new("WaitTime".into(), Vram::new(0x800E98F0)).with_size(Size::new(0x10)),
-        UserSymbol::new("max_rec".into(), Vram::new(0x800E9900)).with_size(Size::new(0x4)),
-        UserSymbol::new("replay_player".into(), Vram::new(0x800E9904)).with_size(Size::new(0x4)),
-        UserSymbol::new("plr_player".into(), Vram::new(0x800E9910)).with_size(Size::new(0x14)),
+        UserSymbol::new("randomtable".into(), Vram::new(0x800E97C8))
+            .with_size(UserSize::new(NonZeroU32::new(0xDC).unwrap())),
+        UserSymbol::new("rec_buff".into(), Vram::new(0x800E98B0))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
+        UserSymbol::new("pRecBuff".into(), Vram::new(0x800E98B8))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
+        UserSymbol::new("oldCont".into(), Vram::new(0x800E98C8))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
+        UserSymbol::new("RecPos".into(), Vram::new(0x800E98D0))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
+        UserSymbol::new("PlayPos".into(), Vram::new(0x800E98E0))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
+        UserSymbol::new("WaitTime".into(), Vram::new(0x800E98F0))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
+        UserSymbol::new("max_rec".into(), Vram::new(0x800E9900))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
+        UserSymbol::new("replay_player".into(), Vram::new(0x800E9904))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
+        UserSymbol::new("plr_player".into(), Vram::new(0x800E9910))
+            .with_size(UserSize::new(NonZeroU32::new(0x14).unwrap())),
         UserSymbol::new("max_channels".into(), Vram::new(0x800E9924)),
         UserSymbol::new("mus_voices".into(), Vram::new(0x800E9928)),
         UserSymbol::new("mus_channels".into(), Vram::new(0x800E992C)),
@@ -4274,11 +4587,15 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         UserSymbol::new("audio_IO_mess_buf".into(), Vram::new(0x800E998C)),
         UserSymbol::new("audio_mess_buf".into(), Vram::new(0x800E9990)),
         UserSymbol::new("audio_dma_size".into(), Vram::new(0x800E9994)),
-        UserSymbol::new("audio_dma_count".into(), Vram::new(0x800E9998)).with_size(Size::new(0x4)),
+        UserSymbol::new("audio_dma_count".into(), Vram::new(0x800E9998))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
         UserSymbol::new("audDMAMessageQ".into(), Vram::new(0x800E99A0)),
-        UserSymbol::new("cartrom_handle".into(), Vram::new(0x800E99B8)).with_size(Size::new(0x4)),
-        UserSymbol::new("audio_sched".into(), Vram::new(0x800E99C0)).with_size(Size::new(0x4)),
-        UserSymbol::new("sched_mem".into(), Vram::new(0x800E99C4)).with_size(Size::new(0x4)),
+        UserSymbol::new("cartrom_handle".into(), Vram::new(0x800E99B8))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
+        UserSymbol::new("audio_sched".into(), Vram::new(0x800E99C0))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
+        UserSymbol::new("sched_mem".into(), Vram::new(0x800E99C4))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
         UserSymbol::new(
             "__MusIntAudManInit$in_function_static$thread".into(),
             Vram::new(0x800E99D0),
@@ -4289,129 +4606,187 @@ pub fn create_drmario64_us_symbols() -> Vec<UserSymbol> {
         ),
         UserSymbol::new("audio_tasks".into(), Vram::new(0x800E9B84)),
         UserSymbol::new("audio_command_list".into(), Vram::new(0x800E9B88)),
-        UserSymbol::new("audio_heap".into(), Vram::new(0x800E9B90)).with_size(Size::new(0x10)),
+        UserSymbol::new("audio_heap".into(), Vram::new(0x800E9B90))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
         UserSymbol::new("frame_samples".into(), Vram::new(0x800E9BA0)),
         UserSymbol::new("frame_samples_min".into(), Vram::new(0x800E9BA4)),
         UserSymbol::new("frame_samples_max".into(), Vram::new(0x800E9BA8)),
         UserSymbol::new("extra_samples".into(), Vram::new(0x800E9BAC)),
         UserSymbol::new("aiRootP".into(), Vram::new(0x800E9BB0)),
-        UserSymbol::new("aiWall".into(), Vram::new(0x800E9BB4)).with_size(Size::new(0x1)),
-        UserSymbol::new("gfx_msg_no".into(), Vram::new(0x800E9BB6)).with_size(Size::new(0x2)),
-        UserSymbol::new("ai_char_data".into(), Vram::new(0x800E9BC0)).with_size(Size::new(0x6C0)),
-        UserSymbol::new("success".into(), Vram::new(0x800EA280)).with_size(Size::new(0x1)),
+        UserSymbol::new("aiWall".into(), Vram::new(0x800E9BB4))
+            .with_size(UserSize::new(NonZeroU32::new(0x1).unwrap())),
+        UserSymbol::new("gfx_msg_no".into(), Vram::new(0x800E9BB6))
+            .with_size(UserSize::new(NonZeroU32::new(0x2).unwrap())),
+        UserSymbol::new("ai_char_data".into(), Vram::new(0x800E9BC0))
+            .with_size(UserSize::new(NonZeroU32::new(0x6C0).unwrap())),
+        UserSymbol::new("success".into(), Vram::new(0x800EA280))
+            .with_size(UserSize::new(NonZeroU32::new(0x1).unwrap())),
         UserSymbol::new("attack_sprite_idx".into(), Vram::new(0x800EA284))
-            .with_size(Size::new(0x4)),
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
         UserSymbol::new("sBgTasksManager_Manager".into(), Vram::new(0x800EA290))
-            .with_size(Size::new(0x1248)),
+            .with_size(UserSize::new(NonZeroU32::new(0x1248).unwrap())),
         UserSymbol::new("B_800EB4D8".into(), Vram::new(0x800EB4D8)),
         UserSymbol::new("main_old".into(), Vram::new(0x800EB4F0)),
         UserSymbol::new("_menuMain_lastDepth".into(), Vram::new(0x800EB4F4))
-            .with_size(Size::new(0x4)),
-        UserSymbol::new("aiRecurData".into(), Vram::new(0x800EB4F8)).with_size(Size::new(0x168)),
-        UserSymbol::new("aiTEdgeCnt".into(), Vram::new(0x800EB660)).with_size(Size::new(0x1)),
-        UserSymbol::new("B_800EB670".into(), Vram::new(0x800EB670)).with_size(Size::new(0x680)),
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
+        UserSymbol::new("aiRecurData".into(), Vram::new(0x800EB4F8))
+            .with_size(UserSize::new(NonZeroU32::new(0x168).unwrap())),
+        UserSymbol::new("aiTEdgeCnt".into(), Vram::new(0x800EB660))
+            .with_size(UserSize::new(NonZeroU32::new(0x1).unwrap())),
+        UserSymbol::new("B_800EB670".into(), Vram::new(0x800EB670))
+            .with_size(UserSize::new(NonZeroU32::new(0x680).unwrap())),
         UserSymbol::new("main_no".into(), Vram::new(0x800EBCF0)),
-        UserSymbol::new("gGfxHead".into(), Vram::new(0x800EBCF4)).with_size(Size::new(0x4)),
+        UserSymbol::new("gGfxHead".into(), Vram::new(0x800EBCF4))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
         UserSymbol::new("gControllerHoldButtons".into(), Vram::new(0x800EBCF8))
-            .with_size(Size::new(0xA)),
-        UserSymbol::new("hei_data".into(), Vram::new(0x800EBD02)).with_size(Size::new(0xA)),
+            .with_size(UserSize::new(NonZeroU32::new(0xA).unwrap())),
+        UserSymbol::new("hei_data".into(), Vram::new(0x800EBD02))
+            .with_size(UserSize::new(NonZeroU32::new(0xA).unwrap())),
         UserSymbol::new("PlayTime".into(), Vram::new(0x800EBD10)),
-        UserSymbol::new("aiNext".into(), Vram::new(0x800EBD14)).with_size(Size::new(0x2)),
-        UserSymbol::new("main_joy".into(), Vram::new(0x800EBD16)).with_size(Size::new(0x4)),
-        UserSymbol::new("gfxThread".into(), Vram::new(0x800EBD20)).with_size(Size::new(0x1B0)),
+        UserSymbol::new("aiNext".into(), Vram::new(0x800EBD14))
+            .with_size(UserSize::new(NonZeroU32::new(0x2).unwrap())),
+        UserSymbol::new("main_joy".into(), Vram::new(0x800EBD16))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
+        UserSymbol::new("gfxThread".into(), Vram::new(0x800EBD20))
+            .with_size(UserSize::new(NonZeroU32::new(0x1B0).unwrap())),
         UserSymbol::new("gfx_msgbuf".into(), Vram::new(0x800EBED0)),
-        UserSymbol::new("game_map_data".into(), Vram::new(0x800EBEF0)).with_size(Size::new(0x1540)),
-        UserSymbol::new("gfx_msg".into(), Vram::new(0x800ED430)).with_size(Size::new(0x2)),
+        UserSymbol::new("game_map_data".into(), Vram::new(0x800EBEF0))
+            .with_size(UserSize::new(NonZeroU32::new(0x1540).unwrap())),
+        UserSymbol::new("gfx_msg".into(), Vram::new(0x800ED430))
+            .with_size(UserSize::new(NonZeroU32::new(0x2).unwrap())),
         UserSymbol::new("nnScGraphicsStack".into(), Vram::new(0x800ED440))
-            .with_size(Size::new(0x2000)),
-        UserSymbol::new("gameBackup".into(), Vram::new(0x800EF440)).with_size(Size::new(0x8)),
-        UserSymbol::new("CapsMagazine".into(), Vram::new(0x800EF448)).with_size(Size::new(0x100)),
+            .with_size(UserSize::new(NonZeroU32::new(0x2000).unwrap())),
+        UserSymbol::new("gameBackup".into(), Vram::new(0x800EF440))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
+        UserSymbol::new("CapsMagazine".into(), Vram::new(0x800EF448))
+            .with_size(UserSize::new(NonZeroU32::new(0x100).unwrap())),
         UserSymbol::new("attack_effect_idx".into(), Vram::new(0x800EF548)),
         UserSymbol::new("diskrom_handle".into(), Vram::new(0x800EF54C)),
         UserSymbol::new("fool_mode".into(), Vram::new(0x800EF550)),
         UserSymbol::new("joycur1".into(), Vram::new(0x800EF554)),
-        UserSymbol::new("decide".into(), Vram::new(0x800EF556)).with_size(Size::new(0x1)),
-        UserSymbol::new("evs_mem_data".into(), Vram::new(0x800EF560)).with_size(Size::new(0x750)),
+        UserSymbol::new("decide".into(), Vram::new(0x800EF556))
+            .with_size(UserSize::new(NonZeroU32::new(0x1).unwrap())),
+        UserSymbol::new("evs_mem_data".into(), Vram::new(0x800EF560))
+            .with_size(UserSize::new(NonZeroU32::new(0x750).unwrap())),
         UserSymbol::new("_menuMain_lastSelect".into(), Vram::new(0x800EFCB0))
-            .with_size(Size::new(0x20)),
-        UserSymbol::new("evs_gamesel".into(), Vram::new(0x800EFCD0)).with_size(Size::new(0x4)),
+            .with_size(UserSize::new(NonZeroU32::new(0x20).unwrap())),
+        UserSymbol::new("evs_gamesel".into(), Vram::new(0x800EFCD0))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
         UserSymbol::new("nnScStack".into(), Vram::new(0x800EFCE0)),
-        UserSymbol::new("evs_playmax".into(), Vram::new(0x800F1CE0)).with_size(Size::new(0x1)),
-        UserSymbol::new("aiFieldData".into(), Vram::new(0x800F1CE8)).with_size(Size::new(0x110)),
-        UserSymbol::new("pObjectMtx".into(), Vram::new(0x800F1DF8)).with_size(Size::new(0x4)),
+        UserSymbol::new("evs_playmax".into(), Vram::new(0x800F1CE0))
+            .with_size(UserSize::new(NonZeroU32::new(0x1).unwrap())),
+        UserSymbol::new("aiFieldData".into(), Vram::new(0x800F1CE8))
+            .with_size(UserSize::new(NonZeroU32::new(0x110).unwrap())),
+        UserSymbol::new("pObjectMtx".into(), Vram::new(0x800F1DF8))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
         UserSymbol::new("evs_default_name".into(), Vram::new(0x800F1E00)),
-        UserSymbol::new("joycur2".into(), Vram::new(0x800F1E20)).with_size(Size::new(0x2)),
-        UserSymbol::new("sGraphicStack".into(), Vram::new(0x800F1E30)).with_size(Size::new(0x2000)),
-        UserSymbol::new("aiHiErB".into(), Vram::new(0x800F3E30)).with_size(Size::new(0x2)),
+        UserSymbol::new("joycur2".into(), Vram::new(0x800F1E20))
+            .with_size(UserSize::new(NonZeroU32::new(0x2).unwrap())),
+        UserSymbol::new("sGraphicStack".into(), Vram::new(0x800F1E30))
+            .with_size(UserSize::new(NonZeroU32::new(0x2000).unwrap())),
+        UserSymbol::new("aiHiErB".into(), Vram::new(0x800F3E30))
+            .with_size(UserSize::new(NonZeroU32::new(0x2).unwrap())),
         UserSymbol::new("aiPriOfs".into(), Vram::new(0x800F3E32)),
-        UserSymbol::new("aiRollFinal".into(), Vram::new(0x800F3E34)).with_size(Size::new(0x1)),
+        UserSymbol::new("aiRollFinal".into(), Vram::new(0x800F3E34))
+            .with_size(UserSize::new(NonZeroU32::new(0x1).unwrap())),
         UserSymbol::new("B_800F3E38".into(), Vram::new(0x800F3E38)),
         UserSymbol::new("watchGame".into(), Vram::new(0x800F3E50)),
         UserSymbol::new("aiFlagCnt".into(), Vram::new(0x800F3E54)),
-        UserSymbol::new("aiGoalX".into(), Vram::new(0x800F3E56)).with_size(Size::new(0x2)),
+        UserSymbol::new("aiGoalX".into(), Vram::new(0x800F3E56))
+            .with_size(UserSize::new(NonZeroU32::new(0x2).unwrap())),
         UserSymbol::new("watchMenu".into(), Vram::new(0x800F3E5C)),
         UserSymbol::new("B_800F3E60".into(), Vram::new(0x800F3E60)),
         UserSymbol::new("gControllerPrevHoldButtons".into(), Vram::new(0x800F3E64))
-            .with_size(Size::new(0xA)),
-        UserSymbol::new("wid_data".into(), Vram::new(0x800F3E6E)).with_size(Size::new(0xA)),
+            .with_size(UserSize::new(NonZeroU32::new(0xA).unwrap())),
+        UserSymbol::new("wid_data".into(), Vram::new(0x800F3E6E))
+            .with_size(UserSize::new(NonZeroU32::new(0xA).unwrap())),
         UserSymbol::new("link_joy".into(), Vram::new(0x800F3E78)),
-        UserSymbol::new("aiHiErY".into(), Vram::new(0x800F3E7C)).with_size(Size::new(0x2)),
+        UserSymbol::new("aiHiErY".into(), Vram::new(0x800F3E7C))
+            .with_size(UserSize::new(NonZeroU32::new(0x2).unwrap())),
         UserSymbol::new("D_800F3E80".into(), Vram::new(0x800F3E80)),
-        UserSymbol::new("attack_sprite".into(), Vram::new(0x800F3E90)).with_size(Size::new(0xA00)),
+        UserSymbol::new("attack_sprite".into(), Vram::new(0x800F3E90))
+            .with_size(UserSize::new(NonZeroU32::new(0xA00).unwrap())),
         UserSymbol::new("watchManual".into(), Vram::new(0x800F4890)),
-        UserSymbol::new("aiRootCnt".into(), Vram::new(0x800F4894)).with_size(Size::new(0x1)),
+        UserSymbol::new("aiRootCnt".into(), Vram::new(0x800F4894))
+            .with_size(UserSize::new(NonZeroU32::new(0x1).unwrap())),
         UserSymbol::new("gfx_msgQ".into(), Vram::new(0x800F4898)),
-        UserSymbol::new("gfx_client".into(), Vram::new(0x800F48B0)).with_size(Size::new(0x8)),
+        UserSymbol::new("gfx_client".into(), Vram::new(0x800F48B0))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
         UserSymbol::new("joygam".into(), Vram::new(0x800F48B8)),
         UserSymbol::new("gameGeom".into(), Vram::new(0x800F48C0)),
-        UserSymbol::new("joycur".into(), Vram::new(0x800F48C4)).with_size(Size::new(0xA)),
-        UserSymbol::new("ai_param".into(), Vram::new(0x800F48D0)).with_size(Size::new(0xA80)),
-        UserSymbol::new("MissRate".into(), Vram::new(0x800F5350)).with_size(Size::new(0x4)),
-        UserSymbol::new("B_800F5358".into(), Vram::new(0x800F5358)).with_size(Size::new(0x10)),
-        UserSymbol::new("aiFlag".into(), Vram::new(0x800F5370)).with_size(Size::new(0x1900)),
-        UserSymbol::new("aiRoot".into(), Vram::new(0x800F6C70)).with_size(Size::new(0x64)),
+        UserSymbol::new("joycur".into(), Vram::new(0x800F48C4))
+            .with_size(UserSize::new(NonZeroU32::new(0xA).unwrap())),
+        UserSymbol::new("ai_param".into(), Vram::new(0x800F48D0))
+            .with_size(UserSize::new(NonZeroU32::new(0xA80).unwrap())),
+        UserSymbol::new("MissRate".into(), Vram::new(0x800F5350))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
+        UserSymbol::new("B_800F5358".into(), Vram::new(0x800F5358))
+            .with_size(UserSize::new(NonZeroU32::new(0x10).unwrap())),
+        UserSymbol::new("aiFlag".into(), Vram::new(0x800F5370))
+            .with_size(UserSize::new(NonZeroU32::new(0x1900).unwrap())),
+        UserSymbol::new("aiRoot".into(), Vram::new(0x800F6C70))
+            .with_size(UserSize::new(NonZeroU32::new(0x64).unwrap())),
         UserSymbol::new("__muscontrol_flag".into(), Vram::new(0x800F6CD4)),
-        UserSymbol::new("joyflg".into(), Vram::new(0x800F6CD8)).with_size(Size::new(0x8)),
-        UserSymbol::new("aiYEdgeCnt".into(), Vram::new(0x800F6CE0)).with_size(Size::new(0x1)),
-        UserSymbol::new("virus_map_data".into(), Vram::new(0x800F6CF0)).with_size(Size::new(0x600)),
+        UserSymbol::new("joyflg".into(), Vram::new(0x800F6CD8))
+            .with_size(UserSize::new(NonZeroU32::new(0x8).unwrap())),
+        UserSymbol::new("aiYEdgeCnt".into(), Vram::new(0x800F6CE0))
+            .with_size(UserSize::new(NonZeroU32::new(0x1).unwrap())),
+        UserSymbol::new("virus_map_data".into(), Vram::new(0x800F6CF0))
+            .with_size(UserSize::new(NonZeroU32::new(0x600).unwrap())),
         UserSymbol::new("virus_map_disp_order".into(), Vram::new(0x800F72F0))
-            .with_size(Size::new(0x180)),
-        UserSymbol::new("evs_cfg_4p".into(), Vram::new(0x800F7470)).with_size(Size::new(0x16)),
+            .with_size(UserSize::new(NonZeroU32::new(0x180).unwrap())),
+        UserSymbol::new("evs_cfg_4p".into(), Vram::new(0x800F7470))
+            .with_size(UserSize::new(NonZeroU32::new(0x16).unwrap())),
         UserSymbol::new("s_hard_mode".into(), Vram::new(0x800F7488)),
         UserSymbol::new("attack_sprite_address".into(), Vram::new(0x800F748C)),
-        UserSymbol::new("gfxYieldBuf".into(), Vram::new(0x800F7490)).with_size(Size::new(0xC00)),
+        UserSymbol::new("gfxYieldBuf".into(), Vram::new(0x800F7490))
+            .with_size(UserSize::new(NonZeroU32::new(0xC00).unwrap())),
         UserSymbol::new("__libmus_alglobals".into(), Vram::new(0x800F8C90))
-            .with_size(Size::new(0x4C)),
+            .with_size(UserSize::new(NonZeroU32::new(0x4C).unwrap())),
         UserSymbol::new("nnScAudioStack".into(), Vram::new(0x800F8CE0))
-            .with_size(Size::new(0x2000)),
+            .with_size(UserSize::new(NonZeroU32::new(0x2000).unwrap())),
         UserSymbol::new("sound_song_id".into(), Vram::new(0x800FACE0)),
-        UserSymbol::new("aiHiErR".into(), Vram::new(0x800FAD28)).with_size(Size::new(0x2)),
+        UserSymbol::new("aiHiErR".into(), Vram::new(0x800FAD28))
+            .with_size(UserSize::new(NonZeroU32::new(0x2).unwrap())),
         UserSymbol::new("gfx_gtask_no".into(), Vram::new(0x800FAD2C)),
         UserSymbol::new("aiSelCom".into(), Vram::new(0x800FAD30)),
-        UserSymbol::new("joygmf".into(), Vram::new(0x800FAD31)).with_size(Size::new(0x4)),
-        UserSymbol::new("aiGoalY".into(), Vram::new(0x800FAD36)).with_size(Size::new(0x2)),
-        UserSymbol::new("aipn".into(), Vram::new(0x800FAD38)).with_size(Size::new(0x1)),
-        UserSymbol::new("aif_field".into(), Vram::new(0x800FAD40)).with_size(Size::new(0x110)),
-        UserSymbol::new("gReverbFx".into(), Vram::new(0x800FAE50)).with_size(Size::new(0x28)),
+        UserSymbol::new("joygmf".into(), Vram::new(0x800FAD31))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
+        UserSymbol::new("aiGoalY".into(), Vram::new(0x800FAD36))
+            .with_size(UserSize::new(NonZeroU32::new(0x2).unwrap())),
+        UserSymbol::new("aipn".into(), Vram::new(0x800FAD38))
+            .with_size(UserSize::new(NonZeroU32::new(0x1).unwrap())),
+        UserSymbol::new("aif_field".into(), Vram::new(0x800FAD40))
+            .with_size(UserSize::new(NonZeroU32::new(0x110).unwrap())),
+        UserSymbol::new("gReverbFx".into(), Vram::new(0x800FAE50))
+            .with_size(UserSize::new(NonZeroU32::new(0x28).unwrap())),
         UserSymbol::new("evs_select_name_no".into(), Vram::new(0x800FAE78))
-            .with_size(Size::new(0x2)),
+            .with_size(UserSize::new(NonZeroU32::new(0x2).unwrap())),
         UserSymbol::new("B_800FAE80".into(), Vram::new(0x800FAE80)),
         UserSymbol::new("gControllerPressedButtons".into(), Vram::new(0x800FAF88))
-            .with_size(Size::new(0xA)),
-        UserSymbol::new("aiSelSpeed".into(), Vram::new(0x800FAF92)).with_size(Size::new(0x1)),
+            .with_size(UserSize::new(NonZeroU32::new(0xA).unwrap())),
+        UserSymbol::new("aiSelSpeed".into(), Vram::new(0x800FAF92))
+            .with_size(UserSize::new(NonZeroU32::new(0x1).unwrap())),
         UserSymbol::new("sched_gfxMQ".into(), Vram::new(0x800FAF94)),
         UserSymbol::new("gAudio_800FAF98".into(), Vram::new(0x800FAF98)),
-        UserSymbol::new("aiHiEraseCtr".into(), Vram::new(0x800FAF9C)).with_size(Size::new(0x2)),
-        UserSymbol::new("dram_stack".into(), Vram::new(0x800FAFA0)).with_size(Size::new(0x400)),
-        UserSymbol::new("aiMoveSF".into(), Vram::new(0x800FB3A0)).with_size(Size::new(0x1)),
+        UserSymbol::new("aiHiEraseCtr".into(), Vram::new(0x800FAF9C))
+            .with_size(UserSize::new(NonZeroU32::new(0x2).unwrap())),
+        UserSymbol::new("dram_stack".into(), Vram::new(0x800FAFA0))
+            .with_size(UserSize::new(NonZeroU32::new(0x400).unwrap())),
+        UserSymbol::new("aiMoveSF".into(), Vram::new(0x800FB3A0))
+            .with_size(UserSize::new(NonZeroU32::new(0x1).unwrap())),
         UserSymbol::new("evs_game_time".into(), Vram::new(0x800FB3A4)),
-        UserSymbol::new("attack_effect".into(), Vram::new(0x800FB3A8)).with_size(Size::new(0x2C0)),
-        UserSymbol::new("gGfxGlist".into(), Vram::new(0x800FB670)).with_size(Size::new(0x18000)),
+        UserSymbol::new("attack_effect".into(), Vram::new(0x800FB3A8))
+            .with_size(UserSize::new(NonZeroU32::new(0x2C0).unwrap())),
+        UserSymbol::new("gGfxGlist".into(), Vram::new(0x800FB670))
+            .with_size(UserSize::new(NonZeroU32::new(0x18000).unwrap())),
         UserSymbol::new("joycnt".into(), Vram::new(0x80113670)),
-        UserSymbol::new("rdp_output".into(), Vram::new(0x801136F0)).with_size(Size::new(0x10000)),
-        UserSymbol::new("evs_gamemode".into(), Vram::new(0x801236F0)).with_size(Size::new(0x4)),
+        UserSymbol::new("rdp_output".into(), Vram::new(0x801136F0))
+            .with_size(UserSize::new(NonZeroU32::new(0x10000).unwrap())),
+        UserSymbol::new("evs_gamemode".into(), Vram::new(0x801236F0))
+            .with_size(UserSize::new(NonZeroU32::new(0x4).unwrap())),
         UserSymbol::new("game_state_data".into(), Vram::new(0x80123700))
-            .with_size(Size::new(0xF10)),
+            .with_size(UserSize::new(NonZeroU32::new(0xF10).unwrap())),
         UserSymbol::new_ignored(Vram::new(0x00000000)),
         UserSymbol::new_ignored(Vram::new(0x80000000)),
         UserSymbol::new_ignored(Vram::new(0x80000004)),

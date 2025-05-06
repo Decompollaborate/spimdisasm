@@ -5,14 +5,14 @@ use core::{cmp, hash::Hash};
 use std::sync::Arc;
 
 use object::{read::elf::Sym, StringTable};
-use spimdisasm::addresses::Size;
+use spimdisasm::addresses::UserSize;
 
 use crate::utils;
 
 #[derive(Debug, Clone)]
 pub struct ElfSymbol {
     value: u32,
-    size: Option<Size>,
+    size: Option<UserSize>,
     typ: ElfSymType,
     bind: ElfSymBind,
     visibility: ElfSymVisibility,
@@ -30,14 +30,7 @@ impl ElfSymbol {
     ) -> Self {
         let value = sym.st_value(elf_endian);
 
-        let size = {
-            let s = sym.st_size(elf_endian);
-            if s == 0 {
-                None
-            } else {
-                Some(Size::new(s))
-            }
-        };
+        let size = UserSize::new_checked(sym.st_size(elf_endian));
 
         let typ = sym.st_type().into();
 
@@ -66,7 +59,7 @@ impl ElfSymbol {
         self.value
     }
     #[must_use]
-    pub fn size(&self) -> Option<Size> {
+    pub fn size(&self) -> Option<UserSize> {
         self.size
     }
     #[must_use]
