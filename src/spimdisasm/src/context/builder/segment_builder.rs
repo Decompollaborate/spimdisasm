@@ -18,6 +18,7 @@ use crate::{
     metadata::{
         GeneratedBy, IgnoredAddressRange, LabelMetadata, LabelType, OverlayCategoryName,
         OwnerSegmentKind, SymbolMetadata, SymbolNameGenerationSettings, SymbolType,
+        UserLabelMetadata, UserSymMetadata,
     },
 };
 
@@ -85,7 +86,7 @@ impl SegmentBuilder {
         rom: Option<Rom>,
         size: Option<Size>,
         sym_type: Option<SymbolType>,
-    ) -> Result<&mut SymbolMetadata, AddUserSymbolError> {
+    ) -> Result<UserSymMetadata, AddUserSymbolError> {
         if let Some(rom) = rom {
             if !self.ranges.in_rom_range(rom) {
                 return Err(AddUserSymbolError::new_rom_out_of_range(
@@ -167,7 +168,7 @@ impl SegmentBuilder {
             if let Some(sym_type) = sym_type {
                 sym.set_type(sym_type, GeneratedBy::UserDeclared);
             }
-            Ok(sym)
+            Ok(UserSymMetadata::new(sym))
         }
     }
 
@@ -177,7 +178,7 @@ impl SegmentBuilder {
         vram: Vram,
         rom: Option<Rom>,
         label_type: LabelType,
-    ) -> Result<&mut LabelMetadata, AddUserLabelError> {
+    ) -> Result<UserLabelMetadata, AddUserLabelError> {
         if let Some(rom) = rom {
             if !self.ranges.in_rom_range(rom) {
                 return Err(AddUserLabelError::new_rom_out_of_range(
@@ -223,13 +224,14 @@ impl SegmentBuilder {
                     OwnerSegmentKind::Global
                 };
 
-                Ok(vacant_entry.insert(LabelMetadata::new_user(
+                let label = vacant_entry.insert(LabelMetadata::new_user(
                     vram,
                     owner_segment_kind,
                     label_type,
                     name,
                     rom,
-                )))
+                ));
+                Ok(UserLabelMetadata::new(label))
             }
         }
     }
@@ -329,7 +331,7 @@ impl GlobalSegmentBuilder {
         rom: Option<Rom>,
         size: Option<Size>,
         sym_type: Option<SymbolType>,
-    ) -> Result<&mut SymbolMetadata, AddUserSymbolError>
+    ) -> Result<UserSymMetadata, AddUserSymbolError>
     where
         T: Into<Arc<str>>,
     {
@@ -343,7 +345,7 @@ impl GlobalSegmentBuilder {
         vram: Vram,
         rom: Option<Rom>,
         label_type: LabelType,
-    ) -> Result<&mut LabelMetadata, AddUserLabelError>
+    ) -> Result<UserLabelMetadata, AddUserLabelError>
     where
         T: Into<Arc<str>>,
     {
@@ -420,7 +422,7 @@ impl OverlaySegmentBuilder {
         rom: Option<Rom>,
         size: Option<Size>,
         sym_type: Option<SymbolType>,
-    ) -> Result<&mut SymbolMetadata, AddUserSymbolError>
+    ) -> Result<UserSymMetadata, AddUserSymbolError>
     where
         T: Into<Arc<str>>,
     {
@@ -434,7 +436,7 @@ impl OverlaySegmentBuilder {
         vram: Vram,
         rom: Option<Rom>,
         label_type: LabelType,
-    ) -> Result<&mut LabelMetadata, AddUserLabelError>
+    ) -> Result<UserLabelMetadata, AddUserLabelError>
     where
         T: Into<Arc<str>>,
     {
@@ -499,7 +501,7 @@ pub(crate) mod python_bindings {
             rom: Option<Rom>,
             attributes: &SymAttributes,
         ) -> Result<(), AddUserSymbolError> {
-            let sym = self.add_user_symbol(name, vram, rom, attributes.size, None)?;
+            let sym = self.add_user_symbol(name, vram, rom, attributes.size, attributes.typ)?;
             attributes.apply_to_sym(sym);
             Ok(())
         }
@@ -692,16 +694,10 @@ pub(crate) mod python_bindings {
     }
 
     impl SymAttributes {
-        pub fn apply_to_sym(&self, sym: &mut SymbolMetadata) {
-            if let Some(typ) = self.typ {
-                *sym.user_declared_type_mut() = Some(typ);
-            }
+        pub fn apply_to_sym(&self, mut sym: UserSymMetadata) {
             //if self.defined {
             //    sym.set_defined();
             //}
-            if let Some(size) = self.size {
-                *sym.user_declared_size_mut() = Some(size);
-            }
             *sym.rodata_migration_behavior_mut() = self.migration_behavior.clone().into();
             if let Some(allow_ref_with_addend) = self.allow_ref_with_addend {
                 sym.set_allow_ref_with_addend(allow_ref_with_addend);

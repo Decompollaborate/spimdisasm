@@ -11,7 +11,6 @@ use super::{
 };
 
 #[derive(Clone)]
-#[allow(dead_code)]
 pub struct LabelMetadata {
     generated_by: GeneratedBy,
     vram: Vram,
@@ -137,11 +136,8 @@ impl LabelMetadata {
     pub fn visibility(&self) -> Option<Arc<str>> {
         self.visibility.clone()
     }
-    pub fn set_visibility<T>(&mut self, visibility: T)
-    where
-        T: Into<Arc<str>>,
-    {
-        self.visibility = Some(visibility.into())
+    pub(crate) fn set_visibility(&mut self, visibility: Arc<str>) {
+        self.visibility = Some(visibility)
     }
 }
 

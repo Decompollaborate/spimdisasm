@@ -351,7 +351,7 @@ fn fill_symbols(
                     })
                     .unwrap_or(Size::new(1));
 
-                let sym_metadata = utils::pretty_unwrap(user_segment.add_user_symbol(
+                let mut sym_metadata = utils::pretty_unwrap(user_segment.add_user_symbol(
                     initial_vram,
                     got_entry.sym_name(),
                     size,
@@ -388,7 +388,7 @@ fn fill_symbols(
             };
 
             if global_ranges.in_vram_range(vram) {
-                let sym_metadata = utils::pretty_unwrap(
+                let mut sym_metadata = utils::pretty_unwrap(
                     global_segment.add_user_symbol(name, vram, rom, size, sym_type),
                 );
                 if sym.is_got_global() {
@@ -411,7 +411,7 @@ fn fill_symbols(
             let vram = Vram::new(label_sym.value());
             let rom = None;
 
-            let label = utils::pretty_unwrap(global_segment.add_user_label(
+            let mut label = utils::pretty_unwrap(global_segment.add_user_label(
                 name,
                 vram,
                 rom,
@@ -438,7 +438,7 @@ fn fill_symbols(
             let vram = Vram::new(label_sym.value());
             let rom = None;
 
-            let label = utils::pretty_unwrap(global_segment.add_user_label(
+            let mut label = utils::pretty_unwrap(global_segment.add_user_label(
                 name,
                 vram,
                 rom,
@@ -466,7 +466,7 @@ fn fill_symbols(
                 let size = Size::new(4);
                 let typ = None;
 
-                let sym_metadata =
+                let mut sym_metadata =
                     utils::pretty_unwrap(user_segment.add_user_symbol(vram, name, size, typ));
                 // I'm not sure if this should be considered Local or Global.
                 // Maybe make a new kind for this?

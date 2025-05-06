@@ -45,8 +45,5 @@ Some functions may end with `jr` with a non-$ra register that hasn't loaded a ju
 
 Parse `.rel.dyn` when it is available
 
-Change functions of builders that add symbols, labels, etc, to return a wrapper around the actual symbol.
-    This would allow to have in a single place what kind of stuff the user is allowed to set to a symbol/label.
-
 Add an `UserSize` type.
     Use `NonZeroU32` internally to avoid users from creating zero-sized sizes.

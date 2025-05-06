@@ -66,6 +66,7 @@ struct Sections {
     bss: Option<NobitsSectionProcessed>,
 }
 impl Sections {
+    #[expect(clippy::too_many_arguments)]
     pub fn new(
         endian: Endian,
         text_info: (RawSectionInfo, ExecutableSectionSettings),

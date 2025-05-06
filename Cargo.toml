@@ -21,3 +21,6 @@ license = "MIT"
 # cargo msrv find -- cargo check -p spimdisasm
 # ```
 rust-version = "1.83.0"
+
+[profile.release]
+debug = true

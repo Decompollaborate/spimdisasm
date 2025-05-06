@@ -11,7 +11,7 @@ use crate::{
     collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
     metadata::{
         GeneratedBy, OwnerSegmentKind, SymbolMetadata, SymbolNameGenerationSettings, SymbolType,
-        UserSegmentMetadata,
+        UserSegmentMetadata, UserSymMetadata,
     },
 };
 
@@ -38,7 +38,7 @@ impl UserSegmentBuilder {
         size: Size,
         name: Option<Arc<str>>,
         typ: Option<SymbolType>,
-    ) -> Result<&mut SymbolMetadata, AddUserSegmentSymbolError> {
+    ) -> Result<UserSymMetadata, AddUserSegmentSymbolError> {
         let generated_by = GeneratedBy::UserDeclared;
         let (metadata, newly_created) =
             self.symbols
@@ -88,7 +88,7 @@ impl UserSegmentBuilder {
             metadata.set_type(typ, generated_by);
         }
 
-        Ok(metadata)
+        Ok(UserSymMetadata::new(metadata))
     }
 
     pub fn add_user_symbol<T>(
@@ -97,7 +97,7 @@ impl UserSegmentBuilder {
         name: T,
         size: Size,
         typ: Option<SymbolType>,
-    ) -> Result<&mut SymbolMetadata, AddUserSegmentSymbolError>
+    ) -> Result<UserSymMetadata, AddUserSegmentSymbolError>
     where
         T: Into<Arc<str>>,
     {

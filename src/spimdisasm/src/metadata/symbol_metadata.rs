@@ -261,7 +261,9 @@ impl SymbolMetadata {
     pub fn symbol_name_generation_settings(&self) -> &SymbolNameGenerationSettings {
         &self.symbol_name_generation_settings
     }
-    pub fn symbol_name_generation_settings_mut(&mut self) -> &mut SymbolNameGenerationSettings {
+    pub(crate) fn symbol_name_generation_settings_mut(
+        &mut self,
+    ) -> &mut SymbolNameGenerationSettings {
         &mut self.symbol_name_generation_settings
     }
 
@@ -283,7 +285,6 @@ impl SymbolMetadata {
         self.user_declared_name = Some(name);
     }
 
-    #[allow(dead_code)]
     pub(crate) fn set_user_declared_name_end(&mut self, name: Arc<str>) {
         self.user_declared_name_end = Some(name);
     }
@@ -291,7 +292,7 @@ impl SymbolMetadata {
     pub fn user_declared_size(&self) -> Option<Size> {
         self.user_declared_size
     }
-    pub fn user_declared_size_mut(&mut self) -> &mut Option<Size> {
+    pub(crate) fn user_declared_size_mut(&mut self) -> &mut Option<Size> {
         &mut self.user_declared_size
     }
     pub fn autodetected_size(&self) -> Option<Size> {
@@ -326,9 +327,6 @@ impl SymbolMetadata {
     }
     pub fn user_declared_type(&self) -> Option<SymbolType> {
         self.user_declared_type
-    }
-    pub fn user_declared_type_mut(&mut self) -> &mut Option<SymbolType> {
-        &mut self.user_declared_type
     }
     pub fn autodetected_type(&self) -> Option<SymbolType> {
         if let Some(t) = self.autodetected_type {
@@ -392,7 +390,7 @@ impl SymbolMetadata {
     pub fn got_info(&self) -> Option<&GotInfo> {
         self.got_info.as_ref()
     }
-    pub fn set_got_access_kind(&mut self, kind: GotAccessKind) {
+    pub(crate) fn set_got_access_kind(&mut self, kind: GotAccessKind) {
         if let Some(got_info) = &mut self.got_info {
             got_info.access_kind = kind;
         } else {
@@ -428,26 +426,22 @@ impl SymbolMetadata {
         &self.rodata_migration_behavior
     }
     #[must_use]
-    // TODO: change to `pub(crate)`
-    pub fn rodata_migration_behavior_mut(&mut self) -> &mut RodataMigrationBehavior {
+    pub(crate) fn rodata_migration_behavior_mut(&mut self) -> &mut RodataMigrationBehavior {
         &mut self.rodata_migration_behavior
     }
 
     pub fn allow_ref_with_addend(&self) -> bool {
         self.allow_ref_with_addend
     }
-    pub fn set_allow_ref_with_addend(&mut self, val: bool) {
+    pub(crate) fn set_allow_ref_with_addend(&mut self, val: bool) {
         self.allow_ref_with_addend = val;
     }
 
     pub fn visibility(&self) -> Option<Arc<str>> {
         self.visibility.clone()
     }
-    pub fn set_visibility<T>(&mut self, visibility: T)
-    where
-        T: Into<Arc<str>>,
-    {
-        self.visibility = Some(visibility.into())
+    pub(crate) fn set_visibility(&mut self, visibility: Arc<str>) {
+        self.visibility = Some(visibility)
     }
 
     pub(crate) fn compiler(&self) -> Option<Compiler> {

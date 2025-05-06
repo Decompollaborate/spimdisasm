@@ -637,8 +637,7 @@ impl FunctionSymProcessed {
     }
 
     #[must_use]
-    #[expect(dead_code)]
-    pub(crate) fn labels(&self) -> &[Vram] {
+    pub fn labels(&self) -> &[Vram] {
         &self.labels
     }
 }
