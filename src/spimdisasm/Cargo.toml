@@ -41,3 +41,6 @@ polonius-the-crab = "0.4.2" # TODO: get rid of the polonius stuff when the new b
 pyo3 = { version = "0.23.2", optional = true }
 encoding_rs = "0.8.35"
 bitflags = { version = "2.8.0", default-features = false }
+
+[dev-dependencies]
+pretty_assertions = "1.4"

@@ -442,6 +442,8 @@ impl Default for StringGuesserFlags {
 mod tests {
     use super::*;
 
+    use pretty_assertions::assert_eq;
+
     #[test]
     fn guess_string_ending_in_word_of_zeroes() {
         static BYTES: [u8; 56] = [

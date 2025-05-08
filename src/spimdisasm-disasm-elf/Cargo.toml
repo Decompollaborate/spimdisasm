@@ -31,3 +31,6 @@ std = ["spimdisasm/std"]
 clap = { version = "4.5.20", features = ["derive"] }
 object = { version = "0.36.7", default-features = false, features = ["std", "elf", "read_core"] }
 spimdisasm = { path = "../spimdisasm" }
+
+[dev-dependencies]
+pretty_assertions = "1.4"

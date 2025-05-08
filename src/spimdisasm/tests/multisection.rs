@@ -3,6 +3,7 @@
 
 use std::collections::BTreeMap;
 
+use pretty_assertions::assert_eq;
 use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
 use spimdisasm::{
     addresses::{

@@ -463,6 +463,8 @@ pub(crate) fn escape_string(val: &str) -> String {
 mod tests {
     use super::*;
 
+    use pretty_assertions::assert_eq;
+
     #[test]
     fn check_valid_string_ending_in_word_of_zeroes() {
         static BYTES: [u8; 56] = [

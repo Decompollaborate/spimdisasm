@@ -1,6 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use pretty_assertions::assert_eq;
 use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
 use spimdisasm::{
     addresses::{AddressRange, RomVramRange},
