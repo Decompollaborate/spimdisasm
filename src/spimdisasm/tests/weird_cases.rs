@@ -10,7 +10,7 @@ use spimdisasm::{
     context::{builder::UserSegmentBuilder, ContextBuilder, GlobalSegmentBuilder},
     parent_segment_info::ParentSegmentInfo,
     sections::before_proc::ExecutableSectionSettings,
-    symbols::display::FunctionDisplaySettings,
+    symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings},
 };
 
 #[test]
@@ -289,7 +289,7 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
         .post_process(&mut context, &user_relocs)
         .unwrap();
 
-    assert_eq!(section_text.functions().len(), 1);
+    assert_eq!(section_text.symbols().len(), 1);
 
     let symbols = context.global_segment().symbols();
     for s in symbols {
@@ -305,8 +305,10 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
 
     let mut disassembled = ".section .text\n".to_string();
     let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
-    for func in section_text.functions() {
-        let func_display = func.display(&context, &function_display_settings);
+    let data_display_settings = SymDataDisplaySettings::new();
+    for func in section_text.symbols() {
+        let func_display =
+            func.display(&context, &function_display_settings, &data_display_settings);
         disassembled.push('\n');
         disassembled.push_str(&func_display.unwrap().to_string());
     }
@@ -649,10 +651,11 @@ fn weird_case_use_gp_as_temp() {
 
     let mut disassembly = ".section .text\n".to_string();
     let display_settings = FunctionDisplaySettings::new(InstructionDisplayFlags::new());
-    for sym in section_text.functions() {
+    let data_display_settings = SymDataDisplaySettings::new();
+    for sym in section_text.symbols() {
         disassembly.push('\n');
         disassembly.push_str(
-            &sym.display(&context, &display_settings)
+            &sym.display(&context, &display_settings, &data_display_settings)
                 .unwrap()
                 .to_string(),
         );

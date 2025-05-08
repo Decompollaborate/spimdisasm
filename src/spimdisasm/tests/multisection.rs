@@ -248,10 +248,10 @@ impl Sections {
 
         if let Some(section) = &self.text {
             out.push_str(".section .text\n");
-            for sym in section.functions() {
+            for sym in section.symbols() {
                 out.push('\n');
                 out.push_str(
-                    &sym.display(&self.context, text_display_settings)
+                    &sym.display(&self.context, text_display_settings, data_display_settings)
                         .unwrap()
                         .to_string(),
                 );
@@ -296,7 +296,7 @@ impl Sections {
 
         if let Some(section) = &self.bss {
             out.push_str("\n.section .bss\n");
-            for sym in section.noload_symbols() {
+            for sym in section.nobits_symbols() {
                 out.push('\n');
                 out.push_str(
                     &sym.display(&self.context, bss_display_settings)

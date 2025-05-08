@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{sync::Arc, vec::Vec};
+use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
 use core::hash;
 
 use crate::{
@@ -13,7 +13,7 @@ use crate::{
     sections::{Section, SectionPostProcessError, SectionProcessed},
     symbols::{
         before_proc::NobitsSym, processed::NobitsSymProcessed, Symbol, SymbolPostProcessError,
-        SymbolProcessed,
+        SymbolPreprocessed, SymbolProcessed,
     },
 };
 
@@ -25,7 +25,7 @@ pub struct NobitsSectionProcessed {
     name: Arc<str>,
     vram_range: AddressRange<Vram>,
     parent_segment_info: ParentSegmentInfo,
-    noload_symbols: Arc<[NobitsSymProcessed]>,
+    nobits_symbols: Arc<[NobitsSymProcessed]>,
     symbol_vrams: UnorderedSet<Vram>,
 }
 
@@ -35,27 +35,28 @@ impl NobitsSectionProcessed {
         name: Arc<str>,
         vram_range: AddressRange<Vram>,
         parent_segment_info: ParentSegmentInfo,
-        noload_symbols: Vec<NobitsSym>,
+        nobits_symbols: Vec<NobitsSym>,
         symbol_vrams: UnorderedSet<Vram>,
     ) -> Result<Self, SectionPostProcessError> {
-        let noload_symbols = noload_symbols
+        let user_relocs = BTreeMap::new();
+        let nobits_symbols = nobits_symbols
             .into_iter()
-            .map(|x| x.post_process(context))
+            .map(|x| x.post_process(context, &user_relocs))
             .collect::<Result<Arc<[NobitsSymProcessed]>, SymbolPostProcessError>>()?;
 
         Ok(Self {
             name,
             vram_range,
             parent_segment_info,
-            noload_symbols,
+            nobits_symbols,
             symbol_vrams,
         })
     }
 }
 
 impl NobitsSectionProcessed {
-    pub fn noload_symbols(&self) -> &[NobitsSymProcessed] {
-        &self.noload_symbols
+    pub fn nobits_symbols(&self) -> &[NobitsSymProcessed] {
+        &self.nobits_symbols
     }
 }
 
@@ -78,7 +79,7 @@ impl Section for NobitsSectionProcessed {
     }
 
     fn symbol_list(&self) -> &[impl Symbol] {
-        &self.noload_symbols
+        &self.nobits_symbols
     }
 
     fn symbols_vrams(&self) -> &UnorderedSet<Vram> {
@@ -87,7 +88,7 @@ impl Section for NobitsSectionProcessed {
 }
 impl SectionProcessed for NobitsSectionProcessed {
     fn symbol_list(&self) -> &[impl SymbolProcessed] {
-        &self.noload_symbols
+        &self.nobits_symbols
     }
 }
 

@@ -17,7 +17,7 @@ use crate::{
     },
     symbols::{
         display::{FunctionDisplaySettings, SymDataDisplaySettings},
-        processed::{DataSymProcessed, FunctionSymProcessed},
+        processed::{DataSymProcessed, EitherFuncDataSymProcessed},
         Symbol,
     },
 };
@@ -80,7 +80,7 @@ impl FuncRodataPairing {
 
         for (func_index, func_sym) in text_section
             .iter()
-            .flat_map(|x| x.functions().iter().enumerate())
+            .flat_map(|x| x.symbols().iter().enumerate())
         {
             let entry = Self::pair_function_to_rodata_section(
                 context,
@@ -139,7 +139,7 @@ impl FuncRodataPairing {
     fn pair_function_to_rodata_section(
         context: &Context,
         function_index: usize,
-        function: &FunctionSymProcessed,
+        symbol: &EitherFuncDataSymProcessed,
         rodata_section: Option<&DataSectionProcessed>,
     ) -> Self {
         /*
@@ -155,6 +155,17 @@ impl FuncRodataPairing {
 
         let mut rodata_indices = Vec::new();
         let mut late_rodata_indices = Vec::new();
+
+        let function = match symbol {
+            EitherFuncDataSymProcessed::Func(function_sym_processed) => function_sym_processed,
+            EitherFuncDataSymProcessed::Data(_) => {
+                return FuncRodataPairing::Pairing {
+                    function_index,
+                    rodata_indices: rodata_indices.into(),
+                    late_rodata_indices: late_rodata_indices.into(),
+                }
+            }
+        };
 
         if let Some(rodata_section) = rodata_section {
             let intersection = function
@@ -297,7 +308,7 @@ impl<'ctx> FuncRodataPairing {
         let metadata = match &self {
             FuncRodataPairing::Pairing { function_index, .. } => {
                 if let Some(text_section) = text_section {
-                    let functions = text_section.functions();
+                    let functions = text_section.symbols();
 
                     if let Some(func) = functions.get(*function_index) {
                         func.find_own_metadata(context)
@@ -437,7 +448,7 @@ pub(crate) mod python_bindings {
                     if let Some(text_section) = text_section {
                         text_section
                             .unwrap_processed()
-                            .functions()
+                            .symbols()
                             .get(*function_index)
                             .map(|function| {
                                 (

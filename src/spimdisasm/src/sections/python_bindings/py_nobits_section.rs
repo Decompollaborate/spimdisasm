@@ -157,7 +157,7 @@ impl PyNobitsSection {
                     vram_end: section.vram_range().end(),
                 })
             }
-            PyNobitsSectionInner::Processed(section) => section.noload_symbols().get(index),
+            PyNobitsSectionInner::Processed(section) => section.nobits_symbols().get(index),
         };
 
         Ok(if let Some(sym) = sym {

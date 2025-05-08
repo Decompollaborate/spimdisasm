@@ -27,7 +27,7 @@ impl PyUserRelocs {
 #[pymethods]
 impl PyUserRelocs {
     #[new]
-    pub fn new() -> Self {
+    pub fn py_new() -> Self {
         Self {
             inner: BTreeMap::new(),
         }

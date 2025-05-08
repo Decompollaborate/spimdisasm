@@ -463,23 +463,6 @@ impl PairedAddressMeta {
 }
 
 impl FunctionSym {
-    pub(crate) fn post_process(
-        self,
-        context: &mut Context,
-        user_relocs: &BTreeMap<Rom, RelocationInfo>,
-    ) -> Result<FunctionSymProcessed, SymbolPostProcessError> {
-        FunctionSymProcessed::new(
-            context,
-            self.ranges,
-            self.instructions,
-            self.parent_segment_info,
-            self.instr_analysis,
-            user_relocs,
-        )
-    }
-}
-
-impl FunctionSym {
     #[must_use]
     pub fn referenced_vrams(&self) -> &UnorderedSet<Vram> {
         self.instr_analysis.referenced_vrams()
@@ -506,7 +489,25 @@ impl RomSymbol for FunctionSym {
         &self.ranges
     }
 }
-impl SymbolPreprocessed for FunctionSym {}
+impl SymbolPreprocessed for FunctionSym {
+    type Output = FunctionSymProcessed;
+
+    #[doc(hidden)]
+    fn post_process(
+        self,
+        context: &mut Context,
+        user_relocs: &BTreeMap<Rom, RelocationInfo>,
+    ) -> Result<Self::Output, SymbolPostProcessError> {
+        FunctionSymProcessed::new(
+            context,
+            self.ranges,
+            self.instructions,
+            self.parent_segment_info,
+            self.instr_analysis,
+            user_relocs,
+        )
+    }
+}
 impl RomSymbolPreprocessed for FunctionSym {}
 
 impl hash::Hash for FunctionSym {

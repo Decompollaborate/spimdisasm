@@ -3,12 +3,15 @@
 
 use core::hash;
 
+use alloc::collections::btree_map::BTreeMap;
+
 use crate::{
-    addresses::{AddressRange, Size, Vram},
+    addresses::{AddressRange, Rom, Size, Vram},
     config::Compiler,
     context::Context,
     metadata::{ParentSectionMetadata, SymbolMetadata},
     parent_segment_info::ParentSegmentInfo,
+    relocation::RelocationInfo,
     section_type::SectionType,
     symbols::{processed::NobitsSymProcessed, SymbolPreprocessed},
 };
@@ -27,7 +30,6 @@ impl NobitsSym {
     pub(crate) fn new(
         context: &mut Context,
         vram_range: AddressRange<Vram>,
-        _in_section_offset: usize,
         parent_segment_info: ParentSegmentInfo,
         properties: NobitsSymProperties,
     ) -> Result<Self, SymbolCreationError> {
@@ -55,15 +57,6 @@ impl NobitsSym {
     }
 }
 
-impl NobitsSym {
-    pub(crate) fn post_process(
-        self,
-        context: &mut Context,
-    ) -> Result<NobitsSymProcessed, SymbolPostProcessError> {
-        NobitsSymProcessed::new(context, self.vram_range, self.parent_segment_info)
-    }
-}
-
 impl Symbol for NobitsSym {
     fn vram_range(&self) -> &AddressRange<Vram> {
         &self.vram_range
@@ -78,7 +71,18 @@ impl Symbol for NobitsSym {
         SECTION_TYPE
     }
 }
-impl SymbolPreprocessed for NobitsSym {}
+impl SymbolPreprocessed for NobitsSym {
+    type Output = NobitsSymProcessed;
+
+    #[doc(hidden)]
+    fn post_process(
+        self,
+        context: &mut Context,
+        _user_relocs: &BTreeMap<Rom, RelocationInfo>,
+    ) -> Result<Self::Output, SymbolPostProcessError> {
+        NobitsSymProcessed::new(context, self.vram_range, self.parent_segment_info)
+    }
+}
 
 impl hash::Hash for NobitsSym {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {

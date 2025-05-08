@@ -475,7 +475,7 @@ impl OverlaySegmentBuilder {
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
-    use crate::{addresses::Size, metadata::RodataMigrationBehavior};
+    use crate::metadata::RodataMigrationBehavior;
 
     use super::*;
 
@@ -525,7 +525,7 @@ pub(crate) mod python_bindings {
             vram: Vram,
             size: UserSize,
         ) -> Result<(), AddIgnoredAddressRangeError> {
-            self.add_ignored_address_range(vram, size.into())
+            self.add_ignored_address_range(vram, size)
         }
 
         #[pyo3(name = "n64_default_banned_addresses")]
@@ -591,7 +591,7 @@ pub(crate) mod python_bindings {
             vram: Vram,
             size: UserSize,
         ) -> Result<(), AddIgnoredAddressRangeError> {
-            self.add_ignored_address_range(vram, size.into())
+            self.add_ignored_address_range(vram, size)
         }
 
         #[pyo3(name = "n64_default_banned_addresses")]
@@ -639,7 +639,7 @@ pub(crate) mod python_bindings {
     pub struct SymAttributes {
         typ: Option<SymbolType>,
         defined: bool,
-        size: Option<Size>,
+        size: Option<UserSize>,
         migration_behavior: PyRodataMigrationBehavior,
         allow_ref_with_addend: Option<bool>,
         can_reference: bool,
@@ -651,7 +651,7 @@ pub(crate) mod python_bindings {
     #[pymethods]
     impl SymAttributes {
         #[new]
-        pub fn new() -> Self {
+        pub fn py_new() -> Self {
             Self {
                 typ: None,
                 defined: false,
@@ -671,7 +671,7 @@ pub(crate) mod python_bindings {
         pub fn set_defined(&mut self, val: bool) {
             self.defined = val;
         }
-        pub fn set_size(&mut self, val: &Size) {
+        pub fn set_size(&mut self, val: &UserSize) {
             self.size = Some(*val);
         }
         pub fn set_migration_behavior(&mut self, val: &PyRodataMigrationBehavior) {

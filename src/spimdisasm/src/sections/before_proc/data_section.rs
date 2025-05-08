@@ -120,23 +120,18 @@ impl DataSection {
 
             symbol_vrams.insert(*new_sym_vram);
 
-            let properties = DataSymProperties {
-                parent_metadata: ParentSectionMetadata::new(
-                    name.clone(),
-                    vram,
-                    parent_segment_info.clone(),
-                ),
-                compiler: settings.compiler,
-                auto_pad_by: auto_pads.get(new_sym_vram).copied(),
-                detected_type: *sym_type,
-                encoding: settings.encoding,
-            };
+            let properties = DataSymProperties::new(
+                ParentSectionMetadata::new(name.clone(), vram, parent_segment_info.clone()),
+                settings.compiler,
+                auto_pads.get(new_sym_vram).copied(),
+                *sym_type,
+                settings.encoding,
+            );
             let sym = DataSym::new(
                 context,
                 raw_bytes[start..end].into(),
                 sym_rom,
                 *new_sym_vram,
-                start,
                 parent_segment_info.clone(),
                 section_type,
                 properties,

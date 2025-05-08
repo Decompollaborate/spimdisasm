@@ -345,10 +345,14 @@ fn drmario64_us_without_symbols() {
     let sym_noload_display_settings = SymNobitsDisplaySettings::new();
     for seg in &segments {
         for sect in &seg.text_sections {
-            for sym in sect.functions() {
+            for sym in sect.symbols() {
                 // sym.display(&context, &function_display_settings).hash(&mut hasher);
                 let _a = sym
-                    .display(&context, &function_display_settings)
+                    .display(
+                        &context,
+                        &function_display_settings,
+                        &sym_data_display_settings,
+                    )
                     .unwrap()
                     .to_string();
             }
@@ -372,7 +376,7 @@ fn drmario64_us_without_symbols() {
             }
         }
         for sect in &seg.bss_sections {
-            for sym in sect.noload_symbols() {
+            for sym in sect.nobits_symbols() {
                 // sym.display(&context, &data_display_settings).hash(&mut hasher);
                 let _a = sym
                     .display(&context, &sym_noload_display_settings)
@@ -397,7 +401,7 @@ fn drmario64_us_without_symbols() {
         .map(|x| {
             x.text_sections
                 .iter()
-                .map(|y| y.functions().len())
+                .map(|y| y.symbols().len())
                 .sum::<usize>()
         })
         .sum();
@@ -440,10 +444,14 @@ fn drmario64_us_with_symbols() {
     let sym_noload_display_settings = SymNobitsDisplaySettings::new();
     for seg in &segments {
         for sect in &seg.text_sections {
-            for sym in sect.functions() {
+            for sym in sect.symbols() {
                 // sym.display(&context, &function_display_settings).hash(&mut hasher);
                 let _a = sym
-                    .display(&context, &function_display_settings)
+                    .display(
+                        &context,
+                        &function_display_settings,
+                        &sym_data_display_settings,
+                    )
                     .unwrap()
                     .to_string();
             }
@@ -467,7 +475,7 @@ fn drmario64_us_with_symbols() {
             }
         }
         for sect in &seg.bss_sections {
-            for sym in sect.noload_symbols() {
+            for sym in sect.nobits_symbols() {
                 // sym.display(&context, &data_display_settings).hash(&mut hasher);
                 let _a = sym
                     .display(&context, &sym_noload_display_settings)
@@ -492,7 +500,7 @@ fn drmario64_us_with_symbols() {
         .map(|x| {
             x.text_sections
                 .iter()
-                .map(|y| y.functions().len())
+                .map(|y| y.symbols().len())
                 .sum::<usize>()
         })
         .sum();

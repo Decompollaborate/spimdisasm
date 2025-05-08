@@ -1,6 +1,8 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use alloc::collections::btree_map::BTreeMap;
+
 use crate::{
     addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     collections::addended_ordered_map::FindSettings,
@@ -10,6 +12,8 @@ use crate::{
     relocation::RelocationInfo,
     section_type::SectionType,
 };
+
+use super::SymbolPostProcessError;
 
 pub trait Symbol {
     #[must_use]
@@ -66,7 +70,16 @@ pub trait RomSymbol: Symbol {
     }
 }
 
-pub trait SymbolPreprocessed: Symbol {}
+pub trait SymbolPreprocessed: Symbol {
+    type Output: SymbolProcessed;
+
+    #[doc(hidden)]
+    fn post_process(
+        self,
+        context: &mut Context,
+        user_relocs: &BTreeMap<Rom, RelocationInfo>,
+    ) -> Result<Self::Output, SymbolPostProcessError>;
+}
 
 pub trait RomSymbolPreprocessed: RomSymbol + SymbolPreprocessed {}
 

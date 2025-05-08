@@ -14,15 +14,18 @@ use crate::analysis::{InstrOpTailCall, InstructionOperation, ReferenceWrapper, R
 use crate::collections::{addended_ordered_map::FindSettings, unordered_set::UnorderedSet};
 use crate::config::{Compiler, Endian, GlobalConfig};
 use crate::context::Context;
-use crate::metadata::{ParentSectionMetadata, SegmentMetadata};
+use crate::metadata::{ParentSectionMetadata, SegmentMetadata, SymbolType};
 use crate::parent_segment_info::ParentSegmentInfo;
 use crate::relocation::RelocationInfo;
 use crate::section_type::SectionType;
 use crate::sections::processed::ExecutableSectionProcessed;
 use crate::sections::{
-    BadBytesSizeError, EmptySectionError, RomSectionPreprocessed, SectionPreprocessed,
-    UnalignedRomError, UnalignedVramError,
+    BadBytesSizeError, BadUserSymbolSizeError, EmptySectionError, RomSectionPreprocessed,
+    SectionPreprocessed, UnalignedRomError, UnalignedVramError,
 };
+use crate::str_decoding::Encoding;
+use crate::symbols::before_proc::data_sym::DataSymProperties;
+use crate::symbols::before_proc::{DataSym, EitherFuncDataSym};
 use crate::symbols::SymbolPreprocessed;
 use crate::symbols::{
     before_proc::{function_sym::FunctionSymProperties, FunctionSym},
@@ -34,6 +37,8 @@ use crate::sections::{
     trait_section::RomSection,
     {Section, SectionCreationError},
 };
+
+const SECTION_TYPE: SectionType = SectionType::Text;
 
 const BYTES_PER_INSTR: u32 = 4;
 
@@ -50,7 +55,7 @@ pub struct ExecutableSection {
     // section_type: SectionType,
 
     //
-    functions: Vec<FunctionSym>,
+    symbols: Vec<EitherFuncDataSym>,
 
     symbol_vrams: UnorderedSet<Vram>,
 }
@@ -89,74 +94,89 @@ impl ExecutableSection {
         debug_assert!(!instrs.is_empty(), "{}, {:?}, {:?}", name, vram, rom);
 
         let owned_segment = context.find_owned_segment(&parent_segment_info)?;
-        let funcs_start_data = find_functions(
+        let boundaries = find_functions(
             context.global_config(),
             settings,
             owned_segment,
             ranges,
             &instrs,
-        );
+        )?;
 
-        debug_assert!(
-            !funcs_start_data.is_empty(),
-            "{}, {:?}, {:?}",
-            name,
-            vram,
-            rom
-        );
+        debug_assert!(!boundaries.is_empty(), "{}, {:?}, {:?}", name, vram, rom);
 
-        let mut functions = Vec::new();
+        let mut symbols = Vec::new();
         let mut symbol_vrams = UnorderedSet::new();
 
-        for (i, (start, auto_pad_by)) in funcs_start_data.iter().enumerate() {
-            let end = if i + 1 < funcs_start_data.len() {
-                funcs_start_data[i + 1].0
-            } else {
-                instrs.len()
-            };
-            debug_assert!(*start < end, "{:?} {} {} {}", rom, vram, *start, end);
-
-            let local_offset = *start as u32 * BYTES_PER_INSTR;
+        for boundary in boundaries {
+            let local_offset = boundary.start as u32 * BYTES_PER_INSTR;
             let s = Size::new(local_offset);
             let current_vram = vram + s;
             let current_rom = rom + s;
 
             symbol_vrams.insert(vram);
 
-            let properties = FunctionSymProperties {
-                parent_metadata: ParentSectionMetadata::new(
-                    name.clone(),
-                    vram,
-                    parent_segment_info.clone(),
-                ),
-                compiler: settings.compiler,
-                auto_pad_by: *auto_pad_by,
-            };
-            let func = FunctionSym::new(
-                context,
-                instrs[*start..end].into(),
-                current_rom,
-                current_vram,
-                parent_segment_info.clone(),
-                properties,
-            )?;
+            let parent_metadata =
+                ParentSectionMetadata::new(name.clone(), vram, parent_segment_info.clone());
 
-            functions.push(func);
+            let sym = if let Some(data_type) = boundary.data_type {
+                let start = boundary.start * BYTES_PER_INSTR as usize;
+                let end = boundary.end * BYTES_PER_INSTR as usize;
+
+                let properties = DataSymProperties::new(
+                    parent_metadata,
+                    settings.compiler,
+                    boundary.auto_pad_by,
+                    Some(data_type),
+                    Encoding::default(),
+                );
+                let data = DataSym::new(
+                    context,
+                    raw_bytes[start..end].into(),
+                    current_rom,
+                    current_vram,
+                    parent_segment_info.clone(),
+                    SECTION_TYPE,
+                    properties,
+                )?;
+
+                EitherFuncDataSym::Data(data)
+            } else {
+                let start = boundary.start;
+                let end = boundary.end;
+
+                let properties = FunctionSymProperties {
+                    parent_metadata,
+                    compiler: settings.compiler,
+                    auto_pad_by: boundary.auto_pad_by,
+                };
+                let func = FunctionSym::new(
+                    context,
+                    instrs[start..end].into(),
+                    current_rom,
+                    current_vram,
+                    parent_segment_info.clone(),
+                    properties,
+                )?;
+
+                EitherFuncDataSym::Func(func)
+            };
+
+            symbols.push(sym);
         }
 
         Ok(Self {
             name,
             ranges,
             parent_segment_info,
-            functions,
+            symbols,
             symbol_vrams,
         })
     }
 }
 
 impl ExecutableSection {
-    pub fn functions(&self) -> &[FunctionSym] {
-        &self.functions
+    pub fn symbols(&self) -> &[EitherFuncDataSym] {
+        &self.symbols
     }
 }
 
@@ -166,13 +186,21 @@ impl ExecutableSection {
         context: &mut Context,
         user_relocs: &BTreeMap<Rom, RelocationInfo>,
     ) -> Result<ExecutableSectionProcessed, SectionPostProcessError> {
+        let ExecutableSection {
+            name,
+            ranges,
+            parent_segment_info,
+            symbols,
+            symbol_vrams,
+        } = self;
+
         ExecutableSectionProcessed::new(
             context,
-            self.name,
-            self.ranges,
-            self.parent_segment_info,
-            self.functions,
-            self.symbol_vrams,
+            name,
+            ranges,
+            parent_segment_info,
+            symbols,
+            symbol_vrams,
             user_relocs,
         )
     }
@@ -193,11 +221,11 @@ impl Section for ExecutableSection {
 
     #[must_use]
     fn section_type(&self) -> SectionType {
-        SectionType::Text
+        SECTION_TYPE
     }
 
     fn symbol_list(&self) -> &[impl Symbol] {
-        &self.functions
+        &self.symbols
     }
 
     fn symbols_vrams(&self) -> &UnorderedSet<Vram> {
@@ -211,7 +239,7 @@ impl RomSection for ExecutableSection {
 }
 impl SectionPreprocessed for ExecutableSection {
     fn symbol_list(&self) -> &[impl SymbolPreprocessed] {
-        &self.functions
+        &self.symbols
     }
 }
 impl RomSectionPreprocessed for ExecutableSection {}
@@ -290,18 +318,104 @@ impl FarthestBranch {
     }
 }
 
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[must_use]
+struct GatheredFunctionBoundary {
+    start: usize,
+    end: usize,
+    auto_pad_by: Option<Vram>,
+    data_type: Option<SymbolType>,
+}
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[must_use]
+struct TempFunctionBoundary {
+    start: usize,
+    auto_pad_by: Option<Vram>,
+    data_type: Option<SymbolType>,
+}
+
+impl TempFunctionBoundary {
+    const fn new_func(start: usize, auto_pad_by: Option<Vram>) -> Self {
+        Self {
+            start,
+            auto_pad_by,
+            data_type: None,
+        }
+    }
+
+    const fn new_data(start: usize, auto_pad_by: Option<Vram>, data_type: SymbolType) -> Self {
+        Self {
+            start,
+            auto_pad_by,
+            data_type: Some(data_type),
+        }
+    }
+
+    const fn finish(self, end: usize) -> GatheredFunctionBoundary {
+        let Self {
+            start,
+            auto_pad_by,
+            data_type,
+        } = self;
+
+        GatheredFunctionBoundary {
+            start,
+            end,
+            auto_pad_by,
+            data_type,
+        }
+    }
+}
+
 fn find_functions(
     global_config: &GlobalConfig,
     settings: &ExecutableSectionSettings,
     owned_segment: &SegmentMetadata,
     section_ranges: RomVramRange,
     instrs: &[Instruction],
-) -> Vec<(usize, Option<Vram>)> {
-    if instrs.is_empty() {
-        return vec![(0, None)];
-    }
+) -> Result<Vec<GatheredFunctionBoundary>, SectionCreationError> {
+    let boundaries = find_functions_impl(
+        global_config,
+        settings,
+        owned_segment,
+        section_ranges,
+        instrs,
+    )?;
 
-    let mut starts_data = vec![(0, None)];
+    let rom = section_ranges.rom().start();
+    let vram = section_ranges.vram().start();
+
+    let mut ends: Vec<usize> = boundaries.iter().skip(1).map(|x| x.start).collect();
+    ends.push(instrs.len());
+    debug_assert!(boundaries.len() == ends.len());
+
+    Ok(boundaries
+        .into_iter()
+        .zip(ends)
+        .map(|(boundary, end)| {
+            debug_assert!(
+                boundary.start < end,
+                "{:?} {} {} {}",
+                rom,
+                vram,
+                boundary.start,
+                end
+            );
+
+            boundary.finish(end)
+        })
+        .collect())
+}
+
+fn find_functions_impl(
+    global_config: &GlobalConfig,
+    settings: &ExecutableSectionSettings,
+    owned_segment: &SegmentMetadata,
+    section_ranges: RomVramRange,
+    instrs: &[Instruction],
+) -> Result<Vec<TempFunctionBoundary>, SectionCreationError> {
+    let mut starts_data = vec![TempFunctionBoundary::new_func(0, None)];
 
     let mut function_ended = None;
     let mut farthest_branch = FarthestBranch::new(section_ranges.rom().start());
@@ -316,11 +430,11 @@ fn find_functions(
         None,
         &mut starts_data,
         true,
-    ) {
+    )? {
         NextStartResult::FunctionStart(current_function_start, current_function_ref) => {
             (current_function_start, current_function_ref)
         }
-        NextStartResult::SectionEnded => return starts_data,
+        NextStartResult::SectionEnded => return Ok(starts_data),
     };
 
     let mut regs_tracker = RegisterTracker::new(
@@ -350,11 +464,11 @@ fn find_functions(
                 current_function_ref.as_ref(),
                 &mut starts_data,
                 false,
-            ) {
+            )? {
                 NextStartResult::FunctionStart(current_function_start, current_function_ref) => {
                     (current_function_start, current_function_ref)
                 }
-                NextStartResult::SectionEnded => return starts_data,
+                NextStartResult::SectionEnded => return Ok(starts_data),
             };
 
             prev_instr = None;
@@ -412,7 +526,7 @@ fn find_functions(
         farthest_branch.decrease();
     }
 
-    starts_data
+    Ok(starts_data)
 }
 
 fn find_functions_branch_checker(
@@ -483,7 +597,6 @@ enum FunctionEndedState {
     ByException,
 }
 
-// returns `(function_ended, prev_func_had_user_declared_size)`
 #[expect(clippy::too_many_arguments)]
 fn find_functions_check_function_ended(
     owned_segment: &SegmentMetadata,
@@ -513,13 +626,14 @@ fn find_functions_check_function_ended(
         }
     }
 
-    if let Some(reference) =
-        owned_segment.find_reference(current_vram + VramOffset::new(8), FindSettings::new(false))
-    {
+    if let Some(reference) = owned_segment.find_reference(
+        current_vram + VramOffset::new(2 * BYTES_PER_INSTR as i32),
+        FindSettings::new(false),
+    ) {
         // If there's another function after this then the current function has ended
         if reference.is_trustable_function() {
             if let Some(sym_rom) = reference.rom() {
-                if current_rom + Size::new(8) == sym_rom {
+                if current_rom + Size::new(2 * BYTES_PER_INSTR) == sym_rom {
                     return Some(FunctionEndedState::WithDelaySlot);
                 }
             } else {
@@ -546,9 +660,9 @@ fn find_functions_check_function_ended(
         }
     }
 
-    if !opcode.is_jump() {
-        return None;
-    }
+    // if !opcode.is_jump() {
+    //     return None;
+    // }
 
     match instr_processed_result {
         InstructionOperation::Link { .. } => {
@@ -649,9 +763,9 @@ fn find_current_start<'segment>(
     instrs: &[Instruction],
     index: &mut usize,
     prev_function_ref: Option<&ReferenceWrapper<'segment, 'segment>>,
-    starts_data: &mut Vec<(usize, Option<Vram>)>,
+    starts_data: &mut Vec<TempFunctionBoundary>,
     is_first: bool,
-) -> NextStartResult<'segment> {
+) -> Result<NextStartResult<'segment>, SectionCreationError> {
     let current_function_ref = if is_first && !instrs[0].is_nop() {
         owned_segment.find_reference(
             section_vram + Size::new(*index as u32 * BYTES_PER_INSTR),
@@ -663,25 +777,54 @@ fn find_current_start<'segment>(
 
     // We ran out of functions
     if *index >= instrs.len() {
-        NextStartResult::SectionEnded
+        Ok(NextStartResult::SectionEnded)
     } else {
         // Add this function to our vec of functions
+
+        let auto_pad_by = prev_function_ref
+            .filter(|x| x.user_declared_size().is_some())
+            .map(|x| x.vram());
+
+        // Disassemble as data instead of as a function if the user set a non-function type and a size.
+        let boundary = if let Some(data_type) = current_function_ref.and_then(|x| {
+            x.user_declared_type()
+                .filter(|t| *t != SymbolType::Function && x.user_declared_size().is_some())
+        }) {
+            TempFunctionBoundary::new_data(*index, auto_pad_by, data_type)
+        } else {
+            TempFunctionBoundary::new_func(*index, auto_pad_by)
+        };
+
         if is_first {
-            if *index != 0 {
-                starts_data.push((*index, None));
+            if *index == 0 {
+                starts_data[0] = boundary;
+            } else {
+                starts_data.push(boundary);
             }
         } else if !owned_segment
             .is_vram_ignored(section_vram + Size::new(*index as u32 * BYTES_PER_INSTR))
         {
-            let auto_pad_by = prev_function_ref
-                .filter(|x| x.user_declared_size().is_some())
-                .map(|x| x.vram());
-            starts_data.push((*index, auto_pad_by));
+            starts_data.push(boundary);
         }
 
         // Decide if we need to keep checking
-        if let Some(user_size) = current_function_ref.and_then(|x| x.user_declared_size()) {
-            // If the user told us about the size of this function then we should blindly trust it
+        if let Some((func_sym, user_size)) =
+            current_function_ref.and_then(|x| x.user_declared_size().map(|y| (x, y)))
+        {
+            // If the user told us about the size of this function then we should blindly trust it (as long as it is valid)
+
+            // This whole section assumes every symbol is a multiple of a word. We shouldn't let the user break that assumption.
+            if user_size.inner() % BYTES_PER_INSTR != 0 {
+                return Err(BadUserSymbolSizeError::new(
+                    "".into(),
+                    func_sym.vram(),
+                    user_size,
+                    SECTION_TYPE,
+                    BYTES_PER_INSTR,
+                )
+                .into());
+            }
+
             *index += (user_size.inner() / BYTES_PER_INSTR) as usize;
             find_current_start(
                 owned_segment,
@@ -711,7 +854,10 @@ fn find_current_start<'segment>(
                 false,
             )
         } else {
-            NextStartResult::FunctionStart(*index * BYTES_PER_INSTR as usize, current_function_ref)
+            Ok(NextStartResult::FunctionStart(
+                *index * BYTES_PER_INSTR as usize,
+                current_function_ref,
+            ))
         }
     }
 }

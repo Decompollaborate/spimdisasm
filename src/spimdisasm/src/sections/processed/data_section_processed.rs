@@ -16,7 +16,7 @@ use crate::{
     },
     symbols::{
         before_proc::DataSym, processed::DataSymProcessed, Symbol, SymbolPostProcessError,
-        SymbolProcessed,
+        SymbolPreprocessed, SymbolProcessed,
     },
 };
 

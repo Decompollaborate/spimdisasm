@@ -15,8 +15,8 @@ use crate::{
         RomSection, RomSectionProcessed, Section, SectionPostProcessError, SectionProcessed,
     },
     symbols::{
-        before_proc::FunctionSym, processed::FunctionSymProcessed, Symbol, SymbolPostProcessError,
-        SymbolProcessed,
+        before_proc::EitherFuncDataSym, processed::EitherFuncDataSymProcessed, Symbol,
+        SymbolPostProcessError, SymbolPreprocessed, SymbolProcessed,
     },
 };
 
@@ -28,7 +28,7 @@ pub struct ExecutableSectionProcessed {
     name: Arc<str>,
     ranges: RomVramRange,
     parent_segment_info: ParentSegmentInfo,
-    functions: Arc<[FunctionSymProcessed]>,
+    symbols: Arc<[EitherFuncDataSymProcessed]>,
     symbol_vrams: UnorderedSet<Vram>,
 }
 
@@ -38,28 +38,28 @@ impl ExecutableSectionProcessed {
         name: Arc<str>,
         ranges: RomVramRange,
         parent_segment_info: ParentSegmentInfo,
-        functions: Vec<FunctionSym>,
+        symbols: Vec<EitherFuncDataSym>,
         symbol_vrams: UnorderedSet<Vram>,
         user_relocs: &BTreeMap<Rom, RelocationInfo>,
     ) -> Result<Self, SectionPostProcessError> {
-        let functions = functions
+        let symbols = symbols
             .into_iter()
             .map(|x| x.post_process(context, user_relocs))
-            .collect::<Result<Arc<[FunctionSymProcessed]>, SymbolPostProcessError>>()?;
+            .collect::<Result<Arc<[EitherFuncDataSymProcessed]>, SymbolPostProcessError>>()?;
 
         Ok(Self {
             name,
             ranges,
             parent_segment_info,
-            functions,
+            symbols,
             symbol_vrams,
         })
     }
 }
 
 impl ExecutableSectionProcessed {
-    pub fn functions(&self) -> &[FunctionSymProcessed] {
-        &self.functions
+    pub fn symbols(&self) -> &[EitherFuncDataSymProcessed] {
+        &self.symbols
     }
 }
 
@@ -82,7 +82,7 @@ impl Section for ExecutableSectionProcessed {
     }
 
     fn symbol_list(&self) -> &[impl Symbol] {
-        &self.functions
+        &self.symbols
     }
 
     fn symbols_vrams(&self) -> &UnorderedSet<Vram> {
@@ -96,7 +96,7 @@ impl RomSection for ExecutableSectionProcessed {
 }
 impl SectionProcessed for ExecutableSectionProcessed {
     fn symbol_list(&self) -> &[impl SymbolProcessed] {
-        &self.functions
+        &self.symbols
     }
 }
 impl RomSectionProcessed for ExecutableSectionProcessed {}

@@ -13,8 +13,8 @@ use crate::{
     },
     symbols::{
         display::{
-            FunctionDisplay, FunctionDisplaySettings, InternalSymDisplSettings, SymDataDisplay,
-            SymDataDisplaySettings,
+            EitherFuncDataDisplay, FunctionDisplaySettings, InternalSymDisplSettings,
+            SymDataDisplay, SymDataDisplaySettings,
         },
         Symbol,
     },
@@ -36,7 +36,7 @@ pub struct FuncRodataPairingDisplay<
     'ro_label,
     'late_ro_label,
 > {
-    func_display: Option<FunctionDisplay<'ctx, 'text, 'text_settings>>,
+    func_display: Option<EitherFuncDataDisplay<'ctx, 'text, 'text_settings, 'rodata_settings>>,
     ro_syms_display: Arc<[SymDataDisplay<'ctx, 'rodata, 'rodata_settings>]>,
     late_ro_syms_display: Arc<[SymDataDisplay<'ctx, 'rodata, 'rodata_settings>]>,
 
@@ -97,13 +97,13 @@ impl<
                 } else {
                     return Err(MissingTextSectionError::new().into());
                 };
-                let functions = text_section.functions();
-                let func = if let Some(func) = functions.get(*function_index) {
-                    func
+                let symbols = text_section.symbols();
+                let sym = if let Some(sym) = symbols.get(*function_index) {
+                    sym
                 } else {
                     return Err(FunctionOutOfBoundsError::new(
                         *function_index,
-                        functions.len(),
+                        symbols.len(),
                         text_section.name(),
                     )
                     .into());
@@ -118,9 +118,10 @@ impl<
                 )?;
 
                 // We do this late to ensure all the section-existing checks are nearby and exist fast.
-                let func_display = Some(func.display_internal(
+                let func_display = Some(sym.display_internal(
                     context,
                     function_display_settings,
+                    rodata_display_settings,
                     InternalSymDisplSettings::new(true),
                 )?);
 

@@ -33,6 +33,7 @@ use pyo3::prelude::*;
 fn spimdisasm(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<addresses::GpValue>()?;
     m.add_class::<addresses::Size>()?;
+    m.add_class::<addresses::UserSize>()?;
     m.add_class::<addresses::Rom>()?;
     m.add_class::<addresses::RomVramRange>()?;
     m.add_class::<addresses::Vram>()?;

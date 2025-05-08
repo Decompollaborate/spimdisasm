@@ -605,11 +605,11 @@ fn create_sections(
     context: &mut Context,
     executable_settings: ExecutableSectionSettings,
     data_settings: DataSectionSettings,
-    noload_settings: NobitsSectionSettings,
+    nobits_settings: NobitsSectionSettings,
 ) -> (Vec<ExecutableSection>, Vec<DataSection>, Vec<NobitsSection>) {
     let mut executable_sections = Vec::new();
     let mut data_sections = Vec::new();
-    let mut noload_sections = Vec::new();
+    let mut nobits_sections = Vec::new();
 
     let global_ranges = context.global_segment().rom_vram_range();
     let parent_segment_info = ParentSegmentInfo::new(
@@ -702,15 +702,15 @@ fn create_sections(
         let vram_end = vram + elf_section.size();
 
         let section = utils::pretty_unwrap(context.create_section_bss(
-            &noload_settings,
+            &nobits_settings,
             name,
             AddressRange::new(vram, vram_end),
             parent_segment_info.clone(),
         ));
-        noload_sections.push(section);
+        nobits_sections.push(section);
     }
 
-    (executable_sections, data_sections, noload_sections)
+    (executable_sections, data_sections, nobits_sections)
 }
 
 fn gather_relocs(elf: &ParsedElf) -> BTreeMap<Rom, RelocationInfo> {
@@ -728,7 +728,7 @@ fn post_process_sections(
     user_relocs: BTreeMap<Rom, RelocationInfo>,
     executable_sections: Vec<ExecutableSection>,
     data_sections: Vec<DataSection>,
-    noload_sections: Vec<NobitsSection>,
+    nobits_sections: Vec<NobitsSection>,
 ) -> (
     Vec<ExecutableSectionProcessed>,
     Vec<DataSectionProcessed>,
@@ -746,14 +746,14 @@ fn post_process_sections(
             .map(|x| x.post_process(context, &user_relocs))
             .collect::<Result<Vec<DataSectionProcessed>, SectionPostProcessError>>(),
     );
-    let noload_sections = utils::pretty_unwrap(
-        noload_sections
+    let nobits_sections = utils::pretty_unwrap(
+        nobits_sections
             .into_iter()
             .map(|x| x.post_process(context))
             .collect::<Result<Vec<NobitsSectionProcessed>, SectionPostProcessError>>(),
     );
 
-    (executable_sections, data_sections, noload_sections)
+    (executable_sections, data_sections, nobits_sections)
 }
 
 fn write_sections_to_files(
@@ -761,11 +761,14 @@ fn write_sections_to_files(
     context: Context,
     executable_sections: Vec<ExecutableSectionProcessed>,
     data_sections: Vec<DataSectionProcessed>,
-    noload_sections: Vec<NobitsSectionProcessed>,
+    nobits_sections: Vec<NobitsSectionProcessed>,
 ) {
     utils::pretty_unwrap(fs::create_dir_all(&output_dir));
 
     let func_display_settings = FunctionDisplaySettings::new(InstructionDisplayFlags::new());
+    let data_display_settings = SymDataDisplaySettings::new();
+    let nobits_display_settings = SymNobitsDisplaySettings::new();
+
     for section in executable_sections {
         let name = section.name();
         let sep = if name.starts_with(".") { "" } else { "." };
@@ -787,16 +790,19 @@ fn write_sections_to_files(
 ",
             name
         ));
-        for symbol in section.functions() {
+        for symbol in section.symbols() {
             utils::pretty_unwrap(write!(
                 asm_file,
                 "\n{}",
-                utils::pretty_unwrap(symbol.display(&context, &func_display_settings))
+                utils::pretty_unwrap(symbol.display(
+                    &context,
+                    &func_display_settings,
+                    &data_display_settings
+                ))
             ));
         }
     }
 
-    let data_display_settings = SymDataDisplaySettings::new();
     for section in data_sections {
         let name = section.name();
         let sep = if name.starts_with(".") { "" } else { "." };
@@ -823,8 +829,7 @@ fn write_sections_to_files(
         }
     }
 
-    let noload_display_settings = SymNobitsDisplaySettings::new();
-    for section in noload_sections {
+    for section in nobits_sections {
         let name = section.name();
         let sep = if name.starts_with(".") { "" } else { "." };
         let filename = format!("{}{}{}.s", section.vram_range().start(), sep, name);
@@ -841,11 +846,11 @@ fn write_sections_to_files(
 ",
             name
         ));
-        for symbol in section.noload_symbols() {
+        for symbol in section.nobits_symbols() {
             utils::pretty_unwrap(write!(
                 asm_file,
                 "\n{}",
-                utils::pretty_unwrap(symbol.display(&context, &noload_display_settings))
+                utils::pretty_unwrap(symbol.display(&context, &nobits_display_settings))
             ));
         }
     }
@@ -883,7 +888,7 @@ fn main() {
         .union(StringGuesserFlags::AllowSingleAlignedDereferences);
     let data_settings =
         DataSectionSettings::new(compiler).with_string_guesser_flags(string_guesser_flags);
-    let noload_settings = NobitsSectionSettings::new(compiler);
+    let nobits_settings = NobitsSectionSettings::new(compiler);
 
     println!("context:");
     let start = utils::get_time_now();
@@ -893,12 +898,12 @@ fn main() {
 
     print!("create_sections");
     let start = utils::get_time_now();
-    let (executable_sections, data_sections, noload_sections) = create_sections(
+    let (executable_sections, data_sections, nobits_sections) = create_sections(
         &elf,
         &mut context,
         executable_settings,
         data_settings,
-        noload_settings,
+        nobits_settings,
     );
     let end = utils::get_time_now();
     println!(": {:?}", end - start);
@@ -911,12 +916,12 @@ fn main() {
 
     print!("post_process_sections");
     let start = utils::get_time_now();
-    let (executable_sections, data_sections, noload_sections) = post_process_sections(
+    let (executable_sections, data_sections, nobits_sections) = post_process_sections(
         &mut context,
         user_relocs,
         executable_sections,
         data_sections,
-        noload_sections,
+        nobits_sections,
     );
     let end = utils::get_time_now();
     println!(": {:?}", end - start);
@@ -928,7 +933,7 @@ fn main() {
         context,
         executable_sections,
         data_sections,
-        noload_sections,
+        nobits_sections,
     );
     let end = utils::get_time_now();
     println!(": {:?}", end - start);

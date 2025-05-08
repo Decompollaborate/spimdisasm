@@ -369,7 +369,7 @@ pub(crate) mod python_bindings {
             size: UserSize,
             typ: Option<SymbolType>,
         ) -> Result<(), AddUserSegmentSymbolError> {
-            self.add_user_symbol(vram, name, size.into(), typ)?;
+            self.add_user_symbol(vram, name, size, typ)?;
             Ok(())
         }
 

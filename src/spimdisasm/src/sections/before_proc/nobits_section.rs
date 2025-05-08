@@ -36,7 +36,7 @@ pub struct NobitsSection {
     // in_section_offset: u32,
 
     //
-    noload_symbols: Vec<NobitsSym>,
+    nobits_symbols: Vec<NobitsSym>,
 
     symbol_vrams: UnorderedSet<Vram>,
 }
@@ -53,7 +53,7 @@ impl NobitsSection {
             return Err(EmptySectionError::new(name, vram_range.start()).into());
         }
 
-        let mut noload_symbols = Vec::new();
+        let mut nobits_symbols = Vec::new();
         let mut symbol_vrams = UnorderedSet::new();
 
         let owned_segment = context.find_owned_segment(&parent_segment_info)?;
@@ -93,7 +93,6 @@ impl NobitsSection {
         let symbols_info_vec: Vec<Vram> = symbols_info.into_iter().collect();
 
         for (i, new_sym_vram) in symbols_info_vec.iter().enumerate() {
-            let start = new_sym_vram.sub_vram(&vram_range.start()).inner() as usize;
             let new_sym_vram_end = if i + 1 < symbols_info_vec.len() {
                 symbols_info_vec[i + 1]
             } else {
@@ -118,24 +117,29 @@ impl NobitsSection {
                 compiler: settings.compiler,
                 auto_pad_by: auto_pads.get(new_sym_vram).copied(),
             };
-            let /*mut*/ sym = NobitsSym::new(context, AddressRange::new(*new_sym_vram, new_sym_vram_end), start, parent_segment_info.clone(), properties)?;
+            let sym = NobitsSym::new(
+                context,
+                AddressRange::new(*new_sym_vram, new_sym_vram_end),
+                parent_segment_info.clone(),
+                properties,
+            )?;
 
-            noload_symbols.push(sym);
+            nobits_symbols.push(sym);
         }
 
         Ok(Self {
             name,
             vram_range,
             parent_segment_info,
-            noload_symbols,
+            nobits_symbols,
             symbol_vrams,
         })
     }
 }
 
 impl NobitsSection {
-    pub fn noload_symbols(&self) -> &[NobitsSym] {
-        &self.noload_symbols
+    pub fn nobits_symbols(&self) -> &[NobitsSym] {
+        &self.nobits_symbols
     }
 }
 
@@ -149,7 +153,7 @@ impl NobitsSection {
             self.name,
             self.vram_range,
             self.parent_segment_info,
-            self.noload_symbols,
+            self.nobits_symbols,
             self.symbol_vrams,
         )
     }
@@ -174,7 +178,7 @@ impl Section for NobitsSection {
     }
 
     fn symbol_list(&self) -> &[impl Symbol] {
-        &self.noload_symbols
+        &self.nobits_symbols
     }
 
     fn symbols_vrams(&self) -> &UnorderedSet<Vram> {
@@ -183,7 +187,7 @@ impl Section for NobitsSection {
 }
 impl SectionPreprocessed for NobitsSection {
     fn symbol_list(&self) -> &[impl SymbolPreprocessed] {
-        &self.noload_symbols
+        &self.nobits_symbols
     }
 }
 

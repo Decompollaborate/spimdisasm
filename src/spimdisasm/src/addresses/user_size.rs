@@ -211,12 +211,12 @@ pub(crate) mod python_bindings {
     impl UserSize {
         #[new]
         pub fn py_new(value: u32) -> Self {
-            Self::new(value)
+            Self::new_checked(value).unwrap()
         }
 
         #[pyo3(name = "inner")]
         pub fn py_inner(&self) -> u32 {
-            self.inner()
+            self.inner().into()
         }
     }
 }

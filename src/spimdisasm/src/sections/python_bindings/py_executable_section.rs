@@ -13,7 +13,8 @@ use crate::{
         SectionPostProcessError,
     },
     symbols::{
-        display::{FunctionDisplaySettings, SymDisplayError},
+        display::{FunctionDisplaySettings, SymDataDisplaySettings, SymDisplayError},
+        processed::EitherFuncDataSymProcessed,
         Symbol,
     },
 };
@@ -167,11 +168,12 @@ impl PyExecutableSection {
                     vram_end: section.vram_range().end(),
                 })
             }
-            PyExecutableSectionInner::Processed(section) => section.functions().get(index),
+            PyExecutableSectionInner::Processed(section) => section.symbols().get(index),
         };
 
         Ok(if let Some(sym) = sym {
-            Some(sym.display(context, settings)?.to_string())
+            let data_settings = SymDataDisplaySettings::new();
+            Some(sym.display(context, settings, &data_settings)?.to_string())
         } else {
             None
         })
@@ -179,9 +181,9 @@ impl PyExecutableSection {
 
     #[pyo3(name = "label_count_for_sym")]
     pub fn py_label_count_for_sym(&self, sym_index: usize) -> usize {
-        let sym = self.unwrap_processed().functions().get(sym_index);
+        let sym = self.unwrap_processed().symbols().get(sym_index);
 
-        if let Some(sym) = sym {
+        if let Some(EitherFuncDataSymProcessed::Func(sym)) = sym {
             sym.labels().len()
         } else {
             0
@@ -198,12 +200,12 @@ impl PyExecutableSection {
         let (sym, parent_segment_info) = {
             let section = self.unwrap_processed();
             (
-                section.functions().get(sym_index),
+                section.symbols().get(sym_index),
                 section.parent_segment_info(),
             )
         };
 
-        if let Some(sym) = sym {
+        if let Some(EitherFuncDataSymProcessed::Func(sym)) = sym {
             if let Some(label_vram) = sym.labels().get(label_index) {
                 let metadata = context
                     .find_owned_segment(parent_segment_info)
@@ -238,12 +240,12 @@ impl PyExecutableSection {
             PyExecutableSectionInner::Invalid => panic!(),
             PyExecutableSectionInner::Preprocessed(..) => panic!(),
             PyExecutableSectionInner::Processed(section) => (
-                section.functions().get(sym_index),
+                section.symbols().get(sym_index),
                 section.parent_segment_info(),
             ),
         };
 
-        if let Some(sym) = sym {
+        if let Some(EitherFuncDataSymProcessed::Func(sym)) = sym {
             if let Some(label_vram) = sym.labels().get(label_index) {
                 let metadata = context
                     .find_owned_segment_mut(parent_segment_info)

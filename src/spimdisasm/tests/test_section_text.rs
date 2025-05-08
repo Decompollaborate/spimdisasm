@@ -15,7 +15,7 @@ use spimdisasm::{
     metadata::{OverlayCategoryName, SymbolType},
     parent_segment_info::ParentSegmentInfo,
     sections::{before_proc::ExecutableSectionSettings, processed::ExecutableSectionProcessed},
-    symbols::display::FunctionDisplaySettings,
+    symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings},
 };
 
 struct UserSym {
@@ -168,10 +168,11 @@ fn disassemble_text(
 
     let mut disassembly = ".section .text\n".to_string();
     let display_settings = FunctionDisplaySettings::new(InstructionDisplayFlags::new());
-    for sym in section_text.functions() {
+    let data_display_settings = SymDataDisplaySettings::new();
+    for sym in section_text.symbols() {
         disassembly.push('\n');
         disassembly.push_str(
-            &sym.display(&context, &display_settings)
+            &sym.display(&context, &display_settings, &data_display_settings)
                 .unwrap()
                 .to_string(),
         );
@@ -377,7 +378,7 @@ glabel func_800004FC
 
     assert_eq!(disassembly, expected_disassembly,);
 
-    assert_eq!(section_text.functions().len(), 3);
+    assert_eq!(section_text.symbols().len(), 3);
 
     let symbols = context.global_segment().symbols();
     for s in symbols {
@@ -1475,6 +1476,79 @@ glabel _hcashavelock
     /* 000020 80000020 24020001 */   addiu      $v0, $zero, 0x1
     /* 000024 80000024 AC860000 */  sw          $a2, 0x0($a0)
 .size _hcashavelock, . - _hcashavelock
+";
+
+    assert_eq!(disassembly, expected_disassembly,);
+}
+
+#[test]
+fn test_section_text_data_sym() {
+    static BYTES: [u8; 4 * 8] = [
+        // function
+        0x03, 0xE0, 0x00, 0x08, // jr
+        0x00, 0x85, 0x10, 0x21, // addu
+        // data
+        0x00, 0xFF, 0xFF, 0xFF, //
+        0x00, 0xFF, 0xFF, 0xFF, //
+        0x00, 0xFF, 0xFF, 0xFF, //
+        0x00, 0xFF, 0xFF, 0xFF, //
+        // function
+        0x03, 0xE0, 0x00, 0x08, // jr
+        0x00, 0x85, 0x10, 0x21, // addu
+    ];
+
+    let rom = Rom::new(0x0);
+    let vram = Vram::new(0x80000000);
+
+    let endian = Endian::Big;
+    let gp_config = None;
+
+    let text_settings =
+        ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
+
+    let user_symbols = vec![
+        UserSym::new("a", Vram::new(0x80000000), None, None, None),
+        UserSym::new(
+            "b",
+            Vram::new(0x80000008),
+            None,
+            UserSize::new_checked(4 * 4),
+            Some(SymbolType::Word),
+        ),
+        UserSym::new("c", Vram::new(0x80000018), None, None, None),
+    ];
+
+    let (disassembly, _context, _section_text) = disassemble_text(
+        &BYTES,
+        rom,
+        vram,
+        endian,
+        gp_config,
+        text_settings,
+        false,
+        false,
+        user_symbols,
+    );
+
+    let expected_disassembly = "\
+.section .text
+
+glabel a
+    /* 000000 80000000 03E00008 */  jr          $ra
+    /* 000004 80000004 00851021 */   addu       $v0, $a0, $a1
+.size a, . - a
+
+dlabel b
+    /* 000008 80000008 00FFFFFF */ .word 0x00FFFFFF
+    /* 00000C 8000000C 00FFFFFF */ .word 0x00FFFFFF
+    /* 000010 80000010 00FFFFFF */ .word 0x00FFFFFF
+    /* 000014 80000014 00FFFFFF */ .word 0x00FFFFFF
+.size b, . - b
+
+glabel c
+    /* 000018 80000018 03E00008 */  jr          $ra
+    /* 00001C 8000001C 00851021 */   addu       $v0, $a0, $a1
+.size c, . - c
 ";
 
     assert_eq!(disassembly, expected_disassembly,);

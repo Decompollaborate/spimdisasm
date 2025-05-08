@@ -8,9 +8,10 @@ use core::{error, fmt};
 use pyo3::prelude::*;
 
 use crate::{
-    addresses::{Rom, Vram},
+    addresses::{Rom, Size, Vram},
     context::OwnedSegmentNotFoundError,
     metadata::{segment_metadata::AddSymbolError, AddLabelError},
+    section_type::SectionType,
     symbols::SymbolCreationError,
 };
 
@@ -28,6 +29,7 @@ pub enum SectionCreationError {
     RomVramAlignmentMismatch(RomVramAlignmentMismatchError),
     AlreadyCreated(SectionAlreadyCreatedError),
     NotPrehated(SectionNotPreheatedError),
+    BadUserSymbolSize(BadUserSymbolSizeError),
 }
 
 impl fmt::Display for SectionCreationError {
@@ -45,6 +47,7 @@ impl fmt::Display for SectionCreationError {
             SectionCreationError::RomVramAlignmentMismatch(x) => write!(f, "{}", x),
             SectionCreationError::AlreadyCreated(x) => write!(f, "{}", x),
             SectionCreationError::NotPrehated(x) => write!(f, "{}", x),
+            SectionCreationError::BadUserSymbolSize(x) => write!(f, "{}", x),
         }
     }
 }
@@ -104,6 +107,11 @@ impl From<SectionAlreadyCreatedError> for SectionCreationError {
 impl From<SectionNotPreheatedError> for SectionCreationError {
     fn from(value: SectionNotPreheatedError) -> Self {
         SectionCreationError::NotPrehated(value)
+    }
+}
+impl From<BadUserSymbolSizeError> for SectionCreationError {
+    fn from(value: BadUserSymbolSizeError) -> Self {
+        SectionCreationError::BadUserSymbolSize(value)
     }
 }
 
@@ -285,6 +293,48 @@ impl fmt::Display for SectionNotPreheatedError {
     }
 }
 impl error::Error for SectionNotPreheatedError {}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+pub struct BadUserSymbolSizeError {
+    name: Arc<str>,
+    vram: Vram,
+    size: Size,
+    section_type: SectionType,
+    multiple_of: u32,
+}
+impl BadUserSymbolSizeError {
+    pub(crate) fn new(
+        name: Arc<str>,
+        vram: Vram,
+        size: Size,
+        section_type: SectionType,
+        multiple_of: u32,
+    ) -> Self {
+        Self {
+            name,
+            vram,
+            size,
+            section_type,
+            multiple_of,
+        }
+    }
+}
+impl fmt::Display for BadUserSymbolSizeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(
+            f,
+            "User-declared symbol '{}' (Vram {}) has an invalid user size ({}).",
+            self.name, self.vram, self.size
+        )?;
+        write!(
+            f,
+            "  This symbol is was found in a '{}' section which requires all symbols to have a size multiple of '{}'", self.section_type, self.multiple_of
+        )
+    }
+}
+impl error::Error for BadUserSymbolSizeError {}
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {

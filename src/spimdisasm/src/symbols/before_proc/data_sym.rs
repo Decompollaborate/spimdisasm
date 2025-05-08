@@ -37,7 +37,6 @@ impl DataSym {
         raw_bytes: Arc<[u8]>,
         rom: Rom,
         vram: Vram,
-        _in_section_offset: usize,
         parent_segment_info: ParentSegmentInfo,
         section_type: SectionType,
         properties: DataSymProperties,
@@ -131,24 +130,6 @@ impl DataSym {
     }
 }
 
-impl DataSym {
-    pub(crate) fn post_process(
-        self,
-        context: &mut Context,
-        user_relocs: &BTreeMap<Rom, RelocationInfo>,
-    ) -> Result<DataSymProcessed, SymbolPostProcessError> {
-        DataSymProcessed::new(
-            context,
-            self.ranges,
-            self.raw_bytes,
-            self.parent_segment_info,
-            self.section_type,
-            self.encoding,
-            user_relocs,
-        )
-    }
-}
-
 impl Symbol for DataSym {
     fn vram_range(&self) -> &AddressRange<Vram> {
         self.ranges.vram()
@@ -163,15 +144,32 @@ impl Symbol for DataSym {
         self.section_type
     }
 }
-
 impl RomSymbol for DataSym {
     #[must_use]
     fn rom_vram_range(&self) -> &RomVramRange {
         &self.ranges
     }
 }
+impl SymbolPreprocessed for DataSym {
+    type Output = DataSymProcessed;
 
-impl SymbolPreprocessed for DataSym {}
+    #[doc(hidden)]
+    fn post_process(
+        self,
+        context: &mut Context,
+        user_relocs: &BTreeMap<Rom, RelocationInfo>,
+    ) -> Result<Self::Output, SymbolPostProcessError> {
+        DataSymProcessed::new(
+            context,
+            self.ranges,
+            self.raw_bytes,
+            self.parent_segment_info,
+            self.section_type,
+            self.encoding,
+            user_relocs,
+        )
+    }
+}
 impl RomSymbolPreprocessed for DataSym {}
 
 impl hash::Hash for DataSym {
@@ -201,14 +199,30 @@ impl PartialOrd for DataSym {
 
 #[derive(Debug, Clone, Hash, PartialEq)]
 pub(crate) struct DataSymProperties {
-    pub parent_metadata: ParentSectionMetadata,
-    pub compiler: Option<Compiler>,
-    pub auto_pad_by: Option<Vram>,
-    pub detected_type: Option<SymbolType>,
-    pub encoding: Encoding,
+    parent_metadata: ParentSectionMetadata,
+    compiler: Option<Compiler>,
+    auto_pad_by: Option<Vram>,
+    detected_type: Option<SymbolType>,
+    encoding: Encoding,
 }
 
 impl DataSymProperties {
+    pub(crate) const fn new(
+        parent_metadata: ParentSectionMetadata,
+        compiler: Option<Compiler>,
+        auto_pad_by: Option<Vram>,
+        detected_type: Option<SymbolType>,
+        encoding: Encoding,
+    ) -> Self {
+        Self {
+            parent_metadata,
+            compiler,
+            auto_pad_by,
+            detected_type,
+            encoding,
+        }
+    }
+
     fn apply_to_metadata(self, metadata: &mut SymbolMetadata) {
         metadata.set_parent_metadata(self.parent_metadata);
 
