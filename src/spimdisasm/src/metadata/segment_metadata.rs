@@ -288,8 +288,17 @@ impl SegmentMetadata {
         F: Fn(&SymbolMetadata) -> Size,
     {
         // Remove every other symbols that may overlap this one
-        let overlapping_range = vram + Size::new(1)..vram + size;
-        self.symbols.retain(|k, _| !overlapping_range.contains(k));
+        if size.inner() > 1 {
+            let start = vram + Size::new(1);
+            let end = vram + size;
+
+            // `retain` can be pretty slow, so we only do it if we know for a
+            // fact that there's at least one overlapping symbol.
+            if self.symbols.range(start..end).next().is_some() {
+                let overlapping_range = start..end;
+                self.symbols.retain(|k, _| !overlapping_range.contains(k));
+            }
+        }
 
         let metadata = self.add_symbol(vram, false, symbol_name_generation_settings)?;
         metadata.set_defined();
