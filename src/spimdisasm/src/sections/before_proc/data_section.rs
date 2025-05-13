@@ -57,7 +57,7 @@ impl DataSection {
         context: &mut Context,
         settings: &DataSectionSettings,
         name: Arc<str>,
-        raw_bytes: &[u8],
+        raw_bytes: Vec<u8>,
         rom: Rom,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
@@ -71,7 +71,8 @@ impl DataSection {
             return Err(RomVramAlignmentMismatchError::new(name, rom, vram, 4).into());
         }
 
-        let size = Size::new(raw_bytes.len() as u32);
+        let total_len = raw_bytes.len();
+        let size = Size::new(total_len as u32);
         let rom_range = AddressRange::new(rom, rom + size);
         let vram_range = AddressRange::new(vram, vram + size);
         let ranges = RomVramRange::new(rom_range, vram_range);
@@ -90,7 +91,7 @@ impl DataSection {
         let (symbols_info_vec, auto_pads) = Self::find_symbols(
             owned_segment,
             settings,
-            raw_bytes,
+            &raw_bytes,
             vram_range,
             section_type,
             context.global_config(),
@@ -99,12 +100,14 @@ impl DataSection {
         let mut data_symbols = Vec::new();
         let mut symbol_vrams = UnorderedSet::new();
 
+        let mut bytes_iter = raw_bytes.into_iter();
+
         for (i, (new_sym_vram, sym_type)) in symbols_info_vec.iter().enumerate() {
             let start = new_sym_vram.sub_vram(&vram).inner() as usize;
             let end = if i + 1 < symbols_info_vec.len() {
                 symbols_info_vec[i + 1].0.sub_vram(&vram).inner() as usize
             } else {
-                raw_bytes.len()
+                total_len
             };
             debug_assert!(
                 start < end,
@@ -113,12 +116,15 @@ impl DataSection {
                 vram,
                 start,
                 end,
-                raw_bytes.len()
+                total_len
             );
 
             let sym_rom = rom + Size::new(start as u32);
 
             symbol_vrams.insert(*new_sym_vram);
+
+            let sym_bytes: Arc<[u8]> = bytes_iter.by_ref().take(end - start).collect();
+            debug_assert!(sym_bytes.len() == end - start);
 
             let properties = DataSymProperties::new(
                 ParentSectionMetadata::new(name.clone(), vram, parent_segment_info.clone()),
@@ -129,7 +135,7 @@ impl DataSection {
             );
             let sym = DataSym::new(
                 context,
-                raw_bytes[start..end].into(),
+                sym_bytes,
                 sym_rom,
                 *new_sym_vram,
                 parent_segment_info.clone(),
@@ -139,6 +145,7 @@ impl DataSection {
 
             data_symbols.push(sym);
         }
+        debug_assert!(bytes_iter.count() == 0);
 
         Ok(Self {
             name,

@@ -636,7 +636,7 @@ fn create_sections(
         let section = utils::pretty_unwrap(context.create_section_text(
             &executable_settings,
             name,
-            raw_bytes,
+            raw_bytes.clone(),
             rom,
             vram,
             parent_segment_info.clone(),
@@ -665,7 +665,7 @@ fn create_sections(
             ProgbitsType::Data => utils::pretty_unwrap(context.create_section_data(
                 &data_settings,
                 name,
-                raw_bytes,
+                raw_bytes.clone(),
                 rom,
                 vram,
                 parent_segment_info.clone(),
@@ -673,7 +673,7 @@ fn create_sections(
             ProgbitsType::Rodata => utils::pretty_unwrap(context.create_section_rodata(
                 &data_settings,
                 name,
-                raw_bytes,
+                raw_bytes.clone(),
                 rom,
                 vram,
                 parent_segment_info.clone(),

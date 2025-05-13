@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::sync::Arc;
+use alloc::{sync::Arc, vec::Vec};
 use core::{error, fmt};
 
 use ::polonius_the_crab::prelude::*;
@@ -97,7 +97,7 @@ impl Context {
         &mut self,
         settings: &ExecutableSectionSettings,
         name: T,
-        raw_bytes: &[u8],
+        raw_bytes: Vec<u8>,
         rom: Rom,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
@@ -132,7 +132,7 @@ impl Context {
         &mut self,
         settings: &DataSectionSettings,
         name: T,
-        raw_bytes: &[u8],
+        raw_bytes: Vec<u8>,
         rom: Rom,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
@@ -168,7 +168,7 @@ impl Context {
         &mut self,
         settings: &DataSectionSettings,
         name: T,
-        raw_bytes: &[u8],
+        raw_bytes: Vec<u8>,
         rom: Rom,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
@@ -204,7 +204,7 @@ impl Context {
         &mut self,
         settings: &DataSectionSettings,
         name: T,
-        raw_bytes: &[u8],
+        raw_bytes: Vec<u8>,
         rom: Rom,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
@@ -606,8 +606,6 @@ impl Context {
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
-    use std::borrow::Cow;
-
     use pyo3::{exceptions::PyRuntimeError, prelude::*};
 
     use crate::sections::python_bindings::{
@@ -624,7 +622,7 @@ pub(crate) mod python_bindings {
             &mut self,
             settings: &ExecutableSectionSettings,
             name: String,
-            raw_bytes: Cow<[u8]>,
+            raw_bytes: Vec<u8>,
             rom: Rom,
             vram: Vram,
             parent_segment_info: ParentSegmentInfo,
@@ -632,7 +630,7 @@ pub(crate) mod python_bindings {
             Ok(PyExecutableSection::new(self.create_section_text(
                 settings,
                 name,
-                &raw_bytes,
+                raw_bytes,
                 rom,
                 vram,
                 parent_segment_info,
@@ -644,7 +642,7 @@ pub(crate) mod python_bindings {
             &mut self,
             settings: &DataSectionSettings,
             name: String,
-            raw_bytes: Cow<[u8]>,
+            raw_bytes: Vec<u8>,
             rom: Rom,
             vram: Vram,
             parent_segment_info: ParentSegmentInfo,
@@ -652,7 +650,7 @@ pub(crate) mod python_bindings {
             Ok(PyDataSection::new(self.create_section_data(
                 settings,
                 name,
-                &raw_bytes,
+                raw_bytes,
                 rom,
                 vram,
                 parent_segment_info,
@@ -664,7 +662,7 @@ pub(crate) mod python_bindings {
             &mut self,
             settings: &DataSectionSettings,
             name: String,
-            raw_bytes: Cow<[u8]>,
+            raw_bytes: Vec<u8>,
             rom: Rom,
             vram: Vram,
             parent_segment_info: ParentSegmentInfo,
@@ -672,7 +670,7 @@ pub(crate) mod python_bindings {
             Ok(PyDataSection::new(self.create_section_rodata(
                 settings,
                 name,
-                &raw_bytes,
+                raw_bytes,
                 rom,
                 vram,
                 parent_segment_info,
@@ -703,7 +701,7 @@ pub(crate) mod python_bindings {
             &mut self,
             settings: &DataSectionSettings,
             name: String,
-            raw_bytes: Cow<[u8]>,
+            raw_bytes: Vec<u8>,
             rom: Rom,
             vram: Vram,
             parent_segment_info: ParentSegmentInfo,
@@ -711,7 +709,7 @@ pub(crate) mod python_bindings {
             Ok(PyDataSection::new(self.create_section_gcc_except_table(
                 settings,
                 name,
-                &raw_bytes,
+                raw_bytes,
                 rom,
                 vram,
                 parent_segment_info,

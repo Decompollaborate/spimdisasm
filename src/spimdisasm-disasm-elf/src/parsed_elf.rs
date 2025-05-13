@@ -237,7 +237,7 @@ impl ElfExecutableSection {
         self.size
     }
     #[must_use]
-    pub fn data(&self) -> &[u8] {
+    pub fn data(&self) -> &Vec<u8> {
         &self.data
     }
 }
@@ -297,7 +297,7 @@ impl ElfDataSection {
         self.size
     }
     #[must_use]
-    pub fn data(&self) -> &[u8] {
+    pub fn data(&self) -> &Vec<u8> {
         &self.data
     }
 }

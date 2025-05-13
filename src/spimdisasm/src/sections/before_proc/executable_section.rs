@@ -65,7 +65,7 @@ impl ExecutableSection {
         context: &mut Context,
         settings: &ExecutableSectionSettings,
         name: Arc<str>,
-        raw_bytes: &[u8],
+        raw_bytes: Vec<u8>,
         rom: Rom,
         vram: Vram,
         parent_segment_info: ParentSegmentInfo,
@@ -90,7 +90,8 @@ impl ExecutableSection {
         let vram_range = AddressRange::new(vram, vram + size);
         let ranges = RomVramRange::new(rom_range, vram_range);
 
-        let instrs = instrs_from_bytes(settings, context.global_config().endian(), raw_bytes, vram);
+        let instrs =
+            instrs_from_bytes(settings, context.global_config().endian(), &raw_bytes, vram);
         debug_assert!(!instrs.is_empty(), "{}, {:?}, {:?}", name, vram, rom);
 
         let owned_segment = context.find_owned_segment(&parent_segment_info)?;
@@ -107,6 +108,9 @@ impl ExecutableSection {
         let mut symbols = Vec::new();
         let mut symbol_vrams = UnorderedSet::new();
 
+        let mut bytes_iter = raw_bytes.into_iter();
+        let mut instrs_iter = instrs.into_iter();
+
         for boundary in boundaries {
             let local_offset = boundary.start as u32 * BYTES_PER_INSTR;
             let s = Size::new(local_offset);
@@ -118,9 +122,17 @@ impl ExecutableSection {
             let parent_metadata =
                 ParentSectionMetadata::new(name.clone(), vram, parent_segment_info.clone());
 
+            let word_count = boundary.end - boundary.start;
+
             let sym = if let Some(data_type) = boundary.data_type {
-                let start = boundary.start * BYTES_PER_INSTR as usize;
-                let end = boundary.end * BYTES_PER_INSTR as usize;
+                let sym_bytes: Arc<[u8]> = bytes_iter
+                    .by_ref()
+                    .take(word_count * BYTES_PER_INSTR as usize)
+                    .collect();
+                debug_assert_eq!(sym_bytes.len(), word_count * BYTES_PER_INSTR as usize);
+                // Advance the other buffer too
+                let _count = instrs_iter.by_ref().take(word_count).count();
+                debug_assert_eq!(_count, word_count);
 
                 let properties = DataSymProperties::new(
                     parent_metadata,
@@ -131,7 +143,7 @@ impl ExecutableSection {
                 );
                 let data = DataSym::new(
                     context,
-                    raw_bytes[start..end].into(),
+                    sym_bytes,
                     current_rom,
                     current_vram,
                     parent_segment_info.clone(),
@@ -141,8 +153,21 @@ impl ExecutableSection {
 
                 EitherFuncDataSym::Data(data)
             } else {
-                let start = boundary.start;
-                let end = boundary.end;
+                let sym_instrs: Arc<[Instruction]> =
+                    instrs_iter.by_ref().take(word_count).collect();
+                debug_assert_eq!(sym_instrs.len(), word_count);
+                // Advance the other buffer too
+                let _count = bytes_iter
+                    .by_ref()
+                    .take(word_count * BYTES_PER_INSTR as usize)
+                    .count();
+                debug_assert_eq!(
+                    _count,
+                    word_count * BYTES_PER_INSTR as usize,
+                    "{} {}",
+                    boundary.start,
+                    boundary.end
+                );
 
                 let properties = FunctionSymProperties {
                     parent_metadata,
@@ -151,7 +176,7 @@ impl ExecutableSection {
                 };
                 let func = FunctionSym::new(
                     context,
-                    instrs[start..end].into(),
+                    sym_instrs,
                     current_rom,
                     current_vram,
                     parent_segment_info.clone(),

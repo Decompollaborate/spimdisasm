@@ -165,7 +165,7 @@ impl Sections {
                 .create_section_text(
                     &text_info.1,
                     ".text",
-                    text_info.0.bytes,
+                    text_info.0.bytes.to_vec(),
                     text_info.0.rom,
                     text_info.0.vram,
                     parent_info.clone(),
@@ -177,7 +177,7 @@ impl Sections {
                 .create_section_data(
                     &data_info.1,
                     ".data",
-                    data_info.0.bytes,
+                    data_info.0.bytes.to_vec(),
                     data_info.0.rom,
                     data_info.0.vram,
                     parent_info.clone(),
@@ -189,7 +189,7 @@ impl Sections {
                 .create_section_rodata(
                     &rodata_info.1,
                     ".rodata",
-                    rodata_info.0.bytes,
+                    rodata_info.0.bytes.to_vec(),
                     rodata_info.0.rom,
                     rodata_info.0.vram,
                     parent_info.clone(),
@@ -201,7 +201,7 @@ impl Sections {
                 .create_section_gcc_except_table(
                     &gcc_except_table_info.1,
                     ".except_table",
-                    gcc_except_table_info.0.bytes,
+                    gcc_except_table_info.0.bytes.to_vec(),
                     gcc_except_table_info.0.rom,
                     gcc_except_table_info.0.vram,
                     parent_info.clone(),

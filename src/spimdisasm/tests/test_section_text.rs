@@ -155,7 +155,7 @@ fn disassemble_text(
         .create_section_text(
             &text_settings,
             section_name,
-            raw_bytes,
+            raw_bytes.to_vec(),
             rom,
             vram,
             parent_segment_info,

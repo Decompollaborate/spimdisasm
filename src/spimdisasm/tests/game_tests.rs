@@ -235,7 +235,7 @@ fn init_segments(
                                     .create_section_text(
                                         &text_settings,
                                         *name,
-                                        &rom_bytes[AddressRange::new(*rom, rom_end)],
+                                        rom_bytes[AddressRange::new(*rom, rom_end)].to_vec(),
                                         *rom,
                                         info.vram_from_rom(*rom),
                                         parent_segment_info.clone(),
@@ -250,7 +250,7 @@ fn init_segments(
                                     .create_section_data(
                                         &data_settings,
                                         *name,
-                                        &rom_bytes[AddressRange::new(*rom, rom_end)],
+                                        rom_bytes[AddressRange::new(*rom, rom_end)].to_vec(),
                                         *rom,
                                         info.vram_from_rom(*rom),
                                         parent_segment_info.clone(),
@@ -265,7 +265,7 @@ fn init_segments(
                                     .create_section_rodata(
                                         &rodata_settings,
                                         *name,
-                                        &rom_bytes[AddressRange::new(*rom, rom_end)],
+                                        rom_bytes[AddressRange::new(*rom, rom_end)].to_vec(),
                                         *rom,
                                         info.vram_from_rom(*rom),
                                         parent_segment_info.clone(),

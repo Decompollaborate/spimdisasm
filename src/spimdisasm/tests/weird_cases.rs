@@ -278,7 +278,7 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
         .create_section_text(
             &text_settings,
             "test",
-            &bytes,
+            bytes.to_vec(),
             rom,
             vram,
             ParentSegmentInfo::new(rom, vram, None),
@@ -638,7 +638,7 @@ fn weird_case_use_gp_as_temp() {
         .create_section_text(
             &text_settings,
             "text",
-            &BYTES,
+            BYTES.to_vec(),
             rom,
             vram,
             parent_segment_info,
