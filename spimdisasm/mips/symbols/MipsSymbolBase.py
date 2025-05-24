@@ -67,7 +67,7 @@ class SymbolBase(common.ElementBase):
         return self.contextSym.allowedToReferenceConstants
 
 
-    def generateAsmLineComment(self, localOffset: int, wordValue: int|None=None, *, isDouble: bool=False, emitRomOffset: bool=True) -> str:
+    def generateAsmLineComment(self, localOffset: int, wordValue: Union[int|list]|None=None, *, isDouble: bool=False, isString: bool=False, emitRomOffset: bool=True) -> str:
         indentation = " " * common.GlobalConfig.ASM_INDENTATION
 
         if not common.GlobalConfig.ASM_COMMENT:
@@ -81,14 +81,23 @@ class SymbolBase(common.ElementBase):
         currentVram = self.getVramOffset(localOffset)
         vramHex = f"{currentVram:08X}"
 
-        wordValueHex = ""
-        if wordValue is not None:
-            if isDouble:
-                wordValueHex = f"{common.Utils.qwordToCurrenEndian(wordValue):016X} "
-            else:
-                wordValueHex = f"{common.Utils.wordToCurrenEndian(wordValue):08X} "
+        if isString:
+            assert type(wordValue) == list
+            comment = f""
+            for word in wordValue:
+                if word is not None:
+                    comment += f"{common.Utils.wordToCurrenEndian(word):08X}"
 
-        return f"{indentation}/* {offsetHex}{vramHex} {wordValueHex}*/"
+            return f"{indentation}/* {offsetHex}{vramHex} {comment} */"
+        else:
+            wordValueHex = ""
+            if wordValue is not None:
+                if isDouble:
+                    wordValueHex = f"{common.Utils.qwordToCurrenEndian(wordValue):016X} "
+                else:
+                    wordValueHex = f"{common.Utils.wordToCurrenEndian(wordValue):08X} "
+
+            return f"{indentation}/* {offsetHex}{vramHex} {wordValueHex}*/"
 
 
     def getSymbolAsmDeclaration(self, symName: str, useGlobalLabel: bool=True) -> str:
@@ -490,7 +499,14 @@ class SymbolBase(common.ElementBase):
             return "", -1
 
         skip = rawStringSize // 4
-        comment = self.generateAsmLineComment(localOffset)
+        if rawStringSize == 0:
+            words = [0]
+        elif skip > 0 and self.words[skip - 1] == 0:
+            words = self.words[:skip]
+        else:
+            words = self.words[:skip + 1]
+
+        comment = self.generateAsmLineComment(localOffset, words, isString=True)
         result = f"{comment} "
 
         commentPaddingNum = 22
