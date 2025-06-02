@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     otherwise it will be discarded.
   - This value must be a power of two, otherwise it will be discarded.
 
+### Changed
+
+- Emit string's bytes as a comment.
+  - This is emitted as a special comment in the line below the actual string.
+
 ## [1.34.2] - 2025-04-25
 
 ### Fixed

@@ -90,6 +90,17 @@ class SymbolBase(common.ElementBase):
 
         return f"{indentation}/* {offsetHex}{vramHex} {wordValueHex}*/"
 
+    def generateBytesComment(self, rawData: bytes) -> str:
+        if not common.GlobalConfig.ASM_COMMENT:
+            return ""
+
+        indentation = " " * common.GlobalConfig.ASM_INDENTATION
+        comment = f"{indentation}/* "
+        for byte in rawData:
+            comment += f"{byte:02X}"
+        comment += f" */{common.GlobalConfig.LINE_ENDS}"
+        return comment
+
 
     def getSymbolAsmDeclaration(self, symName: str, useGlobalLabel: bool=True) -> str:
         if not useGlobalLabel:
@@ -504,6 +515,10 @@ class SymbolBase(common.ElementBase):
             result += common.GlobalConfig.LINE_ENDS + (commentPaddingNum * " ")
         result += f'.asciz "{decodedStrings[-1]}"{common.GlobalConfig.LINE_ENDS}'
 
+        alignedStrSize = (skip + 1) * 4
+        subBuffer = buffer[localOffset:localOffset+alignedStrSize]
+        result += self.generateBytesComment(subBuffer)
+
         return result, skip
 
     def getNthWordAsPascalString(self, i: int) -> tuple[str, int]:
@@ -528,6 +543,10 @@ class SymbolBase(common.ElementBase):
             result += f'.ascii "{decodedValue}"'
             result += common.GlobalConfig.LINE_ENDS + (commentPaddingNum * " ")
         result += f'.ascii "{decodedStrings[-1]}"{common.GlobalConfig.LINE_ENDS}'
+
+        alignedStrSize = (skip + 1) * 4
+        subBuffer = buffer[localOffset:localOffset+alignedStrSize]
+        result += self.generateBytesComment(subBuffer)
 
         return result, skip
 
