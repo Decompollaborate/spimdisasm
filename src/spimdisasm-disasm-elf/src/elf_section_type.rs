@@ -9,7 +9,7 @@ use spimdisasm::{
     config::Endian,
 };
 
-use crate::utils;
+use crate::utils::{self, PrettyUnwrap};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct RawElfSection<'data> {
@@ -45,7 +45,7 @@ impl<'data> RawElfSection<'data> {
             }
         };
 
-        let name = utils::pretty_unwrap(elf_section.name());
+        let name = elf_section.name().pretty_unwrap();
 
         let sh_flags = elf_section_header.sh_flags.get(elf_endian);
         let sh_type = elf_section_header.sh_type.get(elf_endian);
@@ -55,7 +55,7 @@ impl<'data> RawElfSection<'data> {
             let address = Vram::new(elf_section_header.sh_addr.get(elf_endian));
             let offset = Rom::new(elf_section_header.sh_offset.get(elf_endian));
 
-            let data = utils::pretty_unwrap(elf_section.data());
+            let data = elf_section.data().pretty_unwrap();
 
             Self {
                 section_type,

@@ -6,15 +6,25 @@ use std::{fmt::Display, time};
 use object::read::elf::ElfFile32;
 use spimdisasm::config::Endian;
 
-#[track_caller]
-#[inline]
-pub fn pretty_unwrap<T, E>(value: Result<T, E>) -> T
+pub trait PrettyUnwrap {
+    type Output;
+
+    fn pretty_unwrap(self) -> Self::Output;
+}
+
+impl<T, E> PrettyUnwrap for Result<T, E>
 where
     E: Display,
 {
-    match value {
-        Ok(v) => v,
-        Err(e) => panic!("{}", e),
+    type Output = T;
+
+    #[track_caller]
+    #[inline]
+    fn pretty_unwrap(self) -> Self::Output {
+        match self {
+            Ok(v) => v,
+            Err(e) => panic!("{}", e),
+        }
     }
 }
 
@@ -40,14 +50,16 @@ pub fn endian_to_endian(endian: object::Endianness) -> Endian {
 #[inline]
 #[must_use]
 pub fn get_time_now() -> time::Duration {
-    pretty_unwrap(time::SystemTime::now().duration_since(time::UNIX_EPOCH))
+    time::SystemTime::now()
+        .duration_since(time::UNIX_EPOCH)
+        .pretty_unwrap()
 }
 
 #[track_caller]
 #[inline]
 #[must_use]
 pub fn read_elf(binary_data: &[u8]) -> ElfFile32<'_> {
-    let f = pretty_unwrap(object::File::parse(binary_data));
+    let f = object::File::parse(binary_data).pretty_unwrap();
 
     if let object::File::Elf32(elf_file) = f {
         elf_file

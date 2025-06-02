@@ -7,7 +7,7 @@ use std::sync::Arc;
 use object::{read::elf::Sym, StringTable};
 use spimdisasm::addresses::UserSize;
 
-use crate::utils;
+use crate::utils::PrettyUnwrap;
 
 #[derive(Debug, Clone)]
 pub struct ElfSymbol {
@@ -39,8 +39,8 @@ impl ElfSymbol {
 
         let section_index = sym.st_shndx(elf_endian).into();
 
-        let raw_name = utils::pretty_unwrap(sym.name(elf_endian, string_table));
-        let name = utils::pretty_unwrap(std::str::from_utf8(raw_name)).into();
+        let raw_name = sym.name(elf_endian, string_table).pretty_unwrap();
+        let name = std::str::from_utf8(raw_name).pretty_unwrap().into();
 
         Self {
             value,

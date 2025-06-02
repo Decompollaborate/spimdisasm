@@ -38,6 +38,7 @@ use std::{
     io::{BufReader, BufWriter, Read, Write},
     path::{Path, PathBuf},
 };
+use utils::PrettyUnwrap;
 
 mod dynamic_section;
 mod elf_section_type;
@@ -149,12 +150,12 @@ fn print_elf_stuff(elf_file: &ElfFile32) {
 
     println!("dynamic_symbols:");
     for sym in elf_file.dynamic_symbols() {
-        println!("  {}", utils::pretty_unwrap(sym.name()));
+        println!("  {}", sym.name().pretty_unwrap());
     }
     println!();
 
     for section in elf_file.sections() {
-        println!("{}", utils::pretty_unwrap(section.name()));
+        println!("{}", section.name().pretty_unwrap());
         println!(
             "    address: 0x{:08X}, size: 0x{:08X}, align: 0x{:02X}",
             section.address(),
@@ -320,14 +321,18 @@ fn fill_symbols(
     // Silly hack to allow strings starting with `0x0A` (\n) or `0x09` (\t) to be detected as strings.
     // We need to do this because otherwise spimdisasm will think those values look like addresses,
     // because they happen to be in the middle of the non contiguous address space of the elf.
-    utils::pretty_unwrap(global_segment.add_ignored_address_range(
-        Vram::new(0x09000000),
-        const { UserSize::new_checked(0x00800000).unwrap() },
-    ));
-    utils::pretty_unwrap(global_segment.add_ignored_address_range(
-        Vram::new(0x0A000000),
-        const { UserSize::new_checked(0x00800000).unwrap() },
-    ));
+    global_segment
+        .add_ignored_address_range(
+            Vram::new(0x09000000),
+            const { UserSize::new_checked(0x00800000).unwrap() },
+        )
+        .pretty_unwrap();
+    global_segment
+        .add_ignored_address_range(
+            Vram::new(0x0A000000),
+            const { UserSize::new_checked(0x00800000).unwrap() },
+        )
+        .pretty_unwrap();
 
     for global_entry in elf.got_global_symbols() {
         let got_entry = global_entry.got_entry();
@@ -353,12 +358,9 @@ fn fill_symbols(
                     })
                     .unwrap_or(const { UserSize::new_checked(1).unwrap() });
 
-                let mut sym_metadata = utils::pretty_unwrap(user_segment.add_user_symbol(
-                    initial_vram,
-                    got_entry.sym_name(),
-                    size,
-                    sym_type,
-                ));
+                let mut sym_metadata = user_segment
+                    .add_user_symbol(initial_vram, got_entry.sym_name(), size, sym_type)
+                    .pretty_unwrap();
                 sym_metadata.set_got_access_kind(GotAccessKind::Global);
 
                 initials.insert(initial_vram);
@@ -390,9 +392,9 @@ fn fill_symbols(
             };
 
             if global_ranges.in_vram_range(vram) {
-                let mut sym_metadata = utils::pretty_unwrap(
-                    global_segment.add_user_symbol(name, vram, rom, size, sym_type),
-                );
+                let mut sym_metadata = global_segment
+                    .add_user_symbol(name, vram, rom, size, sym_type)
+                    .pretty_unwrap();
                 if sym.is_got_global() {
                     sym_metadata.set_got_access_kind(GotAccessKind::Global);
                 }
@@ -413,12 +415,9 @@ fn fill_symbols(
             let vram = Vram::new(label_sym.value());
             let rom = None;
 
-            let mut label = utils::pretty_unwrap(global_segment.add_user_label(
-                name,
-                vram,
-                rom,
-                LabelType::AlternativeEntry,
-            ));
+            let mut label = global_segment
+                .add_user_label(name, vram, rom, LabelType::AlternativeEntry)
+                .pretty_unwrap();
             if let Some(bind) = label_sym.bind().as_str() {
                 label.set_visibility(bind);
             }
@@ -440,12 +439,9 @@ fn fill_symbols(
             let vram = Vram::new(label_sym.value());
             let rom = None;
 
-            let mut label = utils::pretty_unwrap(global_segment.add_user_label(
-                name,
-                vram,
-                rom,
-                LabelType::AlternativeEntry,
-            ));
+            let mut label = global_segment
+                .add_user_label(name, vram, rom, LabelType::AlternativeEntry)
+                .pretty_unwrap();
             if let Some(bind) = label_sym.bind().as_str() {
                 label.set_visibility(bind);
             }
@@ -468,17 +464,18 @@ fn fill_symbols(
                 let size = const { UserSize::new_checked(4).unwrap() };
                 let typ = None;
 
-                let mut sym_metadata =
-                    utils::pretty_unwrap(user_segment.add_user_symbol(vram, name, size, typ));
+                let mut sym_metadata = user_segment
+                    .add_user_symbol(vram, name, size, typ)
+                    .pretty_unwrap();
                 // I'm not sure if this should be considered Local or Global.
                 // Maybe make a new kind for this?
                 sym_metadata.set_got_access_kind(GotAccessKind::Local);
             }
         }
 
-        utils::pretty_unwrap(
-            global_segment.add_global_offset_table(global_config, global_offset_table.clone()),
-        );
+        global_segment
+            .add_global_offset_table(global_config, global_offset_table.clone())
+            .pretty_unwrap();
     }
 
     (global_segment.finish_symbols(), user_segment)
@@ -507,14 +504,16 @@ fn preheat_sections(
             }
         };
 
-        utils::pretty_unwrap(global_segment.preheat_text(
-            global_config,
-            executable_settings,
-            name,
-            raw_bytes,
-            rom,
-            vram,
-        ));
+        global_segment
+            .preheat_text(
+                global_config,
+                executable_settings,
+                name,
+                raw_bytes,
+                rom,
+                vram,
+            )
+            .pretty_unwrap();
     }
 
     // Data sections later
@@ -536,22 +535,12 @@ fn preheat_sections(
 
         match progbits {
             ProgbitsType::Text => continue,
-            ProgbitsType::Data => utils::pretty_unwrap(global_segment.preheat_data(
-                global_config,
-                data_settings,
-                name,
-                raw_bytes,
-                rom,
-                vram,
-            )),
-            ProgbitsType::Rodata => utils::pretty_unwrap(global_segment.preheat_rodata(
-                global_config,
-                data_settings,
-                name,
-                raw_bytes,
-                rom,
-                vram,
-            )),
+            ProgbitsType::Data => global_segment
+                .preheat_data(global_config, data_settings, name, raw_bytes, rom, vram)
+                .pretty_unwrap(),
+            ProgbitsType::Rodata => global_segment
+                .preheat_rodata(global_config, data_settings, name, raw_bytes, rom, vram)
+                .pretty_unwrap(),
             ProgbitsType::Got => continue,
             ProgbitsType::Unknown => {
                 eprintln!("Unknown progbits: {name}");
@@ -597,7 +586,9 @@ fn create_context(
     let end = utils::get_time_now();
     println!(": {:?}", end - start);
 
-    utils::pretty_unwrap(ContextBuilder::new(global_segment, user_segment).build(global_config))
+    ContextBuilder::new(global_segment, user_segment)
+        .build(global_config)
+        .pretty_unwrap()
 }
 
 fn create_sections(
@@ -633,14 +624,16 @@ fn create_sections(
             }
         };
 
-        let section = utils::pretty_unwrap(context.create_section_text(
-            &executable_settings,
-            name,
-            raw_bytes.clone(),
-            rom,
-            vram,
-            parent_segment_info.clone(),
-        ));
+        let section = context
+            .create_section_text(
+                &executable_settings,
+                name,
+                raw_bytes.clone(),
+                rom,
+                vram,
+                parent_segment_info.clone(),
+            )
+            .pretty_unwrap();
         executable_sections.push(section);
     }
 
@@ -662,22 +655,26 @@ fn create_sections(
 
         let section = match progbits {
             ProgbitsType::Text => continue,
-            ProgbitsType::Data => utils::pretty_unwrap(context.create_section_data(
-                &data_settings,
-                name,
-                raw_bytes.clone(),
-                rom,
-                vram,
-                parent_segment_info.clone(),
-            )),
-            ProgbitsType::Rodata => utils::pretty_unwrap(context.create_section_rodata(
-                &data_settings,
-                name,
-                raw_bytes.clone(),
-                rom,
-                vram,
-                parent_segment_info.clone(),
-            )),
+            ProgbitsType::Data => context
+                .create_section_data(
+                    &data_settings,
+                    name,
+                    raw_bytes.clone(),
+                    rom,
+                    vram,
+                    parent_segment_info.clone(),
+                )
+                .pretty_unwrap(),
+            ProgbitsType::Rodata => context
+                .create_section_rodata(
+                    &data_settings,
+                    name,
+                    raw_bytes.clone(),
+                    rom,
+                    vram,
+                    parent_segment_info.clone(),
+                )
+                .pretty_unwrap(),
             ProgbitsType::Got => continue,
             ProgbitsType::Unknown => {
                 eprintln!("Unknown progbits: {name}");
@@ -701,12 +698,14 @@ fn create_sections(
         };
         let vram_end = vram + elf_section.size();
 
-        let section = utils::pretty_unwrap(context.create_section_bss(
-            &nobits_settings,
-            name,
-            AddressRange::new(vram, vram_end),
-            parent_segment_info.clone(),
-        ));
+        let section = context
+            .create_section_bss(
+                &nobits_settings,
+                name,
+                AddressRange::new(vram, vram_end),
+                parent_segment_info.clone(),
+            )
+            .pretty_unwrap();
         nobits_sections.push(section);
     }
 
@@ -734,24 +733,21 @@ fn post_process_sections(
     Vec<DataSectionProcessed>,
     Vec<NobitsSectionProcessed>,
 ) {
-    let executable_sections = utils::pretty_unwrap(
-        executable_sections
-            .into_iter()
-            .map(|x| x.post_process(context, &user_relocs))
-            .collect::<Result<Vec<ExecutableSectionProcessed>, SectionPostProcessError>>(),
-    );
-    let data_sections = utils::pretty_unwrap(
-        data_sections
-            .into_iter()
-            .map(|x| x.post_process(context, &user_relocs))
-            .collect::<Result<Vec<DataSectionProcessed>, SectionPostProcessError>>(),
-    );
-    let nobits_sections = utils::pretty_unwrap(
-        nobits_sections
-            .into_iter()
-            .map(|x| x.post_process(context))
-            .collect::<Result<Vec<NobitsSectionProcessed>, SectionPostProcessError>>(),
-    );
+    let executable_sections = executable_sections
+        .into_iter()
+        .map(|x| x.post_process(context, &user_relocs))
+        .collect::<Result<Vec<ExecutableSectionProcessed>, SectionPostProcessError>>()
+        .pretty_unwrap();
+    let data_sections = data_sections
+        .into_iter()
+        .map(|x| x.post_process(context, &user_relocs))
+        .collect::<Result<Vec<DataSectionProcessed>, SectionPostProcessError>>()
+        .pretty_unwrap();
+    let nobits_sections = nobits_sections
+        .into_iter()
+        .map(|x| x.post_process(context))
+        .collect::<Result<Vec<NobitsSectionProcessed>, SectionPostProcessError>>()
+        .pretty_unwrap();
 
     (executable_sections, data_sections, nobits_sections)
 }
@@ -763,7 +759,7 @@ fn write_sections_to_files(
     data_sections: Vec<DataSectionProcessed>,
     nobits_sections: Vec<NobitsSectionProcessed>,
 ) {
-    utils::pretty_unwrap(fs::create_dir_all(&output_dir));
+    fs::create_dir_all(&output_dir).pretty_unwrap();
 
     let func_display_settings = FunctionDisplaySettings::new(InstructionDisplayFlags::new());
     let data_display_settings = SymDataDisplaySettings::new();
@@ -775,8 +771,8 @@ fn write_sections_to_files(
         let filename = format!("{}{}{}.s", section.vram_range().start(), sep, name);
         let outpath = output_dir.join(filename);
 
-        let mut asm_file = BufWriter::new(utils::pretty_unwrap(fs::File::create(outpath)));
-        utils::pretty_unwrap(write!(
+        let mut asm_file = BufWriter::new(fs::File::create(outpath).pretty_unwrap());
+        write!(
             asm_file,
             ".include \"macro.inc\"
 
@@ -788,17 +784,17 @@ fn write_sections_to_files(
 
 .align 4
 "
-        ));
+        )
+        .pretty_unwrap();
         for symbol in section.symbols() {
-            utils::pretty_unwrap(write!(
+            write!(
                 asm_file,
                 "\n{}",
-                utils::pretty_unwrap(symbol.display(
-                    &context,
-                    &func_display_settings,
-                    &data_display_settings
-                ))
-            ));
+                symbol
+                    .display(&context, &func_display_settings, &data_display_settings)
+                    .pretty_unwrap()
+            )
+            .pretty_unwrap();
         }
     }
 
@@ -808,8 +804,8 @@ fn write_sections_to_files(
         let filename = format!("{}{}{}.s", section.vram_range().start(), sep, name);
         let outpath = output_dir.join(filename);
 
-        let mut asm_file = BufWriter::new(utils::pretty_unwrap(fs::File::create(outpath)));
-        utils::pretty_unwrap(write!(
+        let mut asm_file = BufWriter::new(fs::File::create(outpath).pretty_unwrap());
+        write!(
             asm_file,
             ".include \"macro.inc\"
 
@@ -817,13 +813,17 @@ fn write_sections_to_files(
 
 .align 4
 "
-        ));
+        )
+        .pretty_unwrap();
         for symbol in section.data_symbols() {
-            utils::pretty_unwrap(write!(
+            write!(
                 asm_file,
                 "\n{}",
-                utils::pretty_unwrap(symbol.display(&context, &data_display_settings))
-            ));
+                symbol
+                    .display(&context, &data_display_settings)
+                    .pretty_unwrap()
+            )
+            .pretty_unwrap();
         }
     }
 
@@ -833,8 +833,8 @@ fn write_sections_to_files(
         let filename = format!("{}{}{}.s", section.vram_range().start(), sep, name);
         let outpath = output_dir.join(filename);
 
-        let mut asm_file = BufWriter::new(utils::pretty_unwrap(fs::File::create(outpath)));
-        utils::pretty_unwrap(write!(
+        let mut asm_file = BufWriter::new(fs::File::create(outpath).pretty_unwrap());
+        write!(
             asm_file,
             ".include \"macro.inc\"
 
@@ -842,13 +842,17 @@ fn write_sections_to_files(
 
 .align 4
 "
-        ));
+        )
+        .pretty_unwrap();
         for symbol in section.nobits_symbols() {
-            utils::pretty_unwrap(write!(
+            write!(
                 asm_file,
                 "\n{}",
-                utils::pretty_unwrap(symbol.display(&context, &nobits_display_settings))
-            ));
+                symbol
+                    .display(&context, &nobits_display_settings)
+                    .pretty_unwrap()
+            )
+            .pretty_unwrap();
         }
     }
 }
