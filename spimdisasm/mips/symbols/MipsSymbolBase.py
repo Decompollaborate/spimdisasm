@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Callable
+from typing import Callable, List, Union, no_type_check
 import rabbitizer
 
 from ... import common
@@ -66,8 +66,8 @@ class SymbolBase(common.ElementBase):
 
         return self.contextSym.allowedToReferenceConstants
 
-
-    def generateAsmLineComment(self, localOffset: int, wordValue: Union[int|list]|None=None, *, isDouble: bool=False, isString: bool=False, emitRomOffset: bool=True) -> str:
+    @no_type_check
+    def generateAsmLineComment(self, localOffset: int, wordValue: Union[int|List[int]|None]=None, *, isDouble: bool=False, isString: bool=False, emitRomOffset: bool=True) -> str:
         indentation = " " * common.GlobalConfig.ASM_INDENTATION
 
         if not common.GlobalConfig.ASM_COMMENT:
@@ -82,14 +82,15 @@ class SymbolBase(common.ElementBase):
         vramHex = f"{currentVram:08X}"
 
         if isString:
-            assert type(wordValue) == list
+            assert isinstance(wordValue, list) or not wordValue, f"Expected wordValue to be List[int] or None, but its type is {type(wordValue)}"
             comment = f""
             for word in wordValue:
                 if word is not None:
                     comment += f"{common.Utils.wordToCurrenEndian(word):08X}"
 
-            return f"{indentation}/* {offsetHex}{vramHex} {comment} */"
+            return f"{indentation}/* {comment} */\n{indentation}/* {offsetHex}{vramHex} */"
         else:
+            assert isinstance(wordValue, int) or not wordValue, f"Expected wordValue to be int or None, but type is {type(wordValue)}"
             wordValueHex = ""
             if wordValue is not None:
                 if isDouble:
