@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.35.0] - 2025-06-03
+
+### Added
+
+- Add the `alignment` property to `ContextSymbol`, via the `setAlignment` and
+  `getAlignment` methods.
+  - Allows to specify custom alignment to each symbol.
+  - The symbol's address must already be aligned to the given custom alignment,
+    otherwise it will be discarded.
+  - This value must be a power of two, otherwise it will be discarded.
+
+### Changed
+
+- Emit string's bytes as a comment.
+  - This is emitted as a special comment in the line below the actual string.
+
 ## [1.34.2] - 2025-04-25
 
 ### Fixed
@@ -1822,6 +1838,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.35.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.34.2...1.35.0
 [1.34.2]: https://github.com/Decompollaborate/spimdisasm/compare/1.34.1...1.34.2
 [1.34.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.34.0...1.34.1
 [1.34.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.33.0...1.34.0
