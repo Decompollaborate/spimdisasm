@@ -29,7 +29,7 @@ impl InstructionAnalyzer {
         ranges: RomVramRange,
         instrs: &[Instruction],
     ) -> Result<InstructionAnalysisResult, OwnedSegmentNotFoundError> {
-        assert!(!instrs.is_empty(), "Empty instruction list?. {:?}", ranges,);
+        assert!(!instrs.is_empty(), "Empty instruction list?. {ranges:?}",);
         let global_config = context.global_config();
 
         let mut analyzer = Self {

@@ -371,7 +371,7 @@ impl DecodingResult {
     fn into_string(self) -> String {
         match self {
             DecodingResult::DecodedString(x) => escape_string(&x),
-            DecodingResult::RawChar(c) => format!("\\x{:02X}", c),
+            DecodingResult::RawChar(c) => format!("\\x{c:02X}"),
         }
     }
 }

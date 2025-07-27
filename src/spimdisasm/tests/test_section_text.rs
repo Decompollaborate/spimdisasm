@@ -120,7 +120,7 @@ fn disassemble_text(
             );
 
             for i in 0x0..=0xF {
-                let segment_name = format!("segment_0{:X}", i);
+                let segment_name = format!("segment_0{i:X}");
                 let category_name = OverlayCategoryName::new(segment_name.clone());
 
                 let magic_number = 0x01000000;
@@ -131,10 +131,7 @@ fn disassemble_text(
                 let segment_rom = Rom::new(arbitrary_number + i * magic_number);
                 let rom_range = AddressRange::new(segment_rom, segment_rom + segment_size);
 
-                println!(
-                    "Adding overlay '{:?}': {:?} {:?}",
-                    category_name, rom_range, vram_range
-                );
+                println!("Adding overlay '{category_name:?}': {rom_range:?} {vram_range:?}");
 
                 let ranges = RomVramRange::new(rom_range, vram_range);
 
@@ -179,7 +176,7 @@ fn disassemble_text(
         );
     }
 
-    println!("{}", disassembly);
+    println!("{disassembly}");
 
     (disassembly, context, section_text)
 }

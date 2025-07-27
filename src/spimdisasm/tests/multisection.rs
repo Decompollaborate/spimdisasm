@@ -485,7 +485,7 @@ fn test_jumptable_with_lo_in_each_case_for_same_hi() {
         &bss_display_settings,
     );
 
-    println!("{}", disassembled_str);
+    println!("{disassembled_str}");
 
     let expected_str = "\
 .section .text
@@ -675,7 +675,7 @@ fn test_mips1_doubles_eb() {
         &bss_display_settings,
     );
 
-    println!("{}", disassembled_str);
+    println!("{disassembled_str}");
 
     let expected_str = "\
 .section .text
@@ -848,7 +848,7 @@ fn test_mips1_doubles_el() {
         &bss_display_settings,
     );
 
-    println!("{}", disassembled_str);
+    println!("{disassembled_str}");
 
     let expected_str = "\
 .section .text

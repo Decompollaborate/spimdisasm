@@ -92,7 +92,7 @@ impl ExecutableSection {
 
         let instrs =
             instrs_from_bytes(settings, context.global_config().endian(), &raw_bytes, vram);
-        debug_assert!(!instrs.is_empty(), "{}, {:?}, {:?}", name, vram, rom);
+        debug_assert!(!instrs.is_empty(), "{name}, {vram:?}, {rom:?}");
 
         let owned_segment = context.find_owned_segment(&parent_segment_info)?;
         let boundaries = find_functions(
@@ -103,7 +103,7 @@ impl ExecutableSection {
             &instrs,
         )?;
 
-        debug_assert!(!boundaries.is_empty(), "{}, {:?}, {:?}", name, vram, rom);
+        debug_assert!(!boundaries.is_empty(), "{name}, {vram:?}, {rom:?}");
 
         let mut symbols = Vec::new();
         let mut symbol_vrams = UnorderedSet::new();
@@ -690,22 +690,15 @@ fn find_functions_check_function_ended(
 
     match instr_processed_result {
         InstructionOperation::Link { .. } => {
-            debug_assert!(opcode.does_link(), "{:?} {:?}", current_rom, opcode);
+            debug_assert!(opcode.does_link(), "{current_rom:?} {opcode:?}");
             None
         }
         InstructionOperation::TailCall { info } => match info {
             InstrOpTailCall::MaybeDirectTailCall { .. } => {
-                debug_assert!(
-                    opcode.is_jump_with_address(),
-                    "{:?} {:?}",
-                    current_rom,
-                    opcode
-                );
+                debug_assert!(opcode.is_jump_with_address(), "{current_rom:?} {opcode:?}");
                 debug_assert!(
                     !settings.instruction_flags.j_as_branch(),
-                    "{:?} {:?}",
-                    current_rom,
-                    opcode
+                    "{current_rom:?} {opcode:?}"
                 );
 
                 Some(FunctionEndedState::WithDelaySlot)
@@ -718,12 +711,12 @@ fn find_functions_check_function_ended(
         },
 
         InstructionOperation::JumptableJump { .. } => {
-            debug_assert!(instr.is_jumptable_jump(), "{:?} {:?}", current_rom, opcode);
+            debug_assert!(instr.is_jumptable_jump(), "{current_rom:?} {opcode:?}");
             None
         }
 
         InstructionOperation::ReturnJump => {
-            debug_assert!(instr.is_return(), "{:?} {:?}", current_rom, opcode);
+            debug_assert!(instr.is_return(), "{current_rom:?} {opcode:?}");
 
             // Found a jr $ra and there are no branches outside of this function
             if settings.detect_redundant_end() {

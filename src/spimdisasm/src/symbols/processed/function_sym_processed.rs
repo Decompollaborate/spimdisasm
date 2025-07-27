@@ -243,7 +243,7 @@ impl FunctionSymProcessed {
                     let constant = *value;
 
                     Some(RelocationType::R_CUSTOM_CONSTANT_HI.new_reloc_info(
-                        RelocReferencedSym::SymName(Arc::from(format!("0x{:X}", constant)), 0),
+                        RelocReferencedSym::SymName(Arc::from(format!("0x{constant:X}")), 0),
                     ))
                 }
                 InstrAnalysisInfo::PairedHi {
@@ -268,7 +268,7 @@ impl FunctionSymProcessed {
                         instr.field().imm_u16().map(|imm| {
                             RelocationType::R_CUSTOM_CONSTANT_HI.new_reloc_info(
                                 RelocReferencedSym::SymName(
-                                    Arc::from(format!("0x{:04X}0000", imm)),
+                                    Arc::from(format!("0x{imm:04X}0000")),
                                     0,
                                 ),
                             )
@@ -297,7 +297,7 @@ impl FunctionSymProcessed {
                 InstrAnalysisInfo::ConstantHi { constant } => {
                     // TODO: use `:08X`.
                     Some(RelocationType::R_CUSTOM_CONSTANT_HI.new_reloc_info(
-                        RelocReferencedSym::SymName(Arc::from(format!("0x{:X}", constant)), 0),
+                        RelocReferencedSym::SymName(Arc::from(format!("0x{constant:X}")), 0),
                     ))
                 }
                 InstrAnalysisInfo::ConstantLo {
@@ -306,7 +306,7 @@ impl FunctionSymProcessed {
                 } => {
                     // TODO: use `:08X`.
                     Some(RelocationType::R_CUSTOM_CONSTANT_LO.new_reloc_info(
-                        RelocReferencedSym::SymName(Arc::from(format!("0x{:X}", constant)), 0),
+                        RelocReferencedSym::SymName(Arc::from(format!("0x{constant:X}")), 0),
                     ))
                 }
                 InstrAnalysisInfo::GpRel {
@@ -423,7 +423,7 @@ impl FunctionSymProcessed {
                         instr.field().imm_u16().map(|imm| {
                             RelocationType::R_CUSTOM_CONSTANT_HI.new_reloc_info(
                                 RelocReferencedSym::SymName(
-                                    Arc::from(format!("0x{:04X}0000", imm)),
+                                    Arc::from(format!("0x{imm:04X}0000")),
                                     0,
                                 ),
                             )
@@ -466,7 +466,7 @@ impl FunctionSymProcessed {
                         instr.field().imm_u16().map(|imm| {
                             RelocationType::R_CUSTOM_CONSTANT_HI.new_reloc_info(
                                 RelocReferencedSym::SymName(
-                                    Arc::from(format!("0x{:04X}0000", imm)),
+                                    Arc::from(format!("0x{imm:04X}0000")),
                                     0,
                                 ),
                             )

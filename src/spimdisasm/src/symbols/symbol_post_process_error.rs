@@ -91,16 +91,16 @@ impl fmt::Display for SymbolPostProcessError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             SymbolPostProcessError::OwnedSegmentNotFound(owned_segment_not_found_error) => {
-                write!(f, "{}", owned_segment_not_found_error)
+                write!(f, "{owned_segment_not_found_error}")
             }
             SymbolPostProcessError::OwnedSymbolNotFound(owned_symbol_not_found) => {
-                write!(f, "{}", owned_symbol_not_found)
+                write!(f, "{owned_symbol_not_found}")
             }
             SymbolPostProcessError::UnalignedUserReloc(unaligned_user_reloc_error) => {
-                write!(f, "{}", unaligned_user_reloc_error)
+                write!(f, "{unaligned_user_reloc_error}")
             }
             SymbolPostProcessError::InvalidRelocForSection(invalid_reloc_for_section_error) => {
-                write!(f, "{}", invalid_reloc_for_section_error)
+                write!(f, "{invalid_reloc_for_section_error}")
             }
         }
     }

@@ -26,11 +26,11 @@ impl fmt::Display for PairingError {
             "Not able to create a display name for this Function-Rodata pairing: "
         )?;
         match self {
-            PairingError::MissingTextSection(x) => write!(f, "{}", x),
-            PairingError::MissingRodataSection(x) => write!(f, "{}", x),
-            PairingError::FunctionOutOfBounds(x) => write!(f, "{}", x),
-            PairingError::RodataOutOfBounds(x) => write!(f, "{}", x),
-            PairingError::SymDisplayFail(x) => write!(f, "{}", x),
+            PairingError::MissingTextSection(x) => write!(f, "{x}"),
+            PairingError::MissingRodataSection(x) => write!(f, "{x}"),
+            PairingError::FunctionOutOfBounds(x) => write!(f, "{x}"),
+            PairingError::RodataOutOfBounds(x) => write!(f, "{x}"),
+            PairingError::SymDisplayFail(x) => write!(f, "{x}"),
         }
     }
 }

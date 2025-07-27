@@ -261,9 +261,9 @@ impl SymDataDisplay<'_, '_, '_> {
                 )
             })
         {
-            write!(f, "{}", rel)?;
+            write!(f, "{rel}")?;
         } else {
-            write!(f, ".word 0x{:08X}", word)?;
+            write!(f, ".word 0x{word:08X}")?;
         }
 
         write!(f, "{}", self.settings.common.line_end())?;

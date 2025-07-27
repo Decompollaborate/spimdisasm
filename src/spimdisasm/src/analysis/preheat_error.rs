@@ -120,7 +120,7 @@ impl fmt::Display for PreheatError {
             self.section_name, self.section_rom, self.section_vram
         )?;
         if let Some(name) = &self.segment_name {
-            write!(f, "overlay segment '{}' ", name)?;
+            write!(f, "overlay segment '{name}' ")?;
         } else {
             write!(f, "global segment ")?;
         }

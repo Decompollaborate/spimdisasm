@@ -28,9 +28,7 @@ impl RomVramRange {
         );
         assert!(
             vram.start().inner() % 4 == rom.start().inner() % 4,
-            "vram ({:?}) and rom ({:?}) must have the same alignment",
-            vram,
-            rom
+            "vram ({vram:?}) and rom ({rom:?}) must have the same alignment"
         );
 
         Self { rom, vram }

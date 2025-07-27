@@ -19,7 +19,7 @@ where
     pub fn new(start: T, end: T) -> Self {
         assert!(
             start <= end,
-            "An address range can't contain an `end` value that's smaller than the `start` one. start: {:?}, end: {:?}", start, end
+            "An address range can't contain an `end` value that's smaller than the `start` one. start: {start:?}, end: {end:?}"
         );
         Self { start, end }
     }

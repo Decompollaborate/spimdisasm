@@ -28,7 +28,7 @@ pub enum SymDisplayError {
 impl fmt::Display for SymDisplayError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            SymDisplayError::OwnedSegmentNotFound(x) => write!(f, "{}", x),
+            SymDisplayError::OwnedSegmentNotFound(x) => write!(f, "{x}"),
             SymDisplayError::SelfSymNotFound() => {
                 // TODO: more info
                 write!(f, "Can't find symbol")

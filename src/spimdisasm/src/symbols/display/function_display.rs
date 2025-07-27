@@ -204,7 +204,7 @@ impl FunctionDisplay<'_, '_, '_> {
             temp
         };
 
-        write!(f, "{}", instr_display)
+        write!(f, "{instr_display}")
     }
 
     fn get_reloc(&self, instr: &Instruction) -> Option<&RelocationInfo> {

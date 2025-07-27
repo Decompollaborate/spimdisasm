@@ -99,11 +99,11 @@ impl SymbolMetadataNameDisplay<'_> {
 
     fn display_suffix(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let OwnerSegmentKind::Overlay(name) = self.sym.owner_segment_kind() {
-            write!(f, "_{}", name)?;
+            write!(f, "_{name}")?;
         }
 
         if let Some(custom_suffix) = self.sym.symbol_name_generation_settings().custom_suffix() {
-            write!(f, "{}", custom_suffix)?;
+            write!(f, "{custom_suffix}")?;
         }
 
         Ok(())
@@ -147,7 +147,7 @@ impl fmt::Display for SymbolMetadataNameDisplay<'_> {
             if should_escape {
                 write!(f, "\"")?;
             }
-            write!(f, "{}", user_declared_name)?;
+            write!(f, "{user_declared_name}")?;
             if should_escape {
                 write!(f, "\"")?;
             }

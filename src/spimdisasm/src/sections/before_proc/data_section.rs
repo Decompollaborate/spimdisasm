@@ -109,15 +109,7 @@ impl DataSection {
             } else {
                 total_len
             };
-            debug_assert!(
-                start < end,
-                "{:?} {} {} {} {}",
-                rom,
-                vram,
-                start,
-                end,
-                total_len
-            );
+            debug_assert!(start < end, "{rom:?} {vram} {start} {end} {total_len}");
 
             let sym_rom = rom + Size::new(start as u32);
 

@@ -24,10 +24,10 @@ impl fmt::Display for SymbolCreationError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             SymbolCreationError::OwnedSegmentNotFound(x) => {
-                write!(f, "{}", x)
+                write!(f, "{x}")
             }
-            SymbolCreationError::AddSymbol(x) => write!(f, "{}", x),
-            SymbolCreationError::AddLabel(x) => write!(f, "{}", x),
+            SymbolCreationError::AddSymbol(x) => write!(f, "{x}"),
+            SymbolCreationError::AddLabel(x) => write!(f, "{x}"),
         }
     }
 }

@@ -39,16 +39,16 @@ impl fmt::Display for SectionPostProcessError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             SectionPostProcessError::OwnedSegmentNotFound(owned_segment_not_found_error) => {
-                write!(f, "{}", owned_segment_not_found_error)
+                write!(f, "{owned_segment_not_found_error}")
             }
             SectionPostProcessError::OwnedSymbolNotFound(owned_symbol_not_found) => {
-                write!(f, "{}", owned_symbol_not_found)
+                write!(f, "{owned_symbol_not_found}")
             }
             SectionPostProcessError::UnalignedUserReloc(unaligned_user_reloc_error) => {
-                write!(f, "{}", unaligned_user_reloc_error)
+                write!(f, "{unaligned_user_reloc_error}")
             }
             SectionPostProcessError::InvalidRelocForSection(invalid_reloc_for_section_error) => {
-                write!(f, "{}", invalid_reloc_for_section_error)
+                write!(f, "{invalid_reloc_for_section_error}")
             }
             #[cfg(feature = "pyo3")]
             SectionPostProcessError::AlreadyPostProcessed {

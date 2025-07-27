@@ -247,14 +247,14 @@ impl RelocationInfoDisplay<'_, '_, '_> {
                     return write!(f, " - (0x{:X} & 0xFFFF)", -addend);
                 }
                 if addend > 0x7FFF {
-                    return write!(f, " + (0x{:X} & 0xFFFF)", addend);
+                    return write!(f, " + (0x{addend:X} & 0xFFFF)");
                 }
             }
 
             if addend < 0 {
                 write!(f, " - 0x{:X}", -addend)
             } else {
-                write!(f, " + 0x{:X}", addend)
+                write!(f, " + 0x{addend:X}")
             }
         }
     }
@@ -284,14 +284,14 @@ impl fmt::Display for RelocationInfoDisplay<'_, '_, '_> {
             RelocationType::R_CUSTOM_CONSTANT_HI => "",
             RelocationType::R_CUSTOM_CONSTANT_LO => "",
         };
-        write!(f, "{}", x)?;
+        write!(f, "{x}")?;
         if self.rel.reloc_type.uses_parenthesis() {
             write!(f, "(")?;
         }
 
         let addend = match &self.reloc_sym_state {
             RelocSymState::LiteralSymName(name, addend) => {
-                write!(f, "{}", name)?;
+                write!(f, "{name}")?;
                 *addend
             }
             RelocSymState::Sym(vram, sym_metadata) => {
@@ -303,11 +303,11 @@ impl fmt::Display for RelocationInfoDisplay<'_, '_, '_> {
                 0
             }
             RelocSymState::SegmentNotFound(vram) => {
-                write!(f, "/* ERROR: segment for address 0x{} not found */", vram)?;
+                write!(f, "/* ERROR: segment for address 0x{vram} not found */")?;
                 0
             }
             RelocSymState::LabelNotFound(vram) => {
-                write!(f, "/* ERROR: label for address 0x{} not found */", vram)?;
+                write!(f, "/* ERROR: label for address 0x{vram} not found */")?;
                 0
             }
         };
@@ -335,7 +335,7 @@ impl fmt::Display for RelocationInfoDisplay<'_, '_, '_> {
             RelocationType::R_CUSTOM_CONSTANT_HI => " >> 16",
             RelocationType::R_CUSTOM_CONSTANT_LO => " & 0xFFFF",
         };
-        write!(f, "{}", x)?;
+        write!(f, "{x}")?;
         if self.rel.reloc_type.uses_parenthesis() {
             write!(f, ")")?;
         }

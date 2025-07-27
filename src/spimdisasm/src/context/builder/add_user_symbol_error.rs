@@ -120,7 +120,7 @@ impl fmt::Display for AddUserSymbolError {
             self.sym_name, self.sym_vram
         )?;
         if let Some(name) = &self.segment_name {
-            write!(f, "overlay segment `{}`", name)?;
+            write!(f, "overlay segment `{name}`")?;
         } else {
             write!(f, "the global segment")?;
         }
@@ -133,11 +133,7 @@ impl fmt::Display for AddUserSymbolError {
                 other_size,
             } => {
                 write!(f,
-                    "This symbol overlaps the symbol `{}` (vram: 0x{}). `{}` has a size of {} bytes",
-                    other_name,
-                    other_vram,
-                    other_name,
-                    other_size,
+                    "This symbol overlaps the symbol `{other_name}` (vram: 0x{other_vram}). `{other_name}` has a size of {other_size} bytes",
                 )
             }
             AddUserSymbolErrorVariant::Duplicated {
@@ -146,15 +142,13 @@ impl fmt::Display for AddUserSymbolError {
             } => {
                 write!(
                     f,
-                    "It has the same Vram as the symbol `{}` (vram: 0x{}).",
-                    other_name, other_vram,
+                    "It has the same Vram as the symbol `{other_name}` (vram: 0x{other_vram}).",
                 )
             }
             AddUserSymbolErrorVariant::VramOutOfRnage { segment_ranges } => {
                 write!(
                     f,
-                    "Vram is outside the segment's range `{:?}`",
-                    segment_ranges
+                    "Vram is outside the segment's range `{segment_ranges:?}`"
                 )
             }
             AddUserSymbolErrorVariant::RomOutOfRange {

@@ -45,7 +45,7 @@ impl LabelMetadataNameDisplay<'_> {
 
     fn display_suffix(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let OwnerSegmentKind::Overlay(name) = self.label.owner_segment_kind() {
-            write!(f, "_{}", name)?;
+            write!(f, "_{name}")?;
         }
 
         /*
@@ -94,7 +94,7 @@ impl fmt::Display for LabelMetadataNameDisplay<'_> {
             if should_escape {
                 write!(f, "\"")?;
             }
-            write!(f, "{}", user_declared_name)?;
+            write!(f, "{user_declared_name}")?;
             if should_escape {
                 write!(f, "\"")?;
             }

@@ -36,18 +36,18 @@ impl fmt::Display for SectionCreationError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             SectionCreationError::OwnedSegmentNotFound(x) => {
-                write!(f, "{}", x)
+                write!(f, "{x}")
             }
-            SectionCreationError::AddSymbol(x) => write!(f, "{}", x),
-            SectionCreationError::AddLabel(x) => write!(f, "{}", x),
-            SectionCreationError::EmptySection(x) => write!(f, "{}", x),
-            SectionCreationError::BadBytesSize(x) => write!(f, "{}", x),
-            SectionCreationError::UnalignedVram(x) => write!(f, "{}", x),
-            SectionCreationError::UnalignedRom(x) => write!(f, "{}", x),
-            SectionCreationError::RomVramAlignmentMismatch(x) => write!(f, "{}", x),
-            SectionCreationError::AlreadyCreated(x) => write!(f, "{}", x),
-            SectionCreationError::NotPrehated(x) => write!(f, "{}", x),
-            SectionCreationError::BadUserSymbolSize(x) => write!(f, "{}", x),
+            SectionCreationError::AddSymbol(x) => write!(f, "{x}"),
+            SectionCreationError::AddLabel(x) => write!(f, "{x}"),
+            SectionCreationError::EmptySection(x) => write!(f, "{x}"),
+            SectionCreationError::BadBytesSize(x) => write!(f, "{x}"),
+            SectionCreationError::UnalignedVram(x) => write!(f, "{x}"),
+            SectionCreationError::UnalignedRom(x) => write!(f, "{x}"),
+            SectionCreationError::RomVramAlignmentMismatch(x) => write!(f, "{x}"),
+            SectionCreationError::AlreadyCreated(x) => write!(f, "{x}"),
+            SectionCreationError::NotPrehated(x) => write!(f, "{x}"),
+            SectionCreationError::BadUserSymbolSize(x) => write!(f, "{x}"),
         }
     }
 }

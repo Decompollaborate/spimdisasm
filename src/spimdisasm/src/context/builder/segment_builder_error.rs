@@ -64,7 +64,7 @@ impl fmt::Display for AddPrioritisedOverlayError {
                     self.overlay_name
                 )?;
                 if let Some(name) = &self.segment_name {
-                    write!(f, "overlay segment '{}'", name)
+                    write!(f, "overlay segment '{name}'")
                 } else {
                     write!(f, "the global segment")
                 }

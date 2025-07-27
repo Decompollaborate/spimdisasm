@@ -337,7 +337,7 @@ impl From<u8> for ElfSymVisibility {
             object::elf::STV_INTERNAL => ElfSymVisibility::Internal,
             object::elf::STV_HIDDEN => ElfSymVisibility::Hidden,
             object::elf::STV_PROTECTED => ElfSymVisibility::Protected,
-            x => panic!("Unknown sym visibility found: {:?}", x),
+            x => panic!("Unknown sym visibility found: {x:?}"),
         }
     }
 }

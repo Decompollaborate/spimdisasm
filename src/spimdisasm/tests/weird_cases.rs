@@ -318,7 +318,7 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
     println!();
     println!();
 
-    println!("{}", disassembled);
+    println!("{disassembled}");
 
     let expected_str = "\
 .section .text
@@ -662,7 +662,7 @@ fn weird_case_use_gp_as_temp() {
         );
     }
 
-    println!("{}", disassembly);
+    println!("{disassembly}");
 
     let expected_disassembly = "\
 .section .text

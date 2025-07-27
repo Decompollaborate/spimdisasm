@@ -270,7 +270,7 @@ impl fmt::Display for OwnedSegmentNotFoundError {
         // TODO: more info
         write!(f, "Can't find owned segment for ")?;
         if let Some(overlay_name) = self.info.overlay_category_name() {
-            write!(f, "overlay '{}'", overlay_name)?;
+            write!(f, "overlay '{overlay_name}'")?;
         } else {
             write!(f, "global segment")?;
         }

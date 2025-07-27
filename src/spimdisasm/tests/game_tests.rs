@@ -329,7 +329,7 @@ fn drmario64_us_without_symbols() {
     let rom_bytes = std::fs::read("../../baserom_uncompressed.us.z64").unwrap();
 
     let global_ranges = get_ranges_from_segments(&drmario64_us_segments);
-    println!("Global ranges: {:?}", global_ranges);
+    println!("Global ranges: {global_ranges:?}");
 
     let mut context = init_context(
         global_ranges,
@@ -428,7 +428,7 @@ fn drmario64_us_with_symbols() {
     let rom_bytes = std::fs::read("../../baserom_uncompressed.us.z64").unwrap();
 
     let global_ranges = get_ranges_from_segments(&drmario64_us_segments);
-    println!("Global ranges: {:?}", global_ranges);
+    println!("Global ranges: {global_ranges:?}");
 
     let mut context = init_context(
         global_ranges,

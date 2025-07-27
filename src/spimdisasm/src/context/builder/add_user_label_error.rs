@@ -108,7 +108,7 @@ impl fmt::Display for AddUserLabelError {
             self.label_name, self.label_vram, self.label_type
         )?;
         if let Some(name) = &self.segment_name {
-            write!(f, "overlay segment `{}`", name)?;
+            write!(f, "overlay segment `{name}`")?;
         } else {
             write!(f, "the global segment")?;
         }
@@ -122,15 +122,13 @@ impl fmt::Display for AddUserLabelError {
             } => {
                 write!(
                     f,
-                    "It has the same Vram as the symbol `{}` (vram: 0x{}, {:?}).",
-                    other_name, other_vram, other_type,
+                    "It has the same Vram as the symbol `{other_name}` (vram: 0x{other_vram}, {other_type:?}).",
                 )
             }
             AddUserLabelErrorVariant::VramOutOfRnage { segment_ranges } => {
                 write!(
                     f,
-                    "Vram is outside the segment's range `{:?}`",
-                    segment_ranges
+                    "Vram is outside the segment's range `{segment_ranges:?}`"
                 )
             }
             AddUserLabelErrorVariant::RomOutOfRange {

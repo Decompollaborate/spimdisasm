@@ -461,7 +461,7 @@ fn parse_symtab(symbols: &mut BTreeMap<u32, SymbolsPerValueBuilder>, elf_file: &
         object::ObjectKind::Executable => {}
         object::ObjectKind::Dynamic => {}
         object::ObjectKind::Core => eprintln!("\nWARNING: core elf kind hasn't been tested\n"),
-        x => panic!("Unhandled elf kind {:?}", x),
+        x => panic!("Unhandled elf kind {x:?}"),
     }
 
     let elf_endian = elf_file.endian();

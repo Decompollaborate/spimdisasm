@@ -225,10 +225,10 @@ impl fmt::Display for FuncRodataPairingDisplay<'_, '_, '_, '_, '_, '_, '_, '_> {
             }
 
             for sym_display in self.ro_syms_display.iter() {
-                write!(f, "{}", line_end)?;
+                write!(f, "{line_end}")?;
                 // TODO:
                 // f.write(sym.disassemble(migrate=True, useGlobalLabel=True, isSplittedSymbol=True))
-                write!(f, "{}", sym_display)?;
+                write!(f, "{sym_display}")?;
             }
 
             // TODO: pyo3 hack for splat stuff
@@ -269,13 +269,13 @@ impl fmt::Display for FuncRodataPairingDisplay<'_, '_, '_, '_, '_, '_, '_, '_> {
                         4
                     };
 
-                    write!(f, ".late_rodata_alignment {}{}", align, line_end)?;
+                    write!(f, ".late_rodata_alignment {align}{line_end}")?;
                 }
 
                 for sym_display in self.late_ro_syms_display.iter() {
                     // TODO:
                     // f.write(sym.disassemble(migrate=True, useGlobalLabel=True, isSplittedSymbol=True))
-                    write!(f, "{}{}", sym_display, line_end)?;
+                    write!(f, "{sym_display}{line_end}")?;
                 }
             }
         }
@@ -295,7 +295,7 @@ impl fmt::Display for FuncRodataPairingDisplay<'_, '_, '_, '_, '_, '_, '_, '_> {
 
             // TODO:
             // f.write(self.function.disassemble(migrate=self.hasRodataSyms(), isSplittedSymbol=True))
-            write!(f, "{}", func_display)?;
+            write!(f, "{func_display}")?;
         }
 
         Ok(())

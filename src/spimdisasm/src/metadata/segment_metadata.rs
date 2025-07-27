@@ -360,7 +360,7 @@ impl fmt::Display for AddSymbolError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Error when trying to add symbol to ")?;
         if let Some(name) = &self.name {
-            write!(f, "overlay segment '{}'", name)?;
+            write!(f, "overlay segment '{name}'")?;
         } else {
             write!(f, "global segment")?;
         }

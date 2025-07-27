@@ -100,10 +100,7 @@ impl NobitsSection {
             };
             debug_assert!(
                 *new_sym_vram < new_sym_vram_end,
-                "{:?} {} {}",
-                vram_range,
-                new_sym_vram,
-                new_sym_vram_end
+                "{vram_range:?} {new_sym_vram} {new_sym_vram_end}"
             );
 
             symbol_vrams.insert(*new_sym_vram);

@@ -61,8 +61,8 @@ impl fmt::Display for AddOverlayToBuilderError {
             self.overlay_name
         )?;
         match &self.inner {
-            AddOverlayToBuilderErrorInner::GlobalOverlappingRom(ovl_range, global_range) => write!(f, "Its Rom range ({:?}) overlaps with the global segment's Rom address range ({:?}).", ovl_range, global_range),
-            AddOverlayToBuilderErrorInner::GlobalOverlappingVram(ovl_range, global_range) => write!(f, "Its Vram range ({:?}) overlaps with the global segment's Vram address range ({:?}).", ovl_range, global_range),
+            AddOverlayToBuilderErrorInner::GlobalOverlappingRom(ovl_range, global_range) => write!(f, "Its Rom range ({ovl_range:?}) overlaps with the global segment's Rom address range ({global_range:?})."),
+            AddOverlayToBuilderErrorInner::GlobalOverlappingVram(ovl_range, global_range) => write!(f, "Its Vram range ({ovl_range:?}) overlaps with the global segment's Vram address range ({global_range:?})."),
             AddOverlayToBuilderErrorInner::DuplicatedName => write!(f, "Its name is already used by other overlay segment."),
         }
     }
@@ -103,9 +103,9 @@ impl fmt::Display for BuildContextError {
             ) => {
                 match segment_name {
                     None => write!(f, "The global segment ")?,
-                    Some(x) => write!(f, "The overlay '{}' ", x)?,
+                    Some(x) => write!(f, "The overlay '{x}' ")?,
                 }
-                write!(f, "references the prioritised overlay segment '{}', but such name was not found in any overlay segment", prioritised_overlay_name)
+                write!(f, "references the prioritised overlay segment '{prioritised_overlay_name}', but such name was not found in any overlay segment")
             }
         }
     }

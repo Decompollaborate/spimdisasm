@@ -98,7 +98,7 @@ fn print_elf_stuff(elf_file: &ElfFile32) {
 
     {
         let mut e_flags = elf_header.e_flags(elf_file.endian());
-        println!("Flags: 0x{:08X}", e_flags);
+        println!("Flags: 0x{e_flags:08X}");
 
         print!("    ");
 
@@ -139,7 +139,7 @@ fn print_elf_stuff(elf_file: &ElfFile32) {
 
         if e_flags != 0 {
             print!(", ");
-            print!("Unknown flags: 0x{:08X}", e_flags);
+            print!("Unknown flags: 0x{e_flags:08X}");
         }
 
         println!();
@@ -169,8 +169,8 @@ fn print_elf_stuff(elf_file: &ElfFile32) {
 
         let sh_flags = section.elf_section_header().sh_flags.get(elf_file.endian());
         let sh_type = section.elf_section_header().sh_type.get(elf_file.endian());
-        println!("    sh_flags: {}", sh_flags);
-        println!("    sh_type: {}", sh_type);
+        println!("    sh_flags: {sh_flags}");
+        println!("    sh_type: {sh_type}");
     }
 }
 
@@ -454,7 +454,7 @@ fn fill_symbols(
     }
 
     for sym in remaining_symbols {
-        eprintln!("Unhandled symbol: {:#08X?}", sym);
+        eprintln!("Unhandled symbol: {sym:#08X?}");
     }
 
     if let Some(global_offset_table) = elf.got() {
@@ -554,7 +554,7 @@ fn preheat_sections(
             )),
             ProgbitsType::Got => continue,
             ProgbitsType::Unknown => {
-                eprintln!("Unknown progbits: {}", name);
+                eprintln!("Unknown progbits: {name}");
             }
         }
     }
@@ -568,7 +568,7 @@ fn create_context(
 ) -> Context {
     let gp_value = elf.gp_value();
     let gp_config = if let Some(gp) = gp_value {
-        println!("{:?}", gp);
+        println!("{gp:?}");
         Some(GpConfig::new_pic(gp))
     } else {
         println!("No gp value found.");
@@ -680,7 +680,7 @@ fn create_sections(
             )),
             ProgbitsType::Got => continue,
             ProgbitsType::Unknown => {
-                eprintln!("Unknown progbits: {}", name);
+                eprintln!("Unknown progbits: {name}");
                 continue;
             }
         };
@@ -784,11 +784,10 @@ fn write_sections_to_files(
 .set noat      /* allow manual use of $at */
 .set noreorder /* do not insert nops after branches */
 
-.section {}
+.section {name}
 
 .align 4
-",
-            name
+"
         ));
         for symbol in section.symbols() {
             utils::pretty_unwrap(write!(
@@ -814,11 +813,10 @@ fn write_sections_to_files(
             asm_file,
             ".include \"macro.inc\"
 
-.section {}
+.section {name}
 
 .align 4
-",
-            name
+"
         ));
         for symbol in section.data_symbols() {
             utils::pretty_unwrap(write!(
@@ -840,11 +838,10 @@ fn write_sections_to_files(
             asm_file,
             ".include \"macro.inc\"
 
-.section {}
+.section {name}
 
 .align 4
-",
-            name
+"
         ));
         for symbol in section.nobits_symbols() {
             utils::pretty_unwrap(write!(
