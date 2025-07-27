@@ -478,13 +478,11 @@ impl Symbol for FunctionSym {
         &self.parent_segment_info
     }
 
-    #[must_use]
     fn section_type(&self) -> SectionType {
         SECTION_TYPE
     }
 }
 impl RomSymbol for FunctionSym {
-    #[must_use]
     fn rom_vram_range(&self) -> &RomVramRange {
         &self.ranges
     }

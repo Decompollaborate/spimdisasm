@@ -265,10 +265,10 @@ impl FunctionSymProcessed {
                         Some(reloc_type.new_reloc_info(referenced_sym))
                     } else {
                         let instr = &instructions[instr_index];
-                        instr.get_processed_immediate().map(|imm| {
+                        instr.field().imm_u16().map(|imm| {
                             RelocationType::R_CUSTOM_CONSTANT_HI.new_reloc_info(
                                 RelocReferencedSym::SymName(
-                                    Arc::from(format!("0x{:08X}", imm << 16)),
+                                    Arc::from(format!("0x{:04X}0000", imm)),
                                     0,
                                 ),
                             )
@@ -420,10 +420,10 @@ impl FunctionSymProcessed {
                         Some(reloc_type.new_reloc_info(referenced_sym))
                     } else {
                         let instr = &instructions[instr_index];
-                        instr.get_processed_immediate().map(|imm| {
+                        instr.field().imm_u16().map(|imm| {
                             RelocationType::R_CUSTOM_CONSTANT_HI.new_reloc_info(
                                 RelocReferencedSym::SymName(
-                                    Arc::from(format!("0x{:08X}", imm << 16)),
+                                    Arc::from(format!("0x{:04X}0000", imm)),
                                     0,
                                 ),
                             )
@@ -463,10 +463,10 @@ impl FunctionSymProcessed {
                         Some(reloc_type.new_reloc_info(referenced_sym))
                     } else {
                         let instr = &instructions[instr_index];
-                        instr.get_processed_immediate().map(|imm| {
+                        instr.field().imm_u16().map(|imm| {
                             RelocationType::R_CUSTOM_CONSTANT_HI.new_reloc_info(
                                 RelocReferencedSym::SymName(
-                                    Arc::from(format!("0x{:08X}", imm << 16)),
+                                    Arc::from(format!("0x{:04X}0000", imm)),
                                     0,
                                 ),
                             )
@@ -670,13 +670,11 @@ impl Symbol for FunctionSymProcessed {
         &self.parent_segment_info
     }
 
-    #[must_use]
     fn section_type(&self) -> SectionType {
         SECTION_TYPE
     }
 }
 impl RomSymbol for FunctionSymProcessed {
-    #[must_use]
     fn rom_vram_range(&self) -> &RomVramRange {
         &self.ranges
     }

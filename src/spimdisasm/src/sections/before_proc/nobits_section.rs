@@ -172,7 +172,6 @@ impl Section for NobitsSection {
         &self.parent_segment_info
     }
 
-    #[must_use]
     fn section_type(&self) -> SectionType {
         SectionType::Bss
     }

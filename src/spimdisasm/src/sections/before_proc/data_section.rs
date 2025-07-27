@@ -664,7 +664,6 @@ impl Section for DataSection {
         &self.parent_segment_info
     }
 
-    #[must_use]
     fn section_type(&self) -> SectionType {
         self.section_type
     }

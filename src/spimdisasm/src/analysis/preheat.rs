@@ -236,10 +236,11 @@ impl Preheater {
                 } => match info {
                     InstrOpPairedAddress::PairedLo { access_info, .. } => {
                         let mut special_case = false;
+                        let field = instr.field();
 
-                        if let Some(lo_rs) = instr.field_rs() {
+                        if let Some(lo_rs) = field.rs() {
                             if instr.opcode().reads_rs() && lo_rs.is_global_pointer(instr.abi()) {
-                                if let Some(lo_rt) = instr.field_rt() {
+                                if let Some(lo_rt) = field.rt() {
                                     if instr.opcode().modifies_rt()
                                         && lo_rt.is_global_pointer(instr.abi())
                                     {

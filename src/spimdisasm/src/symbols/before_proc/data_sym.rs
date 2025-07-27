@@ -139,13 +139,11 @@ impl Symbol for DataSym {
         &self.parent_segment_info
     }
 
-    #[must_use]
     fn section_type(&self) -> SectionType {
         self.section_type
     }
 }
 impl RomSymbol for DataSym {
-    #[must_use]
     fn rom_vram_range(&self) -> &RomVramRange {
         &self.ranges
     }

@@ -34,7 +34,6 @@ impl Symbol for EitherFuncDataSym {
         }
     }
 
-    #[must_use]
     fn section_type(&self) -> SectionType {
         match self {
             EitherFuncDataSym::Func(function_sym) => function_sym.section_type(),
@@ -43,7 +42,6 @@ impl Symbol for EitherFuncDataSym {
     }
 }
 impl RomSymbol for EitherFuncDataSym {
-    #[must_use]
     fn rom_vram_range(&self) -> &RomVramRange {
         match self {
             EitherFuncDataSym::Func(function_sym) => function_sym.rom_vram_range(),

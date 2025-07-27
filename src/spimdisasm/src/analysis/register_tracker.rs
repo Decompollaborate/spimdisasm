@@ -383,9 +383,9 @@ impl RegisterTracker {
 
             info
         } else if opcode.ands_registers() {
-            if let (Some(rd), Some(rs), Some(rt)) =
-                (instr.field_rd(), instr.field_rs(), instr.field_rt())
-            {
+            let field = instr.field();
+
+            if let (Some(rd), Some(rs), Some(rt)) = (field.rd(), field.rs(), field.rt()) {
                 if rd.is_stack_pointer(instr.abi())
                     && (rs.is_stack_pointer(instr.abi()) || rt.is_stack_pointer(instr.abi()))
                 {
@@ -410,7 +410,8 @@ impl RegisterTracker {
     fn handle_jalr(&self, instr: &Instruction) -> InstructionOperation {
         debug_assert!(instr.opcode() == Opcode::core_jalr);
 
-        let rs = instr.field_rs().expect("jalr should have an rs field");
+        let field = instr.field();
+        let rs = field.rs().expect("jalr should have an rs field");
         let reg_value = &self.registers[rs.as_index()];
 
         let info = match reg_value {
@@ -482,14 +483,15 @@ impl RegisterTracker {
 
     fn handle_branch(&mut self, instr: &Instruction, target_vram: Vram) -> InstructionOperation {
         let opcode = instr.opcode();
+        let field = instr.field();
 
-        if let (true, Some(reg)) = (opcode.reads_rs(), instr.field_rs()) {
+        if let (true, Some(reg)) = (opcode.reads_rs(), field.rs()) {
             self.registers[reg.as_index()].apply_branch();
         }
-        if let (true, Some(reg)) = (opcode.reads_rt(), instr.field_rt()) {
+        if let (true, Some(reg)) = (opcode.reads_rt(), field.rt()) {
             self.registers[reg.as_index()].apply_branch();
         }
-        if let (true, Some(reg)) = (opcode.reads_rd(), instr.field_rd()) {
+        if let (true, Some(reg)) = (opcode.reads_rd(), field.rd()) {
             self.registers[reg.as_index()].apply_branch();
         }
 
@@ -499,7 +501,8 @@ impl RegisterTracker {
     fn handle_jr(&self, instr: &Instruction) -> InstructionOperation {
         debug_assert!(instr.opcode() == Opcode::core_jr);
 
-        let rs = instr.field_rs().expect("jr should have an rs field");
+        let field = instr.field();
+        let rs = field.rs().expect("jr should have an rs field");
         let reg_value = &self.registers[rs.as_index()];
 
         match reg_value {
@@ -621,10 +624,9 @@ impl RegisterTracker {
     ) -> (Gpr, GprRegisterValue, InstructionOperation) {
         debug_assert!(instr.opcode().can_be_hi());
 
-        let reg = instr.field_rt().expect("lui should have an rt field");
-        let imm = instr
-            .get_processed_immediate()
-            .expect("lui should have an immediate field") as u32;
+        let field = instr.field();
+        let reg = field.rt().expect("lui should have an rt field");
+        let imm = field.imm_u16().expect("lui should have an immediate field") as u32;
         let value = imm << 16;
 
         let reg_value = GprRegisterValue::Hi {
@@ -645,17 +647,16 @@ impl RegisterTracker {
         global_offset_table: Option<&GlobalOffsetTable>,
     ) -> (Option<(Gpr, GprRegisterValue)>, InstructionOperation) {
         let opcode = instr.opcode();
-        let imm = instr
-            .get_processed_immediate()
-            .expect("This instruction should have an immediate") as i16;
-        let rs = instr
-            .field_rs()
-            .expect("lo instructions should have an rs field");
+        let field = instr.field();
+        let imm = field
+            .imm_i16()
+            .expect("This instruction should have an immediate");
+        let rs = field.rs().expect("lo instructions should have an rs field");
 
         if opcode.does_dereference() {
             self.handle_lo_dereference(instr, instr_rom, global_offset_table, rs, imm)
         } else {
-            let rt = instr.field_rt().expect("should have an rt field");
+            let rt = field.rt().expect("should have an rt field");
             self.handle_lo_addiu(instr, instr_rom, rt, rs, imm)
         }
     }
@@ -850,7 +851,8 @@ impl RegisterTracker {
             }
         };
 
-        let new_val = if let (true, Some(rt)) = (opcode.does_load(), instr.field_rt()) {
+        let field = instr.field();
+        let new_val = if let (true, Some(rt)) = (opcode.does_load(), field.rt()) {
             // Hack: Avoid ovewriting the $gp value when the asm is restoring it from the stack.
             if matches!(
                 self.registers[rt.as_index()],
@@ -945,11 +947,12 @@ impl RegisterTracker {
         instr: &Instruction,
         instr_rom: Rom,
     ) -> (Gpr, GprRegisterValue, InstructionOperation) {
-        let rt = instr.field_rt().expect("should have an rt field");
-        let rs = instr.field_rs().expect("should have an rs field");
-        let imm = instr
-            .get_processed_immediate()
-            .expect("This instruction should have an immediate") as u16;
+        let field = instr.field();
+        let rt = field.rt().expect("should have an rt field");
+        let rs = field.rs().expect("should have an rs field");
+        let imm = field
+            .imm_u16()
+            .expect("This instruction should have an immediate");
 
         let reg_value = self.registers[rs.as_index()].or_imm16(imm, instr_rom);
 
@@ -974,14 +977,15 @@ impl RegisterTracker {
         instr: &Instruction,
         instr_rom: Rom,
     ) -> (Gpr, GprRegisterValue, InstructionOperation) {
-        let rd = instr
-            .field_rd()
+        let field = instr.field();
+        let rd = field
+            .rd()
             .expect("This instruction should have a rd register");
-        let rs = instr
-            .field_rs()
+        let rs = field
+            .rs()
             .expect("This instruction should have a rs register");
-        let rt = instr
-            .field_rt()
+        let rt = field
+            .rt()
             .expect("This instruction should have a rt register");
 
         let rs_value = &self.registers[rs.as_index()];
@@ -1039,14 +1043,15 @@ impl RegisterTracker {
         instr: &Instruction,
         instr_rom: Rom,
     ) -> (Gpr, GprRegisterValue, InstructionOperation) {
-        let rd = instr
-            .field_rd()
+        let field = instr.field();
+        let rd = field
+            .rd()
             .expect("This instruction should have a rd register");
-        let rs = instr
-            .field_rs()
+        let rs = field
+            .rs()
             .expect("This instruction should have a rs register");
-        let rt = instr
-            .field_rt()
+        let rt = field
+            .rt()
             .expect("This instruction should have a rt register");
 
         let rs_value = &self.registers[rs.as_index()];
@@ -1066,14 +1071,15 @@ impl RegisterTracker {
         instr: &Instruction,
         instr_rom: Rom,
     ) -> (Gpr, GprRegisterValue, InstructionOperation) {
-        let rd = instr
-            .field_rd()
+        let field = instr.field();
+        let rd = field
+            .rd()
             .expect("This instruction should have a rd register");
-        let rs = instr
-            .field_rs()
+        let rs = field
+            .rs()
             .expect("This instruction should have a rs register");
-        let rt = instr
-            .field_rt()
+        let rt = field
+            .rt()
             .expect("This instruction should have a rt register");
 
         let reg_value =
@@ -1117,7 +1123,7 @@ impl RegisterTracker {
                     // Even if the currently known patterns only use `bal`, it was decided to make
                     // this more general and make it work for every link instruction.
 
-                    let reg = if let (true, Some(rd)) = (opcode.modifies_rd(), prev.field_rd()) {
+                    let reg = if let (true, Some(rd)) = (opcode.modifies_rd(), prev.field().rd()) {
                         rd
                     } else {
                         Gpr::ra
@@ -1173,7 +1179,7 @@ impl RegisterTracker {
     fn check_mips1_doublefloat(instr: &Instruction, access_info: &(AccessType, bool)) -> bool {
         access_info.0 == AccessType::FLOAT
             && instr.abi() == Abi::O32
-            && instr.field_ft().is_some_and(|ft| ft.as_index() % 2 != 0)
+            && instr.field().ft().is_some_and(|ft| ft.as_index() % 2 != 0)
     }
 }
 

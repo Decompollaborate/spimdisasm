@@ -76,7 +76,6 @@ impl Section for ExecutableSectionProcessed {
         &self.parent_segment_info
     }
 
-    #[must_use]
     fn section_type(&self) -> SectionType {
         SECTION_TYPE
     }
