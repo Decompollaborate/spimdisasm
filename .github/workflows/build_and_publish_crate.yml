@@ -1,0 +1,144 @@
+name: Build and upload Rust crate
+
+# Build on every branch push, tag push, and pull request change:
+on: [push, pull_request]
+
+env:
+  RUSTFLAGS: "-D warnings"
+  RUSTDOCFLAGS: "-D warnings"
+
+jobs:
+  check_fmt:
+    name: Check format
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout reposistory
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Check format
+        run: cargo fmt --check
+
+  check_clippy:
+    name: Check clippy - no features
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout reposistory
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup clippy
+        run: rustup component add clippy
+
+      - name: Run clippy
+        run: cargo clippy -p spimdisasm --all-targets --no-default-features
+
+  check_clippy_all_features:
+    name: Check clippy - features - all
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout reposistory
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup clippy
+        run: rustup component add clippy
+
+      - name: Run clippy
+        run: cargo clippy -p spimdisasm --all-targets -F std -F hash_tables
+
+  check_doc:
+    name: Check doc
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout reposistory
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Run doc tets
+        run: cargo test --doc
+
+      - name: Run doc
+        run: cargo doc
+
+  run_tests:
+    name: Run tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout reposistory
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Run tests
+        run: cargo test -p spimdisasm
+
+  msrv:
+    name: Check MSRV is correct
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout reposistory
+        uses: actions/checkout@v4
+
+      - name: Setup MSRV checker
+        uses: taiki-e/install-action@cargo-hack
+
+      - name: Run MSRV checker
+        run: cargo hack check --rust-version --workspace --all-targets --ignore-private
+
+  msrv_all_features:
+    name: Check MSRV is correct for all features
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout reposistory
+        uses: actions/checkout@v4
+
+      - name: Setup MSRV checker
+        uses: taiki-e/install-action@cargo-hack
+
+      - name: Run MSRV checker
+        run: cargo hack check --rust-version --workspace --all-targets --ignore-private -F std -F hash_tables
+
+  publish_spimdisasm:
+    name: Publish crate
+    runs-on: ubuntu-latest
+    needs:
+      - check_fmt
+      - check_clippy
+      - check_clippy_all_features
+      - check_doc
+      - run_tests
+      - msrv
+      - msrv_all_features
+
+    steps:
+      - name: Checkout reposistory
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Rust package
+        run: cargo build --release --workspace
+
+      - name: Publish spimdisasm dry run
+        if: github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/')
+        run: cargo publish -p spimdisasm --dry-run
+
+      - name: Upload spimdisasm crate
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        run: cargo publish -p spimdisasm --token ${{ secrets.CARGO_REGISTRY_TOKEN }}

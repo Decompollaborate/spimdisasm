@@ -338,7 +338,7 @@ dependencies = [
 
 [[package]]
 name = "spimdisasm"
-version = "2.0.0-dev0"
+version = "2.0.0-alpha.1"
 dependencies = [
  "bitflags",
  "encoding_rs",
@@ -350,7 +350,7 @@ dependencies = [
 
 [[package]]
 name = "spimdisasm-disasm-elf"
-version = "2.0.0-dev0"
+version = "2.0.0-alpha.1"
 dependencies = [
  "clap",
  "object",

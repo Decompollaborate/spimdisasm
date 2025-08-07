@@ -5,16 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - 202X-YY-ZZ
+## [2.0.0-alpha.1] - 202X-YY-ZZ
 
 ### Changed
 
-- Change casing of everything from camelCase to snake_case.
-- Renames:
-  - `ContextSymbol`: `SymbolMetadata`.
-  - `SymbolsSegment`: `SegmentMetadata`.
-  - `getSymbol`: `find_symbol`.
-  - `tryPlusOffset`: `check_addend`.
+- spimdisasm has been fully rewritten in Rust.
+- The API has changed and now every function and method are `snake_case`.
+- Some old subsystems were renamed to a more fitting name.
+- And many others!
 
 ## [Unreleased]
 
@@ -1709,7 +1707,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Version 1.0.0
 
-[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/2.0.0-alpha.1...rs
+[2.0.0-alpha.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.30.2...2.0.0-alpha.1
 [1.30.2]: https://github.com/Decompollaborate/spimdisasm/compare/1.30.1...1.30.2
 [1.30.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.30.0...1.30.1
 [1.30.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.29.0...1.30.0
