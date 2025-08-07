@@ -110,7 +110,6 @@ jobs:
       - check_doc
       - run_tests
       - msrv
-      - msrv_all_features
 
     steps:
       - name: Checkout reposistory
