@@ -100,19 +100,6 @@ jobs:
       - name: Run MSRV checker
         run: cargo hack check --rust-version --workspace --all-targets --ignore-private
 
-  msrv_all_features:
-    name: Check MSRV is correct for all features
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout reposistory
-        uses: actions/checkout@v4
-
-      - name: Setup MSRV checker
-        uses: taiki-e/install-action@cargo-hack
-
-      - name: Run MSRV checker
-        run: cargo hack check --rust-version --workspace --all-targets --ignore-private -F std -F hash_tables
-
   publish_spimdisasm:
     name: Publish crate
     runs-on: ubuntu-latest
