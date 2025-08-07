@@ -86,7 +86,7 @@ impl SegmentBuilder {
         rom: Option<Rom>,
         size: Option<Size>,
         sym_type: Option<SymbolType>,
-    ) -> Result<UserSymMetadata, AddUserSymbolError> {
+    ) -> Result<UserSymMetadata<'_>, AddUserSymbolError> {
         if let Some(rom) = rom {
             if !self.ranges.in_rom_range(rom) {
                 return Err(AddUserSymbolError::new_rom_out_of_range(
@@ -179,7 +179,7 @@ impl SegmentBuilder {
         vram: Vram,
         rom: Option<Rom>,
         label_type: LabelType,
-    ) -> Result<UserLabelMetadata, AddUserLabelError> {
+    ) -> Result<UserLabelMetadata<'_>, AddUserLabelError> {
         if let Some(rom) = rom {
             if !self.ranges.in_rom_range(rom) {
                 return Err(AddUserLabelError::new_rom_out_of_range(
@@ -332,7 +332,7 @@ impl GlobalSegmentBuilder {
         rom: Option<Rom>,
         size: Option<UserSize>,
         sym_type: Option<SymbolType>,
-    ) -> Result<UserSymMetadata, AddUserSymbolError>
+    ) -> Result<UserSymMetadata<'_>, AddUserSymbolError>
     where
         T: Into<Arc<str>>,
     {
@@ -346,7 +346,7 @@ impl GlobalSegmentBuilder {
         vram: Vram,
         rom: Option<Rom>,
         label_type: LabelType,
-    ) -> Result<UserLabelMetadata, AddUserLabelError>
+    ) -> Result<UserLabelMetadata<'_>, AddUserLabelError>
     where
         T: Into<Arc<str>>,
     {
@@ -423,7 +423,7 @@ impl OverlaySegmentBuilder {
         rom: Option<Rom>,
         size: Option<UserSize>,
         sym_type: Option<SymbolType>,
-    ) -> Result<UserSymMetadata, AddUserSymbolError>
+    ) -> Result<UserSymMetadata<'_>, AddUserSymbolError>
     where
         T: Into<Arc<str>>,
     {
@@ -437,7 +437,7 @@ impl OverlaySegmentBuilder {
         vram: Vram,
         rom: Option<Rom>,
         label_type: LabelType,
-    ) -> Result<UserLabelMetadata, AddUserLabelError>
+    ) -> Result<UserLabelMetadata<'_>, AddUserLabelError>
     where
         T: Into<Arc<str>>,
     {

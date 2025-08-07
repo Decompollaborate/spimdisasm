@@ -42,7 +42,7 @@ impl GlobalOffsetTable {
     }
 
     #[must_use]
-    pub(crate) fn request_address(&self, vram: Vram) -> Option<GotRequestedAddress> {
+    pub(crate) fn request_address(&self, vram: Vram) -> Option<GotRequestedAddress<'_>> {
         if !self.vram.in_range(vram) {
             return None;
         }
@@ -67,7 +67,7 @@ impl GlobalOffsetTable {
         }
     }
 
-    pub fn iter(&self) -> GlobalOffsetTableIter {
+    pub fn iter(&self) -> GlobalOffsetTableIter<'_> {
         GlobalOffsetTableIter::new(self)
     }
 }

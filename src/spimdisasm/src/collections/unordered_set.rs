@@ -149,11 +149,11 @@ where
     T: Ord + Hash + Eq,
 {
     #[cfg(not(feature = "hash_tables"))]
-    pub fn iter(&self) -> btree_set::Iter<T> {
+    pub fn iter(&self) -> btree_set::Iter<'_, T> {
         self.inner.iter()
     }
     #[cfg(feature = "hash_tables")]
-    pub fn iter(&self) -> hash_set::Iter<T> {
+    pub fn iter(&self) -> hash_set::Iter<'_, T> {
         self.inner.iter()
     }
 

@@ -139,47 +139,47 @@ where
     K: Ord + Hash + Eq,
 {
     #[cfg(not(feature = "hash_tables"))]
-    pub fn iter(&self) -> btree_map::Iter<K, V> {
+    pub fn iter(&self) -> btree_map::Iter<'_, K, V> {
         self.inner.iter()
     }
     #[cfg(feature = "hash_tables")]
-    pub fn iter(&self) -> hash_map::Iter<K, V> {
+    pub fn iter(&self) -> hash_map::Iter<'_, K, V> {
         self.inner.iter()
     }
 
     #[cfg(not(feature = "hash_tables"))]
-    pub fn iter_mut(&mut self) -> btree_map::IterMut<K, V> {
+    pub fn iter_mut(&mut self) -> btree_map::IterMut<'_, K, V> {
         self.inner.iter_mut()
     }
     #[cfg(feature = "hash_tables")]
-    pub fn iter_mut(&mut self) -> hash_map::IterMut<K, V> {
+    pub fn iter_mut(&mut self) -> hash_map::IterMut<'_, K, V> {
         self.inner.iter_mut()
     }
 
     #[cfg(not(feature = "hash_tables"))]
-    pub fn keys(&self) -> btree_map::Keys<K, V> {
+    pub fn keys(&self) -> btree_map::Keys<'_, K, V> {
         self.inner.keys()
     }
     #[cfg(feature = "hash_tables")]
-    pub fn keys(&self) -> hash_map::Keys<K, V> {
+    pub fn keys(&self) -> hash_map::Keys<'_, K, V> {
         self.inner.keys()
     }
 
     #[cfg(not(feature = "hash_tables"))]
-    pub fn values(&self) -> btree_map::Values<K, V> {
+    pub fn values(&self) -> btree_map::Values<'_, K, V> {
         self.inner.values()
     }
     #[cfg(feature = "hash_tables")]
-    pub fn values(&self) -> hash_map::Values<K, V> {
+    pub fn values(&self) -> hash_map::Values<'_, K, V> {
         self.inner.values()
     }
 
     #[cfg(not(feature = "hash_tables"))]
-    pub fn values_mut(&mut self) -> btree_map::ValuesMut<K, V> {
+    pub fn values_mut(&mut self) -> btree_map::ValuesMut<'_, K, V> {
         self.inner.values_mut()
     }
     #[cfg(feature = "hash_tables")]
-    pub fn values_mut(&mut self) -> hash_map::ValuesMut<K, V> {
+    pub fn values_mut(&mut self) -> hash_map::ValuesMut<'_, K, V> {
         self.inner.values_mut()
     }
 

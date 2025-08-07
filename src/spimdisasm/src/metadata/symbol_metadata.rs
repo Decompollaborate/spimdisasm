@@ -274,7 +274,7 @@ impl SymbolMetadata {
         &mut self.rom
     }
 
-    pub fn display_name(&self) -> SymbolMetadataNameDisplay {
+    pub fn display_name(&self) -> SymbolMetadataNameDisplay<'_> {
         SymbolMetadataNameDisplay::new(self)
     }
 

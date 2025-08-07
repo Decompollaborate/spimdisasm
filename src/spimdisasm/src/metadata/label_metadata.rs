@@ -103,7 +103,7 @@ impl LabelMetadata {
         self.rom = Some(new_rom);
     }
 
-    pub fn display_name(&self) -> LabelMetadataNameDisplay {
+    pub fn display_name(&self) -> LabelMetadataNameDisplay<'_> {
         LabelMetadataNameDisplay::new(self)
     }
     pub(crate) fn user_declared_name(&self) -> Option<Arc<str>> {

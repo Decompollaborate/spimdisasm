@@ -46,7 +46,7 @@ pub fn get_time_now() -> time::Duration {
 #[track_caller]
 #[inline]
 #[must_use]
-pub fn read_elf(binary_data: &[u8]) -> ElfFile32 {
+pub fn read_elf(binary_data: &[u8]) -> ElfFile32<'_> {
     let f = pretty_unwrap(object::File::parse(binary_data));
 
     if let object::File::Elf32(elf_file) = f {

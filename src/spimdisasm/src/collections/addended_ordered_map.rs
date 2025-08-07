@@ -263,7 +263,7 @@ where
     K: Ord + Copy + Add<SIZE, Output = K>,
     V: SizedValue<SIZE>,
 {
-    pub fn iter(&self) -> btree_map::Iter<K, V> {
+    pub fn iter(&self) -> btree_map::Iter<'_, K, V> {
         self.inner.iter()
     }
 
@@ -287,15 +287,15 @@ where
         self.inner.range_mut(range)
     }
 
-    pub fn keys(&self) -> btree_map::Keys<K, V> {
+    pub fn keys(&self) -> btree_map::Keys<'_, K, V> {
         self.inner.keys()
     }
 
-    pub fn values(&self) -> btree_map::Values<K, V> {
+    pub fn values(&self) -> btree_map::Values<'_, K, V> {
         self.inner.values()
     }
 
-    pub fn values_mut(&mut self) -> btree_map::ValuesMut<K, V> {
+    pub fn values_mut(&mut self) -> btree_map::ValuesMut<'_, K, V> {
         self.inner.values_mut()
     }
 

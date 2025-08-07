@@ -406,7 +406,7 @@ impl SegmentMetadata {
     pub(crate) fn find_label_range_mut(
         &mut self,
         vram_range: AddressRange<Vram>,
-    ) -> btree_map::RangeMut<Vram, LabelMetadata> {
+    ) -> btree_map::RangeMut<'_, Vram, LabelMetadata> {
         self.labels.range_mut(vram_range)
     }
 }
@@ -417,14 +417,14 @@ impl SegmentMetadata {
         &self,
         vram: Vram,
         settings: FindSettings,
-    ) -> Option<ReferenceWrapper> {
+    ) -> Option<ReferenceWrapper<'_, '_>> {
         ReferenceWrapper::find(&self.symbols, &self.preheater, vram, settings)
     }
 
     pub(crate) fn find_references_range(
         &self,
         vram_range: AddressRange<Vram>,
-    ) -> reference_wrapper::Range {
+    ) -> reference_wrapper::Range<'_, '_> {
         ReferenceWrapper::range(&self.symbols, &self.preheater, vram_range)
     }
 }

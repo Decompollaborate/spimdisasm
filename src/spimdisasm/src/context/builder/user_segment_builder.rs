@@ -38,7 +38,7 @@ impl UserSegmentBuilder {
         size: Size,
         name: Option<Arc<str>>,
         typ: Option<SymbolType>,
-    ) -> Result<UserSymMetadata, AddUserSegmentSymbolError> {
+    ) -> Result<UserSymMetadata<'_>, AddUserSegmentSymbolError> {
         let generated_by = GeneratedBy::UserDeclared;
         let (metadata, newly_created) =
             self.symbols
@@ -97,7 +97,7 @@ impl UserSegmentBuilder {
         name: T,
         size: UserSize,
         typ: Option<SymbolType>,
-    ) -> Result<UserSymMetadata, AddUserSegmentSymbolError>
+    ) -> Result<UserSymMetadata<'_>, AddUserSegmentSymbolError>
     where
         T: Into<Arc<str>>,
     {
