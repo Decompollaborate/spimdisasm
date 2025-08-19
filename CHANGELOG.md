@@ -27,6 +27,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     .endm
     ```
 
+### Changed
+
+- Change the default label used in alternative entry symbols from `glabel` to
+  `alabel`.
+
 ## [1.35.0] - 2025-06-03
 
 ### Added

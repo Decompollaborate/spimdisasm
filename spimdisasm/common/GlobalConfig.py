@@ -245,7 +245,7 @@ class GlobalConfigType:
     """Sets the indentation used for labels within functions"""
 
     ASM_TEXT_LABEL: str = "glabel"
-    ASM_TEXT_ALT_LABEL: str = "glabel"
+    ASM_TEXT_ALT_LABEL: str = "alabel"
     ASM_JTBL_LABEL: str = "jlabel"
     ASM_DATA_LABEL: str = "dlabel"
     ASM_EHTBL_LABEL: str = "ehlabel"
