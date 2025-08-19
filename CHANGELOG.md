@@ -29,8 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Change the default label used in alternative entry symbols from `glabel` to
+- Change the default used in alternative entry symbols: from `glabel` to
   `alabel`.
+- Change the default for function end labels: from not emitting it to actually
+  emit the label and use `endlabel` by default.
 
 ## [1.35.0] - 2025-06-03
 

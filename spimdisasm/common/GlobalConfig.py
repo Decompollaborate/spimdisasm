@@ -252,7 +252,7 @@ class GlobalConfigType:
     ASM_NM_LABEL: str = "nmlabel"
     ASM_USE_SYMBOL_LABEL: bool = True
     ASM_TEXT_ENT_LABEL: str = ""
-    ASM_TEXT_END_LABEL: str = ""
+    ASM_TEXT_END_LABEL: str = "endlabel"
     ASM_TEXT_FUNC_AS_LABEL: bool = False
     ASM_DATA_SYM_AS_LABEL: bool = False
     ASM_EMIT_SIZE_DIRECTIVE: bool = True
