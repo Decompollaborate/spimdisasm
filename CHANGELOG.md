@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- New "non matching" label.
+  - Used to generate a corresponding `.NON_MATCHING` symbol for each symbol that
+    haven't been matched yet.
+  - By default the label used is `nmlabel`. This can be changed in the API by
+    setting the `GlobalConfig.ASM_NM_LABEL` option.
+  - To avoid emitting this label set the `GlobalConfig.ASM_NM_LABEL` option to
+    an empty string.
+  - The assembly macro is expected to look like the following:
+
+    ```mips
+    .macro nmlabel label, size=1
+        .global \label\().NON_MATCHING
+        .type \label\().NON_MATCHING, @object
+        .size \label\().NON_MATCHING, \size
+        \label\().NON_MATCHING:
+    .endm
+    ```
+
 ## [1.35.0] - 2025-06-03
 
 ### Added

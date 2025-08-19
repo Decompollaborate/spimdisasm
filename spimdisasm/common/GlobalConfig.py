@@ -249,6 +249,7 @@ class GlobalConfigType:
     ASM_JTBL_LABEL: str = "jlabel"
     ASM_DATA_LABEL: str = "dlabel"
     ASM_EHTBL_LABEL: str = "ehlabel"
+    ASM_NM_LABEL: str = "nmlabel"
     ASM_USE_SYMBOL_LABEL: bool = True
     ASM_TEXT_ENT_LABEL: str = ""
     ASM_TEXT_END_LABEL: str = ""
@@ -396,6 +397,7 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
         miscConfig.add_argument("--asm-jtbl-label", help=f"Changes the label used to declare jumptable labels. Defaults to {self.ASM_JTBL_LABEL}")
         miscConfig.add_argument("--asm-data-label", help=f"Changes the label used to declare data symbols. Defaults to {self.ASM_DATA_LABEL}")
         miscConfig.add_argument("--asm-ehtbl-label", help=f"Changes the label used to declare ehtable symbols. Defaults to {self.ASM_EHTBL_LABEL}")
+        miscConfig.add_argument("--asm-nm-label", help=f"Changes the label used to declare the symbol is non matching. Defaults to {self.ASM_NM_LABEL}")
         miscConfig.add_argument("--asm-use-symbol-label", help=f"Toggles the use of labels for symbols. Defaults to {self.ASM_USE_SYMBOL_LABEL}", action=Utils.BooleanOptionalAction)
         miscConfig.add_argument("--asm-ent-label", help=f"Tells the disassembler to start using an ent label for functions")
         miscConfig.add_argument("--asm-end-label", help=f"Tells the disassembler to start using an end label for functions")
@@ -602,6 +604,8 @@ Defaults to {self.ASM_GLOBALIZE_TEXT_LABELS_REFERENCED_BY_NON_JUMPTABLE}""", act
             self.ASM_DATA_LABEL = args.asm_data_label
         if args.asm_ehtbl_label:
             self.ASM_EHTBL_LABEL = args.asm_ehtbl_label
+        if args.asm_nm_label:
+            self.ASM_NM_LABEL = args.asm_nm_label
         if args.asm_use_symbol_label is not None:
             self.ASM_USE_SYMBOL_LABEL = args.asm_use_symbol_label
         if args.asm_ent_label:

@@ -125,9 +125,11 @@ class SymbolBase(common.ElementBase):
             label = common.GlobalConfig.LINE_ENDS
             symLabel = contextSym.getLabelMacro(isInMiddleLabel=True)
             if symLabel is not None:
-                label += f"{symLabel} {contextSym.getName()}{common.GlobalConfig.LINE_ENDS}"
+                symName = contextSym.getName()
+                label += f"{symLabel} {symName}{common.GlobalConfig.LINE_ENDS}"
                 if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
-                    label += f"{contextSym.getName()}:" + common.GlobalConfig.LINE_ENDS
+                    label += f"{symName}:" + common.GlobalConfig.LINE_ENDS
+                label += self.getNonMatchingLabel(symName, None)
         return label
 
     def getReloc(self, wordOffset: int, instr: rabbitizer.Instruction|None) -> common.RelocationInfo | None:
@@ -146,6 +148,18 @@ class SymbolBase(common.ElementBase):
     def getSizeDirective(self, symName: str) -> str:
         if common.GlobalConfig.ASM_EMIT_SIZE_DIRECTIVE:
             return f".size {symName}, . - {symName}{common.GlobalConfig.LINE_ENDS}"
+        return ""
+
+    def getNonMatchingLabel(self, symName: str, symSize: int|None) -> str:
+        if common.GlobalConfig.ASM_NM_LABEL:
+            out = f"{common.GlobalConfig.ASM_NM_LABEL} {symName}"
+            if symSize is not None:
+                if symSize < 1:
+                    symSize = 1
+                sizePart = f", 0x{symSize:X}"
+            else:
+                sizePart = ""
+            return f"{out}{sizePart}{common.GlobalConfig.LINE_ENDS}"
         return ""
 
     def isFunction(self) -> bool:
@@ -587,9 +601,10 @@ class SymbolBase(common.ElementBase):
         if symAlignmentShift is not None:
             return self._getAlignDirectiveStr(symAlignmentShift, i)
         elif self.isDouble(i):
-            shiftValue = common.GlobalConfig.COMPILER.value.prevAlign_double
-            if shiftValue is not None:
-                return self._getAlignDirectiveStr(shiftValue, i)
+            if i == 0:
+                shiftValue = common.GlobalConfig.COMPILER.value.prevAlign_double
+                if shiftValue is not None:
+                    return self._getAlignDirectiveStr(shiftValue, i)
         elif self.isJumpTable():
             if i == 0:
                 shiftValue = common.GlobalConfig.COMPILER.value.prevAlign_jumptable
@@ -618,6 +633,7 @@ class SymbolBase(common.ElementBase):
 
         symName = self.getName()
         output += self.getSymbolAsmDeclaration(symName, useGlobalLabel)
+        output += self.getNonMatchingLabel(symName, None)
 
         lastSymName = symName
 

@@ -880,6 +880,7 @@ class SymbolFunction(SymbolText):
             symSize -= 4 * self.countExtraPadding()
 
         output += self.getSymbolAsmDeclaration(symName, useGlobalLabel)
+        output += self.getNonMatchingLabel(symName, symSize)
 
         wasLastInstABranch = False
         instructionOffset = 0
@@ -907,7 +908,7 @@ class SymbolFunction(SymbolText):
 
             if instructionOffset == symSize:
                 if common.GlobalConfig.ASM_TEXT_END_LABEL:
-                    output += f"{common.GlobalConfig.ASM_TEXT_END_LABEL} {self.getName()}" + common.GlobalConfig.LINE_ENDS
+                    output += f"{common.GlobalConfig.ASM_TEXT_END_LABEL} {symName}" + common.GlobalConfig.LINE_ENDS
 
                 output += self.getSizeDirective(symName)
 

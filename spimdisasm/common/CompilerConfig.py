@@ -15,7 +15,7 @@ class CompilerProperties:
 
     hasLateRodata: bool = False
 
-    prevAlign_double: int|None = None # TODO: Specifying 3 as the default should be harmless. Need to investigate.
+    prevAlign_double: int|None = 3
     prevAlign_jumptable: int|None = None
     prevAlign_string: int|None = 2
     prevAlign_function: int|None = None
