@@ -27,6 +27,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     .endm
     ```
 
+- New "data end" label.
+  - Used to mark the end of a data symbol.
+  - By default the label used is `nmlabel`. This can be changed in the API by
+    setting the `GlobalConfig.ASM_DATA_END_LABEL` option.
+  - To avoid emitting this label set the `GlobalConfig.ASM_DATA_END_LABEL`
+    option to an empty string.
+
 ### Changed
 
 - Change the default used in alternative entry symbols: from `glabel` to

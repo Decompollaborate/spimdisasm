@@ -311,6 +311,8 @@ class SymbolBase(common.ElementBase):
             output += common.GlobalConfig.LINE_ENDS
 
             if sym1 is not None:
+                if common.GlobalConfig.ASM_DATA_END_LABEL:
+                    output += f"{common.GlobalConfig.ASM_DATA_END_LABEL} {lastSymName}{common.GlobalConfig.LINE_ENDS}"
                 output += self.getSizeDirective(lastSymName)
                 lastSymName = sym1.getName()
 
@@ -322,6 +324,8 @@ class SymbolBase(common.ElementBase):
             output += common.GlobalConfig.LINE_ENDS
 
         if sym2 is not None:
+            if common.GlobalConfig.ASM_DATA_END_LABEL:
+                output += f"{common.GlobalConfig.ASM_DATA_END_LABEL} {lastSymName}{common.GlobalConfig.LINE_ENDS}"
             output += self.getSizeDirective(lastSymName)
             lastSymName = sym2.getName()
 
@@ -337,6 +341,8 @@ class SymbolBase(common.ElementBase):
             output += common.GlobalConfig.LINE_ENDS
 
             if sym3 is not None:
+                if common.GlobalConfig.ASM_DATA_END_LABEL:
+                    output += f"{common.GlobalConfig.ASM_DATA_END_LABEL} {lastSymName}{common.GlobalConfig.LINE_ENDS}"
                 output += self.getSizeDirective(lastSymName)
                 lastSymName = sym3.getName()
 
@@ -689,6 +695,8 @@ class SymbolBase(common.ElementBase):
             i += skip
             i += 1
 
+        if common.GlobalConfig.ASM_DATA_END_LABEL:
+            output += f"{common.GlobalConfig.ASM_DATA_END_LABEL} {lastSymName}{common.GlobalConfig.LINE_ENDS}"
         output += self.getSizeDirective(lastSymName)
 
         nameEnd = self.getNameEnd()
