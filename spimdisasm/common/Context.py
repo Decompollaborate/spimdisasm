@@ -227,13 +227,13 @@ class Context:
 
 
     def parseArgs(self, args: argparse.Namespace) -> None:
-        if args.default_banned != False:
+        if args.default_banned:
             self.fillDefaultBannedSymbols()
-        if args.libultra_syms != False:
+        if args.libultra_syms:
             self.globalSegment.fillLibultraSymbols()
-        if args.ique_syms != False:
+        if args.ique_syms:
             self.globalSegment.fillIQueSymbols()
-        if args.hardware_regs != False:
+        if args.hardware_regs:
             self.globalSegment.fillHardwareRegs(args.named_hardware_regs)
 
         if args.functions is not None:

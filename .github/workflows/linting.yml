@@ -1,10 +1,10 @@
-name: Check mypy
+name: Linting
 
 # Build on every branch push, tag push, and pull request change:
 on: [push, pull_request]
 
 jobs:
-  checks:
+  mypy:
     runs-on: ubuntu-latest
     name: mypy
     steps:
@@ -30,3 +30,30 @@ jobs:
         run: |
           . .venv/bin/activate
           mypy --show-column-numbers --hide-error-context .
+
+  ruff:
+    runs-on: ubuntu-latest
+    name: ruff
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Setup venv
+        run: |
+          python3 -m venv .venv
+
+      - name: Install Dependencies
+        run: |
+          . .venv/bin/activate
+          python3 -m pip install -U -r requirements.txt
+          python3 -m pip install -U ruff
+
+      - name: mypy
+        run: |
+          . .venv/bin/activate
+          ruff check

@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
-import rabbitizer
 
 from .. import common
 from .. import elf32
@@ -311,7 +310,7 @@ def insertDynsymIntoContext(context: common.Context, symbolTable: elf32.Elf32Sym
 def insertGotIntoContext(context: common.Context, got: elf32.Elf32GlobalOffsetTable, stringTable: elf32.Elf32StringTable) -> None:
     lazyResolver = got.localsTable[0]
     lazyResolverSym = context.globalSegment.addSymbol(lazyResolver)
-    lazyResolverSym.name = f"$$.LazyResolver"
+    lazyResolverSym.name = "$$.LazyResolver"
     lazyResolverSym.isUserDeclared = True
     lazyResolverSym.isGotLocal = True
 

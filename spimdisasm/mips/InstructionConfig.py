@@ -22,7 +22,7 @@ class InstructionConfig:
         abi_choices = ["numeric", "32", "o32", "n32", "n64"]
         registerNames.add_argument("--Mgpr-names", help=f"Use GPR names according to the specified ABI. Defaults to {rabbitizer.config.regNames_gprAbiNames.name.lower()}", choices=abi_choices)
         registerNames.add_argument("--Mfpr-names", help=f"Use FPR names according to the specified ABI. Defaults to {rabbitizer.config.regNames_fprAbiNames.name.lower()}", choices=abi_choices)
-        registerNames.add_argument("--Mreg-names", help=f"Use GPR and FPR names according to the specified ABI. This flag takes precedence over --Mgpr-names and --Mfpr-names", choices=abi_choices)
+        registerNames.add_argument("--Mreg-names", help="Use GPR and FPR names according to the specified ABI. This flag takes precedence over --Mgpr-names and --Mfpr-names", choices=abi_choices)
 
         registerNames.add_argument("--use-fpccsr", help=f"Toggles using the FpcCsr alias for float register $31 when using the numeric ABI. Defaults to {rabbitizer.config.regNames_userFpcCsr}", action=Utils.BooleanOptionalAction)
 

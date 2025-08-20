@@ -6,11 +6,11 @@
 from __future__ import annotations
 
 
-from .RspDisasmInternals import getToolDescription
-from .RspDisasmInternals import addOptionsToParser
-from .RspDisasmInternals import getArgsParser
-from .RspDisasmInternals import applyArgs
-from .RspDisasmInternals import initializeContext
-from .RspDisasmInternals import processArguments
-from .RspDisasmInternals import addSubparser
-from .RspDisasmInternals import rspDisasmMain
+from .RspDisasmInternals import getToolDescription as getToolDescription
+from .RspDisasmInternals import addOptionsToParser as addOptionsToParser
+from .RspDisasmInternals import getArgsParser as getArgsParser
+from .RspDisasmInternals import applyArgs as applyArgs
+from .RspDisasmInternals import initializeContext as initializeContext
+from .RspDisasmInternals import processArguments as processArguments
+from .RspDisasmInternals import addSubparser as addSubparser
+from .RspDisasmInternals import rspDisasmMain as rspDisasmMain

@@ -36,7 +36,7 @@ def addOptionsToParser(parser: argparse.ArgumentParser) -> argparse.ArgumentPars
     parser_singleFile.add_argument("--data-start", help="Raw offset of the input binary file to start disassembling the .data section. Expects an hex value. Requires --data-end", default=None)
     parser_singleFile.add_argument("--data-end", help="Offset end of the input binary file to start disassembling the .data section. Expects an hex value. Requires --data-start",  default=None)
 
-    parser_singleFile.add_argument("--disasm-rsp", help=f"Experimental. Disassemble this file using rsp ABI instructions. Warning: In its current state the generated asm may not be assemblable to a matching binary. Defaults to False", action="store_true")
+    parser_singleFile.add_argument("--disasm-rsp", help="Experimental. Disassemble this file using rsp ABI instructions. Warning: In its current state the generated asm may not be assemblable to a matching binary. Defaults to False", action="store_true")
 
     parser.add_argument("--file-splits", help="Path to a file splits csv")
 

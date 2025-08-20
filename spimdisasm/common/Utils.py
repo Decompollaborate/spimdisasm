@@ -157,7 +157,7 @@ def runCommandGetOutput(command: str, args: list[str]) -> list[str] | None:
     try:
         output = subprocess.check_output([command, *args]).decode("utf-8")
         return output.strip().split("\n")
-    except:
+    except Exception:
         return None
 
 def readCsv(filepath: Path) -> list[list[str]]:

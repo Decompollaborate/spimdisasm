@@ -31,4 +31,4 @@ from .Elf32Rels import Elf32RelEntry as Elf32RelEntry
 from .Elf32File import Elf32File as Elf32File
 
 # To avoid breaking backwards compatibility
-from ..common.Relocation import RelocType as Elf32Relocs
+from ..common.Relocation import RelocType as Elf32Relocs # noqa: F401

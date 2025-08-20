@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from . import analysis
+from . import analysis as analysis
 
 from .MipsSymbolBase import SymbolBase as SymbolBase
 
