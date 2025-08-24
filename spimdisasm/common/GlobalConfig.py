@@ -249,14 +249,14 @@ class GlobalConfigType:
     ASM_JTBL_LABEL: str = "jlabel"
     ASM_DATA_LABEL: str = "dlabel"
     ASM_EHTBL_LABEL: str = "ehlabel"
-    ASM_NM_LABEL: str = "nmlabel"
+    ASM_NM_LABEL: str = "nonmatching"
     ASM_USE_SYMBOL_LABEL: bool = True
     ASM_TEXT_ENT_LABEL: str = ""
     ASM_TEXT_END_LABEL: str = "endlabel"
     ASM_DATA_END_LABEL: str = "enddlabel"
     ASM_TEXT_FUNC_AS_LABEL: bool = False
     ASM_DATA_SYM_AS_LABEL: bool = False
-    ASM_EMIT_SIZE_DIRECTIVE: bool = True
+    ASM_EMIT_SIZE_DIRECTIVE: bool = False
     ASM_USE_PRELUDE: bool = True
     ASM_PRELUDE_USE_INCLUDES: bool = True
     ASM_PRELUDE_USE_INSTRUCTION_DIRECTIVES: bool = True

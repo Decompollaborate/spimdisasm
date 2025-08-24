@@ -89,7 +89,7 @@ class Context:
         self.globalSegment = SymbolsSegment(self, 0x0, 0x1000, 0x80000000, 0x80001000, overlayCategory=None)
         # For symbols that we don't know where they come from
         self.unknownSegment = SymbolsSegment(self, None, None, 0x00000000, 0xFFFFFFFF, overlayCategory=None)
-        self._isTheUnknownSegment = True
+        self.unknownSegment._isTheUnknownSegment = True
 
         self.overlaySegments: dict[str, dict[int, SymbolsSegment]] = dict()
         "Outer key is overlay type, inner key is the vrom of the overlay's segment"
