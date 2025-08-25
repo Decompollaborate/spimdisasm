@@ -25,7 +25,7 @@ class FileSectionType(OrderedEnum):
     def fromId(sectionId: int) -> FileSectionType:
         try:
             return FileSectionType(sectionId)
-        except:
+        except Exception:
             return FileSectionType.Invalid
 
     @staticmethod

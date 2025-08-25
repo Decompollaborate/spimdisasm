@@ -211,3 +211,5 @@ data/
 
 *.ld
 *.o
+
+.ruff_cache/

@@ -429,7 +429,7 @@ class SymbolFunction(SymbolText):
                 comment = f"Failed to symbolize address 0x{constant:08X} for {relocType.getPercentRel()}. Make sure this address is within the recognized valid address space."
                 if relocType in {common.RelocType.MIPS_GPREL16, common.RelocType.MIPS_GOT16}:
                     if common.GlobalConfig.GP_VALUE is None:
-                        comment += f" Please specify a gp_value."
+                        comment += " Please specify a gp_value."
                     elif not self.context.isInTotalVramRange(common.GlobalConfig.GP_VALUE):
                         comment += f" The provided gp_value (0x{common.GlobalConfig.GP_VALUE:08X}) seems wrong."
                 self.endOfLineComment[instrOffset//4] = f" /* {comment} */"
@@ -689,7 +689,7 @@ class SymbolFunction(SymbolText):
                     return common.RelocationInfo(common.RelocType.CUSTOM_CONSTANT_LO, f"0x{constantValue:X}")
                 return None
             else:
-                hiHalf = constantValue >> 16
+                # hiHalf = constantValue >> 16
                 loHalf = constantValue & 0xFFFF
                 if loHalf < 0x8000:
                     # positive lo half
@@ -880,6 +880,7 @@ class SymbolFunction(SymbolText):
             symSize -= 4 * self.countExtraPadding()
 
         output += self.getSymbolAsmDeclaration(symName, useGlobalLabel)
+        output += self.getNonMatchingLabel(symName, symSize)
 
         wasLastInstABranch = False
         instructionOffset = 0
@@ -907,7 +908,7 @@ class SymbolFunction(SymbolText):
 
             if instructionOffset == symSize:
                 if common.GlobalConfig.ASM_TEXT_END_LABEL:
-                    output += f"{common.GlobalConfig.ASM_TEXT_END_LABEL} {self.getName()}" + common.GlobalConfig.LINE_ENDS
+                    output += f"{common.GlobalConfig.ASM_TEXT_END_LABEL} {symName}" + common.GlobalConfig.LINE_ENDS
 
                 output += self.getSizeDirective(symName)
 

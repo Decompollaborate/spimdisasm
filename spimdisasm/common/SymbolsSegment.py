@@ -366,13 +366,13 @@ class SymbolsSegment:
 
         # libleo (64DD) address range
         0xA5000508: "LEO_CMD",
-        0xA5000508: "LEO_STATUS",
+        # 0xA5000508: "LEO_STATUS",
 
         0xA5000510: "LEO_BM_CTL",
-        0xA5000510: "LEO_BM_STATUS",
+        # 0xA5000510: "LEO_BM_STATUS",
 
         0xA5000518: "LEO_SEQ_CTL",
-        0xA5000518: "LEO_SEQ_STATUS",
+        # 0xA5000518: "LEO_SEQ_STATUS",
 
 
         0xA5000000: "LEO_C2_BUFF",      # C2 Sector Buffer
@@ -547,6 +547,7 @@ class SymbolsSegment:
 
     def readSplatSymbolAddrs(self, filepath: Path) -> None:
         if not filepath.exists():
+            Utils.eprintQuietless(f"symbol_addrs file '{filepath}' not found.")
             return
 
         with filepath.open() as f:

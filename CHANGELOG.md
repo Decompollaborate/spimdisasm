@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.36.0] - 2025-08-25
+
+### Added
+
+- New "non matching" label.
+  - Used to generate a corresponding `.NON_MATCHING` symbol for each symbol that
+    haven't been matched yet.
+  - By default the label used is `nonmatching`. This can be changed in the API by
+    setting the `GlobalConfig.ASM_NM_LABEL` option.
+  - To avoid emitting this label set the `GlobalConfig.ASM_NM_LABEL` option to
+    an empty string.
+  - The assembly macro is expected to look like the following:
+
+    ```mips
+    .macro nonmatching label, size=1
+        .global \label\().NON_MATCHING
+        .type \label\().NON_MATCHING, @object
+        .size \label\().NON_MATCHING, \size
+        \label\().NON_MATCHING:
+    .endm
+    ```
+
+- New "data end" label.
+  - Used to mark the end of a data symbol.
+  - By default the label used is `enddlabel`. This can be changed in the API by
+    setting the `GlobalConfig.ASM_DATA_END_LABEL` option.
+  - To avoid emitting this label set the `GlobalConfig.ASM_DATA_END_LABEL`
+    option to an empty string.
+- Added support for splat's `reloc_addrs` file format on the bundled front-ends.
+  - Allows specifying reloc overrides at specific rom addresses.
+  - Use the flag `--reloc-addrs` to specify one or more paths to the files. All
+    the files will be applied in order.
+
+### Changed
+
+- Change the default used in alternative entry symbols: from `glabel` to
+  `alabel`.
+- Change the default for function end labels: from not emitting it to actually
+  emit the label and use `endlabel` by default.
+
 ## [1.35.0] - 2025-06-03
 
 ### Added
@@ -1838,6 +1878,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.36.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.35.0...1.36.0
 [1.35.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.34.2...1.35.0
 [1.34.2]: https://github.com/Decompollaborate/spimdisasm/compare/1.34.1...1.34.2
 [1.34.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.34.0...1.34.1

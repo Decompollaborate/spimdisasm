@@ -99,25 +99,25 @@ _percentRel = {
     # RelocType.MIPS_32:         f"",
     # RelocType.MIPS_REL32:      f"",
     # RelocType.MIPS_26:         f"",
-    RelocType.MIPS_HI16:       f"%hi",
-    RelocType.MIPS_LO16:       f"%lo",
-    RelocType.MIPS_GPREL16:    f"%gp_rel",
+    RelocType.MIPS_HI16:       "%hi",
+    RelocType.MIPS_LO16:       "%lo",
+    RelocType.MIPS_GPREL16:    "%gp_rel",
     # RelocType.MIPS_LITERAL:    f"",
-    RelocType.MIPS_GOT16:      f"%got",
+    RelocType.MIPS_GOT16:      "%got",
     # RelocType.MIPS_PC16:       f"",
-    RelocType.MIPS_CALL16:     f"%call16",
+    RelocType.MIPS_CALL16:     "%call16",
     # RelocType.MIPS_GPREL32:    f"",
 
-    RelocType.MIPS_GOT_HI16:   f"%got_hi",
-    RelocType.MIPS_GOT_LO16:   f"%got_lo",
-    RelocType.MIPS_CALL_HI16:  f"%call_hi",
-    RelocType.MIPS_CALL_LO16:  f"%call_lo",
+    RelocType.MIPS_GOT_HI16:   "%got_hi",
+    RelocType.MIPS_GOT_LO16:   "%got_lo",
+    RelocType.MIPS_CALL_HI16:  "%call_hi",
+    RelocType.MIPS_CALL_LO16:  "%call_lo",
 }
 
 _wordRel = {
     # RelocType.MIPS_NONE:       f"",
     # RelocType.MIPS_16:         f"",
-    RelocType.MIPS_32:         f".word",
+    RelocType.MIPS_32:         ".word",
     # RelocType.MIPS_REL32:      f"",
     # RelocType.MIPS_26:         f"",
     # RelocType.MIPS_HI16:       f"",
@@ -127,7 +127,7 @@ _wordRel = {
     # RelocType.MIPS_GOT16:      f"",
     # RelocType.MIPS_PC16:       f"",
     # RelocType.MIPS_CALL16:     f"",
-    RelocType.MIPS_GPREL32:    f".gpword",
+    RelocType.MIPS_GPREL32:    ".gpword",
     # RelocType.MIPS_GOT_HI16:   f"",
     # RelocType.MIPS_GOT_LO16:   f"",
     # RelocType.MIPS_CALL_HI16:  f"",
@@ -135,8 +135,8 @@ _wordRel = {
 }
 
 _operationRel = {
-    RelocType.CUSTOM_CONSTANT_HI:  f">> 16",
-    RelocType.CUSTOM_CONSTANT_LO:  f"& 0xFFFF",
+    RelocType.CUSTOM_CONSTANT_HI:  ">> 16",
+    RelocType.CUSTOM_CONSTANT_LO:  "& 0xFFFF",
 }
 
 @dataclasses.dataclass
@@ -197,9 +197,9 @@ class RelocationInfo:
     def getInlineStr(self, isSplittedSymbol: bool=False) -> str:
         output = f"    # {self.relocType.name} '{self.getName(isSplittedSymbol=isSplittedSymbol)}'"
         if self.staticReference is not None:
-            output += f" (static)"
+            output += " (static)"
         if self.globalReloc:
-            output += f" (global reloc)"
+            output += " (global reloc)"
         output += f"{GlobalConfig.LINE_ENDS}"
         return output
 

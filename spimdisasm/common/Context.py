@@ -89,7 +89,7 @@ class Context:
         self.globalSegment = SymbolsSegment(self, 0x0, 0x1000, 0x80000000, 0x80001000, overlayCategory=None)
         # For symbols that we don't know where they come from
         self.unknownSegment = SymbolsSegment(self, None, None, 0x00000000, 0xFFFFFFFF, overlayCategory=None)
-        self._isTheUnknownSegment = True
+        self.unknownSegment._isTheUnknownSegment = True
 
         self.overlaySegments: dict[str, dict[int, SymbolsSegment]] = dict()
         "Outer key is overlay type, inner key is the vrom of the overlay's segment"
@@ -184,6 +184,39 @@ class Context:
         self.globalRelocationOverrides[vromAddres] = reloc
         return reloc
 
+    def readSplatRelocAddrs(self, filepath: Path) -> None:
+        if not filepath.exists():
+            Utils.eprintQuietless(f"reloc_addrs file '{filepath}' not found.")
+            return
+
+        def get_required(pairs: dict[str, str], key: str, line: str) -> str:
+            value = pairs.get(key)
+            if value is None:
+                Utils.panic(f"\nError parsing reloc_addrs file '{filepath}'.\n    Missing key '{key}'.\n    While parsing line '{line}'")
+            return value
+
+        with filepath.open() as f:
+            for line in f:
+                line = line.strip()
+                pairs = Utils.parseColonSeparatedPairLine(line)
+
+                romStr = get_required(pairs, "rom", line)
+                rom = Utils.intFromStr(romStr)
+                if rom is None:
+                    Utils.panic(f"\nInvalid value '{romStr}' for attribute 'rom'.\n    While parsing line '{line}'")
+
+                relocStr = get_required(pairs, "reloc", line)
+                reloc = RelocType.fromStr(relocStr)
+                if reloc is None:
+                    Utils.panic(f"\nInvalid value '{relocStr}' for attribute 'reloc'.\n    While parsing line '{line}'")
+
+                symbol = get_required(pairs, "symbol", line)
+
+                addend = Utils.getMaybeIntFromMaybeStr(pairs.get("addend")) or 0
+
+                self.addGlobalReloc(rom, reloc, symbol, addend)
+
+
     def saveContextToFile(self, contextPath: Path) -> None:
         with contextPath.open("w") as f:
             self.globalSegment.saveContextToFile(f)
@@ -215,6 +248,7 @@ class Context:
         csvConfig.add_argument("--variables", help="Path to a variables csv", action="append")
         csvConfig.add_argument("--constants", help="Path to a constants csv", action="append")
         csvConfig.add_argument("--symbol-addrs", help="Path to a splat-compatible symbol_addrs.txt file", action="append")
+        csvConfig.add_argument("--reloc-addrs", help="Path to a splat-compatible reloc_addrs.txt file", action="append")
 
 
         symbolsConfig = parser.add_argument_group("Context default symbols configuration")
@@ -227,13 +261,13 @@ class Context:
 
 
     def parseArgs(self, args: argparse.Namespace) -> None:
-        if args.default_banned != False:
+        if args.default_banned:
             self.fillDefaultBannedSymbols()
-        if args.libultra_syms != False:
+        if args.libultra_syms:
             self.globalSegment.fillLibultraSymbols()
-        if args.ique_syms != False:
+        if args.ique_syms:
             self.globalSegment.fillIQueSymbols()
-        if args.hardware_regs != False:
+        if args.hardware_regs:
             self.globalSegment.fillHardwareRegs(args.named_hardware_regs)
 
         if args.functions is not None:
@@ -248,3 +282,6 @@ class Context:
         if args.symbol_addrs is not None:
             for filepath in args.symbol_addrs:
                 self.globalSegment.readSplatSymbolAddrs(Path(filepath))
+        if args.reloc_addrs is not None:
+            for filepath in args.reloc_addrs:
+                self.readSplatRelocAddrs(Path(filepath))

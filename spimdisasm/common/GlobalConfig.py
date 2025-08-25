@@ -245,16 +245,18 @@ class GlobalConfigType:
     """Sets the indentation used for labels within functions"""
 
     ASM_TEXT_LABEL: str = "glabel"
-    ASM_TEXT_ALT_LABEL: str = "glabel"
+    ASM_TEXT_ALT_LABEL: str = "alabel"
     ASM_JTBL_LABEL: str = "jlabel"
     ASM_DATA_LABEL: str = "dlabel"
     ASM_EHTBL_LABEL: str = "ehlabel"
+    ASM_NM_LABEL: str = "nonmatching"
     ASM_USE_SYMBOL_LABEL: bool = True
     ASM_TEXT_ENT_LABEL: str = ""
-    ASM_TEXT_END_LABEL: str = ""
+    ASM_TEXT_END_LABEL: str = "endlabel"
+    ASM_DATA_END_LABEL: str = "enddlabel"
     ASM_TEXT_FUNC_AS_LABEL: bool = False
     ASM_DATA_SYM_AS_LABEL: bool = False
-    ASM_EMIT_SIZE_DIRECTIVE: bool = True
+    ASM_EMIT_SIZE_DIRECTIVE: bool = False
     ASM_USE_PRELUDE: bool = True
     ASM_PRELUDE_USE_INCLUDES: bool = True
     ASM_PRELUDE_USE_INSTRUCTION_DIRECTIVES: bool = True
@@ -396,9 +398,11 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
         miscConfig.add_argument("--asm-jtbl-label", help=f"Changes the label used to declare jumptable labels. Defaults to {self.ASM_JTBL_LABEL}")
         miscConfig.add_argument("--asm-data-label", help=f"Changes the label used to declare data symbols. Defaults to {self.ASM_DATA_LABEL}")
         miscConfig.add_argument("--asm-ehtbl-label", help=f"Changes the label used to declare ehtable symbols. Defaults to {self.ASM_EHTBL_LABEL}")
+        miscConfig.add_argument("--asm-nm-label", help=f"Changes the label used to declare the symbol is non matching. Defaults to {self.ASM_NM_LABEL}")
         miscConfig.add_argument("--asm-use-symbol-label", help=f"Toggles the use of labels for symbols. Defaults to {self.ASM_USE_SYMBOL_LABEL}", action=Utils.BooleanOptionalAction)
-        miscConfig.add_argument("--asm-ent-label", help=f"Tells the disassembler to start using an ent label for functions")
-        miscConfig.add_argument("--asm-end-label", help=f"Tells the disassembler to start using an end label for functions")
+        miscConfig.add_argument("--asm-ent-label", help="Tells the disassembler to start using an ent label for functions")
+        miscConfig.add_argument("--asm-end-label", help="Tells the disassembler to start using an end label for functions")
+        miscConfig.add_argument("--asm-data-end-label", help="Tells the disassembler the end label to use for data symbols")
         miscConfig.add_argument("--asm-func-as-label", help=f"Toggle adding the function name as an additional label. Defaults to {self.ASM_TEXT_FUNC_AS_LABEL}", action=Utils.BooleanOptionalAction)
         miscConfig.add_argument("--asm-data-as-label", help=f"Toggle adding the data symbol name as an additional label. Defaults to {self.ASM_DATA_SYM_AS_LABEL}", action=Utils.BooleanOptionalAction)
         miscConfig.add_argument("--asm-emit-size-directive", help=f"Toggles emitting a size directive to generated symbols. Defaults to {self.ASM_EMIT_SIZE_DIRECTIVE}", action=Utils.BooleanOptionalAction)
@@ -602,12 +606,16 @@ Defaults to {self.ASM_GLOBALIZE_TEXT_LABELS_REFERENCED_BY_NON_JUMPTABLE}""", act
             self.ASM_DATA_LABEL = args.asm_data_label
         if args.asm_ehtbl_label:
             self.ASM_EHTBL_LABEL = args.asm_ehtbl_label
+        if args.asm_nm_label:
+            self.ASM_NM_LABEL = args.asm_nm_label
         if args.asm_use_symbol_label is not None:
             self.ASM_USE_SYMBOL_LABEL = args.asm_use_symbol_label
         if args.asm_ent_label:
             self.ASM_TEXT_ENT_LABEL = args.asm_ent_label
         if args.asm_end_label:
             self.ASM_TEXT_END_LABEL = args.asm_end_label
+        if args.asm_data_end_label:
+            self.ASM_DATA_END_LABEL = args.asm_data_end_label
         if args.asm_func_as_label is not None:
             self.ASM_TEXT_FUNC_AS_LABEL = args.asm_func_as_label
         if args.asm_data_as_label is not None:

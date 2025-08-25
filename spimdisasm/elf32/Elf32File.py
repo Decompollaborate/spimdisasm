@@ -102,52 +102,52 @@ class Elf32File:
             common.GlobalConfig.PIC = True
 
         if Elf32HeaderFlag.XGOT in self.elfFlags:
-            common.Utils.eprint(f"Warning: Elf with XGOT flag.")
-            common.Utils.eprint(f"\t This flag is currently not handled in any way, please report this")
+            common.Utils.eprint("Warning: Elf with XGOT flag.")
+            common.Utils.eprint("\t This flag is currently not handled in any way, please report this")
 
         if Elf32HeaderFlag.F_64BIT_WHIRL in self.elfFlags:
-            common.Utils.eprint(f"Warning: Elf with F_64BIT_WHIRL flag.")
-            common.Utils.eprint(f"\t This flag is currently not handled in any way, please report this")
+            common.Utils.eprint("Warning: Elf with F_64BIT_WHIRL flag.")
+            common.Utils.eprint("\t This flag is currently not handled in any way, please report this")
 
         if Elf32HeaderFlag.ABI_ON32 in self.elfFlags:
-            common.Utils.eprint(f"Warning: Elf with ABI_ON32 flag.")
-            common.Utils.eprint(f"\t This flag is currently not handled in any way, please report this")
+            common.Utils.eprint("Warning: Elf with ABI_ON32 flag.")
+            common.Utils.eprint("\t This flag is currently not handled in any way, please report this")
 
         if Elf32HeaderFlag._32BITSMODE in self.elfFlags:
-            common.Utils.eprint(f"Warning: Elf with 32BITSMODE flag.")
-            common.Utils.eprint(f"\t This flag is currently not handled in any way, please report this")
+            common.Utils.eprint("Warning: Elf with 32BITSMODE flag.")
+            common.Utils.eprint("\t This flag is currently not handled in any way, please report this")
 
         if Elf32HeaderFlag.FP64 in self.elfFlags:
-            common.Utils.eprint(f"Warning: Elf with FP64 flag.")
-            common.Utils.eprint(f"\t This flag is currently not handled in any way, please report this")
+            common.Utils.eprint("Warning: Elf with FP64 flag.")
+            common.Utils.eprint("\t This flag is currently not handled in any way, please report this")
 
         if Elf32HeaderFlag.NAN2008 in self.elfFlags:
-            common.Utils.eprint(f"Warning: Elf with NAN2008 flag.")
-            common.Utils.eprint(f"\t This flag is currently not handled in any way, please report this")
+            common.Utils.eprint("Warning: Elf with NAN2008 flag.")
+            common.Utils.eprint("\t This flag is currently not handled in any way, please report this")
 
         if Elf32HeaderFlag.ABI2 in self.elfFlags and Elf32HeaderFlag.O64 in self.elfFlags:
-            common.Utils.eprint(f"Warning: Elf compiled using N64 ABI. Support is in experimental state")
+            common.Utils.eprint("Warning: Elf compiled using N64 ABI. Support is in experimental state")
             common.GlobalConfig.ABI = common.Abi.N32
         elif Elf32HeaderFlag.ABI2 in self.elfFlags:
-            common.Utils.eprint(f"Warning: Elf compiled using N32 ABI. Support is in experimental state")
+            common.Utils.eprint("Warning: Elf compiled using N32 ABI. Support is in experimental state")
             common.GlobalConfig.ABI = common.Abi.N32
         elif Elf32HeaderFlag.O64 in self.elfFlags:
-            common.Utils.eprint(f"Warning: Elf compiled using O64 ABI. Support is in experimental state")
+            common.Utils.eprint("Warning: Elf compiled using O64 ABI. Support is in experimental state")
             common.GlobalConfig.ABI = common.Abi.O64
 
         if Elf32HeaderFlag.EABI32 in self.elfFlags:
-            common.Utils.eprint(f"Warning: Elf compiled using EABI32 ABI. Support is in experimental state")
+            common.Utils.eprint("Warning: Elf compiled using EABI32 ABI. Support is in experimental state")
             common.GlobalConfig.ABI = common.Abi.EABI32
 
         if Elf32HeaderFlag.EABI64 in self.elfFlags:
-            common.Utils.eprint(f"Warning: Elf compiled using EABI64 ABI. Support is in experimental state")
+            common.Utils.eprint("Warning: Elf compiled using EABI64 ABI. Support is in experimental state")
             common.GlobalConfig.ABI = common.Abi.EABI64
 
         unkArchLevel = {Elf32HeaderFlag.ARCH_5, Elf32HeaderFlag.ARCH_32, Elf32HeaderFlag.ARCH_64, Elf32HeaderFlag.ARCH_32R2, Elf32HeaderFlag.ARCH_64R2} & set(self.elfFlags)
         if unkArchLevel:
             unkArchLevelNames = [x.name for x in unkArchLevel]
             common.Utils.eprint(f"Warning: Elf uses not supported architecture level: {unkArchLevelNames}")
-            common.Utils.eprint(f"\t This means this elf probably uses an unknown instruction set")
+            common.Utils.eprint("\t This means this elf probably uses an unknown instruction set")
 
         if Elf32HeaderFlag.ARCH_1 in self.elfFlags:
             common.GlobalConfig.ARCHLEVEL = common.ArchLevel.MIPS1
@@ -365,11 +365,11 @@ class Elf32File:
 
 
     def readelf_fileHeader(self) -> None:
-        print(f"ELF Header:")
-        print(f"  Magic:  ", end="")
+        print("ELF Header:")
+        print("  Magic:  ", end="")
         for magic in self.header.ident.ident:
             print(f" {magic:02X}", end="")
-        print(f"\n          ", end="")
+        print("\n          ", end="")
         for magic in self.header.ident.ident:
             character = chr(magic)
             if not character.isprintable():
@@ -398,9 +398,9 @@ class Elf32File:
         print(f"  {'OS/ABI:':<34} ", end="")
         osAbi = self.header.ident.getOsAbi()
         if osAbi == Elf32HeaderIdentifier.OsAbi.NONE:
-            print(f"UNIX - System V")
+            print("UNIX - System V")
         elif osAbi == Elf32HeaderIdentifier.OsAbi.IRIX:
-            print(f"SGI Irix")
+            print("SGI Irix")
         else:
             print(osAbi.name)
 
@@ -487,7 +487,7 @@ class Elf32File:
         print(f"There are {len(self.sectionHeaders)} section headers, starting at offset 0x{self.sectionHeaders.shoff:X}:")
         print()
 
-        print(f"Section Headers:")
+        print("Section Headers:")
 
         largestSectionHeaderName = 17
         for header in self.sectionHeaders:
@@ -525,11 +525,11 @@ class Elf32File:
 
             i += 1
 
-        print(f"Key to Flags:")
-        print(f"  W (write), A (alloc), X (execute), M (merge), S (strings), I (info),")
-        print(f"  L (link order), O (extra OS processing required), G (group), T (TLS),")
-        print(f"  C (compressed), x (unknown), o (OS specific), E (exclude),")
-        print(f"  D (mbind), p (processor specific)")
+        print("Key to Flags:")
+        print("  W (write), A (alloc), X (execute), M (merge), S (strings), I (info),")
+        print("  L (link order), O (extra OS processing required), G (group), T (TLS),")
+        print("  C (compressed), x (unknown), o (OS specific), E (exclude),")
+        print("  D (mbind), p (processor specific)")
 
         print()
 
@@ -627,7 +627,7 @@ class Elf32File:
         print()
 
     def readelf_displayGot(self) -> None:
-        print(f"Primary GOT:")
+        print("Primary GOT:")
         gpValue = 0x7FF0
         entryAddress = 0
         if self.dynamic is not None and self.dynamic.pltGot is not None:
@@ -639,7 +639,7 @@ class Elf32File:
             print()
 
         if self.got is not None:
-            print(f" Reserved entries:")
+            print(" Reserved entries:")
             print(f"   Address {'Access':>12}  Initial Purpose")
             access = entryAddress - gpValue
             if access < 0:
@@ -651,7 +651,7 @@ class Elf32File:
 
             print()
 
-            print(f" Local entries:")
+            print(" Local entries:")
             print(f"   Address {'Access':>12}  Initial")
             for x in self.got.localsTable[1:]:
                 access = entryAddress - gpValue
@@ -664,7 +664,7 @@ class Elf32File:
 
             print()
 
-            print(f" Global entries:")
+            print(" Global entries:")
             print(f"  {'Address':>8} {'Access':>12}  Initial Sym.Val. Type    {'Ndx':12} Name")
             for gotEntry in self.got.globalsTable:
                 access = entryAddress - gpValue
