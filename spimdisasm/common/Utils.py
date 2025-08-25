@@ -13,7 +13,7 @@ import rabbitizer
 import struct
 import subprocess
 import sys
-from typing import Any
+from typing import Any, NoReturn
 
 from .GlobalConfig import GlobalConfig, InputEndian
 
@@ -21,13 +21,19 @@ from .GlobalConfig import GlobalConfig, InputEndian
 def eprint(*args: Any, **kwargs: Any) -> None:
     print(*args, file=sys.stderr, **kwargs)
 
+def panic(*args: Any, **kwargs: Any) -> NoReturn:
+    eprint(*args, **kwargs)
+    exit(1)
+
 def printQuietless(*args: Any, **kwargs: Any) -> None:
     if not GlobalConfig.QUIET:
         print(*args, **kwargs)
 
-def epprintQuietless(*args: Any, **kwargs: Any) -> None:
+def eprintQuietless(*args: Any, **kwargs: Any) -> None:
     if not GlobalConfig.QUIET:
-        print(*args, file=sys.stderr, **kwargs)
+        print(*args, **kwargs)
+def epprintQuietless(*args: Any, **kwargs: Any) -> None:
+    return eprintQuietless(*args, **kwargs)
 
 
 def printVerbose(*args: Any, **kwargs: Any) -> None:
@@ -36,7 +42,7 @@ def printVerbose(*args: Any, **kwargs: Any) -> None:
 
 def eprintVerbose(*args: Any, **kwargs: Any) -> None:
     if not GlobalConfig.QUIET and GlobalConfig.VERBOSE:
-        print(*args, file=sys.stderr, **kwargs)
+        eprint(*args, **kwargs)
 
 # https://stackoverflow.com/questions/1512457/determining-if-stdout-for-a-python-process-is-redirected
 def isStdoutRedirected() -> bool:
@@ -176,7 +182,7 @@ def parseColonSeparatedPairLine(line: str) -> dict[str, str]:
     pairs: dict[str, str] = dict()
 
     # Allow // and # comments
-    line = line.split("//")[0].split("#")[0].strip()
+    line = line.split("//")[0].strip()
 
     for info in line.split(" "):
         if ":" not in info:
@@ -192,6 +198,13 @@ def getMaybeIntFromMaybeStr(number: str|None, base: int=0) -> int|None:
         return None
 
     return int(number, base)
+
+def intFromStr(number: str, base: int=0) -> int|None:
+    try:
+        return int(number, base)
+    except ValueError:
+        return None
+
 
 
 TRUEY_VALS = ["true", "on", "yes", "y"]

@@ -547,6 +547,7 @@ class SymbolsSegment:
 
     def readSplatSymbolAddrs(self, filepath: Path) -> None:
         if not filepath.exists():
+            Utils.eprintQuietless(f"symbol_addrs file '{filepath}' not found.")
             return
 
         with filepath.open() as f:

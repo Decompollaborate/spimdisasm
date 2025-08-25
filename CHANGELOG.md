@@ -33,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     setting the `GlobalConfig.ASM_DATA_END_LABEL` option.
   - To avoid emitting this label set the `GlobalConfig.ASM_DATA_END_LABEL`
     option to an empty string.
+- Added support for splat's `reloc_addrs` file format on the bundled front-ends.
+  - Allows specifying reloc overrides at specific rom addresses.
+  - Use the flag `--reloc-addrs` to specify one or more paths to the files. All
+    the files will be applied in order.
 
 ### Changed
 
