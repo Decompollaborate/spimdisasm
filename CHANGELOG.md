@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.36.0] - 2025-08-25
+
 ### Added
 
 - New "non matching" label.
@@ -1876,6 +1878,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.36.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.35.0...1.36.0
 [1.35.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.34.2...1.35.0
 [1.34.2]: https://github.com/Decompollaborate/spimdisasm/compare/1.34.1...1.34.2
 [1.34.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.34.0...1.34.1

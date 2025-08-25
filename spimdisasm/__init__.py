@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 __version_info__: tuple[int, int, int] = (1, 36, 0)
-__version__ = ".".join(map(str, __version_info__)) + "-dev0"
+__version__ = ".".join(map(str, __version_info__)) # + "-dev0"
 __author__ = "Decompollaborate"
 
 from . import common as common
