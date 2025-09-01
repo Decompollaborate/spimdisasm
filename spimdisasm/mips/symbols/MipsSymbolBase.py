@@ -126,10 +126,10 @@ class SymbolBase(common.ElementBase):
             symLabel = contextSym.getLabelMacro(isInMiddleLabel=True)
             if symLabel is not None:
                 symName = contextSym.getName()
+                label += self.getNonMatchingLabel(symName, None)
                 label += f"{symLabel} {symName}{common.GlobalConfig.LINE_ENDS}"
                 if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
                     label += f"{symName}:" + common.GlobalConfig.LINE_ENDS
-                label += self.getNonMatchingLabel(symName, None)
         return label
 
     def getReloc(self, wordOffset: int, instr: rabbitizer.Instruction|None) -> common.RelocationInfo | None:
@@ -159,7 +159,10 @@ class SymbolBase(common.ElementBase):
                 sizePart = f", 0x{symSize:X}"
             else:
                 sizePart = ""
-            return f"{out}{sizePart}{common.GlobalConfig.LINE_ENDS}"
+            # We need an empty line between the nonmatching marker and the actual
+            # label to avoid triggering the KMC compiler to emit an extra nop as
+            # part of the function.
+            return f"{out}{sizePart}{common.GlobalConfig.LINE_ENDS}{common.GlobalConfig.LINE_ENDS}"
         return ""
 
     def isFunction(self) -> bool:
@@ -638,8 +641,8 @@ class SymbolBase(common.ElementBase):
         output += self.getPrevAlignDirective(0)
 
         symName = self.getName()
-        output += self.getSymbolAsmDeclaration(symName, useGlobalLabel)
         output += self.getNonMatchingLabel(symName, None)
+        output += self.getSymbolAsmDeclaration(symName, useGlobalLabel)
 
         lastSymName = symName
 

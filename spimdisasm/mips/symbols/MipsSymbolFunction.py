@@ -879,8 +879,8 @@ class SymbolFunction(SymbolText):
             # on the emitted size and end directives.
             symSize -= 4 * self.countExtraPadding()
 
-        output += self.getSymbolAsmDeclaration(symName, useGlobalLabel)
         output += self.getNonMatchingLabel(symName, symSize)
+        output += self.getSymbolAsmDeclaration(symName, useGlobalLabel)
 
         wasLastInstABranch = False
         instructionOffset = 0
