@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix some issues related to the new "non matching" marker.
+  - The marker is now emitted behind the actual symbols and with an empty line
+    in between it and the actual symbol label.
+  - This should fix some symbol alignment issues and the extra generated nop on
+    projects using the KMC compiler.
+
 ## [1.36.0] - 2025-08-25
 
 ### Added
