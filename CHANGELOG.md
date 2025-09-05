@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Avoid guessing symbols as string if the first word of the symbol is an address
+  to a known symbol.
+
 ## [1.36.1] - 2025-09-01
 
 ### Fixed

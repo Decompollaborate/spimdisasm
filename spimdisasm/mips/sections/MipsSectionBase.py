@@ -58,7 +58,7 @@ class SectionBase(FileBase):
         contextSym = self.getSymbol(word, tryPlusOffset=True, checkUpperLimit=False)
         if contextSym is not None:
             symType = contextSym.getTypeSpecial()
-            if symType in {common.SymbolSpecialType.function, common.SymbolSpecialType.branchlabel, common.SymbolSpecialType.jumptablelabel}:
+            if symType in {common.SymbolSpecialType.function, common.SymbolSpecialType.branchlabel, common.SymbolSpecialType.jumptablelabel, common.SymbolSpecialType.gccexcepttablelabel}:
                 # Avoid generating extra symbols in the middle of functions
                 return False
 
@@ -188,12 +188,25 @@ class SectionBase(FileBase):
                 return False
 
         # This would mean the string is an empty string, which is not very likely
-        if self.words[localOffset//4] == 0:
+        w = self.words[localOffset//4]
+        if w == 0:
             if stringGuesserLevel < 3:
                 return False
 
         if contextSym.hasOnlyAutodetectedType():
             if stringGuesserLevel < 4:
+                return False
+
+        # We don't want to decode as string if this is a pointer
+        suspectedPtr = self.getSymbol(w)
+        if suspectedPtr is not None:
+            if w == suspectedPtr.vram:
+                return False
+            if suspectedPtr.getTypeSpecial() in {common.SymbolSpecialType.function, common.SymbolSpecialType.branchlabel, common.SymbolSpecialType.jumptablelabel, common.SymbolSpecialType.gccexcepttablelabel}:
+                # It is very unlikely for a symbol to be referencing the middle
+                # of a function, so we allow this to be a string.
+                pass
+            else:
                 return False
 
         currentVram = self.getVramOffset(localOffset)
