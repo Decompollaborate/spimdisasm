@@ -208,6 +208,9 @@ class SectionBase(FileBase):
                 pass
             else:
                 return False
+        elif w % 4 == 0 and self.containsVram(w) and w != contextSym.vram:
+            # Likely to be a pointer to a symbol in the current section.
+            return False
 
         currentVram = self.getVramOffset(localOffset)
         currentVrom = self.getVromOffset(localOffset)
