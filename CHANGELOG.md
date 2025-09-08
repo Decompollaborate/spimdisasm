@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `SingleFileDisasm`:
+  - Error out if the end address is larger than the start address of `.text` or
+    data.
+  - Avoid writing a `.text.s` file if the `.text` start and end addresses are
+    the same, as long as the user has given data addresses, otherwise panic.
+
 ### Fixed
 
 - Avoid guessing symbols as string if the first word of the symbol is an address

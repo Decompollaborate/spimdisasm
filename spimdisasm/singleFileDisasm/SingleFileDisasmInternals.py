@@ -95,10 +95,20 @@ def getSplits(fileSplitsPath: Path|None, vromStart: int, vromEnd: int, fileVram:
 
         endVram = fileVram + vromEnd - vromStart
 
-        splitEntry = common.FileSplitEntry(vromStart, fileVram, "", common.FileSectionType.Text, vromEnd, False, disasmRsp)
-        splits.append(splitEntry)
+        if vromStart < vromEnd:
+            splitEntry = common.FileSplitEntry(vromStart, fileVram, "", common.FileSectionType.Text, vromEnd, False, disasmRsp)
+            splits.append(splitEntry)
+        elif vromStart == vromEnd:
+            # Empty .text section. We can allow it if the user wants to only disassemble data for some reason.
+            if vromDataStart is None or vromDataEnd is None:
+                common.Utils.panic("Error: The given start and end addresses are the same, and no data addresses were given either.")
+        else: # vromStart > vromEnd
+            common.Utils.panic(f"Error: The given start address (0x{vromStart:X}) is larger than the end address (0x{vromEnd:X}).")
 
         if vromDataStart is not None and vromDataEnd is not None:
+            if vromDataStart >= vromDataEnd:
+                common.Utils.panic(f"Error: The end address of data (0x{vromDataEnd:X}) must be larger than its start address (0x{vromDataStart:X}).")
+
             dataVramStart = endVram
             endVram = dataVramStart + vromDataEnd - vromDataStart
             vromEnd = vromDataEnd
