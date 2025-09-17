@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `Context.setupGotTable()`: Allows finer control over the GOT table.
+  - The user can manually define which entries are got-local and which ones are
+    got-global, instead of relying on a given order.
+  - Useful for programs that don't follow the ABI way of defining the GOT; first
+    the locals entries and then the globals entries.
+- `common.GotEntry` class: Defines if an entry of the GOT is either local or
+  global. It must be used together with `Context.setupGotTable()`
+
 ### Changed
 
 - `SingleFileDisasm`:
@@ -14,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     data.
   - Avoid writing a `.text.s` file if the `.text` start and end addresses are
     the same, as long as the user has given data addresses, otherwise panic.
+
+### Deprecated
+
+- `Context.initGotTable()`: Prefer `Context.setupGotTable()` instead.
 
 ### Fixed
 

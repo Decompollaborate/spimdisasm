@@ -373,10 +373,12 @@ def processGlobalOffsetTable(context: common.Context, elfFile: elf32.Elf32File) 
         common.GlobalConfig.GP_VALUE = elfFile.reginfo.gpValue
 
     if elfFile.dynamic is not None and elfFile.got is not None:
-        globalsTable = [gotEntry.getAddress() for gotEntry in elfFile.got.globalsTable]
+        localsTable = [common.GotEntry(address, False) for address in elfFile.got.localsTable]
+        globalsTable = [common.GotEntry(gotEntry.getAddress(), True) for gotEntry in elfFile.got.globalsTable]
+        tableEntries = localsTable + globalsTable
 
         assert elfFile.dynamic.pltGot is not None
-        context.initGotTable(elfFile.dynamic.pltGot, elfFile.got.localsTable, globalsTable)
+        context.setupGotTable(elfFile.dynamic.pltGot, tableEntries)
 
         for small in elfFile.smallSections.values():
             context.addSmallSection(small.addr, small.size)

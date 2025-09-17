@@ -127,7 +127,7 @@ class Elf32File:
 
         if Elf32HeaderFlag.ABI2 in self.elfFlags and Elf32HeaderFlag.O64 in self.elfFlags:
             common.Utils.eprint("Warning: Elf compiled using N64 ABI. Support is in experimental state")
-            common.GlobalConfig.ABI = common.Abi.N32
+            common.GlobalConfig.ABI = common.Abi.N64
         elif Elf32HeaderFlag.ABI2 in self.elfFlags:
             common.Utils.eprint("Warning: Elf compiled using N32 ABI. Support is in experimental state")
             common.GlobalConfig.ABI = common.Abi.N32
