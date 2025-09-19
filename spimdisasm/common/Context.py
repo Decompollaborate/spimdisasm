@@ -12,7 +12,7 @@ from pathlib import Path
 from . import Utils
 from .ContextSymbols import ContextSymbol
 from .SymbolsSegment import SymbolsSegment
-from .GpAccesses import GpAccessContainer
+from .GpAccesses import GpAccessContainer, GotEntry
 from .Relocation import RelocationInfo, RelocType
 
 
@@ -142,13 +142,27 @@ class Context:
         return self.totalVramRange.addSpecialRange(start, end)
 
 
-    def initGotTable(self, pltGot: int, localsTable: list[int], globalsTable: list[int]) -> None:
-        self.gpAccesses.initGotTable(pltGot, localsTable, globalsTable)
+    def setupGotTable(self, pltGot: int, table: list[GotEntry]) -> None:
+        self.gpAccesses.setupGotTable(pltGot, table)
 
-        for gotEntry in self.gpAccesses.got.globalsTable:
-            contextSym = self.globalSegment.addSymbol(gotEntry)
+        for gotEntry in self.gpAccesses.got.iterGlobals():
+            contextSym = self.globalSegment.addSymbol(gotEntry.value())
             contextSym.isUserDeclared = True
             contextSym.isGotGlobal = True
+
+    #! @deprecated
+    def initGotTable(self, pltGot: int, localsTable: list[int], globalsTable: list[int]) -> None:
+        """
+        DEPRECATED: prefer `setupGotTable()` instead.
+        """
+        table = []
+        for x in localsTable:
+            table.append(GotEntry(x, False))
+        for x in globalsTable:
+            table.append(GotEntry(x, True))
+
+        self.setupGotTable(pltGot, table)
+
 
     def addSmallSection(self, address: int, size: int) -> None:
         self.gpAccesses.addSmallSection(address, size)

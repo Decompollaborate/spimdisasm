@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.37.0] - 2025-09-18
+
+### Added
+
+- `Context.setupGotTable()`: Allows finer control over the GOT table.
+  - The user can manually define which entries are got-local and which ones are
+    got-global, instead of relying on a given order.
+  - Useful for programs that don't follow the ABI way of defining the GOT; first
+    the locals entries and then the globals entries.
+- `common.GotEntry` class: Defines if an entry of the GOT is either local or
+  global. It must be used together with `Context.setupGotTable()`
+
+### Changed
+
+- `SingleFileDisasm`:
+  - Error out if the start address is larger than the end address of `.text` or
+    data.
+  - Avoid writing a `.text.s` file if the `.text` start and end addresses are
+    the same, as long as the user has given data addresses, otherwise panic.
+
+### Deprecated
+
+- `Context.initGotTable()`: Prefer `Context.setupGotTable()` instead.
+
+### Fixed
+
+- Avoid guessing symbols as string if the first word of the symbol is an address
+  to a known symbol.
+- `rabbitizer` 1.14.0 or above is required.
+  - Adds a new argument to the R3000GTE `dpct` instruction that exposes required
+    garbage bits.
+
 ## [1.36.1] - 2025-09-01
 
 ### Fixed
@@ -1888,6 +1920,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.37.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.36.1...1.37.0
 [1.36.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.36.0...1.36.1
 [1.36.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.35.0...1.36.0
 [1.35.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.34.2...1.35.0

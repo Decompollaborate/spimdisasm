@@ -23,7 +23,7 @@ from .Context import Context as Context
 from .FileSplitFormat import FileSplitFormat as FileSplitFormat
 from .FileSplitFormat import FileSplitEntry as FileSplitEntry
 from .ElementBase import ElementBase as ElementBase
-from .GpAccesses import GlobalOffsetTable as GlobalOffsetTable
+from .GpAccesses import GotEntry as GotEntry
 from .OrderedEnum import OrderedEnum as OrderedEnum
 from .Relocation import RelocType as RelocType
 from .Relocation import RelocationInfo as RelocationInfo

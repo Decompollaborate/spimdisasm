@@ -6,46 +6,77 @@
 from __future__ import annotations
 
 import dataclasses
+from typing import Generator
 
 from .. import common
 
 from .SortedDict import SortedDict
 
 
+class GotEntry:
+    def __init__(self, value: int, isGlobal: bool) -> None:
+        self._value = value
+        self._isGlobal = isGlobal
+
+    def value(self) -> int:
+        return self._value
+    def isGlobal(self) -> bool:
+        return self._isGlobal
+
+
 class GlobalOffsetTable:
     def __init__(self) -> None:
-        self.localsTable: list[int] = list()
-        self.globalsTable: list[int] = list()
+        self._table: list[GotEntry] = list()
 
-        self.tableAddress: int|None = None
+        self._tableAddress: int|None = None
 
+    def setupTable(self, pltGot: int, table: list[GotEntry]) -> None:
+        self._tableAddress = pltGot
+        self._table = [entry for entry in table]
 
+    #! @deprecated
     def initTables(self, pltGot: int, localsTable: list[int], globalsTable: list[int]) -> None:
-        self.tableAddress = pltGot
-        self.localsTable = [address for address in localsTable]
-        self.globalsTable = [address for address in globalsTable]
+        """
+        DEPRECATED: Prefer `setupTable()` instead.
+        """
+        table = []
+        for x in localsTable:
+            table.append(GotEntry(x, False))
+        for x in globalsTable:
+            table.append(GotEntry(x, True))
+        self.setupTable(pltGot, table)
 
 
-    def getGotSymEntry(self, address: int) -> tuple[int|None, bool|None]:
-        if self.tableAddress is None:
-            return None, None
+    def tableAddress(self) -> int|None:
+        return self._tableAddress
 
-        index = (address - self.tableAddress) // 4
+    def iterGlobals(self) -> Generator[GotEntry]:
+        for entry in self._table:
+            if entry._isGlobal:
+                yield entry
+
+    def iterLocals(self) -> Generator[GotEntry]:
+        for entry in self._table:
+            if not entry._isGlobal:
+                yield entry
+
+
+    def _getGotEntry(self, address: int) -> GotEntry|None:
+        if self._tableAddress is None:
+            return None
+
+        index = (address - self._tableAddress) // 4
 
         if index < 0:
             common.Utils.eprint(f"Warning: %got address 0x{address:X} not found on local or global table (negative index)")
-            common.Utils.eprint(f"    index: {index}, len(localsTable):{len(self.localsTable)}, len(globalsTable): {len(self.globalsTable)}")
-            return None, None
+            common.Utils.eprint(f"    index: {index}, len(table):{len(self._table)}")
+            return None
 
-        if index < len(self.localsTable):
-            return self.localsTable[index], False
-
-        index -= len(self.localsTable)
-        if index >= len(self.globalsTable):
+        if index >= len(self._table):
             common.Utils.eprint(f"Warning: %got address 0x{address:X} not found on local or global table (out of range)")
-            common.Utils.eprint(f"    index: {index}, len(globalsTable): {len(self.globalsTable)}")
-            return None, None
-        return self.globalsTable[index], True
+            common.Utils.eprint(f"    index: {index}, len(table): {len(self._table)}")
+            return None
+        return self._table[index]
 
 
 @dataclasses.dataclass
@@ -78,10 +109,21 @@ class GpAccessContainer:
     def addSmallSection(self, address: int, size: int) -> None:
         self.smallSections[address] = SmallSection(address, size)
 
-    def initGotTable(self, tableAddress: int, localsTable: list[int], globalsTable: list[int]) -> None:
-        self.got.initTables(tableAddress, localsTable, globalsTable)
+    def setupGotTable(self, tableAddress: int, table: list[GotEntry]) -> None:
+        self.got.setupTable(tableAddress, table)
+        self.addSmallSection(tableAddress, len(table) * 4)
 
-        self.addSmallSection(tableAddress, (len(localsTable) + len(globalsTable)) * 4)
+    #! @deprecated
+    def initGotTable(self, tableAddress: int, localsTable: list[int], globalsTable: list[int]) -> None:
+        """
+        DEPRECATED: Prefer `setupGotTable()` instead
+        """
+        table = []
+        for x in localsTable:
+            table.append(GotEntry(x, False))
+        for x in globalsTable:
+            table.append(GotEntry(x, True))
+        self.setupGotTable(tableAddress, table)
 
     def requestAddress(self, address: int) -> GpAccess|None:
         small = self.smallSections.getKeyRight(address)
@@ -91,7 +133,7 @@ class GpAccessContainer:
 
         sectionAddr, sectionData = small
 
-        if sectionAddr != self.got.tableAddress:
+        if sectionAddr != self.got._tableAddress:
             if not sectionData.isInRange(address):
                 common.Utils.eprint(f"Warning: No section found for $gp access at address 0x{address:08X}")
                 return None
@@ -102,13 +144,12 @@ class GpAccessContainer:
             return access
 
         # got
-        gotEntry, inGlobalTable = self.got.getGotSymEntry(address)
-
-        if gotEntry is None or inGlobalTable is None:
+        gotEntry = self.got._getGotEntry(address)
+        if gotEntry is None:
             return None
 
-        access = GpAccess(gotEntry)
-        access.isGotGlobal = inGlobalTable
-        access.isGotLocal = not inGlobalTable
+        access = GpAccess(gotEntry._value)
+        access.isGotGlobal = gotEntry._isGlobal
+        access.isGotLocal = not gotEntry._isGlobal
 
         return access

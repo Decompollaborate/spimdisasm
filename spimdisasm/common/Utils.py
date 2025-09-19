@@ -254,6 +254,7 @@ bannedEscapeCharacters = {
     0x1D,
     0x1E,
     0x1F,
+    0x7F,
 }
 
 escapeCharactersSpecialCases = {
