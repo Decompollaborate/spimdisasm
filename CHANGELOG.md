@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.37.0] - 2025-09-18
+
 ### Added
 
 - `Context.setupGotTable()`: Allows finer control over the GOT table.
@@ -33,6 +35,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Avoid guessing symbols as string if the first word of the symbol is an address
   to a known symbol.
+- `rabbitizer` 1.14.0 or above is required.
+  - Adds a new argument to the R3000GTE `dpct` instruction that exposes required
+    garbage bits.
 
 ## [1.36.1] - 2025-09-01
 
@@ -1915,6 +1920,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version 1.0.0
 
 [unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[1.37.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.36.1...1.37.0
 [1.36.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.36.0...1.36.1
 [1.36.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.35.0...1.36.0
 [1.35.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.34.2...1.35.0
