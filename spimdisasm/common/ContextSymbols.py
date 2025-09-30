@@ -571,13 +571,17 @@ class ContextSymbol:
         typePrefix = self._defaultName_typePrefix(currentType)
         return f"{sectionPrefix}{typePrefix}{uniqueIdentifier}"
 
-    def getName(self) -> str:
+    def getNameUnquoted(self) -> str:
         if self.nameGetCallback is not None:
             name = self.nameGetCallback(self)
         elif self.name is None:
             name = self.getDefaultName()
         else:
             name = self.name
+        return name
+
+    def getName(self) -> str:
+        name = self.getNameUnquoted()
         if "@" in name or "<" in name or "\\" in name or "-" in name or "+" in name:
             return f'"{name}"'
         return name

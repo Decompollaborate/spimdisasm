@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.38.0] - 2025-09-30
+
+### Added
+
+- `ContextSymbol.getNameUnquoted()` and `SymbolBase.getNameUnquoted()`.
+  - Access the name of the symbol without any quoting applied.
+  - The symbol is automatically quoted by `getName()` if its name contain any of
+    `@`, `<`, `\\`, `-` or `+`; meaning this function can be used to access the
+    actual user-defined name.
+
 ## [1.37.0] - 2025-09-18
 
 ### Added
@@ -1919,7 +1929,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Version 1.0.0
 
-[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/master...develop
+[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/1.38.0...HEAD
+[1.38.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.37.0...1.38.0
 [1.37.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.36.1...1.37.0
 [1.36.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.36.0...1.36.1
 [1.36.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.35.0...1.36.0

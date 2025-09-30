@@ -69,13 +69,14 @@ If you use a `requirements.txt` file in your repository, then you can add
 this library with the following line:
 
 ```txt
-spimdisasm>=1.37.0,<2.0.0
+spimdisasm>=1.38.0,<2.0.0
 ```
 
 ### Development version
 
-The unstable development version is located at the [develop](https://github.com/Decompollaborate/spimdisasm/tree/develop)
-branch. PRs should be made into that branch instead of the main one.
+The development version is located at the
+[1.x](https://github.com/Decompollaborate/spimdisasm/tree/1.x)
+branch.
 
 The recommended way to install a locally cloned repo is by passing the `-e`
 (editable) flag to `pip`.
@@ -89,7 +90,7 @@ clone the repository, then you could use the following command:
 
 ```bash
 python3 -m pip uninstall spimdisasm
-python3 -m pip install git+https://github.com/Decompollaborate/spimdisasm.git@develop
+python3 -m pip install git+https://github.com/Decompollaborate/spimdisasm.git@1.x
 ```
 
 NOTE: Installing the development version is not recommended unless you know what

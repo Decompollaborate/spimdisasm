@@ -32,6 +32,9 @@ class SymbolBase(common.ElementBase):
         "Every referenced vram found"
 
 
+    def getNameUnquoted(self) -> str:
+        return self.contextSym.getNameUnquoted()
+
     def getName(self) -> str:
         return self.contextSym.getName()
 
