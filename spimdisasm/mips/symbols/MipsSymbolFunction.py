@@ -780,6 +780,8 @@ class SymbolFunction(SymbolText):
         else:
             label = labelSym.getName() + ":" + common.GlobalConfig.LINE_ENDS
         label = (" " * common.GlobalConfig.ASM_INDENTATION_LABELS) + label
+        if common.GlobalConfig.ASM_EMIT_ALIGN_BRANCH_LABELS:
+            label = f"{self._getAlignDirectiveStr(2, instructionOffset)}{label}"
         return label
 
     def _emitInstruction(self, instr: rabbitizer.Instruction, instructionOffset: int, wasLastInstABranch: bool, isSplittedSymbol: bool=False) -> str:

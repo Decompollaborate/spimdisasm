@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Option to emit alignment directives on every branch label and jumptable label.
+  - This forces every branch label to have an `.align 2` directive.
+  - Can be used as a workaround for certain assembler bugs, like the short loop
+    bug in the PS2 toolchain.
+  - By default this setting is off, it can be controlled by setting
+    `GlobalConfig.ASM_EMIT_ALIGN_BRANCH_LABELS`.
+
 ## [1.38.0] - 2025-09-30
 
 ### Added

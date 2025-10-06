@@ -263,6 +263,8 @@ class GlobalConfigType:
     ASM_PRELUDE_USE_SECTION_START: bool = True
     ASM_GENERATED_BY: bool = True
 
+    ASM_EMIT_ALIGN_BRANCH_LABELS: bool = False
+
     ASM_GLOBALIZE_TEXT_LABELS_REFERENCED_BY_NON_JUMPTABLE: bool = False
     """
     Use `ASM_JTBL_LABEL` on text labels that are referenced by non jumptable
@@ -411,6 +413,7 @@ A C string must start at a 0x4-aligned region, which is '\\0' terminated and pad
         miscConfig.add_argument("--asm-prelude-use-instruction-directives", help=f"Toggle use of the instruction directives on the default prelude. Has no effect if `--asm-use-prelude` is turned off. Defaults to {self.ASM_PRELUDE_USE_INSTRUCTION_DIRECTIVES}", action=Utils.BooleanOptionalAction)
         miscConfig.add_argument("--asm-prelude-use-section-start", help=f"Toggle use of the section start directive on the default prelude. Has no effect if `--asm-use-prelude` is turned off. Defaults to {self.ASM_PRELUDE_USE_SECTION_START}", action=Utils.BooleanOptionalAction)
         miscConfig.add_argument("--asm-generated-by", help=f"Toggle comment indicating the tool and version used to generate the disassembly. Defaults to {self.ASM_GENERATED_BY}", action=Utils.BooleanOptionalAction)
+        miscConfig.add_argument("--asm-emit-align_branch-labels", help=f"Emit a label directive for each branch label and jumptable label. It can be used as a workaround for certain assembler bugs, like the case of the PS2 toolchain. Defaults to {self.ASM_EMIT_ALIGN_BRANCH_LABELS}", action=Utils.BooleanOptionalAction)
 
         miscConfig.add_argument("--asm-globalize-text-labels-referenced-by-non-jumptable", help=f"""\
 Use `ASM_JTBL_LABEL` on text labels that are referenced by non jumptable
@@ -632,6 +635,8 @@ Defaults to {self.ASM_GLOBALIZE_TEXT_LABELS_REFERENCED_BY_NON_JUMPTABLE}""", act
             self.ASM_PRELUDE_USE_SECTION_START = args.asm_prelude_use_section_start
         if args.asm_generated_by is not None:
             self.ASM_GENERATED_BY = args.asm_generated_by
+        if args.asm_emit_align_branch_labels is not None:
+            self.ASM_EMIT_ALIGN_BRANCH_LABELS = args.asm_emit_align_branch_labels
 
         if args.print_new_file_boundaries is not None:
             self.PRINT_NEW_FILE_BOUNDARIES = args.print_new_file_boundaries
