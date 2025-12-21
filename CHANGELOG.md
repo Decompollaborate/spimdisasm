@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.39.1] - 2025-12-21
+
 ### Fixed
 
 - Fix some specific cases where a jumptable mis-identification would break
@@ -1946,7 +1948,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Version 1.0.0
 
-[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/1.39.0...HEAD
+[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/1.39.1...HEAD
+[1.39.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.38.0...1.39.1
 [1.39.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.38.0...1.39.0
 [1.38.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.37.0...1.38.0
 [1.37.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.36.1...1.37.0
