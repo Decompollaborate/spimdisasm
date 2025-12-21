@@ -41,10 +41,10 @@ jobs:
       id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     steps:
-      - uses: actions/download-artifact@vmain
+      - uses: actions/download-artifact@main
         with:
           name: artifact
           path: dist
 
       - name: Publish package distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@v1.12.4
+        uses: pypa/gh-action-pypi-publish@v1.13.0

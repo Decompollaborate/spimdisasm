@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.39.1] - 2025-12-21
+## [1.39.2] - 2025-12-21
+
+### Fixed
+
+- Fix issues with the Github release due to GHA issues.
+
+## [1.39.1] - 2025-12-21 [YANKED]
 
 ### Fixed
 
@@ -1948,7 +1954,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Version 1.0.0
 
-[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/1.39.1...HEAD
+[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/1.39.2...HEAD
+[1.39.2]: https://github.com/Decompollaborate/spimdisasm/compare/1.38.1...1.39.2
 [1.39.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.38.0...1.39.1
 [1.39.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.38.0...1.39.0
 [1.38.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.37.0...1.38.0
