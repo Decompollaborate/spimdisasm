@@ -1028,7 +1028,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Emit a comment saying if a reloc is a global one when the emit relocs flag is passed
+- Emit a comment saying if a reloc is a global one when the emit relocs flag is
+  passed.
 
 ### Fixed
 
@@ -1738,8 +1739,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Explicitly require a `rabbitizer` version smaller than the next major version to
-  avoid possible compatibility issues.
+- Explicitly require a `rabbitizer` version smaller than the next major version
+  to avoid possible compatibility issues.
 - Set up automatic discovery on `setup.cfg`
 
 ## [1.2.3] - 2022-06-11

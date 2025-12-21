@@ -9,7 +9,7 @@ jobs:
     name: Lint md files
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@main
 
     - name: Lint markdown files
       uses: articulate/actions-markdownlint@v1.1.0
