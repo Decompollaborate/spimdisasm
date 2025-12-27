@@ -653,7 +653,7 @@ class SymbolBase(common.ElementBase):
         canReferenceSymbolsWithAddends = self.canUseAddendsOnData()
         canReferenceConstants = self.canUseConstantsOnData()
 
-        symSize = self.contextSym.getSize()
+        symSize: int | None = self.contextSym.getSize()
 
         i = 0
         while i < self.sizew:
