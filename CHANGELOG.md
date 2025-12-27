@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.39.3] - 2025-12-27
+
+### Fixed
+
+- Fix end data label sometimes not being placed at the correct spot when the
+  symbol has a user-defined symbol.
+
 ## [1.39.2] - 2025-12-21
 
 ### Fixed
@@ -1954,7 +1961,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Version 1.0.0
 
-[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/1.39.2...HEAD
+[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/1.39.3...HEAD
+[1.39.3]: https://github.com/Decompollaborate/spimdisasm/compare/1.38.2...1.39.3
 [1.39.2]: https://github.com/Decompollaborate/spimdisasm/compare/1.38.1...1.39.2
 [1.39.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.38.0...1.39.1
 [1.39.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.38.0...1.39.0

@@ -317,9 +317,7 @@ class SymbolBase(common.ElementBase):
             output += common.GlobalConfig.LINE_ENDS
 
             if sym1 is not None:
-                if common.GlobalConfig.ASM_DATA_END_LABEL:
-                    output += f"{common.GlobalConfig.ASM_DATA_END_LABEL} {lastSymName}{common.GlobalConfig.LINE_ENDS}"
-                output += self.getSizeDirective(lastSymName)
+                output += self._getSymEnd(lastSymName)
                 lastSymName = sym1.getName()
 
             output += self.getExtraLabelFromSymbol(sym1)
@@ -330,9 +328,7 @@ class SymbolBase(common.ElementBase):
             output += common.GlobalConfig.LINE_ENDS
 
         if sym2 is not None:
-            if common.GlobalConfig.ASM_DATA_END_LABEL:
-                output += f"{common.GlobalConfig.ASM_DATA_END_LABEL} {lastSymName}{common.GlobalConfig.LINE_ENDS}"
-            output += self.getSizeDirective(lastSymName)
+            output += self._getSymEnd(lastSymName)
             lastSymName = sym2.getName()
 
         output += self.getExtraLabelFromSymbol(sym2)
@@ -347,9 +343,7 @@ class SymbolBase(common.ElementBase):
             output += common.GlobalConfig.LINE_ENDS
 
             if sym3 is not None:
-                if common.GlobalConfig.ASM_DATA_END_LABEL:
-                    output += f"{common.GlobalConfig.ASM_DATA_END_LABEL} {lastSymName}{common.GlobalConfig.LINE_ENDS}"
-                output += self.getSizeDirective(lastSymName)
+                output += self._getSymEnd(lastSymName)
                 lastSymName = sym3.getName()
 
             output += self.getExtraLabelFromSymbol(sym3)
@@ -639,6 +633,13 @@ class SymbolBase(common.ElementBase):
 
         return ""
 
+    def _getSymEnd(self, lastSymName: str) -> str:
+        output = ""
+        if common.GlobalConfig.ASM_DATA_END_LABEL:
+            output += f"{common.GlobalConfig.ASM_DATA_END_LABEL} {lastSymName}{common.GlobalConfig.LINE_ENDS}"
+        output += self.getSizeDirective(lastSymName)
+        return output
+
     def disassembleAsData(self, useGlobalLabel: bool=True, isSplittedSymbol: bool=False) -> str:
         output = self.contextSym.getReferenceeSymbols()
         output += self.getPrevAlignDirective(0)
@@ -651,6 +652,8 @@ class SymbolBase(common.ElementBase):
 
         canReferenceSymbolsWithAddends = self.canUseAddendsOnData()
         canReferenceConstants = self.canUseConstantsOnData()
+
+        symSize = self.contextSym.getSize()
 
         i = 0
         while i < self.sizew:
@@ -671,6 +674,8 @@ class SymbolBase(common.ElementBase):
                     lastSymName = sym2.getName()
                 elif sym1 is not None:
                     lastSymName = sym1.getName()
+                if lastSymName != symName:
+                    symSize = None
             elif self.isFloat(i):
                 data, skip = self.getNthWordAsFloat(i)
             elif self.isDouble(i):
@@ -701,9 +706,13 @@ class SymbolBase(common.ElementBase):
             i += skip
             i += 1
 
-        if common.GlobalConfig.ASM_DATA_END_LABEL:
-            output += f"{common.GlobalConfig.ASM_DATA_END_LABEL} {lastSymName}{common.GlobalConfig.LINE_ENDS}"
-        output += self.getSizeDirective(lastSymName)
+            if i * 4 == symSize:
+                output += self._getSymEnd(lastSymName)
+
+        if symSize is None:
+            # Size was cleared up by some in-middle symbol, so we need to emit
+            # the end label for the last sym
+            output += self._getSymEnd(lastSymName)
 
         nameEnd = self.getNameEnd()
         if nameEnd is not None:
