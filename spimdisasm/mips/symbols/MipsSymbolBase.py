@@ -512,13 +512,13 @@ class SymbolBase(common.ElementBase):
 
         return output, 1
 
-    def getNthWordAsString(self, i: int) -> tuple[str, int]:
+    def getNthWordAsString(self, i: int, lastSymName: str, symSize: int | None) -> tuple[str, int, int | None]:
         localOffset = 4*i
 
         buffer = common.Utils.wordsToBytes(self.words)
         decodedStrings, rawStringSize = common.Utils.decodeBytesToStrings(buffer, localOffset, self.stringEncoding)
         if rawStringSize < 0:
-            return "", -1
+            return "", -1, symSize
 
         skip = rawStringSize // 4
         comment = self.generateAsmLineComment(localOffset)
@@ -539,7 +539,15 @@ class SymbolBase(common.ElementBase):
         subBuffer = buffer[localOffset:localOffset+alignedStrSize]
         result += self.generateBytesComment(subBuffer)
 
-        return result, skip
+        if symSize is not None and symSize > 0 and alignedStrSize >= symSize:
+            # Users may use sizes that are not multiple of four, because
+            # strings may be smaller than a multiple of four and padded, which
+            # padding the user may not consider part of the size of the string.
+            result += self._getSymEnd(lastSymName)
+            # Make it -1 to to avoid emitting the enddlabel more than once
+            symSize = -1
+
+        return result, skip, symSize
 
     def getNthWordAsPascalString(self, i: int) -> tuple[str, int]:
         localOffset = 4*i
@@ -681,7 +689,7 @@ class SymbolBase(common.ElementBase):
             elif self.isDouble(i):
                 data, skip = self.getNthWordAsDouble(i)
             elif self.isString():
-                data, skip = self.getNthWordAsString(i)
+                data, skip, symSize = self.getNthWordAsString(i, lastSymName, symSize)
                 if skip < 0:
                     # Not a string
                     self.contextSym.failedStringDecoding = True

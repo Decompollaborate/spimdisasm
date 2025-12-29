@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fix end data label sometimes not being placed at the correct spot when the
   symbol has a user-defined symbol.
+- Fix not emitting `enddlabel` on strings with user-sizes that are not a
+  multiple of 4.
 
 ## [1.39.2] - 2025-12-21
 
