@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   symbol has a user-defined symbol.
 - Fix not emitting `enddlabel` on strings with user-sizes that are not a
   multiple of 4.
+- Fix not emitting `enddlabel` on `.byte`/`.short`s when the size is not a
+  multiple of 4.
 
 ## [1.39.2] - 2025-12-21
 
