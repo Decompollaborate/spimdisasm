@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.39.3] - 2025-12-27
 
+### Changed
+
+- User provided relocations now have priority over other type inference.
+- Warn if the user declared size for a symbol is not a multiple of 4 and and
+  symbol type is not of byte or short type.
+
 ### Fixed
 
 - Fix end data label sometimes not being placed at the correct spot when the

@@ -708,7 +708,7 @@ class SymbolFunction(SymbolText):
         if self.pointersRemoved:
             return None, None
 
-        relocInfo = self.getReloc(instrOffset, instr)
+        relocInfo = self.getReloc(instrOffset)
         if relocInfo is not None:
             if relocInfo.isRelocNone():
                 if instr.isJumpWithAddress():
@@ -900,7 +900,7 @@ class SymbolFunction(SymbolText):
                 currentLine += common.GlobalConfig.LINE_ENDS
 
             if common.GlobalConfig.EMIT_INLINE_RELOC:
-                relocInfo = self.getReloc(instructionOffset, instr)
+                relocInfo = self.getReloc(instructionOffset)
                 currentLine += self.relocToInlineStr(relocInfo, isSplittedSymbol=isSplittedSymbol)
 
             output += currentLine

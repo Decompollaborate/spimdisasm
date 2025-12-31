@@ -135,7 +135,7 @@ class SymbolBase(common.ElementBase):
                     label += f"{symName}:" + common.GlobalConfig.LINE_ENDS
         return label
 
-    def getReloc(self, wordOffset: int, instr: rabbitizer.Instruction|None) -> common.RelocationInfo | None:
+    def getReloc(self, wordOffset: int) -> common.RelocationInfo | None:
         relocInfo = self.context.globalRelocationOverrides.get(self.getVromOffset(wordOffset))
 
         if relocInfo is None:
@@ -396,7 +396,7 @@ class SymbolBase(common.ElementBase):
 
         return True
 
-    def getNthWordAsWords(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False, isSplittedSymbol: bool=False) -> tuple[str, int]:
+    def getNthWordAsWords(self, i: int, relocInfo: common.RelocationInfo | None, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False, isSplittedSymbol: bool=False) -> tuple[str, int]:
         output = ""
         localOffset = 4*i
         currentVram = self.getVramOffset(localOffset)
@@ -412,7 +412,6 @@ class SymbolBase(common.ElementBase):
         value = f"0x{w:08X}"
 
         # .elf relocated symbol
-        relocInfo = self.getReloc(localOffset, None)
         if relocInfo is not None:
             if relocInfo.isRelocNone():
                 # If the reloc type is none then use the raw number instead
@@ -581,8 +580,8 @@ class SymbolBase(common.ElementBase):
 
         return result, skip
 
-    def getNthWord(self, i: int, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False, isSplittedSymbol: bool=False) -> tuple[str, int]:
-        return self.getNthWordAsWords(i, canReferenceSymbolsWithAddends=canReferenceSymbolsWithAddends, canReferenceConstants=canReferenceConstants, isSplittedSymbol=isSplittedSymbol)
+    def getNthWord(self, i: int, relocInfo: common.RelocationInfo | None, canReferenceSymbolsWithAddends: bool=False, canReferenceConstants: bool=False, isSplittedSymbol: bool=False) -> tuple[str, int]:
+        return self.getNthWordAsWords(i, relocInfo, canReferenceSymbolsWithAddends=canReferenceSymbolsWithAddends, canReferenceConstants=canReferenceConstants, isSplittedSymbol=isSplittedSymbol)
 
 
     def countExtraPadding(self) -> int:
@@ -666,17 +665,36 @@ class SymbolBase(common.ElementBase):
 
         symSize: int | None = self.contextSym.userDeclaredSize
 
+        if symSize is not None and symSize % 4 != 0 and self.contextSym.userDeclaredType is not None:
+            warningMsg = f"""
+Warning: Symbol '{symName}' (0x{self.vram:08X}) was given a size '0x{symSize:X}' that is not a multiple of its given type '{self.contextSym.userDeclaredType}'
+This may produce inconsistency issues like end labels not being emitted.
+You are highly encouraged to fix it.
+This may be changed to a hard error in the future.
+"""
+            if symSize % 2 != 0:
+                if not self.isByte(0):
+                    common.Utils.eprint(warningMsg)
+            else:
+                if not self.isByte(0) and not self.isShort(0):
+                    common.Utils.eprint(warningMsg)
+
         i = 0
         while i < self.sizew:
             currentVram = self.getVramOffset(i*4)
             currentVrom = self.getVromOffset(i*4)
+            relocInfo = self.getReloc(i*4)
 
             sym1 = self.getSymbol(currentVram+1, vromAddress=currentVrom, tryPlusOffset=False, checkGlobalSegment=False)
             sym2 = self.getSymbol(currentVram+2, vromAddress=currentVrom, tryPlusOffset=False, checkGlobalSegment=False)
             sym3 = self.getSymbol(currentVram+3, vromAddress=currentVrom, tryPlusOffset=False, checkGlobalSegment=False)
 
-            # Check for symbols in the middle of this word
-            if sym1 is not None or sym2 is not None or sym3 is not None or self.isByte(i) or self.isShort(i):
+            if relocInfo is not None:
+                # If there is any user provided reloc info then we use that instead of anything else.
+                # What can go wrong
+                data, skip = self.getNthWord(i, relocInfo, isSplittedSymbol=isSplittedSymbol, canReferenceSymbolsWithAddends=canReferenceSymbolsWithAddends, canReferenceConstants=canReferenceConstants)
+            elif sym1 is not None or sym2 is not None or sym3 is not None or self.isByte(i) or self.isShort(i):
+                # Check for symbols in the middle of this word
                 data, skip = self.getNthWordAsBytesAndShorts(i, sym1, sym2, sym3, lastSymName, symSize)
 
                 if sym3 is not None:
@@ -696,21 +714,20 @@ class SymbolBase(common.ElementBase):
                 if skip < 0:
                     # Not a string
                     self.contextSym.failedStringDecoding = True
-                    data, skip = self.getNthWord(i, isSplittedSymbol=isSplittedSymbol, canReferenceSymbolsWithAddends=canReferenceSymbolsWithAddends, canReferenceConstants=canReferenceConstants)
+                    data, skip = self.getNthWord(i, relocInfo, isSplittedSymbol=isSplittedSymbol, canReferenceSymbolsWithAddends=canReferenceSymbolsWithAddends, canReferenceConstants=canReferenceConstants)
             elif self.isPascalString():
                 data, skip = self.getNthWordAsPascalString(i)
                 if skip < 0:
                     # Not a string
                     self.contextSym.failedPascalStringDecoding = True
-                    data, skip = self.getNthWord(i, isSplittedSymbol=isSplittedSymbol, canReferenceSymbolsWithAddends=canReferenceSymbolsWithAddends, canReferenceConstants=canReferenceConstants)
+                    data, skip = self.getNthWord(i, relocInfo, isSplittedSymbol=isSplittedSymbol, canReferenceSymbolsWithAddends=canReferenceSymbolsWithAddends, canReferenceConstants=canReferenceConstants)
             else:
-                data, skip = self.getNthWord(i, isSplittedSymbol=isSplittedSymbol, canReferenceSymbolsWithAddends=canReferenceSymbolsWithAddends, canReferenceConstants=canReferenceConstants)
+                data, skip = self.getNthWord(i, relocInfo, isSplittedSymbol=isSplittedSymbol, canReferenceSymbolsWithAddends=canReferenceSymbolsWithAddends, canReferenceConstants=canReferenceConstants)
 
             if i != 0:
                 output += self.getPrevAlignDirective(i)
             output += data
             if common.GlobalConfig.EMIT_INLINE_RELOC:
-                relocInfo = self.getReloc(i*4, None)
                 output += self.relocToInlineStr(relocInfo, isSplittedSymbol)
             output += self.getPostAlignDirective(i)
 
