@@ -28,9 +28,9 @@ default = []
 std = ["spimdisasm/std"]
 
 [dependencies]
-clap = { version = "4.5.20", features = ["derive"] }
-object = { version = "0.36.7", default-features = false, features = ["std", "elf", "read_core"] }
+clap = { version = "4", features = ["derive"] }
+object = { version = "0.38", default-features = false, features = ["std", "elf", "read_core"] }
 spimdisasm = { path = "../spimdisasm" }
 
 [dev-dependencies]
-pretty_assertions = "1.4"
+pretty_assertions = "1"
