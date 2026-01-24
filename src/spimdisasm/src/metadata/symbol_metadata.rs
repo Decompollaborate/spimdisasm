@@ -82,7 +82,6 @@ pub enum RodataMigrationBehavior {
     MigrateToSpecificFunction(Arc<str>),
 }
 
-
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum OwnerSegmentKind {
     Global,

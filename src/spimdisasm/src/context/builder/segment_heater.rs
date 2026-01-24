@@ -202,17 +202,20 @@ impl SegmentHeater {
                         .preheater
                         .references()
                         .find(&aux_vram, FindSettings::new(true));
-                    if maybe_overlapped_sym.is_none() {
-                        buf.write_all("what?".as_bytes()).unwrap();
-                    } else if maybe_overlapped_sym.unwrap().vram() != *vram {
-                        buf.write_all(
-                            format!(
-                                "The size of this symbol overlaps with address 0x{}",
-                                maybe_overlapped_sym.unwrap().vram()
+
+                    if let Some(maybe_overlapped_sym) = maybe_overlapped_sym {
+                        let maybe_overlapped_vram = maybe_overlapped_sym.vram();
+                        if maybe_overlapped_vram != *vram {
+                            buf.write_all(
+                                format!(
+                                    "The size of this symbol overlaps with address 0x{maybe_overlapped_vram}"
+                                )
+                                .as_bytes(),
                             )
-                            .as_bytes(),
-                        )
-                        .unwrap();
+                            .unwrap();
+                        }
+                    } else {
+                        buf.write_all("what?".as_bytes()).unwrap();
                     }
                 }
 
