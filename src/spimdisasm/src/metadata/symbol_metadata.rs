@@ -52,10 +52,11 @@ impl GotInfo {
     }
 }
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Default)]
 #[non_exhaustive]
 pub enum RodataMigrationBehavior {
     /// Let spimdisasm handle if it should migrate this rodata symbol.
+    #[default]
     Default,
 
     /// Ignore rules for migrating rodata and force migration of this symbol to any
@@ -81,11 +82,6 @@ pub enum RodataMigrationBehavior {
     MigrateToSpecificFunction(Arc<str>),
 }
 
-impl Default for RodataMigrationBehavior {
-    fn default() -> Self {
-        Self::Default
-    }
-}
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum OwnerSegmentKind {

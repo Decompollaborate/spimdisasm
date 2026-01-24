@@ -3,6 +3,7 @@
 
 #![doc = include_str!("../README.md")]
 #![warn(clippy::ref_option)]
+// #![warn(clippy::missing_panics_doc)] // TODO
 #![cfg_attr(feature = "nightly", feature(btree_cursors))]
 #![cfg_attr(not(feature = "std"), no_std)]
 

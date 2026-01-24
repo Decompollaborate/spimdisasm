@@ -716,9 +716,11 @@ fn gather_relocs(elf: &ParsedElf) -> BTreeMap<Rom, RelocationInfo> {
     let _avoid_warning = elf;
     let user_relocs = BTreeMap::new();
 
-    // TODO
+    // TODO: fill user_relocs
 
-    #[expect(clippy::let_and_return)]
+    // TODO: change this back to `expect` when clippy fixes the issue
+    // https://github.com/rust-lang/rust-clippy/issues/16451
+    #[allow(clippy::let_and_return)]
     user_relocs
 }
 
