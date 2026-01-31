@@ -19,27 +19,88 @@ use crate::{
 };
 
 use super::{
-    AddOverlayToBuilderError, BuildContextError, GlobalSegmentHeater, OverlaySegmentHeater,
-    SegmentHeater, UserSegmentBuilder,
+    AddGlobalToBuilderError, AddOverlayToBuilderError, BuildContextError, GlobalSegmentHeater,
+    OverlaySegmentHeater, SegmentHeater, UserSegmentBuilder,
 };
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct ContextBuilder {
-    global_segment: GlobalSegmentHeater,
-    user_segment: UserSegmentBuilder,
+    global_segments: Vec<GlobalSegmentHeater>,
     overlays: Vec<OverlaySegmentHeater>,
-    overlay_names: UnorderedSet<Arc<str>>,
+    segment_names: UnorderedSet<Arc<str>>,
 }
 
 impl ContextBuilder {
     #[must_use]
-    pub fn new(global_segment: GlobalSegmentHeater, user_segment: UserSegmentBuilder) -> Self {
+    pub fn new() -> Self {
         Self {
-            global_segment,
-            user_segment,
+            global_segments: Vec::new(),
             overlays: Vec::new(),
-            overlay_names: UnorderedSet::new(),
+            segment_names: UnorderedSet::new(),
+        }
+    }
+
+    pub fn add_global_segment(
+        &mut self,
+        global_segment: GlobalSegmentHeater,
+    ) -> Result<(), AddGlobalToBuilderError> {
+        // We can't let a global segment overlap with anything else
+        let self_ranges = global_segment.ranges();
+        let self_rom = self_ranges.rom();
+        let self_vram = self_ranges.vram();
+
+        for g in &self.global_segments {
+            let other_ranges = g.ranges();
+            let other_rom = other_ranges.rom();
+            let other_vram = other_ranges.vram();
+
+            if other_rom.overlaps(self_rom) {
+                return Err(AddGlobalToBuilderError::new_global_overlapping_rom(
+                    global_segment.name(),
+                    *self_rom,
+                    g.name(),
+                    *other_rom,
+                ));
+            } else if other_vram.overlaps(self_vram) {
+                return Err(AddGlobalToBuilderError::new_global_overlapping_vram(
+                    global_segment.name(),
+                    *self_vram,
+                    g.name(),
+                    *other_vram,
+                ));
+            }
+        }
+
+        for o in &self.overlays {
+            let other_ranges = o.ranges();
+            let other_rom = other_ranges.rom();
+            let other_vram = other_ranges.vram();
+
+            if other_rom.overlaps(self_rom) {
+                return Err(AddGlobalToBuilderError::new_overlay_overlapping_rom(
+                    global_segment.name(),
+                    *self_rom,
+                    o.name(),
+                    *other_rom,
+                ));
+            } else if other_vram.overlaps(self_vram) {
+                return Err(AddGlobalToBuilderError::new_overlay_overlapping_vram(
+                    global_segment.name(),
+                    *self_vram,
+                    o.name(),
+                    *other_vram,
+                ));
+            }
+        }
+
+        if !self.segment_names.insert(global_segment.name()) {
+            Err(AddGlobalToBuilderError::new_duplicated_name(
+                global_segment.name(),
+            ))
+        } else {
+            self.global_segments.push(global_segment);
+            Ok(())
         }
     }
 
@@ -47,22 +108,35 @@ impl ContextBuilder {
         &mut self,
         overlay: OverlaySegmentHeater,
     ) -> Result<(), AddOverlayToBuilderError> {
-        let global_ranges = self.global_segment.ranges();
-        let overlay_ranges = overlay.ranges();
+        let self_ranges = overlay.ranges();
+        let self_rom = self_ranges.rom();
+        let self_vram = self_ranges.vram();
 
-        if global_ranges.rom().overlaps(overlay_ranges.rom()) {
-            Err(AddOverlayToBuilderError::new_overlapping_rom(
-                overlay.name(),
-                *overlay_ranges.rom(),
-                *global_ranges.rom(),
-            ))
-        } else if global_ranges.vram().overlaps(overlay_ranges.vram()) {
-            Err(AddOverlayToBuilderError::new_overlapping_vram(
-                overlay.name(),
-                *overlay_ranges.vram(),
-                *global_ranges.vram(),
-            ))
-        } else if !self.overlay_names.insert(overlay.name()) {
+        // We let overlays overlap with other overlays.
+        // but overlapping with global segments is prohibited.
+        for g in &self.global_segments {
+            let other_ranges = g.ranges();
+            let other_rom = other_ranges.rom();
+            let other_vram = other_ranges.vram();
+
+            if other_rom.overlaps(self_rom) {
+                return Err(AddOverlayToBuilderError::new_overlapping_rom(
+                    overlay.name(),
+                    *self_rom,
+                    g.name(),
+                    *other_rom,
+                ));
+            } else if other_vram.overlaps(self_vram) {
+                return Err(AddOverlayToBuilderError::new_overlapping_vram(
+                    overlay.name(),
+                    *self_vram,
+                    g.name(),
+                    *other_vram,
+                ));
+            }
+        }
+
+        if !self.segment_names.insert(overlay.name()) {
             Err(AddOverlayToBuilderError::new_duplicated_name(
                 overlay.name(),
             ))
@@ -73,7 +147,7 @@ impl ContextBuilder {
     }
 
     fn get_visible_vram_ranges_for_segment(
-        segment_name: Option<Arc<str>>,
+        segment_name: Arc<str>,
         segment: &SegmentHeater,
         overlays: &[OverlaySegmentHeater],
     ) -> Result<Vec<AddressRange<Vram>>, BuildContextError> {
@@ -126,7 +200,7 @@ impl ContextBuilder {
         let mut visible_ranges_for_overlays = Vec::new();
         for overlay in &overlays {
             visible_ranges_for_overlays.push(Self::get_visible_vram_ranges_for_segment(
-                Some(overlay.name()),
+                overlay.name(),
                 overlay.inner(),
                 &overlays,
             )?);
@@ -213,10 +287,20 @@ impl ContextBuilder {
         Ok(overlay_segments)
     }
 
-    pub fn build(self, global_config: GlobalConfig) -> Result<Context, BuildContextError> {
+    pub fn build(
+        self,
+        global_config: GlobalConfig,
+        user_segment: UserSegmentBuilder,
+    ) -> Result<Context, BuildContextError> {
+        if self.global_segments.is_empty() {
+            return Err(BuildContextError::new_zero_global_segments());
+        }
+
         let mut preheated_sections = UnorderedMap::new();
-        for (rom, _) in self.global_segment.preheated_sections_rom() {
-            preheated_sections.insert(*rom, false);
+        for global_segment in &self.global_segments {
+            for (rom, _) in global_segment.preheated_sections_rom() {
+                preheated_sections.insert(*rom, false);
+            }
         }
         for overlay in &self.overlays {
             for (rom, _) in overlay.preheated_sections_rom() {
@@ -224,22 +308,35 @@ impl ContextBuilder {
             }
         }
 
-        let visible_ranges_for_global = Self::get_visible_vram_ranges_for_segment(
-            None,
-            self.global_segment.inner(),
-            &self.overlays,
-        )?;
-        let global_segment = self.global_segment.finish(visible_ranges_for_global.into());
+        let temp: Result<Vec<SegmentMetadata>, BuildContextError> = self
+            .global_segments
+            .into_iter()
+            .map(|seg| {
+                let visible_ranges_for_global = Self::get_visible_vram_ranges_for_segment(
+                    seg.name(),
+                    seg.inner(),
+                    &self.overlays,
+                )?;
+                Ok(seg.finish(visible_ranges_for_global.into()))
+            })
+            .collect();
+        let global_segments = temp?;
 
         let overlay_segments = Self::build_overlays(self.overlays)?;
 
         Ok(Context::new(
             global_config,
-            global_segment,
-            self.user_segment.build(),
+            user_segment.build(),
+            global_segments,
             overlay_segments,
             preheated_sections,
         ))
+    }
+}
+
+impl Default for ContextBuilder {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -250,8 +347,16 @@ pub(crate) mod python_bindings {
     #[pymethods]
     impl ContextBuilder {
         #[new]
-        fn py_new(global_segment: GlobalSegmentHeater, user_segment: UserSegmentBuilder) -> Self {
-            Self::new(global_segment, user_segment)
+        fn py_new() -> Self {
+            Self::new()
+        }
+
+        #[pyo3(name = "add_global_segment")]
+        pub fn py_add_global_segment(
+            &mut self,
+            global_segment: GlobalSegmentHeater,
+        ) -> Result<(), AddGlobalToBuilderError> {
+            self.add_global_segment(global_segment)
         }
 
         #[pyo3(name = "add_overlay")]
@@ -263,9 +368,13 @@ pub(crate) mod python_bindings {
         }
 
         #[pyo3(name = "build")]
-        pub fn py_build(&self, global_config: GlobalConfig) -> Result<Context, BuildContextError> {
+        pub fn py_build(
+            &self,
+            global_config: GlobalConfig,
+            user_segment: UserSegmentBuilder,
+        ) -> Result<Context, BuildContextError> {
             // Silly clone because we can't move from a Python instance
-            self.clone().build(global_config)
+            self.clone().build(global_config, user_segment)
         }
     }
 }

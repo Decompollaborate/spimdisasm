@@ -7,7 +7,10 @@ use core::{error, fmt};
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::addresses::{AddressRange, Rom, Size, Vram};
+use crate::{
+    addresses::{AddressRange, Rom, Size, Vram},
+    metadata::SegmentKind,
+};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 enum PreheatErrorInner {
@@ -30,7 +33,7 @@ enum PreheatErrorInner {
 #[non_exhaustive]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct PreheatError {
-    segment_name: Option<Arc<str>>,
+    segment_kind: SegmentKind,
     section_name: Arc<str>,
     section_rom: Rom,
     section_vram: Vram,
@@ -39,7 +42,7 @@ pub struct PreheatError {
 
 impl PreheatError {
     pub(crate) const fn new_wrong_rom(
-        segment_name: Option<Arc<str>>,
+        segment_kind: SegmentKind,
         section_name: Arc<str>,
         section_rom: Rom,
         section_vram: Vram,
@@ -47,7 +50,7 @@ impl PreheatError {
         section_end: Rom,
     ) -> Self {
         Self {
-            segment_name,
+            segment_kind,
             section_name,
             section_rom,
             section_vram,
@@ -58,7 +61,7 @@ impl PreheatError {
         }
     }
     pub(crate) const fn new_wrong_vram(
-        segment_name: Option<Arc<str>>,
+        segment_kind: SegmentKind,
         section_name: Arc<str>,
         section_rom: Rom,
         section_vram: Vram,
@@ -66,7 +69,7 @@ impl PreheatError {
         section_end: Vram,
     ) -> Self {
         Self {
-            segment_name,
+            segment_kind,
             section_name,
             section_rom,
             section_vram,
@@ -77,13 +80,13 @@ impl PreheatError {
         }
     }
     pub(crate) const fn new_already_preheated(
-        segment_name: Option<Arc<str>>,
+        segment_kind: SegmentKind,
         section_name: Arc<str>,
         section_rom: Rom,
         section_vram: Vram,
     ) -> Self {
         Self {
-            segment_name,
+            segment_kind,
             section_name,
             section_rom,
             section_vram,
@@ -91,7 +94,7 @@ impl PreheatError {
         }
     }
     pub(crate) fn new_overlaps_with_already_preheated(
-        segment_name: Option<Arc<str>>,
+        segment_kind: SegmentKind,
         section_name: Arc<str>,
         section_rom: Rom,
         section_vram: Vram,
@@ -100,7 +103,7 @@ impl PreheatError {
         other_size: Size,
     ) -> Self {
         Self {
-            segment_name,
+            segment_kind,
             section_name,
             section_rom,
             section_vram,
@@ -119,11 +122,7 @@ impl fmt::Display for PreheatError {
             "Error while preheating the section '{}' ({:?} / {:?}) from the ",
             self.section_name, self.section_rom, self.section_vram
         )?;
-        if let Some(name) = &self.segment_name {
-            write!(f, "overlay segment '{name}' ")?;
-        } else {
-            write!(f, "global segment ")?;
-        }
+        self.segment_kind.write_verbose(f)?;
         write!(f, ": ")?;
 
         match &self.inner {

@@ -11,27 +11,24 @@ use alloc::{
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::{
-    addresses::{GlobalOffsetTable, Rom, RomVramRange, Size, UserSize, Vram},
-    collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
-    config::GlobalConfig,
-    metadata::{
-        GeneratedBy, IgnoredAddressRange, LabelMetadata, LabelType, OverlayCategoryName,
-        OwnerSegmentKind, SymbolMetadata, SymbolNameGenerationSettings, SymbolType,
-        UserLabelMetadata, UserSymMetadata,
-    },
+use crate::addresses::{GlobalOffsetTable, Rom, RomVramRange, Size, UserSize, Vram};
+use crate::collections::addended_ordered_map::{AddendedOrderedMap, FindSettings};
+use crate::config::GlobalConfig;
+use crate::metadata::{
+    GeneratedBy, IgnoredAddressRange, LabelMetadata, LabelType, OverlayCategoryName,
+    SymbolMetadata, SymbolNameGenerationSettings, SymbolType, UserLabelMetadata, UserSymMetadata,
 };
 
 use super::{
     segment_builder_error::AddPrioritisedOverlayError, AddGlobalOffsetTableError,
     AddIgnoredAddressRangeError, AddUserLabelError, AddUserSymbolError, GlobalSegmentHeater,
-    OverlaySegmentHeater,
+    OverlaySegmentHeater, SegmentBuilderKind,
 };
 
 #[derive(Debug, Clone, PartialEq)]
 struct SegmentBuilder {
+    kind: SegmentBuilderKind,
     ranges: RomVramRange,
-    name: Option<Arc<str>>,
     prioritised_overlays: Vec<Arc<str>>,
     user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
     user_labels: BTreeMap<Vram, LabelMetadata>,
@@ -40,7 +37,7 @@ struct SegmentBuilder {
 }
 
 impl SegmentBuilder {
-    fn new(ranges: RomVramRange, name: Option<Arc<str>>) -> Self {
+    fn new(kind: SegmentBuilderKind, ranges: RomVramRange) -> Self {
         let mut ignored_addresses = AddendedOrderedMap::new();
 
         // Hardcode the address 0 to always be ignored.
@@ -49,8 +46,8 @@ impl SegmentBuilder {
         });
 
         Self {
+            kind,
             ranges,
-            name,
             prioritised_overlays: Vec::new(),
             user_symbols: AddendedOrderedMap::new(),
             user_labels: BTreeMap::new(),
@@ -59,22 +56,20 @@ impl SegmentBuilder {
         }
     }
 
+    // TODO: check somewhere the names of the priortised overlays actually exist.
     fn add_prioritised_overlay(
         &mut self,
-        segment_name: Arc<str>,
+        overlay_segment_name: Arc<str>,
     ) -> Result<(), AddPrioritisedOverlayError> {
-        if self.name.as_ref() == Some(&segment_name) {
-            Err(AddPrioritisedOverlayError::new_self_name(
-                self.name.clone(),
-                segment_name,
-            ))
-        } else if self.prioritised_overlays.contains(&segment_name) {
+        if self.kind.name() == overlay_segment_name {
+            Err(AddPrioritisedOverlayError::new_self_name(self.kind.clone()))
+        } else if self.prioritised_overlays.contains(&overlay_segment_name) {
             Err(AddPrioritisedOverlayError::new_duplicated(
-                self.name.clone(),
-                segment_name,
+                self.kind.clone(),
+                overlay_segment_name,
             ))
         } else {
-            self.prioritised_overlays.push(segment_name);
+            self.prioritised_overlays.push(overlay_segment_name);
             Ok(())
         }
     }
@@ -92,7 +87,7 @@ impl SegmentBuilder {
                 return Err(AddUserSymbolError::new_rom_out_of_range(
                     name,
                     vram,
-                    self.name.clone(),
+                    self.kind.clone(),
                     rom,
                     *self.ranges.rom(),
                 ));
@@ -103,7 +98,7 @@ impl SegmentBuilder {
             return Err(AddUserSymbolError::new_vram_out_of_range(
                 name,
                 vram,
-                self.name.clone(),
+                self.kind.clone(),
                 *self.ranges.vram(),
             ));
         }
@@ -117,7 +112,7 @@ impl SegmentBuilder {
                 return Err(AddUserSymbolError::new_overlap(
                     name,
                     vram,
-                    self.name.clone(),
+                    self.kind.clone(),
                     Arc::from(other.display_name().to_string()),
                     other.vram(),
                     other.size().unwrap(),
@@ -131,11 +126,7 @@ impl SegmentBuilder {
             vram,
             FindSettings::new(check_addend),
             || {
-                let owner_segment_kind = if let Some(name) = self.name.clone() {
-                    OwnerSegmentKind::Overlay(name)
-                } else {
-                    OwnerSegmentKind::Global
-                };
+                let owner_segment_kind = self.kind.clone().into();
                 SymbolMetadata::new(
                     GeneratedBy::UserDeclared,
                     vram,
@@ -149,7 +140,7 @@ impl SegmentBuilder {
             Err(AddUserSymbolError::new_overlap(
                 name,
                 vram,
-                self.name.clone(),
+                self.kind.clone(),
                 Arc::from(sym.display_name().to_string()),
                 sym.vram(),
                 sym.size().unwrap(),
@@ -158,7 +149,7 @@ impl SegmentBuilder {
             Err(AddUserSymbolError::new_duplicated(
                 name,
                 vram,
-                self.name.clone(),
+                self.kind.clone(),
                 Arc::from(sym.display_name().to_string()),
                 sym.vram(),
             ))
@@ -186,7 +177,7 @@ impl SegmentBuilder {
                     name,
                     vram,
                     label_type,
-                    self.name.clone(),
+                    self.kind.clone(),
                     rom,
                     *self.ranges.rom(),
                 ));
@@ -198,7 +189,7 @@ impl SegmentBuilder {
                 name,
                 vram,
                 label_type,
-                self.name.clone(),
+                self.kind.clone(),
                 *self.ranges.vram(),
             ));
         }
@@ -212,18 +203,14 @@ impl SegmentBuilder {
                     name,
                     vram,
                     label_type,
-                    self.name.clone(),
+                    self.kind.clone(),
                     Arc::from(label.display_name().to_string()),
                     label.vram(),
                     label.label_type(),
                 ))
             }
             btree_map::Entry::Vacant(vacant_entry) => {
-                let owner_segment_kind = if let Some(name) = self.name.clone() {
-                    OwnerSegmentKind::Overlay(name)
-                } else {
-                    OwnerSegmentKind::Global
-                };
+                let owner_segment_kind = self.kind.clone().into();
 
                 let label = vacant_entry.insert(LabelMetadata::new_user(
                     vram,
@@ -309,9 +296,13 @@ pub struct GlobalSegmentBuilder {
 }
 
 impl GlobalSegmentBuilder {
-    pub fn new(ranges: RomVramRange) -> Self {
+    pub fn new<T>(segment_name: T, ranges: RomVramRange) -> Self
+    where
+        T: Into<Arc<str>>,
+    {
+        let kind = SegmentBuilderKind::Global(segment_name.into());
         Self {
-            inner: SegmentBuilder::new(ranges, None),
+            inner: SegmentBuilder::new(kind, ranges),
         }
     }
 
@@ -377,13 +368,24 @@ impl GlobalSegmentBuilder {
     }
 
     pub fn finish_symbols(self) -> GlobalSegmentHeater {
+        let SegmentBuilder {
+            kind,
+            ranges,
+            prioritised_overlays,
+            user_symbols,
+            user_labels,
+            ignored_addresses,
+            global_offset_table,
+        } = self.inner;
+
         GlobalSegmentHeater::new(
-            self.inner.ranges,
-            self.inner.prioritised_overlays.into(),
-            self.inner.user_symbols,
-            self.inner.user_labels,
-            self.inner.ignored_addresses,
-            self.inner.global_offset_table,
+            kind,
+            ranges,
+            prioritised_overlays.into(),
+            user_symbols,
+            user_labels,
+            ignored_addresses,
+            global_offset_table,
         )
     }
 }
@@ -396,12 +398,12 @@ pub struct OverlaySegmentBuilder {
 }
 
 impl OverlaySegmentBuilder {
-    pub fn new<T>(ranges: RomVramRange, category_name: OverlayCategoryName, segment_name: T) -> Self
+    pub fn new<T>(segment_name: T, ranges: RomVramRange, category_name: OverlayCategoryName) -> Self
     where
         T: Into<Arc<str>>,
     {
         Self {
-            inner: SegmentBuilder::new(ranges, Some(segment_name.into())),
+            inner: SegmentBuilder::new(SegmentBuilderKind::Overlay(segment_name.into()), ranges),
             category_name,
         }
     }
@@ -458,16 +460,24 @@ impl OverlaySegmentBuilder {
     }
 
     pub fn finish_symbols(self) -> OverlaySegmentHeater {
+        let SegmentBuilder {
+            kind,
+            ranges,
+            prioritised_overlays,
+            user_symbols,
+            user_labels,
+            ignored_addresses,
+            global_offset_table,
+        } = self.inner;
+
         OverlaySegmentHeater::new(
-            self.inner.ranges,
-            self.inner.name.expect(
-                "Should not be None since that's the only way to create an object of this struct",
-            ),
-            self.inner.prioritised_overlays.into(),
-            self.inner.user_symbols,
-            self.inner.user_labels,
-            self.inner.ignored_addresses,
-            self.inner.global_offset_table,
+            kind,
+            ranges,
+            prioritised_overlays.into(),
+            user_symbols,
+            user_labels,
+            ignored_addresses,
+            global_offset_table,
             self.category_name,
         )
     }
@@ -482,8 +492,8 @@ pub(crate) mod python_bindings {
     #[pymethods]
     impl GlobalSegmentBuilder {
         #[new]
-        pub fn py_new(ranges: RomVramRange) -> Self {
-            Self::new(ranges)
+        pub fn py_new(segment_name: String, ranges: RomVramRange) -> Self {
+            Self::new(segment_name, ranges)
         }
 
         #[pyo3(name = "add_prioritised_overlay")]
@@ -545,11 +555,11 @@ pub(crate) mod python_bindings {
     impl OverlaySegmentBuilder {
         #[new]
         pub fn py_new(
+            segment_name: String,
             ranges: RomVramRange,
             category_name: OverlayCategoryName,
-            segment_name: String,
         ) -> Self {
-            Self::new(ranges, category_name, segment_name)
+            Self::new(segment_name, ranges, category_name)
         }
 
         #[pyo3(name = "add_prioritised_overlay")]

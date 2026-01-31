@@ -13,7 +13,9 @@ use crate::{
         unordered_set::UnorderedSet,
     },
     config::GlobalConfig,
-    metadata::{IgnoredAddressRange, LabelMetadata, LabelType, SymbolMetadata, SymbolType},
+    metadata::{
+        IgnoredAddressRange, LabelMetadata, LabelType, SegmentKind, SymbolMetadata, SymbolType,
+    },
     section_type::SectionType,
     sections::before_proc::{DataSectionSettings, ExecutableSectionSettings},
 };
@@ -25,7 +27,7 @@ use super::{
 
 #[derive(Debug, Clone, Hash, PartialEq, PartialOrd)]
 pub(crate) struct Preheater {
-    segment_name: Option<Arc<str>>,
+    segment_kind: SegmentKind,
     ranges: RomVramRange,
     references: AddendedOrderedMap<Vram, ReferencedAddress>,
     label_references: BTreeMap<Vram, ReferencedLabel>,
@@ -34,9 +36,9 @@ pub(crate) struct Preheater {
 }
 
 impl Preheater {
-    pub(crate) const fn new(segment_name: Option<Arc<str>>, ranges: RomVramRange) -> Self {
+    pub(crate) const fn new(segment_kind: SegmentKind, ranges: RomVramRange) -> Self {
         Self {
-            segment_name,
+            segment_kind,
             ranges,
             references: AddendedOrderedMap::new(),
             label_references: BTreeMap::new(),
@@ -974,7 +976,7 @@ impl Preheater {
 
         if !segment_rom_range.in_range(rom) || !segment_rom_range.in_range_inclusive_end(rom_end) {
             Err(PreheatError::new_wrong_rom(
-                self.segment_name.clone(),
+                self.segment_kind.clone(),
                 name,
                 rom,
                 vram,
@@ -985,7 +987,7 @@ impl Preheater {
             || !segment_vram_range.in_range_inclusive_end(vram_end)
         {
             Err(PreheatError::new_wrong_vram(
-                self.segment_name.clone(),
+                self.segment_kind.clone(),
                 name,
                 rom,
                 vram,
@@ -998,7 +1000,7 @@ impl Preheater {
             .is_some()
         {
             Err(PreheatError::new_already_preheated(
-                self.segment_name.clone(),
+                self.segment_kind.clone(),
                 name,
                 rom,
                 vram,
@@ -1008,7 +1010,7 @@ impl Preheater {
             .find(&vram, FindSettings::new(true))
         {
             Err(PreheatError::new_overlaps_with_already_preheated(
-                self.segment_name.clone(),
+                self.segment_kind.clone(),
                 name,
                 rom,
                 vram,

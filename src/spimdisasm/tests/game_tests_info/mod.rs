@@ -191,6 +191,14 @@ impl UserSymbol {
             UserSymbol::Label(..) | UserSymbol::Ignored(..) => panic!("no"),
         }
     }
+
+    pub fn vram(&self) -> Vram {
+        match self {
+            UserSymbol::Info(s) => s.vram,
+            UserSymbol::Label(_name, vram, _label_type) => *vram,
+            UserSymbol::Ignored(vram, _user_size) => *vram,
+        }
+    }
 }
 
 pub fn create_drmario64_us_segments() -> Vec<TestSegment> {
@@ -205,7 +213,7 @@ pub fn create_drmario64_us_segments() -> Vec<TestSegment> {
         TestSegment::Info(TestSegmentInfo {
             name: "ipl3",
             rom: Rom::new(0x000040),
-            vram: Vram::new(0x80000040),
+            vram: Vram::new(0xA4000040),
             noload_size: None,
             sections: vec![TestSection::Bin(Rom::new(0x000040), "ipl3")],
         }),
@@ -472,7 +480,7 @@ pub fn create_drmario64_us_segments() -> Vec<TestSegment> {
             rom: Rom::new(0x011A60),
             vram: Vram::new(0x80029C40),
             noload_size: None,
-            sections: vec![TestSection::Text(Rom::new(0x011A60), "dma_table")],
+            sections: vec![TestSection::Data(Rom::new(0x011A60), "dma_table")],
         }),
         TestSegment::Info(TestSegmentInfo {
             name: "main_segment",
@@ -628,7 +636,7 @@ pub fn create_drmario64_us_segments() -> Vec<TestSegment> {
             sections: vec![TestSection::Bss(Vram::new(0x80205000), "buffers/buffer2")],
         }),
         TestSegment::Info(TestSegmentInfo {
-            name: "buffer1",
+            name: "framebuffer",
             rom: Rom::new(0x09B460),
             vram: Vram::new(0x803B5000),
             noload_size: Some(Size::new(0x4B000)),

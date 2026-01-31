@@ -89,7 +89,7 @@ impl Sections {
             .with_gp_config(gp_config)
             .build();
         let mut context = {
-            let mut global_builder = GlobalSegmentBuilder::new(global_ranges);
+            let mut global_builder = GlobalSegmentBuilder::new("segment", global_ranges);
             if let Some(global_offset_table) = global_offset_table {
                 global_builder
                     .add_global_offset_table(&global_config, global_offset_table)
@@ -146,12 +146,14 @@ impl Sections {
                     .unwrap();
             }
 
-            let mut platform_segment = UserSegmentBuilder::new();
-            platform_segment.n64_libultra_symbols().unwrap();
-            platform_segment.n64_hardware_registers(true, true).unwrap();
+            let mut builder = ContextBuilder::new();
+            builder.add_global_segment(global_heater).unwrap();
 
-            let builder = ContextBuilder::new(global_heater, platform_segment);
-            builder.build(global_config).unwrap()
+            let mut user_segment = UserSegmentBuilder::new();
+            user_segment.n64_libultra_symbols().unwrap();
+            user_segment.n64_hardware_registers(true, true).unwrap();
+
+            builder.build(global_config, user_segment).unwrap()
         };
 
         let parent_info = ParentSegmentInfo::new(
@@ -312,8 +314,12 @@ impl Sections {
 
     pub fn print_global_segment_info(&self) {
         println!();
-        println!("Global segment info:");
-        print_segment_info(self.context.global_segment());
+        println!("Global segments info:");
+        println!();
+        for segment in self.context.global_segments() {
+            println!("Segment '{}'", segment.name());
+            print_segment_info(segment);
+        }
         println!();
         println!();
     }

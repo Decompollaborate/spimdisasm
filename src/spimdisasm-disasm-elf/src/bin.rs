@@ -312,7 +312,7 @@ fn fill_symbols(
     global_ranges: RomVramRange,
     global_config: &GlobalConfig,
 ) -> (GlobalSegmentHeater, UserSegmentBuilder) {
-    let mut global_segment = GlobalSegmentBuilder::new(global_ranges);
+    let mut global_segment = GlobalSegmentBuilder::new("global", global_ranges);
     let mut user_segment = UserSegmentBuilder::new();
 
     let mut initials = HashSet::new();
@@ -586,8 +586,14 @@ fn create_context(
     let end = utils::get_time_now();
     println!(": {:?}", end - start);
 
-    ContextBuilder::new(global_segment, user_segment)
-        .build(global_config)
+    let mut context_builder = ContextBuilder::new();
+
+    context_builder
+        .add_global_segment(global_segment)
+        .pretty_unwrap();
+
+    context_builder
+        .build(global_config, user_segment)
         .pretty_unwrap()
 }
 
@@ -602,7 +608,7 @@ fn create_sections(
     let mut data_sections = Vec::new();
     let mut nobits_sections = Vec::new();
 
-    let global_ranges = context.global_segment().rom_vram_range();
+    let global_ranges = context.global_segments().first().unwrap().rom_vram_range();
     let parent_segment_info = ParentSegmentInfo::new(
         global_ranges.rom().start(),
         global_ranges.vram().start(),

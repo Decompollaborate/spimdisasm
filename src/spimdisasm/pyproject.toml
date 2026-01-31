@@ -4,7 +4,7 @@
 [project]
 name = "spimdisasm"
 # Version should be synced with spimdisasm/__init__.py
-version = "2.0.0-alpha.1"
+version = "2.0.0-alpha.2"
 description = "MIPS disassembler"
 readme = "README.md"
 license = {file = "../../LICENSE"}

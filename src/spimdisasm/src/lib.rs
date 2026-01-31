@@ -2,10 +2,13 @@
 /* SPDX-License-Identifier: MIT */
 
 #![doc = include_str!("../README.md")]
-#![warn(clippy::ref_option)]
-// #![warn(clippy::missing_panics_doc)] // TODO
 #![cfg_attr(feature = "nightly", feature(btree_cursors))]
 #![cfg_attr(not(feature = "std"), no_std)]
+#![warn(clippy::ref_option)]
+#![warn(clippy::ref_option_ref)]
+#![warn(clippy::useless_let_if_seq)]
+// #![warn(clippy::missing_panics_doc)] // TODO
+// #![warn(clippy::clone_on_ref_ptr)] // TODO
 
 #[macro_use]
 extern crate alloc;

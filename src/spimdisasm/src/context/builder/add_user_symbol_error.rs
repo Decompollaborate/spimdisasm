@@ -9,6 +9,8 @@ use pyo3::prelude::*;
 
 use crate::addresses::{AddressRange, Rom, Size, Vram};
 
+use super::SegmentBuilderKind;
+
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
 enum AddUserSymbolErrorVariant {
@@ -36,7 +38,7 @@ enum AddUserSymbolErrorVariant {
 pub struct AddUserSymbolError {
     sym_name: Arc<str>,
     sym_vram: Vram,
-    segment_name: Option<Arc<str>>,
+    segment_kind: SegmentBuilderKind,
     variant: AddUserSymbolErrorVariant,
 }
 
@@ -44,7 +46,7 @@ impl AddUserSymbolError {
     pub(crate) fn new_overlap(
         sym_name: Arc<str>,
         sym_vram: Vram,
-        segment_name: Option<Arc<str>>,
+        segment_kind: SegmentBuilderKind,
         other_name: Arc<str>,
         other_vram: Vram,
         other_size: Size,
@@ -52,7 +54,7 @@ impl AddUserSymbolError {
         Self {
             sym_name,
             sym_vram,
-            segment_name,
+            segment_kind,
             variant: AddUserSymbolErrorVariant::Overlap {
                 other_name,
                 other_vram,
@@ -64,14 +66,14 @@ impl AddUserSymbolError {
     pub(crate) fn new_duplicated(
         sym_name: Arc<str>,
         sym_vram: Vram,
-        segment_name: Option<Arc<str>>,
+        segment_kind: SegmentBuilderKind,
         other_name: Arc<str>,
         other_vram: Vram,
     ) -> Self {
         Self {
             sym_name,
             sym_vram,
-            segment_name,
+            segment_kind,
             variant: AddUserSymbolErrorVariant::Duplicated {
                 other_name,
                 other_vram,
@@ -82,13 +84,13 @@ impl AddUserSymbolError {
     pub(crate) fn new_vram_out_of_range(
         sym_name: Arc<str>,
         sym_vram: Vram,
-        segment_name: Option<Arc<str>>,
+        segment_kind: SegmentBuilderKind,
         segment_ranges: AddressRange<Vram>,
     ) -> Self {
         Self {
             sym_name,
             sym_vram,
-            segment_name,
+            segment_kind,
             variant: AddUserSymbolErrorVariant::VramOutOfRnage { segment_ranges },
         }
     }
@@ -96,14 +98,14 @@ impl AddUserSymbolError {
     pub(crate) fn new_rom_out_of_range(
         sym_name: Arc<str>,
         sym_vram: Vram,
-        segment_name: Option<Arc<str>>,
+        segment_kind: SegmentBuilderKind,
         rom: Rom,
         segment_ranges: AddressRange<Rom>,
     ) -> Self {
         Self {
             sym_name,
             sym_vram,
-            segment_name,
+            segment_kind,
             variant: AddUserSymbolErrorVariant::RomOutOfRange {
                 rom,
                 segment_ranges,
@@ -117,13 +119,9 @@ impl fmt::Display for AddUserSymbolError {
         write!(
             f,
             "Error when trying to add user symbol `{}` ({:?}) to ",
-            self.sym_name, self.sym_vram
+            self.sym_name, self.sym_vram,
         )?;
-        if let Some(name) = &self.segment_name {
-            write!(f, "overlay segment `{name}`")?;
-        } else {
-            write!(f, "the global segment")?;
-        }
+        self.segment_kind.write_verbose(f)?;
         write!(f, ": ")?;
 
         match &self.variant {

@@ -255,7 +255,7 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
         AddressRange::new(rom, rom + size),
         AddressRange::new(vram, vram + size),
     );
-    let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
+    let mut global_segment = GlobalSegmentBuilder::new("segment", global_ranges).finish_symbols();
 
     let text_settings =
         ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
@@ -264,13 +264,14 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
         .preheat_text(&global_config, &text_settings, "test", &bytes, rom, vram)
         .unwrap();
 
-    let mut platform_segment = UserSegmentBuilder::new();
-    platform_segment.n64_libultra_symbols().unwrap();
-    platform_segment.n64_hardware_registers(true, true).unwrap();
+    let mut context_builder = ContextBuilder::new();
+    context_builder.add_global_segment(global_segment).unwrap();
 
-    let mut context = ContextBuilder::new(global_segment, platform_segment)
-        .build(global_config)
-        .unwrap();
+    let mut user_segment = UserSegmentBuilder::new();
+    user_segment.n64_libultra_symbols().unwrap();
+    user_segment.n64_hardware_registers(true, true).unwrap();
+
+    let mut context = context_builder.build(global_config, user_segment).unwrap();
 
     let instr_display_flags = InstructionDisplayFlags::default();
 
@@ -292,17 +293,19 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
 
     assert_eq!(section_text.symbols().len(), 1);
 
-    let symbols = context.global_segment().symbols();
-    for s in symbols {
-        println!("{:?}", s.1);
-    }
-    assert_eq!(symbols.len(), 1);
+    for segment in context.global_segments() {
+        let symbols = segment.symbols();
+        for s in symbols {
+            println!("{:?}", s.1);
+        }
+        assert_eq!(symbols.len(), 1);
 
-    let labels = context.global_segment().labels();
-    for s in labels {
-        println!("{:?}", s.1);
+        let labels = segment.labels();
+        for s in labels {
+            println!("{:?}", s.1);
+        }
+        assert_eq!(labels.len(), 20);
     }
-    assert_eq!(labels.len(), 20);
 
     let mut disassembled = ".section .text\n".to_string();
     let function_display_settings = FunctionDisplaySettings::new(instr_display_flags);
@@ -620,17 +623,19 @@ fn weird_case_use_gp_as_temp() {
             AddressRange::new(segment_rom, Rom::new(0x0003F3A4)),
             AddressRange::new(segment_vram, Vram::new(0x8004EBA4)),
         );
-        let mut global_segment = GlobalSegmentBuilder::new(global_ranges).finish_symbols();
+        let mut global_segment =
+            GlobalSegmentBuilder::new("segment", global_ranges).finish_symbols();
 
         global_segment
             .preheat_text(&global_config, &text_settings, "text", &BYTES, rom, vram)
             .unwrap();
 
-        let platform_segment = UserSegmentBuilder::new();
+        let mut builder = ContextBuilder::new();
+        builder.add_global_segment(global_segment).unwrap();
 
-        let builder = ContextBuilder::new(global_segment, platform_segment);
+        let user_segment = UserSegmentBuilder::new();
 
-        builder.build(global_config).unwrap()
+        builder.build(global_config, user_segment).unwrap()
     };
 
     let parent_segment_info = ParentSegmentInfo::new(segment_rom, segment_vram, None);

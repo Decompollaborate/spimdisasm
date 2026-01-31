@@ -15,18 +15,19 @@ use crate::analysis::{reference_wrapper, Preheater, ReferenceWrapper};
 use crate::collections::addended_ordered_map::{AddendedOrderedMap, FindSettings};
 use crate::section_type::SectionType;
 
-use super::{symbol_metadata::GeneratedBy, OverlayCategoryName, SymbolNameGenerationSettings};
+use super::{symbol_metadata::GeneratedBy, SymbolNameGenerationSettings};
 use super::{
-    AddLabelError, IgnoredAddressRange, LabelMetadata, LabelType, OwnerSegmentKind, ReferrerInfo,
-    SymbolMetadata, SymbolType,
+    AddLabelError, IgnoredAddressRange, LabelMetadata, LabelType, ReferrerInfo, SymbolMetadata,
+    SymbolType,
 };
+use super::{OverlayCategoryName, SegmentKind};
 
 #[derive(Debug, Clone, Hash, PartialEq, PartialOrd)]
 pub struct SegmentMetadata {
+    segment_kind: SegmentKind,
     ranges: RomVramRange,
 
     category_name: Option<OverlayCategoryName>,
-    name: Option<Arc<str>>,
 
     prioritised_overlays: Arc<[Arc<str>]>,
     visible_overlay_ranges: Arc<[AddressRange<Vram>]>,
@@ -38,13 +39,12 @@ pub struct SegmentMetadata {
     global_offset_table: Option<GlobalOffsetTable>,
 
     preheater: Preheater,
-
-    is_the_unknown_segment: bool,
 }
 
 impl SegmentMetadata {
     #[allow(clippy::too_many_arguments)]
     fn new(
+        segment_kind: SegmentKind,
         ranges: RomVramRange,
         prioritised_overlays: Arc<[Arc<str>]>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
@@ -54,12 +54,11 @@ impl SegmentMetadata {
         visible_overlay_ranges: Arc<[AddressRange<Vram>]>,
         global_offset_table: Option<GlobalOffsetTable>,
         category_name: Option<OverlayCategoryName>,
-        name: Option<Arc<str>>,
     ) -> Self {
         Self {
+            segment_kind,
             ranges,
             category_name,
-            name,
 
             prioritised_overlays,
             visible_overlay_ranges,
@@ -70,13 +69,12 @@ impl SegmentMetadata {
             global_offset_table,
 
             preheater,
-
-            is_the_unknown_segment: false,
         }
     }
 
     #[expect(clippy::too_many_arguments)]
     pub(crate) fn new_global(
+        name: Arc<str>,
         ranges: RomVramRange,
         prioritised_overlays: Arc<[Arc<str>]>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
@@ -87,6 +85,7 @@ impl SegmentMetadata {
         global_offset_table: Option<GlobalOffsetTable>,
     ) -> Self {
         Self::new(
+            SegmentKind::Global(name),
             ranges,
             prioritised_overlays,
             user_symbols,
@@ -96,12 +95,12 @@ impl SegmentMetadata {
             visible_overlay_ranges,
             global_offset_table,
             None,
-            None,
         )
     }
 
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn new_overlay(
+        name: Arc<str>,
         ranges: RomVramRange,
         prioritised_overlays: Arc<[Arc<str>]>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
@@ -111,9 +110,9 @@ impl SegmentMetadata {
         visible_overlay_ranges: Arc<[AddressRange<Vram>]>,
         global_offset_table: Option<GlobalOffsetTable>,
         category_name: OverlayCategoryName,
-        name: Arc<str>,
     ) -> Self {
         Self::new(
+            SegmentKind::Overlay(name),
             ranges,
             prioritised_overlays,
             user_symbols,
@@ -123,7 +122,6 @@ impl SegmentMetadata {
             visible_overlay_ranges,
             global_offset_table,
             Some(category_name),
-            Some(name),
         )
     }
 
@@ -131,25 +129,24 @@ impl SegmentMetadata {
         let rom_range = AddressRange::new(Rom::new(0x00000000), Rom::new(0xFFFFFFFF));
         let vram_range = AddressRange::new(Vram::new(0x00000000), Vram::new(0xFFFFFFFF));
         let ranges = RomVramRange::new(rom_range, vram_range);
-        Self {
-            is_the_unknown_segment: true,
-            ..Self::new(
-                ranges,
-                Arc::new([]),
-                AddendedOrderedMap::new(),
-                BTreeMap::new(),
-                AddendedOrderedMap::new(),
-                Preheater::new(None, ranges),
-                Arc::new([]),
-                None,
-                None,
-                None,
-            )
-        }
+        Self::new(
+            SegmentKind::Unknown,
+            ranges,
+            Arc::new([]),
+            AddendedOrderedMap::new(),
+            BTreeMap::new(),
+            AddendedOrderedMap::new(),
+            Preheater::new(SegmentKind::Unknown, ranges),
+            Arc::new([]),
+            None,
+            None,
+        )
     }
 
-    pub fn name(&self) -> Option<Arc<str>> {
-        self.name.clone()
+    pub fn name(&self) -> Arc<str> {
+        self.segment_kind
+            .name()
+            .unwrap_or_else(|| Arc::from("$$ The unknown segment $$"))
     }
 
     pub const fn rom_vram_range(&self) -> &RomVramRange {
@@ -246,13 +243,7 @@ impl SegmentMetadata {
                 vram,
                 FindSettings::new(allow_sym_with_addend),
                 || {
-                    let owner_segment_kind = if self.is_the_unknown_segment {
-                        OwnerSegmentKind::Unknown
-                    } else if let Some(name) = &self.name {
-                        OwnerSegmentKind::Overlay(name.clone())
-                    } else {
-                        OwnerSegmentKind::Global
-                    };
+                    let owner_segment_kind = self.segment_kind.clone().into();
 
                     SymbolMetadata::new(
                         GeneratedBy::Autogenerated,
@@ -268,7 +259,7 @@ impl SegmentMetadata {
             Err(AddSymbolError {
                 vram,
                 segment_ranges: *self.vram_range(),
-                name: self.name.clone(),
+                segment_kind: self.segment_kind.clone(),
             })
         }
     }
@@ -323,13 +314,7 @@ impl SegmentMetadata {
     ) -> Result<&mut LabelMetadata, AddLabelError> {
         if self.in_vram_range(vram) {
             let label = self.labels.entry(vram).or_insert_with(|| {
-                let owner_segment_kind = if self.is_the_unknown_segment {
-                    OwnerSegmentKind::Unknown
-                } else if let Some(name) = &self.name {
-                    OwnerSegmentKind::Overlay(name.clone())
-                } else {
-                    OwnerSegmentKind::Global
-                };
+                let owner_segment_kind = self.segment_kind.clone().into();
                 LabelMetadata::new(vram, owner_segment_kind, label_type)
             });
 
@@ -341,7 +326,7 @@ impl SegmentMetadata {
             Err(AddLabelError::new_vram_out_of_range(
                 vram,
                 label_type,
-                self.name.clone(),
+                self.segment_kind.clone(),
                 *self.vram_range(),
             ))
         }
@@ -354,16 +339,13 @@ impl SegmentMetadata {
 pub struct AddSymbolError {
     vram: Vram,
     segment_ranges: AddressRange<Vram>,
-    name: Option<Arc<str>>,
+    segment_kind: SegmentKind,
 }
 impl fmt::Display for AddSymbolError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Error when trying to add symbol to ")?;
-        if let Some(name) = &self.name {
-            write!(f, "overlay segment '{name}'")?;
-        } else {
-            write!(f, "global segment")?;
-        }
+        self.segment_kind.write_verbose(f)?;
+
         write!(f, ": ")?;
         write!(
             f,
@@ -437,17 +419,19 @@ mod tests {
 
     #[test]
     fn check_symbol_bounds() {
+        let name = Arc::from("boot");
         let symbol_name_generation_settings = SymbolNameGenerationSettings::new();
         let rom_range = AddressRange::new(Rom::new(0), Rom::new(0x1400));
         let vram_range = AddressRange::new(Vram::new(0), Vram::new(0x1800));
         let ranges = RomVramRange::new(rom_range, vram_range);
         let mut segment = SegmentMetadata::new_global(
+            Arc::clone(&name),
             ranges,
             Arc::new([]),
             AddendedOrderedMap::new(),
             BTreeMap::new(),
             AddendedOrderedMap::new(),
-            Preheater::new(None, ranges),
+            Preheater::new(SegmentKind::Global(name), ranges),
             Arc::new([]),
             None,
         );

@@ -71,7 +71,7 @@ fn disassemble_text(
             AddressRange::new(segment_rom, Rom::new(0x04000000)),
             AddressRange::new(segment_vram, Vram::new(0x84000000)),
         );
-        let mut global_segment_builder = GlobalSegmentBuilder::new(global_ranges);
+        let mut global_segment_builder = GlobalSegmentBuilder::new("segment", global_ranges);
 
         for user_sym in user_symbols {
             let UserSym {
@@ -100,18 +100,8 @@ fn disassemble_text(
             )
             .unwrap();
 
-        let mut user_segment = UserSegmentBuilder::new();
-
-        if fill_n64_symbols {
-            matches!(
-                text_settings.compiler(),
-                Some(Compiler::IDO | Compiler::KMC | Compiler::SN64 | Compiler::EGCS)
-            );
-            user_segment.n64_libultra_symbols().unwrap();
-            user_segment.n64_hardware_registers(true, true).unwrap();
-        }
-
-        let mut builder = ContextBuilder::new(global_segment_heater, user_segment);
+        let mut builder = ContextBuilder::new();
+        builder.add_global_segment(global_segment_heater).unwrap();
 
         if add_segmented_assets {
             matches!(
@@ -136,7 +126,7 @@ fn disassemble_text(
                 let ranges = RomVramRange::new(rom_range, vram_range);
 
                 let overlay_builder =
-                    OverlaySegmentBuilder::new(ranges, category_name, segment_name);
+                    OverlaySegmentBuilder::new(segment_name, ranges, category_name);
 
                 builder
                     .add_overlay(overlay_builder.finish_symbols())
@@ -144,7 +134,18 @@ fn disassemble_text(
             }
         }
 
-        builder.build(global_config).unwrap()
+        let mut user_segment = UserSegmentBuilder::new();
+
+        if fill_n64_symbols {
+            matches!(
+                text_settings.compiler(),
+                Some(Compiler::IDO | Compiler::KMC | Compiler::SN64 | Compiler::EGCS)
+            );
+            user_segment.n64_libultra_symbols().unwrap();
+            user_segment.n64_hardware_registers(true, true).unwrap();
+        }
+
+        builder.build(global_config, user_segment).unwrap()
     };
 
     let parent_segment_info = ParentSegmentInfo::new(segment_rom, segment_vram, None);
@@ -378,17 +379,19 @@ glabel func_800004FC
 
     assert_eq!(section_text.symbols().len(), 3);
 
-    let symbols = context.global_segment().symbols();
-    for s in symbols {
-        println!("{:?}", s.1);
-    }
-    assert_eq!(symbols.len(), 10);
+    for segment in context.global_segments() {
+        let symbols = segment.symbols();
+        for s in symbols {
+            println!("{:?}", s.1);
+        }
+        assert_eq!(symbols.len(), 10);
 
-    let labels = context.global_segment().labels();
-    for s in labels {
-        println!("{:?}", s.1);
+        let labels = segment.labels();
+        for s in labels {
+            println!("{:?}", s.1);
+        }
+        assert_eq!(labels.len(), 4);
     }
-    assert_eq!(labels.len(), 4);
 }
 
 #[test]
@@ -957,7 +960,9 @@ glabel func_8080010C
     assert_eq!(disassembly, expected_disassembly);
 
     let silly_symbol = context
-        .global_segment()
+        .global_segments()
+        .first()
+        .unwrap()
         .symbols()
         .find(&Vram::new(0x808014A4), FindSettings::new(false))
         .unwrap();

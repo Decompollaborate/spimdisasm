@@ -36,8 +36,9 @@ use crate::{
 pub struct Context {
     global_config: GlobalConfig,
 
-    global_segment: SegmentMetadata,
     user_segment: UserSegmentMetadata,
+
+    global_segments: Vec<SegmentMetadata>,
 
     //
     overlay_segments: UnorderedMap<OverlayCategoryName, OverlayCategory>,
@@ -56,15 +57,15 @@ pub struct Context {
 impl Context {
     pub(crate) fn new(
         global_config: GlobalConfig,
-        global_segment: SegmentMetadata,
         user_segment: UserSegmentMetadata,
+        global_segments: Vec<SegmentMetadata>,
         overlay_segments: UnorderedMap<OverlayCategoryName, OverlayCategory>,
         preheated_sections: UnorderedMap<Rom, bool>,
     ) -> Self {
         Self {
             global_config,
-            global_segment,
             user_segment,
+            global_segments,
             overlay_segments,
             unknown_segment: SegmentMetadata::new_unknown_segment(),
             preheated_sections,
@@ -79,12 +80,12 @@ impl Context {
         &self.global_config
     }
     #[must_use]
-    pub const fn global_segment(&self) -> &SegmentMetadata {
-        &self.global_segment
-    }
-    #[must_use]
     pub const fn user_segment(&self) -> &UserSegmentMetadata {
         &self.user_segment
+    }
+    #[must_use]
+    pub fn global_segments(&self) -> &[SegmentMetadata] {
+        &self.global_segments
     }
     #[must_use]
     pub const fn overlay_segments(&self) -> &UnorderedMap<OverlayCategoryName, OverlayCategory> {
@@ -299,13 +300,17 @@ impl Context {
                     return Ok(segment);
                 }
             }
-        } else if self.global_segment.in_rom_range(info.segment_rom()) {
-            // Global segment may contain more than one actual segment, so checking for ranges is okay.
-            return Ok(&self.global_segment);
-        } else if self.global_segment.in_vram_range(info.segment_vram()) {
-            // Global segment doesn't have overlapping issues, so it should be fine to check for vram address.
-            // This can be required by segments that only have bss sections.
-            return Ok(&self.global_segment);
+        } else {
+            for seg in self.global_segments.iter() {
+                if seg.in_rom_range(info.segment_rom()) {
+                    // Global segment may contain more than one actual segment, so checking for ranges is okay.
+                    return Ok(seg);
+                } else if seg.in_vram_range(info.segment_vram()) {
+                    // Global segment doesn't have overlapping issues, so it should be fine to check for vram address.
+                    // This can be required by segments that only have bss sections.
+                    return Ok(seg);
+                }
+            }
         }
         Err(OwnedSegmentNotFoundError { info: info.clone() })
     }
@@ -322,13 +327,17 @@ impl Context {
                     return Ok(segment);
                 }
             }
-        } else if self.global_segment.in_rom_range(info.segment_rom()) {
-            // Global segment may contain more than one actual segment, so checking for ranges is okay.
-            return Ok(&mut self.global_segment);
-        } else if self.global_segment.in_vram_range(info.segment_vram()) {
-            // Global segment doesn't have overlapping issues, so it should be fine to check for vram address.
-            // This can be required by segments that only have bss sections.
-            return Ok(&mut self.global_segment);
+        } else {
+            for seg in &mut self.global_segments {
+                if seg.in_rom_range(info.segment_rom()) {
+                    // Global segment may contain more than one actual segment, so checking for ranges is okay.
+                    return Ok(seg);
+                } else if seg.in_vram_range(info.segment_vram()) {
+                    // Global segment doesn't have overlapping issues, so it should be fine to check for vram address.
+                    // This can be required by segments that only have bss sections.
+                    return Ok(seg);
+                }
+            }
         }
         Err(OwnedSegmentNotFoundError { info: info.clone() })
     }
@@ -351,8 +360,13 @@ impl Context {
             return Some(t);
         }
 
-        if self.global_segment.in_vram_range(vram) {
-            return find_within_segment(&self.global_segment).filter(|t| validate(t));
+        for seg in &self.global_segments {
+            // If we find this vram is within a global segment then we can stop
+            // searching, because we know this should be the only segment that
+            // should overlap this segment.
+            if seg.in_vram_range(vram) {
+                return find_within_segment(seg).filter(|t| validate(t));
+            }
         }
 
         if !self.overlay_segments.is_empty() {
@@ -396,7 +410,7 @@ impl Context {
                                 continue;
                             }
                             for (_segment_rom, segment) in segments_per_rom.segments() {
-                                if segment.name().as_ref() == Some(prioritised_overlay)
+                                if &segment.name() == prioritised_overlay
                                     && segment.in_vram_range(vram)
                                 {
                                     if let Some(t) =
@@ -504,9 +518,13 @@ fn find_referenced_segment_mut_impl<'ctx>(
     vram: Vram,
     info: &ParentSegmentInfo,
 ) -> &'ctx mut SegmentMetadata {
-    if slf.global_segment.in_vram_range(vram) {
-        return &mut slf.global_segment;
-    }
+    polonius!(|slf| -> &'polonius mut SegmentMetadata {
+        for seg in &mut slf.global_segments {
+            if seg.in_vram_range(vram) {
+                polonius_return!(seg);
+            }
+        }
+    });
 
     if !slf.overlay_segments.is_empty() {
         polonius!(|slf| -> &'polonius mut SegmentMetadata {
@@ -556,7 +574,7 @@ fn find_referenced_overlay_segment_mut<'ctx>(
                                 continue;
                             }
                             for (segment_rom, segment) in segments_per_rom.segments() {
-                                if segment.name().as_ref() == Some(prioritised_overlay)
+                                if &segment.name() == prioritised_overlay
                                     && segment.in_vram_range(vram)
                                 {
                                     // We need to clone here to avoid lifetime issues

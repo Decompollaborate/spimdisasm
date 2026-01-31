@@ -17,8 +17,11 @@ use crate::{
     sections::before_proc::{DataSectionSettings, ExecutableSectionSettings},
 };
 
+use super::SegmentBuilderKind;
+
 #[derive(Debug, Clone, Hash, PartialEq)]
 pub(crate) struct SegmentHeater {
+    kind: SegmentBuilderKind,
     ranges: RomVramRange,
     prioritised_overlays: Arc<[Arc<str>]>,
     user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
@@ -30,8 +33,8 @@ pub(crate) struct SegmentHeater {
 }
 
 impl SegmentHeater {
-    const fn new(
-        segment_name: Option<Arc<str>>,
+    fn new(
+        kind: SegmentBuilderKind,
         ranges: RomVramRange,
         prioritised_overlays: Arc<[Arc<str>]>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
@@ -40,6 +43,7 @@ impl SegmentHeater {
         global_offset_table: Option<GlobalOffsetTable>,
     ) -> Self {
         Self {
+            kind: kind.clone(),
             ranges,
             prioritised_overlays,
             user_symbols,
@@ -47,10 +51,13 @@ impl SegmentHeater {
             ignored_addresses,
             global_offset_table,
 
-            preheater: Preheater::new(segment_name, ranges),
+            preheater: Preheater::new(kind.into(), ranges),
         }
     }
 
+    pub(crate) fn name(&self) -> Arc<str> {
+        self.kind.name()
+    }
     pub(crate) const fn ranges(&self) -> &RomVramRange {
         &self.ranges
     }
@@ -156,9 +163,7 @@ impl SegmentHeater {
         )
     }
 
-    fn dump_info(&self, segment_name: Option<&str>) {
-        let _avoid_unused_warning = segment_name;
-
+    fn dump_info(&self) {
         // TODO: remove
         #[cfg(feature = "std")]
         {
@@ -168,13 +173,10 @@ impl SegmentHeater {
             };
 
             use crate::{addresses::Size, collections::addended_ordered_map::FindSettings};
+            let segment_name = self.kind.name();
 
             let mut buf = BufWriter::new(
-                File::create(format!(
-                    "gathered_{}_references.csv",
-                    segment_name.unwrap_or("global")
-                ))
-                .unwrap(),
+                File::create(format!("gathered_{segment_name}_references.csv",)).unwrap(),
             );
             buf.write_all(
                 "vram,type,size,user_declared_size,autodetected_size,alignment,reference_counter,referenced_by,issues\n".as_bytes(),
@@ -241,7 +243,8 @@ pub struct GlobalSegmentHeater {
 }
 
 impl GlobalSegmentHeater {
-    pub(crate) const fn new(
+    pub(crate) fn new(
+        kind: SegmentBuilderKind,
         ranges: RomVramRange,
         prioritised_overlays: Arc<[Arc<str>]>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
@@ -251,7 +254,7 @@ impl GlobalSegmentHeater {
     ) -> Self {
         Self {
             inner: SegmentHeater::new(
-                None,
+                kind,
                 ranges,
                 prioritised_overlays,
                 user_symbols,
@@ -266,6 +269,9 @@ impl GlobalSegmentHeater {
         &self.inner
     }
 
+    pub(crate) fn name(&self) -> Arc<str> {
+        self.inner.name()
+    }
     pub(crate) const fn ranges(&self) -> &RomVramRange {
         self.inner.ranges()
     }
@@ -349,17 +355,29 @@ impl GlobalSegmentHeater {
         self,
         visible_overlay_ranges: Arc<[AddressRange<Vram>]>,
     ) -> SegmentMetadata {
-        self.inner.dump_info(None);
+        self.inner.dump_info();
+
+        let SegmentHeater {
+            kind,
+            ranges,
+            prioritised_overlays,
+            user_symbols,
+            user_labels,
+            ignored_addresses,
+            global_offset_table,
+            preheater,
+        } = self.inner;
 
         SegmentMetadata::new_global(
-            self.inner.ranges,
-            self.inner.prioritised_overlays,
-            self.inner.user_symbols,
-            self.inner.user_labels,
-            self.inner.ignored_addresses,
-            self.inner.preheater,
+            kind.into_name(),
+            ranges,
+            prioritised_overlays,
+            user_symbols,
+            user_labels,
+            ignored_addresses,
+            preheater,
             visible_overlay_ranges,
-            self.inner.global_offset_table,
+            global_offset_table,
         )
     }
 }
@@ -368,15 +386,14 @@ impl GlobalSegmentHeater {
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
 pub struct OverlaySegmentHeater {
     inner: SegmentHeater,
-    name: Arc<str>,
     category_name: OverlayCategoryName,
 }
 
 impl OverlaySegmentHeater {
     #[expect(clippy::too_many_arguments)]
     pub(crate) fn new(
+        kind: SegmentBuilderKind,
         ranges: RomVramRange,
-        name: Arc<str>,
         prioritised_overlays: Arc<[Arc<str>]>,
         user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
         user_labels: BTreeMap<Vram, LabelMetadata>,
@@ -386,7 +403,7 @@ impl OverlaySegmentHeater {
     ) -> Self {
         Self {
             inner: SegmentHeater::new(
-                Some(name.clone()),
+                kind,
                 ranges,
                 prioritised_overlays,
                 user_symbols,
@@ -394,7 +411,6 @@ impl OverlaySegmentHeater {
                 ignored_addresses,
                 global_offset_table,
             ),
-            name,
             category_name,
         }
     }
@@ -404,7 +420,7 @@ impl OverlaySegmentHeater {
     }
 
     pub(crate) fn name(&self) -> Arc<str> {
-        self.name.clone()
+        self.inner.name()
     }
     pub(crate) fn category_name(&self) -> &OverlayCategoryName {
         &self.category_name
@@ -501,19 +517,30 @@ impl OverlaySegmentHeater {
         self,
         visible_overlay_ranges: Arc<[AddressRange<Vram>]>,
     ) -> SegmentMetadata {
-        self.inner.dump_info(Some(&self.name));
+        self.inner.dump_info();
+
+        let SegmentHeater {
+            kind,
+            ranges,
+            prioritised_overlays,
+            user_symbols,
+            user_labels,
+            ignored_addresses,
+            global_offset_table,
+            preheater,
+        } = self.inner;
 
         SegmentMetadata::new_overlay(
-            self.inner.ranges,
-            self.inner.prioritised_overlays,
-            self.inner.user_symbols,
-            self.inner.user_labels,
-            self.inner.ignored_addresses,
-            self.inner.preheater,
+            kind.into_name(),
+            ranges,
+            prioritised_overlays,
+            user_symbols,
+            user_labels,
+            ignored_addresses,
+            preheater,
             visible_overlay_ranges,
-            self.inner.global_offset_table,
+            global_offset_table,
             self.category_name,
-            self.name,
         )
     }
 }

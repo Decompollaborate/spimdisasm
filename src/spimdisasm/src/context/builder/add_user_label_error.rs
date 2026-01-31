@@ -12,6 +12,8 @@ use crate::{
     metadata::LabelType,
 };
 
+use super::SegmentBuilderKind;
+
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
 enum AddUserLabelErrorVariant {
@@ -36,7 +38,7 @@ pub struct AddUserLabelError {
     label_name: Arc<str>,
     label_vram: Vram,
     label_type: LabelType,
-    segment_name: Option<Arc<str>>,
+    segment_kind: SegmentBuilderKind,
     variant: AddUserLabelErrorVariant,
 }
 
@@ -45,7 +47,7 @@ impl AddUserLabelError {
         label_name: Arc<str>,
         label_vram: Vram,
         label_type: LabelType,
-        segment_name: Option<Arc<str>>,
+        segment_kind: SegmentBuilderKind,
         other_name: Arc<str>,
         other_vram: Vram,
         other_type: LabelType,
@@ -54,7 +56,7 @@ impl AddUserLabelError {
             label_name,
             label_vram,
             label_type,
-            segment_name,
+            segment_kind,
             variant: AddUserLabelErrorVariant::Duplicated {
                 other_name,
                 other_vram,
@@ -67,14 +69,14 @@ impl AddUserLabelError {
         label_name: Arc<str>,
         label_vram: Vram,
         label_type: LabelType,
-        segment_name: Option<Arc<str>>,
+        segment_kind: SegmentBuilderKind,
         segment_ranges: AddressRange<Vram>,
     ) -> Self {
         Self {
             label_name,
             label_vram,
             label_type,
-            segment_name,
+            segment_kind,
             variant: AddUserLabelErrorVariant::VramOutOfRnage { segment_ranges },
         }
     }
@@ -83,7 +85,7 @@ impl AddUserLabelError {
         label_name: Arc<str>,
         label_vram: Vram,
         label_type: LabelType,
-        segment_name: Option<Arc<str>>,
+        segment_kind: SegmentBuilderKind,
         rom: Rom,
         segment_ranges: AddressRange<Rom>,
     ) -> Self {
@@ -91,7 +93,7 @@ impl AddUserLabelError {
             label_name,
             label_vram,
             label_type,
-            segment_name,
+            segment_kind,
             variant: AddUserLabelErrorVariant::RomOutOfRange {
                 rom,
                 segment_ranges,
@@ -107,11 +109,7 @@ impl fmt::Display for AddUserLabelError {
             "Error when trying to add user label `{}` ({:?} {:?}) to ",
             self.label_name, self.label_vram, self.label_type
         )?;
-        if let Some(name) = &self.segment_name {
-            write!(f, "overlay segment `{name}`")?;
-        } else {
-            write!(f, "the global segment")?;
-        }
+        self.segment_kind.write_verbose(f)?;
         write!(f, ": ")?;
 
         match &self.variant {

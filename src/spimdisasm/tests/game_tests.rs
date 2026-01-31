@@ -2,6 +2,8 @@
 /* SPDX-License-Identifier: MIT */
 
 use pretty_assertions::assert_eq;
+use std::{collections::HashSet, sync::Arc};
+
 use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
 use spimdisasm::{
     addresses::{AddressRange, RomVramRange},
@@ -22,92 +24,18 @@ use game_tests_info::{
 
 const COMPILER: Option<Compiler> = Some(Compiler::KMC);
 
-pub fn get_ranges_from_segments(segments: &[TestSegment]) -> RomVramRange {
-    let mut rom_start = None;
-    let mut rom_end = None;
-    let mut vram_start = None;
-    let mut vram_end = None;
-
-    for w in segments.windows(2) {
-        let a = &w[0];
-        let b = &w[1];
-
-        match (a, b) {
-            (TestSegment::EndMarker(..), _) => {
-                panic!("Doesn't make sense")
-            }
-            (TestSegment::Info(x), TestSegment::EndMarker(y)) => {
-                assert!(x.rom <= *y);
-
-                rom_start.get_or_insert(x.rom);
-                vram_start.get_or_insert(x.vram);
-
-                rom_end = Some(*y);
-                vram_end = Some(x.vram_end(*y - x.rom));
-            }
-            (TestSegment::Info(x), TestSegment::Info(y)) => {
-                assert!(x.rom <= y.rom);
-
-                rom_start.get_or_insert(x.rom);
-                vram_start.get_or_insert(x.vram);
-
-                rom_end.get_or_insert(y.rom);
-                vram_end.get_or_insert(x.vram_end(y.rom - x.rom));
-            }
-        }
-    }
-
-    let global_rom_range = AddressRange::new(rom_start.unwrap(), rom_end.unwrap());
-    let global_vram_range = AddressRange::new(vram_start.unwrap(), vram_end.unwrap());
-
-    RomVramRange::new(global_rom_range, global_vram_range)
-}
-
 fn init_context(
-    global_ranges: RomVramRange,
-    symbols: Vec<UserSymbol>,
+    mut symbols: Vec<UserSymbol>,
     rom_bytes: &[u8],
-    user_segments: &[TestSegment],
+    user_defined_segment: &[TestSegment],
 ) -> Context {
-    assert!(user_segments.len() >= 2);
+    assert!(user_defined_segment.len() >= 2);
+
+    let mut context_builder = ContextBuilder::new();
 
     let global_config = GlobalConfigBuilder::new(Endian::Big).build();
-    let mut global_segment = GlobalSegmentBuilder::new(global_ranges);
 
-    for sym in symbols {
-        match sym {
-            game_tests_info::UserSymbol::Info(user_symbol_info) => {
-                let mut sym = global_segment
-                    .add_user_symbol(
-                        user_symbol_info.name,
-                        user_symbol_info.vram,
-                        user_symbol_info.rom,
-                        user_symbol_info.size,
-                        user_symbol_info.typ,
-                    )
-                    .unwrap();
-
-                // TODO:
-                // if let Some(name_end) = user_symbol_info.name_end {
-                //     sym.set_user_declared_name_end(name_end);
-                // }
-                *sym.rodata_migration_behavior_mut() = user_symbol_info.migration_behavior;
-                if user_symbol_info.dont_allow_addend {
-                    sym.set_allow_ref_with_addend(false);
-                }
-            }
-            UserSymbol::Label(name, vram, label_type) => {
-                global_segment
-                    .add_user_label(name, vram, None, label_type)
-                    .unwrap();
-            }
-            game_tests_info::UserSymbol::Ignored(_vram, _size) => {}
-        }
-    }
-
-    let mut global_segment_heater = global_segment.finish_symbols();
-
-    for w in user_segments.windows(2) {
+    for w in user_defined_segment.windows(2) {
         let a = &w[0];
         let b = &w[1];
         match (a, b) {
@@ -120,6 +48,57 @@ fn init_context(
                 })
                 | TestSegment::EndMarker(segment_rom_end),
             ) => {
+                let ranges = RomVramRange::new(
+                    AddressRange::new(info.rom, *segment_rom_end),
+                    AddressRange::new(info.vram, info.vram_end(*segment_rom_end - info.rom)),
+                );
+                let mut global_segment = GlobalSegmentBuilder::new(info.name, ranges);
+
+                let mut remove = HashSet::new();
+                for sym in &symbols {
+                    if !ranges.vram().in_range(sym.vram()) {
+                        continue;
+                    }
+                    match sym {
+                        game_tests_info::UserSymbol::Info(user_symbol_info) => {
+                            let mut sym = global_segment
+                                .add_user_symbol(
+                                    Arc::clone(&user_symbol_info.name),
+                                    user_symbol_info.vram,
+                                    user_symbol_info.rom,
+                                    user_symbol_info.size,
+                                    user_symbol_info.typ,
+                                )
+                                .unwrap();
+
+                            // TODO:
+                            // if let Some(name_end) = user_symbol_info.name_end {
+                            //     sym.set_user_declared_name_end(name_end);
+                            // }
+                            *sym.rodata_migration_behavior_mut() =
+                                user_symbol_info.migration_behavior.clone();
+                            if user_symbol_info.dont_allow_addend {
+                                sym.set_allow_ref_with_addend(false);
+                            }
+                        }
+                        UserSymbol::Label(name, vram, label_type) => {
+                            global_segment
+                                .add_user_label(name.clone(), *vram, None, *label_type)
+                                .unwrap();
+                        }
+                        game_tests_info::UserSymbol::Ignored(_vram, _size) => {
+                            // TODO
+                        }
+                    }
+                    remove.insert(sym.vram());
+                }
+
+                if !remove.is_empty() {
+                    symbols.retain(|x| !remove.contains(&x.vram()));
+                }
+
+                let mut global_segment_heater = global_segment.finish_symbols();
+
                 for (i, sect) in info.sections.iter().enumerate() {
                     let rom_end = if i + 1 < info.sections.len() {
                         match info.sections[i + 1] {
@@ -170,28 +149,31 @@ fn init_context(
                         TestSection::Bss(..) | TestSection::Bin(..) => {}
                     }
                 }
+
+                context_builder
+                    .add_global_segment(global_segment_heater)
+                    .unwrap();
             }
         }
     }
 
-    let mut platform_segment = UserSegmentBuilder::new();
-    platform_segment.n64_libultra_symbols().unwrap();
-    platform_segment.n64_hardware_registers(true, true).unwrap();
+    let mut user_segment = UserSegmentBuilder::new();
+    user_segment.n64_libultra_symbols().unwrap();
+    user_segment.n64_hardware_registers(true, true).unwrap();
 
-    let builder = ContextBuilder::new(global_segment_heater, platform_segment);
-    builder.build(global_config).unwrap()
+    context_builder.build(global_config, user_segment).unwrap()
 }
 
 fn init_segments(
     context: &mut Context,
     rom_bytes: &[u8],
-    user_segments: Vec<TestSegment>,
+    user_defined_segment: Vec<TestSegment>,
 ) -> Vec<SegmentDataProcessed> {
-    assert!(user_segments.len() >= 2);
+    assert!(user_defined_segment.len() >= 2);
 
     let mut segments = Vec::new();
 
-    for w in user_segments.windows(2) {
+    for w in user_defined_segment.windows(2) {
         let a = &w[0];
         let b = &w[1];
         match (a, b) {
@@ -328,15 +310,7 @@ fn drmario64_us_without_symbols() {
 
     let rom_bytes = std::fs::read("../../baserom_uncompressed.us.z64").unwrap();
 
-    let global_ranges = get_ranges_from_segments(&drmario64_us_segments);
-    println!("Global ranges: {global_ranges:?}");
-
-    let mut context = init_context(
-        global_ranges,
-        Vec::new(),
-        &rom_bytes,
-        &drmario64_us_segments,
-    );
+    let mut context = init_context(Vec::new(), &rom_bytes, &drmario64_us_segments);
 
     let segments = init_segments(&mut context, &rom_bytes, drmario64_us_segments);
 
@@ -387,8 +361,23 @@ fn drmario64_us_without_symbols() {
         }
     }
 
-    assert_eq!(context.global_segment().symbols().len(), 3400);
-    assert_eq!(context.global_segment().labels().len(), 8594);
+    static PER_SEGMENT_SYM_COUNT: [(&str, usize, usize); 9] = [
+        ("header", 6, 6),
+        ("ipl3", 0, 0),
+        ("entry", 1, 1),
+        ("boot", 515, 1248),
+        ("dma_table", 4, 4),
+        ("main_segment", 2814, 7358),
+        ("buffer1", 2, 2),
+        ("buffer2", 1, 1),
+        ("framebuffer", 1, 1),
+    ];
+    assert_eq!(context.global_segments().len(), 9);
+    for (seg, expected) in context.global_segments().iter().zip(PER_SEGMENT_SYM_COUNT) {
+        let name = seg.name();
+        let has = (name.as_ref(), seg.symbols().len(), seg.labels().len());
+        assert_eq!(has, expected);
+    }
 
     /*
     for seg in &segments {
@@ -406,7 +395,7 @@ fn drmario64_us_without_symbols() {
                 .sum::<usize>()
         })
         .sum();
-    assert_eq!(function_count, 1417);
+    assert_eq!(function_count, 1411);
 
     let data_syms_count: usize = segments
         .iter()
@@ -417,7 +406,7 @@ fn drmario64_us_without_symbols() {
                 .sum::<usize>()
         })
         .sum();
-    assert_eq!(data_syms_count, 545);
+    assert_eq!(data_syms_count, 517);
 }
 
 #[cfg_attr(feature = "game_tests", test)]
@@ -427,11 +416,7 @@ fn drmario64_us_with_symbols() {
 
     let rom_bytes = std::fs::read("../../baserom_uncompressed.us.z64").unwrap();
 
-    let global_ranges = get_ranges_from_segments(&drmario64_us_segments);
-    println!("Global ranges: {global_ranges:?}");
-
     let mut context = init_context(
-        global_ranges,
         create_drmario64_us_symbols(),
         &rom_bytes,
         &drmario64_us_segments,
@@ -486,8 +471,33 @@ fn drmario64_us_with_symbols() {
         }
     }
 
-    assert_eq!(context.global_segment().symbols().len(), 3097);
-    assert_eq!(context.global_segment().labels().len(), 8637);
+    /*
+    for seg in context.global_segments() {
+        println!("{}:", seg.name());
+        for (vram, sym) in seg.symbols() {
+            println!("    {} {}", vram, sym.display_name());
+        }
+        println!();
+    }
+    */
+
+    static PER_SEGMENT_SYM_COUNT: [(&str, usize, usize); 9] = [
+        ("header", 6, 6),
+        ("ipl3", 0, 0),
+        ("entry", 1, 1),
+        ("boot", 486, 1247),
+        ("dma_table", 1, 4),
+        ("main_segment", 2596, 7371),
+        ("buffer1", 1, 2),
+        ("buffer2", 1, 1),
+        ("framebuffer", 1, 1),
+    ];
+    assert_eq!(context.global_segments().len(), 9);
+    for (seg, expected) in context.global_segments().iter().zip(PER_SEGMENT_SYM_COUNT) {
+        let name = seg.name();
+        let has = (name.as_ref(), seg.symbols().len(), seg.labels().len());
+        assert_eq!(has, expected);
+    }
 
     /*
     for seg in &segments {
@@ -505,7 +515,7 @@ fn drmario64_us_with_symbols() {
                 .sum::<usize>()
         })
         .sum();
-    assert_eq!(function_count, 1413);
+    assert_eq!(function_count, 1412);
 
     let data_syms_count: usize = segments
         .iter()
@@ -516,5 +526,5 @@ fn drmario64_us_with_symbols() {
                 .sum::<usize>()
         })
         .sum();
-    assert_eq!(data_syms_count, 460);
+    assert_eq!(data_syms_count, 461);
 }

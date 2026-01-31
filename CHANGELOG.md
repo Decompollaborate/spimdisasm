@@ -5,7 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0-alpha.1] - 202X-YY-ZZ
+## [Unreleased]
+
+### Changed
+
+- Change global segments to allow more than one global segment instead of
+  forcing the user to merge all the ranges into one.
+
+## [2.0.0-alpha.1] - 2025-08-07
 
 ### Changed
 
@@ -13,19 +20,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The API has changed and now every function and method are `snake_case`.
 - Some old subsystems were renamed to a more fitting name.
 - And many others!
-
-## [Unreleased]
-
-### Changed
-
-- Improve comment specifying the reason why an address could not be symbolized
-  if it is `$gp` relative.
-- Prevent section split suggestions if the selected compiler doesn't follow the
-  0x10 boundary rule.
-- Rename `MWCC` compiler option to `MWCCPS2`.
-- Python 3.9 or later is now required.
-  - Nothing really changed. Just the CI tools I was using is refusing to use any
-    Python version older than this. Sorry if you were affected by this.
 
 ## [1.30.2] - 2024-09-19
 
