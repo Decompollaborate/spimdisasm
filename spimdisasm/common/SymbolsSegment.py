@@ -627,3 +627,7 @@ class SymbolsSegment:
                 align = pairs.get("align")
                 if align is not None:
                     contextSym.setAlignment(int(align, 0))
+
+                useNonMatchingLabel = Utils.getMaybeBooleyFromMaybeStr(pairs.get("use_non_matching_label"))
+                if useNonMatchingLabel is not None:
+                    contextSym.useNonMatchingLabel = useNonMatchingLabel

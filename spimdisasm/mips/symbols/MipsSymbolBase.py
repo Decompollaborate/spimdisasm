@@ -154,7 +154,7 @@ class SymbolBase(common.ElementBase):
         return ""
 
     def getNonMatchingLabel(self, symName: str, symSize: int|None) -> str:
-        if common.GlobalConfig.ASM_NM_LABEL:
+        if common.GlobalConfig.ASM_NM_LABEL and self.contextSym.useNonMatchingLabel:
             out = f"{common.GlobalConfig.ASM_NM_LABEL} {symName}"
             if symSize is not None:
                 if symSize < 1:
