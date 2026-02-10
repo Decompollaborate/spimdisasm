@@ -264,6 +264,8 @@ class ContextSymbol:
     given value.
     """
 
+    useNonMatchingLabel: bool = True
+
     @property
     def vram(self) -> int:
         return self.address
