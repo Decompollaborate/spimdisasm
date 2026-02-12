@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.40.0] - 2026-02-12
+
+### Added
+
+- Add `useNonMatchingLabel` setting to `ContextSymbol`.
+  - Allows to toggle the use of the `nonmatching` marker for specific symbols.
+  - Defaults to `True`.
+
 ## [1.39.3] - 2025-12-27
 
 ### Changed
