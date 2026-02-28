@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.40.1] - 2026-02-28
+
+### Fixed
+
+- Fix wrong data symbol disassembly when there incorrect relocations are used.
+  - If a relocation that is not valid for data symbols (i.e. `R_MIPS_26`) was
+    tried to be used in a data symbol, spimdisasm would try to still use the
+    embedded symbol but force a `.word` directive instead of rejecting the
+    relocation.
+  - Fixes issue #201
+
 ## [1.40.0] - 2026-02-12
 
 ### Added
@@ -1979,7 +1990,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Version 1.0.0
 
-[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/1.40.0...HEAD
+[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/1.40.1...HEAD
+[1.40.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.40.0...1.40.1
 [1.40.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.39.3...1.40.0
 [1.39.3]: https://github.com/Decompollaborate/spimdisasm/compare/1.39.2...1.39.3
 [1.39.2]: https://github.com/Decompollaborate/spimdisasm/compare/1.39.1...1.39.2

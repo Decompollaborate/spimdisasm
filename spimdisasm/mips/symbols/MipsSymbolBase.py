@@ -420,15 +420,19 @@ class SymbolBase(common.ElementBase):
                 relocVram = relocInfo.staticReference.sectionVram + w
                 contextSym = self.getSymbol(relocVram, checkUpperLimit=False)
                 if contextSym is not None:
-                    value = contextSym.getSymbolPlusOffset(relocVram)
                     wordRel = relocInfo.relocType.getWordRel()
                     if wordRel is not None:
                         dotType = wordRel
+                        value = contextSym.getSymbolPlusOffset(relocVram)
             else:
-                value = relocInfo.getName(isSplittedSymbol=isSplittedSymbol)
+                # Get the directive for this reloc (.word, .gpword, etc).
+                # If the returned directive is None, then this relocation is
+                # invalid for data, meaning there's no point on getting the
+                # referenced symbol.
                 wordRel = relocInfo.relocType.getWordRel()
                 if wordRel is not None:
                     dotType = wordRel
+                    value = relocInfo.getName(isSplittedSymbol=isSplittedSymbol)
         elif self.contextSym.isJumpTable():
             if self.contextSym.isGot and common.GlobalConfig.GP_VALUE is not None:
                 labelAddr = common.GlobalConfig.GP_VALUE + rabbitizer.Utils.from2Complement(w, 32)
