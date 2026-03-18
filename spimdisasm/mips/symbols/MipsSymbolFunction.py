@@ -851,9 +851,8 @@ class SymbolFunction(SymbolText):
         if migrate:
             output += self.getSpimdisasmVersionString()
 
-        if not common.GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS:
-            if self.hasUnimplementedIntrs:
-                return self.disassembleAsData(useGlobalLabel=useGlobalLabel, isSplittedSymbol=isSplittedSymbol)
+        if (not common.GlobalConfig.DISASSEMBLE_UNKNOWN_INSTRUCTIONS and self.hasUnimplementedIntrs) or isinstance(self.contextSym.getTypeSpecial(), str):
+            return self.disassembleAsData(useGlobalLabel=useGlobalLabel, isSplittedSymbol=isSplittedSymbol)
 
         if not common.GlobalConfig.PIC and self.gpRelHack and len(self.instrAnalyzer.gpReferencedSymbols) > 0:
             output += f"/* Symbols accessed via $gp register */{common.GlobalConfig.LINE_ENDS}"
