@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.40.3] - 2026-05-04
+
+### Fixed
+
+- Turn off `bigAddendWorkaroundForMigratedFunctions` for `MWCCPS2`.
+  - Fixes issues with the relocation entry order.
+  - Fixes [#202](https://github.com/Decompollaborate/spimdisasm/issues/202)
+
 ## [1.40.2] - 2026-03-18
 
 ### Fixed
@@ -1997,7 +2005,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Version 1.0.0
 
-[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/1.40.2...HEAD
+[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/1.40.3...HEAD
+
+[1.40.3]: https://github.com/Decompollaborate/spimdisasm/compare/1.40.2...1.40.3
 [1.40.2]: https://github.com/Decompollaborate/spimdisasm/compare/1.40.1...1.40.2
 [1.40.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.40.0...1.40.1
 [1.40.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.39.3...1.40.0
