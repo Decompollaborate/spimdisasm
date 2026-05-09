@@ -29,7 +29,7 @@ enum PyExecutableSectionInner {
 #[derive(Debug, Clone, Hash, PartialEq, PartialOrd)]
 #[cfg_attr(
     feature = "pyo3",
-    pyclass(module = "spimdisasm", name = "ExecutableSection")
+    pyclass(module = "spimdisasm", name = "n", from_py_object)
 )]
 pub struct PyExecutableSection {
     inner: PyExecutableSectionInner,
@@ -91,6 +91,7 @@ impl PyExecutableSection {
     }
 
     #[pyo3(name = "get_sym_info")]
+    #[expect(clippy::type_complexity)]
     pub fn py_get_sym_info(
         &self,
         context: &Context,

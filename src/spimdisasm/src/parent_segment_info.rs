@@ -10,7 +10,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 // TODO: consider changing rom and vram to RomVramRange
 pub struct ParentSegmentInfo {
     segment_rom: Rom,

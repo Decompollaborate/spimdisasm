@@ -33,17 +33,22 @@ hash_tables = ["std"]
 
 nightly = [] # Evil stuff, do not use.
 game_tests = [] # Tests that require game roms to run
-pyo3 = ["std", "dep:pyo3", "rabbitizer/pyo3"]
+pyo3 = [
+    "std",
+    "dep:pyo3",
+    "rabbitizer/pyo3",
+]
 
 [dependencies]
-rabbitizer = { version = "=2.0.0-alpha.7", features = ["MIPS_IV", "all_extensions"] }
+rabbitizer = { version = "=2.0.0-alpha.8", features = ["MIPS_IV", "all_extensions"] }
 # rabbitizer = { git = "https://github.com/Decompollaborate/rabbitizer.git", branch = "🦀", features = ["MIPS_IV", "all_extensions"] }
 # rabbitizer = { path = "../../../rabbitizer/src/rabbitizer", features = ["MIPS_IV", "all_extensions"] }
+
 polonius-the-crab = "0" # TODO: get rid of the polonius stuff when the new borrow checker has been released.
 encoding_rs = "0.8"
 bitflags = { version = "2", default-features = false }
 
-pyo3 = { version = "0.23", optional = true }
+pyo3 = { version = "0.28", optional = true }
 
 [dev-dependencies]
 pretty_assertions = "1"

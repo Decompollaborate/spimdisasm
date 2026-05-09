@@ -21,7 +21,7 @@ enum AddGlobalToBuilderErrorInner {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct AddGlobalToBuilderError {
     segment_name: Arc<str>,
     inner: AddGlobalToBuilderErrorInner,
@@ -149,7 +149,7 @@ enum AddOverlayToBuilderErrorInner {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct AddOverlayToBuilderError {
     overlay_name: Arc<str>,
     inner: AddOverlayToBuilderErrorInner,

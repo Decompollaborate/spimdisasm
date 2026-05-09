@@ -9,7 +9,7 @@ use super::{RelocReferencedSym, RelocationInfo};
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
 #[allow(non_camel_case_types)]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", eq))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", eq, from_py_object))]
 pub enum RelocationType {
     /// Official description: No reloc.
     ///

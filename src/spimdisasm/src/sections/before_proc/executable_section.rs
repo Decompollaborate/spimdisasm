@@ -910,7 +910,7 @@ fn find_current_start_advance_nops<'segment>(
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct ExecutableSectionSettings {
     compiler: Option<Compiler>,
     instruction_flags: InstructionFlags,

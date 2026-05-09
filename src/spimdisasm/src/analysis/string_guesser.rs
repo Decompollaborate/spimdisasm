@@ -84,7 +84,7 @@ bitflags! {
     /// [`IDO`]: crate::config::compiler::IDO
     #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
     #[non_exhaustive]
-    #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", eq))]
+    #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", eq, from_py_object))]
     pub struct StringGuesserFlags: u32 {
         /// The most conservative setting. Imposes the following restrictions:
         /// - Do not try to guess if the user provided a type for the symbol.

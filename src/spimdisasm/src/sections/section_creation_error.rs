@@ -17,7 +17,7 @@ use crate::{
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub enum SectionCreationError {
     OwnedSegmentNotFound(OwnedSegmentNotFoundError),
     AddSymbol(AddSymbolError),
@@ -117,7 +117,7 @@ impl From<BadUserSymbolSizeError> for SectionCreationError {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct EmptySectionError {
     name: Arc<str>,
     vram: Vram,
@@ -140,7 +140,7 @@ impl error::Error for EmptySectionError {}
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct BadBytesSizeError {
     name: Arc<str>,
     size: usize,
@@ -164,7 +164,7 @@ impl error::Error for BadBytesSizeError {}
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct UnalignedVramError {
     name: Arc<str>,
     vram: Vram,
@@ -192,7 +192,7 @@ impl error::Error for UnalignedVramError {}
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct UnalignedRomError {
     name: Arc<str>,
     rom: Rom,
@@ -222,7 +222,7 @@ impl error::Error for UnalignedRomError {}
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct RomVramAlignmentMismatchError {
     name: Arc<str>,
     rom: Rom,
@@ -248,7 +248,7 @@ impl error::Error for RomVramAlignmentMismatchError {}
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct SectionAlreadyCreatedError {
     name: Arc<str>,
     rom: Option<Rom>,
@@ -272,7 +272,7 @@ impl error::Error for SectionAlreadyCreatedError {}
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct SectionNotPreheatedError {
     name: Arc<str>,
     rom: Rom,
@@ -296,7 +296,7 @@ impl error::Error for SectionNotPreheatedError {}
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct BadUserSymbolSizeError {
     name: Arc<str>,
     vram: Vram,

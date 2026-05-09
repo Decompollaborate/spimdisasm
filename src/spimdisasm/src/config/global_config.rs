@@ -9,7 +9,7 @@ use super::{Endian, GpConfig, MacroLabels};
 use pyo3::prelude::*;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct GlobalConfig {
     endian: Endian,
     gp_config: Option<GpConfig>,
@@ -48,7 +48,7 @@ impl GlobalConfig {
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct GlobalConfigBuilder {
     endian: Endian,
     gp_config: Option<GpConfig>,

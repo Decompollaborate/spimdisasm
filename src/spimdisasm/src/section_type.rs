@@ -8,7 +8,7 @@ use pyo3::prelude::*;
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", eq))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", eq, from_py_object))]
 pub enum SectionType {
     Text = 1,
     Data,

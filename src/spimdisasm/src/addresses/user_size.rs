@@ -11,7 +11,7 @@ use crate::collections::addended_ordered_map::SizedValue;
 use super::{Rom, Size, Vram};
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct UserSize {
     inner: NonZeroU32,
 }

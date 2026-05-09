@@ -237,7 +237,7 @@ impl SegmentHeater {
 }
 
 #[derive(Debug, Clone, Hash, PartialEq)]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct GlobalSegmentHeater {
     inner: SegmentHeater,
 }
@@ -383,7 +383,7 @@ impl GlobalSegmentHeater {
 }
 
 #[derive(Debug, Clone, Hash, PartialEq)]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct OverlaySegmentHeater {
     inner: SegmentHeater,
     category_name: OverlayCategoryName,

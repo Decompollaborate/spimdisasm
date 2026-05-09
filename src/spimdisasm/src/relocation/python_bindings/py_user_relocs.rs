@@ -13,7 +13,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", name = "UserRelocs"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", name = "s", from_py_object))]
 pub struct PyUserRelocs {
     inner: BTreeMap<Rom, RelocationInfo>,
 }
@@ -53,7 +53,7 @@ impl PyUserRelocs {
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct UserRelocAddError {
     rom: Rom,
 }

@@ -9,7 +9,7 @@ use pyo3::prelude::*;
 use super::Size;
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct Rom {
     inner: u32,
 }

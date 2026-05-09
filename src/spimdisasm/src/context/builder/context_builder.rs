@@ -24,7 +24,7 @@ use super::{
 };
 
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct ContextBuilder {
     global_segments: Vec<GlobalSegmentHeater>,
     overlays: Vec<OverlaySegmentHeater>,

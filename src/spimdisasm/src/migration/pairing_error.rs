@@ -11,7 +11,7 @@ use crate::symbols::display::SymDisplayError;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub enum PairingError {
     MissingTextSection(MissingTextSectionError),
     MissingRodataSection(MissingRodataSectionError),
@@ -64,7 +64,7 @@ impl From<SymDisplayError> for PairingError {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct MissingTextSectionError {}
 impl MissingTextSectionError {
     pub(crate) fn new() -> Self {
@@ -83,7 +83,7 @@ impl error::Error for MissingTextSectionError {}
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct MissingRodataSectionError {}
 impl MissingRodataSectionError {
     pub(crate) fn new() -> Self {
@@ -102,7 +102,7 @@ impl error::Error for MissingRodataSectionError {}
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct FunctionOutOfBoundsError {
     index: usize,
     len: usize,
@@ -132,7 +132,7 @@ impl error::Error for FunctionOutOfBoundsError {}
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct RodataOutOfBoundsError {
     index: usize,
     len: usize,

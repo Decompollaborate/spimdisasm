@@ -213,7 +213,7 @@ impl PartialOrd for NobitsSection {
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct NobitsSectionSettings {
     compiler: Option<Compiler>,
 }

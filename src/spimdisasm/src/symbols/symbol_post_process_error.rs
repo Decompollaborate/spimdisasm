@@ -13,7 +13,7 @@ use crate::{
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct OwnedSymbolNotFoundError {}
 impl OwnedSymbolNotFoundError {
     pub(crate) fn new() -> Self {
@@ -29,7 +29,7 @@ impl error::Error for OwnedSymbolNotFoundError {}
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct UnalignedUserRelocError {
     reloc_rom: Rom,
     reloc_type: RelocationType,
@@ -51,7 +51,7 @@ impl error::Error for UnalignedUserRelocError {}
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct InvalidRelocForSectionError {
     reloc_rom: Rom,
     reloc_type: RelocationType,
@@ -79,7 +79,7 @@ impl error::Error for InvalidRelocForSectionError {}
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub enum SymbolPostProcessError {
     OwnedSegmentNotFound(OwnedSegmentNotFoundError),
     OwnedSymbolNotFound(OwnedSymbolNotFoundError),

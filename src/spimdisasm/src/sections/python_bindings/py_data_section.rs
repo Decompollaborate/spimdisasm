@@ -25,7 +25,7 @@ enum PyDataSectionInner {
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, PartialOrd)]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", name = "DataSection"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", name = "n", from_py_object))]
 pub struct PyDataSection {
     inner: PyDataSectionInner,
 }
@@ -84,6 +84,7 @@ impl PyDataSection {
     }
 
     #[pyo3(name = "get_sym_info")]
+    #[expect(clippy::type_complexity)]
     pub fn py_get_sym_info(
         &self,
         context: &Context,

@@ -290,7 +290,7 @@ impl SegmentBuilder {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct GlobalSegmentBuilder {
     inner: SegmentBuilder,
 }
@@ -391,7 +391,7 @@ impl GlobalSegmentBuilder {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct OverlaySegmentBuilder {
     inner: SegmentBuilder,
     category_name: OverlayCategoryName,
@@ -621,7 +621,7 @@ pub(crate) mod python_bindings {
     #[non_exhaustive]
     #[cfg_attr(
         feature = "pyo3",
-        pyclass(module = "spimdisasm", eq, name = "RodataMigrationBehavior")
+        pyclass(module = "spimdisasm", name = "RodataMigrationBehavior", eq, from_py_object)
     )]
     pub enum PyRodataMigrationBehavior {
         Default(),

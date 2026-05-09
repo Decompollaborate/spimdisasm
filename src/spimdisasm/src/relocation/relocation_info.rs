@@ -19,7 +19,7 @@ use crate::{
 use super::{RelocReferencedSym, RelocationType};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct RelocationInfo {
     reloc_type: RelocationType,
     referenced_sym: RelocReferencedSym,

@@ -18,7 +18,7 @@ use crate::{
 use super::AddUserSegmentSymbolError;
 
 #[derive(Debug, Clone, Hash, PartialEq)]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct UserSegmentBuilder {
     symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
 }

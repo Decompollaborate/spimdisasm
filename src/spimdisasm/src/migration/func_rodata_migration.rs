@@ -412,7 +412,7 @@ pub(crate) mod python_bindings {
     #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
     #[cfg_attr(
         feature = "pyo3",
-        pyclass(module = "spimdisasm", name = "FuncRodataPairing")
+        pyclass(module = "spimdisasm", name = "g", from_py_object)
     )]
     pub struct PyFuncRodataPairing {
         inner: FuncRodataPairing,
@@ -498,6 +498,7 @@ pub(crate) mod python_bindings {
         }
 
         #[pyo3(name = "display", signature = (context, text_section, function_display_settings, rodata_section, rodata_display_settings, section_label_text, section_label_rodata, section_label_late_rodata))]
+        #[expect(clippy::too_many_arguments)]
         pub fn py_display(
             &self,
             context: &Context,

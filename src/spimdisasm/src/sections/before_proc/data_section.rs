@@ -706,7 +706,7 @@ impl PartialOrd for DataSection {
 }
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct DataSectionSettings {
     compiler: Option<Compiler>,
     string_guesser_flags: StringGuesserFlags,

@@ -34,7 +34,7 @@ enum AddUserSymbolErrorVariant {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct AddUserSymbolError {
     sym_name: Arc<str>,
     sym_vram: Vram,

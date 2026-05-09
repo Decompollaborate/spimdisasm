@@ -7,7 +7,7 @@ use alloc::sync::Arc;
 use pyo3::prelude::*;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm"))]
+#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct MacroLabels {
     func: Arc<str>,
     alt_func: Arc<str>,
