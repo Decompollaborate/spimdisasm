@@ -16,6 +16,7 @@ pub extern crate rabbitizer;
 
 pub mod addresses;
 pub mod analysis;
+pub mod got;
 pub mod parent_segment_info;
 pub mod section_type;
 pub mod str_decoding;

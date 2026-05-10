@@ -1,7 +1,10 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use crate::addresses::{GotGlobalEntry, Rom, Vram};
+use crate::{
+    addresses::{Rom, Vram},
+    got::GotGlobalEntry,
+};
 
 use super::InstrOpJumptable;
 

@@ -6,8 +6,9 @@ use core::mem;
 use rabbitizer::{access_type::AccessType, Instruction};
 
 use crate::{
-    addresses::{GlobalOffsetTable, Rom, RomVramRange, Size, Vram},
+    addresses::{Rom, RomVramRange, Size, Vram},
     collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
+    got::GlobalOffsetTable,
 };
 
 use super::{

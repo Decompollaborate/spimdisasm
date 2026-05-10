@@ -4,9 +4,10 @@
 use rabbitizer::Instruction;
 
 use crate::{
-    addresses::{GlobalOffsetTable, RomVramRange, Size, Vram},
+    addresses::{RomVramRange, Size, Vram},
     collections::{addended_ordered_map::FindSettings, unordered_set::UnorderedSet},
     context::{Context, OwnedSegmentNotFoundError},
+    got::GlobalOffsetTable,
     metadata::SegmentMetadata,
     parent_segment_info::ParentSegmentInfo,
 };

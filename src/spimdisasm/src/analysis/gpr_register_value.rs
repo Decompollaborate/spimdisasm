@@ -6,8 +6,9 @@ use rabbitizer::{
 };
 
 use crate::{
-    addresses::{GlobalOffsetTable, GotGlobalEntry, GotRequestedAddress, GpValue, Rom, Vram},
+    addresses::{GpValue, Rom, Vram},
     config::{Endian, GpConfig},
+    got::{GlobalOffsetTable, GotGlobalEntry, GotRequestedAddress},
 };
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]

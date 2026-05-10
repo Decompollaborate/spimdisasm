@@ -7,10 +7,11 @@ use alloc::{collections::BTreeMap, sync::Arc};
 use pyo3::prelude::*;
 
 use crate::{
-    addresses::{AddressRange, GlobalOffsetTable, Rom, RomVramRange, Size, Vram},
+    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     analysis::{PreheatError, Preheater},
     collections::addended_ordered_map::AddendedOrderedMap,
     config::GlobalConfig,
+    got::GlobalOffsetTable,
     metadata::{
         IgnoredAddressRange, LabelMetadata, OverlayCategoryName, SegmentMetadata, SymbolMetadata,
     },

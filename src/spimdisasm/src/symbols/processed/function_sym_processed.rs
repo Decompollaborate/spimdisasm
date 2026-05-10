@@ -6,10 +6,11 @@ use core::hash;
 use rabbitizer::Instruction;
 
 use crate::{
-    addresses::{AddressRange, GotGlobalEntry, Rom, RomVramRange, Size, Vram},
+    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     analysis::{InstrAnalysisInfo, InstructionAnalysisResult},
     collections::{addended_ordered_map::FindSettings, unordered_set::UnorderedSet},
     context::Context,
+    got::GotGlobalEntry,
     metadata::{ReferrerInfo, SegmentMetadata, SymbolType},
     parent_segment_info::ParentSegmentInfo,
     relocation::{RelocReferencedSym, RelocationInfo, RelocationType},

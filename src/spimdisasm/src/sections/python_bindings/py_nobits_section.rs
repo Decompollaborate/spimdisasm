@@ -28,7 +28,7 @@ enum PyNobitsSectionInner {
 #[derive(Debug, Clone, Hash, PartialEq, PartialOrd)]
 #[cfg_attr(
     feature = "pyo3",
-    pyclass(module = "spimdisasm", name = "n", from_py_object)
+    pyclass(module = "spimdisasm", name = "NobitsSection", from_py_object)
 )]
 pub struct PyNobitsSection {
     inner: PyNobitsSectionInner,

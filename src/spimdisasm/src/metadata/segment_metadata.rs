@@ -10,9 +10,10 @@ use core::{error, fmt};
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::addresses::{AddressRange, GlobalOffsetTable, Rom, RomVramRange, Size, Vram};
+use crate::addresses::{AddressRange, Rom, RomVramRange, Size, Vram};
 use crate::analysis::{reference_wrapper, Preheater, ReferenceWrapper};
 use crate::collections::addended_ordered_map::{AddendedOrderedMap, FindSettings};
+use crate::got::GlobalOffsetTable;
 use crate::section_type::SectionType;
 
 use super::{symbol_metadata::GeneratedBy, SymbolNameGenerationSettings};

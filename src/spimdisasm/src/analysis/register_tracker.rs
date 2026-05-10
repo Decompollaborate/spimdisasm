@@ -7,9 +7,10 @@ use rabbitizer::{
 };
 
 use crate::{
-    addresses::{GlobalOffsetTable, GotGlobalEntry, Rom, Vram},
+    addresses::{Rom, Vram},
     analysis::gpr_register_value::{GprRegDereferencedAddress, GprRegRawAddress},
     config::{Endian, GpConfig},
+    got::{GlobalOffsetTable, GotGlobalEntry},
 };
 
 use super::{gpr_register_value::GprRegConstantInfo, GprRegisterValue};
@@ -1193,8 +1194,9 @@ mod tests {
     use rabbitizer::{InstructionFlags, IsaVersion};
 
     use crate::{
-        addresses::{GotGlobalEntry, GotLocalEntry, GpValue, Size},
+        addresses::{GpValue, Size},
         config::Endian,
+        got::{GotGlobalEntry, GotLocalEntry},
     };
 
     fn register_tracking_general_test(

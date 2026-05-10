@@ -6,13 +6,14 @@ use alloc::{collections::btree_map::BTreeMap, sync::Arc};
 use rabbitizer::{access_type::AccessType, registers_meta::Register, Instruction};
 
 use crate::{
-    addresses::{AddressRange, GlobalOffsetTable, Rom, RomVramRange, Size, Vram},
+    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     collections::{
         addended_ordered_map::{AddendedOrderedMap, FindSettings, SizedValue},
         unordered_map::UnorderedMap,
         unordered_set::UnorderedSet,
     },
     config::GlobalConfig,
+    got::GlobalOffsetTable,
     metadata::{
         IgnoredAddressRange, LabelMetadata, LabelType, SegmentKind, SymbolMetadata, SymbolType,
     },

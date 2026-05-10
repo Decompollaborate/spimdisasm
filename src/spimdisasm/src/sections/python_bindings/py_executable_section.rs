@@ -29,7 +29,7 @@ enum PyExecutableSectionInner {
 #[derive(Debug, Clone, Hash, PartialEq, PartialOrd)]
 #[cfg_attr(
     feature = "pyo3",
-    pyclass(module = "spimdisasm", name = "n", from_py_object)
+    pyclass(module = "spimdisasm", name = "ExecutableSection", from_py_object)
 )]
 pub struct PyExecutableSection {
     inner: PyExecutableSectionInner,

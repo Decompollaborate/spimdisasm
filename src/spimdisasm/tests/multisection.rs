@@ -6,12 +6,10 @@ use std::collections::BTreeMap;
 use pretty_assertions::assert_eq;
 use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
 use spimdisasm::{
-    addresses::{
-        AddressRange, GlobalOffsetTable, GotGlobalEntry, GotLocalEntry, GpValue, Rom, RomVramRange,
-        Size, Vram,
-    },
+    addresses::{AddressRange, GpValue, Rom, RomVramRange, Size, Vram},
     config::{Endian, GlobalConfigBuilder, GpConfig},
     context::{builder::UserSegmentBuilder, Context, ContextBuilder, GlobalSegmentBuilder},
+    got::{GlobalOffsetTable, GotGlobalEntry, GotLocalEntry},
     metadata::SegmentMetadata,
     parent_segment_info::ParentSegmentInfo,
     sections::{

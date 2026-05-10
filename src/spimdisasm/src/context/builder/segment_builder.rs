@@ -11,9 +11,10 @@ use alloc::{
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::addresses::{GlobalOffsetTable, Rom, RomVramRange, Size, UserSize, Vram};
+use crate::addresses::{Rom, RomVramRange, Size, UserSize, Vram};
 use crate::collections::addended_ordered_map::{AddendedOrderedMap, FindSettings};
 use crate::config::GlobalConfig;
+use crate::got::GlobalOffsetTable;
 use crate::metadata::{
     GeneratedBy, IgnoredAddressRange, LabelMetadata, LabelType, OverlayCategoryName,
     SymbolMetadata, SymbolNameGenerationSettings, SymbolType, UserLabelMetadata, UserSymMetadata,
@@ -621,7 +622,12 @@ pub(crate) mod python_bindings {
     #[non_exhaustive]
     #[cfg_attr(
         feature = "pyo3",
-        pyclass(module = "spimdisasm", name = "RodataMigrationBehavior", eq, from_py_object)
+        pyclass(
+            module = "spimdisasm",
+            name = "RodataMigrationBehavior",
+            eq,
+            from_py_object
+        )
     )]
     pub enum PyRodataMigrationBehavior {
         Default(),

@@ -8,11 +8,10 @@ use std::{
 
 use object::{read::elf::ElfFile32, Object};
 use spimdisasm::{
-    addresses::{
-        GlobalOffsetTable, GotGlobalEntry, GotLocalEntry, GpValue, Rom, Size, UserSize, Vram,
-    },
+    addresses::{GpValue, Rom, Size, UserSize, Vram},
     collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
     config::Endian,
+    got::{GlobalOffsetTable, GotGlobalEntry, GotLocalEntry},
 };
 
 use crate::{

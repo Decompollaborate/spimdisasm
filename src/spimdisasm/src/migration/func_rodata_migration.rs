@@ -412,7 +412,7 @@ pub(crate) mod python_bindings {
     #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
     #[cfg_attr(
         feature = "pyo3",
-        pyclass(module = "spimdisasm", name = "g", from_py_object)
+        pyclass(module = "spimdisasm", name = "FuncRodataPairing", from_py_object)
     )]
     pub struct PyFuncRodataPairing {
         inner: FuncRodataPairing,
