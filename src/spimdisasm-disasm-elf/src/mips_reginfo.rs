@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use spimdisasm::{addresses::GpValue, config::Endian};
+use spimdisasm::{address_space::GpValue, config::Endian};
 
 use crate::elf_section_type::{ElfSectionType, RawElfSection};
 

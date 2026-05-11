@@ -1,10 +1,9 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use crate::{
-    addresses::Vram,
-    collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
-};
+use address_space::Vram;
+
+use crate::collections::addended_ordered_map::{AddendedOrderedMap, FindSettings};
 
 use super::SymbolMetadata;
 

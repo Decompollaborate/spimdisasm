@@ -10,10 +10,9 @@ use object::{
 };
 use parsed_elf::ParsedElf;
 use spimdisasm::{
-    self,
-    addresses::{AddressRange, Rom, RomVramRange, UserSize, Vram},
+    address_space::{AddressRange, Rom, RomVramRange, UserSize, Vram},
     analysis::StringGuesserFlags,
-    config::{GlobalConfig, GlobalConfigBuilder, GpConfig},
+    config::{Compiler, GlobalConfig, GlobalConfigBuilder, GpConfig},
     context::{
         builder::{GlobalSegmentHeater, UserSegmentBuilder},
         Context, ContextBuilder, GlobalSegmentBuilder,
@@ -56,7 +55,7 @@ pub enum ArgCompiler {
     IDO,
 }
 
-impl From<ArgCompiler> for spimdisasm::config::Compiler {
+impl From<ArgCompiler> for Compiler {
     fn from(value: ArgCompiler) -> Self {
         match value {
             ArgCompiler::IDO => Self::IDO,
@@ -301,10 +300,10 @@ fn create_global_ranges(elf: &ParsedElf) -> RomVramRange {
         }
     }
 
-    let rom = AddressRange::new(rom_start.unwrap(), rom_end.unwrap());
-    let vram = AddressRange::new(vram_start.unwrap(), vram_end.unwrap());
+    let rom = AddressRange::new(rom_start.unwrap(), rom_end.unwrap()).unwrap();
+    let vram = AddressRange::new(vram_start.unwrap(), vram_end.unwrap()).unwrap();
 
-    RomVramRange::new(rom, vram)
+    RomVramRange::new(rom, vram, 4).unwrap()
 }
 
 fn fill_symbols(
@@ -324,13 +323,13 @@ fn fill_symbols(
     global_segment
         .add_ignored_address_range(
             Vram::new(0x09000000),
-            const { UserSize::new_checked(0x00800000).unwrap() },
+            UserSize::new_checked(0x00800000).unwrap(),
         )
         .pretty_unwrap();
     global_segment
         .add_ignored_address_range(
             Vram::new(0x0A000000),
-            const { UserSize::new_checked(0x00800000).unwrap() },
+            UserSize::new_checked(0x00800000).unwrap(),
         )
         .pretty_unwrap();
 
@@ -356,7 +355,7 @@ fn fill_symbols(
                             ElfSymSectionIndex::Undef | ElfSymSectionIndex::Common
                         ) && !matches!(elf_sym.typ(), ElfSymType::Function)
                     })
-                    .unwrap_or(const { UserSize::new_checked(1).unwrap() });
+                    .unwrap_or(UserSize::new_checked(1).unwrap());
 
                 let mut sym_metadata = user_segment
                     .add_user_symbol(initial_vram, got_entry.sym_name(), size, sym_type)
@@ -461,7 +460,7 @@ fn fill_symbols(
             if vram != Vram::new(0) {
                 // Something silly, so the user doesn't confuse this as a real symbol
                 let name = "$$.LazyResolver";
-                let size = const { UserSize::new_checked(4).unwrap() };
+                let size = UserSize::new_checked(4).unwrap();
                 let typ = None;
 
                 let mut sym_metadata = user_segment
@@ -708,7 +707,7 @@ fn create_sections(
             .create_section_bss(
                 &nobits_settings,
                 name,
-                AddressRange::new(vram, vram_end),
+                AddressRange::new(vram, vram_end).unwrap(),
                 parent_segment_info.clone(),
             )
             .pretty_unwrap();

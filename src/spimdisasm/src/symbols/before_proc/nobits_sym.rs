@@ -5,8 +5,9 @@ use core::hash;
 
 use alloc::collections::btree_map::BTreeMap;
 
+use address_space::{AddressRange, Rom, Size, Vram};
+
 use crate::{
-    addresses::{AddressRange, Rom, Size, Vram},
     config::Compiler,
     context::Context,
     metadata::{ParentSectionMetadata, SymbolMetadata},

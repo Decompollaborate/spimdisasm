@@ -4,3 +4,6 @@
 pub mod py_data_section;
 pub mod py_executable_section;
 pub mod py_nobits_section;
+
+pub mod pre_post_section;
+pub mod py_sym_info;

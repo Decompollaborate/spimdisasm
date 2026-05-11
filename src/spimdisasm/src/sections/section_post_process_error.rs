@@ -4,7 +4,7 @@
 use core::{error, fmt};
 
 #[cfg(feature = "pyo3")]
-use crate::addresses::Vram;
+use address_space::Vram;
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
@@ -26,13 +26,19 @@ pub enum SectionPostProcessError {
     InvalidRelocForSection(InvalidRelocForSectionError),
 
     #[cfg(feature = "pyo3")]
-    AlreadyPostProcessed {
-        name: String,
-        vram_start: Vram,
-        vram_end: Vram,
-    },
+    AlreadyPostProcessed(AlreadyPostProcessedError),
     #[cfg(feature = "pyo3")]
     InvalidState(),
+}
+
+#[cfg(feature = "pyo3")]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
+#[pyclass(module = "spimdisasm", from_py_object)]
+pub struct AlreadyPostProcessedError {
+    pub(crate) name: String,
+    pub(crate) vram_start: Vram,
+    pub(crate) vram_end: Vram,
 }
 
 impl fmt::Display for SectionPostProcessError {
@@ -51,11 +57,11 @@ impl fmt::Display for SectionPostProcessError {
                 write!(f, "{invalid_reloc_for_section_error}")
             }
             #[cfg(feature = "pyo3")]
-            SectionPostProcessError::AlreadyPostProcessed {
+            SectionPostProcessError::AlreadyPostProcessed(AlreadyPostProcessedError {
                 name,
                 vram_start,
                 vram_end,
-            } => {
+            }) => {
                 write!(
                     f,
                     "The section {} ({:?} {:?}) has already been post-processed.",

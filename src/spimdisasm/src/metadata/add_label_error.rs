@@ -3,10 +3,9 @@
 
 use core::{error, fmt};
 
+use address_space::{AddressRange, Vram};
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
-
-use crate::addresses::{AddressRange, Vram};
 
 use super::{LabelType, SegmentKind};
 

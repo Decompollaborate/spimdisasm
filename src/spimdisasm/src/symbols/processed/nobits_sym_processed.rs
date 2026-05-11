@@ -3,8 +3,9 @@
 
 use core::hash;
 
+use address_space::{AddressRange, Vram};
+
 use crate::{
-    addresses::{AddressRange, Vram},
     context::Context,
     parent_segment_info::ParentSegmentInfo,
     section_type::SectionType,

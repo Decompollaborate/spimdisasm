@@ -4,11 +4,12 @@
 use alloc::{collections::btree_set::BTreeSet, sync::Arc, vec::Vec};
 use core::hash;
 
+use address_space::{AddressRange, Vram};
+
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
-    addresses::{AddressRange, Vram},
     collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
     config::Compiler,
     context::Context,
@@ -116,7 +117,8 @@ impl NobitsSection {
             };
             let sym = NobitsSym::new(
                 context,
-                AddressRange::new(*new_sym_vram, new_sym_vram_end),
+                AddressRange::new(*new_sym_vram, new_sym_vram_end)
+                    .expect("It surely won't be a problem"),
                 parent_segment_info.clone(),
                 properties,
             )?;

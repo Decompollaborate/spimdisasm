@@ -3,11 +3,12 @@
 
 use alloc::{sync::Arc, vec::Vec};
 
+use address_space::{AddressRange, Vram};
+
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
-    addresses::{AddressRange, Vram},
     analysis::ReferencedAddress,
     collections::{
         addended_ordered_map::FindSettings, unordered_map::UnorderedMap,

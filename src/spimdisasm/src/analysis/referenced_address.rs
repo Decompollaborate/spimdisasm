@@ -3,10 +3,11 @@
 
 use alloc::vec::Vec;
 use core::hash::Hash;
+
+use address_space::{Size, Vram};
 use rabbitizer::access_type::AccessType;
 
 use crate::{
-    addresses::{Size, Vram},
     collections::{addended_ordered_map::SizedValue, unordered_map::UnorderedMap},
     metadata::SymbolType,
 };

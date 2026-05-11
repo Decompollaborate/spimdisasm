@@ -1,8 +1,9 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use address_space::{Rom, Vram};
+
 use crate::{
-    addresses::{Rom, Vram},
     collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
     parent_segment_info::ParentSegmentInfo,
 };

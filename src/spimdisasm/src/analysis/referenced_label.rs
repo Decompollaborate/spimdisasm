@@ -4,7 +4,9 @@
 use alloc::vec::Vec;
 use core::hash::Hash;
 
-use crate::{addresses::Vram, metadata::LabelType};
+use address_space::Vram;
+
+use crate::metadata::LabelType;
 
 #[derive(Debug, Clone)]
 pub struct ReferencedLabel {

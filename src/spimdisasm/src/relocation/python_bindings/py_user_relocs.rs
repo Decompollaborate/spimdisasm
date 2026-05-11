@@ -1,16 +1,15 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use alloc::{collections::BTreeMap, sync::Arc};
 use core::{error, fmt};
-use std::{collections::BTreeMap, sync::Arc};
+
+use address_space::Rom;
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::{
-    addresses::Rom,
-    relocation::{RelocReferencedSym, RelocationInfo, RelocationType},
-};
+use crate::relocation::{RelocReferencedSym, RelocationInfo, RelocationType};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(
@@ -38,11 +37,12 @@ impl PyUserRelocs {
 
     pub fn add_reloc(
         &mut self,
-        rom: Rom,
+        rom: u32,
         reloc_type: RelocationType,
         sym_name: String,
         addend: i64,
     ) -> Result<(), UserRelocAddError> {
+        let rom = Rom::new(rom);
         let reloc =
             reloc_type.new_reloc_info(RelocReferencedSym::SymName(Arc::from(sym_name), addend));
 

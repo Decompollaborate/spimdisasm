@@ -4,7 +4,7 @@
 use alloc::sync::Arc;
 use core::{fmt, hash::Hash};
 
-use crate::addresses::{Rom, Vram};
+use address_space::{Rom, Vram};
 
 use super::{
     GeneratedBy, LabelMetadataNameDisplay, LabelType, OwnerSegmentKind, ReferrerInfo, Referrers,

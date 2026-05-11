@@ -4,8 +4,9 @@
 use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
 use core::hash;
 
+use address_space::{AddressRange, Rom, RomVramRange, Size, Vram};
+
 use crate::{
-    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     collections::addended_ordered_map::FindSettings,
     context::Context,
     metadata::{LabelType, ReferrerInfo, SymbolType},
@@ -63,7 +64,7 @@ impl DataSymProcessed {
                     ));
                 }
 
-                let reloc_index = (*reloc_rom - ranges.rom().start()).inner() as usize / 4;
+                let reloc_index = reloc_rom.sub_rom(&ranges.rom().start()).inner() as usize / 4;
                 assert!(reloc_index < relocs.len());
                 relocs[reloc_index] = if reloc_info.reloc_type().is_none() {
                     None

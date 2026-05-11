@@ -3,7 +3,8 @@
 
 use alloc::sync::Arc;
 
-use crate::addresses::{AddressRange, Rom, RomVramRange, Size, Vram};
+use address_space::{AddressRange, Rom, RomVramRange, Size, Vram};
+
 use crate::collections::unordered_set::UnorderedSet;
 use crate::parent_segment_info::ParentSegmentInfo;
 use crate::section_type::SectionType;

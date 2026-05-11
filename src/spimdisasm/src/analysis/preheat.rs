@@ -3,10 +3,10 @@
 
 use alloc::{collections::btree_map::BTreeMap, sync::Arc};
 
+use address_space::{AddressRange, Rom, RomVramRange, Size, Vram};
 use rabbitizer::{access_type::AccessType, registers_meta::Register, Instruction};
 
 use crate::{
-    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     collections::{
         addended_ordered_map::{AddendedOrderedMap, FindSettings, SizedValue},
         unordered_map::UnorderedMap,
@@ -701,9 +701,11 @@ impl Preheater {
                                             user_symbols,
                                             ignored_addresses,
                                         ) {
-                                            jtbl_ref.set_autodetected_size(
-                                                (current_vram - jtbl_vram).try_into().unwrap(),
-                                            );
+                                            if let Some(jtbl_size) =
+                                                current_vram.sub_vram_checked(&jtbl_vram)
+                                            {
+                                                jtbl_ref.set_autodetected_size(jtbl_size);
+                                            }
                                         }
                                     }
 
@@ -760,6 +762,9 @@ impl Preheater {
                                         AddressRange::new(
                                             current_vram + Size::new(1),
                                             current_vram + Size::new(str_sym_size as u32),
+                                        )
+                                        .expect(
+                                            "string size shouldn't be large enough to overflow",
                                         ),
                                     );
 

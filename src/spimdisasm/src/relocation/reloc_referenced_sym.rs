@@ -3,7 +3,7 @@
 
 use alloc::sync::Arc;
 
-use crate::addresses::Vram;
+use address_space::Vram;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]

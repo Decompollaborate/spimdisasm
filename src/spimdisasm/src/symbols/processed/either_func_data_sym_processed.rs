@@ -1,8 +1,9 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use address_space::{AddressRange, RomVramRange, Vram};
+
 use crate::{
-    addresses::{AddressRange, RomVramRange, Vram},
     context::Context,
     parent_segment_info::ParentSegmentInfo,
     relocation::RelocationInfo,

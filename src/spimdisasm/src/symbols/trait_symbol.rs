@@ -3,14 +3,11 @@
 
 use alloc::collections::btree_map::BTreeMap;
 
+use address_space::{AddressRange, Rom, RomVramRange, Size, Vram};
+
 use crate::{
-    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
-    collections::addended_ordered_map::FindSettings,
-    context::Context,
-    metadata::SymbolMetadata,
-    parent_segment_info::ParentSegmentInfo,
-    relocation::RelocationInfo,
-    section_type::SectionType,
+    collections::addended_ordered_map::FindSettings, context::Context, metadata::SymbolMetadata,
+    parent_segment_info::ParentSegmentInfo, relocation::RelocationInfo, section_type::SectionType,
 };
 
 use super::SymbolPostProcessError;

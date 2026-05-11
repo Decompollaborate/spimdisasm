@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use object::ObjectSection;
 use spimdisasm::{
-    addresses::{Rom, Size, Vram},
+    address_space::{Rom, Size, Vram},
     config::Endian,
 };
 

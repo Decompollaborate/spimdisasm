@@ -4,13 +4,12 @@
 use alloc::sync::Arc;
 use core::{error, fmt};
 
+use address_space::{AddressRange, Rom, Size, Vram};
+
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::{
-    addresses::{AddressRange, Rom, Size, Vram},
-    metadata::SegmentKind,
-};
+use crate::metadata::SegmentKind;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 enum PreheatErrorInner {
@@ -25,7 +24,7 @@ enum PreheatErrorInner {
     AlreadyPreheated,
     OverlapsWithAlreadyPreheated {
         other_name: Arc<str>,
-        other_range: AddressRange<Vram>,
+        other_range: Option<AddressRange<Vram>>,
     },
 }
 
@@ -109,7 +108,7 @@ impl PreheatError {
             section_vram,
             inner: PreheatErrorInner::OverlapsWithAlreadyPreheated {
                 other_name,
-                other_range: AddressRange::new(other_vram, other_vram + other_size),
+                other_range: AddressRange::new_size(other_vram, other_size),
             },
         }
     }
@@ -132,7 +131,7 @@ impl fmt::Display for PreheatError {
             PreheatErrorInner::OverlapsWithAlreadyPreheated {
                 other_name,
                 other_range,
-            } => write!(f, "This section's vram overlaps with the vram range of the section '{}', which has a vram of 0x{} ~ {}", other_name, other_range.start(), other_range.end()),
+            } => write!(f, "This section's vram overlaps with the vram range of the section '{}', which has a vram of {:?}", other_name, other_range),
         }
     }
 }

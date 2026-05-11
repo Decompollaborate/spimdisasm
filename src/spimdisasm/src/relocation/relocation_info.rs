@@ -3,11 +3,12 @@
 
 use core::fmt;
 
+use address_space::Vram;
+
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
-    addresses::Vram,
     collections::addended_ordered_map::FindSettings,
     config::Compiler,
     context::Context,

@@ -5,8 +5,9 @@
 
 use std::{collections::BTreeMap, num::NonZeroU32, sync::Arc};
 
+use address_space::{Rom, Size, UserSize, Vram};
+
 use spimdisasm::{
-    addresses::{Rom, Size, UserSize, Vram},
     context::Context,
     metadata::{LabelType, RodataMigrationBehavior, SymbolType},
     sections::{
@@ -47,7 +48,7 @@ impl TestSegmentInfo {
         self.vram + rom_size + noload_size
     }
     pub fn vram_from_rom(&self, rom: Rom) -> Vram {
-        (rom - self.rom) + self.vram
+        rom.sub_rom_checked(&self.rom).unwrap() + self.vram
     }
 }
 

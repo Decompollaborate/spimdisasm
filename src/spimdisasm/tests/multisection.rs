@@ -4,9 +4,10 @@
 use std::collections::BTreeMap;
 
 use pretty_assertions::assert_eq;
+
+use address_space::{AddressRange, GpValue, Rom, RomVramRange, Size, Vram};
 use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
 use spimdisasm::{
-    addresses::{AddressRange, GpValue, Rom, RomVramRange, Size, Vram},
     config::{Endian, GlobalConfigBuilder, GpConfig},
     context::{builder::UserSegmentBuilder, Context, ContextBuilder, GlobalSegmentBuilder},
     got::{GlobalOffsetTable, GotGlobalEntry, GotLocalEntry},
@@ -31,10 +32,13 @@ impl<'a> RawSectionInfo<'a> {
     }
 
     pub fn ranges(&self) -> RomVramRange {
-        RomVramRange::new(
-            AddressRange::new(self.rom, self.rom + Size::new(self.bytes.len() as u32)),
-            AddressRange::new(self.vram, self.vram + Size::new(self.bytes.len() as u32)),
+        let size = Size::new(self.bytes.len() as u32);
+        RomVramRange::new_option(
+            AddressRange::new(self.rom, self.rom + size),
+            AddressRange::new(self.vram, self.vram + size),
+            4,
         )
+        .unwrap()
     }
 }
 
@@ -49,10 +53,12 @@ impl RawNobitsSectionInfo {
     }
 
     pub fn ranges(&self) -> RomVramRange {
-        RomVramRange::new(
+        RomVramRange::new_option(
             AddressRange::new(Rom::new(0), Rom::new(0)),
-            AddressRange::new(self.vram, self.vram + self.size),
+            AddressRange::new_size(self.vram, self.size),
+            4,
         )
+        .unwrap()
     }
 }
 

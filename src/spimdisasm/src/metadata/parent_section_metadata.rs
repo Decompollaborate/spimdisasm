@@ -3,7 +3,9 @@
 
 use alloc::sync::Arc;
 
-use crate::{addresses::Vram, parent_segment_info::ParentSegmentInfo};
+use address_space::Vram;
+
+use crate::parent_segment_info::ParentSegmentInfo;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct ParentSectionMetadata {

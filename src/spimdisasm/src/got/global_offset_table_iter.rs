@@ -1,11 +1,12 @@
 /* SPDX-FileCopyrightText: © 2025-2026 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use address_space::{Size, Vram};
+
 use super::{GlobalOffsetTable, GotRequestedAddress};
 
-use crate::addresses::{Size, Vram};
-
 #[must_use]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct GlobalOffsetTableIter<'got> {
     current_vram: Vram,
     got: &'got GlobalOffsetTable,

@@ -12,9 +12,9 @@
 
 #[macro_use]
 extern crate alloc;
+pub extern crate address_space;
 pub extern crate rabbitizer;
 
-pub mod addresses;
 pub mod analysis;
 pub mod got;
 pub mod parent_segment_info;
@@ -37,13 +37,6 @@ use pyo3::prelude::*;
 #[cfg(feature = "pyo3")]
 #[pymodule]
 fn spimdisasm(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_class::<addresses::GpValue>()?;
-    m.add_class::<addresses::Size>()?;
-    m.add_class::<addresses::UserSize>()?;
-    m.add_class::<addresses::Rom>()?;
-    m.add_class::<addresses::RomVramRange>()?;
-    m.add_class::<addresses::Vram>()?;
-
     m.add_class::<metadata::SymbolType>()?;
     m.add_class::<metadata::LabelType>()?;
     m.add_class::<context::builder::segment_builder::python_bindings::PyRodataMigrationBehavior>()?;

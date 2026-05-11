@@ -7,10 +7,10 @@ use alloc::{
 };
 use core::{error, fmt};
 
+use address_space::{AddressRange, Rom, RomVramRange, Size, Vram};
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::addresses::{AddressRange, Rom, RomVramRange, Size, Vram};
 use crate::analysis::{reference_wrapper, Preheater, ReferenceWrapper};
 use crate::collections::addended_ordered_map::{AddendedOrderedMap, FindSettings};
 use crate::got::GlobalOffsetTable;
@@ -129,7 +129,8 @@ impl SegmentMetadata {
     pub(crate) fn new_unknown_segment() -> Self {
         let rom_range = AddressRange::new(Rom::new(0x00000000), Rom::new(0xFFFFFFFF));
         let vram_range = AddressRange::new(Vram::new(0x00000000), Vram::new(0xFFFFFFFF));
-        let ranges = RomVramRange::new(rom_range, vram_range);
+        let ranges =
+            RomVramRange::new_option(rom_range, vram_range, 1).expect("This shouldn't panic");
         Self::new(
             SegmentKind::Unknown,
             ranges,
@@ -178,7 +179,7 @@ impl SegmentMetadata {
         self.ranges.vram().in_range(vram)
     }
 
-    pub const fn rom_size(&self) -> Size {
+    pub fn rom_size(&self) -> Size {
         self.ranges.rom().size()
     }
 
@@ -422,9 +423,9 @@ mod tests {
     fn check_symbol_bounds() {
         let name = Arc::from("boot");
         let symbol_name_generation_settings = SymbolNameGenerationSettings::new();
-        let rom_range = AddressRange::new(Rom::new(0), Rom::new(0x1400));
-        let vram_range = AddressRange::new(Vram::new(0), Vram::new(0x1800));
-        let ranges = RomVramRange::new(rom_range, vram_range);
+        let rom_range = AddressRange::new(Rom::new(0), Rom::new(0x1400)).unwrap();
+        let vram_range = AddressRange::new(Vram::new(0), Vram::new(0x1800)).unwrap();
+        let ranges = RomVramRange::new(rom_range, vram_range, 4).unwrap();
         let mut segment = SegmentMetadata::new_global(
             Arc::clone(&name),
             ranges,

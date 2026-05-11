@@ -3,11 +3,12 @@
 
 use alloc::{collections::vec_deque::VecDeque, string::ToString, sync::Arc, vec::Vec};
 
+use address_space::Vram;
+
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
-    addresses::Vram,
     collections::unordered_set::UnorderedSet,
     context::Context,
     metadata::{RodataMigrationBehavior, SymbolMetadata, SymbolMetadataNameDisplay},

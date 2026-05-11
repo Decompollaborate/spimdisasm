@@ -4,10 +4,9 @@
 use alloc::sync::Arc;
 use core::{error, fmt};
 
+use address_space::{AddressRange, Rom, Vram};
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
-
-use crate::addresses::{AddressRange, Rom, Vram};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]

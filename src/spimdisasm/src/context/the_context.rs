@@ -5,12 +5,12 @@ use alloc::{sync::Arc, vec::Vec};
 use core::{error, fmt};
 
 use ::polonius_the_crab::prelude::*;
+use address_space::{AddressRange, Rom, Vram};
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
-    addresses::{AddressRange, Rom, Vram},
     collections::{
         addended_ordered_map::FindSettings, unordered_map::UnorderedMap,
         unordered_set::UnorderedSet,
@@ -641,16 +641,16 @@ pub(crate) mod python_bindings {
             settings: &ExecutableSectionSettings,
             name: String,
             raw_bytes: Vec<u8>,
-            rom: Rom,
-            vram: Vram,
+            rom: u32,
+            vram: u32,
             parent_segment_info: ParentSegmentInfo,
         ) -> Result<PyExecutableSection, SectionCreationError> {
             Ok(PyExecutableSection::new(self.create_section_text(
                 settings,
                 name,
                 raw_bytes,
-                rom,
-                vram,
+                Rom::new(rom),
+                Vram::new(vram),
                 parent_segment_info,
             )?))
         }
@@ -661,16 +661,16 @@ pub(crate) mod python_bindings {
             settings: &DataSectionSettings,
             name: String,
             raw_bytes: Vec<u8>,
-            rom: Rom,
-            vram: Vram,
+            rom: u32,
+            vram: u32,
             parent_segment_info: ParentSegmentInfo,
         ) -> Result<PyDataSection, SectionCreationError> {
             Ok(PyDataSection::new(self.create_section_data(
                 settings,
                 name,
                 raw_bytes,
-                rom,
-                vram,
+                Rom::new(rom),
+                Vram::new(vram),
                 parent_segment_info,
             )?))
         }
@@ -681,16 +681,16 @@ pub(crate) mod python_bindings {
             settings: &DataSectionSettings,
             name: String,
             raw_bytes: Vec<u8>,
-            rom: Rom,
-            vram: Vram,
+            rom: u32,
+            vram: u32,
             parent_segment_info: ParentSegmentInfo,
         ) -> Result<PyDataSection, SectionCreationError> {
             Ok(PyDataSection::new(self.create_section_rodata(
                 settings,
                 name,
                 raw_bytes,
-                rom,
-                vram,
+                Rom::new(rom),
+                Vram::new(vram),
                 parent_segment_info,
             )?))
         }
@@ -700,11 +700,12 @@ pub(crate) mod python_bindings {
             &mut self,
             settings: &NobitsSectionSettings,
             name: String,
-            vram_start: Vram,
-            vram_end: Vram,
+            vram_start: u32,
+            vram_end: u32,
             parent_segment_info: ParentSegmentInfo,
         ) -> Result<PyNobitsSection, SectionCreationError> {
-            let vram_ranges = AddressRange::new(vram_start, vram_end);
+            let vram_ranges =
+                AddressRange::new(Vram::new(vram_start), Vram::new(vram_end)).unwrap();
 
             Ok(PyNobitsSection::new(self.create_section_bss(
                 settings,
@@ -720,16 +721,16 @@ pub(crate) mod python_bindings {
             settings: &DataSectionSettings,
             name: String,
             raw_bytes: Vec<u8>,
-            rom: Rom,
-            vram: Vram,
+            rom: u32,
+            vram: u32,
             parent_segment_info: ParentSegmentInfo,
         ) -> Result<PyDataSection, SectionCreationError> {
             Ok(PyDataSection::new(self.create_section_gcc_except_table(
                 settings,
                 name,
                 raw_bytes,
-                rom,
-                vram,
+                Rom::new(rom),
+                Vram::new(vram),
                 parent_segment_info,
             )?))
         }

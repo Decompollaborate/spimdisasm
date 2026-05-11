@@ -1,12 +1,13 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use pretty_assertions::assert_eq;
 use std::{collections::HashSet, sync::Arc};
 
+use pretty_assertions::assert_eq;
+
+use address_space::{AddressRange, RomVramRange};
 use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
 use spimdisasm::{
-    addresses::{AddressRange, RomVramRange},
     config::{Compiler, Endian, GlobalConfigBuilder},
     context::{builder::UserSegmentBuilder, Context, ContextBuilder, GlobalSegmentBuilder},
     parent_segment_info::ParentSegmentInfo,
@@ -48,10 +49,12 @@ fn init_context(
                 })
                 | TestSegment::EndMarker(segment_rom_end),
             ) => {
-                let ranges = RomVramRange::new(
+                let ranges = RomVramRange::new_option(
                     AddressRange::new(info.rom, *segment_rom_end),
-                    AddressRange::new(info.vram, info.vram_end(*segment_rom_end - info.rom)),
-                );
+                    AddressRange::new(info.vram, info.vram_end(segment_rom_end.sub_rom(&info.rom))),
+                    4,
+                )
+                .unwrap();
                 let mut global_segment = GlobalSegmentBuilder::new(info.name, ranges);
 
                 let mut remove = HashSet::new();
@@ -121,7 +124,7 @@ fn init_context(
                                     InstructionFlags::new(IsaVersion::MIPS_III),
                                 ),
                                 *name,
-                                &rom_bytes[AddressRange::new(*rom, rom_end)],
+                                &rom_bytes[AddressRange::new(*rom, rom_end).unwrap()],
                                 *rom,
                                 info.vram_from_rom(*rom),
                             )
@@ -131,7 +134,7 @@ fn init_context(
                                 &global_config,
                                 &DataSectionSettings::new(COMPILER),
                                 *name,
-                                &rom_bytes[AddressRange::new(*rom, rom_end)],
+                                &rom_bytes[AddressRange::new(*rom, rom_end).unwrap()],
                                 *rom,
                                 info.vram_from_rom(*rom),
                             )
@@ -141,7 +144,7 @@ fn init_context(
                                 &global_config,
                                 &DataSectionSettings::new(COMPILER),
                                 *name,
-                                &rom_bytes[AddressRange::new(*rom, rom_end)],
+                                &rom_bytes[AddressRange::new(*rom, rom_end).unwrap()],
                                 *rom,
                                 info.vram_from_rom(*rom),
                             )
@@ -217,7 +220,8 @@ fn init_segments(
                                     .create_section_text(
                                         &text_settings,
                                         *name,
-                                        rom_bytes[AddressRange::new(*rom, rom_end)].to_vec(),
+                                        rom_bytes[AddressRange::new(*rom, rom_end).unwrap()]
+                                            .to_vec(),
                                         *rom,
                                         info.vram_from_rom(*rom),
                                         parent_segment_info.clone(),
@@ -232,7 +236,8 @@ fn init_segments(
                                     .create_section_data(
                                         &data_settings,
                                         *name,
-                                        rom_bytes[AddressRange::new(*rom, rom_end)].to_vec(),
+                                        rom_bytes[AddressRange::new(*rom, rom_end).unwrap()]
+                                            .to_vec(),
                                         *rom,
                                         info.vram_from_rom(*rom),
                                         parent_segment_info.clone(),
@@ -247,7 +252,8 @@ fn init_segments(
                                     .create_section_rodata(
                                         &rodata_settings,
                                         *name,
-                                        rom_bytes[AddressRange::new(*rom, rom_end)].to_vec(),
+                                        rom_bytes[AddressRange::new(*rom, rom_end).unwrap()]
+                                            .to_vec(),
                                         *rom,
                                         info.vram_from_rom(*rom),
                                         parent_segment_info.clone(),
@@ -268,10 +274,11 @@ fn init_segments(
                                 }
                             } else {
                                 info.vram
-                                    + (*segment_rom_end - info.rom)
+                                    + segment_rom_end.sub_rom(&info.rom)
                                     + info.noload_size.unwrap()
                             };
-                            let vram_range = AddressRange::new(*vram, bss_section_vram_end);
+                            let vram_range =
+                                AddressRange::new(*vram, bss_section_vram_end).unwrap();
                             bss_sections.push(
                                 context
                                     .create_section_bss(

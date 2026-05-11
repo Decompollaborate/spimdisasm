@@ -16,3 +16,6 @@ pub(crate) use sym_common_display::SymCommonDisplaySettings;
 pub use sym_data_display::{SymDataDisplay, SymDataDisplaySettings};
 pub use sym_display_error::SymDisplayError;
 pub use sym_nobits_display::{SymNobitsDisplay, SymNobitsDisplaySettings};
+
+#[cfg(feature = "pyo3")]
+pub use sym_display_error::NotPostProcessedYetError;

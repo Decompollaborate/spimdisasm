@@ -5,7 +5,7 @@ use core::{cmp, hash::Hash};
 use std::sync::Arc;
 
 use object::{read::elf::Sym, StringTable};
-use spimdisasm::addresses::UserSize;
+use spimdisasm::address_space::UserSize;
 
 use crate::utils::PrettyUnwrap;
 

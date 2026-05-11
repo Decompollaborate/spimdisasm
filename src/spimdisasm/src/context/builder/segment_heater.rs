@@ -3,11 +3,12 @@
 
 use alloc::{collections::BTreeMap, sync::Arc};
 
+use address_space::{AddressRange, Rom, RomVramRange, Size, Vram};
+
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
-    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     analysis::{PreheatError, Preheater},
     collections::addended_ordered_map::AddendedOrderedMap,
     config::GlobalConfig,
@@ -173,7 +174,10 @@ impl SegmentHeater {
                 io::{BufWriter, Write},
             };
 
-            use crate::{addresses::Size, collections::addended_ordered_map::FindSettings};
+            use address_space::Size;
+
+            use crate::collections::addended_ordered_map::FindSettings;
+
             let segment_name = self.kind.name();
 
             let mut buf = BufWriter::new(
@@ -559,10 +563,17 @@ pub(crate) mod python_bindings {
             settings: &ExecutableSectionSettings,
             name: String,
             raw_bytes: &[u8],
-            rom: Rom,
-            vram: Vram,
+            rom: u32,
+            vram: u32,
         ) -> Result<(), PreheatError> {
-            self.preheat_text(global_config, settings, name, raw_bytes, rom, vram)
+            self.preheat_text(
+                global_config,
+                settings,
+                name,
+                raw_bytes,
+                Rom::new(rom),
+                Vram::new(vram),
+            )
         }
 
         #[pyo3(name = "preheat_data")]
@@ -572,10 +583,17 @@ pub(crate) mod python_bindings {
             settings: &DataSectionSettings,
             name: String,
             raw_bytes: &[u8],
-            rom: Rom,
-            vram: Vram,
+            rom: u32,
+            vram: u32,
         ) -> Result<(), PreheatError> {
-            self.preheat_data(global_config, settings, name, raw_bytes, rom, vram)
+            self.preheat_data(
+                global_config,
+                settings,
+                name,
+                raw_bytes,
+                Rom::new(rom),
+                Vram::new(vram),
+            )
         }
 
         #[pyo3(name = "preheat_rodata")]
@@ -585,10 +603,17 @@ pub(crate) mod python_bindings {
             settings: &DataSectionSettings,
             name: String,
             raw_bytes: &[u8],
-            rom: Rom,
-            vram: Vram,
+            rom: u32,
+            vram: u32,
         ) -> Result<(), PreheatError> {
-            self.preheat_rodata(global_config, settings, name, raw_bytes, rom, vram)
+            self.preheat_rodata(
+                global_config,
+                settings,
+                name,
+                raw_bytes,
+                Rom::new(rom),
+                Vram::new(vram),
+            )
         }
 
         #[pyo3(name = "preheat_gcc_except_table")]
@@ -598,10 +623,17 @@ pub(crate) mod python_bindings {
             settings: &DataSectionSettings,
             name: String,
             raw_bytes: &[u8],
-            rom: Rom,
-            vram: Vram,
+            rom: u32,
+            vram: u32,
         ) -> Result<(), PreheatError> {
-            self.preheat_gcc_except_table(global_config, settings, name, raw_bytes, rom, vram)
+            self.preheat_gcc_except_table(
+                global_config,
+                settings,
+                name,
+                raw_bytes,
+                Rom::new(rom),
+                Vram::new(vram),
+            )
         }
     }
 
@@ -614,10 +646,17 @@ pub(crate) mod python_bindings {
             settings: &ExecutableSectionSettings,
             name: String,
             raw_bytes: &[u8],
-            rom: Rom,
-            vram: Vram,
+            rom: u32,
+            vram: u32,
         ) -> Result<(), PreheatError> {
-            self.preheat_text(global_config, settings, name, raw_bytes, rom, vram)
+            self.preheat_text(
+                global_config,
+                settings,
+                name,
+                raw_bytes,
+                Rom::new(rom),
+                Vram::new(vram),
+            )
         }
 
         #[pyo3(name = "preheat_data")]
@@ -627,10 +666,17 @@ pub(crate) mod python_bindings {
             settings: &DataSectionSettings,
             name: String,
             raw_bytes: &[u8],
-            rom: Rom,
-            vram: Vram,
+            rom: u32,
+            vram: u32,
         ) -> Result<(), PreheatError> {
-            self.preheat_data(global_config, settings, name, raw_bytes, rom, vram)
+            self.preheat_data(
+                global_config,
+                settings,
+                name,
+                raw_bytes,
+                Rom::new(rom),
+                Vram::new(vram),
+            )
         }
 
         #[pyo3(name = "preheat_rodata")]
@@ -640,10 +686,17 @@ pub(crate) mod python_bindings {
             settings: &DataSectionSettings,
             name: String,
             raw_bytes: &[u8],
-            rom: Rom,
-            vram: Vram,
+            rom: u32,
+            vram: u32,
         ) -> Result<(), PreheatError> {
-            self.preheat_rodata(global_config, settings, name, raw_bytes, rom, vram)
+            self.preheat_rodata(
+                global_config,
+                settings,
+                name,
+                raw_bytes,
+                Rom::new(rom),
+                Vram::new(vram),
+            )
         }
 
         #[pyo3(name = "preheat_gcc_except_table")]
@@ -653,10 +706,17 @@ pub(crate) mod python_bindings {
             settings: &DataSectionSettings,
             name: String,
             raw_bytes: &[u8],
-            rom: Rom,
-            vram: Vram,
+            rom: u32,
+            vram: u32,
         ) -> Result<(), PreheatError> {
-            self.preheat_gcc_except_table(global_config, settings, name, raw_bytes, rom, vram)
+            self.preheat_gcc_except_table(
+                global_config,
+                settings,
+                name,
+                raw_bytes,
+                Rom::new(rom),
+                Vram::new(vram),
+            )
         }
     }
 }

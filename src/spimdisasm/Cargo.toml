@@ -40,9 +40,10 @@ pyo3 = [
 ]
 
 [dependencies]
-rabbitizer = { version = "=2.0.0-alpha.8", features = ["MIPS_IV", "all_extensions"] }
-# rabbitizer = { git = "https://github.com/Decompollaborate/rabbitizer.git", branch = "🦀", features = ["MIPS_IV", "all_extensions"] }
+# rabbitizer = { version = "=2.0.0-alpha.8", features = ["MIPS_IV", "all_extensions"] }
+rabbitizer = { git = "https://github.com/Decompollaborate/rabbitizer.git", branch = "🦀", features = ["MIPS_IV", "all_extensions"] }
 # rabbitizer = { path = "../../../rabbitizer/src/rabbitizer", features = ["MIPS_IV", "all_extensions"] }
+address_space = { version = "0.1", features = ["try_from", "error"] }
 
 polonius-the-crab = "0" # TODO: get rid of the polonius stuff when the new borrow checker has been released.
 encoding_rs = "0.8"

@@ -2,6 +2,7 @@
 /* SPDX-License-Identifier: MIT */
 
 mod add_label_error;
+mod address_range_overflow_error;
 mod ignored_address_range;
 mod label_metadata;
 mod label_metadata_name_display;
@@ -21,6 +22,7 @@ mod user_segment_metadata;
 mod user_sym_metadata;
 
 pub use add_label_error::AddLabelError;
+pub use address_range_overflow_error::AddressRangeOverflowError;
 pub(crate) use ignored_address_range::IgnoredAddressRange;
 pub use label_metadata::LabelMetadata;
 pub use label_metadata_name_display::LabelMetadataNameDisplay;

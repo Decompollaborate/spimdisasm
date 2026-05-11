@@ -4,8 +4,9 @@
 use alloc::sync::Arc;
 use core::fmt;
 
+use address_space::Size;
+
 use crate::{
-    addresses::Size,
     context::Context,
     sections::{
         processed::{DataSectionProcessed, ExecutableSectionProcessed},

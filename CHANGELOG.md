@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Re-export the `address_space` crate.
+
 ### Changed
 
 - Change global segments to allow more than one global segment instead of
@@ -14,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Move the `GlobalOffsetTable`, `GotGlobalEntry`, `GotLocalEntry`,
   `GotRequestedAddress` and `GlobalOffsetTableIter` to the new `got` module from
   the `addresses` module.
+- Use the `address_space` crate to handle `Vram`, `Rom`, `Size`, `UserSize`,
+  `GpValue`, `AddressRange` and `RomVramRange` instead of using our own types.
+
+### Removed
+
+- Delete the `addresses` module.
 
 ## [2.0.0-alpha.1] - 2025-08-07
 

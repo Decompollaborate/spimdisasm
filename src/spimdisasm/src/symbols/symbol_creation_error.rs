@@ -8,7 +8,7 @@ use pyo3::prelude::*;
 
 use crate::{
     context::OwnedSegmentNotFoundError,
-    metadata::{segment_metadata::AddSymbolError, AddLabelError},
+    metadata::{segment_metadata::AddSymbolError, AddLabelError, AddressRangeOverflowError},
 };
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -18,6 +18,7 @@ pub enum SymbolCreationError {
     OwnedSegmentNotFound(OwnedSegmentNotFoundError),
     AddSymbol(AddSymbolError),
     AddLabel(AddLabelError),
+    AddressRangeOverflow(AddressRangeOverflowError),
 }
 
 impl fmt::Display for SymbolCreationError {
@@ -28,6 +29,7 @@ impl fmt::Display for SymbolCreationError {
             }
             SymbolCreationError::AddSymbol(x) => write!(f, "{x}"),
             SymbolCreationError::AddLabel(x) => write!(f, "{x}"),
+            SymbolCreationError::AddressRangeOverflow(x) => write!(f, "{x}"),
         }
     }
 }
@@ -47,5 +49,10 @@ impl From<AddSymbolError> for SymbolCreationError {
 impl From<AddLabelError> for SymbolCreationError {
     fn from(value: AddLabelError) -> Self {
         SymbolCreationError::AddLabel(value)
+    }
+}
+impl From<AddressRangeOverflowError> for SymbolCreationError {
+    fn from(value: AddressRangeOverflowError) -> Self {
+        SymbolCreationError::AddressRangeOverflow(value)
     }
 }

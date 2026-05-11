@@ -4,8 +4,9 @@
 use alloc::{collections::btree_map::BTreeMap, sync::Arc};
 use core::hash;
 
+use address_space::{AddressRange, Rom, RomVramRange, Size, Vram};
+
 use crate::{
-    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     config::{Compiler, Endian},
     context::Context,
     metadata::{GeneratedBy, ParentSectionMetadata, ReferrerInfo, SymbolMetadata, SymbolType},
@@ -42,9 +43,9 @@ impl DataSym {
         properties: DataSymProperties,
     ) -> Result<Self, SymbolCreationError> {
         let size = Size::new(raw_bytes.len() as u32);
-        let rom_range = AddressRange::new(rom, rom + size);
-        let vram_range = AddressRange::new(vram, vram + size);
-        let ranges = RomVramRange::new(rom_range, vram_range);
+        let rom_range = AddressRange::new_size(rom, size).expect("TODO: proper error");
+        let vram_range = AddressRange::new_size(vram, size).expect("TODO: proper error");
+        let ranges = RomVramRange::new(rom_range, vram_range, 4).expect("TODO: proper error");
 
         let global_config = context.global_config();
         let endian = global_config.endian();

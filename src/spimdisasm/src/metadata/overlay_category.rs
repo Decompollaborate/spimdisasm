@@ -1,10 +1,9 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use crate::{
-    addresses::{Rom, RomVramRange},
-    collections::unordered_map::UnorderedMap,
-};
+use address_space::{Rom, RomVramRange};
+
+use crate::collections::unordered_map::UnorderedMap;
 
 use super::{OverlayCategoryName, SegmentMetadata};
 

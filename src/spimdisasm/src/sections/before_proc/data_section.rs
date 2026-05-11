@@ -4,11 +4,12 @@
 use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
 use core::hash;
 
+use address_space::{AddressRange, Rom, RomVramRange, Size, Vram};
+
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
-    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     analysis::StringGuesserFlags,
     collections::{
         addended_ordered_map::FindSettings, unordered_map::UnorderedMap,
@@ -16,7 +17,7 @@ use crate::{
     },
     config::{Compiler, Endian, GlobalConfig},
     context::Context,
-    metadata::{ParentSectionMetadata, SegmentMetadata, SymbolType},
+    metadata::{AddressRangeOverflowError, ParentSectionMetadata, SegmentMetadata, SymbolType},
     parent_segment_info::ParentSegmentInfo,
     relocation::RelocationInfo,
     section_type::SectionType,
@@ -73,9 +74,9 @@ impl DataSection {
 
         let total_len = raw_bytes.len();
         let size = Size::new(total_len as u32);
-        let rom_range = AddressRange::new(rom, rom + size);
-        let vram_range = AddressRange::new(vram, vram + size);
-        let ranges = RomVramRange::new(rom_range, vram_range);
+        let Some(ranges) = RomVramRange::new_size(rom, vram, size, 4) else {
+            return Err(AddressRangeOverflowError::new(rom, vram, size, 4, Some(name)).into());
+        };
 
         let symbol_name_generation_settings = context
             .global_config()
@@ -92,7 +93,7 @@ impl DataSection {
             owned_segment,
             settings,
             &raw_bytes,
-            vram_range,
+            *ranges.vram(),
             section_type,
             context.global_config(),
         );
@@ -345,7 +346,7 @@ impl DataSection {
                             prev_sym_info = Some((
                                 current_vram,
                                 Some(SymbolType::CString),
-                                Some((next_vram - current_vram).try_into().unwrap()),
+                                Some(next_vram.sub_vram(&current_vram)),
                             ));
                         }
                     }
@@ -484,10 +485,13 @@ impl DataSection {
         match guessed_size {
             Ok(str_size) => {
                 let str_sym_size = str_size.next_multiple_of(4);
-                let mut in_between_range = owned_segment.find_references_range(AddressRange::new(
-                    current_vram + Size::new(1),
-                    current_vram + Size::new(str_sym_size as u32),
-                ));
+                let mut in_between_range = owned_segment.find_references_range(
+                    AddressRange::new(
+                        current_vram + Size::new(1),
+                        current_vram + Size::new(str_sym_size as u32),
+                    )
+                    .expect("string size shouldn't be that big"),
+                );
 
                 if in_between_range.next().is_some() || str_sym_size > sub_raw_bytes.len() {
                     // Check if there is already another symbol after the current one and before the end of the string,
@@ -558,10 +562,10 @@ impl DataSection {
                         Vram::new(next_vram.inner().next_multiple_of(str_alignment));
                     if vram_range.in_range(next_next_vram) {
                         let next_next_ref = owned_segment
-                            .find_references_range(AddressRange::new(
-                                next_vram,
-                                next_next_vram + Size::new(1),
-                            ))
+                            .find_references_range(
+                                AddressRange::new(next_vram, next_next_vram + Size::new(1))
+                                    .expect("should not be that big to overflow"),
+                            )
                             .next();
 
                         if next_next_ref.is_none_or(|x| {
@@ -581,10 +585,10 @@ impl DataSection {
 
             // Look for the next known symbol
             if let Some(next_next_ref) = owned_segment
-                .find_references_range(AddressRange::new(
-                    next_vram + Size::new(1),
-                    vram_range.end(),
-                ))
+                .find_references_range(
+                    AddressRange::new(next_vram + Size::new(1), vram_range.end())
+                        .expect("Should be within the range"),
+                )
                 .next()
             {
                 let next_next_vram = next_next_ref.vram();

@@ -1,14 +1,16 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use bitflags::bitflags;
 use core::{error, fmt};
+
+use address_space::Vram;
+use bitflags::bitflags;
 use rabbitizer::access_type::AccessType;
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::{addresses::Vram, config::Compiler, metadata::SymbolType, str_decoding::Encoding};
+use crate::{config::Compiler, metadata::SymbolType, str_decoding::Encoding};
 
 use super::ReferenceWrapper;
 

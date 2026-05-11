@@ -5,11 +5,12 @@ use core::fmt;
 
 use rabbitizer::{Instruction, InstructionDisplayFlags};
 
+use address_space::{Size, Vram};
+
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
-    addresses::{Size, Vram},
     collections::addended_ordered_map::FindSettings,
     context::Context,
     metadata::{GeneratedBy, LabelType, SegmentMetadata, SymbolMetadata},

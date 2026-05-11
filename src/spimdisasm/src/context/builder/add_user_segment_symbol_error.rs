@@ -4,7 +4,7 @@
 use alloc::sync::Arc;
 use core::{error, fmt};
 
-use crate::addresses::{Size, Vram};
+use address_space::{Size, Vram};
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 enum AddUserSegmentSymbolErrorVariant {

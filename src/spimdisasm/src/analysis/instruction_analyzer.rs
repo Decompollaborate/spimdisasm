@@ -1,10 +1,10 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use address_space::{RomVramRange, Size, Vram};
 use rabbitizer::Instruction;
 
 use crate::{
-    addresses::{RomVramRange, Size, Vram},
     collections::{addended_ordered_map::FindSettings, unordered_set::UnorderedSet},
     context::{Context, OwnedSegmentNotFoundError},
     got::GlobalOffsetTable,

@@ -4,27 +4,20 @@
 use pyo3::prelude::*;
 
 use crate::{
-    addresses::{Rom, Size},
     context::Context,
-    metadata::{LabelType, SymbolType},
+    metadata::LabelType,
     relocation::python_bindings::py_user_relocs::PyUserRelocs,
     sections::{
-        before_proc::ExecutableSection, processed::ExecutableSectionProcessed, Section,
-        SectionPostProcessError,
+        before_proc::ExecutableSection,
+        processed::ExecutableSectionProcessed,
+        python_bindings::{pre_post_section::PrePostSection, py_sym_info::PySymInfo},
+        Section, SectionPostProcessError,
     },
     symbols::{
         display::{FunctionDisplaySettings, SymDataDisplaySettings, SymDisplayError},
         processed::EitherFuncDataSymProcessed,
-        Symbol,
     },
 };
-
-#[derive(Debug, Clone, Hash, PartialEq, PartialOrd)]
-enum PyExecutableSectionInner {
-    Invalid,
-    Preprocessed(ExecutableSection),
-    Processed(ExecutableSectionProcessed),
-}
 
 #[derive(Debug, Clone, Hash, PartialEq, PartialOrd)]
 #[cfg_attr(
@@ -32,22 +25,18 @@ enum PyExecutableSectionInner {
     pyclass(module = "spimdisasm", name = "ExecutableSection", from_py_object)
 )]
 pub struct PyExecutableSection {
-    inner: PyExecutableSectionInner,
+    inner: PrePostSection<ExecutableSection, ExecutableSectionProcessed>,
 }
 
 impl PyExecutableSection {
     pub fn new(section: ExecutableSection) -> Self {
         Self {
-            inner: PyExecutableSectionInner::Preprocessed(section),
+            inner: PrePostSection::new(section),
         }
     }
 
     pub fn unwrap_processed(&self) -> &ExecutableSectionProcessed {
-        match &self.inner {
-            PyExecutableSectionInner::Invalid => panic!(),
-            PyExecutableSectionInner::Preprocessed(..) => panic!(),
-            PyExecutableSectionInner::Processed(section) => section,
-        }
+        self.inner.unwrap_processed()
     }
 }
 
@@ -59,98 +48,26 @@ impl PyExecutableSection {
         context: &mut Context,
         user_relocs: &PyUserRelocs,
     ) -> Result<(), SectionPostProcessError> {
-        let section = core::mem::replace(&mut self.inner, PyExecutableSectionInner::Invalid);
-
-        let new_value = match section {
-            PyExecutableSectionInner::Invalid => {
-                return Err(SectionPostProcessError::InvalidState())
-            }
-            PyExecutableSectionInner::Preprocessed(section) => {
-                section.post_process(context, user_relocs.inner())?
-            }
-            PyExecutableSectionInner::Processed(section) => {
-                return Err(SectionPostProcessError::AlreadyPostProcessed {
-                    name: section.name().to_string(),
-                    vram_start: section.vram_range().start(),
-                    vram_end: section.vram_range().end(),
-                })
-            }
-        };
-
-        self.inner = PyExecutableSectionInner::Processed(new_value);
-        Ok(())
+        self.inner.post_process(
+            context,
+            user_relocs.inner(),
+            |section, context, user_relocs| section.post_process(context, user_relocs),
+        )
     }
 
     #[pyo3(name = "sym_count")]
     pub fn py_sym_count(&self) -> usize {
-        match &self.inner {
-            PyExecutableSectionInner::Invalid => panic!(),
-            PyExecutableSectionInner::Preprocessed(section) => section.symbol_list().len(),
-            PyExecutableSectionInner::Processed(section) => section.symbol_list().len(),
-        }
+        self.inner.sym_count()
     }
 
     #[pyo3(name = "get_sym_info")]
-    #[expect(clippy::type_complexity)]
-    pub fn py_get_sym_info(
-        &self,
-        context: &Context,
-        index: usize,
-    ) -> Option<(
-        u32,
-        Option<Rom>,
-        Option<SymbolType>,
-        Option<Size>,
-        bool,
-        usize,
-        Option<String>,
-    )> {
-        let metadata = match &self.inner {
-            PyExecutableSectionInner::Invalid => panic!(),
-            PyExecutableSectionInner::Preprocessed(section) => section
-                .symbol_list()
-                .get(index)
-                .map(|x| x.find_own_metadata(context)),
-            PyExecutableSectionInner::Processed(section) => section
-                .symbol_list()
-                .get(index)
-                .map(|x| x.find_own_metadata(context)),
-        };
-
-        metadata.map(|x| {
-            (
-                x.vram().inner(),
-                x.rom(),
-                x.sym_type(),
-                x.size(),
-                x.is_defined(),
-                x.reference_counter(),
-                x.parent_metadata().and_then(|x| {
-                    x.parent_segment_info()
-                        .overlay_category_name()
-                        .map(|x| x.inner().to_string())
-                }),
-            )
-        })
+    pub fn py_get_sym_info(&self, context: &Context, index: usize) -> Option<PySymInfo> {
+        self.inner.get_sym_info(context, index)
     }
 
     #[pyo3(name = "set_sym_name")]
     pub fn py_set_sym_name(&mut self, context: &mut Context, index: usize, new_name: String) {
-        let metadata = match &self.inner {
-            PyExecutableSectionInner::Invalid => panic!(),
-            PyExecutableSectionInner::Preprocessed(section) => section
-                .symbol_list()
-                .get(index)
-                .map(|x| x.find_own_metadata_mut(context)),
-            PyExecutableSectionInner::Processed(section) => section
-                .symbol_list()
-                .get(index)
-                .map(|x| x.find_own_metadata_mut(context)),
-        };
-
-        if let Some(metadata) = metadata {
-            metadata.set_user_declared_name(new_name.into());
-        }
+        self.inner.set_sym_name(context, index, new_name)
     }
 
     #[pyo3(name = "display_sym")]
@@ -160,24 +77,14 @@ impl PyExecutableSection {
         index: usize,
         settings: &FunctionDisplaySettings,
     ) -> Result<Option<String>, SymDisplayError> {
-        let sym = match &self.inner {
-            PyExecutableSectionInner::Invalid => panic!(),
-            PyExecutableSectionInner::Preprocessed(section) => {
-                return Err(SymDisplayError::NotPostProcessedYet {
-                    name: section.name().to_string(),
-                    vram_start: section.vram_range().start(),
-                    vram_end: section.vram_range().end(),
-                })
-            }
-            PyExecutableSectionInner::Processed(section) => section.symbols().get(index),
-        };
-
-        Ok(if let Some(sym) = sym {
-            let data_settings = SymDataDisplaySettings::new();
-            Some(sym.display(context, settings, &data_settings)?.to_string())
-        } else {
-            None
-        })
+        let data_settings = SymDataDisplaySettings::new();
+        self.inner.display_sym(
+            |section| section.symbols().get(index),
+            |sym| {
+                sym.display(context, settings, &data_settings)
+                    .map(|x| x.to_string())
+            },
+        )
     }
 
     #[pyo3(name = "label_count_for_sym")]
@@ -197,7 +104,7 @@ impl PyExecutableSection {
         context: &Context,
         sym_index: usize,
         label_index: usize,
-    ) -> Option<(u32, Option<Rom>, LabelType, bool, usize)> {
+    ) -> Option<(u32, Option<u32>, LabelType, bool, usize)> {
         let (sym, parent_segment_info) = {
             let section = self.unwrap_processed();
             (
@@ -216,7 +123,7 @@ impl PyExecutableSection {
 
                 Some((
                     metadata.vram().inner(),
-                    metadata.rom(),
+                    metadata.rom().map(|x| x.inner()),
                     metadata.label_type(),
                     metadata.is_defined(),
                     metadata.reference_counter(),
@@ -237,14 +144,9 @@ impl PyExecutableSection {
         label_index: usize,
         new_name: String,
     ) {
-        let (sym, parent_segment_info) = match &self.inner {
-            PyExecutableSectionInner::Invalid => panic!(),
-            PyExecutableSectionInner::Preprocessed(..) => panic!(),
-            PyExecutableSectionInner::Processed(section) => (
-                section.symbols().get(sym_index),
-                section.parent_segment_info(),
-            ),
-        };
+        let section = self.inner.unwrap_processed();
+        let sym = section.symbols().get(sym_index);
+        let parent_segment_info = section.parent_segment_info();
 
         if let Some(EitherFuncDataSymProcessed::Func(sym)) = sym {
             if let Some(label_vram) = sym.labels().get(label_index) {

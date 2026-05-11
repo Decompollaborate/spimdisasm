@@ -1,13 +1,13 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use address_space::{Rom, Vram, VramOffset};
 use rabbitizer::{
     abi::Abi, access_type::AccessType, opcodes::Opcode, registers::Gpr, registers_meta::Register,
-    vram::VramOffset, Instruction,
+    Instruction,
 };
 
 use crate::{
-    addresses::{Rom, Vram},
     analysis::gpr_register_value::{GprRegDereferencedAddress, GprRegRawAddress},
     config::{Endian, GpConfig},
     got::{GlobalOffsetTable, GotGlobalEntry},
@@ -1188,13 +1188,13 @@ impl RegisterTracker {
 mod tests {
     use super::*;
 
-    use pretty_assertions::assert_eq;
-
     use alloc::vec::Vec;
+
+    use address_space::{GpValue, Size};
+    use pretty_assertions::assert_eq;
     use rabbitizer::{InstructionFlags, IsaVersion};
 
     use crate::{
-        addresses::{GpValue, Size},
         config::Endian,
         got::{GotGlobalEntry, GotLocalEntry},
     };

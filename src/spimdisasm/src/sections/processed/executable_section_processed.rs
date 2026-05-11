@@ -4,8 +4,9 @@
 use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
 use core::hash;
 
+use address_space::{AddressRange, Rom, RomVramRange, Vram};
+
 use crate::{
-    addresses::{AddressRange, Rom, RomVramRange, Vram},
     collections::unordered_set::UnorderedSet,
     context::Context,
     parent_segment_info::ParentSegmentInfo,

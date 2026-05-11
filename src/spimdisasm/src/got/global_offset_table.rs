@@ -3,9 +3,9 @@
 
 use alloc::vec::Vec;
 
-use super::{GlobalOffsetTableIter, GotGlobalEntry, GotLocalEntry, GotRequestedAddress};
+use address_space::{AddressRange, Size, Vram};
 
-use crate::addresses::{AddressRange, Size, Vram};
+use super::{GlobalOffsetTableIter, GotGlobalEntry, GotLocalEntry, GotRequestedAddress};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct GlobalOffsetTable {
@@ -19,7 +19,8 @@ impl GlobalOffsetTable {
     #[must_use]
     pub fn new(vram: Vram, locals: Vec<GotLocalEntry>, globals: Vec<GotGlobalEntry>) -> Self {
         let count = locals.len() + globals.len();
-        let vram = AddressRange::new(vram, vram + Size::new(count as u32 * 4));
+        let vram = AddressRange::new_size(vram, Size::new(count as u32 * 4))
+            .expect("GOT table is too large?");
 
         Self {
             vram,

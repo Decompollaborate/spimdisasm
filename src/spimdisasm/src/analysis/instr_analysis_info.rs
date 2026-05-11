@@ -1,10 +1,9 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use crate::{
-    addresses::{Rom, Vram},
-    got::GotGlobalEntry,
-};
+use address_space::{Rom, Vram};
+
+use crate::got::GotGlobalEntry;
 
 use super::InstrOpJumptable;
 
@@ -205,7 +204,7 @@ impl InstrAnalysisInfo {
         }
     }
 
-    pub(crate) fn align_down_unaddended(self, alignment: u8) -> Self {
+    pub(crate) fn align_down_unaddended(self, alignment: u32) -> Self {
         match self {
             InstrAnalysisInfo::PairedHi {
                 addended_vram,

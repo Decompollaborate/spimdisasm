@@ -3,10 +3,10 @@
 
 use core::cmp::Ordering;
 
+use address_space::{AddressRange, Rom, Size, Vram};
 use rabbitizer::access_type::AccessType;
 
 use crate::{
-    addresses::{AddressRange, Rom, Size, Vram},
     collections::{
         addended_ordered_map::{self, AddendedOrderedMap, FindSettings},
         unordered_map::UnorderedMap,

@@ -3,11 +3,12 @@
 
 use alloc::sync::Arc;
 
+use address_space::{Size, UserSize, Vram};
+
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
-    addresses::{Size, UserSize, Vram},
     collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
     metadata::{
         GeneratedBy, OwnerSegmentKind, SymbolMetadata, SymbolNameGenerationSettings, SymbolType,
@@ -364,12 +365,17 @@ pub(crate) mod python_bindings {
         #[pyo3(name = "add_user_symbol", signature=(vram, name, size, typ))]
         pub fn py_add_symbol(
             &mut self,
-            vram: Vram,
+            vram: u32,
             name: String,
-            size: UserSize,
+            size: u32,
             typ: Option<SymbolType>,
         ) -> Result<(), AddUserSegmentSymbolError> {
-            self.add_user_symbol(vram, name, size, typ)?;
+            self.add_user_symbol(
+                Vram::new(vram),
+                name,
+                UserSize::new_checked(size).unwrap(),
+                typ,
+            )?;
             Ok(())
         }
 

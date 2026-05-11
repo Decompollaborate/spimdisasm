@@ -1,13 +1,12 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use address_space::{Rom, Vram};
+
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::{
-    addresses::{Rom, Vram},
-    metadata::OverlayCategoryName,
-};
+use crate::metadata::OverlayCategoryName;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
@@ -51,11 +50,15 @@ pub(crate) mod python_bindings {
         // https://pyo3.rs/v0.23.2/function/signature.html#trailing-optional-arguments
         #[pyo3(signature = (segment_rom, segment_vram, overlay_category_name))]
         pub fn py_new(
-            segment_rom: Rom,
-            segment_vram: Vram,
+            segment_rom: u32,
+            segment_vram: u32,
             overlay_category_name: Option<OverlayCategoryName>,
         ) -> Self {
-            Self::new(segment_rom, segment_vram, overlay_category_name)
+            Self::new(
+                Rom::new(segment_rom),
+                Vram::new(segment_vram),
+                overlay_category_name,
+            )
         }
     }
 }

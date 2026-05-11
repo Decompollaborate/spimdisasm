@@ -8,7 +8,7 @@ use std::{
 
 use object::{read::elf::ElfFile32, Object};
 use spimdisasm::{
-    addresses::{GpValue, Rom, Size, UserSize, Vram},
+    address_space::{GpValue, Rom, Size, UserSize, Vram},
     collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
     config::Endian,
     got::{GlobalOffsetTable, GotGlobalEntry, GotLocalEntry},
@@ -121,7 +121,7 @@ impl ParsedElf {
 
             let (_, newly_created) =
                 seen_symbols.find_mut_or_insert_with(vram, FindSettings::new(true), || {
-                    size.unwrap_or(const { UserSize::new_checked(1).unwrap() })
+                    size.unwrap_or(UserSize::new_checked(1).unwrap())
                 });
 
             if newly_created {

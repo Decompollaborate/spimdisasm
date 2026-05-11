@@ -3,10 +3,10 @@
 
 use std::collections::BTreeMap;
 
+use address_space::{AddressRange, GpValue, Rom, RomVramRange, Size, UserSize, Vram};
 use pretty_assertions::assert_eq;
 use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaExtension, IsaVersion};
 use spimdisasm::{
-    addresses::{AddressRange, GpValue, Rom, RomVramRange, Size, UserSize, Vram},
     collections::addended_ordered_map::FindSettings,
     config::{Compiler, Endian, GlobalConfigBuilder, GpConfig},
     context::{
@@ -67,10 +67,12 @@ fn disassemble_text(
             .with_gp_config(gp_config)
             .build();
 
-        let global_ranges = RomVramRange::new(
+        let global_ranges = RomVramRange::new_option(
             AddressRange::new(segment_rom, Rom::new(0x04000000)),
             AddressRange::new(segment_vram, Vram::new(0x84000000)),
-        );
+            4,
+        )
+        .unwrap();
         let mut global_segment_builder = GlobalSegmentBuilder::new("segment", global_ranges);
 
         for user_sym in user_symbols {
@@ -123,7 +125,7 @@ fn disassemble_text(
 
                 println!("Adding overlay '{category_name:?}': {rom_range:?} {vram_range:?}");
 
-                let ranges = RomVramRange::new(rom_range, vram_range);
+                let ranges = RomVramRange::new_option(rom_range, vram_range, 4).unwrap();
 
                 let overlay_builder =
                     OverlaySegmentBuilder::new(segment_name, ranges, category_name);

@@ -4,13 +4,12 @@
 use alloc::sync::Arc;
 use core::{error, fmt};
 
+use address_space::{AddressRange, Rom, Vram};
+
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::{
-    addresses::{AddressRange, Rom, Vram},
-    metadata::LabelType,
-};
+use crate::metadata::LabelType;
 
 use super::SegmentBuilderKind;
 

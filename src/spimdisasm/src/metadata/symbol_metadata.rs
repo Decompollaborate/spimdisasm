@@ -3,13 +3,14 @@
 
 use alloc::sync::Arc;
 use core::{fmt, hash::Hash};
+
+use address_space::{Rom, Size, Vram};
 use rabbitizer::access_type::AccessType;
 
 //#[cfg(feature = "pyo3")]
 //use pyo3::prelude::*;
 
 use crate::{
-    addresses::{Rom, Size, Vram},
     collections::{addended_ordered_map::SizedValue, unordered_map::UnorderedMap},
     config::Compiler,
     section_type::SectionType,

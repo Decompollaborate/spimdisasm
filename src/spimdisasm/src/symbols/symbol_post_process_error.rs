@@ -3,12 +3,13 @@
 
 use core::{error, fmt};
 
+use address_space::Rom;
+
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
-    addresses::Rom, context::OwnedSegmentNotFoundError, relocation::RelocationType,
-    section_type::SectionType,
+    context::OwnedSegmentNotFoundError, relocation::RelocationType, section_type::SectionType,
 };
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]

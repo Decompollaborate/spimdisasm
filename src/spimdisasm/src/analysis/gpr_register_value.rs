@@ -1,12 +1,12 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use rabbitizer::{
-    abi::Abi, access_type::AccessType, registers::Gpr, registers_meta::Register, vram::VramOffset,
-};
+use address_space::VramOffset;
+use rabbitizer::{abi::Abi, access_type::AccessType, registers::Gpr, registers_meta::Register};
+
+use address_space::{GpValue, Rom, Vram};
 
 use crate::{
-    addresses::{GpValue, Rom, Vram},
     config::{Endian, GpConfig},
     got::{GlobalOffsetTable, GotGlobalEntry, GotRequestedAddress},
 };

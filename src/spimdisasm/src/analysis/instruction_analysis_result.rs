@@ -5,8 +5,9 @@ use alloc::{sync::Arc, vec::Vec};
 use core::mem;
 use rabbitizer::{access_type::AccessType, Instruction};
 
+use address_space::{Rom, RomVramRange, Size, Vram};
+
 use crate::{
-    addresses::{Rom, RomVramRange, Size, Vram},
     collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
     got::GlobalOffsetTable,
 };
@@ -131,12 +132,14 @@ impl InstructionAnalysisBuilder {
                 {
                     // Tell the other half of the doublefloat access that it shuold use an unaddended address.
                     for instr_rom in other_counter.into_iter().flat_map(|(_, rom_list)| rom_list) {
-                        let index = (instr_rom - ranges.rom().start()).inner() as usize / 4;
+                        let rom_start = &ranges.rom().start();
+                        let diff = instr_rom.sub_rom(rom_start);
+                        let index = diff.inner() as usize / 4;
 
                         let value = instruction_infos[index].clone().align_down_unaddended(8);
                         if let Some(upper_rom) = value.upper_rom() {
-                            let upper_index =
-                                (upper_rom - ranges.rom().start()).inner() as usize / 4;
+                            let diff = upper_rom.sub_rom(rom_start);
+                            let upper_index = diff.inner() as usize / 4;
 
                             // Update the upper half too.
                             let upper_value = instruction_infos[upper_index]
@@ -450,7 +453,7 @@ impl InstructionAnalysisBuilder {
             .expect("This should not panic")
     }
     fn index_from_rom(&self, rom: Rom) -> usize {
-        (rom - self.ranges.rom().start()).inner() as usize / 4
+        rom.sub_rom(&self.ranges.rom().start()).inner() as usize / 4
     }
 
     fn set_info_if_empty(&mut self, index: usize, info: InstrAnalysisInfo) {

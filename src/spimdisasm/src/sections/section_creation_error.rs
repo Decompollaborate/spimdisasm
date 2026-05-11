@@ -4,13 +4,14 @@
 use alloc::sync::Arc;
 use core::{error, fmt};
 
+use address_space::{Rom, Size, Vram};
+
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
-    addresses::{Rom, Size, Vram},
     context::OwnedSegmentNotFoundError,
-    metadata::{segment_metadata::AddSymbolError, AddLabelError},
+    metadata::{segment_metadata::AddSymbolError, AddLabelError, AddressRangeOverflowError},
     section_type::SectionType,
     symbols::SymbolCreationError,
 };
@@ -30,6 +31,7 @@ pub enum SectionCreationError {
     AlreadyCreated(SectionAlreadyCreatedError),
     NotPrehated(SectionNotPreheatedError),
     BadUserSymbolSize(BadUserSymbolSizeError),
+    AddressRangeOverflow(AddressRangeOverflowError),
 }
 
 impl fmt::Display for SectionCreationError {
@@ -48,6 +50,7 @@ impl fmt::Display for SectionCreationError {
             SectionCreationError::AlreadyCreated(x) => write!(f, "{x}"),
             SectionCreationError::NotPrehated(x) => write!(f, "{x}"),
             SectionCreationError::BadUserSymbolSize(x) => write!(f, "{x}"),
+            SectionCreationError::AddressRangeOverflow(x) => write!(f, "{x}"),
         }
     }
 }
@@ -61,6 +64,9 @@ impl From<SymbolCreationError> for SectionCreationError {
             }
             SymbolCreationError::AddSymbol(x) => SectionCreationError::AddSymbol(x),
             SymbolCreationError::AddLabel(x) => SectionCreationError::AddLabel(x),
+            SymbolCreationError::AddressRangeOverflow(x) => {
+                SectionCreationError::AddressRangeOverflow(x)
+            }
         }
     }
 }
@@ -335,6 +341,12 @@ impl fmt::Display for BadUserSymbolSizeError {
     }
 }
 impl error::Error for BadUserSymbolSizeError {}
+
+impl From<AddressRangeOverflowError> for SectionCreationError {
+    fn from(value: AddressRangeOverflowError) -> Self {
+        SectionCreationError::AddressRangeOverflow(value)
+    }
+}
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {

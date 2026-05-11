@@ -4,10 +4,9 @@
 use alloc::sync::Arc;
 use core::{error, fmt};
 
+use address_space::{AddressRange, Rom, Size, Vram};
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
-
-use crate::addresses::{AddressRange, Rom, Size, Vram};
 
 use super::SegmentBuilderKind;
 

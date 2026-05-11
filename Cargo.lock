@@ -3,6 +3,12 @@
 version = 4
 
 [[package]]
+name = "address_space"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "80fa45ef7c53844190b1b45f8bde7e9df4958f8d6385335bdb3053c68c0bf278"
+
+[[package]]
 name = "anstream"
 version = "0.6.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -337,10 +343,10 @@ dependencies = [
 
 [[package]]
 name = "rabbitizer"
-version = "2.0.0-alpha.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "831ef2f5b90ad594176a99fbf291d5cbeebc6881caefc2d0b54b154f754b96ed"
+version = "2.0.0-alpha.9"
+source = "git+https://github.com/Decompollaborate/rabbitizer.git?branch=%F0%9F%A6%80#cd8cb311afae5218f5b753eb3411984df3155e4b"
 dependencies = [
+ "address_space",
  "bitflags",
  "ordered-float",
  "pyo3",
@@ -350,6 +356,7 @@ dependencies = [
 name = "spimdisasm"
 version = "2.0.0-alpha.2"
 dependencies = [
+ "address_space",
  "bitflags",
  "encoding_rs",
  "polonius-the-crab",

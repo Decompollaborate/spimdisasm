@@ -8,10 +8,10 @@ use alloc::{
     vec::Vec,
 };
 
+use address_space::{Rom, RomVramRange, Size, UserSize, Vram};
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::addresses::{Rom, RomVramRange, Size, UserSize, Vram};
 use crate::collections::addended_ordered_map::{AddendedOrderedMap, FindSettings};
 use crate::config::GlobalConfig;
 use crate::got::GlobalOffsetTable;
@@ -486,6 +486,8 @@ impl OverlaySegmentBuilder {
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
+    use address_space::AddressRange;
+
     use crate::metadata::RodataMigrationBehavior;
 
     use super::*;
@@ -493,7 +495,16 @@ pub(crate) mod python_bindings {
     #[pymethods]
     impl GlobalSegmentBuilder {
         #[new]
-        pub fn py_new(segment_name: String, ranges: RomVramRange) -> Self {
+        pub fn py_new(
+            segment_name: String,
+            rom_start: u32,
+            rom_end: u32,
+            vram_start: u32,
+            vram_end: u32,
+        ) -> Self {
+            let rom = AddressRange::new(Rom::new(rom_start), Rom::new(rom_end));
+            let vram = AddressRange::new(Vram::new(vram_start), Vram::new(vram_end));
+            let ranges = RomVramRange::new_option(rom, vram, 4).unwrap();
             Self::new(segment_name, ranges)
         }
 
@@ -509,11 +520,17 @@ pub(crate) mod python_bindings {
         pub fn py_add_symbol(
             &mut self,
             name: String,
-            vram: Vram,
-            rom: Option<Rom>,
+            vram: u32,
+            rom: Option<u32>,
             attributes: &SymAttributes,
         ) -> Result<(), AddUserSymbolError> {
-            let sym = self.add_user_symbol(name, vram, rom, attributes.size, attributes.typ)?;
+            let sym = self.add_user_symbol(
+                name,
+                Vram::new(vram),
+                rom.map(Rom::new),
+                attributes.size,
+                attributes.typ,
+            )?;
             attributes.apply_to_sym(sym);
             Ok(())
         }
@@ -522,21 +539,21 @@ pub(crate) mod python_bindings {
         pub fn py_add_user_label(
             &mut self,
             name: String,
-            vram: Vram,
-            rom: Option<Rom>,
+            vram: u32,
+            rom: Option<u32>,
             label_type: LabelType,
         ) -> Result<(), AddUserLabelError> {
-            self.add_user_label(name, vram, rom, label_type)?;
+            self.add_user_label(name, Vram::new(vram), rom.map(Rom::new), label_type)?;
             Ok(())
         }
 
         #[pyo3(name = "add_ignored_address_range")]
         pub fn py_add_ignored_address_range(
             &mut self,
-            vram: Vram,
-            size: UserSize,
+            vram: u32,
+            size: u32,
         ) -> Result<(), AddIgnoredAddressRangeError> {
-            self.add_ignored_address_range(vram, size)
+            self.add_ignored_address_range(Vram::new(vram), UserSize::new_checked(size).unwrap())
         }
 
         #[pyo3(name = "n64_default_banned_addresses")]
@@ -557,9 +574,15 @@ pub(crate) mod python_bindings {
         #[new]
         pub fn py_new(
             segment_name: String,
-            ranges: RomVramRange,
+            rom_start: u32,
+            rom_end: u32,
+            vram_start: u32,
+            vram_end: u32,
             category_name: OverlayCategoryName,
         ) -> Self {
+            let rom = AddressRange::new(Rom::new(rom_start), Rom::new(rom_end));
+            let vram = AddressRange::new(Vram::new(vram_start), Vram::new(vram_end));
+            let ranges = RomVramRange::new_option(rom, vram, 4).unwrap();
             Self::new(segment_name, ranges, category_name)
         }
 
@@ -575,11 +598,17 @@ pub(crate) mod python_bindings {
         pub fn py_add_symbol(
             &mut self,
             name: String,
-            vram: Vram,
-            rom: Option<Rom>,
+            vram: u32,
+            rom: Option<u32>,
             attributes: &SymAttributes,
         ) -> Result<(), AddUserSymbolError> {
-            let sym = self.add_user_symbol(name, vram, rom, attributes.size, attributes.typ)?;
+            let sym = self.add_user_symbol(
+                name,
+                Vram::new(vram),
+                rom.map(Rom::new),
+                attributes.size,
+                attributes.typ,
+            )?;
             attributes.apply_to_sym(sym);
             Ok(())
         }
@@ -588,21 +617,21 @@ pub(crate) mod python_bindings {
         pub fn py_add_user_label(
             &mut self,
             name: String,
-            vram: Vram,
-            rom: Option<Rom>,
+            vram: u32,
+            rom: Option<u32>,
             label_type: LabelType,
         ) -> Result<(), AddUserLabelError> {
-            self.add_user_label(name, vram, rom, label_type)?;
+            self.add_user_label(name, Vram::new(vram), rom.map(Rom::new), label_type)?;
             Ok(())
         }
 
         #[pyo3(name = "add_ignored_address_range")]
         pub fn py_add_ignored_address_range(
             &mut self,
-            vram: Vram,
-            size: UserSize,
+            vram: u32,
+            size: u32,
         ) -> Result<(), AddIgnoredAddressRangeError> {
-            self.add_ignored_address_range(vram, size)
+            self.add_ignored_address_range(Vram::new(vram), UserSize::new_checked(size).unwrap())
         }
 
         #[pyo3(name = "n64_default_banned_addresses")]
@@ -687,8 +716,8 @@ pub(crate) mod python_bindings {
         pub fn set_defined(&mut self, val: bool) {
             self.defined = val;
         }
-        pub fn set_size(&mut self, val: &UserSize) {
-            self.size = Some(*val);
+        pub fn set_size(&mut self, val: u32) {
+            self.size = Some(UserSize::new_checked(val).unwrap());
         }
         pub fn set_migration_behavior(&mut self, val: &PyRodataMigrationBehavior) {
             self.migration_behavior = val.clone();

@@ -1,10 +1,9 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use address_space::GpValue;
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
-
-use crate::addresses::GpValue;
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
@@ -48,13 +47,13 @@ pub(crate) mod python_bindings {
     impl GpConfig {
         #[pyo3(name = "new_pic")]
         #[staticmethod]
-        pub fn py_new_pic(gp_value: GpValue) -> Self {
-            Self::new_pic(gp_value)
+        pub fn py_new_pic(gp_value: u32) -> Self {
+            Self::new_pic(GpValue::new(gp_value))
         }
         #[pyo3(name = "new_sdata")]
         #[staticmethod]
-        pub fn py_new_sdata(gp_value: GpValue) -> Self {
-            Self::new_sdata(gp_value)
+        pub fn py_new_sdata(gp_value: u32) -> Self {
+            Self::new_sdata(GpValue::new(gp_value))
         }
     }
 }

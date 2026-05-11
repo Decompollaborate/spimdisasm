@@ -5,8 +5,9 @@ use alloc::{collections::btree_map::BTreeMap, sync::Arc};
 use core::hash;
 use rabbitizer::Instruction;
 
+use address_space::{AddressRange, Rom, RomVramRange, Size, Vram};
+
 use crate::{
-    addresses::{AddressRange, Rom, RomVramRange, Size, Vram},
     analysis::{
         GatheredTypeInfo, InstrAnalysisInfo, InstrOpJumptable, InstructionAnalysisResult,
         InstructionAnalyzer,
@@ -18,17 +19,16 @@ use crate::{
     config::Compiler,
     context::Context,
     metadata::{
-        GeneratedBy, GotAccessKind, LabelType, ParentSectionMetadata, ReferrerInfo,
-        SegmentMetadata, SymbolMetadata, SymbolNameGenerationSettings, SymbolType,
+        AddressRangeOverflowError, GeneratedBy, GotAccessKind, LabelType, ParentSectionMetadata,
+        ReferrerInfo, SegmentMetadata, SymbolMetadata, SymbolNameGenerationSettings, SymbolType,
     },
     parent_segment_info::ParentSegmentInfo,
     relocation::RelocationInfo,
     section_type::SectionType,
-    symbols::{processed::FunctionSymProcessed, RomSymbolPreprocessed, SymbolPreprocessed},
-};
-
-use crate::symbols::{
-    trait_symbol::RomSymbol, Symbol, SymbolCreationError, SymbolPostProcessError,
+    symbols::{
+        processed::FunctionSymProcessed, trait_symbol::RomSymbol, RomSymbolPreprocessed, Symbol,
+        SymbolCreationError, SymbolPostProcessError, SymbolPreprocessed,
+    },
 };
 
 const SECTION_TYPE: SectionType = SectionType::Text;
@@ -51,9 +51,9 @@ impl FunctionSym {
         properties: FunctionSymProperties,
     ) -> Result<Self, SymbolCreationError> {
         let size = Size::new(instructions.len() as u32 * 4);
-        let rom_range = AddressRange::new(rom, rom + size);
-        let vram_range = AddressRange::new(vram, vram + size);
-        let ranges = RomVramRange::new(rom_range, vram_range);
+        let Some(ranges) = RomVramRange::new_size(rom, vram, size, 4) else {
+            return Err(AddressRangeOverflowError::new(rom, vram, size, 4, None).into());
+        };
 
         let instr_analysis =
             InstructionAnalyzer::analyze(context, &parent_segment_info, ranges, &instructions)?;

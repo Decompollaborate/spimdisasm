@@ -4,7 +4,7 @@
 use core::{error, fmt};
 
 #[cfg(feature = "pyo3")]
-use crate::addresses::Vram;
+use address_space::Vram;
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
@@ -18,11 +18,17 @@ pub enum SymDisplayError {
     SelfSymNotFound(),
 
     #[cfg(feature = "pyo3")]
-    NotPostProcessedYet {
-        name: String,
-        vram_start: Vram,
-        vram_end: Vram,
-    },
+    NotPostProcessedYet(NotPostProcessedYetError),
+}
+
+#[cfg(feature = "pyo3")]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
+#[pyclass(module = "spimdisasm", from_py_object)]
+pub struct NotPostProcessedYetError {
+    pub(crate) name: String,
+    pub(crate) vram_start: Vram,
+    pub(crate) vram_end: Vram,
 }
 
 impl fmt::Display for SymDisplayError {
@@ -34,11 +40,11 @@ impl fmt::Display for SymDisplayError {
                 write!(f, "Can't find symbol")
             }
             #[cfg(feature = "pyo3")]
-            SymDisplayError::NotPostProcessedYet {
+            SymDisplayError::NotPostProcessedYet(NotPostProcessedYetError {
                 name,
                 vram_start,
                 vram_end,
-            } => write!(
+            }) => write!(
                 f,
                 "Section {} ({:?} {:?}) has not been processed yet.",
                 name, vram_start, vram_end

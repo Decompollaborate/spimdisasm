@@ -4,17 +4,18 @@
 use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
 use core::hash;
 
-use rabbitizer::{Instruction, InstructionFlags};
-
+use address_space::{AddressRange, Rom, RomVramRange, Size, Vram, VramOffset};
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
+use rabbitizer::{Instruction, InstructionFlags};
 
-use crate::addresses::{AddressRange, Rom, RomVramRange, Size, Vram, VramOffset};
 use crate::analysis::{InstrOpTailCall, InstructionOperation, ReferenceWrapper, RegisterTracker};
 use crate::collections::{addended_ordered_map::FindSettings, unordered_set::UnorderedSet};
 use crate::config::{Compiler, Endian, GlobalConfig};
 use crate::context::Context;
-use crate::metadata::{ParentSectionMetadata, SegmentMetadata, SymbolType};
+use crate::metadata::{
+    AddressRangeOverflowError, ParentSectionMetadata, SegmentMetadata, SymbolType,
+};
 use crate::parent_segment_info::ParentSegmentInfo;
 use crate::relocation::RelocationInfo;
 use crate::section_type::SectionType;
@@ -86,9 +87,16 @@ impl ExecutableSection {
         }
 
         let size = Size::new(raw_bytes.len() as u32);
-        let rom_range = AddressRange::new(rom, rom + size);
-        let vram_range = AddressRange::new(vram, vram + size);
-        let ranges = RomVramRange::new(rom_range, vram_range);
+        let Some(ranges) = RomVramRange::new_size(rom, vram, size, BYTES_PER_INSTR) else {
+            return Err(AddressRangeOverflowError::new(
+                rom,
+                vram,
+                size,
+                BYTES_PER_INSTR,
+                Some(name),
+            )
+            .into());
+        };
 
         let instrs =
             instrs_from_bytes(settings, context.global_config().endian(), &raw_bytes, vram);

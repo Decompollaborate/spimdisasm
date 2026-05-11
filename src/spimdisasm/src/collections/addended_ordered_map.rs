@@ -8,13 +8,13 @@ use core::{
     ops::{Add, RangeBounds},
 };
 
+use address_space::{Size, UserSize};
+
 #[cfg(not(feature = "nightly"))]
 use ::polonius_the_crab::prelude::*;
 
 #[cfg(feature = "nightly")]
 use core::ops::Bound;
-
-use crate::addresses::Size;
 
 pub type Range<'a, K, V> = btree_map::Range<'a, K, V>;
 pub type RangeMut<'a, K, V> = btree_map::RangeMut<'a, K, V>;
@@ -418,6 +418,46 @@ where
 {
     fn size(&self) -> T {
         *self
+    }
+}
+
+impl SizedValue for Option<Size> {
+    fn size(&self) -> Size {
+        self.unwrap_or(const { Size::new(1) })
+    }
+}
+
+impl<T> SizedValue for (T, Size) {
+    fn size(&self) -> Size {
+        self.1
+    }
+}
+
+impl SizedValue<Size> for UserSize {
+    fn size(&self) -> Size {
+        Size::from(*self)
+    }
+}
+
+impl SizedValue<UserSize> for Option<UserSize> {
+    fn size(&self) -> UserSize {
+        self.unwrap_or(UserSize::new_checked(1).unwrap())
+    }
+}
+impl SizedValue<Size> for Option<UserSize> {
+    fn size(&self) -> Size {
+        self.unwrap_or(UserSize::new_checked(1).unwrap()).into()
+    }
+}
+
+impl<T> SizedValue<UserSize> for (T, UserSize) {
+    fn size(&self) -> UserSize {
+        self.1
+    }
+}
+impl<T> SizedValue<Size> for (T, UserSize) {
+    fn size(&self) -> Size {
+        self.1.into()
     }
 }
 
