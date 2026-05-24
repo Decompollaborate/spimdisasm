@@ -3,17 +3,14 @@
 
 use alloc::sync::Arc;
 
+use addended_ordered_map::{AddendedOrderedMap, FindSettings};
 use address_space::{Size, UserSize, Vram};
-
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::{
-    collections::addended_ordered_map::{AddendedOrderedMap, FindSettings},
-    metadata::{
-        GeneratedBy, OwnerSegmentKind, SymbolMetadata, SymbolNameGenerationSettings, SymbolType,
-        UserSegmentMetadata, UserSymMetadata,
-    },
+use crate::metadata::{
+    GeneratedBy, OwnerSegmentKind, SymbolMetadata, SymbolNameGenerationSettings, SymbolType,
+    UserSegmentMetadata, UserSymMetadata,
 };
 
 use super::AddUserSegmentSymbolError;
@@ -21,13 +18,13 @@ use super::AddUserSegmentSymbolError;
 #[derive(Debug, Clone, Hash, PartialEq)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct UserSegmentBuilder {
-    symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+    symbols: AddendedOrderedMap<Vram, SymbolMetadata, Size>,
 }
 
 impl UserSegmentBuilder {
     #[must_use]
     #[allow(clippy::new_without_default)]
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             symbols: AddendedOrderedMap::new(),
         }

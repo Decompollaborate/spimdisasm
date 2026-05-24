@@ -3,11 +3,11 @@
 
 use core::fmt;
 
+use addended_ordered_map::FindSettings;
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
-    collections::addended_ordered_map::FindSettings,
     context::Context,
     metadata::{SegmentMetadata, SymbolMetadata},
     symbols::{processed::NobitsSymProcessed, Symbol},

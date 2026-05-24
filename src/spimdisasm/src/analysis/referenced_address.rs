@@ -4,13 +4,11 @@
 use alloc::vec::Vec;
 use core::hash::Hash;
 
+use addended_ordered_map::SizedValue;
 use address_space::{Size, Vram};
 use rabbitizer::access_type::AccessType;
 
-use crate::{
-    collections::{addended_ordered_map::SizedValue, unordered_map::UnorderedMap},
-    metadata::SymbolType,
-};
+use crate::{collections::unordered_map::UnorderedMap, metadata::SymbolType};
 
 #[derive(Debug, Clone)]
 pub struct ReferencedAddress {
@@ -253,7 +251,7 @@ impl Hash for ReferencedAddress {
     }
 }
 
-impl SizedValue for ReferencedAddress {
+impl SizedValue<Size> for ReferencedAddress {
     fn size(&self) -> Size {
         self.size().unwrap_or(Size::new(1))
     }

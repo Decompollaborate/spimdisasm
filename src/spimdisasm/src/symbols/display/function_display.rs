@@ -3,15 +3,13 @@
 
 use core::fmt;
 
-use rabbitizer::{Instruction, InstructionDisplayFlags};
-
+use addended_ordered_map::FindSettings;
 use address_space::{Size, Vram};
-
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
+use rabbitizer::{Instruction, InstructionDisplayFlags};
 
 use crate::{
-    collections::addended_ordered_map::FindSettings,
     context::Context,
     metadata::{GeneratedBy, LabelType, SegmentMetadata, SymbolMetadata},
     relocation::RelocationInfo,

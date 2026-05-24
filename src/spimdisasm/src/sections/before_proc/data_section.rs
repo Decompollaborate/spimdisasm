@@ -4,17 +4,14 @@
 use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
 use core::hash;
 
+use addended_ordered_map::FindSettings;
 use address_space::{AddressRange, Rom, RomVramRange, Size, Vram};
-
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
     analysis::StringGuesserFlags,
-    collections::{
-        addended_ordered_map::FindSettings, unordered_map::UnorderedMap,
-        unordered_set::UnorderedSet,
-    },
+    collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
     config::{Compiler, Endian, GlobalConfig},
     context::Context,
     metadata::{AddressRangeOverflowError, ParentSectionMetadata, SegmentMetadata, SymbolType},

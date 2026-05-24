@@ -5,16 +5,13 @@ use alloc::{sync::Arc, vec::Vec};
 use core::{error, fmt};
 
 use ::polonius_the_crab::prelude::*;
+use addended_ordered_map::FindSettings;
 use address_space::{AddressRange, Rom, Vram};
-
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
-    collections::{
-        addended_ordered_map::FindSettings, unordered_map::UnorderedMap,
-        unordered_set::UnorderedSet,
-    },
+    collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
     config::GlobalConfig,
     metadata::{
         LabelMetadata, OverlayCategory, OverlayCategoryName, SegmentMetadata, SymbolMetadata,

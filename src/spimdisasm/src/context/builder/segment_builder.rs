@@ -8,11 +8,11 @@ use alloc::{
     vec::Vec,
 };
 
+use addended_ordered_map::{AddendedOrderedMap, FindSettings};
 use address_space::{Rom, RomVramRange, Size, UserSize, Vram};
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::collections::addended_ordered_map::{AddendedOrderedMap, FindSettings};
 use crate::config::GlobalConfig;
 use crate::got::GlobalOffsetTable;
 use crate::metadata::{
@@ -31,9 +31,9 @@ struct SegmentBuilder {
     kind: SegmentBuilderKind,
     ranges: RomVramRange,
     prioritised_overlays: Vec<Arc<str>>,
-    user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+    user_symbols: AddendedOrderedMap<Vram, SymbolMetadata, Size>,
     user_labels: BTreeMap<Vram, LabelMetadata>,
-    ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
+    ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange, Size>,
     global_offset_table: Option<GlobalOffsetTable>,
 }
 
@@ -106,7 +106,7 @@ impl SegmentBuilder {
 
         // Check overlaps
         if let Some(size) = size {
-            if let Some(other) = self.user_symbols.find(
+            if let Some(other) = self.user_symbols.find_value(
                 &(vram + Size::new(size.inner() - 1)),
                 FindSettings::new(true),
             ) {

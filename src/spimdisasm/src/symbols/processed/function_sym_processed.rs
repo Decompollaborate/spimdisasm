@@ -4,12 +4,13 @@
 use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
 use core::hash;
 
+use addended_ordered_map::FindSettings;
 use address_space::{AddressRange, Rom, RomVramRange, Size, Vram};
 use rabbitizer::Instruction;
 
 use crate::{
     analysis::{InstrAnalysisInfo, InstructionAnalysisResult},
-    collections::{addended_ordered_map::FindSettings, unordered_set::UnorderedSet},
+    collections::unordered_set::UnorderedSet,
     context::Context,
     got::GotGlobalEntry,
     metadata::{ReferrerInfo, SegmentMetadata, SymbolType},

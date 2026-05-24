@@ -3,13 +3,12 @@
 
 use core::fmt;
 
+use addended_ordered_map::FindSettings;
 use address_space::Vram;
-
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
-    collections::addended_ordered_map::FindSettings,
     config::Compiler,
     context::Context,
     metadata::{LabelMetadata, LabelType, SymbolMetadata, SymbolType},

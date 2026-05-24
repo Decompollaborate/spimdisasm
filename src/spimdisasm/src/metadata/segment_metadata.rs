@@ -7,12 +7,12 @@ use alloc::{
 };
 use core::{error, fmt};
 
+use addended_ordered_map::{AddendedOrderedMap, FindSettings};
 use address_space::{AddressRange, Rom, RomVramRange, Size, Vram};
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::analysis::{reference_wrapper, Preheater, ReferenceWrapper};
-use crate::collections::addended_ordered_map::{AddendedOrderedMap, FindSettings};
 use crate::got::GlobalOffsetTable;
 use crate::section_type::SectionType;
 
@@ -33,10 +33,10 @@ pub struct SegmentMetadata {
     prioritised_overlays: Arc<[Arc<str>]>,
     visible_overlay_ranges: Arc<[AddressRange<Vram>]>,
 
-    symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+    symbols: AddendedOrderedMap<Vram, SymbolMetadata, Size>,
     labels: BTreeMap<Vram, LabelMetadata>,
     // constants: BTreeMap<Vram, SymbolMetadata>,
-    ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
+    ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange, Size>,
     global_offset_table: Option<GlobalOffsetTable>,
 
     preheater: Preheater,
@@ -48,9 +48,9 @@ impl SegmentMetadata {
         segment_kind: SegmentKind,
         ranges: RomVramRange,
         prioritised_overlays: Arc<[Arc<str>]>,
-        user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+        user_symbols: AddendedOrderedMap<Vram, SymbolMetadata, Size>,
         user_labels: BTreeMap<Vram, LabelMetadata>,
-        ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
+        ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange, Size>,
         preheater: Preheater,
         visible_overlay_ranges: Arc<[AddressRange<Vram>]>,
         global_offset_table: Option<GlobalOffsetTable>,
@@ -78,9 +78,9 @@ impl SegmentMetadata {
         name: Arc<str>,
         ranges: RomVramRange,
         prioritised_overlays: Arc<[Arc<str>]>,
-        user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+        user_symbols: AddendedOrderedMap<Vram, SymbolMetadata, Size>,
         user_labels: BTreeMap<Vram, LabelMetadata>,
-        ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
+        ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange, Size>,
         preheater: Preheater,
         visible_overlay_ranges: Arc<[AddressRange<Vram>]>,
         global_offset_table: Option<GlobalOffsetTable>,
@@ -104,9 +104,9 @@ impl SegmentMetadata {
         name: Arc<str>,
         ranges: RomVramRange,
         prioritised_overlays: Arc<[Arc<str>]>,
-        user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+        user_symbols: AddendedOrderedMap<Vram, SymbolMetadata, Size>,
         user_labels: BTreeMap<Vram, LabelMetadata>,
-        ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
+        ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange, Size>,
         preheater: Preheater,
         visible_overlay_ranges: Arc<[AddressRange<Vram>]>,
         global_offset_table: Option<GlobalOffsetTable>,
@@ -217,11 +217,11 @@ impl SegmentMetadata {
     #[must_use]
     pub(crate) fn is_vram_ignored(&self, vram: Vram) -> bool {
         self.ignored_addresses
-            .find(&vram, FindSettings::new(true))
+            .find_value(&vram, FindSettings::new(true))
             .is_some()
     }
 
-    pub const fn symbols(&self) -> &AddendedOrderedMap<Vram, SymbolMetadata> {
+    pub const fn symbols(&self) -> &AddendedOrderedMap<Vram, SymbolMetadata, Size> {
         &self.symbols
     }
     pub const fn labels(&self) -> &BTreeMap<Vram, LabelMetadata> {
@@ -365,7 +365,7 @@ impl SegmentMetadata {
         vram: Vram,
         settings: FindSettings,
     ) -> Option<&SymbolMetadata> {
-        self.symbols.find(&vram, settings)
+        self.symbols.find_value(&vram, settings)
     }
 
     #[must_use]
@@ -374,7 +374,7 @@ impl SegmentMetadata {
         vram: Vram,
         settings: FindSettings,
     ) -> Option<&mut SymbolMetadata> {
-        self.symbols.find_mut(&vram, settings)
+        self.symbols.find_value_mut(&vram, settings)
     }
 
     #[must_use]

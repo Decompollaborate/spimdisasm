@@ -3,14 +3,13 @@
 
 use alloc::{collections::BTreeMap, sync::Arc};
 
+use addended_ordered_map::AddendedOrderedMap;
 use address_space::{AddressRange, Rom, RomVramRange, Size, Vram};
-
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
     analysis::{PreheatError, Preheater},
-    collections::addended_ordered_map::AddendedOrderedMap,
     config::GlobalConfig,
     got::GlobalOffsetTable,
     metadata::{
@@ -26,9 +25,9 @@ pub(crate) struct SegmentHeater {
     kind: SegmentBuilderKind,
     ranges: RomVramRange,
     prioritised_overlays: Arc<[Arc<str>]>,
-    user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+    user_symbols: AddendedOrderedMap<Vram, SymbolMetadata, Size>,
     user_labels: BTreeMap<Vram, LabelMetadata>,
-    ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
+    ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange, Size>,
     global_offset_table: Option<GlobalOffsetTable>,
 
     preheater: Preheater,
@@ -39,9 +38,9 @@ impl SegmentHeater {
         kind: SegmentBuilderKind,
         ranges: RomVramRange,
         prioritised_overlays: Arc<[Arc<str>]>,
-        user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+        user_symbols: AddendedOrderedMap<Vram, SymbolMetadata, Size>,
         user_labels: BTreeMap<Vram, LabelMetadata>,
-        ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
+        ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange, Size>,
         global_offset_table: Option<GlobalOffsetTable>,
     ) -> Self {
         Self {
@@ -67,7 +66,7 @@ impl SegmentHeater {
         &self.prioritised_overlays
     }
 
-    fn preheated_sections_rom(&self) -> &AddendedOrderedMap<Rom, Size> {
+    fn preheated_sections_rom(&self) -> &AddendedOrderedMap<Rom, Size, Size> {
         self.preheater.preheated_sections_rom()
     }
 }
@@ -174,9 +173,8 @@ impl SegmentHeater {
                 io::{BufWriter, Write},
             };
 
+            use addended_ordered_map::FindSettings;
             use address_space::Size;
-
-            use crate::collections::addended_ordered_map::FindSettings;
 
             let segment_name = self.kind.name();
 
@@ -208,7 +206,7 @@ impl SegmentHeater {
                     let maybe_overlapped_sym = self
                         .preheater
                         .references()
-                        .find(&aux_vram, FindSettings::new(true));
+                        .find_value(&aux_vram, FindSettings::new(true));
 
                     if let Some(maybe_overlapped_sym) = maybe_overlapped_sym {
                         let maybe_overlapped_vram = maybe_overlapped_sym.vram();
@@ -252,9 +250,9 @@ impl GlobalSegmentHeater {
         kind: SegmentBuilderKind,
         ranges: RomVramRange,
         prioritised_overlays: Arc<[Arc<str>]>,
-        user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+        user_symbols: AddendedOrderedMap<Vram, SymbolMetadata, Size>,
         user_labels: BTreeMap<Vram, LabelMetadata>,
-        ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
+        ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange, Size>,
         global_offset_table: Option<GlobalOffsetTable>,
     ) -> Self {
         Self {
@@ -281,7 +279,7 @@ impl GlobalSegmentHeater {
         self.inner.ranges()
     }
 
-    pub(crate) fn preheated_sections_rom(&self) -> &AddendedOrderedMap<Rom, Size> {
+    pub(crate) fn preheated_sections_rom(&self) -> &AddendedOrderedMap<Rom, Size, Size> {
         self.inner.preheated_sections_rom()
     }
 
@@ -400,9 +398,9 @@ impl OverlaySegmentHeater {
         kind: SegmentBuilderKind,
         ranges: RomVramRange,
         prioritised_overlays: Arc<[Arc<str>]>,
-        user_symbols: AddendedOrderedMap<Vram, SymbolMetadata>,
+        user_symbols: AddendedOrderedMap<Vram, SymbolMetadata, Size>,
         user_labels: BTreeMap<Vram, LabelMetadata>,
-        ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange>,
+        ignored_addresses: AddendedOrderedMap<Vram, IgnoredAddressRange, Size>,
         global_offset_table: Option<GlobalOffsetTable>,
         category_name: OverlayCategoryName,
     ) -> Self {
@@ -443,7 +441,7 @@ impl OverlaySegmentHeater {
         &mut self.inner.preheater
     }
 
-    pub(crate) fn preheated_sections_rom(&self) -> &AddendedOrderedMap<Rom, Size> {
+    pub(crate) fn preheated_sections_rom(&self) -> &AddendedOrderedMap<Rom, Size, Size> {
         self.inner.preheated_sections_rom()
     }
 

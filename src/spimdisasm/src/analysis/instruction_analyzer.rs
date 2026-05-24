@@ -1,11 +1,12 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use addended_ordered_map::FindSettings;
 use address_space::{RomVramRange, Size, Vram};
 use rabbitizer::Instruction;
 
 use crate::{
-    collections::{addended_ordered_map::FindSettings, unordered_set::UnorderedSet},
+    collections::unordered_set::UnorderedSet,
     context::{Context, OwnedSegmentNotFoundError},
     got::GlobalOffsetTable,
     metadata::SegmentMetadata,

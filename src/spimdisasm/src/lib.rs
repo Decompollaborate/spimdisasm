@@ -12,6 +12,7 @@
 
 #[macro_use]
 extern crate alloc;
+pub extern crate addended_ordered_map;
 pub extern crate address_space;
 pub extern crate rabbitizer;
 

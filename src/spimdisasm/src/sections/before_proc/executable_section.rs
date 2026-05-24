@@ -4,13 +4,14 @@
 use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
 use core::hash;
 
+use addended_ordered_map::FindSettings;
 use address_space::{AddressRange, Rom, RomVramRange, Size, Vram, VramOffset};
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 use rabbitizer::{Instruction, InstructionFlags};
 
 use crate::analysis::{InstrOpTailCall, InstructionOperation, ReferenceWrapper, RegisterTracker};
-use crate::collections::{addended_ordered_map::FindSettings, unordered_set::UnorderedSet};
+use crate::collections::unordered_set::UnorderedSet;
 use crate::config::{Compiler, Endian, GlobalConfig};
 use crate::context::Context;
 use crate::metadata::{

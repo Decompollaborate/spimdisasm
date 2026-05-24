@@ -3,19 +3,17 @@
 
 use alloc::{collections::btree_map::BTreeMap, sync::Arc};
 use core::hash;
-use rabbitizer::Instruction;
 
+use addended_ordered_map::FindSettings;
 use address_space::{AddressRange, Rom, RomVramRange, Size, Vram};
+use rabbitizer::Instruction;
 
 use crate::{
     analysis::{
         GatheredTypeInfo, InstrAnalysisInfo, InstrOpJumptable, InstructionAnalysisResult,
         InstructionAnalyzer,
     },
-    collections::{
-        addended_ordered_map::FindSettings, unordered_map::UnorderedMap,
-        unordered_set::UnorderedSet,
-    },
+    collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
     config::Compiler,
     context::Context,
     metadata::{

@@ -3,15 +3,13 @@
 
 use alloc::{collections::btree_map::BTreeMap, sync::Arc};
 
+use ::polonius_the_crab::prelude::*;
+use addended_ordered_map::{AddendedOrderedMap, FindSettings};
 use address_space::{AddressRange, Rom, RomVramRange, Size, Vram};
 use rabbitizer::{access_type::AccessType, registers_meta::Register, Instruction};
 
 use crate::{
-    collections::{
-        addended_ordered_map::{AddendedOrderedMap, FindSettings, SizedValue},
-        unordered_map::UnorderedMap,
-        unordered_set::UnorderedSet,
-    },
+    collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
     config::GlobalConfig,
     got::GlobalOffsetTable,
     metadata::{
@@ -30,14 +28,14 @@ use super::{
 pub(crate) struct Preheater {
     segment_kind: SegmentKind,
     ranges: RomVramRange,
-    references: AddendedOrderedMap<Vram, ReferencedAddress>,
+    references: AddendedOrderedMap<Vram, ReferencedAddress, Size>,
     label_references: BTreeMap<Vram, ReferencedLabel>,
-    preheated_sections_rom: AddendedOrderedMap<Rom, Size>,
-    preheated_sections_vram: AddendedOrderedMap<Vram, (Arc<str>, Vram, Size)>,
+    preheated_sections_rom: AddendedOrderedMap<Rom, Size, Size>,
+    preheated_sections_vram: AddendedOrderedMap<Vram, (Size, Arc<str>, Vram), Size>,
 }
 
 impl Preheater {
-    pub(crate) const fn new(segment_kind: SegmentKind, ranges: RomVramRange) -> Self {
+    pub(crate) fn new(segment_kind: SegmentKind, ranges: RomVramRange) -> Self {
         Self {
             segment_kind,
             ranges,
@@ -48,13 +46,15 @@ impl Preheater {
         }
     }
 
-    pub(crate) fn references(&self) -> &AddendedOrderedMap<Vram, ReferencedAddress> {
+    pub(crate) fn references(&self) -> &AddendedOrderedMap<Vram, ReferencedAddress, Size> {
         &self.references
     }
-    pub(crate) fn references_mut(&mut self) -> &mut AddendedOrderedMap<Vram, ReferencedAddress> {
+    pub(crate) fn references_mut(
+        &mut self,
+    ) -> &mut AddendedOrderedMap<Vram, ReferencedAddress, Size> {
         &mut self.references
     }
-    pub(crate) fn preheated_sections_rom(&self) -> &AddendedOrderedMap<Rom, Size> {
+    pub(crate) fn preheated_sections_rom(&self) -> &AddendedOrderedMap<Rom, Size, Size> {
         &self.preheated_sections_rom
     }
 
@@ -67,9 +67,9 @@ impl Preheater {
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
-        user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
+        user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata, Size>,
         user_labels: &BTreeMap<Vram, LabelMetadata>,
-        ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
+        ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange, Size>,
         global_offset_table: Option<&GlobalOffsetTable>,
     ) -> Result<(), PreheatError> {
         self.check_failable_preconditions(name, raw_bytes, rom, vram)?;
@@ -338,9 +338,9 @@ impl Preheater {
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
-        user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
+        user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata, Size>,
         user_labels: &BTreeMap<Vram, LabelMetadata>,
-        ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
+        ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange, Size>,
         _global_offset_table: Option<&GlobalOffsetTable>,
     ) -> Result<(), PreheatError> {
         self.common_data_preheat(
@@ -366,9 +366,9 @@ impl Preheater {
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
-        user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
+        user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata, Size>,
         user_labels: &BTreeMap<Vram, LabelMetadata>,
-        ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
+        ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange, Size>,
         _global_offset_table: Option<&GlobalOffsetTable>,
     ) -> Result<(), PreheatError> {
         self.common_data_preheat(
@@ -394,9 +394,9 @@ impl Preheater {
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
-        user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
+        user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata, Size>,
         user_labels: &BTreeMap<Vram, LabelMetadata>,
-        ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
+        ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange, Size>,
         _global_offset_table: Option<&GlobalOffsetTable>,
     ) -> Result<(), PreheatError> {
         self.check_failable_preconditions(name, raw_bytes, rom, vram)?;
@@ -418,7 +418,7 @@ impl Preheater {
             let word_vram = Vram::new(word);
 
             if ignored_addresses
-                .find(&word_vram, FindSettings::new(true))
+                .find_value(&word_vram, FindSettings::new(true))
                 .is_none()
                 && self.ranges.in_vram_range(word_vram)
             {
@@ -446,10 +446,10 @@ impl Preheater {
         raw_bytes: &[u8],
         rom: Rom,
         vram: Vram,
-        user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
+        user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata, Size>,
         user_labels: &BTreeMap<Vram, LabelMetadata>,
         section_type: SectionType,
-        ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
+        ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange, Size>,
     ) -> Result<(), PreheatError> {
         self.check_failable_preconditions(name, raw_bytes, rom, vram)?;
 
@@ -730,7 +730,7 @@ impl Preheater {
                     // Only try to guess if this data is a string if we don't suspect this word may
                     // be an address.
                     if ignored_addresses
-                        .find(&current_vram, FindSettings::new(true))
+                        .find_value(&current_vram, FindSettings::new(true))
                         .is_none()
                         && (!reference_found || (reference_is_in_function && table_label.is_none()))
                     {
@@ -844,7 +844,7 @@ impl Preheater {
                 {
                     if let Some(current_reference_mut) = self
                         .references
-                        .find_mut(&table_vram, FindSettings::new(false))
+                        .find_value_mut(&table_vram, FindSettings::new(false))
                     {
                         current_reference_mut.add_table_label(table_label);
                     }
@@ -878,11 +878,11 @@ impl Preheater {
         &mut self,
         vram: Vram,
         referenced_by: Option<Vram>,
-        user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
-        ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
+        user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata, Size>,
+        ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange, Size>,
     ) -> Option<&mut ReferencedAddress> {
         if ignored_addresses
-            .find(&vram, FindSettings::new(true))
+            .find_value(&vram, FindSettings::new(true))
             .is_some()
         {
             None
@@ -897,11 +897,11 @@ impl Preheater {
         &mut self,
         vram: Vram,
         referenced_by: Option<Vram>,
-        user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
-        ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange>,
+        user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata, Size>,
+        ignored_addresses: &AddendedOrderedMap<Vram, IgnoredAddressRange, Size>,
     ) -> Option<&mut ReferencedAddress> {
         if ignored_addresses
-            .find(&vram, FindSettings::new(true))
+            .find_value(&vram, FindSettings::new(true))
             .is_some()
         {
             None
@@ -916,28 +916,10 @@ impl Preheater {
         &mut self,
         vram: Vram,
         referenced_by: Option<Vram>,
-        user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata>,
+        user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata, Size>,
         settings: FindSettings,
     ) -> &mut ReferencedAddress {
-        let (refer, _) = self
-            .references
-            .find_mut_or_insert_with_key_value(&vram, settings, || {
-                if let Some(metadata) = user_symbols.find(&vram, settings) {
-                    let vram = metadata.vram();
-                    let mut refer = ReferencedAddress::new_user_declared(vram);
-
-                    if let Some(typ) = metadata.user_declared_type() {
-                        refer.set_user_declared_type(typ);
-                    }
-                    if let Some(size) = metadata.user_declared_size() {
-                        refer.set_user_declared_size(size);
-                    }
-
-                    (vram, refer)
-                } else {
-                    (vram, ReferencedAddress::new(vram))
-                }
-            });
+        let refer = new_ref_impl_impl(self, vram, user_symbols, settings);
 
         if let Some(referenced_by) = referenced_by {
             refer.add_referenced_by(referenced_by);
@@ -1002,7 +984,7 @@ impl Preheater {
             ))
         } else if self
             .preheated_sections_rom
-            .find(&rom, FindSettings::new(true))
+            .find_value(&rom, FindSettings::new(true))
             .is_some()
         {
             Err(PreheatError::new_already_preheated(
@@ -1011,9 +993,9 @@ impl Preheater {
                 rom,
                 vram,
             ))
-        } else if let Some((other_name, other_vram, other_size)) = self
+        } else if let Some((other_size, other_name, other_vram)) = self
             .preheated_sections_vram
-            .find(&vram, FindSettings::new(true))
+            .find_value(&vram, FindSettings::new(true))
         {
             Err(PreheatError::new_overlaps_with_already_preheated(
                 self.segment_kind.clone(),
@@ -1033,15 +1015,42 @@ impl Preheater {
             self.preheated_sections_vram.find_mut_or_insert_with(
                 vram,
                 FindSettings::new(false),
-                || (name, vram, size),
+                || (size, name, vram),
             );
             Ok(())
         }
     }
 }
 
-impl SizedValue for (Arc<str>, Vram, Size) {
-    fn size(&self) -> Size {
-        self.2
-    }
+fn new_ref_impl_impl<'pre>(
+    mut slf: &'pre mut Preheater,
+    vram: Vram,
+    user_symbols: &AddendedOrderedMap<Vram, SymbolMetadata, Size>,
+    settings: FindSettings,
+) -> &'pre mut ReferencedAddress {
+    polonius!(|slf| -> &'polonius mut ReferencedAddress {
+        if let Some(refer) = slf.references.find_value_mut(&vram, settings) {
+            polonius_return!(refer);
+        }
+    });
+
+    let (k, v) = if let Some(metadata) = user_symbols.find_value(&vram, settings) {
+        let other_vram = metadata.vram();
+        let mut refer = ReferencedAddress::new_user_declared(other_vram);
+
+        if let Some(typ) = metadata.user_declared_type() {
+            refer.set_user_declared_type(typ);
+        }
+        if let Some(size) = metadata.user_declared_size() {
+            refer.set_user_declared_size(size);
+        }
+
+        (other_vram, refer)
+    } else {
+        (vram, ReferencedAddress::new(vram))
+    };
+
+    let (refer, _) = slf.references.find_mut_or_insert_with(k, settings, || v);
+
+    refer
 }

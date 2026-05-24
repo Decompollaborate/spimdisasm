@@ -4,10 +4,10 @@
 use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
 use core::hash;
 
+use addended_ordered_map::FindSettings;
 use address_space::{AddressRange, Rom, RomVramRange, Size, Vram};
 
 use crate::{
-    collections::addended_ordered_map::FindSettings,
     context::Context,
     metadata::{LabelType, ReferrerInfo, SymbolType},
     parent_segment_info::ParentSegmentInfo,

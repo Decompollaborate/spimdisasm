@@ -3,17 +3,14 @@
 
 use alloc::{sync::Arc, vec::Vec};
 
+use addended_ordered_map::FindSettings;
 use address_space::{AddressRange, Vram};
-
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
 use crate::{
     analysis::ReferencedAddress,
-    collections::{
-        addended_ordered_map::FindSettings, unordered_map::UnorderedMap,
-        unordered_set::UnorderedSet,
-    },
+    collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
     config::GlobalConfig,
     context::Context,
     metadata::{OverlayCategory, OverlayCategoryName, SegmentMetadata},

@@ -1,16 +1,15 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+use alloc::collections::btree_map;
 use core::cmp::Ordering;
 
+use addended_ordered_map::{self, AddendedOrderedMap, FindSettings};
 use address_space::{AddressRange, Rom, Size, Vram};
 use rabbitizer::access_type::AccessType;
 
 use crate::{
-    collections::{
-        addended_ordered_map::{self, AddendedOrderedMap, FindSettings},
-        unordered_map::UnorderedMap,
-    },
+    collections::unordered_map::UnorderedMap,
     metadata::{GeneratedBy, SymbolMetadata, SymbolType},
 };
 
@@ -25,13 +24,13 @@ pub enum ReferenceWrapper<'seg, 'addr> {
 
 impl<'seg, 'addr> ReferenceWrapper<'seg, 'addr> {
     pub(crate) fn find(
-        symbols: &'seg AddendedOrderedMap<Vram, SymbolMetadata>,
+        symbols: &'seg AddendedOrderedMap<Vram, SymbolMetadata, Size>,
         preheater: &'addr Preheater,
         vram: Vram,
         settings: FindSettings,
     ) -> Option<Self> {
-        let metadata = symbols.find(&vram, settings);
-        let reference = preheater.references().find(&vram, settings);
+        let metadata = symbols.find_value(&vram, settings);
+        let reference = preheater.references().find_value(&vram, settings);
 
         match (metadata, reference) {
             (None, None) => None,
@@ -67,7 +66,7 @@ impl<'seg, 'addr> ReferenceWrapper<'seg, 'addr> {
     }
 
     pub(crate) fn range(
-        symbols: &'seg AddendedOrderedMap<Vram, SymbolMetadata>,
+        symbols: &'seg AddendedOrderedMap<Vram, SymbolMetadata, Size>,
         preheater: &'addr Preheater,
         vram_range: AddressRange<Vram>,
     ) -> Range<'seg, 'addr> {
@@ -227,8 +226,8 @@ impl<'seg, 'addr> From<(&'seg SymbolMetadata, &'addr ReferencedAddress)>
 
 #[must_use]
 pub(crate) struct Range<'seg, 'addr> {
-    metadata_range: addended_ordered_map::Range<'seg, Vram, SymbolMetadata>,
-    references_range: addended_ordered_map::Range<'addr, Vram, ReferencedAddress>,
+    metadata_range: btree_map::Range<'seg, Vram, SymbolMetadata>,
+    references_range: btree_map::Range<'addr, Vram, ReferencedAddress>,
 
     buffer_metadata: Option<(&'seg Vram, &'seg SymbolMetadata)>,
     buffer_reference: Option<(&'addr Vram, &'addr ReferencedAddress)>,
@@ -236,8 +235,8 @@ pub(crate) struct Range<'seg, 'addr> {
 
 impl<'seg, 'addr> Range<'seg, 'addr> {
     fn new(
-        metadata_range: addended_ordered_map::Range<'seg, Vram, SymbolMetadata>,
-        references_range: addended_ordered_map::Range<'addr, Vram, ReferencedAddress>,
+        metadata_range: btree_map::Range<'seg, Vram, SymbolMetadata>,
+        references_range: btree_map::Range<'addr, Vram, ReferencedAddress>,
     ) -> Self {
         Self {
             metadata_range,

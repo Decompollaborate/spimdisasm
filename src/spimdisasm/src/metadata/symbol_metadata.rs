@@ -4,6 +4,7 @@
 use alloc::sync::Arc;
 use core::{fmt, hash::Hash};
 
+use addended_ordered_map::SizedValue;
 use address_space::{Rom, Size, Vram};
 use rabbitizer::access_type::AccessType;
 
@@ -11,9 +12,7 @@ use rabbitizer::access_type::AccessType;
 //use pyo3::prelude::*;
 
 use crate::{
-    collections::{addended_ordered_map::SizedValue, unordered_map::UnorderedMap},
-    config::Compiler,
-    section_type::SectionType,
+    collections::unordered_map::UnorderedMap, config::Compiler, section_type::SectionType,
 };
 
 use super::{
@@ -613,7 +612,7 @@ impl fmt::Debug for SymbolMetadata {
     }
 }
 
-impl SizedValue for SymbolMetadata {
+impl SizedValue<Size> for SymbolMetadata {
     fn size(&self) -> Size {
         self.size().unwrap_or(Size::new(1))
     }

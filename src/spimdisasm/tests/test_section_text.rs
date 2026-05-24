@@ -3,11 +3,11 @@
 
 use std::collections::BTreeMap;
 
+use addended_ordered_map::FindSettings;
 use address_space::{AddressRange, GpValue, Rom, RomVramRange, Size, UserSize, Vram};
 use pretty_assertions::assert_eq;
 use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaExtension, IsaVersion};
 use spimdisasm::{
-    collections::addended_ordered_map::FindSettings,
     config::{Compiler, Endian, GlobalConfigBuilder, GpConfig},
     context::{
         builder::UserSegmentBuilder, Context, ContextBuilder, GlobalSegmentBuilder,
@@ -966,7 +966,7 @@ glabel func_8080010C
         .first()
         .unwrap()
         .symbols()
-        .find(&Vram::new(0x808014A4), FindSettings::new(false))
+        .find_value(&Vram::new(0x808014A4), FindSettings::new(false))
         .unwrap();
 
     println!("{:?} {:?}", silly_symbol, silly_symbol.owner_segment_kind());
