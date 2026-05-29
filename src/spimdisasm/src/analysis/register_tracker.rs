@@ -472,6 +472,7 @@ impl RegisterTracker {
             | GprRegisterValue::StackPointer { .. }
             | GprRegisterValue::GivenAddress { .. }
             | GprRegisterValue::Hi { .. }
+            | GprRegisterValue::HiBranched { .. }
             | GprRegisterValue::HiGp { .. }
             | GprRegisterValue::ConstantInfo { .. }
             | GprRegisterValue::DereferencedAddressAddedWithGp { .. } => {
@@ -604,6 +605,7 @@ impl RegisterTracker {
             | GprRegisterValue::StackPointer { .. }
             | GprRegisterValue::GivenAddress { .. }
             | GprRegisterValue::Hi { .. }
+            | GprRegisterValue::HiBranched { .. }
             | GprRegisterValue::HiGp { .. }
             | GprRegisterValue::ConstantInfo { .. } => {
                 if rs.holds_return_address(instr.abi()) {
@@ -845,6 +847,7 @@ impl RegisterTracker {
             | GprRegisterValue::StackPointer { .. }
             | GprRegisterValue::GivenAddress { .. }
             | GprRegisterValue::Hi { .. }
+            | GprRegisterValue::HiBranched { .. }
             | GprRegisterValue::HiGp { .. }
             | GprRegisterValue::ConstantInfo { .. }
             | GprRegisterValue::DereferencedAddressAddedWithGp { .. } => {
@@ -933,6 +936,7 @@ impl RegisterTracker {
             | GprRegisterValue::StackPointer { .. }
             | GprRegisterValue::GivenAddress { .. }
             | GprRegisterValue::Hi { .. }
+            | GprRegisterValue::HiBranched { .. }
             | GprRegisterValue::HiGp { .. }
             | GprRegisterValue::DereferencedAddress { .. }
             | GprRegisterValue::DereferencedAddressBranchChecked { .. }

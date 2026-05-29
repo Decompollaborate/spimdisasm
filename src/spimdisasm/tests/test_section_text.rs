@@ -1599,12 +1599,12 @@ fn test_section_text_conditional_addiu() {
 
 /* Automatically generated and unreferenced pad */
 glabel func_8003CC14
-    /* 03D814 8003CC14 3C01FFC0 */  lui         $at, %hi(UNK_FFC0001F)
+    /* 03D814 8003CC14 3C01FFC0 */  lui         $at, (0xFFC00000 >> 16)
     /* 03D818 8003CC18 8CEB0164 */  lw          $t3, 0x164($a3)
     /* 03D81C 8003CC1C 00616021 */  addu        $t4, $v1, $at
     /* 03D820 8003CC20 05810003 */  bgez        $t4, .L8003CC30
     /* 03D824 8003CC24 000C7943 */   sra        $t7, $t4, 5
-    /* 03D828 8003CC28 2581001F */  addiu       $at, $t4, %lo(UNK_FFC0001F)
+    /* 03D828 8003CC28 2581001F */  addiu       $at, $t4, 0x1F
     /* 03D82C 8003CC2C 00017943 */  sra         $t7, $at, 5
   .L8003CC30:
     /* 03D830 8003CC30 016F6823 */  subu        $t5, $t3, $t7

@@ -25,6 +25,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Delete the `addresses` module.
 
+### Fixed
+
+- Avoid pairing a `%hi`/`%lo` pair if when constructing the pair the `%hi` part
+  was checked in a "branch"-like instruction.
+  - Compilers have no need to check the value of the %hi part, so it is very
+    likely for this kind of pattern to not be a symbol pair.
+  - This kind of pattern is more common as a division pattern instead.
+
 ## [2.0.0-alpha.1] - 2025-08-07
 
 ### Changed

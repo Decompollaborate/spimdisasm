@@ -32,6 +32,24 @@ pub(crate) enum GprRegisterValue {
         value: u32,
         rom: Rom,
     },
+    /// A %hi value that has been checked against a branch instruction.
+    ///
+    /// This kind of pattern doesn't make sense as a symbol pairing, since
+    /// compilers have no need to check the value of the %hi part.
+    /// Instead it is more common as a division pattern.
+    ///
+    /// For example
+    /// ```mips
+    /// lui         $at, (0xFFC00000 >> 16)
+    /// addu        $t4, $v1, $at
+    /// bgez        $t4, .L8003CC30
+    ///  sra        $t7, $t4, 5
+    /// addiu       $at, $t4, 0x1F
+    /// ```
+    HiBranched {
+        value: u32,
+        rom: Rom,
+    },
     HiGp {
         value: u32,
         rom: Rom,
@@ -292,13 +310,20 @@ impl GprRegisterValue {
                 }
             }
 
+            Self::Hi { value, rom } => {
+                *self = Self::HiBranched {
+                    value: *value,
+                    rom: *rom,
+                }
+            }
+
             Self::Garbage
             | Self::HardwiredZero
             | Self::SoftZero
             | Self::GlobalPointer { .. }
             | Self::StackPointer { .. }
             | Self::GivenAddress { .. }
-            | Self::Hi { .. }
+            | Self::HiBranched { .. }
             | Self::HiGp { .. }
             | Self::ConstantInfo { .. }
             | Self::RawAddress { .. }
@@ -370,6 +395,7 @@ impl GprRegisterValue {
 
             Self::Garbage
             | Self::GivenAddress { .. }
+            | Self::HiBranched { .. }
             | Self::HiGp { .. }
             | Self::ConstantInfo { .. }
             | Self::DereferencedAddress { .. }
@@ -566,6 +592,7 @@ impl GprRegisterValue {
             | Self::HardwiredZero
             | Self::SoftZero
             | Self::GivenAddress { .. }
+            | Self::HiBranched { .. }
             | Self::ConstantInfo { .. }
             | Self::DereferencedAddress { .. }
             | Self::DereferencedAddressBranchChecked { .. }
@@ -602,6 +629,7 @@ impl GprRegisterValue {
             | Self::GlobalPointer { .. }
             | Self::StackPointer { .. }
             | Self::GivenAddress { .. }
+            | Self::HiBranched { .. }
             | Self::HiGp { .. }
             | Self::ConstantInfo { .. }
             | Self::RawAddress { .. }
@@ -854,6 +882,9 @@ impl GprRegisterValue {
             (Self::HiGp { .. }, Self::HiGp { .. }) => Self::Garbage,
             (Self::HiGp { .. }, Self::RawAddress { .. }) => Self::Garbage,
             (Self::RawAddress { .. }, Self::HiGp { .. }) => Self::Garbage,
+
+            (Self::HiBranched { .. }, _) => Self::Garbage,
+            (_, Self::HiBranched { .. }) => Self::Garbage,
 
             (Self::RawAddress { .. }, Self::RawAddress { .. }) => Self::Garbage,
 
