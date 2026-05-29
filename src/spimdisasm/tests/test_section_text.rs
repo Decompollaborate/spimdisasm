@@ -1558,3 +1558,58 @@ glabel c
 
     assert_eq!(disassembly, expected_disassembly,);
 }
+
+#[test]
+fn test_section_text_conditional_addiu() {
+    static BYTES: [u8; 4 * 8] = [
+        0x3C, 0x01, 0xFF, 0xC0, // lui
+        0x8C, 0xEB, 0x01, 0x64, // lw
+        0x00, 0x61, 0x60, 0x21, // addu
+        0x05, 0x81, 0x00, 0x03, // bgez
+        0x00, 0x0C, 0x79, 0x43, // sra
+        0x25, 0x81, 0x00, 0x1F, // addiu
+        0x00, 0x01, 0x79, 0x43, // sra
+        0x01, 0x6F, 0x68, 0x23, // subu
+    ];
+
+    let rom = Rom::new(0x3D814);
+    let vram = Vram::new(0x8003CC14);
+
+    let endian = Endian::Big;
+    let gp_config = None;
+
+    let text_settings =
+        ExecutableSectionSettings::new(None, InstructionFlags::new(IsaVersion::MIPS_III));
+    let user_symbols = Vec::new();
+
+    let (disassembly, _context, _section_text) = disassemble_text(
+        &BYTES,
+        rom,
+        vram,
+        endian,
+        gp_config,
+        text_settings,
+        false,
+        false,
+        user_symbols,
+    );
+
+    let expected_disassembly = "\
+.section .text
+
+/* Automatically generated and unreferenced pad */
+glabel func_8003CC14
+    /* 03D814 8003CC14 3C01FFC0 */  lui         $at, %hi(UNK_FFC0001F)
+    /* 03D818 8003CC18 8CEB0164 */  lw          $t3, 0x164($a3)
+    /* 03D81C 8003CC1C 00616021 */  addu        $t4, $v1, $at
+    /* 03D820 8003CC20 05810003 */  bgez        $t4, .L8003CC30
+    /* 03D824 8003CC24 000C7943 */   sra        $t7, $t4, 5
+    /* 03D828 8003CC28 2581001F */  addiu       $at, $t4, %lo(UNK_FFC0001F)
+    /* 03D82C 8003CC2C 00017943 */  sra         $t7, $at, 5
+  .L8003CC30:
+    /* 03D830 8003CC30 016F6823 */  subu        $t5, $t3, $t7
+.size func_8003CC14, . - func_8003CC14
+";
+
+    assert_eq!(disassembly, expected_disassembly,);
+}
