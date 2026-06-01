@@ -46,7 +46,10 @@ class SymbolBss(SymbolBase):
         if self.contextSym.hasUserDeclaredSize():
             # Check user declared size matches the size that will be generated
             contextSymSize = self.contextSym.getSize()
-            if self.spaceSize != contextSymSize:
+            sizeMismatch = self.spaceSize < contextSymSize
+            if common.GlobalConfig.CREATE_BSS_PADS:
+                sizeMismatch = self.spaceSize != contextSymSize
+            if sizeMismatch:
                 warningMessage = f"""
 Range check triggered: .bss symbol (name: {self.getName()}, address: 0x{self.contextSym.vram:08X}):
     User declared size (0x{contextSymSize:X}) does not match the .space that will be emitted (0x{self.spaceSize:X}).

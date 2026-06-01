@@ -58,15 +58,18 @@ class SectionBss(SectionBase):
             assert symbolVram < self.bssVramEnd
             bssSymbolOffsets.add(symbolVram - self.bssVramStart)
 
-            # If the bss has an explicit size then produce an extra symbol after it, so the generated bss symbol uses the user-declared size
-            if contextSym.hasUserDeclaredSize():
-                newSymbolVram = symbolVram + contextSym.getSize()
-                if newSymbolVram != self.bssVramEnd:
-                    assert newSymbolVram >= self.bssVramStart
-                    assert newSymbolVram < self.bssVramEnd, f"{self.name}, symbolVram={symbolVram:08X}, newSymbolVram={newSymbolVram:08X}, self.bssVramEnd={self.bssVramEnd:08X}"
-                    symOffset = symbolVram + contextSym.getSize() - self.bssVramStart
-                    bssSymbolOffsets.add(symOffset)
-                    autoCreatedPads.add(symOffset)
+            # If the bss/sbss has an explicit non-zero size then produce an extra symbol after it,
+            # so the generated symbol uses the user-declared size
+            if common.GlobalConfig.CREATE_BSS_PADS and contextSym.hasUserDeclaredSize():
+                contextSymSize = contextSym.getSize()
+                if contextSymSize > 0:
+                    newSymbolVram = symbolVram + contextSymSize
+                    if newSymbolVram != self.bssVramEnd:
+                        assert newSymbolVram >= self.bssVramStart
+                        assert newSymbolVram < self.bssVramEnd, f"{self.name}, symbolVram={symbolVram:08X}, newSymbolVram={newSymbolVram:08X}, self.bssVramEnd={self.bssVramEnd:08X}"
+                        symOffset = symbolVram + contextSymSize - self.bssVramStart
+                        bssSymbolOffsets.add(symOffset)
+                        autoCreatedPads.add(symOffset)
 
 
         sortedOffsets = sorted(bssSymbolOffsets)
