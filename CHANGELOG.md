@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.40.4] - 2026-06-01
+
+### Changed
+
+- Quote symbol names containing whitespace.
+  - Allow to properly emit symbol names containing spaces for some MWCC symbols.
+  - Implemented by PR <https://github.com/Decompollaborate/spimdisasm/pull/204>.
+
 ## [1.40.3] - 2026-05-04
 
 ### Fixed
@@ -2005,8 +2013,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Version 1.0.0
 
-[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/1.40.3...HEAD
+[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/1.40.4...HEAD
 
+[1.40.4]: https://github.com/Decompollaborate/spimdisasm/compare/1.40.3...1.40.4
 [1.40.3]: https://github.com/Decompollaborate/spimdisasm/compare/1.40.2...1.40.3
 [1.40.2]: https://github.com/Decompollaborate/spimdisasm/compare/1.40.1...1.40.2
 [1.40.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.40.0...1.40.1
