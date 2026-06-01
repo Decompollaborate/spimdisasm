@@ -584,7 +584,7 @@ class ContextSymbol:
 
     def getName(self) -> str:
         name = self.getNameUnquoted()
-        if "@" in name or "<" in name or "\\" in name or "-" in name or "+" in name:
+        if "@" in name or "<" in name or "\\" in name or "-" in name or "+" in name or any(c.isspace() for c in name):
             return f'"{name}"'
         return name
 
