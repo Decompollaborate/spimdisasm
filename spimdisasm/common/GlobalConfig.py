@@ -296,6 +296,8 @@ class GlobalConfigType:
     """Create dummy and unreferenced rodata symbols after another symbol which has non-zero user-declared size.
 
     The generated pad symbols may have non-zero data"""
+    CREATE_BSS_PADS: bool = True
+    """Create dummy and unreferenced bss/sbss symbols after another symbol which has non-zero user-declared size."""
 
     QUIET: bool = False
     VERBOSE: bool = False
@@ -433,6 +435,7 @@ Defaults to {self.ASM_GLOBALIZE_TEXT_LABELS_REFERENCED_BY_NON_JUMPTABLE}""", act
 
         miscConfig.add_argument("--create-data-pads", help=f"Create dummy and unreferenced data symbols after another symbol which has non-zero user-declared size.\nThe generated pad symbols may have non-zero data. Defaults to {self.CREATE_DATA_PADS}", action=Utils.BooleanOptionalAction)
         miscConfig.add_argument("--create-rodata-pads", help=f"Create dummy and unreferenced rodata symbols after another symbol which has non-zero user-declared size.\nThe generated pad symbols may have non-zero data. Defaults to {self.CREATE_RODATA_PADS}", action=Utils.BooleanOptionalAction)
+        miscConfig.add_argument("--create-bss-pads", help=f"Create dummy and unreferenced bss/sbss symbols after another symbol which has non-zero user-declared size. Defaults to {self.CREATE_BSS_PADS}", action=Utils.BooleanOptionalAction)
 
 
         verbosityConfig = parser.add_argument_group("Verbosity options")
@@ -653,6 +656,8 @@ Defaults to {self.ASM_GLOBALIZE_TEXT_LABELS_REFERENCED_BY_NON_JUMPTABLE}""", act
             self.CREATE_DATA_PADS = args.create_data_pads
         if args.create_rodata_pads is not None:
             self.CREATE_RODATA_PADS = args.create_rodata_pads
+        if args.create_bss_pads is not None:
+            self.CREATE_BSS_PADS = args.create_bss_pads
 
 
         if args.verbose is not None:

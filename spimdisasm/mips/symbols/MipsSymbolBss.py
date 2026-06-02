@@ -46,7 +46,10 @@ class SymbolBss(SymbolBase):
         if self.contextSym.hasUserDeclaredSize():
             # Check user declared size matches the size that will be generated
             contextSymSize = self.contextSym.getSize()
-            if self.spaceSize != contextSymSize:
+            sizeMismatch = self.spaceSize < contextSymSize
+            if common.GlobalConfig.CREATE_BSS_PADS:
+                sizeMismatch = self.spaceSize != contextSymSize
+            if sizeMismatch:
                 warningMessage = f"""
 Range check triggered: .bss symbol (name: {self.getName()}, address: 0x{self.contextSym.vram:08X}):
     User declared size (0x{contextSymSize:X}) does not match the .space that will be emitted (0x{self.spaceSize:X}).
@@ -61,10 +64,28 @@ Range check triggered: .bss symbol (name: {self.getName()}, address: 0x{self.con
         output += self.getPrevAlignDirective(0)
 
         symName = self.getName()
-        output += self.getNonMatchingLabel(symName, self.spaceSize)
+        symSize: int | None = None
+        if not common.GlobalConfig.CREATE_BSS_PADS:
+            symSize = self.contextSym.userDeclaredSize
+            if symSize is not None:
+                if symSize <= 0 or symSize > self.spaceSize:
+                    symSize = None
+
+        spaceSize = self.spaceSize
+        if symSize is not None:
+            spaceSize = symSize
+
+        output += self.getNonMatchingLabel(symName, spaceSize)
         output += self.getSymbolAsmDeclaration(symName, useGlobalLabel)
         output += self.generateAsmLineComment(0, emitRomOffset=False)
-        output += f" .space 0x{self.spaceSize:02X}{common.GlobalConfig.LINE_ENDS}"
+        output += f" .space 0x{spaceSize:02X}{common.GlobalConfig.LINE_ENDS}"
+
+        if symSize is not None:
+            output += self._getSymEnd(symName)
+
+        if spaceSize != self.spaceSize:
+            output += self.generateAsmLineComment(spaceSize, emitRomOffset=False)
+            output += f" .space 0x{self.spaceSize - spaceSize:02X}{common.GlobalConfig.LINE_ENDS}"
 
         nameEnd = self.getNameEnd()
         if nameEnd is not None:
