@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.41.0] - 2026-06-01
+
+### Added
+
+- Add option to disable BSS pad symbols.
+  - Can be toggled with `GlobalConfig.CREATE_BSS_PADS`.
+  - When disabled, spimdisasm won't generate an extra symbol for the trailing
+    size, instead an extra `.space` directive will be emitted after the symbol
+    containing the extra size.
+  - Pads are generated if a symbol has a user-declared size, and there's a gap
+    between this symbol and the next referened/declared symbol.
+  - Implemented by PR <https://github.com/Decompollaborate/spimdisasm/pull/205>.
+
+### Changed
+
+- `enddlabel` labels are now emitted for bss symbols.
+
 ## [1.40.4] - 2026-06-01
 
 ### Changed
