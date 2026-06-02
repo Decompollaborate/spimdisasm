@@ -2030,8 +2030,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Version 1.0.0
 
-[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/1.40.4...HEAD
+[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/1.41.0...HEAD
 
+[1.41.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.40.4...1.41.0
 [1.40.4]: https://github.com/Decompollaborate/spimdisasm/compare/1.40.3...1.40.4
 [1.40.3]: https://github.com/Decompollaborate/spimdisasm/compare/1.40.2...1.40.3
 [1.40.2]: https://github.com/Decompollaborate/spimdisasm/compare/1.40.1...1.40.2
