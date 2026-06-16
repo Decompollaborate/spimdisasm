@@ -458,6 +458,8 @@ class ContextSymbol:
             return False
         if self._isStatic:
             return True
+        if self.nameGetCallback is not None:
+            return False
         if self.name is None:
             return False
         return self.name.startswith(".")

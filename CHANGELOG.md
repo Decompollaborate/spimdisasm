@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.42.0] - 2026-06-16
+
+### Added
+
+- Prioritised segment system.
+  - Allows specifying which segments should be prioritised when looking for
+    symbol references, on a per-segment basis.
+  - This can be useful for referencing symbols from a specific asset overlay
+    segment from the main segments or other overlays, or disambiguating which
+    overlay from a different overlay category a given segment should reference.
+  - Those prioritised segments are listed by name, and they are checked in the
+    same order they are originally declared in the prioritisedSegments list.
+  - You can tell what segments a specific segment should prioritise by using
+    `SymbolsSegment::addPrioritisedSegment`. You also need to give a name to
+    each overlay segment in `Context::addOverlaySegment`, otherwise spimdisasm
+    won't know what segments you are refering to.
+- Absolute symbol system.
+  - Intended way to declare symbols that are not part of the vram address space.
+  - When looking up for address references, these kind of symbols are checked
+    first, allowing to declare symbols that do not correspond to any real
+    segment or symbols that should take priority over normal symbols.
+  - Declare them by adding them to `Context::absoluteSegment`.
+
+### Fixed
+
+- Avoid typing a symbol as a target label (branches labels, jumptable labels,
+  etc) if the symbol is known to not be in a text section.
+  - This can sometimes happen on handwritten assembly, where there's a jump
+    instruction into a data/bss symbol.
+- Fill `SymbolFunction.relocs` with branch relocations.
+
 ## [1.41.0] - 2026-06-01
 
 ### Added
@@ -2030,8 +2061,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Version 1.0.0
 
-[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/1.41.0...HEAD
+[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/1.42.0...HEAD
 
+[1.42.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.41.0...1.42.0
 [1.41.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.40.4...1.41.0
 [1.40.4]: https://github.com/Decompollaborate/spimdisasm/compare/1.40.3...1.40.4
 [1.40.3]: https://github.com/Decompollaborate/spimdisasm/compare/1.40.2...1.40.3

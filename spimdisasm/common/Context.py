@@ -94,6 +94,9 @@ class Context:
         self.overlaySegments: dict[str, dict[int, SymbolsSegment]] = dict()
         "Outer key is overlay type, inner key is the vrom of the overlay's segment"
 
+        self.absoluteSegment = SymbolsSegment(self, None, None, 0x00000000, 0xFFFFFFFF, overlayCategory=None)
+        self.absoluteSegment._isAbsoluteSegment = True
+
         self.totalVramRange: SymbolsRanges = SymbolsRanges(self.globalSegment.vramStart, self.globalSegment.vramEnd)
         self._defaultVramRanges: bool = True
 
@@ -120,10 +123,10 @@ class Context:
         self.totalVramRange.decreaseStart(vramStart)
         self.totalVramRange.increaseEnd(vramEnd)
 
-    def addOverlaySegment(self, overlayCategory: str, segmentVromStart: int, segmentVromEnd: int, segmentVramStart: int, segmentVramEnd: int) -> SymbolsSegment:
+    def addOverlaySegment(self, overlayCategory: str, segmentVromStart: int, segmentVromEnd: int, segmentVramStart: int, segmentVramEnd: int, name: str|None=None) -> SymbolsSegment:
         if overlayCategory not in self.overlaySegments:
             self.overlaySegments[overlayCategory] = dict()
-        segment = SymbolsSegment(self, segmentVromStart, segmentVromEnd, segmentVramStart, segmentVramEnd, overlayCategory=overlayCategory)
+        segment = SymbolsSegment(self, segmentVromStart, segmentVromEnd, segmentVramStart, segmentVramEnd, overlayCategory=overlayCategory, name=name)
         self.overlaySegments[overlayCategory][segmentVromStart] = segment
 
         if self._defaultVramRanges:

@@ -18,11 +18,12 @@ if TYPE_CHECKING:
     from .Context import Context
 
 class SymbolsSegment:
-    def __init__(self, context: "Context", vromStart: int|None, vromEnd: int|None, vramStart: int, vramEnd: int, overlayCategory: str|None=None) -> None:
+    def __init__(self, context: "Context", vromStart: int|None, vromEnd: int|None, vramStart: int, vramEnd: int, overlayCategory: str|None=None, name:str|None=None) -> None:
         assert vramStart < vramEnd
         if vromStart is not None and vromEnd is not None:
             assert vromStart <= vromEnd, f"0x{vromStart:06X} <= 0x{vromEnd:06X}"
 
+        self.name: str|None = name
         self.vromStart: int|None = vromStart
         self.vromEnd: int|None = vromEnd
 
@@ -33,6 +34,8 @@ class SymbolsSegment:
 
         self.overlayCategory: str|None = overlayCategory
 
+        self.prioritisedSegments: list[str] = []
+
         self.symbols: SortedDict[ContextSymbol] = SortedDict()
 
         self.constants: dict[int, ContextSymbol] = dict()
@@ -41,6 +44,11 @@ class SymbolsSegment:
         "Stuff that looks like pointers, found referenced by data"
 
         self._isTheUnknownSegment: bool = False
+        self._isAbsoluteSegment: bool = False
+
+
+    def addPrioritisedSegment(self, segmentName: str) -> None:
+        self.prioritisedSegments.append(segmentName)
 
 
     @property
@@ -188,6 +196,10 @@ class SymbolsSegment:
     def getAndPopPointerInDataReferencesRange(self, low: int, high: int) -> Generator[int, None, None]:
         for key, _ in self.newPointersInData.getRangeAndPop(low, high, startInclusive=True, endInclusive=False):
             yield key
+
+
+    def getPrioritisedSegments(self) -> list[str]:
+        return self.prioritisedSegments
 
 
     def saveContextToFile(self, f: TextIO) -> None:

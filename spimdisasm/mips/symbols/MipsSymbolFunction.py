@@ -337,6 +337,18 @@ class SymbolFunction(SymbolText):
         return common.RelocType.MIPS_LO16
 
     def _generateRelocsFromInstructionAnalyzer(self) -> None:
+        if not common.GlobalConfig.IGNORE_BRANCHES:
+            for instrOffset, targetVram in self.instrAnalyzer.branchInstrOffsets.items():
+                instr = self.instructions[instrOffset // 4]
+                if not instr.isBranch() and not instr.isUnconditionalBranch():
+                    continue
+                branch = self.instrAnalyzer.branchTargetInstrOffsets[instrOffset]
+                branchTargetVrom = self.getVromOffset(branch)
+                labelSym = self.getSymbol(targetVram, vromAddress=branchTargetVrom, tryPlusOffset=False)
+                if labelSym is None or labelSym.unknownSegment:
+                    continue
+                self.relocs[instrOffset] = common.RelocationInfo(common.RelocType.MIPS_PC16, labelSym)
+
         for instrOffset, address in self.instrAnalyzer.symbolInstrOffset.items():
             if self.context.isAddressBanned(address):
                 continue

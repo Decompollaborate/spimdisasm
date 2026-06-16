@@ -217,6 +217,10 @@ class ElementBase:
     def getSymbol(self, vramAddress: int, *, vromAddress: int|None=None, tryPlusOffset: bool=True, checkUpperLimit: bool=True, checkGlobalSegment: bool=True) -> ContextSymbol|None:
         "Searches symbol or a symbol with an addend if `tryPlusOffset` is True"
 
+        contextSym = self.context.absoluteSegment.getSymbol(vramAddress, tryPlusOffset, checkUpperLimit=True)
+        if contextSym is not None:
+            return contextSym
+
         if vromAddress is not None:
             return self.getSegmentForVrom(vromAddress).getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
 
@@ -233,10 +237,16 @@ class ElementBase:
             if segmentsPerVrom is not None:
                 overlaySegment = segmentsPerVrom.get(self.segmentVromStart, None)
                 if overlaySegment is not None:
-                    # if overlaySegment.isVramInRange(vramAddress):
-                    contextSym = overlaySegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
-                    if contextSym is not None:
-                        return contextSym
+                    if overlaySegment.isVramInRange(vramAddress):
+                        contextSym = overlaySegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
+                        if contextSym is not None:
+                            return contextSym
+
+                        contextSym = self._findInPrioritisedSegments(overlaySegment, vramAddress, lambda x: True, tryPlusOffset, checkUpperLimit)
+                        if contextSym is not None:
+                            return contextSym
+
+                        return None
 
             # If the vram was not part of that segment, then check for every other overlay category
             for overlayCategory, segmentsPerVrom in self.context.overlaySegments.items():
@@ -261,6 +271,10 @@ class ElementBase:
         return contextSym
 
     def getSymbolFromAnySegment(self, vramAddress: int, symValidation: Callable[[ContextSymbol], bool], *, tryPlusOffset: bool=True, checkUpperLimit: bool=True) -> ContextSymbol|None:
+        contextSym = self.context.absoluteSegment.getSymbol(vramAddress, tryPlusOffset, checkUpperLimit=True)
+        if contextSym is not None and symValidation(contextSym):
+            return contextSym
+
         contextSym = self.context.globalSegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
         if contextSym is not None and symValidation(contextSym):
             return contextSym
@@ -276,6 +290,10 @@ class ElementBase:
                     # if overlaySegment.isVramInRange(vramAddress):
                     contextSym = overlaySegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
                     if contextSym is not None and symValidation(contextSym):
+                        return contextSym
+
+                    contextSym = self._findInPrioritisedSegments(overlaySegment, vramAddress, symValidation, tryPlusOffset, checkUpperLimit)
+                    if contextSym is not None:
                         return contextSym
 
             # If the vram was not part of that segment, then check for every other overlay category
@@ -297,6 +315,16 @@ class ElementBase:
                     return None
         if contextSym is not None and symValidation(contextSym):
             return contextSym
+        return None
+
+    def _findInPrioritisedSegments(self, overlaySegment: SymbolsSegment, vramAddress: int, symValidation: Callable[[ContextSymbol], bool], tryPlusOffset: bool, checkUpperLimit: bool) -> ContextSymbol|None:
+        for prioritizedOverlay in overlaySegment.getPrioritisedSegments():
+            for _overlayCategory, segmentsPerVrom in self.context.overlaySegments.items():
+                for otherOverlaySegment in segmentsPerVrom.values():
+                    if otherOverlaySegment.name == prioritizedOverlay and otherOverlaySegment.isVramInRange(vramAddress):
+                        contextSym = otherOverlaySegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
+                        if contextSym is not None and symValidation(contextSym):
+                            return contextSym
         return None
 
     def getSymbolByVrom(self, vromAddress: int, *, tryPlusOffset: bool = True, checkUpperLimit: bool = True) -> ContextSymbol|None:

@@ -31,6 +31,15 @@ class SymbolBase(common.ElementBase):
         self.referencedVrams: set[int] = set()
         "Every referenced vram found"
 
+        # Void the autodetected symbol type if it is a branch target, but the
+        # symbol isn't part of a text section.
+        # This may happen on handwritten asm where the function jumps to some
+        # data/bss symbol. This can be seen on libultra's monoutil.s (__isExp).
+        if self.sectionType != common.FileSectionType.Text:
+            symType = self.contextSym.autodetectedType
+            if isinstance(symType, common.SymbolSpecialType):
+                if symType.isTargetLabel():
+                    self.contextSym.autodetectedType = None
 
     def getNameUnquoted(self) -> str:
         return self.contextSym.getNameUnquoted()
