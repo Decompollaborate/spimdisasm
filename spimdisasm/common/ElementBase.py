@@ -179,6 +179,10 @@ class ElementBase:
                     if overlaySegment.isVramInRange(vram):
                         return overlaySegment
 
+                    prioritisedSegment = self._findPrioritisedSegment(vram, overlaySegment)
+                    if prioritisedSegment is not None:
+                        return prioritisedSegment
+
         return self.context.unknownSegment
 
     def getSegmentForVrom(self, vrom: int) -> SymbolsSegment:
@@ -214,7 +218,16 @@ class ElementBase:
         return self.context.unknownSegment
 
 
-    def getSymbol(self, vramAddress: int, *, vromAddress: int|None=None, tryPlusOffset: bool=True, checkUpperLimit: bool=True, checkGlobalSegment: bool=True) -> ContextSymbol|None:
+    def getSymbol(
+        self,
+        vramAddress: int,
+        *,
+        vromAddress: int|None=None,
+        tryPlusOffset: bool=True,
+        checkUpperLimit: bool=True,
+        checkGlobalSegment: bool=True,
+        allowOutsideIfVramIsInside: bool=True,
+    ) -> ContextSymbol|None:
         "Searches symbol or a symbol with an addend if `tryPlusOffset` is True"
 
         contextSym = self.context.absoluteSegment.getSymbol(vramAddress, tryPlusOffset, checkUpperLimit=True)
@@ -237,15 +250,22 @@ class ElementBase:
             if segmentsPerVrom is not None:
                 overlaySegment = segmentsPerVrom.get(self.segmentVromStart, None)
                 if overlaySegment is not None:
+                    inRange = False
                     if overlaySegment.isVramInRange(vramAddress):
                         contextSym = overlaySegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
                         if contextSym is not None:
                             return contextSym
+                        inRange = True
 
-                        contextSym = self._findInPrioritisedSegments(overlaySegment, vramAddress, lambda x: True, tryPlusOffset, checkUpperLimit)
-                        if contextSym is not None:
-                            return contextSym
+                    contextSym = self._findInPrioritisedSegments(overlaySegment, vramAddress, lambda x: True, tryPlusOffset, checkUpperLimit)
+                    if contextSym is not None:
+                        return contextSym
 
+                    if inRange and not allowOutsideIfVramIsInside:
+                        # Disallow checking the other overlays if the requested
+                        # vram is inside the current segment.
+                        # TODO: consider changing allowOutsideIfVramIsInside=False
+                        # as the default.
                         return None
 
             # If the vram was not part of that segment, then check for every other overlay category
@@ -325,6 +345,18 @@ class ElementBase:
                         contextSym = otherOverlaySegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
                         if contextSym is not None and symValidation(contextSym):
                             return contextSym
+        return None
+
+    def _findPrioritisedSegment(
+        self,
+        vram: int,
+        ownedSegment: SymbolsSegment,
+    ) -> SymbolsSegment|None:
+        for prioritisedSegmentName in ownedSegment.prioritisedSegments:
+            for _ovlCat, segmentsPerRom in self.context.overlaySegments.items():
+                for _segmentRom, segment in segmentsPerRom.items():
+                    if segment.name == prioritisedSegmentName and segment.isVramInRange(vram):
+                        return segment
         return None
 
     def getSymbolByVrom(self, vromAddress: int, *, tryPlusOffset: bool = True, checkUpperLimit: bool = True) -> ContextSymbol|None:

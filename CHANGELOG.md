@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `ContextSymbol::segment`. Useful for debugging.
+- `allowOutsideIfVramIsInside` parameter to `ElementBase::getSymbol`.
+  - Setting to `False` allows to control if when doing a symbol look up it
+    should check other overlays even when the address is within of the parent
+    segment already.
+  - Defaults to `True` to preserve the old behavior.
+
+### Fixed
+
+- Fix sometimes not creating a symbol on the corresponding prioritized segment.
+
 ## [1.42.0] - 2026-06-16
 
 ### Added

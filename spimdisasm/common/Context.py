@@ -247,7 +247,7 @@ class Context:
             for segmentVrom, overlaySegment in segmentsPerVrom.items():
 
                 # ovlPath = contextPath.with_stem(f"{contextPath.stem}_{overlayCategory}_{segmentVrom:06X}")
-                ovlPath = contextPath.with_name(f"{contextPath.stem}_{overlayCategory}_{segmentVrom:06X}" + contextPath.suffix)
+                ovlPath = contextPath.with_name(f"{contextPath.stem}_{overlayCategory}_{overlaySegment.name}_{segmentVrom:06X}{contextPath.suffix}")
                 with ovlPath.open("w") as f:
                     overlaySegment.saveContextToFile(f)
 

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import dataclasses
 import enum
-from typing import Callable
+from typing import Callable, TYPE_CHECKING
 import rabbitizer
 
 from .GlobalConfig import GlobalConfig
@@ -15,6 +15,10 @@ from .FileSectionType import FileSectionType
 from .SortedDict import SortedDict
 
 from . import Utils
+
+if TYPE_CHECKING:
+    from .SymbolsSegment import SymbolsSegment
+
 
 class SymbolSpecialType(enum.Enum):
     function            = enum.auto()
@@ -114,6 +118,7 @@ for kind in gAccessKinds.values():
 @dataclasses.dataclass
 class ContextSymbol:
     address: int
+    segment: "SymbolsSegment"
     name: str|None = None
     nameEnd: str|None = None
     userDeclaredSize: int|None = None
