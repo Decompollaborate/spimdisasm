@@ -165,6 +165,12 @@ class ElementBase:
         if self.context.globalSegment.isVramInRange(vram):
             return self.context.globalSegment
 
+        if self.overlayCategory is None:
+            # The owned segment is the global segment
+            prioritisedSegment = self._findPrioritisedSegment(vram, self.context.globalSegment)
+            if prioritisedSegment is not None:
+                return prioritisedSegment
+
         if self.overlayCategory is not None:
             # If this element is part of an overlay segment
 
@@ -242,6 +248,12 @@ class ElementBase:
             if contextSym is not None:
                 return contextSym
 
+            if self.overlayCategory is None:
+                # This is the owned segment
+                contextSym = self._findInPrioritisedSegments(self.context.globalSegment, vramAddress, lambda x: True, tryPlusOffset, checkUpperLimit)
+                if contextSym is not None:
+                    return contextSym
+
         if self.overlayCategory is not None:
             # If this element is part of an overlay segment
 
@@ -298,6 +310,11 @@ class ElementBase:
         contextSym = self.context.globalSegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
         if contextSym is not None and symValidation(contextSym):
             return contextSym
+
+        if self.overlayCategory is None:
+            contextSym = self._findInPrioritisedSegments(self.context.globalSegment, vramAddress, symValidation, tryPlusOffset, checkUpperLimit)
+            if contextSym is not None:
+                return contextSym
 
         if self.overlayCategory is not None:
             # If this element is part of an overlay segment

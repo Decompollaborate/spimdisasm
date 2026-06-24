@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fix sometimes not creating a symbol on the corresponding prioritized segment.
+- Fix global segments not honoring prioritised segments.
 
 ## [1.42.0] - 2026-06-16
 
