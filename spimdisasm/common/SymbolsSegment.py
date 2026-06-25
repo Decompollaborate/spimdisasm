@@ -34,7 +34,7 @@ class SymbolsSegment:
 
         self.overlayCategory: str|None = overlayCategory
 
-        self.prioritisedSegments: list[str] = []
+        self.prioritizedSegments: list[str] = []
 
         self.symbols: SortedDict[ContextSymbol] = SortedDict()
 
@@ -47,8 +47,12 @@ class SymbolsSegment:
         self._isAbsoluteSegment: bool = False
 
 
+    def addPrioritizedSegment(self, segmentName: str) -> None:
+        self.prioritizedSegments.append(segmentName)
+
+    # @deprecated: prefer addPrioritizedSegment
     def addPrioritisedSegment(self, segmentName: str) -> None:
-        self.prioritisedSegments.append(segmentName)
+        self.addPrioritizedSegment(segmentName)
 
 
     @property
@@ -198,8 +202,11 @@ class SymbolsSegment:
             yield key
 
 
+    def getPrioritizedSegments(self) -> list[str]:
+        return self.prioritizedSegments
+
     def getPrioritisedSegments(self) -> list[str]:
-        return self.prioritisedSegments
+        return self.getPrioritizedSegments()
 
 
     def saveContextToFile(self, f: TextIO) -> None:
@@ -648,7 +655,7 @@ class SymbolsSegment:
     def __str__(self) -> str:
         vromStart = f"0x{self.vromStart:X}" if self.vromStart is not None else "None"
         vromEnd = f"0x{self.vromEnd:X}" if self.vromEnd is not None else "None"
-        return f"SymbolsSegment<name={self.name}, Vram=0x{self.vramStart:08X}, VramEnd=0x{self.vramEnd:08X}, overlayCategory={self.overlayCategory}, vromStart={vromStart}, vromEnd={vromEnd}, prioritisedSegments={self.prioritisedSegments}>"
+        return f"SymbolsSegment<name={self.name}, Vram=0x{self.vramStart:08X}, VramEnd=0x{self.vramEnd:08X}, overlayCategory={self.overlayCategory}, vromStart={vromStart}, vromEnd={vromEnd}, prioritizedSegments={self.prioritizedSegments}>"
 
     def __repr__(self) -> str:
         return self.__str__()

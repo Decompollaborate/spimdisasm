@@ -167,9 +167,9 @@ class ElementBase:
 
         if self.overlayCategory is None:
             # The owned segment is the global segment
-            prioritisedSegment = self._findPrioritisedSegment(vram, self.context.globalSegment)
-            if prioritisedSegment is not None:
-                return prioritisedSegment
+            prioritizedSegment = self._findPrioritizedSegment(vram, self.context.globalSegment)
+            if prioritizedSegment is not None:
+                return prioritizedSegment
 
         if self.overlayCategory is not None:
             # If this element is part of an overlay segment
@@ -185,9 +185,9 @@ class ElementBase:
                     if overlaySegment.isVramInRange(vram):
                         return overlaySegment
 
-                    prioritisedSegment = self._findPrioritisedSegment(vram, overlaySegment)
-                    if prioritisedSegment is not None:
-                        return prioritisedSegment
+                    prioritizedSegment = self._findPrioritizedSegment(vram, overlaySegment)
+                    if prioritizedSegment is not None:
+                        return prioritizedSegment
 
         return self.context.unknownSegment
 
@@ -250,7 +250,7 @@ class ElementBase:
 
             if self.overlayCategory is None:
                 # This is the owned segment
-                contextSym = self._findInPrioritisedSegments(self.context.globalSegment, vramAddress, lambda x: True, tryPlusOffset, checkUpperLimit)
+                contextSym = self._findInPrioritizedSegments(self.context.globalSegment, vramAddress, lambda x: True, tryPlusOffset, checkUpperLimit)
                 if contextSym is not None:
                     return contextSym
 
@@ -269,7 +269,7 @@ class ElementBase:
                             return contextSym
                         inRange = True
 
-                    contextSym = self._findInPrioritisedSegments(overlaySegment, vramAddress, lambda x: True, tryPlusOffset, checkUpperLimit)
+                    contextSym = self._findInPrioritizedSegments(overlaySegment, vramAddress, lambda x: True, tryPlusOffset, checkUpperLimit)
                     if contextSym is not None:
                         return contextSym
 
@@ -312,7 +312,7 @@ class ElementBase:
             return contextSym
 
         if self.overlayCategory is None:
-            contextSym = self._findInPrioritisedSegments(self.context.globalSegment, vramAddress, symValidation, tryPlusOffset, checkUpperLimit)
+            contextSym = self._findInPrioritizedSegments(self.context.globalSegment, vramAddress, symValidation, tryPlusOffset, checkUpperLimit)
             if contextSym is not None:
                 return contextSym
 
@@ -329,7 +329,7 @@ class ElementBase:
                     if contextSym is not None and symValidation(contextSym):
                         return contextSym
 
-                    contextSym = self._findInPrioritisedSegments(overlaySegment, vramAddress, symValidation, tryPlusOffset, checkUpperLimit)
+                    contextSym = self._findInPrioritizedSegments(overlaySegment, vramAddress, symValidation, tryPlusOffset, checkUpperLimit)
                     if contextSym is not None:
                         return contextSym
 
@@ -354,8 +354,8 @@ class ElementBase:
             return contextSym
         return None
 
-    def _findInPrioritisedSegments(self, overlaySegment: SymbolsSegment, vramAddress: int, symValidation: Callable[[ContextSymbol], bool], tryPlusOffset: bool, checkUpperLimit: bool) -> ContextSymbol|None:
-        for prioritizedOverlay in overlaySegment.getPrioritisedSegments():
+    def _findInPrioritizedSegments(self, overlaySegment: SymbolsSegment, vramAddress: int, symValidation: Callable[[ContextSymbol], bool], tryPlusOffset: bool, checkUpperLimit: bool) -> ContextSymbol|None:
+        for prioritizedOverlay in overlaySegment.getPrioritizedSegments():
             for _overlayCategory, segmentsPerVrom in self.context.overlaySegments.items():
                 for otherOverlaySegment in segmentsPerVrom.values():
                     if otherOverlaySegment.name == prioritizedOverlay and otherOverlaySegment.isVramInRange(vramAddress):
@@ -364,15 +364,15 @@ class ElementBase:
                             return contextSym
         return None
 
-    def _findPrioritisedSegment(
+    def _findPrioritizedSegment(
         self,
         vram: int,
         ownedSegment: SymbolsSegment,
     ) -> SymbolsSegment|None:
-        for prioritisedSegmentName in ownedSegment.prioritisedSegments:
+        for prioritizedSegmentName in ownedSegment.prioritizedSegments:
             for _ovlCat, segmentsPerRom in self.context.overlaySegments.items():
                 for _segmentRom, segment in segmentsPerRom.items():
-                    if segment.name == prioritisedSegmentName and segment.isVramInRange(vram):
+                    if segment.name == prioritizedSegmentName and segment.isVramInRange(vram):
                         return segment
         return None
 

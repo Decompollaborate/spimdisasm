@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.42.1] - 2026-06-24
+
 ### Added
 
 - `ContextSymbol::segment`. Useful for debugging.
@@ -16,10 +18,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     segment already.
   - Defaults to `True` to preserve the old behavior.
 
+### Deprecated
+
+- `SymbolsSegment::addPrioritisedSegment`: Prefer
+  `SymbolsSegment::addPrioritizedSegment`.
+- `SymbolsSegment::getPrioritisedSegments`: Prefer
+  `SymbolsSegment::getPrioritizedSegments`.
+
 ### Fixed
 
 - Fix sometimes not creating a symbol on the corresponding prioritized segment.
-- Fix global segments not honoring prioritised segments.
+- Fix global segments not honoring prioritized segments.
 
 ## [1.42.0] - 2026-06-16
 
@@ -2075,8 +2084,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Version 1.0.0
 
-[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/1.42.0...HEAD
+[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/1.42.1...HEAD
 
+[1.42.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.42.0...1.42.1
 [1.42.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.41.0...1.42.0
 [1.41.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.40.4...1.41.0
 [1.40.4]: https://github.com/Decompollaborate/spimdisasm/compare/1.40.3...1.40.4
