@@ -140,6 +140,9 @@ class ElementBase:
 
 
     def getSegment(self) -> SymbolsSegment:
+        if self._ownSegmentReference is not None:
+            return self._ownSegmentReference
+
         if self.overlayCategory is not None:
             # If this element is part of an overlay segment
 
@@ -148,15 +151,17 @@ class ElementBase:
             if segmentsPerVrom is not None:
                 overlaySegment = segmentsPerVrom.get(self.segmentVromStart, None)
                 if overlaySegment is not None:
-                    if self._ownSegmentReference is None:
-                        if overlaySegment.isVromInRange(self.vromStart):
+                    if overlaySegment.isVromInRange(self.vromStart):
+                        if self._ownSegmentReference is None:
                             self._ownSegmentReference = overlaySegment
-                    return overlaySegment
+                        return overlaySegment
 
-        if self._ownSegmentReference is None:
-            if self.context.globalSegment.isVromInRange(self.vromStart):
+        if self.context.globalSegment.isVromInRange(self.vromStart):
+            if self._ownSegmentReference is None:
                 self._ownSegmentReference = self.context.globalSegment
-        return self.context.globalSegment
+            return self.context.globalSegment
+
+        return self.context.unknownSegment
 
     def getSegmentForVram(self, vram: int) -> SymbolsSegment:
         if self._ownSegmentReference is None:

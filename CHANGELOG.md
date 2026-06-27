@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.42.2] - 2026-06-27
+
+### Fixed
+
+- Fix not creating symbols on prioritized segments referenced by data sections.
+
 ## [1.42.1] - 2026-06-24
 
 ### Added
@@ -2084,8 +2090,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Version 1.0.0
 
-[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/1.42.1...HEAD
+[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/1.42.2...HEAD
 
+[1.42.2]: https://github.com/Decompollaborate/spimdisasm/compare/1.42.1...1.42.2
 [1.42.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.42.0...1.42.1
 [1.42.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.41.0...1.42.0
 [1.41.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.40.4...1.41.0
