@@ -2,6 +2,7 @@
 /* SPDX-License-Identifier: MIT */
 
 pub mod before_proc;
+pub mod pre_post_section;
 pub mod processed;
 mod section_creation_error;
 mod section_post_process_error;
@@ -17,6 +18,6 @@ pub use section_creation_error::{
 };
 pub use section_post_process_error::SectionPostProcessError;
 pub use trait_section::{
-    RomSection, RomSectionPreprocessed, RomSectionProcessed, Section, SectionPreprocessed,
-    SectionProcessed,
+    ProcessableSection, RomSection, RomSectionPreprocessed, RomSectionProcessed, Section,
+    SectionPreprocessed, SectionProcessed,
 };

@@ -22,8 +22,8 @@ use crate::relocation::UserRelocs;
 use crate::section_type::SectionType;
 use crate::sections::processed::ExecutableSectionProcessed;
 use crate::sections::{
-    BadBytesSizeError, BadUserSymbolSizeError, EmptySectionError, RomSectionPreprocessed,
-    SectionPreprocessed, UnalignedRomError, UnalignedVramError,
+    BadBytesSizeError, BadUserSymbolSizeError, EmptySectionError, ProcessableSection,
+    RomSectionPreprocessed, SectionPreprocessed, UnalignedRomError, UnalignedVramError,
 };
 use crate::str_decoding::Encoding;
 use crate::symbols::before_proc::data_sym::DataSymProperties;
@@ -276,6 +276,18 @@ impl SectionPreprocessed for ExecutableSection {
     }
 }
 impl RomSectionPreprocessed for ExecutableSection {}
+
+impl ProcessableSection for ExecutableSection {
+    type Processed = ExecutableSectionProcessed;
+
+    fn post_process(
+        self,
+        context: &mut Context,
+        user_relocs: &UserRelocs,
+    ) -> Result<Self::Processed, SectionPostProcessError> {
+        self.post_process(context, user_relocs)
+    }
+}
 
 impl hash::Hash for ExecutableSection {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {

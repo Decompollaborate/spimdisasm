@@ -3,14 +3,14 @@
 
 use pyo3::prelude::*;
 
+use super::py_sym_info::PySymInfo;
 use crate::{
     context::Context,
     relocation::python_bindings::py_user_relocs::PyUserRelocs,
     sections::{
         before_proc::DataSection,
+        pre_post_section::{PrePostSection, PrePostSectionPostProcessError},
         processed::DataSectionProcessed,
-        python_bindings::{pre_post_section::PrePostSection, py_sym_info::PySymInfo},
-        SectionPostProcessError,
     },
     symbols::display::{SymDataDisplaySettings, SymDisplayError},
 };
@@ -29,7 +29,7 @@ impl PyDataSection {
     }
 
     pub fn unwrap_processed(&self) -> &DataSectionProcessed {
-        self.inner.unwrap_processed()
+        self.inner.processed().unwrap()
     }
 }
 
@@ -40,12 +40,8 @@ impl PyDataSection {
         &mut self,
         context: &mut Context,
         user_relocs: &PyUserRelocs,
-    ) -> Result<(), SectionPostProcessError> {
-        self.inner.post_process(
-            context,
-            user_relocs.inner(),
-            |data_section, context, user_relocs| data_section.post_process(context, user_relocs),
-        )
+    ) -> Result<(), PrePostSectionPostProcessError> {
+        self.inner.post_process(context, user_relocs.inner())
     }
 
     #[pyo3(name = "sym_count")]

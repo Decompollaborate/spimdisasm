@@ -19,9 +19,9 @@ use crate::{
     relocation::UserRelocs,
     section_type::SectionType,
     sections::{
-        processed::DataSectionProcessed, EmptySectionError, RomSection, RomSectionPreprocessed,
-        RomVramAlignmentMismatchError, Section, SectionCreationError, SectionPostProcessError,
-        SectionPreprocessed,
+        processed::DataSectionProcessed, EmptySectionError, ProcessableSection, RomSection,
+        RomSectionPreprocessed, RomVramAlignmentMismatchError, Section, SectionCreationError,
+        SectionPostProcessError, SectionPreprocessed,
     },
     str_decoding::Encoding,
     symbols::{
@@ -680,6 +680,18 @@ impl SectionPreprocessed for DataSection {
     }
 }
 impl RomSectionPreprocessed for DataSection {}
+
+impl ProcessableSection for DataSection {
+    type Processed = DataSectionProcessed;
+
+    fn post_process(
+        self,
+        context: &mut Context,
+        user_relocs: &UserRelocs,
+    ) -> Result<Self::Processed, SectionPostProcessError> {
+        self.post_process(context, user_relocs)
+    }
+}
 
 impl hash::Hash for DataSection {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {

@@ -3,15 +3,16 @@
 
 use pyo3::prelude::*;
 
+use super::py_sym_info::PySymInfo;
 use crate::{
     context::Context,
     metadata::LabelType,
     relocation::python_bindings::py_user_relocs::PyUserRelocs,
     sections::{
         before_proc::ExecutableSection,
+        pre_post_section::{PrePostSection, PrePostSectionPostProcessError},
         processed::ExecutableSectionProcessed,
-        python_bindings::{pre_post_section::PrePostSection, py_sym_info::PySymInfo},
-        Section, SectionPostProcessError,
+        Section,
     },
     symbols::{
         display::{FunctionDisplaySettings, SymDataDisplaySettings, SymDisplayError},
@@ -36,7 +37,7 @@ impl PyExecutableSection {
     }
 
     pub fn unwrap_processed(&self) -> &ExecutableSectionProcessed {
-        self.inner.unwrap_processed()
+        self.inner.processed().unwrap()
     }
 }
 
@@ -47,12 +48,8 @@ impl PyExecutableSection {
         &mut self,
         context: &mut Context,
         user_relocs: &PyUserRelocs,
-    ) -> Result<(), SectionPostProcessError> {
-        self.inner.post_process(
-            context,
-            user_relocs.inner(),
-            |section, context, user_relocs| section.post_process(context, user_relocs),
-        )
+    ) -> Result<(), PrePostSectionPostProcessError> {
+        self.inner.post_process(context, user_relocs.inner())
     }
 
     #[pyo3(name = "sym_count")]
@@ -144,7 +141,7 @@ impl PyExecutableSection {
         label_index: usize,
         new_name: String,
     ) {
-        let section = self.inner.unwrap_processed();
+        let section = self.unwrap_processed();
         let sym = section.symbols().get(sym_index);
         let parent_segment_info = section.parent_segment_info();
 

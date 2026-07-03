@@ -6,8 +6,11 @@ use alloc::sync::Arc;
 use address_space::{AddressRange, Rom, RomVramRange, Size, Vram};
 
 use crate::collections::unordered_set::UnorderedSet;
+use crate::context::Context;
 use crate::parent_segment_info::ParentSegmentInfo;
+use crate::relocation::UserRelocs;
 use crate::section_type::SectionType;
+use crate::sections::section_post_process_error::SectionPostProcessError;
 use crate::symbols::{Symbol, SymbolPreprocessed, SymbolProcessed};
 
 pub trait Section {
@@ -54,6 +57,16 @@ pub trait SectionPreprocessed: Section {
 }
 
 pub trait RomSectionPreprocessed: RomSection + SectionPreprocessed {}
+
+pub trait ProcessableSection: SectionPreprocessed {
+    type Processed;
+
+    fn post_process(
+        self,
+        context: &mut Context,
+        user_relocs: &UserRelocs,
+    ) -> Result<Self::Processed, SectionPostProcessError>;
+}
 
 pub trait SectionProcessed: Section {
     #[must_use]

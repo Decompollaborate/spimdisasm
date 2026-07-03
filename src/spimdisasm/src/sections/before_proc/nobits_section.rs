@@ -15,8 +15,12 @@ use crate::{
     context::Context,
     metadata::ParentSectionMetadata,
     parent_segment_info::ParentSegmentInfo,
+    relocation::UserRelocs,
     section_type::SectionType,
-    sections::{processed::NobitsSectionProcessed, EmptySectionError, SectionPreprocessed},
+    sections::{
+        processed::NobitsSectionProcessed, EmptySectionError, ProcessableSection,
+        SectionPreprocessed,
+    },
     symbols::{
         before_proc::{nobits_sym::NobitsSymProperties, NobitsSym},
         Symbol, SymbolPreprocessed,
@@ -186,6 +190,18 @@ impl Section for NobitsSection {
 impl SectionPreprocessed for NobitsSection {
     fn symbol_list(&self) -> &[impl SymbolPreprocessed] {
         &self.nobits_symbols
+    }
+}
+
+impl ProcessableSection for NobitsSection {
+    type Processed = NobitsSectionProcessed;
+
+    fn post_process(
+        self,
+        context: &mut Context,
+        _user_relocs: &UserRelocs,
+    ) -> Result<Self::Processed, SectionPostProcessError> {
+        self.post_process(context)
     }
 }
 

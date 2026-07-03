@@ -3,14 +3,14 @@
 
 use pyo3::prelude::*;
 
+use super::py_sym_info::PySymInfo;
 use crate::{
     context::Context,
     relocation::python_bindings::py_user_relocs::PyUserRelocs,
     sections::{
         before_proc::NobitsSection,
+        pre_post_section::{PrePostSection, PrePostSectionPostProcessError},
         processed::NobitsSectionProcessed,
-        python_bindings::{pre_post_section::PrePostSection, py_sym_info::PySymInfo},
-        SectionPostProcessError,
     },
     symbols::display::{SymDisplayError, SymNobitsDisplaySettings},
 };
@@ -39,12 +39,8 @@ impl PyNobitsSection {
         &mut self,
         context: &mut Context,
         user_relocs: &PyUserRelocs,
-    ) -> Result<(), SectionPostProcessError> {
-        self.inner.post_process(
-            context,
-            user_relocs.inner(),
-            |section, context, _user_relocs| section.post_process(context),
-        )
+    ) -> Result<(), PrePostSectionPostProcessError> {
+        self.inner.post_process(context, user_relocs.inner())
     }
 
     #[pyo3(name = "sym_count")]
