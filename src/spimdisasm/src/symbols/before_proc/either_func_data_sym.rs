@@ -1,14 +1,12 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::collections::btree_map::BTreeMap;
-
-use address_space::{AddressRange, Rom, RomVramRange, Vram};
+use address_space::{AddressRange, RomVramRange, Vram};
 
 use crate::{
     context::Context,
     parent_segment_info::ParentSegmentInfo,
-    relocation::RelocationInfo,
+    relocation::UserRelocs,
     section_type::SectionType,
     symbols::{
         processed::EitherFuncDataSymProcessed, RomSymbol, RomSymbolPreprocessed, Symbol,
@@ -61,7 +59,7 @@ impl SymbolPreprocessed for EitherFuncDataSym {
     fn post_process(
         self,
         context: &mut Context,
-        user_relocs: &BTreeMap<Rom, RelocationInfo>,
+        user_relocs: &UserRelocs,
     ) -> Result<Self::Output, SymbolPostProcessError> {
         Ok(match self {
             EitherFuncDataSym::Func(function_sym) => {

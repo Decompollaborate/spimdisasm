@@ -1,8 +1,6 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use std::collections::BTreeMap;
-
 use pretty_assertions::assert_eq;
 
 use address_space::{AddressRange, GpValue, Rom, RomVramRange, Size, Vram};
@@ -13,6 +11,7 @@ use spimdisasm::{
     got::{GlobalOffsetTable, GotGlobalEntry, GotLocalEntry},
     metadata::SegmentMetadata,
     parent_segment_info::ParentSegmentInfo,
+    relocation::UserRelocs,
     sections::{
         before_proc::{DataSectionSettings, ExecutableSectionSettings, NobitsSectionSettings},
         processed::{DataSectionProcessed, ExecutableSectionProcessed, NobitsSectionProcessed},
@@ -225,7 +224,7 @@ impl Sections {
                 .unwrap()
         });
 
-        let user_relocs = BTreeMap::new();
+        let user_relocs = UserRelocs::new();
         let text = text.map(|x| x.post_process(&mut context, &user_relocs).unwrap());
         let data = data.map(|x| x.post_process(&mut context, &user_relocs).unwrap());
         let rodata = rodata.map(|x| x.post_process(&mut context, &user_relocs).unwrap());

@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
+use alloc::{sync::Arc, vec::Vec};
 use core::hash;
 
 use addended_ordered_map::FindSettings;
@@ -15,7 +15,7 @@ use crate::{
     got::GotGlobalEntry,
     metadata::{ReferrerInfo, SegmentMetadata, SymbolType},
     parent_segment_info::ParentSegmentInfo,
-    relocation::{RelocReferencedSym, RelocationInfo, RelocationType},
+    relocation::{RelocReferencedSym, RelocationInfo, RelocationType, UserRelocs},
     section_type::SectionType,
     symbols::{
         display::{
@@ -46,7 +46,7 @@ impl FunctionSymProcessed {
         instructions: Arc<[Instruction]>,
         parent_segment_info: ParentSegmentInfo,
         instr_analysis: InstructionAnalysisResult,
-        user_relocs: &BTreeMap<Rom, RelocationInfo>,
+        user_relocs: &UserRelocs,
     ) -> Result<Self, SymbolPostProcessError> {
         let labels = Self::find_and_update_labels(context, &ranges, &parent_segment_info)?;
         let mut relocs = Self::generate_relocs(

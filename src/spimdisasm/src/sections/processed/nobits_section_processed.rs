@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
+use alloc::{sync::Arc, vec::Vec};
 use core::hash;
 
 use address_space::{AddressRange, Vram};
@@ -10,6 +10,7 @@ use crate::{
     collections::unordered_set::UnorderedSet,
     context::Context,
     parent_segment_info::ParentSegmentInfo,
+    relocation::UserRelocs,
     section_type::SectionType,
     sections::{Section, SectionPostProcessError, SectionProcessed},
     symbols::{
@@ -39,7 +40,7 @@ impl NobitsSectionProcessed {
         nobits_symbols: Vec<NobitsSym>,
         symbol_vrams: UnorderedSet<Vram>,
     ) -> Result<Self, SectionPostProcessError> {
-        let user_relocs = BTreeMap::new();
+        let user_relocs = UserRelocs::new();
         let nobits_symbols = nobits_symbols
             .into_iter()
             .map(|x| x.post_process(context, &user_relocs))

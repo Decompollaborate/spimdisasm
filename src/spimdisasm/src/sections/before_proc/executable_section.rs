@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
+use alloc::{sync::Arc, vec::Vec};
 use core::hash;
 
 use addended_ordered_map::FindSettings;
@@ -18,7 +18,7 @@ use crate::metadata::{
     AddressRangeOverflowError, ParentSectionMetadata, SegmentMetadata, SymbolType,
 };
 use crate::parent_segment_info::ParentSegmentInfo;
-use crate::relocation::RelocationInfo;
+use crate::relocation::UserRelocs;
 use crate::section_type::SectionType;
 use crate::sections::processed::ExecutableSectionProcessed;
 use crate::sections::{
@@ -218,7 +218,7 @@ impl ExecutableSection {
     pub fn post_process(
         self,
         context: &mut Context,
-        user_relocs: &BTreeMap<Rom, RelocationInfo>,
+        user_relocs: &UserRelocs,
     ) -> Result<ExecutableSectionProcessed, SectionPostProcessError> {
         let ExecutableSection {
             name,

@@ -1,8 +1,6 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use std::collections::BTreeMap;
-
 use addended_ordered_map::FindSettings;
 use address_space::{AddressRange, GpValue, Rom, RomVramRange, Size, UserSize, Vram};
 use pretty_assertions::assert_eq;
@@ -15,6 +13,7 @@ use spimdisasm::{
     },
     metadata::{OverlayCategoryName, SymbolType},
     parent_segment_info::ParentSegmentInfo,
+    relocation::UserRelocs,
     sections::{before_proc::ExecutableSectionSettings, processed::ExecutableSectionProcessed},
     symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings},
 };
@@ -162,7 +161,7 @@ fn disassemble_text(
         )
         .unwrap();
 
-    let user_relocs = BTreeMap::new();
+    let user_relocs = UserRelocs::new();
     let section_text = section_text
         .post_process(&mut context, &user_relocs)
         .unwrap();

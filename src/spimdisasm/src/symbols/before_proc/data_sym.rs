@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{collections::btree_map::BTreeMap, sync::Arc};
+use alloc::sync::Arc;
 use core::hash;
 
 use address_space::{AddressRange, Rom, RomVramRange, Size, Vram};
@@ -11,7 +11,7 @@ use crate::{
     context::Context,
     metadata::{GeneratedBy, ParentSectionMetadata, ReferrerInfo, SymbolMetadata, SymbolType},
     parent_segment_info::ParentSegmentInfo,
-    relocation::RelocationInfo,
+    relocation::UserRelocs,
     section_type::SectionType,
     str_decoding::Encoding,
     symbols::{processed::DataSymProcessed, RomSymbolPreprocessed, SymbolPreprocessed},
@@ -156,7 +156,7 @@ impl SymbolPreprocessed for DataSym {
     fn post_process(
         self,
         context: &mut Context,
-        user_relocs: &BTreeMap<Rom, RelocationInfo>,
+        user_relocs: &UserRelocs,
     ) -> Result<Self::Output, SymbolPostProcessError> {
         DataSymProcessed::new(
             context,

@@ -3,16 +3,14 @@
 
 use core::hash;
 
-use alloc::collections::btree_map::BTreeMap;
-
-use address_space::{AddressRange, Rom, Size, Vram};
+use address_space::{AddressRange, Size, Vram};
 
 use crate::{
     config::Compiler,
     context::Context,
     metadata::{ParentSectionMetadata, SymbolMetadata},
     parent_segment_info::ParentSegmentInfo,
-    relocation::RelocationInfo,
+    relocation::UserRelocs,
     section_type::SectionType,
     symbols::{processed::NobitsSymProcessed, SymbolPreprocessed},
 };
@@ -78,7 +76,7 @@ impl SymbolPreprocessed for NobitsSym {
     fn post_process(
         self,
         context: &mut Context,
-        _user_relocs: &BTreeMap<Rom, RelocationInfo>,
+        _user_relocs: &UserRelocs,
     ) -> Result<Self::Output, SymbolPostProcessError> {
         NobitsSymProcessed::new(context, self.vram_range, self.parent_segment_info)
     }

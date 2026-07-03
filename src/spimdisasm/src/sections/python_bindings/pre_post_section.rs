@@ -7,7 +7,7 @@ use address_space::Rom;
 
 use crate::{
     context::Context,
-    relocation::RelocationInfo,
+    relocation::{RelocationInfo, UserRelocs},
     sections::{
         python_bindings::py_sym_info::PySymInfo,
         section_post_process_error::AlreadyPostProcessedError, Section, SectionPostProcessError,
@@ -50,15 +50,11 @@ where
     pub fn post_process<F>(
         &mut self,
         context: &mut Context,
-        user_relocs: &BTreeMap<Rom, RelocationInfo>,
+        user_relocs: &UserRelocs,
         post_process: F,
     ) -> Result<(), SectionPostProcessError>
     where
-        F: FnOnce(
-            Pre,
-            &mut Context,
-            &BTreeMap<Rom, RelocationInfo>,
-        ) -> Result<Processed, SectionPostProcessError>,
+        F: FnOnce(Pre, &mut Context, &UserRelocs) -> Result<Processed, SectionPostProcessError>,
     {
         let section = core::mem::replace(self, Self::Invalid);
 

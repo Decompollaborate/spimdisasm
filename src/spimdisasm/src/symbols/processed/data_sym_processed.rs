@@ -1,17 +1,17 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
+use alloc::{sync::Arc, vec::Vec};
 use core::hash;
 
 use addended_ordered_map::FindSettings;
-use address_space::{AddressRange, Rom, RomVramRange, Size, Vram};
+use address_space::{AddressRange, RomVramRange, Size, Vram};
 
 use crate::{
     context::Context,
     metadata::{LabelType, ReferrerInfo, SymbolType},
     parent_segment_info::ParentSegmentInfo,
-    relocation::{RelocReferencedSym, RelocationInfo, RelocationType},
+    relocation::{RelocReferencedSym, RelocationInfo, RelocationType, UserRelocs},
     section_type::SectionType,
     str_decoding::Encoding,
     symbols::{
@@ -42,7 +42,7 @@ impl DataSymProcessed {
         parent_segment_info: ParentSegmentInfo,
         section_type: SectionType,
         encoding: Encoding,
-        user_relocs: &BTreeMap<Rom, RelocationInfo>,
+        user_relocs: &UserRelocs,
     ) -> Result<Self, SymbolPostProcessError> {
         let mut relocs = Self::generate_relocs(context, &ranges, &raw_bytes, &parent_segment_info)?;
 

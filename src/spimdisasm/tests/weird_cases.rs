@@ -1,8 +1,6 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use std::collections::BTreeMap;
-
 use address_space::{AddressRange, GpValue, Rom, RomVramRange, Size, Vram};
 use pretty_assertions::assert_eq;
 use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaExtension, IsaVersion};
@@ -10,6 +8,7 @@ use spimdisasm::{
     config::{Compiler, Endian, GlobalConfigBuilder, GpConfig},
     context::{builder::UserSegmentBuilder, ContextBuilder, GlobalSegmentBuilder},
     parent_segment_info::ParentSegmentInfo,
+    relocation::UserRelocs,
     sections::before_proc::ExecutableSectionSettings,
     symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings},
 };
@@ -288,7 +287,7 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
         )
         .unwrap();
 
-    let user_relocs = BTreeMap::new();
+    let user_relocs = UserRelocs::new();
     let section_text = section_text
         .post_process(&mut context, &user_relocs)
         .unwrap();
@@ -654,7 +653,7 @@ fn weird_case_use_gp_as_temp() {
         )
         .unwrap();
 
-    let user_relocs = BTreeMap::new();
+    let user_relocs = UserRelocs::new();
     let section_text = section_text
         .post_process(&mut context, &user_relocs)
         .unwrap();

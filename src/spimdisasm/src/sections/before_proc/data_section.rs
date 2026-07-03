@@ -16,7 +16,7 @@ use crate::{
     context::Context,
     metadata::{AddressRangeOverflowError, ParentSectionMetadata, SegmentMetadata, SymbolType},
     parent_segment_info::ParentSegmentInfo,
-    relocation::RelocationInfo,
+    relocation::UserRelocs,
     section_type::SectionType,
     sections::{
         processed::DataSectionProcessed, EmptySectionError, RomSection, RomSectionPreprocessed,
@@ -629,7 +629,7 @@ impl DataSection {
     pub fn post_process(
         self,
         context: &mut Context,
-        user_relocs: &BTreeMap<Rom, RelocationInfo>,
+        user_relocs: &UserRelocs,
     ) -> Result<DataSectionProcessed, SectionPostProcessError> {
         DataSectionProcessed::new(
             context,

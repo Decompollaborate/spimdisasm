@@ -1,16 +1,16 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{collections::btree_map::BTreeMap, sync::Arc, vec::Vec};
+use alloc::{sync::Arc, vec::Vec};
 use core::hash;
 
-use address_space::{AddressRange, Rom, RomVramRange, Vram};
+use address_space::{AddressRange, RomVramRange, Vram};
 
 use crate::{
     collections::unordered_set::UnorderedSet,
     context::Context,
     parent_segment_info::ParentSegmentInfo,
-    relocation::RelocationInfo,
+    relocation::UserRelocs,
     section_type::SectionType,
     sections::{
         RomSection, RomSectionProcessed, Section, SectionPostProcessError, SectionProcessed,
@@ -42,7 +42,7 @@ impl DataSectionProcessed {
         section_type: SectionType,
         data_symbols: Vec<DataSym>,
         symbol_vrams: UnorderedSet<Vram>,
-        user_relocs: &BTreeMap<Rom, RelocationInfo>,
+        user_relocs: &UserRelocs,
     ) -> Result<Self, SectionPostProcessError> {
         let data_symbols = data_symbols
             .into_iter()

@@ -1,14 +1,15 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::collections::btree_map::BTreeMap;
-
 use addended_ordered_map::FindSettings;
 use address_space::{AddressRange, Rom, RomVramRange, Size, Vram};
 
 use crate::{
-    context::Context, metadata::SymbolMetadata, parent_segment_info::ParentSegmentInfo,
-    relocation::RelocationInfo, section_type::SectionType,
+    context::Context,
+    metadata::SymbolMetadata,
+    parent_segment_info::ParentSegmentInfo,
+    relocation::{RelocationInfo, UserRelocs},
+    section_type::SectionType,
 };
 
 use super::SymbolPostProcessError;
@@ -75,7 +76,7 @@ pub trait SymbolPreprocessed: Symbol {
     fn post_process(
         self,
         context: &mut Context,
-        user_relocs: &BTreeMap<Rom, RelocationInfo>,
+        user_relocs: &UserRelocs,
     ) -> Result<Self::Output, SymbolPostProcessError>;
 }
 

@@ -3,13 +3,14 @@
 
 #![allow(dead_code)]
 
-use std::{collections::BTreeMap, num::NonZeroU32, sync::Arc};
+use std::{num::NonZeroU32, sync::Arc};
 
 use address_space::{Rom, Size, UserSize, Vram};
 
 use spimdisasm::{
     context::Context,
     metadata::{LabelType, RodataMigrationBehavior, SymbolType},
+    relocation::UserRelocs,
     sections::{
         before_proc::{DataSection, ExecutableSection, NobitsSection},
         processed::{DataSectionProcessed, ExecutableSectionProcessed, NobitsSectionProcessed},
@@ -62,7 +63,7 @@ pub struct SegmentData {
 
 impl SegmentData {
     pub fn post_process(self, context: &mut Context) -> SegmentDataProcessed {
-        let user_relocs = BTreeMap::new();
+        let user_relocs = UserRelocs::new();
         SegmentDataProcessed {
             name: self.name,
             text_sections: self

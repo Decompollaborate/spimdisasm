@@ -10,7 +10,7 @@ use object::{
 };
 use parsed_elf::ParsedElf;
 use spimdisasm::{
-    address_space::{AddressRange, Rom, RomVramRange, UserSize, Vram},
+    address_space::{AddressRange, RomVramRange, UserSize, Vram},
     analysis::StringGuesserFlags,
     config::{Compiler, GlobalConfig, GlobalConfigBuilder, GpConfig},
     context::{
@@ -20,7 +20,7 @@ use spimdisasm::{
     metadata::{GotAccessKind, LabelType, SymbolType},
     parent_segment_info::ParentSegmentInfo,
     rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion},
-    relocation::RelocationInfo,
+    relocation::UserRelocs,
     sections::{
         before_proc::{
             DataSection, DataSectionSettings, ExecutableSection, ExecutableSectionSettings,
@@ -32,7 +32,7 @@ use spimdisasm::{
     symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings, SymNobitsDisplaySettings},
 };
 use std::{
-    collections::{BTreeMap, HashSet},
+    collections::HashSet,
     fs::{self, File},
     io::{BufReader, BufWriter, Read, Write},
     path::{Path, PathBuf},
@@ -717,9 +717,9 @@ fn create_sections(
     (executable_sections, data_sections, nobits_sections)
 }
 
-fn gather_relocs(elf: &ParsedElf) -> BTreeMap<Rom, RelocationInfo> {
+fn gather_relocs(elf: &ParsedElf) -> UserRelocs {
     let _avoid_warning = elf;
-    let user_relocs = BTreeMap::new();
+    let user_relocs = UserRelocs::new();
 
     // TODO: fill user_relocs
 
@@ -731,7 +731,7 @@ fn gather_relocs(elf: &ParsedElf) -> BTreeMap<Rom, RelocationInfo> {
 
 fn post_process_sections(
     context: &mut Context,
-    user_relocs: BTreeMap<Rom, RelocationInfo>,
+    user_relocs: UserRelocs,
     executable_sections: Vec<ExecutableSection>,
     data_sections: Vec<DataSection>,
     nobits_sections: Vec<NobitsSection>,

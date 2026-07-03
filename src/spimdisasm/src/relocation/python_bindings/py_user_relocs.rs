@@ -1,15 +1,14 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{collections::BTreeMap, sync::Arc};
-use core::{error, fmt};
+use alloc::sync::Arc;
 
 use address_space::Rom;
 
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::relocation::{RelocReferencedSym, RelocationInfo, RelocationType};
+use crate::relocation::{RelocReferencedSym, RelocationType, UserRelocAddError, UserRelocs};
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(
@@ -17,11 +16,11 @@ use crate::relocation::{RelocReferencedSym, RelocationInfo, RelocationType};
     pyclass(module = "spimdisasm", name = "UserRelocs", from_py_object)
 )]
 pub struct PyUserRelocs {
-    inner: BTreeMap<Rom, RelocationInfo>,
+    inner: UserRelocs,
 }
 
 impl PyUserRelocs {
-    pub fn inner(&self) -> &BTreeMap<Rom, RelocationInfo> {
+    pub fn inner(&self) -> &UserRelocs {
         &self.inner
     }
 }
@@ -31,7 +30,7 @@ impl PyUserRelocs {
     #[new]
     pub fn py_new() -> Self {
         Self {
-            inner: BTreeMap::new(),
+            inner: UserRelocs::new(),
         }
     }
 
@@ -43,39 +42,9 @@ impl PyUserRelocs {
         addend: i64,
     ) -> Result<(), UserRelocAddError> {
         let rom = Rom::new(rom);
-        let reloc =
+        let reloc_info =
             reloc_type.new_reloc_info(RelocReferencedSym::SymName(Arc::from(sym_name), addend));
 
-        if self.inner.insert(rom, reloc).is_some() {
-            // err
-            Err(UserRelocAddError { rom })
-        } else {
-            Ok(())
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
-pub struct UserRelocAddError {
-    rom: Rom,
-}
-impl fmt::Display for UserRelocAddError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "Duplicated rom address {:?} while adding relocs",
-            self.rom
-        )
-    }
-}
-impl error::Error for UserRelocAddError {}
-
-use pyo3::exceptions::PyRuntimeError;
-pyo3::create_exception!(spimdisasm, PyUserRelocAddError, PyRuntimeError);
-
-impl std::convert::From<UserRelocAddError> for PyErr {
-    fn from(err: UserRelocAddError) -> PyErr {
-        PyUserRelocAddError::new_err(err.to_string())
+        self.inner.add_reloc(rom, reloc_info)
     }
 }
