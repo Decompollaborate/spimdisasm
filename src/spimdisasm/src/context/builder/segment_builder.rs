@@ -273,7 +273,7 @@ impl SegmentBuilder {
         Ok(())
     }
 
-    // TODO: Document adding symbols outside of the program should be added to the UserSegment instead of here
+    // TODO: Document adding symbols outside of the program should be added to the AbsoluteSegment instead of here
     fn add_global_offset_table(
         &mut self,
         global_config: &GlobalConfig,
@@ -358,7 +358,7 @@ impl GlobalSegmentBuilder {
         self.inner.n64_default_banned_addresses()
     }
 
-    // TODO: Document adding symbols outside of the program should be added to the UserSegment instead of here
+    // TODO: Document adding symbols outside of the program should be added to the AbsoluteSegment instead of here
     pub fn add_global_offset_table(
         &mut self,
         global_config: &GlobalConfig,

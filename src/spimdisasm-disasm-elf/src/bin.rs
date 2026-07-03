@@ -14,7 +14,7 @@ use spimdisasm::{
     analysis::StringGuesserFlags,
     config::{Compiler, GlobalConfig, GlobalConfigBuilder, GpConfig},
     context::{
-        builder::{GlobalSegmentHeater, UserSegmentBuilder},
+        builder::{GlobalSegmentHeater, AbsoluteSegmentBuilder},
         Context, ContextBuilder, GlobalSegmentBuilder,
     },
     metadata::{GotAccessKind, LabelType, SymbolType},
@@ -310,9 +310,9 @@ fn fill_symbols(
     elf: &ParsedElf,
     global_ranges: RomVramRange,
     global_config: &GlobalConfig,
-) -> (GlobalSegmentHeater, UserSegmentBuilder) {
+) -> (GlobalSegmentHeater, AbsoluteSegmentBuilder) {
     let mut global_segment = GlobalSegmentBuilder::new("global", global_ranges);
-    let mut user_segment = UserSegmentBuilder::new();
+    let mut absolute_segment = AbsoluteSegmentBuilder::new();
 
     let mut initials = HashSet::new();
     let mut remaining_symbols = Vec::new();
@@ -357,7 +357,7 @@ fn fill_symbols(
                     })
                     .unwrap_or(UserSize::new_checked(1).unwrap());
 
-                let mut sym_metadata = user_segment
+                let mut sym_metadata = absolute_segment
                     .add_user_symbol(initial_vram, got_entry.sym_name(), size, sym_type)
                     .pretty_unwrap();
                 sym_metadata.set_got_access_kind(GotAccessKind::Global);
@@ -463,7 +463,7 @@ fn fill_symbols(
                 let size = UserSize::new_checked(4).unwrap();
                 let typ = None;
 
-                let mut sym_metadata = user_segment
+                let mut sym_metadata = absolute_segment
                     .add_user_symbol(vram, name, size, typ)
                     .pretty_unwrap();
                 // I'm not sure if this should be considered Local or Global.
@@ -477,7 +477,7 @@ fn fill_symbols(
             .pretty_unwrap();
     }
 
-    (global_segment.finish_symbols(), user_segment)
+    (global_segment.finish_symbols(), absolute_segment)
 }
 
 fn preheat_sections(
@@ -569,7 +569,7 @@ fn create_context(
 
     print!("    symbols");
     let start = utils::get_time_now();
-    let (mut global_segment, user_segment) = fill_symbols(elf, global_ranges, &global_config);
+    let (mut global_segment, absolute_segment) = fill_symbols(elf, global_ranges, &global_config);
     let end = utils::get_time_now();
     println!(": {:?}", end - start);
 
@@ -592,7 +592,7 @@ fn create_context(
         .pretty_unwrap();
 
     context_builder
-        .build(global_config, user_segment)
+        .build(global_config, absolute_segment)
         .pretty_unwrap()
 }
 

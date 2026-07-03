@@ -69,7 +69,7 @@ impl fmt::Display for AddIgnoredAddressRangeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Error while trying to add an ignored address \"{:?} {:?}\" to the user segment: ",
+            "Error while trying to add an ignored address \"{:?} {:?}\" to the absolute segment: ",
             self.vram, self.size
         )?;
 

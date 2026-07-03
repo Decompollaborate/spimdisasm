@@ -9,7 +9,7 @@ use address_space::{AddressRange, RomVramRange};
 use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
 use spimdisasm::{
     config::{Compiler, Endian, GlobalConfigBuilder},
-    context::{builder::UserSegmentBuilder, Context, ContextBuilder, GlobalSegmentBuilder},
+    context::{builder::AbsoluteSegmentBuilder, Context, ContextBuilder, GlobalSegmentBuilder},
     parent_segment_info::ParentSegmentInfo,
     sections::before_proc::{
         DataSectionSettings, ExecutableSectionSettings, NobitsSectionSettings,
@@ -160,11 +160,11 @@ fn init_context(
         }
     }
 
-    let mut user_segment = UserSegmentBuilder::new();
-    user_segment.n64_libultra_symbols().unwrap();
-    user_segment.n64_hardware_registers(true, true).unwrap();
+    let mut absolute_segment = AbsoluteSegmentBuilder::new();
+    absolute_segment.n64_libultra_symbols().unwrap();
+    absolute_segment.n64_hardware_registers(true, true).unwrap();
 
-    context_builder.build(global_config, user_segment).unwrap()
+    context_builder.build(global_config, absolute_segment).unwrap()
 }
 
 fn init_segments(

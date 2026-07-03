@@ -15,7 +15,7 @@ use crate::{
     config::GlobalConfig,
     metadata::{
         LabelMetadata, OverlayCategory, OverlayCategoryName, SegmentMetadata, SymbolMetadata,
-        UserSegmentMetadata,
+        AbsoluteSegmentMetadata,
     },
     parent_segment_info::ParentSegmentInfo,
     section_type::SectionType,
@@ -33,7 +33,7 @@ use crate::{
 pub struct Context {
     global_config: GlobalConfig,
 
-    user_segment: UserSegmentMetadata,
+    absolute_segment: AbsoluteSegmentMetadata,
 
     global_segments: Vec<SegmentMetadata>,
 
@@ -54,14 +54,14 @@ pub struct Context {
 impl Context {
     pub(crate) fn new(
         global_config: GlobalConfig,
-        user_segment: UserSegmentMetadata,
+        absolute_segment: AbsoluteSegmentMetadata,
         global_segments: Vec<SegmentMetadata>,
         overlay_segments: UnorderedMap<OverlayCategoryName, OverlayCategory>,
         preheated_sections: UnorderedMap<Rom, bool>,
     ) -> Self {
         Self {
             global_config,
-            user_segment,
+            absolute_segment,
             global_segments,
             overlay_segments,
             unknown_segment: SegmentMetadata::new_unknown_segment(),
@@ -77,8 +77,8 @@ impl Context {
         &self.global_config
     }
     #[must_use]
-    pub const fn user_segment(&self) -> &UserSegmentMetadata {
-        &self.user_segment
+    pub const fn absolute_segment(&self) -> &AbsoluteSegmentMetadata {
+        &self.absolute_segment
     }
     #[must_use]
     pub fn global_segments(&self) -> &[SegmentMetadata] {
@@ -345,15 +345,15 @@ impl Context {
         vram: Vram,
         info: &ParentSegmentInfo,
         find_within_segment: FS,
-        find_within_user_segment: FU,
+        find_within_absolute_segment: FU,
         validate: FV,
     ) -> Option<T>
     where
         FS: Fn(&'a SegmentMetadata) -> Option<T>,
-        FU: Fn(&'a UserSegmentMetadata) -> Option<T>,
+        FU: Fn(&'a AbsoluteSegmentMetadata) -> Option<T>,
         FV: Fn(&T) -> bool,
     {
-        if let Some(t) = find_within_user_segment(&self.user_segment) {
+        if let Some(t) = find_within_absolute_segment(&self.absolute_segment) {
             return Some(t);
         }
 
@@ -485,7 +485,7 @@ impl Context {
             vram,
             info,
             |segment| segment.find_symbol(vram, settings),
-            |user_segment| user_segment.find_symbol(vram, settings),
+            |absolute_segment| absolute_segment.find_symbol(vram, settings),
             sym_validation,
         )
     }

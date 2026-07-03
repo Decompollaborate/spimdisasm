@@ -7,14 +7,14 @@ use core::{error, fmt};
 use address_space::{Size, Vram};
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
-enum AddUserSegmentSymbolErrorVariant {
+enum AddAbsoluteSegmentSymbolErrorVariant {
     Overlap,
     Duplicated,
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-pub struct AddUserSegmentSymbolError {
+pub struct AddAbsoluteSegmentSymbolError {
     vram: Vram,
     name: Option<Arc<str>>,
     size: Size,
@@ -23,9 +23,9 @@ pub struct AddUserSegmentSymbolError {
     other_sym_name: Option<Arc<str>>,
     other_sym_size: Size,
 
-    variant: AddUserSegmentSymbolErrorVariant,
+    variant: AddAbsoluteSegmentSymbolErrorVariant,
 }
-impl AddUserSegmentSymbolError {
+impl AddAbsoluteSegmentSymbolError {
     fn new(
         vram: Vram,
         name: Option<Arc<str>>,
@@ -33,7 +33,7 @@ impl AddUserSegmentSymbolError {
         other_sym_vram: Vram,
         other_sym_name: Option<Arc<str>>,
         other_sym_size: Size,
-        variant: AddUserSegmentSymbolErrorVariant,
+        variant: AddAbsoluteSegmentSymbolErrorVariant,
     ) -> Self {
         Self {
             vram,
@@ -61,7 +61,7 @@ impl AddUserSegmentSymbolError {
             other_sym_vram,
             other_sym_name,
             other_sym_size,
-            AddUserSegmentSymbolErrorVariant::Overlap,
+            AddAbsoluteSegmentSymbolErrorVariant::Overlap,
         )
     }
 
@@ -80,24 +80,24 @@ impl AddUserSegmentSymbolError {
             other_sym_vram,
             other_sym_name,
             other_sym_size,
-            AddUserSegmentSymbolErrorVariant::Duplicated,
+            AddAbsoluteSegmentSymbolErrorVariant::Duplicated,
         )
     }
 }
 
-impl fmt::Display for AddUserSegmentSymbolError {
+impl fmt::Display for AddAbsoluteSegmentSymbolError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Error while trying to add a symbol \"")?;
         if let Some(name) = &self.name {
             write!(f, "'{name}' ")?;
         }
-        write!(f, "{:?} {:?}\" to the user segment: ", self.vram, self.size)?;
+        write!(f, "{:?} {:?}\" to the absolute segment: ", self.vram, self.size)?;
 
         match self.variant {
-            AddUserSegmentSymbolErrorVariant::Overlap => {
+            AddAbsoluteSegmentSymbolErrorVariant::Overlap => {
                 write!(f, "This symbol overlaps with the previously added symbol")?
             }
-            AddUserSegmentSymbolErrorVariant::Duplicated => {
+            AddAbsoluteSegmentSymbolErrorVariant::Duplicated => {
                 write!(f, "It has the same Vram as the previously added symbol")?
             }
         }
@@ -109,7 +109,7 @@ impl fmt::Display for AddUserSegmentSymbolError {
         write!(f, "{:?} {:?}\"", self.other_sym_vram, self.other_sym_size)
     }
 }
-impl error::Error for AddUserSegmentSymbolError {}
+impl error::Error for AddAbsoluteSegmentSymbolError {}
 
 #[cfg(feature = "pyo3")]
 pub(crate) mod python_bindings {
@@ -118,11 +118,11 @@ pub(crate) mod python_bindings {
 
     // TODO: make a generic spimdisasm exception and make every other error to inherit from it
 
-    pyo3::create_exception!(spimdisasm, AddUserSegmentSymbolError, PyRuntimeError);
+    pyo3::create_exception!(spimdisasm, AddAbsoluteSegmentSymbolError, PyRuntimeError);
 
-    impl std::convert::From<super::AddUserSegmentSymbolError> for PyErr {
-        fn from(err: super::AddUserSegmentSymbolError) -> PyErr {
-            AddUserSegmentSymbolError::new_err(err.to_string())
+    impl std::convert::From<super::AddAbsoluteSegmentSymbolError> for PyErr {
+        fn from(err: super::AddAbsoluteSegmentSymbolError) -> PyErr {
+            AddAbsoluteSegmentSymbolError::new_err(err.to_string())
         }
     }
 }

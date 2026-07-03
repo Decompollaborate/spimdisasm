@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Re-export the `address_space` crate.
+- Create `UserRelocs` instead of using a raw `BTreeMap`.
+- `PrePostSection` enum, handles having either a section or a processed section
+  in the same enum.
 
 ### Changed
 
@@ -20,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the `addresses` module.
 - Use the `address_space` crate to handle `Vram`, `Rom`, `Size`, `UserSize`,
   `GpValue`, `AddressRange` and `RomVramRange` instead of using our own types.
+- Rename the `UserSegment` to `AbsoluteSegment`.
 
 ### Removed
 

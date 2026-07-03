@@ -8,7 +8,7 @@ use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaExtension, IsaVer
 use spimdisasm::{
     config::{Compiler, Endian, GlobalConfigBuilder, GpConfig},
     context::{
-        builder::UserSegmentBuilder, Context, ContextBuilder, GlobalSegmentBuilder,
+        builder::AbsoluteSegmentBuilder, Context, ContextBuilder, GlobalSegmentBuilder,
         OverlaySegmentBuilder,
     },
     metadata::{OverlayCategoryName, SymbolType},
@@ -135,18 +135,18 @@ fn disassemble_text(
             }
         }
 
-        let mut user_segment = UserSegmentBuilder::new();
+        let mut absolute_segment = AbsoluteSegmentBuilder::new();
 
         if fill_n64_symbols {
             matches!(
                 text_settings.compiler(),
                 Some(Compiler::IDO | Compiler::KMC | Compiler::SN64 | Compiler::EGCS)
             );
-            user_segment.n64_libultra_symbols().unwrap();
-            user_segment.n64_hardware_registers(true, true).unwrap();
+            absolute_segment.n64_libultra_symbols().unwrap();
+            absolute_segment.n64_hardware_registers(true, true).unwrap();
         }
 
-        builder.build(global_config, user_segment).unwrap()
+        builder.build(global_config, absolute_segment).unwrap()
     };
 
     let parent_segment_info = ParentSegmentInfo::new(segment_rom, segment_vram, None);

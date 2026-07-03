@@ -7,11 +7,11 @@ use address_space::{Size, Vram};
 use super::SymbolMetadata;
 
 #[derive(Debug, Clone, Hash, PartialEq, PartialOrd)]
-pub struct UserSegmentMetadata {
+pub struct AbsoluteSegmentMetadata {
     symbols: AddendedOrderedMap<Vram, SymbolMetadata, Size>,
 }
 
-impl UserSegmentMetadata {
+impl AbsoluteSegmentMetadata {
     pub(crate) fn new(symbols: AddendedOrderedMap<Vram, SymbolMetadata, Size>) -> Self {
         Self { symbols }
     }

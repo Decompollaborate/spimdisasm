@@ -18,7 +18,7 @@ mod symbol_metadata_name_display;
 mod symbol_name_generation_settings;
 mod symbol_type;
 mod user_label_metadata;
-mod user_segment_metadata;
+mod absolute_segment_metadata;
 mod user_sym_metadata;
 
 pub use add_label_error::AddLabelError;
@@ -41,5 +41,5 @@ pub use symbol_metadata_name_display::SymbolMetadataNameDisplay;
 pub use symbol_name_generation_settings::SymbolNameGenerationSettings;
 pub use symbol_type::SymbolType;
 pub use user_label_metadata::UserLabelMetadata;
-pub use user_segment_metadata::UserSegmentMetadata;
+pub use absolute_segment_metadata::AbsoluteSegmentMetadata;
 pub use user_sym_metadata::UserSymMetadata;

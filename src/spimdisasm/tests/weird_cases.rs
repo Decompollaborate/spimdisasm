@@ -6,7 +6,7 @@ use pretty_assertions::assert_eq;
 use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaExtension, IsaVersion};
 use spimdisasm::{
     config::{Compiler, Endian, GlobalConfigBuilder, GpConfig},
-    context::{builder::UserSegmentBuilder, ContextBuilder, GlobalSegmentBuilder},
+    context::{builder::AbsoluteSegmentBuilder, ContextBuilder, GlobalSegmentBuilder},
     parent_segment_info::ParentSegmentInfo,
     relocation::UserRelocs,
     sections::before_proc::ExecutableSectionSettings,
@@ -268,11 +268,11 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
     let mut context_builder = ContextBuilder::new();
     context_builder.add_global_segment(global_segment).unwrap();
 
-    let mut user_segment = UserSegmentBuilder::new();
-    user_segment.n64_libultra_symbols().unwrap();
-    user_segment.n64_hardware_registers(true, true).unwrap();
+    let mut absolute_segment = AbsoluteSegmentBuilder::new();
+    absolute_segment.n64_libultra_symbols().unwrap();
+    absolute_segment.n64_hardware_registers(true, true).unwrap();
 
-    let mut context = context_builder.build(global_config, user_segment).unwrap();
+    let mut context = context_builder.build(global_config, absolute_segment).unwrap();
 
     let instr_display_flags = InstructionDisplayFlags::default();
 
@@ -636,9 +636,9 @@ fn weird_case_use_gp_as_temp() {
         let mut builder = ContextBuilder::new();
         builder.add_global_segment(global_segment).unwrap();
 
-        let user_segment = UserSegmentBuilder::new();
+        let absolute_segment = AbsoluteSegmentBuilder::new();
 
-        builder.build(global_config, user_segment).unwrap()
+        builder.build(global_config, absolute_segment).unwrap()
     };
 
     let parent_segment_info = ParentSegmentInfo::new(segment_rom, segment_vram, None);

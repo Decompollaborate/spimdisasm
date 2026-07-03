@@ -4,7 +4,7 @@
 mod add_global_offset_table_error;
 mod add_ignored_address_range_error;
 mod add_user_label_error;
-mod add_user_segment_symbol_error;
+mod add_absolute_segment_symbol_error;
 mod add_user_symbol_error;
 mod context_builder;
 mod context_builder_error;
@@ -12,12 +12,12 @@ pub(crate) mod segment_builder;
 mod segment_builder_error;
 mod segment_builder_kind;
 mod segment_heater;
-mod user_segment_builder;
+mod absolute_segment_builder;
 
 pub use add_global_offset_table_error::AddGlobalOffsetTableError;
 pub use add_ignored_address_range_error::AddIgnoredAddressRangeError;
 pub use add_user_label_error::AddUserLabelError;
-pub use add_user_segment_symbol_error::AddUserSegmentSymbolError;
+pub use add_absolute_segment_symbol_error::AddAbsoluteSegmentSymbolError;
 pub use add_user_symbol_error::AddUserSymbolError;
 pub use context_builder::ContextBuilder;
 pub use context_builder_error::{
@@ -28,4 +28,4 @@ pub use segment_builder_error::AddPrioritisedOverlayError;
 pub(crate) use segment_builder_kind::SegmentBuilderKind;
 pub(crate) use segment_heater::SegmentHeater;
 pub use segment_heater::{GlobalSegmentHeater, OverlaySegmentHeater};
-pub use user_segment_builder::UserSegmentBuilder;
+pub use absolute_segment_builder::AbsoluteSegmentBuilder;

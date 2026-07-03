@@ -7,7 +7,7 @@ use address_space::{AddressRange, GpValue, Rom, RomVramRange, Size, Vram};
 use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
 use spimdisasm::{
     config::{Endian, GlobalConfigBuilder, GpConfig},
-    context::{builder::UserSegmentBuilder, Context, ContextBuilder, GlobalSegmentBuilder},
+    context::{builder::AbsoluteSegmentBuilder, Context, ContextBuilder, GlobalSegmentBuilder},
     got::{GlobalOffsetTable, GotGlobalEntry, GotLocalEntry},
     metadata::SegmentMetadata,
     parent_segment_info::ParentSegmentInfo,
@@ -152,11 +152,11 @@ impl Sections {
             let mut builder = ContextBuilder::new();
             builder.add_global_segment(global_heater).unwrap();
 
-            let mut user_segment = UserSegmentBuilder::new();
-            user_segment.n64_libultra_symbols().unwrap();
-            user_segment.n64_hardware_registers(true, true).unwrap();
+            let mut absolute_segment = AbsoluteSegmentBuilder::new();
+            absolute_segment.n64_libultra_symbols().unwrap();
+            absolute_segment.n64_hardware_registers(true, true).unwrap();
 
-            builder.build(global_config, user_segment).unwrap()
+            builder.build(global_config, absolute_segment).unwrap()
         };
 
         let parent_info = ParentSegmentInfo::new(

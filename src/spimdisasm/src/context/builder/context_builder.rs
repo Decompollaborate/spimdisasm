@@ -18,7 +18,7 @@ use crate::{
 
 use super::{
     AddGlobalToBuilderError, AddOverlayToBuilderError, BuildContextError, GlobalSegmentHeater,
-    OverlaySegmentHeater, SegmentHeater, UserSegmentBuilder,
+    OverlaySegmentHeater, SegmentHeater, AbsoluteSegmentBuilder,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -288,7 +288,7 @@ impl ContextBuilder {
     pub fn build(
         self,
         global_config: GlobalConfig,
-        user_segment: UserSegmentBuilder,
+        absolute_segment: AbsoluteSegmentBuilder,
     ) -> Result<Context, BuildContextError> {
         if self.global_segments.is_empty() {
             return Err(BuildContextError::new_zero_global_segments());
@@ -324,7 +324,7 @@ impl ContextBuilder {
 
         Ok(Context::new(
             global_config,
-            user_segment.build(),
+            absolute_segment.build(),
             global_segments,
             overlay_segments,
             preheated_sections,
@@ -369,10 +369,10 @@ pub(crate) mod python_bindings {
         pub fn py_build(
             &self,
             global_config: GlobalConfig,
-            user_segment: UserSegmentBuilder,
+            absolute_segment: AbsoluteSegmentBuilder,
         ) -> Result<Context, BuildContextError> {
             // Silly clone because we can't move from a Python instance
-            self.clone().build(global_config, user_segment)
+            self.clone().build(global_config, absolute_segment)
         }
     }
 }

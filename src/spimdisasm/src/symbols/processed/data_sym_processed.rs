@@ -183,7 +183,7 @@ impl DataSymProcessed {
                             Some(found_sym)
                         } else {
                             context
-                                .user_segment()
+                                .absolute_segment()
                                 .find_symbol(word_vram, FindSettings::new(true))
                         }
                     } else {

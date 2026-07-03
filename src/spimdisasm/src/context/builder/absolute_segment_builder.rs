@@ -10,18 +10,18 @@ use pyo3::prelude::*;
 
 use crate::metadata::{
     GeneratedBy, OwnerSegmentKind, SymbolMetadata, SymbolNameGenerationSettings, SymbolType,
-    UserSegmentMetadata, UserSymMetadata,
+    AbsoluteSegmentMetadata, UserSymMetadata,
 };
 
-use super::AddUserSegmentSymbolError;
+use super::AddAbsoluteSegmentSymbolError;
 
 #[derive(Debug, Clone, Hash, PartialEq)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
-pub struct UserSegmentBuilder {
+pub struct AbsoluteSegmentBuilder {
     symbols: AddendedOrderedMap<Vram, SymbolMetadata, Size>,
 }
 
-impl UserSegmentBuilder {
+impl AbsoluteSegmentBuilder {
     #[must_use]
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
@@ -36,7 +36,7 @@ impl UserSegmentBuilder {
         size: Size,
         name: Option<Arc<str>>,
         typ: Option<SymbolType>,
-    ) -> Result<UserSymMetadata<'_>, AddUserSegmentSymbolError> {
+    ) -> Result<UserSymMetadata<'_>, AddAbsoluteSegmentSymbolError> {
         let generated_by = GeneratedBy::UserDeclared;
         let (metadata, newly_created) =
             self.symbols
@@ -50,7 +50,7 @@ impl UserSegmentBuilder {
                 });
 
         if metadata.vram() != vram {
-            return Err(AddUserSegmentSymbolError::new_overlap(
+            return Err(AddAbsoluteSegmentSymbolError::new_overlap(
                 vram,
                 name,
                 size,
@@ -63,7 +63,7 @@ impl UserSegmentBuilder {
         }
 
         if !newly_created {
-            return Err(AddUserSegmentSymbolError::new_duplicated(
+            return Err(AddAbsoluteSegmentSymbolError::new_duplicated(
                 vram,
                 name,
                 size,
@@ -75,7 +75,7 @@ impl UserSegmentBuilder {
             ));
         }
 
-        // Symbols from user_segment are always considered as "defined"
+        // Symbols from absolute_segment are always considered as "defined"
         metadata.set_defined();
         *metadata.user_declared_size_mut() = Some(size);
 
@@ -95,7 +95,7 @@ impl UserSegmentBuilder {
         name: T,
         size: UserSize,
         typ: Option<SymbolType>,
-    ) -> Result<UserSymMetadata<'_>, AddUserSegmentSymbolError>
+    ) -> Result<UserSymMetadata<'_>, AddAbsoluteSegmentSymbolError>
     where
         T: Into<Arc<str>>,
     {
@@ -106,7 +106,7 @@ impl UserSegmentBuilder {
         &mut self,
         syms: &[(Vram, SymbolType, Size, &str)],
         set_names: bool,
-    ) -> Result<(), AddUserSegmentSymbolError> {
+    ) -> Result<(), AddAbsoluteSegmentSymbolError> {
         for (vram, typ, size, name) in syms {
             self.add_symbol_impl(*vram, *size, set_names.then(|| (*name).into()), Some(*typ))?;
         }
@@ -114,7 +114,7 @@ impl UserSegmentBuilder {
         Ok(())
     }
 
-    pub fn n64_libultra_symbols(&mut self) -> Result<(), AddUserSegmentSymbolError> {
+    pub fn n64_libultra_symbols(&mut self) -> Result<(), AddAbsoluteSegmentSymbolError> {
         #[rustfmt::skip]
         const SYMS: [(Vram, SymbolType, Size, &str); 9] = [
             (Vram::new(0x800001A0), SymbolType::Word, Size::new(0x4),  "leoBootID"),
@@ -135,7 +135,7 @@ impl UserSegmentBuilder {
         &mut self,
         set_names: bool,
         _set_as_constants: bool,
-    ) -> Result<(), AddUserSegmentSymbolError> {
+    ) -> Result<(), AddAbsoluteSegmentSymbolError> {
         #[rustfmt::skip]
         const SYMS: [(Vram, SymbolType, Size, &str); 127] = [
             // Signal Processor Registers
@@ -301,7 +301,7 @@ impl UserSegmentBuilder {
         Ok(())
     }
 
-    pub fn ique_libultra_symbols(&mut self) -> Result<(), AddUserSegmentSymbolError> {
+    pub fn ique_libultra_symbols(&mut self) -> Result<(), AddAbsoluteSegmentSymbolError> {
         #[rustfmt::skip]
         const SYMS: [(Vram, SymbolType, Size, &str); 15] = [
             (Vram::new(0x8000035C), SymbolType::Word,    Size::new(0x4),     "__osBbEepromAddress"),
@@ -328,7 +328,7 @@ impl UserSegmentBuilder {
         &mut self,
         set_names: bool,
         _set_as_constants: bool,
-    ) -> Result<(), AddUserSegmentSymbolError> {
+    ) -> Result<(), AddAbsoluteSegmentSymbolError> {
         // TODO: fill missing ones
         #[rustfmt::skip]
         const SYMS: [(Vram, SymbolType, Size, &str); 4] = [
@@ -343,8 +343,8 @@ impl UserSegmentBuilder {
         Ok(())
     }
 
-    pub(crate) fn build(self) -> UserSegmentMetadata {
-        UserSegmentMetadata::new(self.symbols)
+    pub(crate) fn build(self) -> AbsoluteSegmentMetadata {
+        AbsoluteSegmentMetadata::new(self.symbols)
     }
 }
 
@@ -353,7 +353,7 @@ pub(crate) mod python_bindings {
     use super::*;
 
     #[pymethods]
-    impl UserSegmentBuilder {
+    impl AbsoluteSegmentBuilder {
         #[new]
         fn py_new() -> Self {
             Self::new()
@@ -366,7 +366,7 @@ pub(crate) mod python_bindings {
             name: String,
             size: u32,
             typ: Option<SymbolType>,
-        ) -> Result<(), AddUserSegmentSymbolError> {
+        ) -> Result<(), AddAbsoluteSegmentSymbolError> {
             self.add_user_symbol(
                 Vram::new(vram),
                 name,
@@ -377,7 +377,7 @@ pub(crate) mod python_bindings {
         }
 
         #[pyo3(name = "n64_libultra_symbols")]
-        pub fn py_n64_libultra_symbols(&mut self) -> Result<(), AddUserSegmentSymbolError> {
+        pub fn py_n64_libultra_symbols(&mut self) -> Result<(), AddAbsoluteSegmentSymbolError> {
             self.n64_libultra_symbols()
         }
 
@@ -386,12 +386,12 @@ pub(crate) mod python_bindings {
             &mut self,
             set_names: bool,
             set_as_constants: bool,
-        ) -> Result<(), AddUserSegmentSymbolError> {
+        ) -> Result<(), AddAbsoluteSegmentSymbolError> {
             self.n64_hardware_registers(set_names, set_as_constants)
         }
 
         #[pyo3(name = "ique_libultra_symbols")]
-        pub fn py_ique_libultra_symbols(&mut self) -> Result<(), AddUserSegmentSymbolError> {
+        pub fn py_ique_libultra_symbols(&mut self) -> Result<(), AddAbsoluteSegmentSymbolError> {
             self.ique_libultra_symbols()
         }
 
@@ -400,7 +400,7 @@ pub(crate) mod python_bindings {
             &mut self,
             set_names: bool,
             set_as_constants: bool,
-        ) -> Result<(), AddUserSegmentSymbolError> {
+        ) -> Result<(), AddAbsoluteSegmentSymbolError> {
             self.ique_hardware_registers(set_names, set_as_constants)
         }
     }
