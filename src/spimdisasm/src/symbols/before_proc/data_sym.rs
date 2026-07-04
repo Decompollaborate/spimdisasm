@@ -10,9 +10,9 @@ use crate::{
     config::{Compiler, Endian},
     context::Context,
     metadata::{GeneratedBy, ParentSectionMetadata, ReferrerInfo, SymbolMetadata, SymbolType},
-    parent_segment_info::ParentSegmentInfo,
     relocation::UserRelocs,
     section_type::SectionType,
+    segments::ParentSegmentInfo,
     str_decoding::Encoding,
     symbols::{processed::DataSymProcessed, RomSymbolPreprocessed, SymbolPreprocessed},
 };

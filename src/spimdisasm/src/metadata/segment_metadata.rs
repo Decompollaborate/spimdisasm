@@ -12,16 +12,18 @@ use address_space::{AddressRange, Rom, RomVramRange, Size, Vram};
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::analysis::{reference_wrapper, Preheater, ReferenceWrapper};
-use crate::got::GlobalOffsetTable;
-use crate::section_type::SectionType;
+use crate::{
+    analysis::{reference_wrapper, Preheater, ReferenceWrapper},
+    got::GlobalOffsetTable,
+    section_type::SectionType,
+    segments::{OverlayCategoryName, Segment},
+};
 
 use super::{symbol_metadata::GeneratedBy, SymbolNameGenerationSettings};
 use super::{
-    AddLabelError, IgnoredAddressRange, LabelMetadata, LabelType, ReferrerInfo, SymbolMetadata,
-    SymbolType,
+    AddLabelError, IgnoredAddressRange, LabelMetadata, LabelType, ReferrerInfo, SegmentKind,
+    SymbolMetadata, SymbolType,
 };
-use super::{OverlayCategoryName, SegmentKind};
 
 #[derive(Debug, Clone, Hash, PartialEq, PartialOrd)]
 pub struct SegmentMetadata {
@@ -205,6 +207,16 @@ impl SegmentMetadata {
 
     pub(crate) fn prioritised_overlays(&self) -> &[Arc<str>] {
         &self.prioritised_overlays
+    }
+
+    pub(crate) fn visible_overlay_ranges(&self) -> &[AddressRange<Vram>] {
+        &self.visible_overlay_ranges
+    }
+    pub(crate) const fn preheater(&self) -> &Preheater {
+        &self.preheater
+    }
+    pub(crate) const fn preheater_mut(&mut self) -> &mut Preheater {
+        &mut self.preheater
     }
 
     // TODO: actually use
@@ -410,6 +422,32 @@ impl SegmentMetadata {
         vram_range: AddressRange<Vram>,
     ) -> reference_wrapper::Range<'_, '_> {
         ReferenceWrapper::range(&self.symbols, &self.preheater, vram_range)
+    }
+}
+
+impl Segment for SegmentMetadata {
+    type FindSettings = FindSettings;
+    type Symbol = SymbolMetadata;
+    type Label = LabelMetadata;
+
+    fn name(&self) -> Arc<str> {
+        self.name()
+    }
+
+    fn rom_vram_range(&self) -> &RomVramRange {
+        self.rom_vram_range()
+    }
+
+    fn prioritised_overlays(&self) -> &[Arc<str>] {
+        self.prioritised_overlays()
+    }
+
+    fn find_symbol(&self, vram: Vram, settings: &Self::FindSettings) -> Option<&Self::Symbol> {
+        self.find_symbol(vram, *settings)
+    }
+
+    fn find_label(&self, vram: Vram, _settings: &Self::FindSettings) -> Option<&Self::Label> {
+        self.find_label(vram)
     }
 }
 

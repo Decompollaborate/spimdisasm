@@ -10,9 +10,9 @@ use address_space::{AddressRange, RomVramRange, Size, Vram};
 use crate::{
     context::Context,
     metadata::{LabelType, ReferrerInfo, SymbolType},
-    parent_segment_info::ParentSegmentInfo,
     relocation::{RelocReferencedSym, RelocationInfo, RelocationType, UserRelocs},
     section_type::SectionType,
+    segments::ParentSegmentInfo,
     str_decoding::Encoding,
     symbols::{
         display::{
@@ -119,6 +119,7 @@ impl DataSymProcessed {
         let should_search_for_address = sym_type.is_none_or(|x| x.can_reference_symbols());
         let is_table = sym_type.is_some_and(|x| x.is_table());
         let find_settings = FindSettings::new(!is_table && metadata.allow_ref_with_addend());
+        let find_label = FindSettings::new(false);
 
         if should_search_for_address {
             let reloc_type = if add_gp_to_pointed_data {
@@ -149,6 +150,7 @@ impl DataSymProcessed {
                             context.find_label_from_any_segment(
                                 word_vram,
                                 parent_segment_info,
+                                find_label,
                                 |_| true,
                             ),
                             false,
@@ -183,6 +185,7 @@ impl DataSymProcessed {
                             Some(found_sym)
                         } else {
                             context
+                                .segments()
                                 .absolute_segment()
                                 .find_symbol(word_vram, FindSettings::new(true))
                         }

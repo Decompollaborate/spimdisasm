@@ -11,10 +11,10 @@ use spimdisasm::{
         builder::AbsoluteSegmentBuilder, Context, ContextBuilder, GlobalSegmentBuilder,
         OverlaySegmentBuilder,
     },
-    metadata::{OverlayCategoryName, SymbolType},
-    parent_segment_info::ParentSegmentInfo,
+    metadata::SymbolType,
     relocation::UserRelocs,
     sections::{before_proc::ExecutableSectionSettings, processed::ExecutableSectionProcessed},
+    segments::{OverlayCategoryName, ParentSegmentInfo},
     symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings},
 };
 
@@ -380,7 +380,7 @@ glabel func_800004FC
 
     assert_eq!(section_text.symbols().len(), 3);
 
-    for segment in context.global_segments() {
+    for segment in context.segments().global_segments() {
         let symbols = segment.symbols();
         for s in symbols {
             println!("{:?}", s.1);
@@ -961,6 +961,7 @@ glabel func_8080010C
     assert_eq!(disassembly, expected_disassembly);
 
     let silly_symbol = context
+        .segments()
         .global_segments()
         .first()
         .unwrap()

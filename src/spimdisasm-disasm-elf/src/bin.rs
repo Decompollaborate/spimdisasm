@@ -14,11 +14,10 @@ use spimdisasm::{
     analysis::StringGuesserFlags,
     config::{Compiler, GlobalConfig, GlobalConfigBuilder, GpConfig},
     context::{
-        builder::{GlobalSegmentHeater, AbsoluteSegmentBuilder},
+        builder::{AbsoluteSegmentBuilder, GlobalSegmentHeater},
         Context, ContextBuilder, GlobalSegmentBuilder,
     },
     metadata::{GotAccessKind, LabelType, SymbolType},
-    parent_segment_info::ParentSegmentInfo,
     rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion},
     relocation::UserRelocs,
     sections::{
@@ -29,6 +28,7 @@ use spimdisasm::{
         processed::{DataSectionProcessed, ExecutableSectionProcessed, NobitsSectionProcessed},
         Section, SectionPostProcessError,
     },
+    segments::ParentSegmentInfo,
     symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings, SymNobitsDisplaySettings},
 };
 use std::{
@@ -607,7 +607,12 @@ fn create_sections(
     let mut data_sections = Vec::new();
     let mut nobits_sections = Vec::new();
 
-    let global_ranges = context.global_segments().first().unwrap().rom_vram_range();
+    let global_ranges = context
+        .segments()
+        .global_segments()
+        .first()
+        .unwrap()
+        .rom_vram_range();
     let parent_segment_info = ParentSegmentInfo::new(
         global_ranges.rom().start(),
         global_ranges.vram().start(),

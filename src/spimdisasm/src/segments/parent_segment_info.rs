@@ -6,7 +6,7 @@ use address_space::{Rom, Vram};
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::metadata::OverlayCategoryName;
+use super::OverlayCategoryName;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]

@@ -10,9 +10,9 @@ use address_space::{Rom, Size, Vram};
 use pyo3::prelude::*;
 
 use crate::{
-    context::OwnedSegmentNotFoundError,
     metadata::{segment_metadata::AddSymbolError, AddLabelError, AddressRangeOverflowError},
     section_type::SectionType,
+    segments::OwnedSegmentNotFoundError,
     symbols::SymbolCreationError,
 };
 

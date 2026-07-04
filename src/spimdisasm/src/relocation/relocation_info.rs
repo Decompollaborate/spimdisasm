@@ -12,7 +12,7 @@ use crate::{
     config::Compiler,
     context::Context,
     metadata::{LabelMetadata, LabelType, SymbolMetadata, SymbolType},
-    parent_segment_info::ParentSegmentInfo,
+    segments::ParentSegmentInfo,
     symbols::display::InternalSymDisplSettings,
 };
 
@@ -172,8 +172,12 @@ impl<'ctx, 'rel, 'prnt> RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
                 }
             }
             RelocReferencedSym::Label(vram) => {
-                if let Some(label_metadata) =
-                    context.find_label_from_any_segment(*vram, segment_info, |metadata| {
+                let find_settings = FindSettings::new(false);
+                if let Some(label_metadata) = context.find_label_from_any_segment(
+                    *vram,
+                    segment_info,
+                    find_settings,
+                    |metadata| {
                         match rel.reloc_type {
                             RelocationType::R_MIPS_NONE => true, // Shouldn't be possible, but whatever.
 
@@ -210,8 +214,8 @@ impl<'ctx, 'rel, 'prnt> RelocationInfoDisplay<'ctx, 'rel, 'prnt> {
                             RelocationType::R_CUSTOM_CONSTANT_HI => false,
                             RelocationType::R_CUSTOM_CONSTANT_LO => false,
                         }
-                    })
-                {
+                    },
+                ) {
                     RelocSymState::Label(*vram, label_metadata)
                 } else {
                     if false {

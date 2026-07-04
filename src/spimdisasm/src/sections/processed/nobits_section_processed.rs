@@ -9,10 +9,10 @@ use address_space::{AddressRange, Vram};
 use crate::{
     collections::unordered_set::UnorderedSet,
     context::Context,
-    parent_segment_info::ParentSegmentInfo,
     relocation::UserRelocs,
     section_type::SectionType,
     sections::{Section, SectionPostProcessError, SectionProcessed},
+    segments::ParentSegmentInfo,
     symbols::{
         before_proc::NobitsSym, processed::NobitsSymProcessed, Symbol, SymbolPostProcessError,
         SymbolPreprocessed, SymbolProcessed,

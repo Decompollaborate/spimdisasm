@@ -7,10 +7,10 @@ use rabbitizer::Instruction;
 
 use crate::{
     collections::unordered_set::UnorderedSet,
-    context::{Context, OwnedSegmentNotFoundError},
+    context::Context,
     got::GlobalOffsetTable,
     metadata::SegmentMetadata,
-    parent_segment_info::ParentSegmentInfo,
+    segments::{OwnedSegmentNotFoundError, ParentSegmentInfo},
 };
 
 use super::{

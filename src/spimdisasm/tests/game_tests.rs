@@ -10,10 +10,10 @@ use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaVersion};
 use spimdisasm::{
     config::{Compiler, Endian, GlobalConfigBuilder},
     context::{builder::AbsoluteSegmentBuilder, Context, ContextBuilder, GlobalSegmentBuilder},
-    parent_segment_info::ParentSegmentInfo,
     sections::before_proc::{
         DataSectionSettings, ExecutableSectionSettings, NobitsSectionSettings,
     },
+    segments::ParentSegmentInfo,
     symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings, SymNobitsDisplaySettings},
 };
 
@@ -164,7 +164,9 @@ fn init_context(
     absolute_segment.n64_libultra_symbols().unwrap();
     absolute_segment.n64_hardware_registers(true, true).unwrap();
 
-    context_builder.build(global_config, absolute_segment).unwrap()
+    context_builder
+        .build(global_config, absolute_segment)
+        .unwrap()
 }
 
 fn init_segments(
@@ -379,8 +381,13 @@ fn drmario64_us_without_symbols() {
         ("buffer2", 1, 1),
         ("framebuffer", 1, 1),
     ];
-    assert_eq!(context.global_segments().len(), 9);
-    for (seg, expected) in context.global_segments().iter().zip(PER_SEGMENT_SYM_COUNT) {
+    assert_eq!(context.segments().global_segments().len(), 9);
+    for (seg, expected) in context
+        .segments()
+        .global_segments()
+        .iter()
+        .zip(PER_SEGMENT_SYM_COUNT)
+    {
         let name = seg.name();
         let has = (name.as_ref(), seg.symbols().len(), seg.labels().len());
         assert_eq!(has, expected);
@@ -499,8 +506,13 @@ fn drmario64_us_with_symbols() {
         ("buffer2", 1, 1),
         ("framebuffer", 1, 1),
     ];
-    assert_eq!(context.global_segments().len(), 9);
-    for (seg, expected) in context.global_segments().iter().zip(PER_SEGMENT_SYM_COUNT) {
+    assert_eq!(context.segments().global_segments().len(), 9);
+    for (seg, expected) in context
+        .segments()
+        .global_segments()
+        .iter()
+        .zip(PER_SEGMENT_SYM_COUNT)
+    {
         let name = seg.name();
         let has = (name.as_ref(), seg.symbols().len(), seg.labels().len());
         assert_eq!(has, expected);

@@ -18,7 +18,6 @@ pub extern crate rabbitizer;
 
 pub mod analysis;
 pub mod got;
-pub mod parent_segment_info;
 pub mod section_type;
 pub mod str_decoding;
 
@@ -28,6 +27,7 @@ pub mod metadata;
 pub mod migration;
 pub mod relocation;
 pub mod sections;
+pub mod segments;
 pub mod symbols;
 
 pub mod collections;
@@ -63,12 +63,12 @@ fn spimdisasm(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<relocation::RelocationType>()?;
     m.add_class::<relocation::python_bindings::py_user_relocs::PyUserRelocs>()?;
 
-    m.add_class::<metadata::OverlayCategoryName>()?;
-    m.add_class::<parent_segment_info::ParentSegmentInfo>()?;
-
     m.add_class::<sections::before_proc::ExecutableSectionSettings>()?;
     m.add_class::<sections::before_proc::DataSectionSettings>()?;
     m.add_class::<sections::before_proc::NobitsSectionSettings>()?;
+
+    m.add_class::<segments::OverlayCategoryName>()?;
+    m.add_class::<segments::ParentSegmentInfo>()?;
 
     m.add_class::<symbols::display::FunctionDisplaySettings>()?;
     m.add_class::<symbols::display::SymDataDisplaySettings>()?;

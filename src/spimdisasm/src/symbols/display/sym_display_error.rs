@@ -8,7 +8,7 @@ use address_space::Vram;
 #[cfg(feature = "pyo3")]
 use pyo3::prelude::*;
 
-use crate::context::OwnedSegmentNotFoundError;
+use crate::segments::OwnedSegmentNotFoundError;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]

@@ -10,12 +10,12 @@ use spimdisasm::{
     context::{builder::AbsoluteSegmentBuilder, Context, ContextBuilder, GlobalSegmentBuilder},
     got::{GlobalOffsetTable, GotGlobalEntry, GotLocalEntry},
     metadata::SegmentMetadata,
-    parent_segment_info::ParentSegmentInfo,
     relocation::UserRelocs,
     sections::{
         before_proc::{DataSectionSettings, ExecutableSectionSettings, NobitsSectionSettings},
         processed::{DataSectionProcessed, ExecutableSectionProcessed, NobitsSectionProcessed},
     },
+    segments::ParentSegmentInfo,
     symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings, SymNobitsDisplaySettings},
 };
 
@@ -319,7 +319,7 @@ impl Sections {
         println!();
         println!("Global segments info:");
         println!();
-        for segment in self.context.global_segments() {
+        for segment in self.context.segments().global_segments() {
             println!("Segment '{}'", segment.name());
             print_segment_info(segment);
         }

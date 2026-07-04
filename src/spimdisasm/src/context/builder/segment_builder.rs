@@ -16,9 +16,10 @@ use pyo3::prelude::*;
 use crate::config::GlobalConfig;
 use crate::got::GlobalOffsetTable;
 use crate::metadata::{
-    GeneratedBy, IgnoredAddressRange, LabelMetadata, LabelType, OverlayCategoryName,
-    SymbolMetadata, SymbolNameGenerationSettings, SymbolType, UserLabelMetadata, UserSymMetadata,
+    GeneratedBy, IgnoredAddressRange, LabelMetadata, LabelType, SymbolMetadata,
+    SymbolNameGenerationSettings, SymbolType, UserLabelMetadata, UserSymMetadata,
 };
+use crate::segments::OverlayCategoryName;
 
 use super::{
     segment_builder_error::AddPrioritisedOverlayError, AddGlobalOffsetTableError,

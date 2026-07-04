@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::{collections::BTreeMap, sync::Arc};
+use alloc::{collections::BTreeMap, sync::Arc, vec::Vec};
 
 use addended_ordered_map::AddendedOrderedMap;
 use address_space::{AddressRange, Rom, RomVramRange, Size, Vram};
@@ -12,10 +12,9 @@ use crate::{
     analysis::{PreheatError, Preheater},
     config::GlobalConfig,
     got::GlobalOffsetTable,
-    metadata::{
-        IgnoredAddressRange, LabelMetadata, OverlayCategoryName, SegmentMetadata, SymbolMetadata,
-    },
+    metadata::{IgnoredAddressRange, LabelMetadata, SegmentMetadata, SymbolMetadata},
     sections::before_proc::{DataSectionSettings, ExecutableSectionSettings},
+    segments::{GlobalOvlBuilder, GlobalSegBuilder, OverlayCategoryName, SegBuilder},
 };
 
 use super::SegmentBuilderKind;
@@ -268,10 +267,6 @@ impl GlobalSegmentHeater {
         }
     }
 
-    pub(crate) const fn inner(&self) -> &SegmentHeater {
-        &self.inner
-    }
-
     pub(crate) fn name(&self) -> Arc<str> {
         self.inner.name()
     }
@@ -385,6 +380,28 @@ impl GlobalSegmentHeater {
     }
 }
 
+impl SegBuilder for GlobalSegmentHeater {
+    fn name(&self) -> Arc<str> {
+        self.name()
+    }
+
+    fn rom_vram_range(&self) -> &RomVramRange {
+        self.ranges()
+    }
+
+    fn prioritised_overlays(&self) -> &[Arc<str>] {
+        self.inner.prioritised_overlays()
+    }
+}
+
+impl GlobalSegBuilder for GlobalSegmentHeater {
+    type Finished = SegmentMetadata;
+
+    fn finish(self, visible_ranges: Vec<AddressRange<Vram>>) -> Self::Finished {
+        self.finish(visible_ranges.into())
+    }
+}
+
 #[derive(Debug, Clone, Hash, PartialEq)]
 #[cfg_attr(feature = "pyo3", pyclass(module = "spimdisasm", from_py_object))]
 pub struct OverlaySegmentHeater {
@@ -418,27 +435,11 @@ impl OverlaySegmentHeater {
         }
     }
 
-    pub(crate) const fn inner(&self) -> &SegmentHeater {
-        &self.inner
-    }
-
     pub(crate) fn name(&self) -> Arc<str> {
         self.inner.name()
     }
-    pub(crate) fn category_name(&self) -> &OverlayCategoryName {
-        &self.category_name
-    }
     pub(crate) const fn ranges(&self) -> &RomVramRange {
         self.inner.ranges()
-    }
-    pub(crate) fn prioritised_overlays(&self) -> &[Arc<str>] {
-        self.inner.prioritised_overlays()
-    }
-    pub(crate) const fn preheater(&self) -> &Preheater {
-        &self.inner.preheater
-    }
-    pub(crate) const fn preheater_mut(&mut self) -> &mut Preheater {
-        &mut self.inner.preheater
     }
 
     pub(crate) fn preheated_sections_rom(&self) -> &AddendedOrderedMap<Rom, Size, Size> {
@@ -545,6 +546,32 @@ impl OverlaySegmentHeater {
             global_offset_table,
             self.category_name,
         )
+    }
+}
+
+impl SegBuilder for OverlaySegmentHeater {
+    fn name(&self) -> Arc<str> {
+        self.name()
+    }
+
+    fn rom_vram_range(&self) -> &RomVramRange {
+        self.ranges()
+    }
+
+    fn prioritised_overlays(&self) -> &[Arc<str>] {
+        self.inner.prioritised_overlays()
+    }
+}
+
+impl GlobalOvlBuilder for OverlaySegmentHeater {
+    type Finished = SegmentMetadata;
+
+    fn category_name(&self) -> OverlayCategoryName {
+        self.category_name.clone()
+    }
+
+    fn finish(self, visible_ranges: Vec<AddressRange<Vram>>) -> Self::Finished {
+        self.finish(visible_ranges.into())
     }
 }
 

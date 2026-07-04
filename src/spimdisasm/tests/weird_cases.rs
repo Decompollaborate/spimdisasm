@@ -7,9 +7,9 @@ use rabbitizer::{InstructionDisplayFlags, InstructionFlags, IsaExtension, IsaVer
 use spimdisasm::{
     config::{Compiler, Endian, GlobalConfigBuilder, GpConfig},
     context::{builder::AbsoluteSegmentBuilder, ContextBuilder, GlobalSegmentBuilder},
-    parent_segment_info::ParentSegmentInfo,
     relocation::UserRelocs,
     sections::before_proc::ExecutableSectionSettings,
+    segments::ParentSegmentInfo,
     symbols::display::{FunctionDisplaySettings, SymDataDisplaySettings},
 };
 
@@ -272,7 +272,9 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
     absolute_segment.n64_libultra_symbols().unwrap();
     absolute_segment.n64_hardware_registers(true, true).unwrap();
 
-    let mut context = context_builder.build(global_config, absolute_segment).unwrap();
+    let mut context = context_builder
+        .build(global_config, absolute_segment)
+        .unwrap();
 
     let instr_display_flags = InstructionDisplayFlags::default();
 
@@ -294,7 +296,7 @@ fn oot_kaleido_scope_draw_world_map_1_0() {
 
     assert_eq!(section_text.symbols().len(), 1);
 
-    for segment in context.global_segments() {
+    for segment in context.segments().global_segments() {
         let symbols = segment.symbols();
         for s in symbols {
             println!("{:?}", s.1);

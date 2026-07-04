@@ -5,9 +5,9 @@ use address_space::{AddressRange, RomVramRange, Vram};
 
 use crate::{
     context::Context,
-    parent_segment_info::ParentSegmentInfo,
     relocation::RelocationInfo,
     section_type::SectionType,
+    segments::ParentSegmentInfo,
     symbols::{
         display::{
             EitherFuncDataDisplay, FunctionDisplaySettings, InternalSymDisplSettings,

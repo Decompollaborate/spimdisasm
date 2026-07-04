@@ -7,8 +7,8 @@ use address_space::{AddressRange, Vram};
 
 use crate::{
     context::Context,
-    parent_segment_info::ParentSegmentInfo,
     section_type::SectionType,
+    segments::ParentSegmentInfo,
     symbols::{
         display::{
             InternalSymDisplSettings, SymDisplayError, SymNobitsDisplay, SymNobitsDisplaySettings,

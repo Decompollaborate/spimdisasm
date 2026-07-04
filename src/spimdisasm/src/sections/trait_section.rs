@@ -7,10 +7,10 @@ use address_space::{AddressRange, Rom, RomVramRange, Size, Vram};
 
 use crate::collections::unordered_set::UnorderedSet;
 use crate::context::Context;
-use crate::parent_segment_info::ParentSegmentInfo;
 use crate::relocation::UserRelocs;
 use crate::section_type::SectionType;
 use crate::sections::section_post_process_error::SectionPostProcessError;
+use crate::segments::ParentSegmentInfo;
 use crate::symbols::{Symbol, SymbolPreprocessed, SymbolProcessed};
 
 pub trait Section {

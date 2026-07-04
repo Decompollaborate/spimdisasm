@@ -20,9 +20,9 @@ use crate::{
         AddressRangeOverflowError, GeneratedBy, GotAccessKind, LabelType, ParentSectionMetadata,
         ReferrerInfo, SegmentMetadata, SymbolMetadata, SymbolNameGenerationSettings, SymbolType,
     },
-    parent_segment_info::ParentSegmentInfo,
     relocation::UserRelocs,
     section_type::SectionType,
+    segments::ParentSegmentInfo,
     symbols::{
         processed::FunctionSymProcessed, trait_symbol::RomSymbol, RomSymbolPreprocessed, Symbol,
         SymbolCreationError, SymbolPostProcessError, SymbolPreprocessed,

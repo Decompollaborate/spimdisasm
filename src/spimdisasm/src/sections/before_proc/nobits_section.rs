@@ -14,13 +14,13 @@ use crate::{
     config::Compiler,
     context::Context,
     metadata::ParentSectionMetadata,
-    parent_segment_info::ParentSegmentInfo,
     relocation::UserRelocs,
     section_type::SectionType,
     sections::{
         processed::NobitsSectionProcessed, EmptySectionError, ProcessableSection,
         SectionPreprocessed,
     },
+    segments::ParentSegmentInfo,
     symbols::{
         before_proc::{nobits_sym::NobitsSymProperties, NobitsSym},
         Symbol, SymbolPreprocessed,

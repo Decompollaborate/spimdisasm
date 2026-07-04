@@ -15,7 +15,6 @@ use crate::{
     config::{Compiler, Endian, GlobalConfig},
     context::Context,
     metadata::{AddressRangeOverflowError, ParentSectionMetadata, SegmentMetadata, SymbolType},
-    parent_segment_info::ParentSegmentInfo,
     relocation::UserRelocs,
     section_type::SectionType,
     sections::{
@@ -23,6 +22,7 @@ use crate::{
         RomSectionPreprocessed, RomVramAlignmentMismatchError, Section, SectionCreationError,
         SectionPostProcessError, SectionPreprocessed,
     },
+    segments::ParentSegmentInfo,
     str_decoding::Encoding,
     symbols::{
         before_proc::{data_sym::DataSymProperties, DataSym},

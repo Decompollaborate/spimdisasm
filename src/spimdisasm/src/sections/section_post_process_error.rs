@@ -7,7 +7,7 @@ use core::{error, fmt};
 use pyo3::prelude::*;
 
 use crate::{
-    context::OwnedSegmentNotFoundError,
+    segments::OwnedSegmentNotFoundError,
     symbols::{
         InvalidRelocForSectionError, OwnedSymbolNotFoundError, SymbolPostProcessError,
         UnalignedUserRelocError,

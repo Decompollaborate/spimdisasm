@@ -91,7 +91,11 @@ impl fmt::Display for AddAbsoluteSegmentSymbolError {
         if let Some(name) = &self.name {
             write!(f, "'{name}' ")?;
         }
-        write!(f, "{:?} {:?}\" to the absolute segment: ", self.vram, self.size)?;
+        write!(
+            f,
+            "{:?} {:?}\" to the absolute segment: ",
+            self.vram, self.size,
+        )?;
 
         match self.variant {
             AddAbsoluteSegmentSymbolErrorVariant::Overlap => {

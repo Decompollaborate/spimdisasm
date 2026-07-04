@@ -9,12 +9,12 @@ use address_space::{AddressRange, RomVramRange, Vram};
 use crate::{
     collections::unordered_set::UnorderedSet,
     context::Context,
-    parent_segment_info::ParentSegmentInfo,
     relocation::UserRelocs,
     section_type::SectionType,
     sections::{
         RomSection, RomSectionProcessed, Section, SectionPostProcessError, SectionProcessed,
     },
+    segments::ParentSegmentInfo,
     symbols::{
         before_proc::DataSym, processed::DataSymProcessed, Symbol, SymbolPostProcessError,
         SymbolPreprocessed, SymbolProcessed,

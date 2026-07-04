@@ -1,14 +1,13 @@
 /* SPDX-FileCopyrightText: © 2024-2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
+mod absolute_segment_metadata;
 mod add_label_error;
 mod address_range_overflow_error;
 mod ignored_address_range;
 mod label_metadata;
 mod label_metadata_name_display;
 mod label_type;
-mod overlay_category;
-mod overlay_category_name;
 mod parent_section_metadata;
 mod referenced_info;
 mod segment_kind;
@@ -18,17 +17,15 @@ mod symbol_metadata_name_display;
 mod symbol_name_generation_settings;
 mod symbol_type;
 mod user_label_metadata;
-mod absolute_segment_metadata;
 mod user_sym_metadata;
 
+pub use absolute_segment_metadata::AbsoluteSegmentMetadata;
 pub use add_label_error::AddLabelError;
 pub use address_range_overflow_error::AddressRangeOverflowError;
 pub(crate) use ignored_address_range::IgnoredAddressRange;
 pub use label_metadata::LabelMetadata;
 pub use label_metadata_name_display::LabelMetadataNameDisplay;
 pub use label_type::LabelType;
-pub use overlay_category::OverlayCategory;
-pub use overlay_category_name::OverlayCategoryName;
 pub(crate) use parent_section_metadata::ParentSectionMetadata;
 pub(crate) use referenced_info::{ReferrerInfo, Referrers};
 pub(crate) use segment_kind::SegmentKind;
@@ -41,5 +38,4 @@ pub use symbol_metadata_name_display::SymbolMetadataNameDisplay;
 pub use symbol_name_generation_settings::SymbolNameGenerationSettings;
 pub use symbol_type::SymbolType;
 pub use user_label_metadata::UserLabelMetadata;
-pub use absolute_segment_metadata::AbsoluteSegmentMetadata;
 pub use user_sym_metadata::UserSymMetadata;

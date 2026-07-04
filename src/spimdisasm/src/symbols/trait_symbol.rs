@@ -7,9 +7,9 @@ use address_space::{AddressRange, Rom, RomVramRange, Size, Vram};
 use crate::{
     context::Context,
     metadata::SymbolMetadata,
-    parent_segment_info::ParentSegmentInfo,
     relocation::{RelocationInfo, UserRelocs},
     section_type::SectionType,
+    segments::ParentSegmentInfo,
 };
 
 use super::SymbolPostProcessError;

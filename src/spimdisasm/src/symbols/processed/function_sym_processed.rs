@@ -14,9 +14,9 @@ use crate::{
     context::Context,
     got::GotGlobalEntry,
     metadata::{ReferrerInfo, SegmentMetadata, SymbolType},
-    parent_segment_info::ParentSegmentInfo,
     relocation::{RelocReferencedSym, RelocationInfo, RelocationType, UserRelocs},
     section_type::SectionType,
+    segments::ParentSegmentInfo,
     symbols::{
         display::{
             FunctionDisplay, FunctionDisplaySettings, InternalSymDisplSettings, SymDisplayError,
@@ -111,6 +111,8 @@ impl FunctionSymProcessed {
         let mut referenced_labels_owned_segment = Vec::new();
         let mut referenced_labels_refer_segment = Vec::new();
 
+        let find_label = FindSettings::new(false);
+
         let owned_segment = context.find_owned_segment(parent_segment_info)?;
 
         for (instr_index, info) in instr_analysis.instruction_infos().iter().enumerate() {
@@ -137,9 +139,12 @@ impl FunctionSymProcessed {
                         {
                             RelocReferencedSym::new_address(*target_vram)
                         } else if context
-                            .find_label_from_any_segment(*target_vram, parent_segment_info, |_| {
-                                true
-                            })
+                            .find_label_from_any_segment(
+                                *target_vram,
+                                parent_segment_info,
+                                find_label,
+                                |_| true,
+                            )
                             .is_some()
                         {
                             referenced_labels_refer_segment.push((

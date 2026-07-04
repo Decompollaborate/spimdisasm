@@ -7,8 +7,8 @@ use core::{error, fmt};
 use pyo3::prelude::*;
 
 use crate::{
-    context::OwnedSegmentNotFoundError,
     metadata::{segment_metadata::AddSymbolError, AddLabelError, AddressRangeOverflowError},
+    segments::OwnedSegmentNotFoundError,
 };
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]

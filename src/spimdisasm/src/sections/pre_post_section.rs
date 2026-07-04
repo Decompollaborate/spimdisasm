@@ -9,11 +9,12 @@ use address_space::{AddressRange, Vram};
 use pyo3::prelude::*;
 
 use crate::{
-    context::{Context, OwnedSegmentNotFoundError},
+    context::Context,
     relocation::UserRelocs,
     sections::{
         ProcessableSection, SectionPostProcessError, SectionPreprocessed, SectionProcessed,
     },
+    segments::OwnedSegmentNotFoundError,
     symbols::{InvalidRelocForSectionError, OwnedSymbolNotFoundError, UnalignedUserRelocError},
 };
 

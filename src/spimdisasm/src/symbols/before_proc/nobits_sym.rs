@@ -9,9 +9,9 @@ use crate::{
     config::Compiler,
     context::Context,
     metadata::{ParentSectionMetadata, SymbolMetadata},
-    parent_segment_info::ParentSegmentInfo,
     relocation::UserRelocs,
     section_type::SectionType,
+    segments::ParentSegmentInfo,
     symbols::{processed::NobitsSymProcessed, SymbolPreprocessed},
 };
 

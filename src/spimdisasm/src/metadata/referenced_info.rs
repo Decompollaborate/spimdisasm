@@ -5,7 +5,7 @@ use address_space::{Rom, Vram};
 
 use crate::{
     collections::{unordered_map::UnorderedMap, unordered_set::UnorderedSet},
-    parent_segment_info::ParentSegmentInfo,
+    segments::ParentSegmentInfo,
 };
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]

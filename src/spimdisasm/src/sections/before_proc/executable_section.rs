@@ -17,7 +17,6 @@ use crate::context::Context;
 use crate::metadata::{
     AddressRangeOverflowError, ParentSectionMetadata, SegmentMetadata, SymbolType,
 };
-use crate::parent_segment_info::ParentSegmentInfo;
 use crate::relocation::UserRelocs;
 use crate::section_type::SectionType;
 use crate::sections::processed::ExecutableSectionProcessed;
@@ -25,6 +24,7 @@ use crate::sections::{
     BadBytesSizeError, BadUserSymbolSizeError, EmptySectionError, ProcessableSection,
     RomSectionPreprocessed, SectionPreprocessed, UnalignedRomError, UnalignedVramError,
 };
+use crate::segments::ParentSegmentInfo;
 use crate::str_decoding::Encoding;
 use crate::symbols::before_proc::data_sym::DataSymProperties;
 use crate::symbols::before_proc::{DataSym, EitherFuncDataSym};

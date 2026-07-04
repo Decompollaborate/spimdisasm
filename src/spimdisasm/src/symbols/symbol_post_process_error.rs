@@ -9,7 +9,7 @@ use address_space::Rom;
 use pyo3::prelude::*;
 
 use crate::{
-    context::OwnedSegmentNotFoundError, relocation::RelocationType, section_type::SectionType,
+    relocation::RelocationType, section_type::SectionType, segments::OwnedSegmentNotFoundError,
 };
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]

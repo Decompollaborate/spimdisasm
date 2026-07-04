@@ -4,6 +4,8 @@
 use addended_ordered_map::{AddendedOrderedMap, FindSettings};
 use address_space::{Size, Vram};
 
+use crate::segments::AbsoluteSegment;
+
 use super::SymbolMetadata;
 
 #[derive(Debug, Clone, Hash, PartialEq, PartialOrd)]
@@ -19,5 +21,14 @@ impl AbsoluteSegmentMetadata {
     #[must_use]
     pub fn find_symbol(&self, vram: Vram, settings: FindSettings) -> Option<&SymbolMetadata> {
         self.symbols.find_value(&vram, settings)
+    }
+}
+
+impl AbsoluteSegment for AbsoluteSegmentMetadata {
+    type FindSettings = FindSettings;
+    type Symbol = SymbolMetadata;
+
+    fn find_symbol(&self, vram: Vram, settings: &Self::FindSettings) -> Option<&Self::Symbol> {
+        self.find_symbol(vram, *settings)
     }
 }

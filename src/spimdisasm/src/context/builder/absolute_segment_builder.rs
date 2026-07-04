@@ -9,8 +9,8 @@ use address_space::{Size, UserSize, Vram};
 use pyo3::prelude::*;
 
 use crate::metadata::{
-    GeneratedBy, OwnerSegmentKind, SymbolMetadata, SymbolNameGenerationSettings, SymbolType,
-    AbsoluteSegmentMetadata, UserSymMetadata,
+    AbsoluteSegmentMetadata, GeneratedBy, OwnerSegmentKind, SymbolMetadata,
+    SymbolNameGenerationSettings, SymbolType, UserSymMetadata,
 };
 
 use super::AddAbsoluteSegmentSymbolError;
