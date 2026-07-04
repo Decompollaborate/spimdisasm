@@ -28,8 +28,7 @@ use crate::{
 pub struct Context {
     global_config: GlobalConfig,
 
-    segments:
-        SegmentsCollection<SegmentMetadata, AbsoluteSegmentMetadata>,
+    segments: SegmentsCollection<SegmentMetadata, AbsoluteSegmentMetadata>,
 
     //
     // totalVramRange: SymbolsRanges
@@ -44,10 +43,7 @@ pub struct Context {
 impl Context {
     pub(crate) fn new(
         global_config: GlobalConfig,
-        segments: SegmentsCollection<
-            SegmentMetadata,
-            AbsoluteSegmentMetadata,
-        >,
+        segments: SegmentsCollection<SegmentMetadata, AbsoluteSegmentMetadata>,
         preheated_sections: UnorderedMap<Rom, bool>,
     ) -> Self {
         Self {
@@ -65,10 +61,7 @@ impl Context {
         &self.global_config
     }
     #[must_use]
-    pub const fn segments(
-        &self,
-    ) -> &SegmentsCollection<SegmentMetadata, AbsoluteSegmentMetadata>
-    {
+    pub const fn segments(&self) -> &SegmentsCollection<SegmentMetadata, AbsoluteSegmentMetadata> {
         &self.segments
     }
 }
