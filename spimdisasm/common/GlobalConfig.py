@@ -315,6 +315,8 @@ class GlobalConfigType:
     """Ignores words that starts in 0xXX"""
     WRITE_BINARY: bool = False
     """write to files splitted binaries"""
+    ANALYZE_GP_REL: bool = True
+    """controls the usage of the gp_rel analyzer for MIPS"""
 
 
     def addParametersToArgParse(self, parser: argparse.ArgumentParser) -> None:

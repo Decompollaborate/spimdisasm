@@ -51,6 +51,8 @@ def addOptionsToParser(parser: argparse.ArgumentParser) -> argparse.ArgumentPars
 
     parser.add_argument("--function-info", help="Specifies a path where to output a csvs sumary file of every analyzed function", metavar="PATH")
 
+    parser.add_argument("--analyze-gp-rel", help=f"Activates the gp instruction analyzer for MIPS. Defaults to true",
+                          action=common.Utils.BooleanOptionalAction, default=True)
 
     common.Context.addParametersToArgParse(parser)
 
@@ -71,6 +73,7 @@ def applyArgs(args: argparse.Namespace) -> None:
 
     common.GlobalConfig.REMOVE_POINTERS = args.nuke_pointers
     common.GlobalConfig.IGNORE_BRANCHES = args.nuke_pointers
+    common.GlobalConfig.ANALYZE_GP_REL = args.analyze_gp_rel
     if args.nuke_pointers:
         common.GlobalConfig.IGNORE_WORD_LIST.add(0x80)
         if args.ignore_words:

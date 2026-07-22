@@ -381,7 +381,7 @@ class InstrAnalyzer:
 
         upperHalf: int|None = pairingInfo.value
         luiOffset = pairingInfo.instrOffset
-        if pairingInfo.isGpRel:
+        if pairingInfo.isGpRel and common.GlobalConfig.ANALYZE_GP_REL:
             upperHalf = None
             luiOffset = None
 
