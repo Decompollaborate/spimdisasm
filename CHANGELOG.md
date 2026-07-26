@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.42.3] - 2026-07-26
+
+### Fixed
+
+- Avoid symbolizing `%gp_rel`-related usage when we don't have an explicit
+  user-defined `GP_VALUE`.
+  - This issue could be triggered when a function loads an address into the
+    `$gp` register intending to use it as a plain register instead of a global
+    pointer.
+  - This was causing `relocation truncated to fit: R_MIPS_GPREL16 against ...`
+    linker errors because of the missing gp configuration.
+
 ## [1.42.2] - 2026-06-27
 
 ### Fixed
@@ -2090,8 +2102,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Version 1.0.0
 
-[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/1.42.2...HEAD
+[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/1.42.3...HEAD
 
+[1.42.3]: https://github.com/Decompollaborate/spimdisasm/compare/1.42.2...1.42.3
 [1.42.2]: https://github.com/Decompollaborate/spimdisasm/compare/1.42.1...1.42.2
 [1.42.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.42.0...1.42.1
 [1.42.0]: https://github.com/Decompollaborate/spimdisasm/compare/1.41.0...1.42.0

@@ -382,6 +382,14 @@ class InstrAnalyzer:
         upperHalf: int|None = pairingInfo.value
         luiOffset = pairingInfo.instrOffset
         if pairingInfo.isGpRel:
+            if not common.GlobalConfig.GP_VALUE and not common.GlobalConfig.PIC:
+                # If there's no gp value configured then it is very unlikely
+                # for symbolizing as %gp_rel to be correct.
+                # gp usage on non gp_rel functions may happen on handwritten
+                # assembly that used $gp as a plain register.
+                # We still do the normal pairing for PIC to avoid breaking
+                # disassembling PIC relocatable files.
+                return
             upperHalf = None
             luiOffset = None
 
