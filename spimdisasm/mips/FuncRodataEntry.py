@@ -5,7 +5,8 @@
 
 from __future__ import annotations
 
-from typing import Generator, TextIO
+from collections.abc import Generator
+from typing import TextIO
 
 from collections import deque
 import dataclasses

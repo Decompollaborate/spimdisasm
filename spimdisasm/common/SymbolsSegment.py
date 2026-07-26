@@ -5,7 +5,8 @@
 
 from __future__ import annotations
 
-from typing import TextIO, Generator, TYPE_CHECKING
+from collections.abc import Generator
+from typing import TextIO, TYPE_CHECKING
 from pathlib import Path
 
 from . import Utils

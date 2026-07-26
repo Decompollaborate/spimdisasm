@@ -5,9 +5,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Generator
 import dataclasses
 import struct
-from typing import Generator
 
 from .. import common
 

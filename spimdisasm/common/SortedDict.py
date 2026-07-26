@@ -6,8 +6,8 @@
 from __future__ import annotations
 
 import bisect
-from collections.abc import Mapping, MutableMapping
-from typing import Generator, TypeVar
+from collections.abc import Generator, Mapping, MutableMapping
+from typing import TypeVar
 
 ValueType = TypeVar("ValueType")
 

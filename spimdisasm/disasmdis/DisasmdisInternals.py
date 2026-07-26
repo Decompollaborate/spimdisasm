@@ -6,9 +6,10 @@
 from __future__ import annotations
 
 import argparse
-from typing import Generator
-import rabbitizer
+from collections.abc import Generator
 import sys
+
+import rabbitizer
 
 from .. import common
 from .. import frontendCommon as fec

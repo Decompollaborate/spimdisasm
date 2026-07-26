@@ -5,7 +5,8 @@
 
 from __future__ import annotations
 
-from typing import Generator, Callable
+from collections.abc import Generator
+from typing import Callable
 
 from .GlobalConfig import GlobalConfig
 from .ContextSymbols import ContextSymbol
