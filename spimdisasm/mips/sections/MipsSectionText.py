@@ -84,9 +84,8 @@ class SectionText(SectionBase):
             return farthestBranch, haltFunctionSearching
 
         branchOffset = instr.getBranchOffsetGeneric()
-        if branchOffset > farthestBranch:
-            # keep track of the farthest branch target
-            farthestBranch = branchOffset
+        # keep track of the farthest branch target
+        farthestBranch = max(farthestBranch, branchOffset)
         if branchOffset < 0:
             if branchOffset + instructionOffset < 0:
                 # Whatever we are reading is not a valid instruction
@@ -317,7 +316,6 @@ class SectionText(SectionBase):
         sectionAlign_text = common.GlobalConfig.COMPILER.value.sectionAlign_text
         textAlignment = 1 << sectionAlign_text if sectionAlign_text is not None else None
 
-        i = 0
         startsCount = len(funcsStartsList)
         for startIndex in range(startsCount):
             start = funcsStartsList[startIndex]
@@ -344,7 +342,7 @@ class SectionText(SectionBase):
 
             func = symbols.SymbolFunction(self.context, vrom, vromEnd, self.inFileOffset + localOffset, vram, instrsList[start:end], self.segmentVromStart, self.overlayCategory)
             func.setCommentOffset(self.commentOffset)
-            func.index = i
+            func.index = startIndex
             func.pointersOffsets |= self.pointersOffsets
             func.hasUnimplementedIntrs = hasUnimplementedIntrs
             func.parent = self
@@ -363,8 +361,6 @@ class SectionText(SectionBase):
                     self.fileBoundaries.append(func.inFileOffset)
 
                 previousSymbolExtraPadding = func.countExtraPadding()
-
-            i += 1
 
         # Filter out repeated values and sort
         self.fileBoundaries = sorted(set(self.fileBoundaries))

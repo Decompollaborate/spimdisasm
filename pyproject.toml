@@ -65,12 +65,11 @@ ignore = [
     "SIM102", # https://docs.astral.sh/ruff/rules/collapsible-if/
     "SIM103", # https://docs.astral.sh/ruff/rules/needless-bool/
     "SIM114", # https://docs.astral.sh/ruff/rules/if-with-same-arms/
+    "PLR2044", # https://docs.astral.sh/ruff/rules/empty-comment/
 
     "RUF015", # https://docs.astral.sh/ruff/rules/unnecessary-iterable-allocation-for-first-element/
     "B023", # ?? https://docs.astral.sh/ruff/rules/function-uses-loop-variable/
     "PIE790", # https://docs.astral.sh/ruff/rules/unnecessary-placeholder/
-    "PLR1730", # https://docs.astral.sh/ruff/rules/if-stmt-min-max/
-    "SIM113", # https://docs.astral.sh/ruff/rules/enumerate-for-loop/
     "PERF102", # https://docs.astral.sh/ruff/rules/incorrect-dict-iterator/
     "B006", # https://docs.astral.sh/ruff/rules/mutable-argument-default/
     "UP035", # https://docs.astral.sh/ruff/rules/deprecated-import/
@@ -79,8 +78,6 @@ ignore = [
     "UP028", # https://docs.astral.sh/ruff/rules/yield-in-for-loop/
     "RUF012", # https://docs.astral.sh/ruff/rules/mutable-class-default/
     "PIE796", # https://docs.astral.sh/ruff/rules/non-unique-enums/
-    "PLR2044", # https://docs.astral.sh/ruff/rules/empty-comment/
-    "BLE001", # https://docs.astral.sh/ruff/rules/blind-except/
     "FURB122", # https://docs.astral.sh/ruff/rules/for-loop-writes/
     "UP037", # https://docs.astral.sh/ruff/rules/quoted-annotation/
 ]

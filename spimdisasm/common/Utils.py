@@ -11,7 +11,6 @@ import hashlib
 from pathlib import Path
 import rabbitizer
 import struct
-import subprocess
 import sys
 from typing import Any, NoReturn
 
@@ -158,13 +157,6 @@ def qwordToCurrenEndian(word: int) -> int:
     b = struct.pack('<4H', (word >> 48) & 0xFFFF, (word >> 32) & 0xFFFF, (word >> 16) & 0xFFFF, word & 0xFFFF)
     first, second, third, fourth = map(int, struct.unpack('>4H', b))
     return (first << 48) | (second << 32) | (third << 16) | fourth
-
-def runCommandGetOutput(command: str, args: list[str]) -> list[str] | None:
-    try:
-        output = subprocess.check_output([command, *args]).decode("utf-8")
-        return output.strip().split("\n")
-    except Exception:
-        return None
 
 def readCsv(filepath: Path) -> list[list[str]]:
     data: list[list[str]] = []

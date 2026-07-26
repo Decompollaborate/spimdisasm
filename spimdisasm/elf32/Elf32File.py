@@ -493,13 +493,11 @@ class Elf32File:
         for header in self.sectionHeaders:
             name = self.shstrtab[header.name]
 
-            if len(name) > largestSectionHeaderName:
-                largestSectionHeaderName = len(name)
+            largestSectionHeaderName = max(largestSectionHeaderName, len(name))
 
         print(f"  [{'Nr':>2}] {'Name':<{largestSectionHeaderName}}  {'Type':<15} {'Addr':<8} {'Off':<6} {'Size':<6} ES Flg Lk Inf Al")
 
-        i = 0
-        for header in self.sectionHeaders:
+        for i, header in enumerate(self.sectionHeaders):
             name = self.shstrtab[header.name]
 
             headerType = Elf32SectionHeaderType.fromValue(header.type)
@@ -522,8 +520,6 @@ class Elf32File:
             print(f"  [{i:>2}] {name:<{largestSectionHeaderName}}  {headerTypeStr:<15} {header.addr:08X} {header.offset:06X} {header.size:06X} {header.entsize:02X} {flagsStr:>3} {header.link:> 2X} {header.info:> 3X} {header.addralign:>2X}")
             if unknownFlags:
                 print(f"Warning unknown flags: 0x{unknownFlags:X}")
-
-            i += 1
 
         print("Key to Flags:")
         print("  W (write), A (alloc), X (execute), M (merge), S (strings), I (info),")

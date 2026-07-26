@@ -166,8 +166,7 @@ class SymbolBase(common.ElementBase):
         if common.GlobalConfig.ASM_NM_LABEL and self.contextSym.useNonMatchingLabel:
             out = f"{common.GlobalConfig.ASM_NM_LABEL} {symName}"
             if symSize is not None:
-                if symSize < 1:
-                    symSize = 1
+                symSize = max(symSize, 1)
                 sizePart = f", 0x{symSize:X}"
             else:
                 sizePart = ""

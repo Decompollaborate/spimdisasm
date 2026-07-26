@@ -434,10 +434,8 @@ class SymbolsSegment:
             contextSym.userDeclaredSize = size
             contextSym.isDefined = True
             contextSym.isUserDeclared = True
-            if vram > highestVram:
-                highestVram = vram
-            if vram < lowestVram:
-                lowestVram = vram
+            highestVram = max(highestVram, vram)
+            lowestVram = min(lowestVram, vram)
         self.context.totalVramRange.addSpecialRange(lowestVram, highestVram)
 
     def fillIQueSymbols(self) -> None:
@@ -450,10 +448,8 @@ class SymbolsSegment:
             contextSym.userDeclaredSize = size
             contextSym.isDefined = True
             contextSym.isUserDeclared = True
-            if vram > highestVram:
-                highestVram = vram
-            if vram < lowestVram:
-                lowestVram = vram
+            highestVram = max(highestVram, vram)
+            lowestVram = min(lowestVram, vram)
         self.context.totalVramRange.addSpecialRange(lowestVram, highestVram)
 
     def fillHardwareRegs(self, useRealNames: bool=False) -> None:
@@ -476,10 +472,8 @@ class SymbolsSegment:
                 contextSym.userDeclaredSize = 4
                 contextSym.isDefined = True
                 contextSym.isUserDeclared = True
-            if vram > highestVram:
-                highestVram = vram
-            if vram < lowestVram:
-                lowestVram = vram
+            highestVram = max(highestVram, vram)
+            lowestVram = min(lowestVram, vram)
         self.context.totalVramRange.addSpecialRange(lowestVram, highestVram)
 
 
