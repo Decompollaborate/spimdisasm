@@ -27,12 +27,10 @@ class AddressRange:
     def decreaseStart(self, address: int) -> None:
         if address < self.start:
             self.start = address
-        return None
 
     def increaseEnd(self, address: int) -> None:
         if address > self.end:
             self.end = address
-        return None
 
     def __str__(self) -> str:
         return f"AddressRange(0x{self.start:08X}, 0x{self.end:08X})"

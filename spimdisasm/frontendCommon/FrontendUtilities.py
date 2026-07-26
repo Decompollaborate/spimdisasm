@@ -104,7 +104,6 @@ def analyzeProcessedFiles(processedFiles: dict[common.FileSectionType, list[mips
             f.printAnalyzisResults()
 
             i += 1
-    return
 
 def progressCallback_analyzeProcessedFiles(i: int, filePath: str, processedFilesCount: int) -> None:
     global _sLenLastLine
@@ -126,7 +125,6 @@ def nukePointers(processedFiles: dict[common.FileSectionType, list[mips.sections
                 progressCallback(i, str(filePath), processedFilesCount)
             f.removePointers()
             i += 1
-    return
 
 def progressCallback_nukePointers(i: int, filePath: str, processedFilesCount: int) -> None:
     global _sLenLastLine
@@ -151,7 +149,6 @@ def writeProcessedFiles(processedFiles: dict[common.FileSectionType, list[mips.s
             common.Utils.printVerbose(f"Writing {filePath}")
             mips.FilesHandlers.writeSection(filePath, f)
             i += 1
-    return
 
 def progressCallback_writeProcessedFiles(i: int, filePath: str, processedFilesCount: int) -> None:
     global _sLenLastLine

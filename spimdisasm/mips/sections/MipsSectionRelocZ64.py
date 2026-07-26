@@ -139,7 +139,7 @@ class SectionRelocZ64(SectionBase):
         sym.contextSym.allowedToBeReferenced = False
         sym.parent = self
         sym.setCommentOffset(self.commentOffset)
-        sym.endOfLineComment = {i: f" /* {str(r)} */" for i, r in enumerate(self.entries)}
+        sym.endOfLineComment = {i: f" /* {r!s} */" for i, r in enumerate(self.entries)}
         sym.analyze()
         self.symbolList.append(sym)
         localOffset += 4 * len(self.entries)

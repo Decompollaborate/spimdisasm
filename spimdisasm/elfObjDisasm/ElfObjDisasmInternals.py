@@ -135,7 +135,7 @@ def processSection(
         inputPath: Path, textOutput: Path, dataOutput: Path,
         sectionName: str, sectionEntry: elf32.Elf32SectionHeaderEntry,
         sectionType: common.FileSectionType,
-        sectionClass: type[mips.sections.SectionText]|type[mips.sections.SectionData]|type[mips.sections.SectionRodata]|type[mips.sections.SectionBss]
+        sectionClass: type[mips.sections.SectionText | mips.sections.SectionData | mips.sections.SectionRodata | mips.sections.SectionBss]
     ) -> None:
     outputFilePath = getOutputPath(inputPath, textOutput, dataOutput, sectionType, sectionName)
 
@@ -221,7 +221,6 @@ def changeGlobalSegmentRanges(context: common.Context, processedSegments: dict[c
     if highestVramEnd is None:
         highestVramEnd = 0xFFFFFFFF
     context.changeGlobalSegmentRanges(lowestVromStart, highestVromEnd, lowestVramStart, highestVramEnd)
-    return
 
 
 def addContextSymFromSymEntry(context: common.Context, symEntry: elf32.Elf32SymEntry, symAddress: int, symName: str|None=None, symVrom: int|None=None) -> common.ContextSymbol|None:
@@ -363,7 +362,6 @@ def injectAllElfSymbols(context: common.Context, elfFile: elf32.Elf32File, proce
 
     if elfFile.got is not None and elfFile.dynstr is not None:
         insertGotIntoContext(context, elfFile.got, elfFile.dynstr)
-    return
 
 def processGlobalOffsetTable(context: common.Context, elfFile: elf32.Elf32File) -> None:
     if elfFile.dynamic is not None:
@@ -382,7 +380,6 @@ def processGlobalOffsetTable(context: common.Context, elfFile: elf32.Elf32File) 
 
         for small in elfFile.smallSections.values():
             context.addSmallSection(small.addr, small.size)
-    return
 
 
 def processArguments(args: argparse.Namespace) -> int:

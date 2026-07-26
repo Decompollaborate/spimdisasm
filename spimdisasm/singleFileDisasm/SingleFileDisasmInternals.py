@@ -141,7 +141,6 @@ def changeGlobalSegmentRanges(context: common.Context, processedFiles: dict[comm
     if highestVramEnd is None:
         highestVramEnd = 0xFFFFFFFF
     context.changeGlobalSegmentRanges(0, highestVromEnd, lowestVramStart, highestVramEnd)
-    return
 
 
 def processArguments(args: argparse.Namespace) -> int:

@@ -246,9 +246,9 @@ class SymbolBase(common.ElementBase):
         isWordSized = not self.contextSym.isByte() and not self.contextSym.isShort()
 
         if self.sectionType != common.FileSectionType.Bss:
-            for i in range(0, self.sizew):
+            for i in range(self.sizew):
                 localOffset = 4*i
-                for j in range(0, 4):
+                for j in range(4):
                     if i == 0 and j == 0:
                         continue
 

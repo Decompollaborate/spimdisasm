@@ -133,7 +133,7 @@ class SortedDict(MutableMapping[int, ValueType]):
         for key, value in self.items():
             if comma:
                 ret += ", "
-            ret += f"{repr(key)}: {repr(value)}"
+            ret += f"{key!r}: {value!r}"
             comma = True
         ret += "})"
         return ret
