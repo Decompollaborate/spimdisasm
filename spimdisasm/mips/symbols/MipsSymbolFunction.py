@@ -530,7 +530,7 @@ class SymbolFunction(SymbolText):
                 # TODO: do this in a less ugly way
                 if contextSym.address != symVram:
                     if contextSym.address % 4 != 0 or symVram % 4 != 0:
-                        if contextSym.getType() in {"u16", "s16", "u8", "u8"} or (symAccess is not None and symAccess.accessType in {rabbitizer.AccessType.BYTE, rabbitizer.AccessType.SHORT}):
+                        if contextSym.getType() in {"u16", "s16", "s8", "u8"} or (symAccess is not None and symAccess.accessType in {rabbitizer.AccessType.BYTE, rabbitizer.AccessType.SHORT}):
                             if not (contextSym.getSize() > 4):
                                 if contextSym.userDeclaredSize is None or symVram >= contextSym.address + contextSym.userDeclaredSize:
                                     if symAccess is not None:

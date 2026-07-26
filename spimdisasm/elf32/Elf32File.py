@@ -156,7 +156,7 @@ class Elf32File:
         elif Elf32HeaderFlag.ARCH_3 in self.elfFlags:
             common.GlobalConfig.ARCHLEVEL = common.ArchLevel.MIPS3
         elif Elf32HeaderFlag.ARCH_4 in self.elfFlags:
-            common.GlobalConfig.ARCHLEVEL = common.ArchLevel.MIPS5
+            common.GlobalConfig.ARCHLEVEL = common.ArchLevel.MIPS4
         elif Elf32HeaderFlag.ARCH_5 in self.elfFlags:
             common.GlobalConfig.ARCHLEVEL = common.ArchLevel.MIPS5
         elif Elf32HeaderFlag.ARCH_32 in self.elfFlags:
