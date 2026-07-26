@@ -62,22 +62,17 @@ ignore = [
     "EXE005", # https://docs.astral.sh/ruff/rules/shebang-not-first-line/
     "I001", # https://docs.astral.sh/ruff/rules/unsorted-imports/
     "N999", # https://docs.astral.sh/ruff/rules/invalid-module-name/
+    "PLR2044", # https://docs.astral.sh/ruff/rules/empty-comment/
     "SIM102", # https://docs.astral.sh/ruff/rules/collapsible-if/
     "SIM103", # https://docs.astral.sh/ruff/rules/needless-bool/
     "SIM114", # https://docs.astral.sh/ruff/rules/if-with-same-arms/
-    "PLR2044", # https://docs.astral.sh/ruff/rules/empty-comment/
 
     "RUF015", # https://docs.astral.sh/ruff/rules/unnecessary-iterable-allocation-for-first-element/
     "B023", # ?? https://docs.astral.sh/ruff/rules/function-uses-loop-variable/
-    "PIE790", # https://docs.astral.sh/ruff/rules/unnecessary-placeholder/
-    "PERF102", # https://docs.astral.sh/ruff/rules/incorrect-dict-iterator/
-    "B006", # https://docs.astral.sh/ruff/rules/mutable-argument-default/
     "UP035", # https://docs.astral.sh/ruff/rules/deprecated-import/
     "PERF402", # https://docs.astral.sh/ruff/rules/manual-list-copy/
-    "PLR1722", # https://docs.astral.sh/ruff/rules/sys-exit-alias/
     "UP028", # https://docs.astral.sh/ruff/rules/yield-in-for-loop/
     "RUF012", # https://docs.astral.sh/ruff/rules/mutable-class-default/
-    "PIE796", # https://docs.astral.sh/ruff/rules/non-unique-enums/
     "FURB122", # https://docs.astral.sh/ruff/rules/for-loop-writes/
     "UP037", # https://docs.astral.sh/ruff/rules/quoted-annotation/
 ]

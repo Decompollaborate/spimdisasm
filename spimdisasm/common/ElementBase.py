@@ -118,7 +118,6 @@ class ElementBase:
 
         This method should be called only once for each element.
         """
-        pass
 
 
     def getSpimdisasmVersionString(self) -> str:
@@ -361,7 +360,7 @@ class ElementBase:
 
     def _findInPrioritizedSegments(self, overlaySegment: SymbolsSegment, vramAddress: int, symValidation: Callable[[ContextSymbol], bool], tryPlusOffset: bool, checkUpperLimit: bool) -> ContextSymbol|None:
         for prioritizedOverlay in overlaySegment.getPrioritizedSegments():
-            for _overlayCategory, segmentsPerVrom in self.context.overlaySegments.items():
+            for segmentsPerVrom in self.context.overlaySegments.values():
                 for otherOverlaySegment in segmentsPerVrom.values():
                     if otherOverlaySegment.name == prioritizedOverlay and otherOverlaySegment.isVramInRange(vramAddress):
                         contextSym = otherOverlaySegment.getSymbol(vramAddress, tryPlusOffset=tryPlusOffset, checkUpperLimit=checkUpperLimit)
@@ -375,8 +374,8 @@ class ElementBase:
         ownedSegment: SymbolsSegment,
     ) -> SymbolsSegment|None:
         for prioritizedSegmentName in ownedSegment.prioritizedSegments:
-            for _ovlCat, segmentsPerRom in self.context.overlaySegments.items():
-                for _segmentRom, segment in segmentsPerRom.items():
+            for segmentsPerRom in self.context.overlaySegments.values():
+                for segment in segmentsPerRom.values():
                     if segment.name == prioritizedSegmentName and segment.isVramInRange(vram):
                         return segment
         return None

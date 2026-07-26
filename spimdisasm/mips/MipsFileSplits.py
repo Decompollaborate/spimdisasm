@@ -107,7 +107,7 @@ class FileSplits(FileBase):
         return common.Utils.getStrHash(buffer)
 
     def analyze(self) -> None:
-        for filename, relocSection in self.sectionsDict[common.FileSectionType.Reloc].items():
+        for relocSection in self.sectionsDict[common.FileSectionType.Reloc].values():
             assert isinstance(relocSection, sections.SectionRelocZ64)
             for entry in relocSection.entries:
                 sectionType = entry.getSectionType()

@@ -368,7 +368,6 @@ class SymbolFunction(SymbolText):
                     gotSmall = gpAccess.isSmallSection
                 else:
                     common.Utils.eprint(4, f"0x{self.instructions[instrOffset//4].vram:08X}", f"0x{gotAccess:08X}", self.instructions[instrOffset//4].disassemble())
-                    pass
 
             if contextSym is None:
                 continue

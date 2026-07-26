@@ -168,7 +168,7 @@ class FunctionRodataEntry:
         return rodataMigratedSomewhereElse
 
     @staticmethod
-    def getEntryForFuncFromSection(func: symbols.SymbolFunction, rodataSection: sections.SectionRodata|None, already_migrated_syms: set[int]=set()) -> FunctionRodataEntry:
+    def getEntryForFuncFromSection(func: symbols.SymbolFunction, rodataSection: sections.SectionRodata|None, already_migrated_syms: set[int] | None=None) -> FunctionRodataEntry:
         """
         Pairs the given function to the migrable rodata symbols of the given
         rodata section.
@@ -178,6 +178,8 @@ class FunctionRodataEntry:
         `FunctionRodataEntry` containing the given function.
         """
 
+        if already_migrated_syms is None:
+            already_migrated_syms = set()
         if rodataSection is None:
             return FunctionRodataEntry(func)
 

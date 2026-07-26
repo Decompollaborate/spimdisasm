@@ -22,7 +22,7 @@ def eprint(*args: Any, **kwargs: Any) -> None:
 
 def panic(*args: Any, **kwargs: Any) -> NoReturn:
     eprint(*args, **kwargs)
-    exit(1)
+    sys.exit(1)
 
 def printQuietless(*args: Any, **kwargs: Any) -> None:
     if not GlobalConfig.QUIET:

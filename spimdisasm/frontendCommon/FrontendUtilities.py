@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 from typing import Callable
+import sys
 
 import spimdisasm
 import rabbitizer
@@ -49,7 +50,7 @@ def getSplittedSections(context: common.Context, splits: common.FileSplitFormat,
             continue
         else:
             common.Utils.eprint("Error! Section not set!")
-            exit(1)
+            sys.exit(1)
 
         outputFilePath = outputPath
         if str(outputPath) != "-":
@@ -238,7 +239,7 @@ def writeFunctionInfoCsv(processedFiles: dict[common.FileSectionType, list[mips.
                 f.write(",")
 
                 calledFuncs = []
-                for instrOffset, targetVram in func.instrAnalyzer.funcCallInstrOffsets.items():
+                for targetVram in func.instrAnalyzer.funcCallInstrOffsets.values():
                     funcSym = func.getSymbol(targetVram, tryPlusOffset=False)
                     if funcSym is None:
                         continue
@@ -248,7 +249,7 @@ def writeFunctionInfoCsv(processedFiles: dict[common.FileSectionType, list[mips.
                 f.write(",")
 
                 nonJalCalls = []
-                for loOffset, targetVram in func.instrAnalyzer.indirectFunctionCallOffsets.items():
+                for targetVram in func.instrAnalyzer.indirectFunctionCallOffsets.values():
                     funcSym = func.getSymbol(targetVram, tryPlusOffset=False)
                     if funcSym is None:
                         continue
@@ -258,7 +259,7 @@ def writeFunctionInfoCsv(processedFiles: dict[common.FileSectionType, list[mips.
                 f.write(",")
 
                 referencedFunctions = []
-                for loOffset, symVram in func.instrAnalyzer.symbolLoInstrOffset.items():
+                for symVram in func.instrAnalyzer.symbolLoInstrOffset.values():
                     funcSym = func.getSymbol(symVram, tryPlusOffset=False)
                     if funcSym is None:
                         continue

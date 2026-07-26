@@ -5,8 +5,10 @@
 
 from __future__ import annotations
 
+import sys
+
 import spimdisasm
 
 
 if __name__ == "__main__":
-    exit(spimdisasm.frontendCommon.FrontendUtilities.cliMain())
+    sys.exit(spimdisasm.frontendCommon.FrontendUtilities.cliMain())

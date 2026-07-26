@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import sys
 
 from .. import common
 from .. import elf32
@@ -109,7 +110,7 @@ def applyReadelfLikeFlags(elfFile: elf32.Elf32File, args: argparse.Namespace) ->
             elfFile.readelf_displayGot()
 
     if args.readelf_only:
-        exit(0)
+        sys.exit(0)
 
 SpecialSectionNames = {".text", ".data", ".rodata", ".bss"}
 

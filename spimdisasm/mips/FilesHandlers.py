@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import TextIO
 from pathlib import Path
+import sys
 
 import rabbitizer
 
@@ -53,7 +54,7 @@ def createSectionFromSplitEntry(splitEntry: common.FileSplitEntry, array_of_byte
         f = sections.SectionRelocZ64(context, sectionStart, sectionEnd, vram, splitEntry.fileName, array_of_bytes, 0, None)
     else:
         common.Utils.eprint("Error! Section not set!")
-        exit(-1)
+        sys.exit(-1)
 
     f.isHandwritten = splitEntry.isHandwritten
 

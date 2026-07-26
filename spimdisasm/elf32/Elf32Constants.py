@@ -29,7 +29,7 @@ class Elf32HeaderIdentifier:
     class OsAbi(enum.Enum):
         # EI_OSABI    7        # OS ABI identification
         NONE        =   0 # UNIX System V ABI
-        SYSV        =   0 # Alias.
+        SYSV        =   0 # Alias. # noqa: PIE796
         HPUX        =   1 # HP-UX
         NETBSD      =   2 # NetBSD.
         GNU         =   3 # Object uses GNU ELF extensions.
