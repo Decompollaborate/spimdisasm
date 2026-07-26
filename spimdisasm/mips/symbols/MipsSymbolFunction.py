@@ -448,7 +448,15 @@ class SymbolFunction(SymbolText):
         for instrOffset, targetVram in self.instrAnalyzer.funcCallInstrOffsets.items():
             instr = self.instructions[instrOffset//4]
             is_j = instr.isJumpWithAddress() and not instr.doesLink()
-            funcSym = self.getSymbolFromAnySegment(targetVram, lambda contextSym: contextSym.type == common.SymbolSpecialType.function or contextSym.type is None or (is_j and isinstance(contextSym.type, common.SymbolSpecialType) and contextSym.type.isTargetLabel()), tryPlusOffset=False)
+            def symValidation(contextSym: common.ContextSymbol) -> bool:
+                if contextSym.type == common.SymbolSpecialType.function:
+                    return True
+                if contextSym.type is None:
+                    return True
+                if is_j and isinstance(contextSym.type, common.SymbolSpecialType) and contextSym.type.isTargetLabel(): # noqa: B023
+                    return True
+                return False
+            funcSym = self.getSymbolFromAnySegment(targetVram, symValidation, tryPlusOffset=False)
             if funcSym is None:
                 continue
             self.relocs[instrOffset] = common.RelocationInfo(common.RelocType.MIPS_26, funcSym)
