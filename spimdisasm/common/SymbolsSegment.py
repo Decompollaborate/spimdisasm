@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from .Context import Context
 
 class SymbolsSegment:
-    def __init__(self, context: "Context", vromStart: int|None, vromEnd: int|None, vramStart: int, vramEnd: int, overlayCategory: str|None=None, name:str|None=None) -> None:
+    def __init__(self, context: Context, vromStart: int|None, vromEnd: int|None, vramStart: int, vramEnd: int, overlayCategory: str|None=None, name:str|None=None) -> None:
         assert vramStart < vramEnd
         if vromStart is not None and vromEnd is not None:
             assert vromStart <= vromEnd, f"0x{vromStart:06X} <= 0x{vromEnd:06X}"
@@ -31,7 +31,7 @@ class SymbolsSegment:
         self.vramStart: int = vramStart
         self.vramEnd: int = vramEnd
 
-        self.context: "Context" = context
+        self.context: Context = context
 
         self.overlayCategory: str|None = overlayCategory
 

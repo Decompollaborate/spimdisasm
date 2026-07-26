@@ -118,7 +118,7 @@ for kind in gAccessKinds.values():
 @dataclasses.dataclass
 class ContextSymbol:
     address: int
-    segment: "SymbolsSegment"
+    segment: SymbolsSegment
     name: str|None = None
     nameEnd: str|None = None
     userDeclaredSize: int|None = None
