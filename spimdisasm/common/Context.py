@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import dataclasses
 from pathlib import Path
+from typing import ClassVar
 
 from . import Utils
 from .ContextSymbols import ContextSymbol
@@ -72,7 +73,7 @@ class SymbolsRanges:
         return ret
 
 class Context:
-    N64DefaultBanned = {
+    N64DefaultBanned: ClassVar[set[int]] = {
         0x7FFFFFE0, # osInvalICache
         0x7FFFFFF0, # osInvalDCache, osWritebackDCache, osWritebackDCacheAll
         0x7FFFFFFF,

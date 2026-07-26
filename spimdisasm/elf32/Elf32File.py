@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Callable
+from typing import Callable, ClassVar
 
 from .. import common
 
@@ -339,7 +339,7 @@ class Elf32File:
         pass
 
 
-    _sectionProcessorCallbacks: dict[int, Callable[[Elf32File, bytes, Elf32SectionHeaderEntry, str], None]] = {
+    _sectionProcessorCallbacks: ClassVar[dict[int, Callable[[Elf32File, bytes, Elf32SectionHeaderEntry, str], None]]] = {
         Elf32SectionHeaderType.NULL.value: _processSection_NULL,
         Elf32SectionHeaderType.PROGBITS.value: _processSection_PROGBITS,
         Elf32SectionHeaderType.SYMTAB.value: _processSection_SYMTAB,

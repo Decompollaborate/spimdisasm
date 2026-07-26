@@ -67,6 +67,5 @@ ignore = [
     "SIM103", # https://docs.astral.sh/ruff/rules/needless-bool/
     "SIM114", # https://docs.astral.sh/ruff/rules/if-with-same-arms/
 
-    "RUF012", # https://docs.astral.sh/ruff/rules/mutable-class-default/
     "UP037", # https://docs.astral.sh/ruff/rules/quoted-annotation/
 ]

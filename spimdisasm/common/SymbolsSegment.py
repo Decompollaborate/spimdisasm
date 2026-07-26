@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from collections.abc import Generator
-from typing import TextIO, TYPE_CHECKING
+from typing import ClassVar, TextIO, TYPE_CHECKING
 from pathlib import Path
 
 from . import Utils
@@ -220,7 +220,7 @@ class SymbolsSegment:
         f.writelines(f"new_pointer_in_data,0x{address:08X}\n" for address in self.newPointersInData)
 
 
-    N64LibultraSyms: dict[int, tuple[str, str, int]] = {
+    N64LibultraSyms: ClassVar[dict[int, tuple[str, str, int]]] = {
         0x800001A0: ("leoBootID",      "u32", 0x4),
         0x80000300: ("osTvType",       "u32", 0x4),
         0x80000304: ("osRomType",      "u32", 0x4),
@@ -233,7 +233,7 @@ class SymbolsSegment:
     }
 
     # iQue specific symbols
-    iQueLibultraSyms: dict[int, tuple[str, str, int]] = {
+    iQueLibultraSyms: ClassVar[dict[int, tuple[str, str, int]]] = {
         0x8000035c: ("__osBbEepromAddress", "u32",  0x4),
         0x80000360: ("__osBbEepromSize",    "u32",  0x4),
         0x80000364: ("__osBbFlashAddress",  "u32",  0x4),
@@ -251,7 +251,7 @@ class SymbolsSegment:
         0x800003b8: ("__osBbAuxDataLimit",  "u32",  0x4),
     }
 
-    N64HardwareRegs = {
+    N64HardwareRegs: ClassVar[dict[int, str]] = {
         # Signal Processor Registers
         0xA4040000: "SP_MEM_ADDR_REG",
         0xA4040004: "SP_DRAM_ADDR_REG",
@@ -417,7 +417,7 @@ class SymbolsSegment:
     }
     "N64 OS hardware registers"
 
-    iQueHardwareReg: dict[int, str] = {
+    iQueHardwareReg: ClassVar[dict[int, str]] = {
     }
     "iQue OS hardware registers"
 

@@ -53,7 +53,7 @@ jobs:
           python3 -m pip install -U -r requirements.txt
           python3 -m pip install -U ruff
 
-      - name: mypy
+      - name: ruff check
         run: |
           . .venv/bin/activate
           ruff check
