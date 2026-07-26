@@ -174,8 +174,7 @@ def writeMigratedFunctionsList(processedSegments: dict[common.FileSectionType, l
             resultingList.append(funcReferencingThisSym)
 
     if lastFunc is None:
-        for func in funcs:
-            resultingList.append(func)
+        resultingList.extend(funcs)
     else:
         for func in funcs:
             if func.vram <= lastFunc.vram:

@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Generator
+from collections.abc import Iterator
 import dataclasses
 import struct
 
@@ -73,9 +73,8 @@ class Elf32Dyns:
     def __getitem__(self, key: int) -> Elf32DynEntry:
         return self.dyns[key]
 
-    def __iter__(self) -> Generator[Elf32DynEntry, None, None]:
-        for entry in self.dyns:
-            yield entry
+    def __iter__(self) -> Iterator[Elf32DynEntry]:
+        yield from self.dyns
 
     def getGpValue(self) -> int|None:
         if self.pltGot is None:

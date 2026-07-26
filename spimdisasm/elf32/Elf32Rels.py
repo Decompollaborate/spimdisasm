@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Generator
+from collections.abc import Iterator
 import dataclasses
 import struct
 
@@ -45,6 +45,5 @@ class Elf32Rels:
             entry = Elf32RelEntry.fromBytearray(array_of_bytes, offset + i*0x08)
             self.relocations.append(entry)
 
-    def __iter__(self) -> Generator[Elf32RelEntry, None, None]:
-        for entry in self.relocations:
-            yield entry
+    def __iter__(self) -> Iterator[Elf32RelEntry]:
+        yield from self.relocations

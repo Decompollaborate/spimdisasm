@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Generator
+from collections.abc import Iterator
 import dataclasses
 import struct
 
@@ -56,9 +56,8 @@ class Elf32Syms:
     def __getitem__(self, key: int) -> Elf32SymEntry:
         return self.symbols[key]
 
-    def __iter__(self) -> Generator[Elf32SymEntry, None, None]:
-        for entry in self.symbols:
-            yield entry
+    def __iter__(self) -> Iterator[Elf32SymEntry]:
+        yield from self.symbols
 
     def __len__(self) -> int:
         return len(self.symbols)

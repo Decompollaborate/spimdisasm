@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import bisect
-from collections.abc import Generator, Mapping, MutableMapping
+from collections.abc import Generator, Mapping, MutableMapping, Iterator
 from typing import TypeVar
 
 ValueType = TypeVar("ValueType")
@@ -115,10 +115,9 @@ class SortedDict(MutableMapping[int, ValueType]):
     def __delitem__(self, key: int) -> None:
         self.remove(key)
 
-    def __iter__(self) -> Generator[int, None, None]:
+    def __iter__(self) -> Iterator[int]:
         "Iteration is sorted by keys"
-        for key in self.sortedKeys:
-            yield key
+        yield from self.sortedKeys
 
     def __len__(self) -> int:
         return len(self.map)

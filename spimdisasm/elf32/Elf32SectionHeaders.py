@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Generator
+from collections.abc import Iterator
 import dataclasses
 import struct
 
@@ -74,9 +74,8 @@ class Elf32SectionHeaders:
             return None
         return self.sections[key]
 
-    def __iter__(self) -> Generator[Elf32SectionHeaderEntry, None, None]:
-        for entry in self.sections:
-            yield entry
+    def __iter__(self) -> Iterator[Elf32SectionHeaderEntry]:
+        yield from self.sections
 
     def __len__(self) -> int:
         return len(self.sections)

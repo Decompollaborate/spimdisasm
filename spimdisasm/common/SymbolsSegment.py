@@ -213,14 +213,11 @@ class SymbolsSegment:
     def saveContextToFile(self, f: TextIO) -> None:
         f.write(f"category,{ContextSymbol.getCsvHeader()}\n")
 
-        for address in self.symbols:
-            f.write(f"symbol,{self.symbols[address].toCsv()}\n")
+        f.writelines(f"symbol,{self.symbols[address].toCsv()}\n" for address in self.symbols)
 
-        for address, constant in self.constants.items():
-            f.write(f"constants,{constant.toCsv()}\n")
+        f.writelines(f"constants,{constant.toCsv()}\n" for constant in self.constants.values())
 
-        for address in self.newPointersInData:
-            f.write(f"new_pointer_in_data,0x{address:08X}\n")
+        f.writelines(f"new_pointer_in_data,0x{address:08X}\n" for address in self.newPointersInData)
 
 
     N64LibultraSyms: dict[int, tuple[str, str, int]] = {

@@ -85,8 +85,7 @@ def getWordListFromStdin() -> Generator[int, None, None]:
             lines += line
     except KeyboardInterrupt:
         pass
-    for word in wordGeneratorFromStrList(lines.split(" ")):
-        yield word
+    yield from wordGeneratorFromStrList(lines.split(" "))
 
 
 def processArguments(args: argparse.Namespace) -> int:
