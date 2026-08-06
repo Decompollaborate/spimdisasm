@@ -412,8 +412,8 @@ class SymbolFunction(SymbolText):
                 if contextSym is None:
                     continue
 
-                self.relocs[hiInstrOffset] = common.RelocationInfo(hiRelocType, contextSym)
-                self.relocs[instrOffset] = common.RelocationInfo(relocType, contextSym)
+                self.relocs[hiInstrOffset] = common.RelocationInfo(hiRelocType, contextSym, address - contextSym.vram)
+                self.relocs[instrOffset] = common.RelocationInfo(relocType, contextSym, address - contextSym.vram)
 
         for instrOffset, constant in self.instrAnalyzer.constantInstrOffset.items():
             instr = self.instructions[instrOffset//4]

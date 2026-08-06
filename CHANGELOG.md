@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.42.4] - 2026-08-06
+
+### Fixed
+
+- Fix omitting the symbol addend on a symbol reference when the destination
+  register is the `$gp` register.
+
 ## [1.42.3] - 2026-07-26
 
 ### Fixed
@@ -2102,8 +2109,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Version 1.0.0
 
-[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/1.42.3...HEAD
+[unreleased]: https://github.com/Decompollaborate/spimdisasm/compare/1.42.4...HEAD
 
+[1.42.4]: https://github.com/Decompollaborate/spimdisasm/compare/1.42.3...1.42.4
 [1.42.3]: https://github.com/Decompollaborate/spimdisasm/compare/1.42.2...1.42.3
 [1.42.2]: https://github.com/Decompollaborate/spimdisasm/compare/1.42.1...1.42.2
 [1.42.1]: https://github.com/Decompollaborate/spimdisasm/compare/1.42.0...1.42.1
