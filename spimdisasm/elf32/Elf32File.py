@@ -15,6 +15,7 @@ from .Elf32GlobalOffsetTable import Elf32GlobalOffsetTable
 from .Elf32Header import Elf32Header
 from .Elf32RegInfo import Elf32RegInfo
 from .Elf32SectionHeaders import Elf32SectionHeaders, Elf32SectionHeaderEntry
+from .Elf32ProgramHeaders import Elf32ProgramHeaders
 from .Elf32StringTable import Elf32StringTable
 from .Elf32Syms import Elf32Syms
 from .Elf32Rels import Elf32Rels
@@ -68,6 +69,7 @@ class Elf32File:
         self.reginfo: Elf32RegInfo | None = None
 
         self.sectionHeaders = Elf32SectionHeaders(array_of_bytes, self.header.shoff, self.header.shnum)
+        self.programHeaders = Elf32ProgramHeaders(array_of_bytes, self.header.phoff, self.header.phnum)
 
         shstrtabSectionEntry = self.sectionHeaders.sections[self.header.shstrndx]
         self.shstrtab = Elf32StringTable(array_of_bytes, shstrtabSectionEntry.offset, shstrtabSectionEntry.size)
