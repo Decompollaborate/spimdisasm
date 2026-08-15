@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `SNC` compiler option
+- Add PSP related ELF constants
+- Add ELF program header parsing
+
 ## [1.42.4] - 2026-08-06
 
 ### Fixed

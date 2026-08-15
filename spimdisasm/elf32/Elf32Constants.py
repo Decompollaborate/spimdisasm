@@ -59,6 +59,9 @@ class Elf32ObjectFileType(enum.Enum):
     # LOPROC      0xff00        # Processor-specific range start
     # HIPROC      0xffff        # Processor-specific range end
 
+    SCE_PSPRELEXEC  = 0xFFA0
+    SCE_PSPOVERLAY  = 0xFFA8
+
 
 # Legal values for e_flags field of Elf32_Ehdr
 class Elf32HeaderFlag(enum.Enum):
@@ -236,6 +239,8 @@ class Elf32SectionHeaderType(enum.Enum):
     MIPS_OPTIONS    = 0x7000000D
     MIPS_SYMBOL_LIB = 0x70000020
     MIPS_ABIFLAGS   = 0x7000002A
+
+    SCE_SEGREL      = 0x700000A0
 
     @staticmethod
     def fromValue(value: int) -> Elf32SectionHeaderType|None:

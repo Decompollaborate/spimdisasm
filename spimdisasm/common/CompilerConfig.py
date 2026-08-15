@@ -93,6 +93,9 @@ class Compiler(enum.Enum):
     MWCCPS2 = CompilerProperties("MWCCPS2", prevAlign_jumptable=4, bigAddendWorkaroundForMigratedFunctions=False)
     EEGCC = CompilerProperties("EEGCC", prevAlign_jumptable=3, prevAlign_string=3, prevAlign_function=3)
 
+    # PSP
+    SNC = CompilerProperties("SNC", prevAlign_double=3, prevAlign_jumptable=3, allowRdataMigration=True, bigAddendWorkaroundForMigratedFunctions=False)
+
     @staticmethod
     def fromStr(value: str) -> Compiler|None:
         return compilerOptions.get(value)
@@ -109,5 +112,6 @@ compilerOptions: dict[str, Compiler] = {
         Compiler.PSYQ,
         Compiler.MWCCPS2,
         Compiler.EEGCC,
+        Compiler.SNC,
     ]
 }
